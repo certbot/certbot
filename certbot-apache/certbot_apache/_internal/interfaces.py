@@ -98,11 +98,15 @@ names and parameters in case insensitive manner. This does not apply to everythi
 however, for example the parameters of a conditional statement may be case sensitive.
 For this reason the internal representation of data should not ignore the case.
 """
-
 import abc
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
+from typing import TypeVar
+
+GenericParserNode = TypeVar("GenericParserNode", bound="ParserNode")
 
 
 class ParserNode(metaclass=abc.ABCMeta):
@@ -147,9 +151,13 @@ class ParserNode(metaclass=abc.ABCMeta):
     # for the ParserNode instance.
     metadata: Dict[str, Any]
     """
+    ancestor: Optional["ParserNode"]
+    dirty: bool
+    filepath: Optional[str]
+    metadata: Dict[str, Any]
 
     @abc.abstractmethod
-    def __init__(self, **kwargs: Any):
+    def __init__(self, **kwargs: Any) -> None:
         """
         Initializes the ParserNode instance, and sets the ParserNode specific
         instance variables. This is not meant to be used directly, but through
@@ -192,7 +200,7 @@ class ParserNode(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_ancestors(self, name: str):
+    def find_ancestors(self: GenericParserNode, name: str) -> List[GenericParserNode]:
         """
         Traverses the ancestor tree up, searching for BlockNodes with a specific
         name.
@@ -221,9 +229,10 @@ class CommentNode(ParserNode, metaclass=abc.ABCMeta):
     comment: str
 
     """
+    comment: str
 
     @abc.abstractmethod
-    def __init__(self, **kwargs: Any):
+    def __init__(self, **kwargs: Any) -> None:
         """
         Initializes the CommentNode instance and sets its instance variables.
 
@@ -275,6 +284,9 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
     parameters: Tuple[str, ...]
 
     """
+    enabled: bool
+    name: Optional[str]
+    parameters: Tuple[str, ...]
 
     @abc.abstractmethod
     def __init__(self, **kwargs: Any) -> None:
@@ -366,11 +378,11 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
     children: Tuple[ParserNode, ...]
 
     """
+    children: Tuple[ParserNode, ...]
 
     @abc.abstractmethod
-    def add_child_block(
-        self, name: str, parameters: List[str] = None, position: int = None
-    ) -> "BlockNode":
+    def add_child_block(self, name: str, parameters: Optional[List[str]] = None,
+                        position: Optional[int] = None) -> "BlockNode":
         """
         Adds a new BlockNode child node with provided values and marks the callee
         BlockNode dirty. This is used to add new children to the AST. The preceding
@@ -390,9 +402,8 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def add_child_directive(
-        self, name: str, parameters: Optional[List[str]] = None, position: Optional[int] = None
-    ) -> "DirectiveNode":
+    def add_child_directive(self, name: str, parameters: Optional[List[str]] = None,
+                            position: Optional[int] = None) -> DirectiveNode:
         """
         Adds a new DirectiveNode child node with provided values and marks the
         callee BlockNode dirty. This is used to add new children to the AST. The
@@ -413,7 +424,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def add_child_comment(self, comment: str = "", position: Optional[int] = None) -> "CommentNode":
+    def add_child_comment(self, comment: str = "", position: Optional[int] = None) -> CommentNode:
         """
         Adds a new CommentNode child node with provided value and marks the
         callee BlockNode dirty. This is used to add new children to the AST. The
@@ -450,23 +461,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_comments(self, comment: str) -> List["CommentNode"]:
-        """
-        Find comments with value containing the search term.
-
-        This method walks the child tree of ParserNodes under the instance it was
-        called from. This way it is possible to search for the whole configuration
-        tree, when starting from root node, or to do a partial search when starting
-        from a specified branch. The lookup should be case sensitive.
-
-        :param str comment: The content of comment to search for
-
-        :returns: A list of found CommentNode objects.
-
-        """
-
-    @abc.abstractmethod
-    def find_directives(self, name: str, exclude: bool = True):
+    def find_directives(self, name: str, exclude: bool = True) -> List[DirectiveNode]:
         """
         Find a directive by name. This method walks the child tree of ParserNodes
         under the instance it was called from. This way it is possible to search
@@ -484,7 +479,23 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def delete_child(self, child: "ParserNode") -> None:
+    def find_comments(self, comment: str) -> List[CommentNode]:
+        """
+        Find comments with value containing the search term.
+
+        This method walks the child tree of ParserNodes under the instance it was
+        called from. This way it is possible to search for the whole configuration
+        tree, when starting from root node, or to do a partial search when starting
+        from a specified branch. The lookup should be case sensitive.
+
+        :param str comment: The content of comment to search for
+
+        :returns: A list of found CommentNode objects.
+
+        """
+
+    @abc.abstractmethod
+    def delete_child(self, child: ParserNode) -> None:
         """
         Remove a specified child node from the list of children of the called
         BlockNode object.

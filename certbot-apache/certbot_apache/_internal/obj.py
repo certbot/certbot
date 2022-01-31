@@ -5,15 +5,19 @@ from typing import Iterable
 from typing import Optional
 from typing import Pattern
 from typing import Set
+from typing import Union
+
+from certbot_apache._internal.apacheparser import ApacheBlockNode
+from certbot_apache._internal.augeasparser import AugeasBlockNode
+from certbot_apache._internal.dualparser import DualBlockNode
 
 from certbot.plugins import common
-from certbot_apache._internal import interfaces
 
 
 class Addr(common.Addr):
     """Represents an Apache address."""
 
-    def __eq__(self, other: Any):
+    def __eq__(self, other: Any) -> bool:
         """This is defined as equivalent within Apache.
 
         ip_addr:* == ip_addr
@@ -25,10 +29,10 @@ class Addr(common.Addr):
                      self.is_wildcard() and other.is_wildcard()))
         return False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"certbot_apache._internal.obj.Addr({repr(self.tup)})"
 
-    def __hash__(self):  # pylint: disable=useless-super-delegation
+    def __hash__(self) -> int:  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__ if __eq__ or
         # __cmp__ is overridden. See https://bugs.python.org/issue2235
         return super().__hash__()
@@ -125,11 +129,11 @@ class VirtualHost:
     # ?: is used for not returning enclosed characters
     strip_name: Pattern = re.compile(r"^(?:.+://)?([^ :$]*)")
 
-    def __init__(
-        self, filepath: str, path: str, addrs: Set["Addr"],
-        ssl: bool, enabled: bool, name: Optional[str] = None,
-        aliases: Optional[Set[str]] = None, modmacro: bool = False,
-        ancestor: Optional["VirtualHost"] = None, node = None):
+    def __init__(self, filepath: str, path: str, addrs: Set["Addr"], ssl: bool,
+                 enabled: bool, name: Optional[str] = None, aliases: Optional[Set[str]] = None,
+                 modmacro: bool = False, ancestor: Optional["VirtualHost"] = None,
+                 node: Optional[Union[ApacheBlockNode, AugeasBlockNode, DualBlockNode]] = None
+                 ) -> None:
 
         """Initialize a VH."""
         self.filep = filepath
@@ -141,7 +145,7 @@ class VirtualHost:
         self.enabled = enabled
         self.modmacro = modmacro
         self.ancestor = ancestor
-        self.node: interfaces.BlockNode = node
+        self.node = node
 
     def get_names(self) -> Set[str]:
         """Return a set of all names."""
@@ -153,7 +157,7 @@ class VirtualHost:
 
         return all_names
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"File: {self.filep}\n"
             f"Vhost path: {self.path}\n"
@@ -185,7 +189,7 @@ class VirtualHost:
 
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.filep, self.path,
                      tuple(self.addrs), tuple(self.get_names()),
                      self.ssl, self.enabled, self.modmacro))

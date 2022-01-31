@@ -447,7 +447,7 @@ class MultipleVhostsTest(util.ApacheTest):
         addr = obj.Addr.fromstring("*:80")
         self.assertIs(self.config.is_name_vhost(addr), True)
         self.config.version = (2, 2)
-        self.assertEqual(self.config.is_name_vhost(addr), [])
+        self.assertIs(self.config.is_name_vhost(addr), False)
 
     def test_add_name_vhost(self):
         self.config.add_name_vhost(obj.Addr.fromstring("*:443"))

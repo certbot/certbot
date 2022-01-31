@@ -1,12 +1,14 @@
 """ParserNode utils"""
-from typing import Dict
 from typing import Any
-from typing import List
+from typing import Dict
+from typing import Iterable
 from typing import Optional
 from typing import Tuple
 
+from certbot_apache._internal.interfaces import ParserNode
 
-def validate_kwargs(kwargs: Dict[str, Any], required_names: List[str]) -> Dict[str, Any]:
+
+def validate_kwargs(kwargs: Dict[str, Any], required_names: Iterable[str]) -> Dict[str, Any]:
     """
     Ensures that the kwargs dict has all the expected values. This function modifies
     the kwargs dictionary, and hence the returned dictionary should be used instead
@@ -30,7 +32,8 @@ def validate_kwargs(kwargs: Dict[str, Any], required_names: List[str]) -> Dict[s
     return validated_kwargs
 
 
-def parsernode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Any, ...]:
+def parsernode_kwargs(kwargs: Dict[str, Any]
+                      ) -> Tuple[Optional[ParserNode], bool, Optional[str], Dict[str, Any]]:
     """
     Validates keyword arguments for ParserNode. This function modifies the kwargs
     dictionary, and hence the returned dictionary should be used instead in the
@@ -95,7 +98,8 @@ def commentnode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Optional[str], Dict[str,
     return comment, kwargs
 
 
-def directivenode_kwargs(kwargs: Dict[str, Any]) -> Tuple[Any, Any, Any, Dict]:
+def directivenode_kwargs(kwargs: Dict[str, Any]
+                         ) -> Tuple[Optional[str], Tuple[str, ...], bool, Dict[str, Any]]:
     """
     Validates keyword arguments for DirectiveNode and BlockNode and sets the
     default values for optional kwargs. This function modifies the kwargs

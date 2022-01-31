@@ -74,27 +74,28 @@ from typing import Set
 from typing import Tuple
 from typing import Union
 
-from certbot import errors
-from certbot.compat import os
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
 from certbot_apache._internal import parser
 from certbot_apache._internal import parsernode_util as util
 
+from certbot import errors
+from certbot.compat import os
+
 
 class AugeasParserNode(interfaces.ParserNode):
     """ Augeas implementation of ParserNode interface """
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, **kwargs: Any) -> None:
         # pylint: disable=unused-variable
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)
         super().__init__(**kwargs)
-        self.ancestor: str = ancestor
-        self.filepath: str = filepath
-        self.dirty: bool = dirty
-        self.metadata: Dict[str, Any] = metadata
-        self.parser: parser.ApacheParser = cast(parser.ApacheParser,
+        self.ancestor = ancestor
+        self.filepath = filepath
+        self.dirty = dirty
+        self.metadata = metadata
+        self.parser = cast(parser.ApacheParser,
                                                 self.metadata.get("augeasparser"))
         try:
             if self.metadata["augeaspath"].endswith("/"):
@@ -109,17 +110,17 @@ class AugeasParserNode(interfaces.ParserNode):
     def save(self, msg: Iterable[str]) -> None:
         self.parser.save(msg)
 
-    def find_ancestors(self, name: str) -> List["AugeasBlockNode"]:
+    def find_ancestors(self, name: str) -> List["AugeasParserNode"]:
         """
         Searches for ancestor BlockNodes with a given name.
 
         :param str name: Name of the BlockNode parent to search for
 
         :returns: List of matching ancestor nodes.
-        :rtype: list of AugeasBlockNode
+        :rtype: list of AugeasParserNode
         """
 
-        ancestors: List[AugeasBlockNode] = []
+        ancestors: List["AugeasParserNode"] = []
 
         parent = self.metadata["augeaspath"]
         while True:
@@ -129,7 +130,7 @@ class AugeasParserNode(interfaces.ParserNode):
             if not parent or parent == "/files":
                 break
             anc = self._create_blocknode(parent)
-            if anc.name.lower() == name.lower():
+            if anc.name is not None and anc.name.lower() == name.lower():
                 ancestors.append(anc)
 
         return ancestors
@@ -180,7 +181,7 @@ class AugeasParserNode(interfaces.ParserNode):
 class AugeasCommentNode(AugeasParserNode):
     """ Augeas implementation of CommentNode interface """
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, **kwargs: Any) -> None:
         comment, kwargs = util.commentnode_kwargs(kwargs)  # pylint: disable=unused-variable
         super().__init__(**kwargs)
         self.comment = comment
@@ -198,11 +199,11 @@ class AugeasCommentNode(AugeasParserNode):
 class AugeasDirectiveNode(AugeasParserNode):
     """ Augeas implementation of DirectiveNode interface """
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, **kwargs: Any) -> None:
         name, parameters, enabled, kwargs = util.directivenode_kwargs(kwargs)
         super().__init__(**kwargs)
-        self.name: str = name
-        self.enabled: bool = enabled
+        self.name = name
+        self.enabled = enabled
         if parameters:
             self.set_parameters(parameters)
 
@@ -217,7 +218,7 @@ class AugeasDirectiveNode(AugeasParserNode):
                     self.metadata == other.metadata)
         return False
 
-    def set_parameters(self, parameters: List[str]):
+    def set_parameters(self, parameters: Iterable[str]) -> None:
         """
         Sets parameters of a DirectiveNode or BlockNode object.
 
@@ -236,7 +237,7 @@ class AugeasDirectiveNode(AugeasParserNode):
             self.parser.aug.set(param_path, param)
 
     @property
-    def parameters(self) -> Tuple[Optional[str], ...]:
+    def parameters(self) -> Tuple[str, ...]:
         """
         Fetches the parameters from Augeas tree, ensuring that the sequence always
         represents the current state
@@ -246,17 +247,18 @@ class AugeasDirectiveNode(AugeasParserNode):
         """
         return tuple(self._aug_get_params(self.metadata["augeaspath"]))
 
-    def _aug_get_params(self, path: str) -> List[Optional[str]]:
+    def _aug_get_params(self, path: str) -> List[str]:
         """Helper function to get parameters for DirectiveNodes and BlockNodes"""
 
         arg_paths = self.parser.aug.match(path + "/arg")
-        return [self.parser.get_arg(apath) for apath in arg_paths]
+        args = [self.parser.get_arg(apath) for apath in arg_paths]
+        return [arg for arg in args if arg is not None]
 
 
 class AugeasBlockNode(AugeasDirectiveNode):
     """ Augeas implementation of BlockNode interface """
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.children: Tuple["AugeasBlockNode", ...] = ()
 
@@ -273,9 +275,9 @@ class AugeasBlockNode(AugeasDirectiveNode):
         return False
 
     # pylint: disable=unused-argument
-    def add_child_block(
-        self, name: str, parameters: Optional[str] = None, position: Optional[int] = None
-    ) -> "AugeasBlockNode":  # pragma: no cover
+    def add_child_block(self, name: str,  # pragma: no cover
+                        parameters: Optional[List[str]] = None,
+                        position: Optional[int] = None) -> "AugeasBlockNode":
         """Adds a new BlockNode to the sequence of children"""
 
         insertpath, realpath, before = self._aug_resolve_child_position(
@@ -289,7 +291,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Check if the file was included from the root config or initial state
         file_path = apache_util.get_file_path(realpath)
         if file_path is None:
-            raise errors.Error(f"No file path found for vhost: {realpath}")
+            raise errors.Error(f"No file path found for vhost: {realpath}")  # pragma: no cover
         enabled = self.parser.parsed_in_original(file_path)
 
         # Parameters will be set at the initialization of the new object
@@ -303,9 +305,9 @@ class AugeasBlockNode(AugeasDirectiveNode):
         )
 
     # pylint: disable=unused-argument
-    def add_child_directive(
-        self, name: str, parameters=None, position=None
-    ) -> "AugeasDirectiveNode":  # pragma: no cover
+    def add_child_directive(self, name: str,  # pragma: no cover
+                            parameters: Optional[List[str]] = None,
+                            position: Optional[int] = None) -> AugeasDirectiveNode:
         """Adds a new DirectiveNode to the sequence of children"""
 
         if not parameters:
@@ -324,7 +326,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Check if the file was included from the root config or initial state
         file_path = apache_util.get_file_path(realpath)
         if file_path is None:
-            raise errors.Error(f"No file path found for vhost: {realpath}")
+            raise errors.Error(f"No file path found for vhost: {realpath}")  # pragma: no cover
         enabled = self.parser.parsed_in_original(file_path)
 
         return AugeasDirectiveNode(

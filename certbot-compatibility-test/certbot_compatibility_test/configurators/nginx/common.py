@@ -2,12 +2,10 @@
 import os
 import shutil
 import subprocess
-from typing import cast
 from typing import Set
 from typing import Tuple
 
 from certbot_compatibility_test import errors
-from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
 from certbot_nginx._internal import configurator
@@ -48,8 +46,7 @@ class Proxy(configurators_common.Proxy):
             setattr(self.le_config, "nginx_" + k, constants.os_constant(k))
 
         conf = configuration.NamespaceConfig(self.le_config)
-        self._configurator = cast(interfaces.Configurator, configurator.NginxConfigurator(
-            config=conf, name="nginx"))
+        self._configurator = configurator.NginxConfigurator(config=conf, name="nginx")
         self._configurator.prepare()
 
     def cleanup_from_tests(self) -> None:

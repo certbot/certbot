@@ -4,12 +4,10 @@ import fnmatch
 import logging
 import re
 import subprocess
-from typing import Any
 from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Sequence
 from typing import Tuple
 
 import pkg_resources
@@ -21,7 +19,7 @@ from certbot.compat import os
 logger = logging.getLogger(__name__)
 
 
-def get_mod_deps(mod_name: str) -> Any:
+def get_mod_deps(mod_name: str) -> List[str]:
     """Get known module dependencies.
 
     .. note:: This does not need to be accurate in order for the client to
@@ -135,7 +133,6 @@ def included_in_paths(filepath: str, paths: Iterable[str]) -> bool:
     :returns: True if included
     :rtype: bool
     """
-
     return any(fnmatch.fnmatch(filepath, path) for path in paths)
 
 
@@ -212,7 +209,7 @@ def parse_from_subprocess(command: List[str], regexp: str) -> List[str]:
     return re.compile(regexp).findall(stdout)
 
 
-def _get_runtime_cfg(command: Sequence[str]) -> str:
+def _get_runtime_cfg(command: List[str]) -> str:
     """
     Get runtime configuration info.
 

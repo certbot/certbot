@@ -12,9 +12,9 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Set
+from typing import Tuple
 from typing import Type
 from typing import TypeVar
-from typing import Tuple
 
 import pkg_resources
 
