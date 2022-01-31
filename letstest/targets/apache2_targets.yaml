@@ -30,6 +30,8 @@ targets:
     user: admin
   #-----------------------------------------------------------------------------
   # CentOS
+  # This AMI was found on
+  # https://web.archive.org/web/20211126215532/https://wiki.centos.org/Cloud/AWS.
   - ami: ami-00e87074e52e6c9f9
     name: centos7
     type: centos

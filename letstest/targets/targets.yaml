@@ -32,7 +32,9 @@ targets:
     user: admin
     machine_type: a1.medium
   #-----------------------------------------------------------------------------
-  # Other Redhat Distros
+  # RHEL
+  # These AMIs were found using the commands given at
+  # https://web.archive.org/web/20220129184532/https://access.redhat.com/solutions/15356.
   - ami: ami-005b7876121b7244d
     name: RHEL7
     type: centos
@@ -45,6 +47,8 @@ targets:
     user: ec2-user
   #-----------------------------------------------------------------------------
   # CentOS
+  # These AMIs were found on
+  # https://web.archive.org/web/20211126215532/https://wiki.centos.org/Cloud/AWS.
   - ami: ami-00e87074e52e6c9f9
     name: centos7
     type: centos
