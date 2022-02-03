@@ -68,7 +68,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Fixed
 
-* Revoking a certificate based on an ECDSA key can now be done with `--cert-key`.
+* Revoking a certificate based on an ECDSA key can now be done with `--key-path`.
   See [GH #8569](https://github.com/certbot/certbot/issues/8569).
 
 More details about these changes can be found on our GitHub repo.
