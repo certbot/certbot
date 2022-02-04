@@ -156,6 +156,7 @@ Authors
 * [Luca Beltrame](https://github.com/lbeltrame)
 * [Luca Ebach](https://github.com/lucebac)
 * [Luca Olivetti](https://github.com/olivluca)
+* [Luke Mitchell](https://github.com/lpmitchell)
 * [Luke Rogers](https://github.com/lukeroge)
 * [Maarten](https://github.com/mrtndwrd)
 * [Mads Jensen](https://github.com/atombrella)
