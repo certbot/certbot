@@ -1961,7 +1961,7 @@ class ReportNextStepsTest(unittest.TestCase):
         """No --preconfigured-renewal needs manual cron setup"""
         self.config.preconfigured_renewal = False
         self._call(self.config, None, None)
-        self.assertIn("https://certbot.org/renewal-setup", self._output())
+        self.assertIn("https://certbot.eff.org/renewal-setup", self._output())
 
 
 class UpdateAccountTest(test_util.ConfigTestCase):

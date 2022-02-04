@@ -538,7 +538,7 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
                 "The certificate will need to be renewed before it expires. Certbot can "
                 "automatically renew the certificate in the background, but you may need "
                 "to take steps to enable that functionality. "
-                "See https://certbot.org/renewal-setup for instructions.")
+                "See https://certbot.eff.org/renewal-setup for instructions.")
 
     if not steps:
         return
