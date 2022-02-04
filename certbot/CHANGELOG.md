@@ -20,6 +20,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * GCP Permission list for certbot-dns-google in plugin documentation
 * dns-digitalocean used the SOA TTL for newly created records, rather than 30 seconds.
+* Revoking a certificate based on an ECDSA key can now be done with `--key-path`.
+  See [GH #8569](https://github.com/certbot/certbot/issues/8569).
 
 More details about these changes can be found on our GitHub repo.
 
