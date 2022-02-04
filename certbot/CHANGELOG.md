@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Updated help links to use certbot.eff.org
 
 ### Fixed
 
