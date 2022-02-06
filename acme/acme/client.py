@@ -1076,7 +1076,7 @@ class ClientNetwork:
         logger.debug('JWS payload:\n%s', jobj)
         kwargs = {
             "alg": self.alg,
-            "nonce": nonce
+            "nonce": nonce,
         }
         if acme_version == 2:
             kwargs["url"] = url

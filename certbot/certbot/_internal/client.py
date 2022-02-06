@@ -17,8 +17,13 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 import josepy as jose
 import OpenSSL
+from josepy import ES256
+from josepy import ES384
+from josepy import ES512
+from josepy import RS256
 from josepy.jwk import JWKEC
 from josepy.util import ComparableECKey
+
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -51,8 +56,22 @@ def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
                          regr: Optional[messages.RegistrationResource] = None
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
-    # TODO: Allow for other alg types besides RS256
-    net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
+    if key.typ == 'EC':
+        public_key = key.key
+        if public_key.key_size == 256:
+            alg = ES256
+        elif public_key.key_size == 384:
+            alg = ES384
+        elif public_key.key_size == 521:
+            alg = ES512
+        else:
+            raise errors.NotSupportedError(
+                "No matching signing algorithm can be found for the key"
+            )
+    else:
+        alg = RS256
+    net = acme_client.ClientNetwork(key, alg=alg, account=regr,
+                                    verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
 
     with warnings.catch_warnings():
