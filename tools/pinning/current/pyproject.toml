@@ -63,10 +63,6 @@ mock = "*"
 # here in addition to certbot/setup.py because otherwise the pre-release
 # version of poetry will not be installed.
 poetry = ">=1.2.0a1"
-# setuptools-rust 1.0+ causes some of our tests to fail. In the long term, this
-# should be fixed, but this is a quick fix to get tests passing again. See
-# https://github.com/certbot/certbot/issues/9111 for more info.
-setuptools-rust = "<1"
 # Library traitlets is a transitive dependency of ipdb (traitlets -> ipython -> ipdb).
 # Version 5.x is incompatible with Python 3.6 but for some reasons, poetry fails to
 # add the appropriate marker and allows this version to be installed under Python 3.6.
