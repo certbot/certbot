@@ -250,7 +250,7 @@ class AuthHandler:
         # Make sure to make a copy...
         plugin_pref = self.auth.get_chall_pref(domain)
         if self.pref_challs:
-            plugin_pref_types = set(chall.typ for chall in plugin_pref)
+            plugin_pref_types = {chall.typ for chall in plugin_pref}
             for typ in self.pref_challs:
                 if typ in plugin_pref_types:
                     chall_prefs.append(challenges.Challenge.TYPES[typ])

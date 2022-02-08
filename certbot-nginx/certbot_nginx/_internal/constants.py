@@ -14,11 +14,11 @@ elif platform.system() in ('NetBSD',):
 else:
     server_root_tmp = LINUX_SERVER_ROOT
 
-CLI_DEFAULTS: Dict[str, Any] = dict(
-    server_root=server_root_tmp,
-    ctl="nginx",
-    sleep_seconds=1
-)
+CLI_DEFAULTS: Dict[str, Any] = {
+    "server_root": server_root_tmp,
+    "ctl": "nginx",
+    "sleep_seconds": 1
+}
 """CLI defaults."""
 
 
