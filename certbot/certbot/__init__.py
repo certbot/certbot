@@ -3,7 +3,7 @@
 import sys
 import warnings
 
-__version__ = '1.23.0'
+__version__ = '1.24.0.dev0'
 
 if sys.version_info[:2] == (3, 6):
     warnings.warn(
