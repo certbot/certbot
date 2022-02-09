@@ -84,23 +84,48 @@ class NginxHttp01(common.ChallengePerformer):
         bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
 
         main = self.configurator.parser.parsed[root]
+        # insert include directive
         for line in main:
             if line[0] == ['http']:
                 body = line[1]
-                found_bucket = False
-                posn = 0
-                for inner_line in body:
-                    if inner_line[0] == bucket_directive[1]:
-                        if int(inner_line[1]) < int(bucket_directive[3]):
-                            body[posn] = bucket_directive
-                        found_bucket = True
-                    posn += 1
-                if not found_bucket:
-                    body.insert(0, bucket_directive)
                 if include_directive not in body:
                     body.insert(0, include_directive)
                 included = True
                 break
+
+        # We have several options here.
+        # 1) Only check nginx.conf
+        # 2) Check included files, assuming they've been included inside http already,
+        #     because if they added it outside an http block their config is broken anyway
+        # 3) Add metadata during parsing to note if an include happened inside the http block
+        #
+        # 1 causes bugs; see https://github.com/certbot/certbot/issues/5199
+        # 3 would require a more extensive rewrite and probably isn't necessary anyway
+        # So this code uses option 2.
+        found_bucket = False
+        for file_contents in self.configurator.parser.parsed.values():
+            body = file_contents # already inside http in an included file
+            for line in file_contents:
+                if line[0] == ['http']:
+                    body = line[1] # enter http because this is nginx.conf
+
+            for posn, inner_line in enumerate(body):
+                if inner_line[0] == bucket_directive[1]:
+                    if int(inner_line[1]) < int(bucket_directive[3]):
+                        body[posn] = bucket_directive
+                    found_bucket = True
+                    break
+
+            if found_bucket:
+                break
+
+        if not found_bucket:
+            for line in main:
+                if line[0] == ['http']:
+                    body = line[1]
+                    body.insert(0, bucket_directive)
+                    break
+
         if not included:
             raise errors.MisconfigurationError(
                 'Certbot could not find a block to include '
