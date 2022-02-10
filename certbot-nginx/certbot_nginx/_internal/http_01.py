@@ -93,6 +93,7 @@ class NginxHttp01(common.ChallengePerformer):
                 included = True
                 break
 
+        # insert or update the server_names_hash_bucket_size directive
         # We have several options here.
         # 1) Only check nginx.conf
         # 2) Check included files, assuming they've been included inside http already,
