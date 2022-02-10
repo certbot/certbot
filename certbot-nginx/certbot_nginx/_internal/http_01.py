@@ -110,7 +110,7 @@ class NginxHttp01(common.ChallengePerformer):
                 if line[0] == ['http']:
                     body = line[1] # enter http because this is nginx.conf
                     break
-                    
+
             for posn, inner_line in enumerate(body):
                 if inner_line[0] == bucket_directive[1]:
                     if int(inner_line[1]) < int(bucket_directive[3]):
