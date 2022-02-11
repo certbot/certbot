@@ -14,6 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+* Nginx plugin now checks included files for the singleton server_names_hash_bucket_size directive.
 *
 
 More details about these changes can be found on our GitHub repo.
