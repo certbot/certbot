@@ -146,6 +146,54 @@ class HttpPerformTest(util.NginxTest):
         # Should only get called 5 times, rather than 6, because two vhosts are the same
         self.assertEqual(mock_add_server_directives.call_count, 5*2)
 
+    def test_mod_config_insert_bucket_directive(self):
+        nginx_conf = self.http01.configurator.parser.abs_path('nginx.conf')
+
+        expected = ['server_names_hash_bucket_size', '128']
+        original_conf = self.http01.configurator.parser.parsed[nginx_conf]
+        self.assertFalse(util.contains_at_depth(original_conf, expected, 2))
+
+        self.http01.add_chall(self.achalls[0])
+        self.http01._mod_config()  # pylint: disable=protected-access
+        self.http01.configurator.save()
+        self.http01.configurator.parser.load()
+
+        generated_conf = self.http01.configurator.parser.parsed[nginx_conf]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+
+    def test_mod_config_update_bucket_directive_in_included_file(self):
+        # save old example.com config
+        example_com_loc = self.http01.configurator.parser.abs_path('sites-enabled/example.com')
+        with open(example_com_loc) as f:
+            original_example_com = f.read()
+
+        # modify example.com config
+        modified_example_com = 'server_names_hash_bucket_size 64;\n' + original_example_com
+        with open(example_com_loc, 'w') as f:
+            f.write(modified_example_com)
+        self.http01.configurator.parser.load()
+
+        # run change
+        self.http01.add_chall(self.achalls[0])
+        self.http01._mod_config()  # pylint: disable=protected-access
+        self.http01.configurator.save()
+        self.http01.configurator.parser.load()
+
+        # not in nginx.conf
+        expected = ['server_names_hash_bucket_size', '128']
+        nginx_conf_loc = self.http01.configurator.parser.abs_path('nginx.conf')
+        nginx_conf = self.http01.configurator.parser.parsed[nginx_conf_loc]
+        self.assertFalse(util.contains_at_depth(nginx_conf, expected, 2))
+
+        # is updated in example.com conf
+        generated_conf = self.http01.configurator.parser.parsed[example_com_loc]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected, 0))
+
+        # put back example.com config
+        with open(example_com_loc, 'w') as f:
+            f.write(original_example_com)
+        self.http01.configurator.parser.load()
+
     @mock.patch("certbot_nginx._internal.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_no_memoization(self, ipv6_info):
         # pylint: disable=protected-access
