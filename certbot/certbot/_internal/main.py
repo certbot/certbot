@@ -156,17 +156,39 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
     :param config: Current configuration provided by the client
     :param cert: Matching certificate that could be renewed
     """
-    if not cli.set_by_cli("key_type") or not cli.set_by_cli("certname"):
+    new_key_type = config.key_type.upper()
+    cur_key_type = cert.private_key_type.upper()
 
-        new_key_type = config.key_type.upper()
-        cur_key_type = cert.private_key_type.upper()
+    if new_key_type == cur_key_type:
+        return
 
-        if new_key_type != cur_key_type:
-            msg = ('Are you trying to change the key type of the certificate named {0} '
-                   'from {1} to {2}? Please provide both --cert-name and --key-type on '
-                   'the command line to confirm the change you are trying to make.')
-            msg = msg.format(cert.lineagename, cur_key_type, new_key_type)
-            raise errors.Error(msg)
+    # In interactive mode, ask the user to confirm changing the key type of an existing lineage.
+    if display_util.yesno(
+        f'An {cur_key_type} certificate named {cert.lineagename} already exists. Do you want to '
+        f'update its key type to {new_key_type}?',
+        yes_label='Update key type', no_label='Keep existing key type',
+        default=False, force_interactive=False,
+    ):
+        return
+
+    # The user declined the key type change, or we're running non-interactively.
+
+    # If --key-type was additionally set on the CLI, the user's intention is ambiguous.
+    # To resolve this, we ask the user to also include --cert-name to confirm the change,
+    # or error out.
+    if cli.set_by_cli("key_type"):
+        if cli.set_by_cli("certname"):
+            return
+        else:
+            raise errors.Error(
+                'Are you trying to change the key type of the certificate named '
+                f'{cert.lineagename} from {cur_key_type} to {new_key_type}? Please provide '
+                'both --cert-name and --key-type on the command line to confirm the change '
+                'you are trying to make.'
+            )
+    else:
+        # --key-type was not set on the CLI. Keep the key type of the existing lineage.
+        config.key_type = cur_key_type.lower()
 
 
 def _handle_subset_cert_request(config: configuration.NamespaceConfig,

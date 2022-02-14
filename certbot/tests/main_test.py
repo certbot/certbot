@@ -70,12 +70,14 @@ class TestHandleCerts(unittest.TestCase):
         self.assertEqual(ret, ("renew", mock_lineage))
         self.assertTrue(mock_handle_migration.called)
 
+    @mock.patch("certbot._internal.main.display_util.yesno")
     @mock.patch("certbot._internal.main.cli.set_by_cli")
-    def test_handle_unexpected_key_type_migration(self, mock_set):
+    def test_handle_unexpected_key_type_migration(self, mock_set, mock_yesno):
         config = mock.Mock()
         config.key_type = "rsa"
         cert = mock.Mock()
         cert.private_key_type = "ecdsa"
+        mock_yesno.return_value = False
 
         mock_set.return_value = True
         main._handle_unexpected_key_type_migration(config, cert)
