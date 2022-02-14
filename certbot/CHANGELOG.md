@@ -55,7 +55,8 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
-*
+* Dropped 32 bit support for the Windows beta installer
+* Windows beta installer is now distributed as "certbot-beta-installer-win64.exe"
 
 ### Fixed
 
