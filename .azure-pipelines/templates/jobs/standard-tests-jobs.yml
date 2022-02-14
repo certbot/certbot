@@ -12,16 +12,16 @@ jobs:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 3.10
           TOXENV: py310-cover
-        windows-py37:
-          IMAGE_NAME: vs2017-win2016
+        windows-py36:
+          IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.7
           TOXENV: py37-win
         windows-py39-cover:
-          IMAGE_NAME: vs2017-win2016
+          IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.9
           TOXENV: py39-cover-win
         windows-integration-certbot:
-          IMAGE_NAME: vs2017-win2016
+          IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.9
           TOXENV: integration-certbot
         linux-oldest-tests-1:

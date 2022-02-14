@@ -135,7 +135,7 @@ def create_github_release(github_access_token, tempdir, version):
 
     # Upload windows installer to release
     print("Uploading windows installer")
-    release.upload_asset(tempdir + '/windows-installer/certbot-beta-installer-win32.exe')
+    release.upload_asset(tempdir + '/windows-installer/certbot-beta-installer-win64.exe')
     release.update_release(release.title, release.body, draft=False)
 
 

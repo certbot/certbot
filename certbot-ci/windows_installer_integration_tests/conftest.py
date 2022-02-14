@@ -20,9 +20,9 @@ def pytest_addoption(parser):
     """
     parser.addoption('--installer-path',
                      default=os.path.join(ROOT_PATH, 'windows-installer', 'build',
-                                          'nsis', 'certbot-beta-installer-win32.exe'),
+                                          'nsis', 'certbot-beta-installer-win64.exe'),
                      help='set the path of the windows installer to use, default to '
-                          'CERTBOT_ROOT_PATH\\windows-installer\\build\\nsis\\certbot-beta-installer-win32.exe')  # pylint: disable=line-too-long
+                          'CERTBOT_ROOT_PATH\\windows-installer\\build\\nsis\\certbot-beta-installer-win64.exe')  # pylint: disable=line-too-long
     parser.addoption('--allow-persistent-changes', action='store_true',
                      help='needs to be set, and confirm that the test will make persistent changes on this machine')  # pylint: disable=line-too-long
 

@@ -55,7 +55,7 @@ jobs:
         displayName: Run integration tests for Docker images
   - job: installer_build
     pool:
-      vmImage: vs2017-win2016
+      vmImage: windows-2019
     steps:
       - task: UsePythonVersion@0
         inputs:
@@ -87,17 +87,9 @@ jobs:
       matrix:
         win2019:
           imageName: windows-2019
-        win2016:
-          imageName: vs2017-win2016
     pool:
       vmImage: $(imageName)
     steps:
-      - powershell: |
-          if ($PSVersionTable.PSVersion.Major -ne 5) {
-              throw "Powershell version is not 5.x"
-          }
-        condition: eq(variables['imageName'], 'vs2017-win2016')
-        displayName: Check Powershell 5.x is used in vs2017-win2016
       - task: UsePythonVersion@0
         inputs:
           versionSpec: 3.9
@@ -116,7 +108,7 @@ jobs:
         displayName: Prepare Certbot-CI
       - script: |
           set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
-          venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --allow-persistent-changes --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win32.exe
+          venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --allow-persistent-changes --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win64.exe
         displayName: Run windows installer integration tests
       - script: |
           set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
