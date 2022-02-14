@@ -493,7 +493,7 @@ def main():
 
         # print and save summary results
         results_file = open(log_dir+'/results', 'w')
-        outputs = [outq for outq in iter(outqueue.get, SENTINEL)]
+        outputs = list(iter(outqueue.get, SENTINEL))
         outputs.sort(key=lambda x: x[0])
         failed = False
         results_msg = ""
