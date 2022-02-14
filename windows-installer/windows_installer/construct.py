@@ -94,7 +94,7 @@ def _generate_pynsist_config(repo_path, build_path):
     certbot_version = subprocess.check_output([sys.executable, '-c', 'import certbot; print(certbot.__version__)'],
                                               universal_newlines=True, cwd=certbot_pkg_path).strip()
 
-    # If we change the installer name from `certbot-beta-installer-win64.exe`, it should
+    # If we change the installer name from `certbot-beta-installer-win_amd64.exe`, it should
     # also be changed in tools/create_github_release.py
     with open(installer_cfg_path, 'w') as file_h:
         file_h.write('''\
@@ -124,7 +124,7 @@ files=run.bat
 entry_point=certbot.main:main
 extra_preamble=preamble.py
 '''.format(certbot_version=certbot_version,
-           installer_suffix='win64',
+           installer_suffix='win_amd64',
            python_bitness=PYTHON_BITNESS,
            python_version='.'.join(str(item) for item in PYTHON_VERSION)))
 
