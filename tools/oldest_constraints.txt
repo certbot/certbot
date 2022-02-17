@@ -84,7 +84,7 @@ requests-toolbelt==0.9.1; python_version >= "3.7"
 requests==2.20.0; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 rsa==4.8; python_version >= "3.7" and python_version < "4"
 s3transfer==0.1.13; python_version >= "3.7"
-setuptools==39.0.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
+setuptools==41.6.0; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 six==1.11.0
 texttable==1.6.4; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
 tldextract==3.1.2; python_version >= "3.7"
