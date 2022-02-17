@@ -6,8 +6,8 @@ astroid==2.9.3; python_version >= "3.7" and python_full_version >= "3.6.2"
 atomicwrites==1.4.0; python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.7" and python_full_version >= "3.4.0"
 attrs==21.4.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
 bcrypt==3.2.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
-boto3==1.4.7
-botocore==1.7.41
+boto3==1.15.15
+botocore==1.18.15
 cached-property==1.5.2; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
 certifi==2021.10.8; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
 cffi==1.9.1
@@ -27,7 +27,6 @@ docker-compose==1.25.5; python_version >= "3.7" and python_full_version < "3.0.0
 docker==4.2.2; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
 dockerpty==0.4.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
 docopt==0.6.2; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
-docutils==0.18.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
 execnet==1.9.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
 filelock==3.6.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_version >= "3.7" and python_full_version >= "3.5.0" or python_version >= "3.7"
 funcsigs==0.4
@@ -83,7 +82,7 @@ requests-file==1.5.1; python_version >= "3.7"
 requests-toolbelt==0.9.1; python_version >= "3.7"
 requests==2.20.0; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 rsa==4.8; python_version >= "3.7" and python_version < "4"
-s3transfer==0.1.13; python_version >= "3.7"
+s3transfer==0.3.7; python_version >= "3.7"
 setuptools==41.6.0; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 six==1.11.0
 texttable==1.6.4; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
