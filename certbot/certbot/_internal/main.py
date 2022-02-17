@@ -1673,10 +1673,6 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
     zope.component.provideUtility(report, interfaces.IReporter)
     util.atexit_register(report.print_messages)
 
-    if sys.version_info[:2] == (3, 6):
-        logger.warning("Python 3.6 support will be dropped in the next release "
-                       "of Certbot - please upgrade your Python version.")
-
     with make_displayer(config) as displayer:
         display_obj.set_display(displayer)
 
