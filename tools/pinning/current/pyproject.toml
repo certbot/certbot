@@ -6,7 +6,7 @@ authors = ["Certbot Project"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be

@@ -10,7 +10,7 @@ license = "Apache License 2.0"
 [tool.poetry.dependencies]
 # The Python version here should be kept in sync with the one used in our
 # oldest tests in tox.ini.
-python = "3.6"
+python = "3.7"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
