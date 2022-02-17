@@ -138,6 +138,7 @@ class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
     new_authzr_uri: str = jose.field('new_authzr_uri')
 
 
+
 class AccountFileStorage(interfaces.AccountStorage):
     """Accounts file storage.
 

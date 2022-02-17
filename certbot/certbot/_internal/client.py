@@ -24,7 +24,6 @@ from josepy import RS256
 from josepy.jwk import JWKEC
 from josepy.util import ComparableECKey
 
-
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors

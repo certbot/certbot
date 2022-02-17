@@ -20,11 +20,12 @@ from certbot.compat import os
 import certbot.tests.util as test_util
 
 
-KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
-
-
 class AccountTest(unittest.TestCase):
     """Tests for certbot._internal.account.Account."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
     def setUp(self):
         from certbot._internal.account import Account
@@ -33,18 +34,18 @@ class AccountTest(unittest.TestCase):
             creation_host="test.certbot.org",
             creation_dt=datetime.datetime(2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC),
         )
-        self.acc = Account(self.regr, KEY, self.meta)
+        self.acc = Account(self.regr, self.KEY, self.meta)
         self.regr.__repr__ = mock.MagicMock(return_value="i_am_a_regr")
 
         with mock.patch("certbot._internal.account.socket") as mock_socket:
             mock_socket.getfqdn.return_value = "test.certbot.org"
             with mock.patch("certbot._internal.account.datetime") as mock_dt:
                 mock_dt.datetime.now.return_value = self.meta.creation_dt
-                self.acc_no_meta = Account(self.regr, KEY)
+                self.acc_no_meta = Account(self.regr, self.KEY)
 
     def test_init(self):
         self.assertEqual(self.regr, self.acc.regr)
-        self.assertEqual(KEY, self.acc.key)
+        self.assertEqual(self.KEY, self.acc.key)
         self.assertEqual(self.meta, self.acc_no_meta.meta)
 
     def test_id(self):
@@ -56,6 +57,16 @@ class AccountTest(unittest.TestCase):
     def test_repr(self):
         self.assertTrue(repr(self.acc).startswith(
           "<Account(i_am_a_regr, 7adac10320f585ddf118429c0c4af2cd, Meta("))
+
+
+class AccountTestECKey(AccountTest):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.KEY = cls.KEY = jose.JWKRSA.load(test_util.load_vector("ec_secp384r1_key.pem"))
+
+    def test_ec_key_type(self):
+        self.assertEqual(self.acc.key.typ, "ec")
 
 
 class MetaTest(unittest.TestCase):
@@ -104,6 +115,8 @@ class AccountMemoryStorageTest(unittest.TestCase):
 
 class AccountFileStorageTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.account.AccountFileStorage."""
+
+    KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
     def setUp(self):
         super().setUp()
