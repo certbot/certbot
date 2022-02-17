@@ -10,7 +10,7 @@ install_requires = [
     'josepy>=1.10.0',
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',
-    'pytz>=2017.2',
+    'pytz>=2019.3',
     'requests>=2.20.0',
     'requests-toolbelt>=0.3.0',
     'setuptools>=39.0.1',

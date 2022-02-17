@@ -55,7 +55,7 @@ install_requires = [
     'josepy>=1.9.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
-    'pytz>=2017.2',
+    'pytz>=2019.3',
     # This dependency needs to be added using environment markers to avoid its
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
