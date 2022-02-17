@@ -11,6 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Support for Python 3.6 was removed.
+* The acme library now requires requests>=2.20.0.
 
 ### Fixed
 
