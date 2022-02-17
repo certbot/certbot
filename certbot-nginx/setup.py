@@ -10,7 +10,7 @@ install_requires = [
     f'acme>={version}',
     f'certbot>={version}',
     'PyOpenSSL>=17.3.0',
-    'pyparsing>=2.2.0',
+    'pyparsing>=2.2.1',
     'setuptools>=39.0.1',
 ]
 
