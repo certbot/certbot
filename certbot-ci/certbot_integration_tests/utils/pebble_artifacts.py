@@ -18,8 +18,8 @@ ASSETS_PATH = pkg_resources.resource_filename('certbot_integration_tests', 'asse
 
 def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str, str, str]:
     # pylint: disable=missing-function-docstring
-    suffixes = {'Linux': 'linux-amd64', 'Windows': 'windows-amd64.exe', 'Darwin': 'darwin-arm64'}
-    suffix = suffixes.get(platform.system())
+    suffixes = {'Windows': 'windows-amd64.exe', 'Darwin': 'darwin-arm64'}
+    suffix = suffixes.get(platform.system(), 'linux-amd64')
 
     pebble_path = _fetch_asset('pebble', suffix)
     challtestsrv_path = _fetch_asset('pebble-challtestsrv', suffix)
