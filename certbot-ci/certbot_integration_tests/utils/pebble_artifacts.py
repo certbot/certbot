@@ -2,6 +2,7 @@
 
 import json
 import os
+import platform
 import stat
 from typing import Tuple
 
@@ -17,7 +18,8 @@ ASSETS_PATH = pkg_resources.resource_filename('certbot_integration_tests', 'asse
 
 def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str, str, str]:
     # pylint: disable=missing-function-docstring
-    suffix = 'linux-amd64' if os.name != 'nt' else 'windows-amd64.exe'
+    suffixes = {'Linux': 'linux-amd64', 'Windows': 'windows-amd64.exe', 'Darwin': 'darwin-arm64'}
+    suffix = suffixes.get(platform.system())
 
     pebble_path = _fetch_asset('pebble', suffix)
     challtestsrv_path = _fetch_asset('pebble-challtestsrv', suffix)
