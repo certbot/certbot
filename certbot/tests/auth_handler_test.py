@@ -202,9 +202,9 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
         self.assertEqual(self.mock_display.notification.call_count, 1)
         self.assertIn('Pass "-v" for more info',
-                      self.mock_display.notification.call_args.args[0])
+                      self.mock_display.notification.call_args[0][0])
         self.assertNotIn(f"http://{authzrs[0].body.identifier.value}/.well-known/acme-challenge/",
-                         self.mock_display.notification.call_args.args[0])
+                         self.mock_display.notification.call_args[0][0])
 
     def test_debug_challenges_verbose(self):
         config = mock.Mock(debug_challenges=True)
@@ -221,9 +221,9 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
         self.assertEqual(self.mock_display.notification.call_count, 1)
         self.assertNotIn('Pass "-v" for more info',
-                         self.mock_display.notification.call_args.args[0])
+                         self.mock_display.notification.call_args[0][0])
         self.assertIn(f"http://{authzrs[0].body.identifier.value}/.well-known/acme-challenge/",
-                      self.mock_display.notification.call_args.args[0])
+                      self.mock_display.notification.call_args[0][0])
 
     def test_perform_failure(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
