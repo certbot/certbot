@@ -191,7 +191,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
     def test_debug_challenges(self):
         config = mock.Mock(debug_challenges=True)
-        config.namespace.verbose_count = 0
+        config.verbose_count = 0
         authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.HTTP01])]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
@@ -208,7 +208,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
     def test_debug_challenges_verbose(self):
         config = mock.Mock(debug_challenges=True)
-        config.namespace.verbose_count = 1
+        config.verbose_count = 1
         authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.HTTP01])]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
