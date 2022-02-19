@@ -6,6 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* When the `--debug-challenges` option is used, Certbot now displays the challenge URLs (for 
+  `http-01` challenges) or FQDNs (for `dns-01` challenges) with their expected values when
+  ran with the `-v` option.
 *
 
 ### Changed
