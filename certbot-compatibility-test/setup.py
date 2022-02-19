@@ -18,7 +18,7 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
