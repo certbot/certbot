@@ -4,18 +4,18 @@ jobs:
       PYTHON_VERSION: 3.10
     strategy:
       matrix:
-        macos-py36-cover:
+        macos-py37-cover:
           IMAGE_NAME: macOS-10.15
-          PYTHON_VERSION: 3.6
-          TOXENV: py36-cover
+          PYTHON_VERSION: 3.7
+          TOXENV: py37-cover
         macos-py310-cover:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 3.10
           TOXENV: py310-cover
-        windows-py36:
+        windows-py37:
           IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.6
-          TOXENV: py36-win
+          PYTHON_VERSION: 3.7
+          TOXENV: py37-win
         windows-py39-cover:
           IMAGE_NAME: vs2017-win2016
           PYTHON_VERSION: 3.9
@@ -26,16 +26,16 @@ jobs:
           TOXENV: integration-certbot
         linux-oldest-tests-1:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.7
           TOXENV: '{acme,apache,apache-v2,certbot}-oldest'
         linux-oldest-tests-2:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.7
           TOXENV: '{dns,nginx}-oldest'
-        linux-py36:
+        linux-py37:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
-          TOXENV: py36
+          PYTHON_VERSION: 3.7
+          TOXENV: py37
         linux-py310-cover:
           IMAGE_NAME: ubuntu-18.04
           PYTHON_VERSION: 3.10
@@ -58,11 +58,11 @@ jobs:
           TOXENV: apache_compat
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.7
           TOXENV: apacheconftest-with-pebble
         nginxroundtrip:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.7
           TOXENV: nginxroundtrip
     pool:
       vmImage: $(IMAGE_NAME)
