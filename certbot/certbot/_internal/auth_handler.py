@@ -87,9 +87,34 @@ class AuthHandler:
 
                 # If debug is on, wait for user input before starting the verification process.
                 if config.debug_challenges:
+                    msg = []
+                    if config.namespace.verbose_count > 0:
+                        http01_achalls = {}
+                        dns01_achalls = {}
+                        for achall in achalls:
+                            if isinstance(achall.chall, challenges.HTTP01):
+                                http01_achalls[achall.chall.uri(achall.domain)] = (
+                                    achall.validation(achall.account_key) + "\n"
+                                )
+                            if isinstance(achall.chall, challenges.DNS01):
+                                dns01_achalls[achall.validation_domain_name(achall.domain)] = (
+                                    achall.validation(achall.account_key) + "\n"
+                                )
+                        if http01_achalls:
+                            msg.append("\nThe following URLs should be accessible from the world "
+                                       "wide web and return the value mentioned:\n")
+                            for uri, token in http01_achalls.items():
+                                msg.append(f"{uri}: {token}")
+                        if dns01_achalls:
+                            msg.append("\nThe following FQDNs should return a TXT resource "
+                                       "record with the value mentioned:\n")
+                            for fqdn, token in dns01_achalls.items():
+                                msg.append(f"{fqdn}: {token}")
+                    else:
+                        msg = ['Pass "-v" for more info about challenges.']
                     display_util.notification(
-                        'Challenges loaded. Press continue to submit to CA. '
-                        'Pass "-v" for more info about challenges.', pause=True)
+                        'Challenges loaded. Press continue to submit to CA.\n' + '\n'.join(msg),
+                        pause=True)
             except errors.AuthorizationError as error:
                 logger.critical('Failure in setting up challenges.')
                 logger.info('Attempting to clean up outstanding challenges...')
