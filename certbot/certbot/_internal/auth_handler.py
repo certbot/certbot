@@ -88,7 +88,7 @@ class AuthHandler:
                 # If debug is on, wait for user input before starting the verification process.
                 if config.debug_challenges:
                     msg = []
-                    if config.namespace.verbose_count > 0:
+                    if config.verbose_count > 0:
                         http01_achalls = {}
                         dns01_achalls = {}
                         for achall in achalls:
