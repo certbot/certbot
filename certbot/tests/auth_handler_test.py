@@ -3,6 +3,7 @@ import functools
 import logging
 import unittest
 
+from josepy import b64encode
 try:
     import mock
 except ImportError:  # pragma: no cover
@@ -195,6 +196,9 @@ class HandleAuthorizationsTest(unittest.TestCase):
         authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.HTTP01])]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
+        account_key_thumbprint = b"foobarbaz"
+        self.mock_account.key.thumbprint.return_value = account_key_thumbprint
+
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
 
         self.handler.handle_authorizations(mock_order, config)
@@ -203,8 +207,11 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(self.mock_display.notification.call_count, 1)
         self.assertIn('Pass "-v" for more info',
                       self.mock_display.notification.call_args[0][0])
-        self.assertNotIn(f"http://{authzrs[0].body.identifier.value}/.well-known/acme-challenge/",
+        self.assertNotIn(f"http://{authzrs[0].body.identifier.value}/.well-known/acme-challenge/" +
+                         b64encode(authzrs[0].body.challenges[0].chall.token).decode(),
                          self.mock_display.notification.call_args[0][0])
+        self.assertNotIn(b64encode(account_key_thumbprint).decode(),
+                      self.mock_display.notification.call_args[0][0])
 
     def test_debug_challenges_verbose(self):
         config = mock.Mock(debug_challenges=True)
@@ -212,7 +219,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
         authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.HTTP01])]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
-        self.mock_account.key.thumbprint.return_value = b"foo"
+        account_key_thumbprint = b"foobarbaz"
+        self.mock_account.key.thumbprint.return_value = account_key_thumbprint
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
 
@@ -222,7 +230,10 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(self.mock_display.notification.call_count, 1)
         self.assertNotIn('Pass "-v" for more info',
                          self.mock_display.notification.call_args[0][0])
-        self.assertIn(f"http://{authzrs[0].body.identifier.value}/.well-known/acme-challenge/",
+        self.assertIn(f"http://{authzrs[0].body.identifier.value}/.well-known/acme-challenge/" +
+                      b64encode(authzrs[0].body.challenges[0].chall.token).decode(),
+                      self.mock_display.notification.call_args[0][0])
+        self.assertIn(b64encode(account_key_thumbprint).decode(),
                       self.mock_display.notification.call_args[0][0])
 
     def test_perform_failure(self):
