@@ -17,7 +17,7 @@ During this installation step, warnings describing user access and legal comitme
 !!! ACCESS REQUIRED !!!
 ```
 
-This document suppose that the Azure DevOps organization is named _certbot_, and the Azure DevOps project is also _certbot_.
+This document supposes that the Azure DevOps organization is named _certbot_, and the Azure DevOps project is also _certbot_.
 
 ## Useful links
 
@@ -116,4 +116,4 @@ To set up a variable that is shared between pipelines, follow the instructions
 at
 https://docs.microsoft.com/en-us/azure/devops/pipelines/library/variable-groups.
 When adding variables to a group, don't forget to tick "Keep this value secret"
-if it shouldn't be shared publcily.
+if it shouldn't be shared publicly.
