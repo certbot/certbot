@@ -15,98 +15,98 @@ updates:
       - 'dependencies'
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-cloudflare/'
+    directory: '/certbot-dns-cloudflare/'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'
 
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-cloudxns'
+    directory: '/certbot-dns-cloudxns'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-digitalocean'
+    directory: '/certbot-dns-digitalocean'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-dnsimple'
+    directory: '/certbot-dns-dnsimple'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-dnsmadeeasy'
+    directory: '/certbot-dns-dnsmadeeasy'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-gehirn'
+    directory: '/certbot-dns-gehirn'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-google'
+    directory: '/certbot-dns-google'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-linode'
+    directory: '/certbot-dns-linode'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-luadns'
+    directory: '/certbot-dns-luadns'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-nsone'
+    directory: '/certbot-dns-nsone'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-ovh'
+    directory: '/certbot-dns-ovh'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-rfc2136'
+    directory: '/certbot-dns-rfc2136'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-route53'
+    directory: '/certbot-dns-route53'
     schedule:
       interval: 'weekly'
     labels:
       - 'dependencies'  
   
   - package-ecosystem: 'pip'
-    directory: '/certbot/certbot-dns-sakuracloud'
+    directory: '/certbot-dns-sakuracloud'
     schedule:
       interval: 'weekly'
     labels:
