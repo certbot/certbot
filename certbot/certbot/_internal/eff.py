@@ -44,6 +44,7 @@ def prepare_subscription(config: configuration.NamespaceConfig, acc: Account) ->
         storage.update_meta(acc)
 
 
+# TODO this needs to be changed as well to support accounts with elliptic curves
 def handle_subscription(config: configuration.NamespaceConfig, acc: Optional[Account]) -> None:
     """High level function to take care of EFF newsletter subscriptions.
 

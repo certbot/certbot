@@ -6,9 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-* Support for registering with [EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography) key
-  when creating a new account on LetsEncrypt. You need to edit the `cli.ini` before requesting a
-  new certificate.
+* New accounts are created using an [EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography) key.
+  Existing accounts are not affected by this. Reason for this is bandwidth usage, as well as security.
 
 ### Changed
 
@@ -17,7 +16,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Nginx plugin now checks included files for the singleton server_names_hash_bucket_size directive.
-*
 
 More details about these changes can be found on our GitHub repo.
 

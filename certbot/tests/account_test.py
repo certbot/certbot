@@ -59,7 +59,7 @@ class AccountTest(unittest.TestCase):
           "<Account(i_am_a_regr, 7adac10320f585ddf118429c0c4af2cd, Meta("))
 
 
-class AccountTestECKey(AccountTest):
+class AccountTestECKey(AccountTest, test_util.ConfigTestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -67,6 +67,12 @@ class AccountTestECKey(AccountTest):
 
     def test_ec_key_type(self):
         self.assertEqual(self.acc.key.typ, "ec")
+
+    def test_id(self):
+        self.assertEqual(self.acc.id, "7adac10320f585ddf118429c0c4af2cd")
+
+    def test_read_private_key_json(self):
+        os.path.join(account_path, "private_key.json")
 
 
 class MetaTest(unittest.TestCase):
@@ -134,7 +140,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
             regr=messages.RegistrationResource(
                 uri=None, body=messages.Registration(),
                 new_authzr_uri=self.new_authzr_uri),
-            key=KEY,
+            key=self.KEY,
             meta=self.meta)
         self.mock_client = mock.MagicMock()
         self.mock_client.directory.new_authz = self.new_authzr_uri

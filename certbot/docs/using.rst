@@ -553,9 +553,9 @@ revocation from any ACME account::
 ECDSA account keys
 ~~~~~~~~~~~~~~~~~~
 
-As of Certbot 1.23.0, new account keys are based on ECDSA. The official backend of LetsEncrypt issues
-many certificates, and bandwidth on their servers will be lower compared to RSA-keys. Boulder handles all
-requests, including revocation and
+As of Certbot 1.23.0, new account keys use the ``secp256r1`` curve. The official backend of LetsEncrypt issues
+many certificates, and bandwidth on their servers will be lower compared to RSA-keys. ACME servers handle all
+requests, including revocation and renewals of existing certificates using the account key.
 
 Deleting certificates
 ---------------------
