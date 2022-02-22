@@ -8,7 +8,7 @@ import sys
 import time
 
 PYTHON_VERSION = (3, 9, 7)
-PYTHON_BITNESS = 32
+PYTHON_BITNESS = 64
 NSIS_VERSION = '3.06.1'
 
 
