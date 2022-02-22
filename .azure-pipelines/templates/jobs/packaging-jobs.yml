@@ -60,7 +60,7 @@ jobs:
       - task: UsePythonVersion@0
         inputs:
           versionSpec: 3.9
-          architecture: x86
+          architecture: x64
           addToPath: true
       - script: |
           python -m venv venv
