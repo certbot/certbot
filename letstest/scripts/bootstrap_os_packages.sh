@@ -36,7 +36,7 @@ DeterminePythonVersion() {
 BootstrapDebCommon() {
   sudo apt-get update || error apt-get update hit problems but continuing anyway...
 
-  sudo apt-get install -y --no-install-recommends \
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     python3 \
     python3-dev \
     python3-venv \
