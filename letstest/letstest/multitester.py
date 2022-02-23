@@ -22,7 +22,7 @@ Usage:
 >aws ec2 create-key-pair --profile HappyHacker --key-name MyKeyPair \
  --query 'KeyMaterial' --output text > MyKeyPair.pem
 then:
->letstest targets/targets.yaml MyKeyPair.pem HappyHacker scripts/test_sdists.sh
+>letstest targets/targets.yaml MyKeyPair.pem HappyHacker scripts/test_apache2.sh
 see:
   https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
   https://docs.aws.amazon.com/cli/latest/userguide/cli-ec2-keypairs.html
@@ -56,7 +56,7 @@ parser.add_argument('key_file',
 parser.add_argument('aws_profile',
                     help='profile for AWS (i.e. as in ~/.aws/certificates)')
 parser.add_argument('test_script',
-                    default='test_sdists.sh',
+                    default='test_apache2.sh',
                     help='path of bash script in to deploy and run')
 parser.add_argument('--repo',
                     default='https://github.com/letsencrypt/letsencrypt.git',
