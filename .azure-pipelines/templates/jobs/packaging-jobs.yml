@@ -107,11 +107,11 @@ jobs:
           PIP_NO_BUILD_ISOLATION: no
         displayName: Prepare Certbot-CI
       - script: |
-          set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
+          set PATH=%ProgramFiles%\Certbot\bin;%PATH%
           venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --allow-persistent-changes --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win_amd64.exe
         displayName: Run windows installer integration tests
       - script: |
-          set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
+          set PATH=%ProgramFiles%\Certbot\bin;%PATH%
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
   - job: snaps_build
