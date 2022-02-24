@@ -8,7 +8,7 @@ version = '1.24.0.dev0'
 
 install_requires = [
     'dnspython>=1.15.0',
-    'setuptools>=39.0.1',
+    'setuptools>=41.6.0',
 ]
 
 if not os.environ.get('SNAP_BUILD'):

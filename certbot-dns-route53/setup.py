@@ -8,7 +8,7 @@ version = '1.24.0.dev0'
 
 install_requires = [
     'boto3>=1.15.15',
-    'setuptools>=39.0.1',
+    'setuptools>=41.6.0',
 ]
 
 if not os.environ.get('SNAP_BUILD'):

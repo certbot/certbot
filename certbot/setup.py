@@ -8,7 +8,7 @@ from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
-min_setuptools_version='39.0.1'
+min_setuptools_version='41.6.0'
 # This conditional isn't necessary, but it provides better error messages to
 # people who try to install this package with older versions of setuptools.
 if parse_version(setuptools_version) < parse_version(min_setuptools_version):

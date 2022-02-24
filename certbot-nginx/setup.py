@@ -11,7 +11,7 @@ install_requires = [
     f'certbot>={version}',
     'PyOpenSSL>=17.3.0',
     'pyparsing>=2.2.1',
-    'setuptools>=39.0.1',
+    'setuptools>=41.6.0',
 ]
 
 setup(

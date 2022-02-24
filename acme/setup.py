@@ -13,7 +13,7 @@ install_requires = [
     'pytz>=2019.3',
     'requests>=2.20.0',
     'requests-toolbelt>=0.3.0',
-    'setuptools>=39.0.1',
+    'setuptools>=41.6.0',
 ]
 
 docs_extras = [

@@ -10,7 +10,7 @@ install_requires = [
     f'acme>={version}',
     f'certbot>={version}',
     'python-augeas',
-    'setuptools>=39.0.1',
+    'setuptools>=41.6.0',
 ]
 
 dev_extras = [
