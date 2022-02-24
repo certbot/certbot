@@ -37,19 +37,12 @@ certbot = {path = "../../../certbot", extras = ["test"]}
 acme = {path = "../../../acme", extras = ["test"]}
 
 # Oldest dependencies
-# We specify the oldest versions of our dependencies that we keep
-# support for below. We should only update these packages as needed to make use
-# of features in newer versions of our dependencies. Keeping compatibility with
-# older packages makes it much easier for OS maintainers to update their
-# Certbot packages if needed or desired.
-#
-# When updating these dependencies, we should try to update them no further
-# than the oldest version of the dependency found in CentOS/RHEL 8 + EPEL (or
-# newer versions of CentOS/RHEL + EPEL) as our Certbot packages there see
-# frequent updates. If the dependency being updated is a direct dependency of
-# one of our own packages, the minimum required version of that dependency
-# should be updated in our setup.py files as well to communicate this
-# information to our users.
+# We specify the oldest versions of our dependencies that we keep support for
+# below. These dependencies can be updated as desired to simplify or improve
+# Certbot or its development. If the dependency being updated is a direct
+# dependency of one of our own packages, the minimum required version of that
+# dependency should be updated in our setup.py files as well to communicate
+# this information to our users.
 
 ConfigArgParse = "0.10.0"
 apacheconfig = "0.3.2"
