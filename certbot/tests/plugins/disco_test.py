@@ -279,9 +279,10 @@ class PluginsRegistryTest(unittest.TestCase):
 
     def test_prepare_order(self):
         order: List[str] = []
-        plugins = dict(
-            (c, mock.MagicMock(prepare=functools.partial(order.append, c)))
-            for c in string.ascii_letters)
+        plugins = {
+            c: mock.MagicMock(prepare=functools.partial(order.append, c))
+            for c in string.ascii_letters
+        }
         reg = self._create_new_registry(plugins)
         reg.prepare()
         # order of prepare calls must be sorted to prevent deadlock

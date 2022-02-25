@@ -11,7 +11,6 @@ import sys
 import tempfile
 from typing import Iterable
 from typing import List
-from typing import Sequence
 from typing import Tuple
 
 from cryptography import x509
@@ -185,7 +184,7 @@ def setup_certificate(workspace: str) -> Tuple[str, str]:
     return key_path, cert_path
 
 
-def test_command(command: Sequence[str], directories: Iterable[str]) -> None:
+def test_command(command: List[str], directories: Iterable[str]) -> None:
     """Assert Certbot acquires locks in a specific order.
 
     command is run repeatedly testing that Certbot acquires locks on
@@ -202,7 +201,7 @@ def test_command(command: Sequence[str], directories: Iterable[str]) -> None:
         dir_lock.release()
 
 
-def check_error(command: Sequence[str], dir_path: str) -> None:
+def check_error(command: List[str], dir_path: str) -> None:
     """Run command and verify it fails to acquire the lock for dir_path.
 
     :param str command: certbot command to run
@@ -227,7 +226,7 @@ def check_error(command: Sequence[str], dir_path: str) -> None:
         report_failure(err_msg, out, err)
 
 
-def check_call(args: Sequence[str]) -> str:
+def check_call(args: List[str]) -> str:
     """Simple imitation of subprocess.check_call.
 
     This function is only available in subprocess in Python 2.7+.
@@ -257,7 +256,7 @@ def report_failure(err_msg: str, out: str, err: str) -> None:
     sys.exit(err_msg)
 
 
-def subprocess_call(args: Sequence[str]) -> Tuple[int, str, str]:
+def subprocess_call(args: List[str]) -> Tuple[int, str, str]:
     """Run a command with subprocess and return the result.
 
     :param list args: program and it's arguments to be run

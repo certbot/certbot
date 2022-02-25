@@ -6,7 +6,6 @@ from typing import Callable
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Sequence
 from typing import Tuple
 
 from certbot import errors
@@ -242,7 +241,7 @@ def _choose_names_manually(prompt_prefix: str = "") -> List[str]:
     return []
 
 
-def success_installation(domains: Sequence[str]) -> None:
+def success_installation(domains: List[str]) -> None:
     """Display a box confirming the installation of HTTPS.
 
     :param list domains: domain names which were enabled
@@ -254,7 +253,7 @@ def success_installation(domains: Sequence[str]) -> None:
     )
 
 
-def success_renewal(unused_domains: Sequence[str]) -> None:
+def success_renewal(unused_domains: List[str]) -> None:
     """Display a box confirming the renewal of an existing certificate.
 
     :param list domains: domain names which were renewed
@@ -296,7 +295,7 @@ def report_executed_command(command_name: str, returncode: int, stdout: str, std
         logger.warning("%s ran with error output:\n%s", command_name, indent(err_s, ' '))
 
 
-def _gen_https_names(domains: Sequence[str]) -> str:
+def _gen_https_names(domains: List[str]) -> str:
     """Returns a string of the https domains.
 
     Domains are formatted nicely with ``https://`` prepended to each.

@@ -11,14 +11,15 @@ from typing import Mapping
 from typing import Optional
 from typing import Pattern
 from typing import Set
-from typing import TYPE_CHECKING
 from typing import Tuple
+from typing import TYPE_CHECKING
 from typing import Union
+
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import constants
 
 from certbot import errors
 from certbot.compat import os
-from certbot_apache._internal import apache_util
-from certbot_apache._internal import constants
 
 if TYPE_CHECKING:
     from certbot_apache._internal.configurator import ApacheConfigurator  # pragma: no cover
@@ -125,7 +126,7 @@ class ApacheParser:
                     self.aug.get(path + "/message")))
                 raise errors.PluginError(msg)
 
-    def check_aug_version(self) -> bool:
+    def check_aug_version(self) -> Union[bool, List[str]]:
         """ Checks that we have recent enough version of libaugeas.
         If augeas version is recent enough, it will support case insensitive
         regexp matching"""
@@ -214,7 +215,7 @@ class ApacheParser:
                 self.aug.remove("/files/"+sf)
             self.aug.load()
 
-    def _log_save_errors(self, ex_errs: List[str]) -> None:
+    def _log_save_errors(self, ex_errs: Iterable[str]) -> None:
         """Log errors due to bad Augeas save.
 
         :param list ex_errs: Existing errors before save
@@ -364,7 +365,7 @@ class ApacheParser:
 
         :param str aug_conf_path: Desired Augeas config path to add directive
         :param str directive: Directive you would like to add, e.g. Listen
-        :param args: Values of the directive; str "443" or list of str
+        :param args: Values of the directive; list of str (eg. ["443"])
         :type args: list
 
         """
@@ -431,7 +432,7 @@ class ApacheParser:
         return retpath
 
     def add_dir(
-        self, aug_conf_path: str, directive: Optional[str], args: Union[List[str], str]
+        self, aug_conf_path: Optional[str], directive: Optional[str], args: Union[List[str], str]
     ) -> None:
         """Appends directive to the end fo the file given by aug_conf_path.
 
@@ -444,6 +445,7 @@ class ApacheParser:
         :type args: list or str
 
         """
+        aug_conf_path = aug_conf_path if aug_conf_path else ""
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
         if isinstance(args, list):
             for i, value in enumerate(args, 1):
@@ -452,7 +454,7 @@ class ApacheParser:
         else:
             self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
-    def add_dir_beginning(self, aug_conf_path: str, dirname: str,
+    def add_dir_beginning(self, aug_conf_path: Optional[str], dirname: str,
                           args: Union[List[str], str]) -> None:
         """Adds the directive to the beginning of defined aug_conf_path.
 
@@ -461,6 +463,7 @@ class ApacheParser:
         :param args: Value of the directive. ie. Listen 443, 443 is arg
         :type args: list or str
         """
+        aug_conf_path = aug_conf_path if aug_conf_path else ""
         first_dir = aug_conf_path + "/directive[1]"
         if self.aug.get(first_dir):
             self.aug.insert(first_dir, "directive", True)
@@ -598,7 +601,7 @@ class ApacheParser:
         allargs = self.aug.match(match + '*')
         return [self.get_arg(arg) for arg in allargs]
 
-    def get_arg(self, match: Optional[str]) -> Optional[str]:
+    def get_arg(self, match: str) -> Optional[str]:
         """Uses augeas.get to get argument value and interprets result.
 
         This also converts all variables and parameters appropriately.

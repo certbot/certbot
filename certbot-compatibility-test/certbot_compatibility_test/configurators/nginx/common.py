@@ -2,12 +2,10 @@
 import os
 import shutil
 import subprocess
-from typing import cast
 from typing import Set
 from typing import Tuple
 
 from certbot_compatibility_test import errors
-from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
 from certbot_nginx._internal import configurator
@@ -48,8 +46,7 @@ class Proxy(configurators_common.Proxy):
             setattr(self.le_config, "nginx_" + k, constants.os_constant(k))
 
         conf = configuration.NamespaceConfig(self.le_config)
-        self._configurator = cast(interfaces.Configurator, configurator.NginxConfigurator(
-            config=conf, name="nginx"))
+        self._configurator = configurator.NginxConfigurator(config=conf, name="nginx")
         self._configurator.prepare()
 
     def cleanup_from_tests(self) -> None:
@@ -75,7 +72,7 @@ def _get_names(config: str) -> Tuple[Set[str], Set[str]]:
         for this_file in files:
             update_names = _get_server_names(root, this_file)
             all_names.update(update_names)
-    non_ip_names = set(n for n in all_names if not util.IP_REGEX.match(n))
+    non_ip_names = {n for n in all_names if not util.IP_REGEX.match(n)}
     return all_names, non_ip_names
 
 

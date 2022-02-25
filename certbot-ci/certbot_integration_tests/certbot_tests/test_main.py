@@ -643,6 +643,61 @@ def test_revoke_and_unregister(context: IntegrationTestsContext) -> None:
     assert cert3 in stdout
 
 
+@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
+    ('secp256r1', SECP256R1, []),
+    ('secp384r1', SECP384R1, []),
+    ('secp521r1', SECP521R1, ['boulder-v2'])]
+)
+def test_revoke_ecdsa_cert_key(
+    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve],
+    skip_servers: Iterable[str]) -> None:
+    """Test revoking a certificate """
+    if context.acme_server in skip_servers:
+        pytest.skip(f'ACME server {context.acme_server} does not support ECDSA curve {curve}')
+    cert: str = context.get_domain('curve')
+    context.certbot([
+        'certonly',
+        '--key-type', 'ecdsa', '--elliptic-curve', curve,
+        '-d', cert,
+    ])
+    key = join(context.config_dir, "live", cert, 'privkey.pem')
+    cert_path = join(context.config_dir, "live", cert, 'cert.pem')
+    assert_elliptic_key(key, curve_cls)
+    context.certbot([
+        'revoke', '--cert-path', cert_path, '--key-path', key,
+        '--no-delete-after-revoke',
+    ])
+    stdout, _ = context.certbot(['certificates'])
+    assert stdout.count('INVALID: REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
+
+
+@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
+    ('secp256r1', SECP256R1, []),
+    ('secp384r1', SECP384R1, []),
+    ('secp521r1', SECP521R1, ['boulder-v2'])]
+)
+def test_revoke_ecdsa_cert_key_delete(
+    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve],
+    skip_servers: Iterable[str]) -> None:
+    """Test revoke and deletion for each supported curve type"""
+    if context.acme_server in skip_servers:
+        pytest.skip(f'ACME server {context.acme_server} does not support ECDSA curve {curve}')
+    cert: str = context.get_domain('curve')
+    context.certbot([
+        'certonly',
+        '--key-type', 'ecdsa', '--elliptic-curve', curve,
+        '-d', cert,
+    ])
+    key = join(context.config_dir, "live", cert, 'privkey.pem')
+    cert_path = join(context.config_dir, "live", cert, 'cert.pem')
+    assert_elliptic_key(key, curve_cls)
+    context.certbot([
+        'revoke', '--cert-path', cert_path, '--key-path', key,
+        '--delete-after-revoke',
+    ])
+    assert not exists(cert_path)
+
+
 def test_revoke_mutual_exclusive_flags(context: IntegrationTestsContext) -> None:
     """Test --cert-path and --cert-name cannot be used during revoke."""
     cert = context.get_domain('le1')

@@ -4,13 +4,14 @@ from typing import Any
 from typing import cast
 from typing import List
 
-from certbot import errors
-from certbot import util
-from certbot.errors import MisconfigurationError
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
 from certbot_apache._internal.configurator import OsOptions
+
+from certbot import errors
+from certbot import util
+from certbot.errors import MisconfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         return CentOSParser(
             self.options.server_root, self, self.options.vhost_root, self.version)
 
-    def _deploy_cert(self, *args: Any, **kwargs: Any):  # pylint: disable=arguments-differ
+    def _deploy_cert(self, *args: Any, **kwargs: Any) -> None:  # pylint: disable=arguments-differ
         """
         Override _deploy_cert in order to ensure that the Apache configuration
         has "LoadModule ssl_module..." before parsing the VirtualHost configuration

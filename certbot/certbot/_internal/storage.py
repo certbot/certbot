@@ -289,10 +289,11 @@ def relevant_values(all_values: Mapping[str, Any]) -> Dict[str, Any]:
     plugins = plugins_disco.PluginsRegistry.find_all()
     namespaces = [plugins_common.dest_namespace(plugin) for plugin in plugins]
 
-    rv = dict(
-        (option, value)
+    rv = {
+        option: value
         for option, value in all_values.items()
-        if _relevant(namespaces, option) and cli.option_was_set(option, value))
+        if _relevant(namespaces, option) and cli.option_was_set(option, value)
+    }
     # We always save the server value to help with forward compatibility
     # and behavioral consistency when versions of Certbot with different
     # server defaults are used.

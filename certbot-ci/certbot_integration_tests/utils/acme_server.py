@@ -18,7 +18,6 @@ from typing import Dict
 from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Sequence
 from typing import Type
 
 import requests
@@ -42,7 +41,7 @@ class ACMEServer:
     ACMEServer is also a context manager, and so can be used to ensure ACME server is
     started/stopped upon context enter/exit.
     """
-    def __init__(self, acme_server: str, nodes: Sequence[str], http_proxy: bool = True,
+    def __init__(self, acme_server: str, nodes: List[str], http_proxy: bool = True,
                  stdout: bool = False, dns_server: Optional[str] = None,
                  http_01_port: int = DEFAULT_HTTP_01_PORT) -> None:
         """
@@ -121,7 +120,7 @@ class ACMEServer:
                  traceback: Optional[TracebackType]) -> None:
         self.stop()
 
-    def _construct_acme_xdist(self, acme_server: str, nodes: Sequence[str]) -> None:
+    def _construct_acme_xdist(self, acme_server: str, nodes: List[str]) -> None:
         """Generate and return the acme_xdist dict"""
         acme_xdist = {'acme_server': acme_server, 'challtestsrv_port': CHALLTESTSRV_PORT}
 
@@ -246,7 +245,7 @@ class ACMEServer:
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')
 
-    def _launch_process(self, command: Sequence[str], cwd: str = os.getcwd(),
+    def _launch_process(self, command: List[str], cwd: str = os.getcwd(),
                         env: Optional[Mapping[str, str]] = None,
                         force_stderr: bool = False) -> subprocess.Popen:
         """Launch silently a subprocess OS command"""

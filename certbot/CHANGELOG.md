@@ -2,7 +2,24 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.23.0 - master
+## 1.24.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+* Nginx plugin now checks included files for the singleton server_names_hash_bucket_size directive.
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.23.0 - 2022-02-08
 
 ### Added
 
@@ -22,6 +39,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * GCP Permission list for certbot-dns-google in plugin documentation
 * dns-digitalocean used the SOA TTL for newly created records, rather than 30 seconds.
+* Revoking a certificate based on an ECDSA key can now be done with `--key-path`.
+  See [GH #8569](https://github.com/certbot/certbot/issues/8569).
 
 More details about these changes can be found on our GitHub repo.
 

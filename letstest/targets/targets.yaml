@@ -1,4 +1,7 @@
 # These images are located in us-east-1.
+#
+# All machines must currently use x86_64 since Pebble does not currently
+# publish images for other architectures.
 
 targets:
   #-----------------------------------------------------------------------------
@@ -25,35 +28,12 @@ targets:
     type: ubuntu
     virt: hvm
     user: admin
-  - ami: ami-0dcd54b7d2fff584f
-    name: debian10_arm64
-    type: ubuntu
-    virt: hvm
-    user: admin
-    machine_type: a1.medium
-  #-----------------------------------------------------------------------------
-  # Other Redhat Distros
-  - ami: ami-0916c408cb02e310b
-    name: RHEL7
-    type: centos
-    virt: hvm
-    user: ec2-user
-  - ami: ami-0c322300a1dd5dc79
-    name: RHEL8
-    type: centos
-    virt: hvm
-    user: ec2-user
   #-----------------------------------------------------------------------------
   # CentOS
-  # These Marketplace AMIs must, irritatingly, have their terms manually
-  # agreed to on the AWS marketplace site for any new AWS account using them...
-  - ami: ami-9887c6e7
+  # This AMI was found on
+  # https://web.archive.org/web/20211126215532/https://wiki.centos.org/Cloud/AWS.
+  - ami: ami-00e87074e52e6c9f9
     name: centos7
-    type: centos
-    virt: hvm
-    user: centos
-  - ami: ami-01ca03df4a6012157
-    name: centos8
     type: centos
     virt: hvm
     user: centos

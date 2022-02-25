@@ -36,8 +36,7 @@ class Validator:
             logger.exception(str(error))
             return False
 
-        # Despite documentation saying that bytes are expected for digest(), we must provide a str.
-        return presented_cert.digest(cast(bytes, "sha256")) == cert.digest(cast(bytes, "sha256"))
+        return presented_cert.digest("sha256") == cert.digest("sha256")
 
     def redirect(self, name: str, port: int = 80,
                  headers: Optional[Mapping[str, str]] = None) -> bool:

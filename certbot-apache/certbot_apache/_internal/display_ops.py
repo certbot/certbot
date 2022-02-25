@@ -3,24 +3,26 @@ import logging
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
+
+from certbot_apache._internal.obj import VirtualHost
 
 from certbot import errors
 from certbot.compat import os
 from certbot.display import util as display_util
-from certbot_apache._internal import obj
 
 logger = logging.getLogger(__name__)
 
 
-def select_vhost_multiple(vhosts: Optional[List[obj.VirtualHost]]) -> List[obj.VirtualHost]:
+def select_vhost_multiple(vhosts: Optional[List[VirtualHost]]) -> List[VirtualHost]:
     """Select multiple Vhosts to install the certificate for
 
     :param vhosts: Available Apache VirtualHosts
-    :type vhosts: :class:`list` of type `~obj.VirtualHost`
+    :type vhosts: :class:`list` of type `~VirtualHost`
 
     :returns: List of VirtualHosts
-    :rtype: :class:`list`of type `~obj.Vhost`
+    :rtype: :class:`list`of type `~VirtualHost`
     """
     if not vhosts:
         return []
@@ -37,7 +39,7 @@ def select_vhost_multiple(vhosts: Optional[List[obj.VirtualHost]]) -> List[obj.V
     return []
 
 
-def _reversemap_vhosts(names: Iterable[str], vhosts: List[obj.VirtualHost]):
+def _reversemap_vhosts(names: Iterable[str], vhosts: Iterable[VirtualHost]) -> List[VirtualHost]:
     """Helper function for select_vhost_multiple for mapping string
     representations back to actual vhost objects"""
     return_vhosts = []
@@ -49,12 +51,13 @@ def _reversemap_vhosts(names: Iterable[str], vhosts: List[obj.VirtualHost]):
     return return_vhosts
 
 
-def select_vhost(domain: str, vhosts: List[obj.VirtualHost]) -> Optional[obj.VirtualHost]:
+def select_vhost(domain: str, vhosts: Sequence[VirtualHost]) -> Optional[VirtualHost]:
     """Select an appropriate Apache Vhost.
 
-    :param domain: Domain to select
+    :param str domain: Domain for vhost selection
+
     :param vhosts: Available Apache VirtualHosts
-    :type vhosts: :class:`list` of type `~obj.Vhost`
+    :type vhosts: :class:`list` of type `~VirtualHost`
 
     :returns: VirtualHost or `None`
     :rtype: `~obj.Vhost` or `None`
@@ -68,7 +71,7 @@ def select_vhost(domain: str, vhosts: List[obj.VirtualHost]) -> Optional[obj.Vir
     return None
 
 
-def _vhost_menu(domain: str, vhosts: List[obj.VirtualHost]) -> Tuple[str, int]:
+def _vhost_menu(domain: str, vhosts: Iterable[VirtualHost]) -> Tuple[str, int]:
     """Select an appropriate Apache Vhost.
 
     :param vhosts: Available Apache Virtual Hosts

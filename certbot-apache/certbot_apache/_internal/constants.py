@@ -1,5 +1,6 @@
 """Apache plugin constants."""
-from typing import List, Dict
+from typing import Dict
+from typing import List
 
 import pkg_resources
 
