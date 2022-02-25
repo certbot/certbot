@@ -6,71 +6,44 @@ Get Certbot
    :local:
 
 
-About Certbot
-=============
-
-*Certbot is meant to be run directly on a web server*, normally by a system administrator. In most cases, running Certbot on your personal computer is not a useful option. The instructions below relate to installing and running Certbot on a server.
-
-System administrators can use Certbot directly to request certificates; they should *not* allow unprivileged users to run arbitrary Certbot commands as ``root``, because Certbot allows its user to specify arbitrary file locations and run arbitrary scripts.
-
-Certbot is packaged for many common operating systems and web servers. Check whether
-``certbot`` (or ``letsencrypt``) is packaged for your web server's OS by visiting
-certbot.eff.org_, where you will also find the correct installation instructions for
-your system.
-
-.. Note:: Unless you have very specific requirements, we kindly suggest that you use the installation instructions for your system found at certbot.eff.org_.
-
-.. _certbot.eff.org: https://certbot.eff.org
-
 
 .. _system_requirements:
 
 System Requirements
 ===================
 
-Certbot currently requires Python 3.6+ running on a UNIX-like operating
-system. By default, it requires root access in order to write to
-``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
-bind to port 80 (if you use the ``standalone`` plugin) and to read and
-modify webserver configurations (if you use the ``apache`` or ``nginx``
-plugins).  If none of these apply to you, it is theoretically possible to run
-without root privileges, but for most users who want to avoid running an ACME
-client as root, either `letsencrypt-nosudo
-<https://github.com/diafygi/letsencrypt-nosudo>`_ or `simp_le
-<https://github.com/zenhack/simp_le>`_ are more appropriate choices.
+- Python 3.6+
+- UNIX-like operating system
+- Root access
+- Port 80 Open
 
-The Apache plugin currently requires an OS with augeas version 1.0; currently `it
-supports
-<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/constants.py>`_
-modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin.
+.. Note:: The Apache plugin currently requires an OS with augeas version 1.0; currently it supports modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin.
 
-Alternate installation methods
-================================
+
+Installation
+=============
+
+Unless you have very specific requirements, we kindly suggest that you use the installation instructions for your system found at https://certbot.eff.org/instructions.
+
+.. _snap-install:
+
+Snap (Recommended)
+----
+Most modern Linux distributions (basically any that use systemd) can install Certbot packaged as a snap. Snaps are available for x86_64, ARMv7 and ARMv8 architectures. The Certbot snap provides an easy way to ensure you have the latest version of Certbot with features like automated certificate renewal preconfigured.
+
+You can find instructions for installing the Certbot snap at https://certbot.eff.org/instructions?ws=other&os=snap
+
+Our instructions are the same across all systems that use Snap.
+
 
 If you are offline or your operating system doesn't provide a package, you can use
 an alternate method for installing ``certbot``.
 
-.. _snap-install:
-
-Snap
-----
-
-Most modern Linux distributions (basically any that use systemd) can install
-Certbot packaged as a snap. Snaps are available for x86_64, ARMv7 and ARMv8
-architectures. The Certbot snap provides an easy way to ensure you have the
-latest version of Certbot with features like automated certificate renewal
-preconfigured.
-
-You can find instructions for installing the Certbot snap at
-https://certbot.eff.org/instructions by selecting your server software and then
-choosing "snapd" in the "System" dropdown menu. (You should select "snapd"
-regardless of your operating system, as our instructions are the same across
-all systems.)
 
 .. _docker-user:
 
-Running with Docker
--------------------
+Alternative 1: Docker
+---------------------
 
 Docker_ is an amazingly simple and quick way to obtain a
 certificate. However, this mode of operation is unable to install
@@ -125,25 +98,24 @@ of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 .. _Docker: https://docker.com
 .. _`install Docker`: https://docs.docker.com/engine/installation/
 
-.. _certbot-auto:
-
-Certbot-Auto
-------------
-.. toctree::
-   :hidden:
-
-   uninstall
-
-
-We used to have a shell script named ``certbot-auto`` to help people install
-Certbot on UNIX operating systems, however, this script is no longer supported.
-If you want to uninstall ``certbot-auto``, you can follow our instructions
-:doc:`here <uninstall>`.
-
-Pip
----
+Alternative 2: Pip
+------------------
 
 Installing Certbot through pip is only supported on a best effort basis and
 when using a virtual environment. Instructions for installing Certbot through
 pip can be found at https://certbot.eff.org/instructions by selecting your
 server software and then choosing "pip" in the "System" dropdown menu.
+
+.. _certbot-auto:
+
+Certbot-Auto [Deprecated]
+------------------------
+.. toctree::
+   :hidden:
+
+   uninstall
+
+We used to have a shell script named ``certbot-auto`` to help people install
+Certbot on UNIX operating systems, however, this script is no longer supported.
+If you want to uninstall ``certbot-auto``, you can follow our instructions
+:doc:`here <uninstall>`.
