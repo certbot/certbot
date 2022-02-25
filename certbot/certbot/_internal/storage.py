@@ -298,6 +298,11 @@ def relevant_values(all_values: Mapping[str, Any]) -> Dict[str, Any]:
     # and behavioral consistency when versions of Certbot with different
     # server defaults are used.
     rv["server"] = all_values["server"]
+
+    # Save key type to help with forward compatibility on Certbot's transition
+    # to from RSA to ECDSA certificates by default.
+    rv["key_type"] = all_values["key_type"]
+
     return rv
 
 
