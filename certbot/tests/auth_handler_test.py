@@ -214,8 +214,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
                       self.mock_display.notification.call_args[0][0])
 
     def test_debug_challenges_verbose_http01(self):
-        config = mock.Mock(debug_challenges=True)
-        config.verbose_count = 1
+        config = mock.Mock(debug_challenges=True, verbose_count=1)
         authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.HTTP01])]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
