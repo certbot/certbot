@@ -101,8 +101,8 @@ class AuthHandler:
                                     achall.validation(achall.account_key) + "\n"
                                 )
                         if http01_achalls:
-                            msg.append("\nThe following URLs should be accessible from the world "
-                                       "wide web and return the value mentioned:\n")
+                            msg.append("\nThe following URLs should be accessible from the "
+                                       "internet and return the value mentioned:\n")
                             for uri, key_authz in http01_achalls.items():
                                 msg.append(f"URL: {uri}\nExpected value: {key_authz}")
                         if dns01_achalls:
