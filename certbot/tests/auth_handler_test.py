@@ -192,7 +192,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
     def test_debug_challenges(self):
         config = mock.Mock(debug_challenges=True, verbose_count=0)
-        authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.HTTP01])]
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
         account_key_thumbprint = b"foobarbaz"
@@ -212,9 +212,10 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertNotIn(b64encode(account_key_thumbprint).decode(),
                       self.mock_display.notification.call_args[0][0])
 
-    def test_debug_challenges_verbose_http01(self):
+    def test_debug_challenges_verbose(self):
         config = mock.Mock(debug_challenges=True, verbose_count=1)
-        authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.HTTP01])]
+        authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.HTTP01]),
+                   gen_dom_authzr(domain="1", challs=[acme_util.DNS01])]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
         account_key_thumbprint = b"foobarbaz"
@@ -222,9 +223,12 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
 
+        self.mock_auth.get_chall_pref.return_value = [challenges.HTTP01,
+                                                      challenges.DNS01]
+
         self.handler.handle_authorizations(mock_order, config)
 
-        self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
+        self.assertEqual(self.mock_net.answer_challenge.call_count, 2)
         self.assertEqual(self.mock_display.notification.call_count, 1)
         self.assertNotIn('Pass "-v" for more info',
                          self.mock_display.notification.call_args[0][0])
@@ -233,29 +237,9 @@ class HandleAuthorizationsTest(unittest.TestCase):
                       self.mock_display.notification.call_args[0][0])
         self.assertIn(b64encode(account_key_thumbprint).decode(),
                       self.mock_display.notification.call_args[0][0])
-
-    def test_debug_challenges_verbose_dns01(self):
-        config = mock.Mock(debug_challenges=True)
-        config.verbose_count = 1
-        authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.DNS01])]
-        mock_order = mock.MagicMock(authorizations=authzrs)
-
-        account_key_thumbprint = b"foobarbaz"
-        self.mock_account.key.thumbprint.return_value = account_key_thumbprint
-
-        self.mock_net.poll.side_effect = _gen_mock_on_poll()
-
-        self.mock_auth.get_chall_pref.return_value = [challenges.DNS01]
-
-        self.handler.handle_authorizations(mock_order, config)
-
-        self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
-        self.assertEqual(self.mock_display.notification.call_count, 1)
-        self.assertNotIn('Pass "-v" for more info',
-                         self.mock_display.notification.call_args[0][0])
-        self.assertIn(f"_acme-challenge.{authzrs[0].body.identifier.value}",
+        self.assertIn(f"_acme-challenge.{authzrs[1].body.identifier.value}",
                       self.mock_display.notification.call_args[0][0])
-        self.assertIn(authzrs[0].body.challenges[0].validation(self.mock_account.key),
+        self.assertIn(authzrs[1].body.challenges[0].validation(self.mock_account.key),
                       self.mock_display.notification.call_args[0][0])
 
     def test_perform_failure(self):
