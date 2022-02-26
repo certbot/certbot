@@ -191,7 +191,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self._test_name3_http_01_3_common(combos=False)
 
     def test_debug_challenges(self):
-        config = mock.Mock(debug_challenges=True)
+        config = mock.Mock(debug_challenges=True, verbose_count=0)
         config.verbose_count = 0
         authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.HTTP01])]
         mock_order = mock.MagicMock(authorizations=authzrs)
