@@ -103,13 +103,13 @@ class AuthHandler:
                         if http01_achalls:
                             msg.append("\nThe following URLs should be accessible from the world "
                                        "wide web and return the value mentioned:\n")
-                            for uri, token in http01_achalls.items():
-                                msg.append(f"{uri}: {token}")
+                            for uri, key_authz in http01_achalls.items():
+                                msg.append(f"URL: {uri}\nExpected value: {key_authz}")
                         if dns01_achalls:
                             msg.append("\nThe following FQDNs should return a TXT resource "
                                        "record with the value mentioned:\n")
-                            for fqdn, token in dns01_achalls.items():
-                                msg.append(f"{fqdn}: {token}")
+                            for fqdn, key_authz_hash in dns01_achalls.items():
+                                msg.append(f"FQDN: {fqdn}\nExpected value: {key_authz_hash}")
                     else:
                         msg = ['Pass "-v" for more info about challenges.']
                     display_util.notification(
