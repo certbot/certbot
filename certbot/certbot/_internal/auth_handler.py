@@ -349,16 +349,16 @@ class AuthHandler:
                         achall.validation(achall.account_key) + "\n"
                     )
             if http01_achalls:
-                msg.append("\nThe following URLs should be accessible from the "
+                msg.append("The following URLs should be accessible from the "
                            "internet and return the value mentioned:\n")
                 for uri, key_authz in http01_achalls.items():
                     msg.append(f"URL: {uri}\nExpected value: {key_authz}")
             if dns01_achalls:
-                msg.append("\nThe following FQDNs should return a TXT resource "
+                msg.append("The following FQDNs should return a TXT resource "
                            "record with the value mentioned:\n")
                 for fqdn, key_authz_hash in dns01_achalls.items():
                     msg.append(f"FQDN: {fqdn}\nExpected value: {key_authz_hash}")
-            return "\n".join(msg)
+            return "\n" + "\n".join(msg)
         else:
             return 'Pass "-v" for more info about challenges.'
 
