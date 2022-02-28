@@ -69,7 +69,7 @@ def find_python_executable() -> str:
     * Windows Python launcher 'py' executable in PATH if available
 
     Incompatible python versions for Certbot will be evicted (e.g. Python 3
-    versions less than 3.6).
+    versions less than 3.7).
 
     :rtype: str
     :return: the relevant python executable path
@@ -118,7 +118,7 @@ def _check_version(version_str):
 
     version = (int(search.group(1)), int(search.group(2)))
 
-    if version >= (3, 6):
+    if version >= (3, 7):
         return True
 
     print('Incompatible python version for Certbot found: {0}'.format(version_str))

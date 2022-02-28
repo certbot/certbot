@@ -10,10 +10,10 @@ install_requires = [
     'josepy>=1.10.0',
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',
-    'pytz',
-    'requests>=2.14.2',
+    'pytz>=2019.3',
+    'requests>=2.20.0',
     'requests-toolbelt>=0.3.0',
-    'setuptools>=39.0.1',
+    'setuptools>=41.6.0',
 ]
 
 docs_extras = [
@@ -35,14 +35,13 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',

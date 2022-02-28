@@ -13,9 +13,12 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* We previously said we'd drop Python 3.6 support in this release. This release
-  still supports Python 3.6, however, support is still deprecated and we plan
-  to completely remove support in a future release.
+* Support for Python 3.6 was removed.
+* All Certbot components now require setuptools>=41.6.0.
+* The acme library now requires requests>=2.20.0.
+* Certbot and its acme library now require pytz>=2019.3.
+* certbot-nginx now requires pyparsing>=2.2.1.
+* certbot-dns-route53 now requires boto3>=1.15.15.
 
 ### Fixed
 
