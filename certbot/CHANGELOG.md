@@ -13,7 +13,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* We previously said we'd drop Python 3.6 support in this release. This release
+  still supports Python 3.6, however, support is still deprecated and we plan
+  to completely remove support in a future release.
 
 ### Fixed
 
