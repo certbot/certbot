@@ -69,11 +69,6 @@ poetry = ">=1.2.0a1"
 # point, it's probably worth enumerating and pinning them (and recursing to
 # THEIR build dependencies) as well.
 setuptools-rust = "*"
-# Library traitlets is a transitive dependency of ipdb (traitlets -> ipython -> ipdb).
-# Version 5.x is incompatible with Python 3.6 but for some reasons, poetry fails to
-# add the appropriate marker and allows this version to be installed under Python 3.6.
-# We add a pinning to not create a set of requirements incompatible with Python 3.6.
-traitlets = "<5"
 
 [tool.poetry.dev-dependencies]
 
