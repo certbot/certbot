@@ -58,11 +58,9 @@ jobs:
           TOXENV: apache_compat
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.10
           TOXENV: apacheconftest-with-pebble
         nginxroundtrip:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.10
           TOXENV: nginxroundtrip
     pool:
       vmImage: $(IMAGE_NAME)
