@@ -124,7 +124,7 @@ files=run.bat
 entry_point=certbot.main:main
 extra_preamble=preamble.py
 '''.format(certbot_version=certbot_version,
-           installer_suffix='win_amd64',
+           installer_suffix='win_amd64' if PYTHON_BITNESS == 64 else 'win32',
            python_bitness=PYTHON_BITNESS,
            python_version='.'.join(str(item) for item in PYTHON_VERSION)))
 
