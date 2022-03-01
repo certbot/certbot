@@ -80,6 +80,9 @@ parts:
       - python3-dev
       - cargo
     build-environment:
+      # We set this environment variable while building to try and increase the
+      # stability of fetching the rust crates needed to build the cryptography
+      # library.
       - CARGO_NET_GIT_FETCH_WITH_CLI: true
       - SNAPCRAFT_PYTHON_VENV_ARGS: --upgrade
       # Constraints are passed through the environment variable PIP_CONSTRAINTS instead of using the

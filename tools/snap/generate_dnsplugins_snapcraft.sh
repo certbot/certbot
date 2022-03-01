@@ -27,6 +27,10 @@ parts:
         snapcraftctl pull
         snapcraftctl set-version \`grep ^version \$SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"\`
     build-environment:
+      # We set this environment variable while building to try and increase the
+      # stability of fetching the rust crates needed to build the cryptography
+      # library.
+      - CARGO_NET_GIT_FETCH_WITH_CLI: true
       # Constraints are passed through the environment variable PIP_CONSTRAINTS instead of using the
       # parts.[part_name].constraints option available in snapcraft.yaml when the Python plugin is
       # used. This is done to let these constraints be applied not only on the certbot package
