@@ -12,7 +12,7 @@ jobs:
           IMAGE_NAME: macOS-10.15
           PYTHON_VERSION: 3.10
           TOXENV: py310-cover
-        windows-py36:
+        windows-py37:
           IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.7
           TOXENV: py37-win
