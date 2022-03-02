@@ -162,8 +162,12 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
     if new_key_type == cur_key_type:
         return
 
-    # In interactive mode, ask the user to confirm changing the key type of an existing lineage.
-    if display_util.yesno(
+    # If both --key-type and --cert-name are provided, we consider the user's intent to
+    # be unambiguous: to change the key type of this lineage.
+    is_confirmed_via_cli = cli.set_by_cli("key_type") and cli.set_by_cli("certname")
+
+    # Failing that, we interactively prompt the user to confirm the change.
+    if is_confirmed_via_cli or display_util.yesno(
         f'An {cur_key_type} certificate named {cert.lineagename} already exists. Do you want to '
         f'update its key type to {new_key_type}?',
         yes_label='Update key type', no_label='Keep existing key type',
@@ -171,24 +175,20 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
     ):
         return
 
-    # The user declined the key type change, or we're running non-interactively.
-
-    # If --key-type was additionally set on the CLI, the user's intention is ambiguous.
-    # To resolve this, we ask the user to also include --cert-name to confirm the change,
-    # or error out.
+    # If --key-type was set on the CLI but the user did not confirm the key type change using
+    # one of the two above methods, their intent is ambiguous. Error out.
     if cli.set_by_cli("key_type"):
-        if cli.set_by_cli("certname"):
-            return
-        else:
-            raise errors.Error(
-                'Are you trying to change the key type of the certificate named '
-                f'{cert.lineagename} from {cur_key_type} to {new_key_type}? Please provide '
-                'both --cert-name and --key-type on the command line to confirm the change '
-                'you are trying to make.'
-            )
-    else:
-        # --key-type was not set on the CLI. Keep the key type of the existing lineage.
-        config.key_type = cur_key_type.lower()
+        raise errors.Error(
+            'Are you trying to change the key type of the certificate named '
+            f'{cert.lineagename} from {cur_key_type} to {new_key_type}? Please provide '
+            'both --cert-name and --key-type on the command line to confirm the change '
+            'you are trying to make.'
+        )
+
+    # The mismatch between the lineage's key type and config.key_type is caused by Certbot's
+    # default value. The user is not asking for a key change: keep the key type of the existing
+    # lineage.
+    config.key_type = cur_key_type.lower()
 
 
 def _handle_subset_cert_request(config: configuration.NamespaceConfig,

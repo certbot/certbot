@@ -87,7 +87,7 @@ class TestHandleCerts(unittest.TestCase):
         cert.private_key_type = "ecdsa"
         mock_yesno.return_value = True
         main._handle_unexpected_key_type_migration(config, cert)
-        mock_set.assert_not_called()
+        self.assertEqual(mock_set.call_count, 2)
         self.assertEqual(config.key_type, "rsa")
 
         # User does not interactively confirm the key type change.
