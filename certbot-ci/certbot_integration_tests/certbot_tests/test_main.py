@@ -25,6 +25,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_equals_gro
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_hook_execution
 from certbot_integration_tests.certbot_tests.assertions import assert_rsa_key
+from certbot_integration_tests.certbot_tests.assertions import assert_saved_lineage_option
 from certbot_integration_tests.certbot_tests.assertions import assert_saved_renew_hook
 from certbot_integration_tests.certbot_tests.assertions import assert_world_no_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
@@ -102,6 +103,7 @@ def test_http_01(context: IntegrationTestsContext) -> None:
 
     assert_hook_execution(context.hook_probe, 'deploy')
     assert_saved_renew_hook(context.config_dir, certname)
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'rsa')
 
 
 def test_manual_http_auth(context: IntegrationTestsContext) -> None:
@@ -544,6 +546,7 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
     assert 200 < os.stat(key1).st_size < 250  # ec keys of 256 bits are ~225 bytes
     assert_elliptic_key(key1, SECP256R1)
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
     context.certbot(['renew', '--elliptic-curve', 'secp384r1'])
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
