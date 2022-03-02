@@ -10,7 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Dropped 32 bit support for the Windows beta installer
+* Windows beta installer is now distributed as "certbot-beta-installer-win_amd64.exe".
+  Users of the Windows beta should uninstall the old version before running this.
 
 ### Fixed
 
@@ -55,8 +57,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
-* Dropped 32 bit support for the Windows beta installer
-* Windows beta installer is now distributed as "certbot-beta-installer-win_amd64.exe"
+*
 
 ### Fixed
 
