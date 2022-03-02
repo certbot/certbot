@@ -472,7 +472,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         # Type ignore needed due to
         # https://github.com/pyca/pyopenssl/issues/730.
         logger.debug('Certificate %s. SANs: %s',
-                     cert.digest('sha256'), names)  # type: ignore[arg-type]
+                     cert.digest('sha256'), names)
         if len(names) != 1 or names[0].lower() != domain.lower():
             return False
 

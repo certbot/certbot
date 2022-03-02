@@ -65,11 +65,11 @@ ERROR_CODES = {
     'externalAccountRequired': 'The server requires external account binding',
 }
 
-ERROR_TYPE_DESCRIPTIONS = dict(
-    (ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items())
-
-ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
-    (OLD_ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items()))
+ERROR_TYPE_DESCRIPTIONS = {**{
+    ERROR_PREFIX + name: desc for name, desc in ERROR_CODES.items()
+}, **{  # add errors with old prefix, deprecate me
+    OLD_ERROR_PREFIX + name: desc for name, desc in ERROR_CODES.items()
+}}
 
 
 def is_acme_error(err: BaseException) -> bool:

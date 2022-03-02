@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.24.0 - master
+## 1.25.0 - master
 
 ### Added
 
@@ -14,6 +14,31 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.24.0 - 2022-03-01
+
+### Added
+
+* When the `--debug-challenges` option is used in combination with `-v`, Certbot
+  now displays the challenge URLs (for `http-01` challenges) or FQDNs (for
+  `dns-01` challenges) and their expected return values.
+*
+
+### Changed
+
+* Support for Python 3.6 was removed.
+* All Certbot components now require setuptools>=41.6.0.
+* The acme library now requires requests>=2.20.0.
+* Certbot and its acme library now require pytz>=2019.3.
+* certbot-nginx now requires pyparsing>=2.2.1.
+* certbot-dns-route53 now requires boto3>=1.15.15.
+
+### Fixed
+
+* Nginx plugin now checks included files for the singleton server_names_hash_bucket_size directive.
 *
 
 More details about these changes can be found on our GitHub repo.
