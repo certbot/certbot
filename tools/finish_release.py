@@ -8,19 +8,13 @@ This currently includes:
 * Publishing the Windows installer in a GitHub release
 
 Setup:
- - Create a github personal access token
-   - https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token#creating-a-token
-   - You'll need repo scope
-   - Save the token to somewhere like ~/.ssh/githubpat.txt
  - Install the snapcraft command line tool and log in to a privileged account.
    - https://snapcraft.io/docs/installing-snapcraft
    - Use the command `snapcraft login` to log in.
 
-Sign into code signing server and sign Windows installer prior to running this script
-
 Run:
 
-python tools/finish_release.py ~/.ssh/githubpat.txt
+python tools/finish_release.py
 
 Testing:
 
@@ -41,8 +35,6 @@ import tempfile
 import getpass
 from zipfile import ZipFile
 
-from azure.devops.connection import Connection
-from github import Github
 import requests
 
 # Path to the root directory of the Certbot repository containing this script
@@ -71,7 +63,6 @@ def parse_args(args):
     # Use the file's docstring for the help text and don't let argparse reformat it.
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('githubpat', help='path to your GitHub personal access token')
     parser.add_argument('--css', type=str, required=True, help='hostname of code signing server')
     group = parser.add_mutually_exclusive_group()
     # We use 'store_false' and a destination related to the other type of
@@ -84,86 +75,20 @@ def parse_args(args):
                         help='Skip publishing other artifacts and only publish the Windows installer')
     return parser.parse_args(args)
 
-
-def download_azure_artifacts(tempdir):
-    """Download and unzip build artifacts from Azure pipelines.
-
-    :param str path: path to a temporary directory to save the files
-
-    :returns: released certbot version number as a prefix-free string
-    :rtype: str
-
-    """
-    # Create a connection to the azure org
-    organization_url = 'https://dev.azure.com/certbot'
-    connection = Connection(base_url=organization_url)
-
-    # Find the build artifacts
-    build_client = connection.clients.get_build_client()
-    get_builds_response = build_client.get_builds('certbot', definitions='3')
-    build_id = get_builds_response.value[0].id
-    artifacts = build_client.get_artifacts('certbot', build_id)
-
-    # Save and unzip files
-    for filename in ('windows-installer', 'changelog'):
-        print("Downloading artifact %s" % filename)
-        url = build_client.get_artifact('certbot', build_id, filename).resource.download_url
-        r = requests.get(url)
-        r.raise_for_status()
-        with open(tempdir + '/' + filename + '.zip', 'wb') as f:
-            f.write(r.content)
-        print("Extracting %s" % filename)
-        with ZipFile(tempdir + '/' + filename + '.zip', 'r') as zipObj:
-           zipObj.extractall(tempdir)
-
-    version = build_client.get_build('certbot', build_id).source_branch.split('v')[1]
-    return version
-
-def sign_windows_installer(tempdir, css):
-    """Create a github release, including uploading additional assets
-
-    :param str path: path to a temporary directory where azure artifacts are located
-    :param css path: path to code signing server
-
-    """
-    # This assumes that your username on your local envionement is the same as the one on the css
-    username = getpass.getuser() 
-    host = css
-    command = 'ssh ' + username + '@' + css + ' ./sign'
-    unsigned_css_path = username + '@' + host + ':~'
-    signed_css_path = username + '@' + host + ':~certbot-beta-installer-win32-signed.exe'
-
-    # Upload unsigned executable to CSS, ssh into CSS and sign executable, then upload signed release
-    print("Copy unsigned installer to css")
-    subprocess.run(["scp", tempdir + '/windows-installer/certbot-beta-installer-win32.exe' , unsigned_css_path], check=True)
-    print("Signing installer")
-    subprocess.run(command.split(), check=True)
-    print("Copy signed installer to local path")
-    subprocess.run(["scp", signed_css_path , tempdir + '/windows-installer/'], check=True)
     
+def publish_windows(css):
+    """SSH into CSS and trigger downloading Azure Pipeline assets, sign, and upload to Github
 
-def create_github_release(github_access_token, tempdir, version):
-    """Use build artifacts to create a github release, including uploading additional assets
-
-    :param str github_access_token: string containing github access token
-    :param str path: path to a temporary directory where azure artifacts are located
-    :param str version: Certbot version number, e.g. 1.7.0
+    :param str css: CSS host name
 
     """
-    # Create release
-    g = Github(github_access_token)
-    repo = g.get_user('certbot').get_repo('certbot')
-    release_notes = open(tempdir + '/changelog/release_notes.md', 'r').read()
-    print("Creating git release")
-    release= repo.create_git_release('v{0}'.format(version),
-                                     'Certbot {0}'.format(version),
-                                     release_notes,
-                                     draft=True)
+    username = getpass.getuser()
+    host = css
+    command = ["ssh", username + "@" + host, "python3", "sign.py", "~/.ssh/githubpat.txt"]
+    
+    print("SSH into CSS to trigger signing and uploading of Windows installer...")
+    subprocess.run(command.split(), check=True)
 
-    # Upload windows installer to release
-    print("Uploading windows installer")
-    release.upload_asset(tempdir + '/windows-installer/certbot-beta-installer-win32-signed.exe')
-    release.update_release(release.title, release.body, draft=False)
 
 def assert_logged_into_snapcraft():
     """Confirms that snapcraft is logged in to an account.
@@ -242,26 +167,19 @@ def promote_snaps(version):
                 print(e.stdout)
                 raise
 
-
 def main(args):
     parsed_args = parse_args(args)
 
-    github_access_token_file = parsed_args.githubpat
-    github_access_token = open(github_access_token_file, 'r').read().rstrip()
     css = parsed_args.css
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        version = download_azure_artifacts(tempdir)
-        # Once the GitHub release has been published, trying to publish it
-        # again fails. Publishing the snaps can be done multiple times though
-        # so we do that first to make it easier to run the script again later
-        # if something goes wrong.        
-        if parsed_args.publish_windows:
-            sign_windows_installer(tempdir, css)
-        if parsed_args.publish_snaps:
-            promote_snaps(version)
-        if parsed_args.publish_windows:
-            create_github_release(github_access_token, tempdir, version)
+    # Once the GitHub release has been published, trying to publish it
+    # again fails. Publishing the snaps can be done multiple times though
+    # so we do that first to make it easier to run the script again later
+    # if something goes wrong.        
+    if parsed_args.publish_snaps:
+        promote_snaps(version)
+    if parsed_args.publish_windows:
+        publish_windows(css)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
