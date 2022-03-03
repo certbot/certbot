@@ -271,9 +271,9 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
     except messages.Error as e:
         if e.code in ("invalidEmail", "invalidContact"):
             if config.noninteractive_mode:
-                msg = ("The ACME server believes %s is an invalid email address. "
+                msg = (f"The ACME server believes {config.email} is an invalid email address. "
                        "Please ensure it is a valid email and attempt "
-                       "registration again." % config.email)
+                       "registration again.")
                 raise errors.Error(msg)
             config.email = display_ops.get_email(invalid=True)
             return perform_registration(acme, config, tos_cb)

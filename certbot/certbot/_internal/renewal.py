@@ -247,8 +247,7 @@ def _restore_bool(name: str, value: str) -> bool:
     """
     lowercase_value = value.lower()
     if lowercase_value not in ("true", "false"):
-        raise errors.Error(
-            "Expected True or False for {0} but found {1}".format(name, value))
+        raise errors.Error(f"Expected True or False for {name} but found {value}")
     return lowercase_value == "true"
 
 
@@ -271,7 +270,7 @@ def _restore_int(name: str, value: str) -> int:
     try:
         return int(value)
     except ValueError:
-        raise errors.Error("Expected a numeric value for {0}".format(name))
+        raise errors.Error(f"Expected a numeric value for {name}")
 
 
 def _restore_str(name: str, value: str) -> Optional[str]:
@@ -323,8 +322,8 @@ def _avoid_invalidating_lineage(config: configuration.NamespaceConfig,
                 names = ", ".join(lineage.names())
                 raise errors.Error(
                     "You've asked to renew/replace a seemingly valid certificate with "
-                    "a test certificate (domains: {0}). We will not do that "
-                    "unless you use the --break-my-certs flag!".format(names))
+                    f"a test certificate (domains: {names}). We will not do that "
+                    "unless you use the --break-my-certs flag!")
 
 
 def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str]],
@@ -375,7 +374,7 @@ def _renew_describe_results(config: configuration.NamespaceConfig, renew_success
     notify = display_util.notify
     notify_error = logger.error
 
-    notify('\n{}'.format(display_obj.SIDE_FRAME))
+    notify(f'\n{display_obj.SIDE_FRAME}')
 
     renewal_noun = "simulated renewal" if config.dry_run else "renewal"
 
@@ -383,19 +382,19 @@ def _renew_describe_results(config: configuration.NamespaceConfig, renew_success
         notify("The following certificates are not due for renewal yet:")
         notify(report(renew_skipped, "skipped"))
     if not renew_successes and not renew_failures:
-        notify("No {renewal}s were attempted.".format(renewal=renewal_noun))
+        notify(f"No {renewal_noun}s were attempted.")
         if (config.pre_hook is not None or
                 config.renew_hook is not None or config.post_hook is not None):
             notify("No hooks were run.")
     elif renew_successes and not renew_failures:
-        notify("Congratulations, all {renewal}s succeeded: ".format(renewal=renewal_noun))
+        notify(f"Congratulations, all {renewal_noun}s succeeded: ")
         notify(report(renew_successes, "success"))
     elif renew_failures and not renew_successes:
         notify_error("All %ss failed. The following certificates could "
                "not be renewed:", renewal_noun)
         notify_error(report(renew_failures, "failure"))
     elif renew_failures and renew_successes:
-        notify("The following {renewal}s succeeded:".format(renewal=renewal_noun))
+        notify(f"The following {renewal_noun}s succeeded:")
         notify(report(renew_successes, "success") + "\n")
         notify_error("The following %ss failed:", renewal_noun)
         notify_error(report(renew_failures, "failure"))
@@ -508,8 +507,8 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
                             renew_skipped, parse_failures)
 
     if renew_failures or parse_failures:
-        raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
-            len(renew_failures), len(parse_failures)))
+        raise errors.Error(
+            f"{len(renew_failures)} renew failure(s), {len(parse_failures)} parse failure(s)")
 
     # Windows installer integration tests rely on handle_renewal_request behavior here.
     # If the text below changes, these tests will need to be updated accordingly.
@@ -526,4 +525,4 @@ def _update_renewal_params_from_key(key_path: str, config: configuration.Namespa
         config.key_type = 'ecdsa'
         config.elliptic_curve = key.curve.name
     else:
-        raise errors.Error('Key at {0} is of an unsupported type: {1}.'.format(key_path, type(key)))
+        raise errors.Error(f'Key at {key_path} is of an unsupported type: {type(key)}.')
