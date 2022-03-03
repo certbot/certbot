@@ -39,7 +39,7 @@ class RelevantValuesTest(unittest.TestCase):
     """Tests for certbot._internal.storage.relevant_values."""
 
     def setUp(self):
-        self.values = {"server": "example.org"}
+        self.values = {"server": "example.org", "key_type": "rsa"}
 
     def _call(self, *args, **kwargs):
         from certbot._internal.storage import relevant_values

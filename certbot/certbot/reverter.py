@@ -241,8 +241,7 @@ class Reverter:
             except (IOError, OSError):
                 # This file is required in all checkpoints.
                 logger.error("Unable to recover files from %s", cp_dir)
-                raise errors.ReverterError(
-                    "Unable to recover files from %s" % cp_dir)
+                raise errors.ReverterError(f"Unable to recover files from {cp_dir}")
 
         # Remove any newly added files if they exist
         self._remove_contained_files(os.path.join(cp_dir, "NEW_FILES"))
@@ -295,9 +294,7 @@ class Reverter:
         # Verify no save_file is in protected_files
         for filename in protected_files:
             if filename in save_files:
-                raise errors.ReverterError(
-                    "Attempting to overwrite challenge "
-                    "file - %s" % filename)
+                raise errors.ReverterError(f"Attempting to overwrite challenge file - {filename}")
 
     def register_file_creation(self, temporary: bool, *files: str) -> None:
         r"""Register the creation of all files during certbot execution.

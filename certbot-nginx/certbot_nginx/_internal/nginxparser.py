@@ -28,7 +28,7 @@ from pyparsing import White
 from pyparsing import ZeroOrMore
 
 if TYPE_CHECKING:
-    from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.6
+    from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.7
 
 logger = logging.getLogger(__name__)
 

@@ -156,17 +156,39 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
     :param config: Current configuration provided by the client
     :param cert: Matching certificate that could be renewed
     """
-    if not cli.set_by_cli("key_type") or not cli.set_by_cli("certname"):
+    new_key_type = config.key_type.upper()
+    cur_key_type = cert.private_key_type.upper()
 
-        new_key_type = config.key_type.upper()
-        cur_key_type = cert.private_key_type.upper()
+    if new_key_type == cur_key_type:
+        return
 
-        if new_key_type != cur_key_type:
-            msg = ('Are you trying to change the key type of the certificate named {0} '
-                   'from {1} to {2}? Please provide both --cert-name and --key-type on '
-                   'the command line to confirm the change you are trying to make.')
-            msg = msg.format(cert.lineagename, cur_key_type, new_key_type)
-            raise errors.Error(msg)
+    # If both --key-type and --cert-name are provided, we consider the user's intent to
+    # be unambiguous: to change the key type of this lineage.
+    is_confirmed_via_cli = cli.set_by_cli("key_type") and cli.set_by_cli("certname")
+
+    # Failing that, we interactively prompt the user to confirm the change.
+    if is_confirmed_via_cli or display_util.yesno(
+        f'An {cur_key_type} certificate named {cert.lineagename} already exists. Do you want to '
+        f'update its key type to {new_key_type}?',
+        yes_label='Update key type', no_label='Keep existing key type',
+        default=False, force_interactive=False,
+    ):
+        return
+
+    # If --key-type was set on the CLI but the user did not confirm the key type change using
+    # one of the two above methods, their intent is ambiguous. Error out.
+    if cli.set_by_cli("key_type"):
+        raise errors.Error(
+            'Are you trying to change the key type of the certificate named '
+            f'{cert.lineagename} from {cur_key_type} to {new_key_type}? Please provide '
+            'both --cert-name and --key-type on the command line to confirm the change '
+            'you are trying to make.'
+        )
+
+    # The mismatch between the lineage's key type and config.key_type is caused by Certbot's
+    # default value. The user is not asking for a key change: keep the key type of the existing
+    # lineage.
+    config.key_type = cur_key_type.lower()
 
 
 def _handle_subset_cert_request(config: configuration.NamespaceConfig,
@@ -1672,10 +1694,6 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
     report = reporter.Reporter(config)
     zope.component.provideUtility(report, interfaces.IReporter)
     util.atexit_register(report.print_messages)
-
-    if sys.version_info[:2] == (3, 6):
-        logger.warning("Python 3.6 support will be dropped in the next release "
-                       "of Certbot - please upgrade your Python version.")
 
     with make_displayer(config) as displayer:
         display_obj.set_display(displayer)

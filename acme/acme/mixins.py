@@ -65,4 +65,4 @@ def _safe_jobj_compliance(instance: Any, jobj_method: str,
             jobj.pop(uncompliant_field, None)
         return jobj
 
-    raise AttributeError('Method {0}() is not implemented.'.format(jobj_method))  # pragma: no cover
+    raise AttributeError(f'Method {jobj_method}() is not implemented.')  # pragma: no cover

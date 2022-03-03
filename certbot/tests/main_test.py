@@ -70,30 +70,50 @@ class TestHandleCerts(unittest.TestCase):
         self.assertEqual(ret, ("renew", mock_lineage))
         self.assertTrue(mock_handle_migration.called)
 
+    @mock.patch("certbot._internal.main.display_util.yesno")
     @mock.patch("certbot._internal.main.cli.set_by_cli")
-    def test_handle_unexpected_key_type_migration(self, mock_set):
+    def test_handle_unexpected_key_type_migration(self, mock_set, mock_yesno):
         config = mock.Mock()
-        config.key_type = "rsa"
         cert = mock.Mock()
-        cert.private_key_type = "ecdsa"
 
+        # If the key types do not differ, it should be a no-op.
+        config.key_type = "rsa"
+        cert.private_key_type = "rsa"
+        main._handle_unexpected_key_type_migration(config, cert)
+        mock_yesno.assert_not_called()
+        self.assertEqual(config.key_type, cert.private_key_type)
+
+        # If the user confirms the change interactively, the key change should proceed silently.
+        cert.private_key_type = "ecdsa"
+        mock_yesno.return_value = True
+        main._handle_unexpected_key_type_migration(config, cert)
+        self.assertEqual(mock_set.call_count, 2)
+        self.assertEqual(config.key_type, "rsa")
+
+        # User does not interactively confirm the key type change.
+        mock_yesno.return_value = False
+
+        # If --key-type and --cert-name are both set, the key type change should proceed silently.
         mock_set.return_value = True
         main._handle_unexpected_key_type_migration(config, cert)
+        self.assertEqual(config.key_type, "rsa")
 
+        # If neither --key-type nor --cert-name are set, Certbot should keep the old key type.
         mock_set.return_value = False
-        with self.assertRaises(errors.Error) as raised:
-            main._handle_unexpected_key_type_migration(config, cert)
-        self.assertIn("Please provide both --cert-name and --key-type", str(raised.exception))
+        main._handle_unexpected_key_type_migration(config, cert)
+        self.assertEqual(config.key_type, "ecdsa")
 
+        # If --key-type is set and --cert-name isn't, Certbot should error.
+        config.key_type = "rsa"
         mock_set.side_effect = lambda var: var != "certname"
         with self.assertRaises(errors.Error) as raised:
             main._handle_unexpected_key_type_migration(config, cert)
         self.assertIn("Please provide both --cert-name and --key-type", str(raised.exception))
 
+        # If --key-type is not set, Certbot should keep the old key type.
         mock_set.side_effect = lambda var: var != "key_type"
-        with self.assertRaises(errors.Error) as raised:
-            main._handle_unexpected_key_type_migration(config, cert)
-        self.assertIn("Please provide both --cert-name and --key-type", str(raised.exception))
+        main._handle_unexpected_key_type_migration(config, cert)
+        self.assertEqual(config.key_type, "ecdsa")
 
 
 class RunTest(test_util.ConfigTestCase):

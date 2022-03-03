@@ -285,7 +285,7 @@ def match_and_check_overlaps(cli_config: configuration.NamespaceConfig,
 
     matched: List[str] = _search_lineages(cli_config, find_matches, [], acceptable_matches)
     if not matched:
-        raise errors.Error("No match found for cert-path {0}!".format(cli_config.cert_path))
+        raise errors.Error(f"No match found for cert-path {cli_config.cert_path}!")
     elif len(matched) > 1:
         raise errors.OverlappingMatchFound()
     return matched
@@ -318,26 +318,19 @@ def human_readable_cert_info(config: configuration.NamespaceConfig, cert: storag
         if diff.days == 1:
             status = "VALID: 1 day"
         elif diff.days < 1:
-            status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
+            status = f"VALID: {diff.seconds // 3600} hour(s)"
         else:
-            status = "VALID: {0} days".format(diff.days)
+            status = f"VALID: {diff.days} days"
 
     valid_string = "{0} ({1})".format(cert.target_expiry, status)
     serial = format(crypto_util.get_serial_from_cert(cert.cert_path), 'x')
-    certinfo.append("  Certificate Name: {}\n"
-                    "    Serial Number: {}\n"
-                    "    Key Type: {}\n"
-                    "    Domains: {}\n"
-                    "    Expiry Date: {}\n"
-                    "    Certificate Path: {}\n"
-                    "    Private Key Path: {}".format(
-                         cert.lineagename,
-                         serial,
-                         cert.private_key_type,
-                         " ".join(cert.names()),
-                         valid_string,
-                         cert.fullchain,
-                         cert.privkey))
+    certinfo.append(f"  Certificate Name: {cert.lineagename}\n"
+                    f"    Serial Number: {serial}\n"
+                    f"    Key Type: {cert.private_key_type}\n"
+                    f'    Domains: {" ".join(cert.names())}\n'
+                    f"    Expiry Date: {valid_string}\n"
+                    f"    Certificate Path: {cert.fullchain}\n"
+                    f"    Private Key Path: {cert.privkey}")
     return "".join(certinfo)
 
 

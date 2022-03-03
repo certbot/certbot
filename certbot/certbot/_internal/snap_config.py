@@ -54,7 +54,8 @@ def prepare_env(cli_args: List[str]) -> List[str]:
         session.mount('http://snapd/', _SnapdAdapter())
 
         try:
-            response = session.get('http://snapd/v2/connections?snap=certbot&interface=content')
+            response = session.get('http://snapd/v2/connections?snap=certbot&interface=content',
+                                   timeout=30.0)
             response.raise_for_status()
         except RequestException as e:
             if isinstance(e, HTTPError) and e.response.status_code == 404:

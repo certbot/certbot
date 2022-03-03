@@ -8,7 +8,7 @@ import sys
 import time
 
 PYTHON_VERSION = (3, 9, 7)
-PYTHON_BITNESS = 32
+PYTHON_BITNESS = 64
 NSIS_VERSION = '3.06.1'
 
 
@@ -94,7 +94,7 @@ def _generate_pynsist_config(repo_path, build_path):
     certbot_version = subprocess.check_output([sys.executable, '-c', 'import certbot; print(certbot.__version__)'],
                                               universal_newlines=True, cwd=certbot_pkg_path).strip()
 
-    # If we change the installer name from `certbot-beta-installer-win32.exe`, it should
+    # If we change the installer name from `certbot-beta-installer-win_amd64.exe`, it should
     # also be changed in tools/create_github_release.py
     with open(installer_cfg_path, 'w') as file_h:
         file_h.write('''\

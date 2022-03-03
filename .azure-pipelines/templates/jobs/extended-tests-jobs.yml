@@ -8,12 +8,6 @@ jobs:
       - group: certbot-common
     strategy:
       matrix:
-        linux-py36:
-          PYTHON_VERSION: 3.6
-          TOXENV: py36
-        linux-py37:
-          PYTHON_VERSION: 3.7
-          TOXENV: py37
         linux-py38:
           PYTHON_VERSION: 3.8
           TOXENV: py38
@@ -27,16 +21,12 @@ jobs:
         linux-external-mock:
           TOXENV: external-mock
         linux-boulder-v2-integration-certbot-oldest:
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.7
           TOXENV: integration-certbot-oldest
           ACME_SERVER: boulder-v2
         linux-boulder-v2-integration-nginx-oldest:
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.7
           TOXENV: integration-nginx-oldest
-          ACME_SERVER: boulder-v2
-        linux-boulder-v2-py36-integration:
-          PYTHON_VERSION: 3.6
-          TOXENV: integration
           ACME_SERVER: boulder-v2
         linux-boulder-v2-py37-integration:
           PYTHON_VERSION: 3.7
