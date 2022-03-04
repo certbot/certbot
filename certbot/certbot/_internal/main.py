@@ -1394,6 +1394,10 @@ def run(config: configuration.NamespaceConfig,
     except errors.PluginSelectionError as e:
         return str(e)
 
+    if config.must_staple and installer and "staple-ocsp" not in installer.supported_enhancements():
+        raise errors.NotSupportedError("Must Staple extension requested, but OCSP stapling "
+                                       "is not supported by the selected installer")
+
     # Preflight check for enhancement support by the selected installer
     if not enhancements.are_supported(config, installer):
         raise errors.NotSupportedError("One ore more of the requested enhancements "

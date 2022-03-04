@@ -197,6 +197,15 @@ class RunTest(test_util.ConfigTestCase):
         # The final success message shouldn't be shown
         self.mock_success_installation.assert_not_called()
 
+    @mock.patch('certbot._internal.main.plug_sel.choose_configurator_plugins')
+    def test_run_must_staple_not_supported(self, mock_choose):
+        mock_choose.return_value = (null.Installer(self.config, "null"), None)
+        plugins = disco.PluginsRegistry.find_all()
+        self.config.must_staple = True
+        self.assertRaises(errors.NotSupportedError,
+                          main.run,
+                          self.config, plugins)
+
 class CertonlyTest(unittest.TestCase):
     """Tests for certbot._internal.main.certonly."""
 
