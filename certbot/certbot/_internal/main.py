@@ -1395,14 +1395,14 @@ def run(config: configuration.NamespaceConfig,
         return str(e)
 
     if config.must_staple and installer and "staple-ocsp" not in installer.supported_enhancements():
-        raise errors.NotSupportedError("Must Staple extension requested, but OCSP stapling "
+        raise errors.NotSupportedError("Must-Staple extension requested, but OCSP stapling "
                                        "is not supported by the selected installer "
                                        f"({config.installer})\n\nYou can either:\n * remove the "
                                        "`--must-staple` option from the command line and obtain a "
-                                       "certificate without the Must Staple extension, or;\n * use "
+                                       "certificate without the Must-Staple extension, or;\n * use "
                                        "the `certonly` subcommand and manually install the "
                                        "certificate into your webserver. Note that OCSP stapling "
-                                       "is required for certificates with the Must Staple "
+                                       "is required for certificates with the Must-Staple "
                                        "extension enabled to function properly.\n * choose a "
                                        "different installer plugin, if possible.")
 

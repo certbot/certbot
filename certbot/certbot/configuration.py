@@ -120,7 +120,7 @@ class NamespaceConfig:
 
     @property
     def must_staple(self) -> bool:
-        """Adds the OCSP Must Staple extension to the certificate.
+        """Adds the OCSP Must-Staple extension to the certificate.
 
         Autoconfigures OCSP Stapling for supported setups
         (Apache version >= 2.3.3 ).
