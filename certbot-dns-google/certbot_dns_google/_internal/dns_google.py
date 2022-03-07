@@ -310,7 +310,7 @@ class _GoogleClient:
         # Request an access token from the metadata server.
         http = httplib2.Http()
         r, content = http.request(url, headers=METADATA_HEADERS)
-        if r.status != :
+        if r.status != 200:
             raise ValueError(f"Invalid status code: {r}")
 
         if isinstance(content, bytes):
