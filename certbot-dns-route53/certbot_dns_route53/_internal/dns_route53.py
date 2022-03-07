@@ -92,9 +92,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                     zones.append((zone["Name"], zone["Id"]))
 
         if not zones:
-            raise errors.PluginError(
-                "Unable to find a Route53 hosted zone for {0}".format(domain)
-            )
+            raise errors.PluginError(f"Unable to find a Route53 hosted zone for {domain}")
 
         # Order the zones that are suffixes for our desired to domain by
         # length, this puts them in an order like:
@@ -107,7 +105,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         zone_id = self._find_zone_id_for_domain(validation_domain_name)
 
         rrecords = self._resource_records[validation_domain_name]
-        challenge = {"Value": '"{0}"'.format(validation)}
+        challenge = {"Value": f'"{validation}"'}
         if action == "DELETE":
             # Remove the record being deleted from the list of tracked records
             rrecords.remove(challenge)
@@ -149,5 +147,6 @@ class Authenticator(dns_common.DNSAuthenticator):
                 return
             time.sleep(5)
         raise errors.PluginError(
-            "Timed out waiting for Route53 change. Current status: %s" %
-            response["ChangeInfo"]["Status"])
+            "Timed out waiting for Route53 change. "
+            f'Current status: {response["ChangeInfo"]["Status"]}'
+        )

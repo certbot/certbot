@@ -45,7 +45,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             'credentials',
             'NS1 credentials file',
             {
-                'api-key': 'API key for NS1 API, obtained from {0}'.format(ACCOUNT_URL)
+                'api-key': f'API key for NS1 API, obtained from {ACCOUNT_URL}'
             }
         )
 

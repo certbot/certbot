@@ -46,10 +46,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             'credentials',
             'DNS Made Easy credentials INI file',
             {
-                'api-key': 'API key for DNS Made Easy account, obtained from {0}'
-                           .format(ACCOUNT_URL),
-                'secret-key': 'Secret key for DNS Made Easy account, obtained from {0}'
-                              .format(ACCOUNT_URL)
+                'api-key': f'API key for DNS Made Easy account, obtained from {ACCOUNT_URL}',
+                'secret-key': f'Secret key for DNS Made Easy account, obtained from {ACCOUNT_URL}',
             }
         )
 

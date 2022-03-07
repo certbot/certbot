@@ -46,12 +46,9 @@ class Authenticator(dns_common.DNSAuthenticator):
             'OVH credentials INI file',
             {
                 'endpoint': 'OVH API endpoint (ovh-eu or ovh-ca)',
-                'application-key': 'Application key for OVH API, obtained from {0}'
-                .format(TOKEN_URL),
-                'application-secret': 'Application secret for OVH API, obtained from {0}'
-                .format(TOKEN_URL),
-                'consumer-key': 'Consumer key for OVH API, obtained from {0}'
-                .format(TOKEN_URL),
+                'application-key': f'Application key for OVH API, obtained from {TOKEN_URL}',
+                'application-secret': f'Application secret for OVH API, obtained from {TOKEN_URL}',
+                'consumer-key': f'Consumer key for OVH API, obtained from {TOKEN_URL}',
             }
         )
 

@@ -45,9 +45,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             'credentials',
             'CloudXNS credentials INI file',
             {
-                'api-key': 'API key for CloudXNS account, obtained from {0}'.format(ACCOUNT_URL),
-                'secret-key': 'Secret key for CloudXNS account, obtained from {0}'
-                              .format(ACCOUNT_URL)
+                'api-key': f'API key for CloudXNS account, obtained from {ACCOUNT_URL}',
+                'secret-key': f'Secret key for CloudXNS account, obtained from {ACCOUNT_URL}',
             }
         )
 

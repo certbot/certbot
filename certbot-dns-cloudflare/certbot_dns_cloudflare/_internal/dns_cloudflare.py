@@ -47,22 +47,24 @@ class Authenticator(dns_common.DNSAuthenticator):
         key = credentials.conf('api-key')
         if token:
             if email or key:
-                raise errors.PluginError('{}: dns_cloudflare_email and dns_cloudflare_api_key are '
-                                         'not needed when using an API Token'
-                                         .format(credentials.confobj.filename))
+                raise errors.PluginError(
+                    f'{credentials.confobj.filename}: dns_cloudflare_email and '
+                    'dns_cloudflare_api_key are not needed when using an API Token')
         elif email or key:
             if not email:
-                raise errors.PluginError('{}: dns_cloudflare_email is required when using a Global '
-                                         'API Key. (should be email address associated with '
-                                         'Cloudflare account)'.format(credentials.confobj.filename))
+                raise errors.PluginError(
+                    f'{credentials.confobj.filename}: dns_cloudflare_email is required when '
+                    'using a Global API Key. (should be email address associated with '
+                    'Cloudflare account)')
             if not key:
-                raise errors.PluginError('{}: dns_cloudflare_api_key is required when using a '
-                                         'Global API Key. (see {})'
-                                         .format(credentials.confobj.filename, ACCOUNT_URL))
+                raise errors.PluginError(
+                    f'{credentials.confobj.filename}: dns_cloudflare_api_key is required when '
+                    f'using a Global API Key. (see {ACCOUNT_URL})')
         else:
-            raise errors.PluginError('{}: Either dns_cloudflare_api_token (recommended), or '
-                                     'dns_cloudflare_email and dns_cloudflare_api_key are required.'
-                                     ' (see {})'.format(credentials.confobj.filename, ACCOUNT_URL))
+            raise errors.PluginError(
+                f'{credentials.confobj.filename}: Either dns_cloudflare_api_token (recommended), '
+                'or dns_cloudflare_email and dns_cloudflare_api_key are required.'
+                f' (see {ACCOUNT_URL})')
 
     def _setup_credentials(self) -> None:
         self.credentials = self._configure_credentials(
@@ -124,8 +126,10 @@ class _CloudflareClient:
                 hint = 'Does your API token have "Zone:DNS:Edit" permissions?'
 
             logger.error('Encountered CloudFlareAPIError adding TXT record: %d %s', e, e)
-            raise errors.PluginError('Error communicating with the Cloudflare API: {0}{1}'
-                                     .format(e, ' ({0})'.format(hint) if hint else ''))
+            hint_disp = f' ({hint})' if hint else ''
+            raise errors.PluginError(
+                f'Error communicating with the Cloudflare API: {e}{hint_disp}'
+            )
 
         record_id = self._find_txt_record_id(zone_id, record_name, record_content)
         logger.debug('Successfully added TXT record with record_id: %s', record_id)
@@ -190,19 +194,23 @@ class _CloudflareClient:
                 hint = None
 
                 if code == 6003:
-                    hint = ('Did you copy your entire API token/key? To use Cloudflare tokens, '
-                            'you\'ll need the python package cloudflare>=2.3.1.{}'
-                    .format(' This certbot is running cloudflare ' + str(CloudFlare.__version__)
-                    if hasattr(CloudFlare, '__version__') else ''))
+                    version_disp = (
+                        f" This certbot is running cloudflare {str(CloudFlare.__version__)}"
+                    ) if hasattr(CloudFlare, '__version__') else ""
+                    hint = (
+                        "Did you copy your entire API token/key? To use Cloudflare tokens, "
+                        f"you'll need the python package cloudflare>=2.3.1.{version_disp}"
+                    )
                 elif code == 9103:
                     hint = 'Did you enter the correct email address and Global key?'
                 elif code == 9109:
                     hint = 'Did you enter a valid Cloudflare Token?'
 
                 if hint:
-                    raise errors.PluginError('Error determining zone_id: {0} {1}. Please confirm '
-                                  'that you have supplied valid Cloudflare API credentials. ({2})'
-                                                                         .format(code, msg, hint))
+                    raise errors.PluginError(
+                        f'Error determining zone_id: {code} {msg}. Please confirm '
+                        f'that you have supplied valid Cloudflare API credentials. ({hint})'
+                    )
                 else:
                     logger.debug('Unrecognised CloudFlareAPIError while finding zone_id: %d %s. '
                                  'Continuing with next zone guess...', e, e)
@@ -214,20 +222,24 @@ class _CloudflareClient:
 
         if msg is not None:
             if 'com.cloudflare.api.account.zone.list' in msg:
-                raise errors.PluginError('Unable to determine zone_id for {0} using zone names: '
-                                         '{1}. Please confirm that the domain name has been '
-                                         'entered correctly and your Cloudflare Token has access '
-                                         'to the domain.'.format(domain, zone_name_guesses))
+                raise errors.PluginError(
+                    f'Unable to determine zone_id for {domain} using zone names: '
+                    f'{zone_name_guesses}. Please confirm that the domain name has been '
+                    'entered correctly and your Cloudflare Token has access '
+                    'to the domain.'
+                )
             else:
-                raise errors.PluginError('Unable to determine zone_id for {0} using zone names: '
-                                         '{1}. The error from Cloudflare was: {2} {3}.'
-                                         .format(domain, zone_name_guesses, code, msg))
+                raise errors.PluginError(
+                    f'Unable to determine zone_id for {domain} using zone names: '
+                    f'{zone_name_guesses}. The error from Cloudflare was: {code} {msg}.'
+                )
         else:
-            raise errors.PluginError('Unable to determine zone_id for {0} using zone names: '
-                                     '{1}. Please confirm that the domain name has been '
-                                     'entered correctly and is already associated with the '
-                                     'supplied Cloudflare account.'
-                                     .format(domain, zone_name_guesses))
+            raise errors.PluginError(
+                f'Unable to determine zone_id for {domain} using zone names: '
+                f'{zone_name_guesses}. Please confirm that the domain name has been '
+                'entered correctly and is already associated with the '
+                'supplied Cloudflare account.'
+            )
 
     def _find_txt_record_id(self, zone_id: str, record_name: str,
                             record_content: str) -> Optional[str]:

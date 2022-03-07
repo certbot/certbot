@@ -93,8 +93,10 @@ class _DigitalOceanClient:
                 hint = 'Did you provide a valid API token?'
 
             logger.debug('Error finding domain using the DigitalOcean API: %s', e)
-            raise errors.PluginError('Error finding domain using the DigitalOcean API: {0}{1}'
-                                     .format(e, ' ({0})'.format(hint) if hint else ''))
+            hint_disp = f' ({hint})' if hint else ''
+            raise errors.PluginError(
+                f'Error finding domain using the DigitalOcean API: {e}{hint_disp}'
+            )
 
         try:
             result = domain.create_new_domain_record(
@@ -108,8 +110,7 @@ class _DigitalOceanClient:
             logger.debug('Successfully added TXT record with id: %d', record_id)
         except digitalocean.Error as e:
             logger.debug('Error adding TXT record using the DigitalOcean API: %s', e)
-            raise errors.PluginError('Error adding TXT record using the DigitalOcean API: {0}'
-                                     .format(e))
+            raise errors.PluginError(f'Error adding TXT record using the DigitalOcean API: {e}')
 
     def del_txt_record(self, domain_name: str, record_name: str, record_content: str) -> None:
         """

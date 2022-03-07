@@ -213,7 +213,7 @@ class ClientTest(unittest.TestCase):
             return_value={"ChangeInfo": {"Id": 1}})
 
         validation = "some-value"
-        validation_record = {"Value": '"{0}"'.format(validation)}
+        validation_record = {"Value": f'"{validation}"'}
         self.client._resource_records[DOMAIN] = [validation_record]
 
         self.client._change_txt_record("DELETE", DOMAIN, validation)

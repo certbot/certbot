@@ -46,7 +46,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             'LuaDNS credentials INI file',
             {
                 'email': 'email address associated with LuaDNS account',
-                'token': 'API token for LuaDNS account, obtained from {0}'.format(ACCOUNT_URL)
+                'token': f'API token for LuaDNS account, obtained from {ACCOUNT_URL}'
             }
         )
 

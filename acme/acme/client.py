@@ -1142,8 +1142,7 @@ class ClientNetwork:
                     'response', response_ct)
 
             if content_type == cls.JSON_CONTENT_TYPE and jobj is None:
-                raise errors.ClientError(
-                    'Unexpected response Content-Type: {0}'.format(response_ct))
+                raise errors.ClientError(f'Unexpected response Content-Type: {response_ct}')
 
         return response
 
@@ -1196,7 +1195,7 @@ class ClientNetwork:
             if m is None:
                 raise  # pragma: no cover
             host, path, _err_no, err_msg = m.groups()
-            raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
+            raise ValueError(f"Requesting {host}{path}:{err_msg}")
 
         # If the Content-Type is DER or an Accept header was sent in the
         # request, the response may not be UTF-8 encoded. In this case, we
@@ -1217,8 +1216,7 @@ class ClientNetwork:
             debug_content = response.text
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
-                     "\n".join("{0}: {1}".format(k, v)
-                                for k, v in response.headers.items()),
+                     "\n".join(f"{k}: {v}" for k, v in response.headers.items()),
                      debug_content)
         return response
 

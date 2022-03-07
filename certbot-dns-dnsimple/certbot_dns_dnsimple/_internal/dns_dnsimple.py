@@ -45,7 +45,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             'credentials',
             'DNSimple credentials INI file',
             {
-                'token': 'User access token for DNSimple v2 API. (See {0}.)'.format(ACCOUNT_URL)
+                'token': f'User access token for DNSimple v2 API. (See {ACCOUNT_URL}.)'
             }
         )
 

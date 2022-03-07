@@ -37,9 +37,11 @@ class Authenticator(dns_common.DNSAuthenticator):
                              default_propagation_seconds: int = 60) -> None:
         super().add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials',
-            help=('Path to Google Cloud DNS service account JSON file. (See {0} for' +
-                  'information about creating a service account and {1} for information about the' +
-                  'required permissions.)').format(ACCT_URL, PERMISSIONS_URL),
+            help=(
+                f'Path to Google Cloud DNS service account JSON file. (See {ACCT_URL} for '
+                'information about creating a service account and {PERMISSIONS_URL} '
+                'for information about the required permissions.)'
+            ),
             default=None)
 
     def more_info(self) -> str:
@@ -88,8 +90,7 @@ class _GoogleClient:
                 with open(account_json) as account:
                     self.project_id = json.load(account)['project_id']
             except Exception as e:
-                raise errors.PluginError(
-                    "Error parsing credentials file '{}': {}".format(account_json, e))
+                raise errors.PluginError(f"Error parsing credentials file '{account_json}': {e}")
         else:
             credentials = None
             self.project_id = self.get_project_id()
@@ -135,7 +136,7 @@ class _GoogleClient:
                 {
                     "kind": "dns#resourceRecordSet",
                     "type": "TXT",
-                    "name": record_name + ".",
+                    "name": f"{record_name}.",
                     "rrdatas": add_records,
                     "ttl": record_ttl,
                 },
@@ -148,7 +149,7 @@ class _GoogleClient:
                 {
                     "kind": "dns#resourceRecordSet",
                     "type": "TXT",
-                    "name": record_name + ".",
+                    "name": f"{record_name}.",
                     "rrdatas": record_contents["rrdatas"],
                     "ttl": record_contents["ttl"],
                 },
@@ -168,8 +169,7 @@ class _GoogleClient:
                 status = response['status']
         except googleapiclient_errors.Error as e:
             logger.error('Encountered error adding TXT record: %s', e)
-            raise errors.PluginError('Error communicating with the Google Cloud DNS API: {0}'
-                                     .format(e))
+            raise errors.PluginError(f'Error communicating with the Google Cloud DNS API: {e}')
 
     def del_txt_record(self, domain: str, record_name: str, record_content: str,
                        record_ttl: int) -> None:
@@ -281,8 +281,7 @@ class _GoogleClient:
                 response = request.execute()
                 zones = response['managedZones']
             except googleapiclient_errors.Error as e:
-                raise errors.PluginError('Encountered error finding managed zone: {0}'
-                                         .format(e))
+                raise errors.PluginError(f'Encountered error finding managed zone: {e}')
 
             for zone in zones:
                 zone_id = zone['id']
@@ -290,8 +289,10 @@ class _GoogleClient:
                     logger.debug('Found id of %s for %s using name %s', zone_id, domain, zone_name)
                     return zone_id
 
-        raise errors.PluginError('Unable to determine managed zone for {0} using zone names: {1}.'
-                                 .format(domain, zone_dns_name_guesses))
+        raise errors.PluginError(
+            f'Unable to determine managed zone for {domain} using '
+            f'zone names: {zone_dns_name_guesses}.'
+        )
 
     @staticmethod
     def get_project_id() -> str:
@@ -304,13 +305,13 @@ class _GoogleClient:
         :raises ValueError: Server is found, but response code is not 200
         :returns: project id
         """
-        url = '{0}project/project-id'.format(METADATA_URL)
+        url = f'{METADATA_URL}project/project-id'
 
         # Request an access token from the metadata server.
         http = httplib2.Http()
         r, content = http.request(url, headers=METADATA_HEADERS)
-        if r.status != 200:
-            raise ValueError("Invalid status code: {0}".format(r))
+        if r.status != :
+            raise ValueError(f"Invalid status code: {r}")
 
         if isinstance(content, bytes):
             return content.decode()
