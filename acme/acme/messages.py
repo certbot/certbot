@@ -65,11 +65,11 @@ ERROR_CODES = {
     'externalAccountRequired': 'The server requires external account binding',
 }
 
-ERROR_TYPE_DESCRIPTIONS = dict(
-    (ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items())
-
-ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
-    (OLD_ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items()))
+ERROR_TYPE_DESCRIPTIONS = {**{
+    ERROR_PREFIX + name: desc for name, desc in ERROR_CODES.items()
+}, **{  # add errors with old prefix, deprecate me
+    OLD_ERROR_PREFIX + name: desc for name, desc in ERROR_CODES.items()
+}}
 
 
 def is_acme_error(err: BaseException) -> bool:
@@ -157,12 +157,11 @@ class _Constant(jose.JSONDeSerializable, Hashable):
     @classmethod
     def from_json(cls, jobj: str) -> '_Constant':
         if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
-            raise jose.DeserializationError(
-                '{0} not recognized'.format(cls.__name__))
+            raise jose.DeserializationError(f'{cls.__name__} not recognized')
         return cls.POSSIBLE_NAMES[jobj]
 
     def __repr__(self) -> str:
-        return '{0}({1})'.format(self.__class__.__name__, self.name)
+        return f'{self.__class__.__name__}({self.name})'
 
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, type(self)) and other.name == self.name

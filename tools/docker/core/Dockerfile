@@ -26,6 +26,10 @@ RUN apk add --no-cache --virtual .certbot-deps \
         ca-certificates \
         binutils
 
+# We set this environment variable and install git while building to try and
+# increase the stability of fetching the rust crates needed to build the
+# cryptography library
+ARG CARGO_NET_GIT_FETCH_WITH_CLI=true
 # Install certbot from sources
 RUN apk add --no-cache --virtual .build-deps \
         gcc \
@@ -35,6 +39,7 @@ RUN apk add --no-cache --virtual .build-deps \
         libffi-dev \
         python3-dev \
         cargo \
+        git \
     && python tools/pipstrap.py \
     && python tools/pip_install.py --no-cache-dir \
             --editable src/acme \

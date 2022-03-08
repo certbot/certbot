@@ -356,16 +356,15 @@ class FileDisplay:
         """
         # Can take either tuples or single items in choices list
         if choices and isinstance(choices[0], tuple):
-            choices = ["%s - %s" % (c[0], c[1]) for c in choices]
+            choices = [f"{c[0]} - {c[1]}" for c in choices]
 
         # Write out the message to the user
-        self.outfile.write(
-            "{new}{msg}{new}".format(new=os.linesep, msg=message))
+        self.outfile.write(f"{os.linesep}{message}{os.linesep}")
         self.outfile.write(SIDE_FRAME + os.linesep)
 
         # Write out the menu choices
         for i, desc in enumerate(choices, 1):
-            msg = "{num}: {desc}".format(num=i, desc=desc)
+            msg = f"{i}: {desc}"
             self.outfile.write(util.wrap_lines(msg))
 
             # Keep this outside of the textwrap

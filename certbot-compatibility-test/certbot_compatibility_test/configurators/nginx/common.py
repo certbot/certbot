@@ -72,7 +72,7 @@ def _get_names(config: str) -> Tuple[Set[str], Set[str]]:
         for this_file in files:
             update_names = _get_server_names(root, this_file)
             all_names.update(update_names)
-    non_ip_names = set(n for n in all_names if not util.IP_REGEX.match(n))
+    non_ip_names = {n for n in all_names if not util.IP_REGEX.match(n)}
     return all_names, non_ip_names
 
 

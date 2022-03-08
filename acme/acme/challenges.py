@@ -279,7 +279,7 @@ class DNS01(KeyAuthorizationChallenge):
         :rtype: str
 
         """
-        return "{0}.{1}".format(self.LABEL, name)
+        return f"{self.LABEL}.{name}"
 
 
 @ChallengeResponse.register

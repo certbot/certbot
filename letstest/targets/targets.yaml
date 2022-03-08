@@ -1,4 +1,7 @@
 # These images are located in us-east-1.
+#
+# All machines must currently use x86_64 since Pebble does not currently
+# publish images for other architectures.
 
 targets:
   #-----------------------------------------------------------------------------
@@ -25,37 +28,12 @@ targets:
     type: ubuntu
     virt: hvm
     user: admin
-  - ami: ami-0dcd54b7d2fff584f
-    name: debian10_arm64
-    type: ubuntu
-    virt: hvm
-    user: admin
-    machine_type: a1.medium
-  #-----------------------------------------------------------------------------
-  # RHEL
-  # These AMIs were found using the commands given at
-  # https://web.archive.org/web/20220129184532/https://access.redhat.com/solutions/15356.
-  - ami: ami-005b7876121b7244d
-    name: RHEL7
-    type: centos
-    virt: hvm
-    user: ec2-user
-  - ami: ami-0c322300a1dd5dc79
-    name: RHEL8
-    type: centos
-    virt: hvm
-    user: ec2-user
   #-----------------------------------------------------------------------------
   # CentOS
-  # These AMIs were found on
+  # This AMI was found on
   # https://web.archive.org/web/20211126215532/https://wiki.centos.org/Cloud/AWS.
   - ami: ami-00e87074e52e6c9f9
     name: centos7
-    type: centos
-    virt: hvm
-    user: centos
-  - ami: ami-0ee70e88eed976a1b
-    name: centos_stream8
     type: centos
     virt: hvm
     user: centos

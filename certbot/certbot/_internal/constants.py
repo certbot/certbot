@@ -15,7 +15,7 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 """Plugins Setuptools entry point before rename."""
 
-CLI_DEFAULTS: Dict[str, Any] = dict(
+CLI_DEFAULTS: Dict[str, Any] = dict(  # noqa
     config_files=[
         os.path.join(misc.get_default_folder('config'), 'cli.ini'),
         # https://freedesktop.org/wiki/Software/xdg-user-dirs/
@@ -150,13 +150,13 @@ QUIET_LOGGING_LEVEL = logging.ERROR
 DEFAULT_LOGGING_LEVEL = logging.WARNING
 """Default logging level to use when not in quiet mode."""
 
-RENEWER_DEFAULTS = dict(
-    renewer_enabled="yes",
-    renew_before_expiry="30 days",
+RENEWER_DEFAULTS = {
+    "renewer_enabled": "yes",
+    "renew_before_expiry": "30 days",
     # This value should ensure that there is never a deployment delay by
     # default.
-    deploy_before_expiry="99 years",
-)
+    "deploy_before_expiry": "99 years",
+}
 """Defaults for renewer script."""
 
 ARCHIVE_DIR = "archive"

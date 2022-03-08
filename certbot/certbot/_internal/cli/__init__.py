@@ -271,7 +271,9 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         [None, "certonly", "run"], "--debug-challenges", action="store_true",
         default=flag_default("debug_challenges"),
         help="After setting up challenges, wait for user input before "
-             "submitting to CA")
+             "submitting to CA. When used in combination with the `-v` "
+             "option, the challenge URLs or FQDNs and their expected "
+             "return values are shown.")
     helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),

@@ -10,7 +10,7 @@ license = "Apache License 2.0"
 [tool.poetry.dependencies]
 # The Python version here should be kept in sync with the one used in our
 # oldest tests in tox.ini.
-python = "3.6"
+python = "3.7"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -37,27 +37,20 @@ certbot = {path = "../../../certbot", extras = ["test"]}
 acme = {path = "../../../acme", extras = ["test"]}
 
 # Oldest dependencies
-# We specify the oldest versions of our dependencies that we keep
-# support for below. We should only update these packages as needed to make use
-# of features in newer versions of our dependencies. Keeping compatibility with
-# older packages makes it much easier for OS maintainers to update their
-# Certbot packages if needed or desired.
-#
-# When updating these dependencies, we should try to update them no further
-# than the oldest version of the dependency found in CentOS/RHEL 8 + EPEL (or
-# newer versions of CentOS/RHEL + EPEL) as our Certbot packages there see
-# frequent updates. If the dependency being updated is a direct dependency of
-# one of our own packages, the minimum required version of that dependency
-# should be updated in our setup.py files as well to communicate this
-# information to our users.
+# We specify the oldest versions of our dependencies that we keep support for
+# below. These dependencies can be updated as desired to simplify or improve
+# Certbot or its development. If the dependency being updated is a direct
+# dependency of one of our own packages, the minimum required version of that
+# dependency should be updated in our setup.py files as well to communicate
+# this information to our users.
 
 ConfigArgParse = "0.10.0"
 apacheconfig = "0.3.2"
 asn1crypto = "0.24.0"
-boto3 = "1.4.7"
-botocore = "1.7.41"
+boto3 = "1.15.15"
+botocore = "1.18.15"
 cffi = "1.9.1"
-chardet = "2.2.1"
+chardet = "3.0.4"
 cloudflare = "1.5.1"
 configobj = "5.0.6"
 cryptography = "3.2.1"
@@ -79,14 +72,14 @@ pyOpenSSL = "17.3.0"
 pyRFC3339 = "1.0"
 pyasn1 = "0.1.9"
 pycparser = "2.14"
-pyparsing = "2.2.0"
+pyparsing = "2.2.1"
 python-augeas = "0.5.0"
 python-digitalocean = "1.11"
-pytz = "2012rc0"
-requests = "2.14.2"
-setuptools = "39.0.1"
+pytz = "2019.3"
+requests = "2.20.0"
+setuptools = "41.6.0"
 six = "1.11.0"
-urllib3 = "1.10.2"
+urllib3 = "1.24.2"
 # Package names containing "." need to be quoted.
 "zope.component" = "4.1.0"
 "zope.event" = "4.0.3"

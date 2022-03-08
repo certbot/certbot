@@ -226,8 +226,7 @@ class AccountFileStorage(interfaces.AccountStorage):
                 else:
                     self._symlink_to_accounts_dir(prev_server_path, server_path)
                 return prev_loaded_account
-            raise errors.AccountNotFound(
-                "Account at %s does not exist" % account_dir_path)
+            raise errors.AccountNotFound(f"Account at {account_dir_path} does not exist")
 
         try:
             with open(self._regr_path(account_dir_path)) as regr_file:
@@ -296,8 +295,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         """
         account_dir_path = self._account_dir_path(account_id)
         if not os.path.isdir(account_dir_path):
-            raise errors.AccountNotFound(
-                "Account at %s does not exist" % account_dir_path)
+            raise errors.AccountNotFound(f"Account at {account_dir_path} does not exist")
         # Step 1: Delete account specific links and the directory
         self._delete_account_dir_for_server_path(account_id, self.config.server_path)
 

@@ -283,9 +283,9 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
     except messages.Error as e:
         if e.code in ("invalidEmail", "invalidContact"):
             if config.noninteractive_mode:
-                msg = ("The ACME server believes %s is an invalid email address. "
+                msg = (f"The ACME server believes {config.email} is an invalid email address. "
                        "Please ensure it is a valid email and attempt "
-                       "registration again." % config.email)
+                       "registration again.")
                 raise errors.Error(msg)
             config.email = display_ops.get_email(invalid=True)
             return perform_registration(acme, config, tos_cb)
@@ -452,7 +452,7 @@ class Client:
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         authzr = orderr.authorizations
-        auth_domains = set(a.body.identifier.value for a in authzr)
+        auth_domains = {a.body.identifier.value for a in authzr}
         successful_domains = [d for d in domains if d in auth_domains]
 
         # allow_subset_of_names is currently disabled for wildcard

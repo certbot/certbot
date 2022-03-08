@@ -25,6 +25,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_equals_gro
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_hook_execution
 from certbot_integration_tests.certbot_tests.assertions import assert_rsa_key
+from certbot_integration_tests.certbot_tests.assertions import assert_saved_lineage_option
 from certbot_integration_tests.certbot_tests.assertions import assert_saved_renew_hook
 from certbot_integration_tests.certbot_tests.assertions import assert_world_no_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
@@ -102,6 +103,7 @@ def test_http_01(context: IntegrationTestsContext) -> None:
 
     assert_hook_execution(context.hook_probe, 'deploy')
     assert_saved_renew_hook(context.config_dir, certname)
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'rsa')
 
 
 def test_manual_http_auth(context: IntegrationTestsContext) -> None:
@@ -552,35 +554,47 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
         '--key-type', 'ecdsa', '--elliptic-curve', 'secp256r1',
         '--force-renewal', '-d', certname,
     ])
-
     key1 = join(context.config_dir, "archive", certname, 'privkey1.pem')
     assert 200 < os.stat(key1).st_size < 250  # ec keys of 256 bits are ~225 bytes
     assert_elliptic_key(key1, SECP256R1)
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
     context.certbot(['renew', '--elliptic-curve', 'secp384r1'])
-
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     key2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
-    assert_elliptic_key(key2, SECP384R1)
     assert 280 < os.stat(key2).st_size < 320  # ec keys of 384 bits are ~310 bytes
+    assert_elliptic_key(key2, SECP384R1)
 
-    # We expect here that the command will fail because without --key-type specified,
-    # Certbot must error out to prevent changing an existing certificate key type,
-    # without explicit user consent (by specifying both --cert-name and --key-type).
-    with pytest.raises(subprocess.CalledProcessError):
-        context.certbot([
-            'certonly',
-            '--force-renewal',
-            '-d', certname
-        ])
+    # When running non-interactively, if --key-type is unspecified but the default value differs
+    # to the lineage key type, Certbot should keep the lineage key type. The curve will still
+    # change to the default value, in order to stay consistent with the behavior of certonly.
+    context.certbot(['certonly', '--force-renewal', '-d', certname])
+    assert_cert_count_for_lineage(context.config_dir, certname, 3)
+    key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
+    assert 200 < os.stat(key3).st_size < 250  # ec keys of 256 bits are ~225 bytes
+    assert_elliptic_key(key3, SECP256R1)
+
+    # When running non-interactively, specifying a different --key-type requires user confirmation
+    # with both --key-type and --cert-name.
+    with pytest.raises(subprocess.CalledProcessError) as error:
+        context.certbot(['certonly', '--force-renewal', '-d', certname,
+                         '--key-type', 'rsa'])
+    assert 'Please provide both --cert-name and --key-type' in error.value.stderr
+
+    context.certbot(['certonly', '--force-renewal', '-d', certname,
+                     '--key-type', 'rsa', '--cert-name', certname])
+    assert_cert_count_for_lineage(context.config_dir, certname, 4)
+    key4 = join(context.config_dir, 'archive', certname, 'privkey4.pem')
+    assert_rsa_key(key4)
 
     # We expect that the previous behavior of requiring both --cert-name and
     # --key-type to be set to not apply to the renew subcommand.
-    context.certbot(['renew', '--force-renewal', '--key-type', 'rsa'])
-    assert_cert_count_for_lineage(context.config_dir, certname, 3)
-    key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
-    assert_rsa_key(key3)
+    context.certbot(['renew', '--force-renewal', '--key-type', 'ecdsa'])
+    assert_cert_count_for_lineage(context.config_dir, certname, 5)
+    key5 = join(context.config_dir, 'archive', certname, 'privkey5.pem')
+    assert 200 < os.stat(key5).st_size < 250  # ec keys of 256 bits are ~225 bytes
+    assert_elliptic_key(key5, SECP256R1)
 
 
 def test_ocsp_must_staple(context: IntegrationTestsContext) -> None:

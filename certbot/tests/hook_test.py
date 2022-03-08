@@ -320,9 +320,10 @@ class RenewalHookTest(HookTest):
 
     def setUp(self):
         super().setUp()
-        self.vars_to_clear = set(
+        self.vars_to_clear = {
             var for var in ("RENEWED_DOMAINS", "RENEWED_LINEAGE",)
-            if var not in os.environ)
+            if var not in os.environ
+        }
 
     def tearDown(self):
         for var in self.vars_to_clear:
