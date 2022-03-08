@@ -1401,10 +1401,10 @@ def run(config: configuration.NamespaceConfig,
                                        "`--must-staple` option from the command line and obtain a "
                                        "certificate without the Must-Staple extension, or;\n * use "
                                        "the `certonly` subcommand and manually install the "
-                                       "certificate into your webserver. Note that OCSP stapling "
-                                       "is required for certificates with the Must-Staple "
-                                       "extension enabled to function properly.\n * choose a "
-                                       "different installer plugin, if possible.")
+                                       "certificate into the intended service (e.g. webserver). "
+                                       "Note that OCSP stapling is required for certificates with "
+                                       "the Must-Staple extension enabled to function properly.\n"
+                                       "* choose a different installer plugin, if possible.")
 
     # Preflight check for enhancement support by the selected installer
     if not enhancements.are_supported(config, installer):
