@@ -548,14 +548,24 @@ revocation from any ACME account::
 
   certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem --key-path /etc/letsencrypt/live/example.com/privkey.pem
 
-.. _deleting:
 
 ECDSA account keys
 ~~~~~~~~~~~~~~~~~~
 
-As of Certbot 1.23.0, new account keys use the ``secp256r1`` curve. The official backend of LetsEncrypt issues
+As of Certbot 2.0, accounts can be creating with a ``secp256r1`` curve. The official backend of LetsEncrypt issues
 many certificates, and bandwidth on their servers will be lower compared to RSA-keys. ACME servers handle all
 requests, including revocation and renewals of existing certificates using the account key.
+
+The flag ``--ecdsa-account-key`` works with ``renew``, ``register`` and ``certonly``::
+
+  certbot certonly --ecdsa-account-key --register-unsafely-without-email -d example.com
+
+
+When an existing account already exists, Certbot will write out an error. In a future release,
+we plan to transparently switch to ECDSA accounts for all existing accounts. The account key
+type supported is described in RFC 8555 §6.2.
+
+.. _deleting:
 
 Deleting certificates
 ---------------------
