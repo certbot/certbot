@@ -6,14 +6,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-* New accounts are created using an [EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography) key.
-  Existing accounts are not affected by this. Reason for this is bandwidth usage, as well as security.
+*
 
 ### Changed
 
 * Dropped 32 bit support for the Windows beta installer
 * Windows beta installer is now distributed as "certbot-beta-installer-win_amd64.exe".
   Users of the Windows beta should uninstall the old version before running this.
+* A flag has been introduced to create an ECDSA ([EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography))
+  account key for `certonly`, `register` and `renew`. Existing accounts will not be affected.
+  Reason for this is bandwidth usage on ACME servers, as well as increased security.
 
 ### Fixed
 
@@ -28,7 +30,7 @@ More details about these changes can be found on our GitHub repo.
 * When the `--debug-challenges` option is used in combination with `-v`, Certbot
   now displays the challenge URLs (for `http-01` challenges) or FQDNs (for
   `dns-01` challenges) and their expected return values.
-*
+
 
 ### Changed
 
