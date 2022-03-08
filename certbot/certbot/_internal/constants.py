@@ -45,6 +45,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(
     allow_subset_of_names=False,
     tos=False,
     account=None,
+    ecdsa_account_key=False,
     duplicate=False,
     os_packages_only=False,
     no_self_upgrade=False,

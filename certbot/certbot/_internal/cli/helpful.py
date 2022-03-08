@@ -223,6 +223,10 @@ class HelpfulArgumentParser:
                 raise errors.Error("Using --allow-subset-of-names with a"
                                    " wildcard domain is not supported.")
 
+        # error when a private key already exists, and it's not a new account
+        if parsed_args.ecdsa_account_key:
+            pass
+
         if parsed_args.hsts and parsed_args.auto_hsts:
             raise errors.Error(
                 "Parameters --hsts and --auto-hsts cannot be used simultaneously.")

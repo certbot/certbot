@@ -78,6 +78,10 @@ class NamespaceConfig:
         """
         return self.namespace.email
 
+    @property
+    def ecdsa_account_key(self) -> bool:
+        return self.namespace.ecdsa_account_key
+
     @email.setter
     def email(self, mail: str) -> None:
         self.namespace.email = mail

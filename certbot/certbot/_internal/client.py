@@ -212,22 +212,18 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
 
     # Each new registration shall use a fresh new key
     key: Optional[jose.JWK] = None
-    if config.key_type == "rsa":
+    if not config.ecdsa_account_key:
         rsa_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=config.rsa_key_size,
             backend=default_backend())
         key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
-    elif config.key_type == "ecdsa":
-        # TODO try to keep it more DRY ...
-        # code taken from crypto_util
-        if config.elliptic_curve.upper() in ('SECP256R1', 'SECP384R1', 'SECP521R1'):
-            ec_key = ec.generate_private_key(
-                curve=getattr(ec, config.elliptic_curve.upper(), None)(),
-                backend=default_backend()
-            )
-        else:
-            raise errors.Error("Unsupported elliptic curve: {}".format(config.elliptic_curve))
+    else:
+        # RFC 8555 6.2 says only ES256 is supported, i.e., SECP256R1
+        ec_key = ec.generate_private_key(
+            curve=ec.SECP256R1(),
+            backend=default_backend(),
+        )
         key = JWKEC(key=ComparableECKey(ec_key))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
