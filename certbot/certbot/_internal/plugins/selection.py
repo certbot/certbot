@@ -249,6 +249,13 @@ def choose_configurator_plugins(config: configuration.NamespaceConfig,
             installer = pick_installer(config, req_inst, plugins, installer_question)
         if need_auth:
             authenticator = pick_authenticator(config, req_auth, plugins)
+
+    # As a special case for certonly, if the user interactively selected nginx
+    # or apache as an authenticator, make sure we set the appropriate installer
+    # to allow us to safely reload after retrieving a cert
+    if verb == "certonly" and authenticator and not installer:
+        if authenticator.name in ("nginx", "apache"):
+            installer = cast(Optional[interfaces.Installer], authenticator)
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
 
     # Report on any failures

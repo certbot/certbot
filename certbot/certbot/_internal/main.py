@@ -538,8 +538,9 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
         # run the "installer" (i.e. reloading the nginx/apache config)
         if config.verb == 'certonly':
             steps.append(
-                f"The certificate was saved, but the plugin {config.installer} failed"
-                "to reload. After fixing the error shown below, try reloading manually."
+                "The certificate was saved, but was not successfully loaded by the installer"
+                f"({config.installer}) due to the installer failing to reload."
+                f"After fixing the error shown below, try reloading {config.installer} manually."
             )
         else:
             steps.append(
@@ -1571,7 +1572,7 @@ def certonly(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
     # run `installer.restart()` to load the newly issued certificate
     installer_err: Optional[errors.Error] = None
     if lineage and installer and not config.dry_run:
-        logger.info(f"Reloading {config.installer} server after certificate issuance")
+        logger.info("Reloading % server after certificate issuance", config.installer)
         try:
             installer.restart()
         except errors.Error as e:
@@ -1672,7 +1673,7 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
     if not cli_args:
         cli_args = sys.argv[1:]
 
-    log.pre_arg_parse_setup()
+    log.pre_arg_parse_setup() 
 
     if os.environ.get('CERTBOT_SNAPPED') == 'True':
         cli_args = snap_config.prepare_env(cli_args)
