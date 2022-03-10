@@ -1673,7 +1673,7 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
     if not cli_args:
         cli_args = sys.argv[1:]
 
-    log.pre_arg_parse_setup() 
+    log.pre_arg_parse_setup()
 
     if os.environ.get('CERTBOT_SNAPPED') == 'True':
         cli_args = snap_config.prepare_env(cli_args)
