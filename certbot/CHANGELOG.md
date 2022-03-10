@@ -13,6 +13,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Dropped 32 bit support for the Windows beta installer
 * Windows beta installer is now distributed as "certbot-beta-installer-win_amd64.exe".
   Users of the Windows beta should uninstall the old version before running this.
+* Added a check whether OCSP stapling is supported by the installer when requesting a
+  certificate with the `run` subcommand in combination with the `--must-staple` option.
+  If the installer does not support OCSP and the `--must-staple` option is used, Certbot
+  will raise an error and quit.
 
 ### Fixed
 
