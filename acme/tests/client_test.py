@@ -922,6 +922,11 @@ class ClientV2Test(ClientTestBase):
 
         self.assertFalse(self.client.external_account_required())
 
+    def test_key_change(self):
+        self.client.directory = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=False)
+        })
+
     def test_external_account_required_default(self):
         self.assertFalse(self.client.external_account_required())
 

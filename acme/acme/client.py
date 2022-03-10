@@ -152,6 +152,12 @@ class ClientBase:
         return self._authzr_from_response(response,
             authzr.body.identifier, authzr.uri)
 
+    def update_account_key(self, response: requests.Response, uri: Optional[str] = None
+                           ) -> messages.KeyChange:
+        # corresponding to the account key (KeyChange) message in acme.messages
+        # Generate the new account key, and store it
+        pass
+
     def _authzr_from_response(self, response: requests.Response,
                               identifier: Optional[messages.Identifier] = None,
                               uri: Optional[str] = None) -> messages.AuthorizationResource:

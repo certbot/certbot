@@ -549,6 +549,8 @@ revocation from any ACME account::
   certbot revoke --cert-path /etc/letsencrypt/live/example.com/cert.pem --key-path /etc/letsencrypt/live/example.com/privkey.pem
 
 
+.. _ecdsa_account_keys:
+
 ECDSA account keys
 ~~~~~~~~~~~~~~~~~~
 
@@ -559,11 +561,17 @@ requests, including revocation and renewals of existing certificates using the a
 The flag ``--ecdsa-account-key`` works with ``renew``, ``register`` and ``certonly``::
 
   certbot certonly --ecdsa-account-key --register-unsafely-without-email -d example.com
+  # Just register an account
+  certbot register --ecdsa-account-key
+  # This will cause the account key to be changed to an ecdsa (signature algorithm ES256) account key
+  # while renewing the certificate
+  certbot renew --ecdsa-account-key
 
 
 When an existing account already exists, Certbot will write out an error. In a future release,
 we plan to transparently switch to ECDSA accounts for all existing accounts. The account key
-type supported is described in RFC 8555 §6.2.
+type supported is described in
+[RFC 8555 §6.2](https://datatracker.ietf.org/doc/html/rfc8555#section-6.2).
 
 .. _deleting:
 
