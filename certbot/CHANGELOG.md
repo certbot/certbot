@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Made our Windows installer signed and trusted in Windows 
 
 ### Changed
 
@@ -52,8 +52,6 @@ More details about these changes can be found on our GitHub repo.
 * Added `show_account` subcommand, which will fetch the account information
   from the ACME server and show the account details (account URL and, if
   applicable, email address or addresses)
-* Added code signing server workflow to `tools/finish_release.py`, creating an Authenticode signature.
-  Making our Windows installer trusted by Windows.
 * We deprecated support for Python 3.6 in Certbot and its ACME library.
   Support for Python 3.6 will be removed in the next major release of Certbot.
 
