@@ -39,7 +39,7 @@ iniconfig==1.1.1; python_version >= "3.7"
 ipaddress==1.0.16
 isort==5.10.1; python_full_version >= "3.6.2" and python_version < "4.0" and python_version >= "3.7"
 jmespath==0.10.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version >= "3.7"
-josepy==1.12.0; python_version >= "3.7"
+josepy==1.13.0; python_version >= "3.7"
 jsonschema==3.2.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
 lazy-object-proxy==1.7.1; python_version >= "3.7" and python_full_version >= "3.6.2"
 logger==1.4; python_version >= "3.7"
