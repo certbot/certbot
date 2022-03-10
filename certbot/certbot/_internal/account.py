@@ -230,15 +230,11 @@ class AccountFileStorage(interfaces.AccountStorage):
 
         try:
             with open(self._regr_path(account_dir_path)) as regr_file:
-                # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.
-                regr = cast(messages.RegistrationResource,
-                            messages.RegistrationResource.json_loads(regr_file.read()))
+                regr = messages.RegistrationResource.json_loads(regr_file.read())
             with open(self._key_path(account_dir_path)) as key_file:
-                # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.
-                key = cast(jose.JWK, jose.JWK.json_loads(key_file.read()))
+                key = jose.JWK.json_loads(key_file.read())
             with open(self._metadata_path(account_dir_path)) as metadata_file:
-                # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.
-                meta = cast(Account.Meta, Account.Meta.json_loads(metadata_file.read()))
+                meta = Account.Meta.json_loads(metadata_file.read())
         except IOError as error:
             raise errors.AccountStorageError(error)
 
