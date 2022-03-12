@@ -296,8 +296,8 @@ class Client(ClientBase):
         """
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
         response = self._post(self.directory[new_reg], new_reg)
-        # TODO: handle errors
-        assert response.status_code == http_client.CREATED
+        if response.status_code != http_client.CREATED:
+            raise errors.Error("An error happened during the account registration")
 
         # "Instance of 'Field' has no key/contact member" bug:
         return self._regr_from_response(response)

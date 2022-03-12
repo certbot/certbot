@@ -3,7 +3,6 @@
 import copy
 import datetime
 import http.client as http_client
-import ipaddress
 import json
 import unittest
 from typing import Dict
@@ -251,7 +250,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
 
         mock_client().request_issuance.return_value = self.certr
 
-        deadline = deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
+        deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
         client = self._init()
         self.assertRaises(errors.TimeoutError, client.finalize_order,
             self.orderr, deadline)
@@ -367,6 +366,10 @@ class ClientTest(ClientTestBase):
 
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
+
+    def test_register_error(self):
+        self.response.status_code = http_client.BAD_REQUEST
+        self.assertRaises(errors.Error, self.client.register, self.new_reg)
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
