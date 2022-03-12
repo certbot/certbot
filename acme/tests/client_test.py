@@ -367,10 +367,6 @@ class ClientTest(ClientTestBase):
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
 
-    def test_register_error(self):
-        self.response.status_code = http_client.BAD_REQUEST
-        self.assertRaises(errors.Error, self.client.register, self.new_reg)
-
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
         self.response.headers['Location'] = self.regr.uri
