@@ -13,7 +13,9 @@ astroid==2.3.0; python_version >= "3.7"
 atomicwrites==1.4.0; sys_platform == "win32" and python_version >= "3.7"
 attrs==21.4.0; python_version >= "3.7"
 awscli==1.22.72
-awscli==1.22.72; python_version >= "3.7"
+astroid==2.9.3; python_version >= "3.7" and python_full_version >= "3.6.2"
+atomicwrites==1.4.0; python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.7" and python_full_version >= "3.4.0"
+attrs==21.4.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
 azure-devops==6.0.0b4; python_version >= "3.7"
 babel==2.9.1; python_version >= "3.7"
 backcall==0.2.0; python_version >= "3.7"
@@ -31,8 +33,13 @@ cffi==1.15.0; python_version >= "3.7"
 charset-normalizer==2.0.12; python_version >= "3.7"
 cleo==1.0.0a4; python_version >= "3.7" and python_version < "4.0"
 cloudflare==2.8.15; python_version >= "3.7"
+<<<<<<< HEAD
 colorama==0.4.3; python_version >= "3.7"
 configargparse==1.5.3; python_version >= "3.7"
+=======
+colorama==0.4.3; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7" or sys_platform == "win32" and python_full_version >= "3.6.2" and python_version >= "3.7" or python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" or python_full_version >= "3.5.0" and python_version >= "3.7" and sys_platform == "win32" or python_version >= "3.7" and python_full_version < "3.0.0" and platform_system == "Windows" or python_version >= "3.7" and python_full_version >= "3.5.0" and platform_system == "Windows"
+configargparse==1.5.3; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 configobj==5.0.6; python_version >= "3.7"
 coverage==6.3.2; python_version >= "3.7"
 crashtest==0.3.1; python_version >= "3.7" and python_version < "4.0"
@@ -44,15 +51,27 @@ distlib==0.3.4; python_version >= "3.7"
 distro==1.7.0; python_version >= "3.7"
 dns-lexicon==3.9.4; python_version >= "3.7" and python_version < "4.0"
 dnspython==2.2.1; python_version >= "3.7" and python_version < "4.0"
+<<<<<<< HEAD
 docker-compose==1.26.2; python_version >= "3.7"
 docker==4.2.2; python_version >= "3.7"
 dockerpty==0.4.1; python_version >= "3.7"
 docopt==0.6.2; python_version >= "3.7"
 docutils==0.15.2; python_version >= "3.7"
+=======
+docker-compose==1.26.2; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
+docker==4.2.2; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
+dockerpty==0.4.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
+docopt==0.6.2; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
+docutils==0.15.2; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version >= "3.7" or python_version >= "3.7" and python_full_version >= "3.4.0"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 entrypoints==0.3; python_version >= "3.7" and python_version < "4.0"
 execnet==1.9.0; python_version >= "3.7"
 fabric==2.6.0; python_version >= "3.7"
+<<<<<<< HEAD
 filelock==3.6.0; python_version >= "3.7" or python_version >= "3.7" and python_version < "4.0"
+=======
+filelock==3.6.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_version >= "3.7" and python_full_version >= "3.5.0" or python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "4.0" or python_version >= "3.7" and python_version < "4.0" and python_full_version >= "3.4.0" or python_version >= "3.7" and python_version < "4.0"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 google-api-core==2.7.1; python_version >= "3.7"
 google-api-python-client==2.40.0; python_version >= "3.7"
 google-auth-httplib2==0.1.0; python_version >= "3.7"
@@ -71,8 +90,13 @@ isodate==0.6.1; python_version >= "3.7"
 isort==4.3.21; python_version >= "3.7"
 jedi==0.18.1; python_version >= "3.7"
 jeepney==0.7.1; python_version >= "3.7" and python_version < "4.0" and sys_platform == "linux"
+<<<<<<< HEAD
 jinja2==3.0.3; python_version >= "3.7"
 jmespath==0.10.0; python_version >= "3.7"
+=======
+jinja2==3.0.3; python_version >= "3.7" or python_version >= "3.7"
+jmespath==0.10.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version >= "3.7"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 josepy==1.13.0; python_version >= "3.7"
 jsonlines==3.0.0; python_version >= "3.7"
 jsonpickle==2.1.0; python_version >= "3.7"
@@ -102,9 +126,14 @@ pkginfo==1.8.2; python_version >= "3.7" and python_version < "4.0" or python_ver
 pluggy==1.0.0; python_version >= "3.7"
 ply==3.11; python_version >= "3.7"
 poetry-core==1.1.0a7; python_version >= "3.7" and python_version < "4.0"
+<<<<<<< HEAD
 poetry==1.2.0a2
 poetry==1.2.0a2; python_version >= "3.7" and python_version < "4.0"
 prompt-toolkit==3.0.28; python_version >= "3.7"
+=======
+poetry==1.2.0a2; python_version >= "3.6" and python_version < "4.0"
+prompt-toolkit==3.0.28; python_version >= "3.7" and python_full_version >= "3.6.2"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 protobuf==3.19.4; python_version >= "3.7"
 ptyprocess==0.7.0; python_version >= "3.7" and python_version < "4.0"
 py==1.11.0; python_version >= "3.7"
@@ -115,8 +144,13 @@ pygithub==1.55; python_version >= "3.7"
 pygments==2.11.2; python_version >= "3.7"
 pyjwt==2.3.0; python_version >= "3.7"
 pylev==1.4.0; python_version >= "3.7" and python_version < "4.0"
+<<<<<<< HEAD
 pylint==2.4.4; python_version >= "3.7"
 pynacl==1.5.0; python_version >= "3.7"
+=======
+pylint==2.12.2; python_full_version >= "3.6.2"
+pynacl==1.5.0; python_version >= "3.7" or python_version >= "3.7"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 pynsist==2.7; python_version >= "3.7"
 pyopenssl==22.0.0; python_version >= "3.7"
 pyparsing==3.0.7; python_version >= "3.7"
@@ -133,8 +167,13 @@ python-digitalocean==1.17.0; python_version >= "3.7"
 python-dotenv==0.19.2; python_version >= "3.7"
 pytz==2021.3; python_version >= "3.7"
 pywin32-ctypes==0.2.0; python_version >= "3.7" and python_version < "4.0" and sys_platform == "win32"
+<<<<<<< HEAD
 pywin32==303; sys_platform == "win32" and python_version >= "3.7"
 pyyaml==5.4.1; python_version >= "3.7"
+=======
+pywin32==303; sys_platform == "win32" and python_version >= "3.7" or sys_platform == "win32" and python_version >= "3.6" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7")
+pyyaml==5.4.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.7" or python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "4.0" or python_version >= "3.7" and python_version < "4.0" and python_full_version >= "3.6.0"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 readme-renderer==33.0; python_version >= "3.7"
 requests-download==0.1.2; python_version >= "3.7"
 requests-file==1.5.1; python_version >= "3.7" and python_version < "4.0"
@@ -146,8 +185,13 @@ rsa==4.7.2; python_version >= "3.7" and python_version < "4"
 s3transfer==0.5.2; python_version >= "3.7"
 secretstorage==3.3.1; python_version >= "3.7" and python_version < "4.0" and sys_platform == "linux"
 semantic-version==2.9.0; python_version >= "3.6"
+<<<<<<< HEAD
 setuptools-rust==1.1.2
 setuptools==60.9.3; python_version >= "3.7"
+=======
+setuptools-rust==1.1.2; python_version >= "3.6"
+setuptools==60.9.3; python_version >= "3.7" or python_version >= "3.7" or python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7" or python_version >= "3.7" and python_full_version >= "3.6.2" or python_full_version >= "3.4.0" and python_version >= "3.7"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 shellingham==1.4.0; python_version >= "3.7" and python_version < "4.0"
 six==1.16.0; python_version >= "3.7"
 snowballstemmer==2.2.0; python_version >= "3.7"
@@ -169,7 +213,11 @@ tox==3.24.5; python_version >= "3.7"
 tqdm==4.63.0; python_version >= "3.7"
 traitlets==5.1.1; python_version >= "3.7"
 twine==3.3.0; python_version >= "3.7"
+<<<<<<< HEAD
 typed-ast==1.5.2; python_version >= "3.7" and python_version < "3.8" or implementation_name == "cpython" and python_version >= "3.7" and python_version < "3.8"
+=======
+typed-ast==1.5.2; python_version >= "3.7" and python_version < "3.8" or implementation_name == "cpython" and python_version < "3.8" and python_version >= "3.7" and python_full_version >= "3.6.2"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 types-cryptography==3.3.18; python_version >= "3.7"
 types-mock==4.0.11; python_version >= "3.7"
 types-pyopenssl==22.0.0; python_version >= "3.7"
@@ -180,7 +228,11 @@ types-requests==2.27.11; python_version >= "3.7"
 types-setuptools==57.4.10; python_version >= "3.7"
 types-six==1.16.12; python_version >= "3.7"
 types-urllib3==1.26.10; python_version >= "3.7"
+<<<<<<< HEAD
 typing-extensions==4.1.1; python_version >= "3.6" or python_version < "3.8" and python_version >= "3.7"
+=======
+typing-extensions==4.1.1; python_version >= "3.7" or python_version >= "3.6" or python_version < "3.10" and python_full_version >= "3.6.2" and python_version >= "3.7" or python_version < "3.8" and python_version >= "3.7"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 uritemplate==4.1.1; python_version >= "3.7"
 urllib3==1.26.8; python_version >= "3.7" and python_version < "4"
 virtualenv==20.4.4; python_version >= "3.7" and python_version < "4.0" or python_version >= "3.7"

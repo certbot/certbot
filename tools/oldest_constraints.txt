@@ -20,6 +20,13 @@ coverage==6.3.2; python_version >= "3.7"
 cryptography==3.2.1
 cython==0.29.28
 distlib==0.3.4; python_version >= "3.7"
+colorama==0.4.4; python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" or python_full_version >= "3.5.0" and python_version >= "3.7" and sys_platform == "win32" or sys_platform == "win32" and python_full_version >= "3.6.2" and python_version >= "3.7"
+configargparse==0.10.0
+configobj==5.0.6
+coverage==6.3.2; python_version >= "3.7" or python_version >= "3.7"
+cryptography==3.2.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
+cython==0.29.28; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
+distlib==0.3.4; python_version >= "3.7" and python_full_version < "3.0.0" or python_version >= "3.7" and python_full_version >= "3.5.0"
 distro==1.0.1
 dns-lexicon==3.2.1
 dnspython==1.15.0
@@ -63,6 +70,9 @@ pyasn1==0.1.9
 pycparser==2.14
 pylint==2.12.2; python_version >= "3.7"
 pynacl==1.5.0; python_version >= "3.7"
+pylint==2.12.2; python_full_version >= "3.6.2"
+pynacl==1.5.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 pyopenssl==17.3.0
 pyparsing==2.2.1
 pypiwin32==223; sys_platform == "win32" and python_version >= "3.7"
@@ -91,6 +101,13 @@ toml==0.10.2; python_version >= "3.7"
 tomli==2.0.1; python_version >= "3.7"
 tox==1.9.2; python_version >= "3.7"
 typed-ast==1.5.2; python_version >= "3.7" and python_version < "3.8" or implementation_name == "cpython" and python_version < "3.8" and python_version >= "3.7"
+texttable==1.6.4; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
+tldextract==3.2.0; python_version >= "3.7"
+toml==0.10.2; python_version >= "3.7" and python_full_version >= "3.6.2"
+tomli==2.0.1; python_version >= "3.7" or python_version >= "3.7"
+tox==1.9.2; python_version >= "3.7"
+typed-ast==1.5.2; python_version >= "3.7" and python_version < "3.8" or implementation_name == "cpython" and python_version < "3.8" and python_version >= "3.7" and python_full_version >= "3.6.2"
+>>>>>>> ee2f5f5a0a1770c85c6740388dbbe93208fa148f
 types-cryptography==3.3.18; python_version >= "3.7"
 types-mock==4.0.11; python_version >= "3.7"
 types-pyopenssl==22.0.0; python_version >= "3.7"
@@ -109,6 +126,13 @@ websocket-client==0.59.0; python_version >= "3.7"
 wheel==0.33.6
 wheel==0.33.6; python_version >= "3.7"
 wrapt==1.13.3; python_version >= "3.7"
+typing-extensions==4.1.1; python_version >= "3.7" or python_version < "3.10" and python_full_version >= "3.6.2" and python_version >= "3.7" or python_version < "3.8" and python_version >= "3.7"
+uritemplate==3.0.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
+urllib3==1.24.2; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0" and python_version < "4")
+virtualenv==20.13.3; python_version >= "3.7" and python_full_version < "3.0.0" or python_version >= "3.7" and python_full_version >= "3.5.0"
+websocket-client==0.59.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7" or python_full_version >= "3.5.0" and python_version >= "3.7"
+wheel==0.33.6; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
+wrapt==1.13.3; python_version >= "3.7" and python_full_version >= "3.6.2"
 zipp==3.7.0; python_version < "3.8" and python_version >= "3.7"
 zope.component==4.1.0
 zope.event==4.0.3
