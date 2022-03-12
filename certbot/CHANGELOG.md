@@ -17,6 +17,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   certificate with the `run` subcommand in combination with the `--must-staple` option.
   If the installer does not support OCSP and the `--must-staple` option is used, Certbot
   will raise an error and quit.
+* Certbot and its acme module now depend on josepy>=1.13.0 due to better type annotation
+  support.
 
 ### Fixed
 
