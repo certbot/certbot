@@ -21,6 +21,7 @@ import zope.interface
 
 from acme import client as acme_client
 from acme import errors as acme_errors
+from acme import messages as acme_messages
 import certbot
 from certbot import configuration
 from certbot import crypto_util
@@ -726,11 +727,18 @@ def _determine_account(config: configuration.NamespaceConfig
                 display_util.notify("Account registered.")
             except errors.MissingCommandlineFlag:
                 raise
-            except errors.Error as err:
+            except (errors.Error, acme_messages.Error) as err:
                 logger.debug("", exc_info=True)
+                if isinstance(err, acme_messages.Error):
+                    if err.detail:
+                        err_msg = err.detail
+                    else:
+                        err_msg = err.description
+                else:
+                    err_msg = str(err)
                 raise errors.Error(
                     "Unable to register an account with ACME server. Error returned by the ACME "
-                    f"server: {err}")
+                    f"server: {err_msg}")
 
     config.account = acc.id
     return acc, acme
