@@ -728,10 +728,9 @@ def _determine_account(config: configuration.NamespaceConfig
                 raise
             except errors.Error as err:
                 logger.debug("", exc_info=True)
-                err_msg = str(err)
                 raise errors.Error(
                     "Unable to register an account with ACME server. Error returned by the ACME "
-                    f"server: {err_msg[0].lower()}{err_msg[1:]}")
+                    f"server: {err}")
 
     config.account = acc.id
     return acc, acme
