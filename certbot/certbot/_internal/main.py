@@ -730,10 +730,20 @@ def _determine_account(config: configuration.NamespaceConfig
             except (errors.Error, acme_messages.Error) as err:
                 logger.debug("", exc_info=True)
                 if isinstance(err, acme_messages.Error):
+                    # `acme.messages.Error` has more details than `certbot.errors.Error`, so we
+                    # can use these details to provide a human readable error message:
                     if err.detail:
+                        # `detail` contains a human readable error message provided by the
+                        # ACME server.
                         err_msg = err.detail
-                    else:
+                    elif err.description:
+                        # If `detail` is not provided, the `acme` library can return a human
+                        # readable error message based on the error type in `description`.
                         err_msg = err.description
+                    else:
+                        # If no human readable error message can be found, the ACME error type
+                        # is presented to the user.
+                        err_msg = str(err)
                 else:
                     err_msg = str(err)
                 raise errors.Error(
