@@ -9,9 +9,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The packages used in our snaps were updated in response to
   https://ubuntu.com/security/notices/USN-5320-1.
 
-This release was only done for our snaps, however, our Docker images were
-rebuilt as well due to pipeline automation. No other distribution mechanisms
-were affected.
+This release was only done for our snaps, however, all of our distribution
+mechanisms were updated.
 
 More details about these changes can be found on our GitHub repo.
 
