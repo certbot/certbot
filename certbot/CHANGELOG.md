@@ -2,6 +2,18 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.24.1 - master
+
+### Fixed
+
+* The packages used in our snaps were updated in response to
+  https://ubuntu.com/security/notices/USN-5320-1.
+
+While this release was built and pushed to all of our normal distribution
+channels, the release was only done for the sake of updating the Certbot snaps.
+
+More details about these changes can be found on our GitHub repo.
+
 ## 1.24.0 - 2022-03-01
 
 ### Added
