@@ -122,14 +122,16 @@ class ACMEServer:
 
     def _construct_acme_xdist(self, acme_server: str, nodes: List[str]) -> None:
         """Generate and return the acme_xdist dict"""
-        acme_xdist = {'acme_server': acme_server, 'challtestsrv_port': CHALLTESTSRV_PORT}
+        acme_xdist: Dict[str, Any] = {'acme_server': acme_server}
 
         # Directory and ACME port are set implicitly in the docker-compose.yml
         # files of Boulder/Pebble.
         if acme_server == 'pebble':
             acme_xdist['directory_url'] = PEBBLE_DIRECTORY_URL
+            acme_xdist['challtestsrv_url'] = PEBBLE_CHALLTESTSRV_URL
         else:  # boulder
             acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL
+            acme_xdist['challtestsrv_url'] = BOULDER_V2_CHALLTESTSRV_URL
 
         acme_xdist['http_port'] = {
             node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
@@ -182,7 +184,7 @@ class ACMEServer:
 
         # Wait for the ACME CA server to be up.
         print('=> Waiting for pebble instance to respond...')
-        misc.check_until_timeout(self.acme_xdist['directory_url'])  # type: ignore[arg-type]
+        misc.check_until_timeout(self.acme_xdist['directory_url'])
 
         print('=> Finished pebble instance deployment.')
 
@@ -216,12 +218,13 @@ class ACMEServer:
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
             misc.check_until_timeout(
-                self.acme_xdist['directory_url'], attempts=300)  # type: ignore[arg-type]
+                self.acme_xdist['directory_url'], attempts=300)
 
             if not self._dns_server:
                 # Configure challtestsrv to answer any A record request with ip of the docker host.
-                response = requests.post('http://localhost:{0}/set-default-ipv4'.format(
-                    CHALLTESTSRV_PORT), json={'ip': '10.77.77.1'}
+                response = requests.post(
+                    f'{BOULDER_V2_CHALLTESTSRV_URL}/set-default-ipv4',
+                    json={'ip': '10.77.77.1'}
                 )
                 response.raise_for_status()
         except BaseException:
