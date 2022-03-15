@@ -122,14 +122,16 @@ class ACMEServer:
 
     def _construct_acme_xdist(self, acme_server: str, nodes: List[str]) -> None:
         """Generate and return the acme_xdist dict"""
-        acme_xdist = {'acme_server': acme_server, 'challtestsrv_port': CHALLTESTSRV_PORT}
+        acme_xdist = {'acme_server': acme_server}
 
         # Directory and ACME port are set implicitly in the docker-compose.yml
         # files of Boulder/Pebble.
         if acme_server == 'pebble':
             acme_xdist['directory_url'] = PEBBLE_DIRECTORY_URL
+            acme_xdist['challtestsrv_url'] = PEBBLE_CHALLTESTSRV_URL
         else:  # boulder
             acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL
+            acme_xdist['challtestsrv_url'] = BOULDER_V2_CHALLTESTSRV_URL
 
         acme_xdist['http_port'] = {
             node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
@@ -221,7 +223,7 @@ class ACMEServer:
             if not self._dns_server:
                 # Configure challtestsrv to answer any A record request with ip of the docker host.
                 response = requests.post(
-                    f'http://{BOULDER_V2_IP_ADDRESS}:{CHALLTESTSRV_PORT}/set-default-ipv4',
+                    f'{BOULDER_V2_CHALLTESTSRV_URL}/set-default-ipv4',
                     json={'ip': '10.77.77.1'}
                 )
                 response.raise_for_status()
