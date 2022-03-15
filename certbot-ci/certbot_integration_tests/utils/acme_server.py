@@ -122,7 +122,7 @@ class ACMEServer:
 
     def _construct_acme_xdist(self, acme_server: str, nodes: List[str]) -> None:
         """Generate and return the acme_xdist dict"""
-        acme_xdist = {'acme_server': acme_server}
+        acme_xdist: Dict[str, Any] = {'acme_server': acme_server}
 
         # Directory and ACME port are set implicitly in the docker-compose.yml
         # files of Boulder/Pebble.
@@ -184,7 +184,7 @@ class ACMEServer:
 
         # Wait for the ACME CA server to be up.
         print('=> Waiting for pebble instance to respond...')
-        misc.check_until_timeout(self.acme_xdist['directory_url'])  # type: ignore[arg-type]
+        misc.check_until_timeout(self.acme_xdist['directory_url'])
 
         print('=> Finished pebble instance deployment.')
 
@@ -218,7 +218,7 @@ class ACMEServer:
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
             misc.check_until_timeout(
-                self.acme_xdist['directory_url'], attempts=300)  # type: ignore[arg-type]
+                self.acme_xdist['directory_url'], attempts=300)
 
             if not self._dns_server:
                 # Configure challtestsrv to answer any A record request with ip of the docker host.
