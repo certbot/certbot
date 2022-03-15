@@ -22,7 +22,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Updated dependencies to use new version of cryptography that uses OpenSSL 1.1.1n, in
+  response to https://www.openssl.org/news/secadv/20220315.txt.
 
 More details about these changes can be found on our GitHub repo.
 
