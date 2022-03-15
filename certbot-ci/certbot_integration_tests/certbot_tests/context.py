@@ -29,7 +29,7 @@ class IntegrationTestsContext:
         self.http_01_port = acme_xdist['http_port'][self.worker_id]
         self.other_port = acme_xdist['other_port'][self.worker_id]
         # Challtestsrv REST API, that exposes entrypoints to register new DNS entries,
-        # is listening on challtestsrv_addr.
+        # is listening on challtestsrv_url.
         self.challtestsrv_url = acme_xdist['challtestsrv_url']
 
         self.workspace = tempfile.mkdtemp()
