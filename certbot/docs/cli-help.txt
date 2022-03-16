@@ -126,7 +126,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.24.0 (certbot;
+                        "". (default: CertbotACMEClient/1.25.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -194,7 +194,7 @@ security:
                         rsa)
   --elliptic-curve N    The SECG elliptic curve name to use. Please see RFC
                         8446 for supported values. (default: secp256r1)
-  --must-staple         Adds the OCSP Must Staple extension to the
+  --must-staple         Adds the OCSP Must-Staple extension to the
                         certificate. Autoconfigures OCSP Stapling for
                         supported setups (Apache version >= 2.3.3 ). (default:
                         False)
