@@ -22,6 +22,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+* Updated dependencies to use new version of cryptography that uses OpenSSL 1.1.1n, in
+  response to https://www.openssl.org/news/secadv/20220315.txt.
 * If account registration fails, Certbot didn't relay the error from the ACME server
   back to the user. This is now fixed: the error message from the ACME server is now
   presented to the user when account registration fails.
