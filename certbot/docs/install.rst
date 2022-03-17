@@ -19,9 +19,7 @@ System Requirements
 
 .. Note:: To run without root privileges, but for most users who want to avoid running an ACME client as root, either letsencrypt-nosudo or simp_le are more appropriate choices.
 
-.. Note:: The Apache plugin currently requires an OS with augeas version 1.0; currently `it supports <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/constants.py>`_
-modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin.
-
+.. Note:: The Apache plugin currently requires an OS with augeas version 1.0; currently `it supports <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/constants.py>`_ modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin. 
 
 Installation
 =============
@@ -31,13 +29,10 @@ Unless you have very specific requirements, we kindly suggest that you use the i
 .. _snap-install:
 
 Snap (Recommended)
-----
+------------------
+Our instructions are the same across all systems that use Snap. You can find instructions for installing the Certbot snap at https://certbot.eff.org/instructions?ws=other&os=snap
+
 Most modern Linux distributions (basically any that use systemd) can install Certbot packaged as a snap. Snaps are available for x86_64, ARMv7 and ARMv8 architectures. The Certbot snap provides an easy way to ensure you have the latest version of Certbot with features like automated certificate renewal preconfigured.
-
-You can find instructions for installing the Certbot snap at https://certbot.eff.org/instructions?ws=other&os=snap
-
-Our instructions are the same across all systems that use Snap.
-
 
 If you are offline or your operating system doesn't provide a package, you can use
 an alternate method for installing ``certbot``.
@@ -53,9 +48,7 @@ certificate. However, this mode of operation is unable to install
 certificates or configure your webserver, because our installer
 plugins cannot reach your webserver from inside the Docker container.
 
-Most users should use the instructions at certbot.eff.org_. You should only use
-Docker if you are sure you know what you are doing and have a good reason to do
-so.
+Most users should use the instructions at certbot.eff.org_. You should only use Docker if you are sure you know what you are doing and have a good reason to do so.
 
 You should definitely read the :ref:`where-certs` section, in order to
 know how to manage the certificates
@@ -100,6 +93,7 @@ of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 
 .. _Docker: https://docker.com
 .. _`install Docker`: https://docs.docker.com/engine/installation/
+.. _certbot.eff.org: https://certbot.eff.org/instructions
 
 Alternative 2: Pip
 ------------------
@@ -112,7 +106,7 @@ server software and then choosing "pip" in the "System" dropdown menu.
 .. _certbot-auto:
 
 Certbot-Auto [Deprecated]
-------------------------
+-------------------------
 .. toctree::
    :hidden:
 
