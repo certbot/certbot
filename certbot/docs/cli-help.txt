@@ -35,7 +35,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -97,7 +97,9 @@ options:
                         necessary to accurately simulate renewal. --deploy-
                         hook commands are not called. (default: False)
   --debug-challenges    After setting up challenges, wait for user input
-                        before submitting to CA (default: False)
+                        before submitting to CA. When used in combination with
+                        the `-v` option, the challenge URLs or FQDNs and their
+                        expected return values are shown. (default: False)
   --preferred-chain PREFERRED_CHAIN
                         Set the preferred certificate chain. If the CA offers
                         multiple certificate chains, prefer the chain whose
@@ -124,7 +126,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.23.0 (certbot;
+                        "". (default: CertbotACMEClient/1.25.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -192,7 +194,7 @@ security:
                         rsa)
   --elliptic-curve N    The SECG elliptic curve name to use. Please see RFC
                         8446 for supported values. (default: secp256r1)
-  --must-staple         Adds the OCSP Must Staple extension to the
+  --must-staple         Adds the OCSP Must-Staple extension to the
                         certificate. Autoconfigures OCSP Stapling for
                         supported setups (Apache version >= 2.3.3 ). (default:
                         False)

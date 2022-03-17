@@ -226,20 +226,15 @@ class AccountFileStorage(interfaces.AccountStorage):
                 else:
                     self._symlink_to_accounts_dir(prev_server_path, server_path)
                 return prev_loaded_account
-            raise errors.AccountNotFound(
-                "Account at %s does not exist" % account_dir_path)
+            raise errors.AccountNotFound(f"Account at {account_dir_path} does not exist")
 
         try:
             with open(self._regr_path(account_dir_path)) as regr_file:
-                # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.
-                regr = cast(messages.RegistrationResource,
-                            messages.RegistrationResource.json_loads(regr_file.read()))
+                regr = messages.RegistrationResource.json_loads(regr_file.read())
             with open(self._key_path(account_dir_path)) as key_file:
-                # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.
-                key = cast(jose.JWK, jose.JWK.json_loads(key_file.read()))
+                key = jose.JWK.json_loads(key_file.read())
             with open(self._metadata_path(account_dir_path)) as metadata_file:
-                # TODO: Remove cast when https://github.com/certbot/certbot/pull/9073 is merged.
-                meta = cast(Account.Meta, Account.Meta.json_loads(metadata_file.read()))
+                meta = Account.Meta.json_loads(metadata_file.read())
         except IOError as error:
             raise errors.AccountStorageError(error)
 
@@ -296,8 +291,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         """
         account_dir_path = self._account_dir_path(account_id)
         if not os.path.isdir(account_dir_path):
-            raise errors.AccountNotFound(
-                "Account at %s does not exist" % account_dir_path)
+            raise errors.AccountNotFound(f"Account at {account_dir_path} does not exist")
         # Step 1: Delete account specific links and the directory
         self._delete_account_dir_for_server_path(account_id, self.config.server_path)
 

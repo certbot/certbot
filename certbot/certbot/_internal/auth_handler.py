@@ -88,8 +88,8 @@ class AuthHandler:
                 # If debug is on, wait for user input before starting the verification process.
                 if config.debug_challenges:
                     display_util.notification(
-                        'Challenges loaded. Press continue to submit to CA. '
-                        'Pass "-v" for more info about challenges.', pause=True)
+                        'Challenges loaded. Press continue to submit to CA.\n' +
+                        self._debug_challenges_msg(achalls, config), pause=True)
             except errors.AuthorizationError as error:
                 logger.critical('Failure in setting up challenges.')
                 logger.info('Attempting to clean up outstanding challenges...')
@@ -324,6 +324,44 @@ class AuthHandler:
 
         display_util.notify("".join(msg))
 
+    def _debug_challenges_msg(self, achalls: List[achallenges.AnnotatedChallenge],
+                              config: configuration.NamespaceConfig) -> str:
+        """Construct message for debug challenges prompt
+
+        :param list achalls: A list of
+            :class:`certbot.achallenges.AnnotatedChallenge`.
+        :param certbot.configuration.NamespaceConfig config: current Certbot configuration
+        :returns: Message containing challenge debug info
+        :rtype: str
+
+        """
+        if config.verbose_count > 0:
+            msg = []
+            http01_achalls = {}
+            dns01_achalls = {}
+            for achall in achalls:
+                if isinstance(achall.chall, challenges.HTTP01):
+                    http01_achalls[achall.chall.uri(achall.domain)] = (
+                        achall.validation(achall.account_key) + "\n"
+                    )
+                if isinstance(achall.chall, challenges.DNS01):
+                    dns01_achalls[achall.validation_domain_name(achall.domain)] = (
+                        achall.validation(achall.account_key) + "\n"
+                    )
+            if http01_achalls:
+                msg.append("The following URLs should be accessible from the "
+                           "internet and return the value mentioned:\n")
+                for uri, key_authz in http01_achalls.items():
+                    msg.append(f"URL: {uri}\nExpected value: {key_authz}")
+            if dns01_achalls:
+                msg.append("The following FQDNs should return a TXT resource "
+                           "record with the value mentioned:\n")
+                for fqdn, key_authz_hash in dns01_achalls.items():
+                    msg.append(f"FQDN: {fqdn}\nExpected value: {key_authz_hash}")
+            return "\n" + "\n".join(msg)
+        else:
+            return 'Pass "-v" for more info about challenges.'
+
 
 def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
                      domain: str) -> achallenges.AnnotatedChallenge:
@@ -345,8 +383,7 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
             challb=challb, domain=domain, account_key=account_key)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
-    raise errors.Error(
-        "Received unsupported challenge of type: {0}".format(chall.typ))
+    raise errors.Error(f"Received unsupported challenge of type: {chall.typ}")
 
 
 def gen_challenge_path(challbs: List[messages.ChallengeBody],

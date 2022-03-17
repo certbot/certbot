@@ -4,13 +4,13 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.24.0.dev0'
+version = '1.26.0.dev0'
 
 install_requires = [
     # This version of lexicon is required to address the problem described in
     # https://github.com/AnalogJ/lexicon/issues/387.
     'dns-lexicon>=3.2.1',
-    'setuptools>=39.0.1',
+    'setuptools>=41.6.0',
 ]
 
 if not os.environ.get('SNAP_BUILD'):
@@ -40,7 +40,7 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
@@ -49,7 +49,6 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',

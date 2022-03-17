@@ -29,8 +29,8 @@ class IntegrationTestsContext:
         self.http_01_port = acme_xdist['http_port'][self.worker_id]
         self.other_port = acme_xdist['other_port'][self.worker_id]
         # Challtestsrv REST API, that exposes entrypoints to register new DNS entries,
-        # is listening on challtestsrv_port.
-        self.challtestsrv_port = acme_xdist['challtestsrv_port']
+        # is listening on challtestsrv_url.
+        self.challtestsrv_url = acme_xdist['challtestsrv_url']
 
         self.workspace = tempfile.mkdtemp()
         self.config_dir = os.path.join(self.workspace, 'conf')
@@ -44,17 +44,17 @@ class IntegrationTestsContext:
             "assert not os.environ.get('CERTBOT_DOMAIN').startswith('fail'); "
             "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN')),"
             "'value':os.environ.get('CERTBOT_VALIDATION')}}; "
-            "request = requests.post('http://localhost:{1}/set-txt', data=json.dumps(data)); "
+            "request = requests.post('{1}/set-txt', data=json.dumps(data)); "
             "request.raise_for_status(); "
             '"'
-        ).format(sys.executable, self.challtestsrv_port)
+        ).format(sys.executable, self.challtestsrv_url)
         self.manual_dns_cleanup_hook = (
             '{0} -c "import os; import requests; import json; '
             "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN'))}}; "
-            "request = requests.post('http://localhost:{1}/clear-txt', data=json.dumps(data)); "
+            "request = requests.post('{1}/clear-txt', data=json.dumps(data)); "
             "request.raise_for_status(); "
             '"'
-        ).format(sys.executable, self.challtestsrv_port)
+        ).format(sys.executable, self.challtestsrv_url)
 
     def cleanup(self) -> None:
         """Cleanup the integration test context."""

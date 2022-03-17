@@ -143,7 +143,7 @@ def generate_csr(privkey: util.Key, names: Union[List[str], Set[str]], path: str
     :type privkey: :class:`certbot.util.Key`
     :param set names: `str` names to include in the CSR
     :param str path: Certificate save directory.
-    :param bool must_staple: If true, include the TLS Feature extension "OCSP Must Staple"
+    :param bool must_staple: If true, include the TLS Feature extension "OCSP Must-Staple"
     :param bool strict_permissions: If true and path exists, an exception is raised if
         the directory doesn't have 0755 permissions or isn't owned by the current user.
 

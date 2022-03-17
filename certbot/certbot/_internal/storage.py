@@ -60,10 +60,10 @@ def renewal_conf_files(config: configuration.NamespaceConfig) -> List[str]:
 
 def renewal_file_for_certname(config: configuration.NamespaceConfig, certname: str) -> str:
     """Return /path/to/certname.conf in the renewal conf directory"""
-    path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
+    path = os.path.join(config.renewal_configs_dir, f"{certname}.conf")
     if not os.path.exists(path):
-        raise errors.CertStorageError("No certificate found with name {0} (expected "
-            "{1}).".format(certname, path))
+        raise errors.CertStorageError(
+            f"No certificate found with name {certname} (expected {path}).")
     return path
 
 
@@ -298,6 +298,11 @@ def relevant_values(all_values: Mapping[str, Any]) -> Dict[str, Any]:
     # and behavioral consistency when versions of Certbot with different
     # server defaults are used.
     rv["server"] = all_values["server"]
+
+    # Save key type to help with forward compatibility on Certbot's transition
+    # from RSA to ECDSA certificates by default.
+    rv["key_type"] = all_values["key_type"]
+
     return rv
 
 
@@ -1174,7 +1179,7 @@ class RenewableCert(interfaces.RenewableCert):
             if os.path.islink(old_privkey):
                 old_privkey = filesystem.readlink(old_privkey)
             else:
-                old_privkey = "privkey{0}.pem".format(prior_version)
+                old_privkey = f"privkey{prior_version}.pem"
             logger.debug("Writing symlink to old private key, %s.", old_privkey)
             os.symlink(old_privkey, target["privkey"])
         else:

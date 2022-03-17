@@ -6,7 +6,7 @@ authors = ["Certbot Project"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -69,11 +69,11 @@ poetry = ">=1.2.0a1"
 # point, it's probably worth enumerating and pinning them (and recursing to
 # THEIR build dependencies) as well.
 setuptools-rust = "*"
-# Library traitlets is a transitive dependency of ipdb (traitlets -> ipython -> ipdb).
-# Version 5.x is incompatible with Python 3.6 but for some reasons, poetry fails to
-# add the appropriate marker and allows this version to be installed under Python 3.6.
-# We add a pinning to not create a set of requirements incompatible with Python 3.6.
-traitlets = "<5"
+# A bad python_requires constraint in pylint 2.6.2 can sometimes crash poetry
+# before it has finished resolving. No newer releases have the same issue. Remove
+# this once we can upgrade to a release of Poetry containing this commit:
+# https://github.com/python-poetry/poetry-core/commit/4e1f2ab582d1fef0033c0d3f35a3f2f2365a4bc9
+pylint = ">2.6.2"
 
 [tool.poetry.dev-dependencies]
 

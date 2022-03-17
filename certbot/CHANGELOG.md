@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.24.0 - master
+## 1.26.0 - master
 
 ### Added
 
@@ -11,6 +11,55 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 *
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.25.0 - 2022-03-16
+
+### Added
+
+*
+
+### Changed
+
+* Dropped 32 bit support for the Windows beta installer
+* Windows beta installer is now distributed as "certbot-beta-installer-win_amd64.exe".
+  Users of the Windows beta should uninstall the old version before running this.
+* Added a check whether OCSP stapling is supported by the installer when requesting a
+  certificate with the `run` subcommand in combination with the `--must-staple` option.
+  If the installer does not support OCSP and the `--must-staple` option is used, Certbot
+  will raise an error and quit.
+* Certbot and its acme module now depend on josepy>=1.13.0 due to better type annotation
+  support.
+
+### Fixed
+
+* Updated dependencies to use new version of cryptography that uses OpenSSL 1.1.1n, in
+  response to https://www.openssl.org/news/secadv/20220315.txt.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.24.0 - 2022-03-01
+
+### Added
+
+* When the `--debug-challenges` option is used in combination with `-v`, Certbot
+  now displays the challenge URLs (for `http-01` challenges) or FQDNs (for
+  `dns-01` challenges) and their expected return values.
+*
+
+### Changed
+
+* Support for Python 3.6 was removed.
+* All Certbot components now require setuptools>=41.6.0.
+* The acme library now requires requests>=2.20.0.
+* Certbot and its acme library now require pytz>=2019.3.
+* certbot-nginx now requires pyparsing>=2.2.1.
+* certbot-dns-route53 now requires boto3>=1.15.15.
 
 ### Fixed
 

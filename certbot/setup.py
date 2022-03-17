@@ -8,7 +8,7 @@ from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
-min_setuptools_version='39.0.1'
+min_setuptools_version='41.6.0'
 # This conditional isn't necessary, but it provides better error messages to
 # people who try to install this package with older versions of setuptools.
 if parse_version(setuptools_version) < parse_version(min_setuptools_version):
@@ -52,10 +52,10 @@ install_requires = [
     'configobj>=5.0.6',
     'cryptography>=2.5.0',
     'distro>=1.0.1',
-    'josepy>=1.9.0',
+    'josepy>=1.13.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
-    'pytz',
+    'pytz>=2019.3',
     # This dependency needs to be added using environment markers to avoid its
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
@@ -101,7 +101,7 @@ test_extras = [
     'types-setuptools',
     'types-six',
     # typing-extensions is required to import typing.Protocol and make the mypy checks
-    # pass (along with pylint about non-existent objects) on Python 3.6 & 3.7
+    # pass (along with pylint about non-existent objects) on Python 3.7
     'typing-extensions',
     'wheel',
 ]
@@ -118,7 +118,7 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -128,7 +128,6 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',

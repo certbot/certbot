@@ -12,12 +12,15 @@ Get Certbot
 System Requirements
 ===================
 
-- Python 3.6+
+- Python 3.7+
 - UNIX-like operating system
 - Root access
 - Port 80 Open
 
-.. Note:: The Apache plugin currently requires an OS with augeas version 1.0; currently it supports modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin.
+.. Note:: To run without root privileges, but for most users who want to avoid running an ACME client as root, either letsencrypt-nosudo or simp_le are more appropriate choices.
+
+.. Note:: The Apache plugin currently requires an OS with augeas version 1.0; currently `it supports <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/constants.py>`_
+modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin.
 
 
 Installation
