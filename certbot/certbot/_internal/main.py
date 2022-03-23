@@ -538,8 +538,8 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
         # run the "installer" (i.e. reloading the nginx/apache config)
         if config.verb == 'certonly':
             steps.append(
-                "The certificate was saved, but was not successfully loaded by the installer"
-                f"({config.installer}) due to the installer failing to reload."
+                "The certificate was saved, but was not successfully loaded by the installer "
+                f"({config.installer}) due to the installer failing to reload. "
                 f"After fixing the error shown below, try reloading {config.installer} manually."
             )
         else:
@@ -1584,6 +1584,8 @@ def certonly(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
     _report_new_cert(config, cert_path, fullchain_path, key_path)
     _report_next_steps(config, installer_err, lineage,
                        new_or_renewed_cert=should_get_cert and not config.dry_run)
+    if installer_err:
+        raise installer_err
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
 
