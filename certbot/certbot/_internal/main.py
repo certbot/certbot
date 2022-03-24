@@ -1572,7 +1572,7 @@ def certonly(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
     # run `installer.restart()` to load the newly issued certificate
     installer_err: Optional[errors.Error] = None
     if lineage and installer and not config.dry_run:
-        logger.info("Reloading % server after certificate issuance", config.installer)
+        logger.info("Reloading %s server after certificate issuance", config.installer)
         try:
             installer.restart()
         except errors.Error as e:
