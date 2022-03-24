@@ -18,7 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   https://www.openssl.org/news/secadv/20220315.txt. 
 * Previously, when Certbot was in the process of registering a new ACME account
   and the ACME server did not present any Terms of Service, the user was asked to
-  agree with a non-existant Terms of Service ("None"). This bug is now fixed, so
+  agree with a non-existent Terms of Service ("None"). This bug is now fixed, so
   that if an ACME server does not provide any Terms of Service to agree with, the
   user is not asked to agree to a non-existant Terms of Service any longer.
 
