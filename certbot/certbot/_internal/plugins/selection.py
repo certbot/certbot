@@ -250,10 +250,16 @@ def choose_configurator_plugins(config: configuration.NamespaceConfig,
         if need_auth:
             authenticator = pick_authenticator(config, req_auth, plugins)
 
+    # Report on any failures
+    if need_inst and not installer:
+        diagnose_configurator_problem("installer", req_inst, plugins)
+    if need_auth and not authenticator:
+        diagnose_configurator_problem("authenticator", req_auth, plugins)
+
     # As a special case for certonly, if a user selected apache or nginx, set
     # the relevant installer (unless the user specifically specified no
     # installer)
-    if verb == "certonly":
+    if verb == "certonly" and authenticator is not None:
         # user specified --nginx or --apache on CLI
         selected_configurator = config.nginx or config.apache
         # user didn't request an authenticator, and so interactively chose nginx
@@ -263,12 +269,6 @@ def choose_configurator_plugins(config: configuration.NamespaceConfig,
         if selected_configurator or interactively_selected:
             installer = cast(Optional[interfaces.Installer], authenticator)
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
-
-    # Report on any failures
-    if need_inst and not installer:
-        diagnose_configurator_problem("installer", req_inst, plugins)
-    if need_auth and not authenticator:
-        diagnose_configurator_problem("authenticator", req_auth, plugins)
 
     record_chosen_plugins(config, plugins, authenticator, installer)
     return installer, authenticator
