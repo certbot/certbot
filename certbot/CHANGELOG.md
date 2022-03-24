@@ -241,9 +241,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* Support for registering with [EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography) key
-  when creating a new account on LetsEncrypt. You need to edit the `cli.ini` before requesting a
-  new certificate.
+*
 
 ### Changed
 
