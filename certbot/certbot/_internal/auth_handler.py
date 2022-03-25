@@ -78,36 +78,66 @@ class AuthHandler:
         achalls = self._choose_challenges(authzrs)
         if not achalls:
             return authzrs
+        
+        # Group annotated challenges so that there never is more than one achall with the same domain name in one group
+        # We do this to avoid races within auth handlers that use domain name as only differentiator (DNS auth handlers)
+        grouped_achalls = [[]]
+        for achall in achalls:
+            validation_domain_name = achall.validation_domain_name(achall.domain)
+
+            group_for_achall = None
+            for group in grouped_achalls:
+                domain_name_in_group = false
+                for (dn, achall) in group:
+                    if dn == validation_domain_name:
+                        domain_name_in_group = true 
+                        break
+                if not domain_name_in_group:
+                    group_for_achall = group
+                    break
+            
+            if group_for_achall is None:
+                group_for_achall = []
+                grouped_achalls.append(group_for_achall)
+            group_for_achall.append((validation_domain_name, achall))
 
         # Starting now, challenges will be cleaned at the end no matter what.
         with error_handler.ExitHandler(self._cleanup_challenges, achalls):
-            # To begin, let's ask the authenticator plugin to perform all challenges.
-            try:
-                resps = self.auth.perform(achalls)
+            authzrs_validated = []
+            # We execute all challenges, group by group
+            for group in achalls_by_validation_domain_name:
+                achalls = []
+                for (dn, achall) in group:
+                    achalls.append(achall)
 
-                # If debug is on, wait for user input before starting the verification process.
-                if config.debug_challenges:
-                    display_util.notification(
-                        'Challenges loaded. Press continue to submit to CA.\n' +
-                        self._debug_challenges_msg(achalls, config), pause=True)
-            except errors.AuthorizationError as error:
-                logger.critical('Failure in setting up challenges.')
-                logger.info('Attempting to clean up outstanding challenges...')
-                raise error
-            # All challenges should have been processed by the authenticator.
-            assert len(resps) == len(achalls), 'Some challenges have not been performed.'
+                # To begin, let's ask the authenticator plugin to perform all challenges.
+                try:
+                    resps = self.auth.perform(achalls)
 
-            # Inform the ACME CA server that challenges are available for validation.
-            for achall, resp in zip(achalls, resps):
-                self.acme.answer_challenge(achall.challb, resp)
+                    # If debug is on, wait for user input before starting the verification process.
+                    if config.debug_challenges:
+                        display_util.notification(
+                            'Challenges loaded. Press continue to submit to CA.\n' +
+                            self._debug_challenges_msg(achalls, config), pause=True)
+                except errors.AuthorizationError as error:
+                    logger.critical('Failure in setting up challenges.')
+                    logger.info('Attempting to clean up outstanding challenges...')
+                    raise error
+                # All challenges should have been processed by the authenticator.
+                assert len(resps) == len(achalls), 'Some challenges have not been performed.'
 
-            # Wait for authorizations to be checked.
-            logger.info('Waiting for verification...')
-            self._poll_authorizations(authzrs, max_retries, best_effort)
+                # Inform the ACME CA server that challenges are available for validation.
+                for achall, resp in zip(achalls, resps):
+                    self.acme.answer_challenge(achall.challb, resp)
 
-            # Keep validated authorizations only. If there is none, no certificate can be issued.
-            authzrs_validated = [authzr for authzr in authzrs
-                                 if authzr.body.status == messages.STATUS_VALID]
+                # Wait for authorizations to be checked.
+                logger.info('Waiting for verification...')
+                self._poll_authorizations(authzrs, max_retries, best_effort)
+
+                # Keep validated authorizations only. If there is none, no certificate can be issued.
+                authzrs_validated.append([authzr for authzr in authzrs
+                                    if authzr.body.status == messages.STATUS_VALID])
+            
             if not authzrs_validated:
                 raise errors.AuthorizationError('All challenges have failed.')
 
