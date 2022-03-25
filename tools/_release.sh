@@ -157,29 +157,25 @@ done
 mkdir "dist.$version"
 for pkg_dir in $SUBPKGS
 do
-  mv $pkg_dir/dist "dist.$version/$pkg_dir/"
+  mv $pkg_dir/dist/* "dist.$version"
 done
 
 echo "Testing packages"
 cd "dist.$version"
-# start local PyPI
-python -m http.server $PORT &
 # cd .. is NOT done on purpose: we make sure that all subpackages are
-# installed from local PyPI rather than current directory (repo root)
+# installed from local archives rather than current directory (repo root)
 VIRTUALENV_NO_DOWNLOAD=1 virtualenv ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
-# Now, use our local PyPI. Disable cache so we get the correct KGS even if we
-# (or our dependencies) have conditional dependencies implemented with if
-# statements in setup.py and we have cached wheels lying around that would
-# cause those ifs to not be evaluated.
+# Now, use our local archives. Disable cache so we get the correct packages even if
+# we (or our dependencies) have conditional dependencies implemented with if
+# statements in setup.py and we have cached wheels lying around that would cause
+# those ifs to not be evaluated.
 python ../tools/pip_install.py \
   --no-cache-dir \
-  --extra-index-url http://localhost:$PORT \
+  --find-links . \
   $SUBPKGS
-# stop local PyPI
-kill $!
 cd ~-
 
 # get a snapshot of the CLI help for the docs

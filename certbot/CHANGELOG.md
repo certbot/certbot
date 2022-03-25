@@ -2,7 +2,30 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.25.0 - master
+## 1.26.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* The default propagation timeout for the OVH DNS plugin (`--dns-ovh-propagation-seconds`)
+  has been increased from 30 seconds to 120 seconds, based on user feedback.
+
+### Fixed
+
+* Certbot for Windows has been upgraded to use Python 3.9.11, in response to
+  https://www.openssl.org/news/secadv/20220315.txt. 
+* Previously, when Certbot was in the process of registering a new ACME account
+  and the ACME server did not present any Terms of Service, the user was asked to
+  agree with a non-existent Terms of Service ("None"). This bug is now fixed, so
+  that if an ACME server does not provide any Terms of Service to agree with, the
+  user is not asked to agree to a non-existent Terms of Service any longer.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.25.0 - 2022-03-16
 
 ### Added
 

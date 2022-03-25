@@ -32,7 +32,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     @classmethod
     def add_parser_arguments(cls, add: Callable[..., None],
-                             default_propagation_seconds: int = 30) -> None:
+                             default_propagation_seconds: int = 120) -> None:
         super().add_parser_arguments(add, default_propagation_seconds)
         add('credentials', help='OVH credentials INI file.')
 

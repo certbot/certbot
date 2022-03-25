@@ -906,7 +906,8 @@ class BackwardsCompatibleClientV2:
             return regr_res
         else:
             client_v2 = cast(ClientV2, self.client)
-            if "terms_of_service" in client_v2.directory.meta:
+            if ("terms_of_service" in client_v2.directory.meta and
+                client_v2.directory.meta.terms_of_service is not None):
                 _assess_tos(client_v2.directory.meta.terms_of_service)
                 regr = regr.update(terms_of_service_agreed=True)
             return client_v2.new_account(regr)
