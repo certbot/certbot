@@ -82,7 +82,7 @@ def is_acme_error(err: BaseException) -> bool:
 class Error(jose.JSONObjectWithFields, errors.Error):
     """ACME error.
 
-    https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
+    https://datatracker.ietf.org/doc/html/rfc7807
 
     :ivar str typ:
     :ivar str title:
@@ -454,26 +454,18 @@ class UpdateRegistration(ResourceMixin, Registration):
     resource: str = fields.resource(resource_type)
 
 
-# TODO fill in the :ivar attributes
-@Directory.register
-class KeyChange(ResourceMixin, UpdateRegistration):
-    """
-    RFC 8555, section 7.3.5. The account key can be changed
-    by submitting both the old and the newly generated account
-    key
-    """
-    resource_type: str = "key-change"
-    resource: str = fields.resource(resource_type)
-    account: str = jose.field('new_authzr_uri', omitempty=True)
-    newKey: jose.JWK = jose.field('newKey', omitempty=False)
-    oldKey: jose.JWK = jose.field('oldKey', omitempty=False)
-
-    #    account (required, string):  The URL for the account being modified.
-    #       The content of this field MUST be the exact string provided in the
-    #       Location header field in response to the newAccount request that
-    #       created the account.
-    #
-    #    oldKey (required, JWK):  The JWK representation of the old key.
+# @Directory.register
+# class KeyChange(ResourceMixin, UpdateRegistration):
+#     """
+#     RFC 8555, section 7.3.5. The account key can be changed
+#     by submitting both the old and the newly generated account
+#     key
+#     """
+#     resource_type: str = "key-change"
+#     resource: str = fields.resource(resource_type)
+#     account: str = jose.field('account', omitempty=False)
+#     newKey: jose.JWK = jose.field('newKey', omitempty=False, decoder=jose.JWK.from_json)
+#     oldKey: jose.JWK = jose.field('oldKey', omitempty=False, decoder=jose.JWK.from_json)
 
 
 class RegistrationResource(ResourceWithURI):

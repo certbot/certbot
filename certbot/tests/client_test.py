@@ -378,7 +378,7 @@ class ClientTest(ClientTestCommon):
             self.eg_order.fullchain_pem)
 
     @mock.patch("certbot._internal.client.crypto_util")
-    def test_ec_account_key(self):
+    def test_ec_account_key(self, mock_crypto_util):
         # self.config.accounts_dir
         pass
 

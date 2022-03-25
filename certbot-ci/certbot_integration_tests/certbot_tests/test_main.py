@@ -156,16 +156,43 @@ def test_certonly(context: IntegrationTestsContext) -> None:
     assert_cert_count_for_lineage(context.config_dir, 'newname', 1)
 
 
-def test_ecdsa_account_flag(context: IntegrationTestsContext):
+def test_certonly_ecdsa_account_flag(context: IntegrationTestsContext):
     context.certbot([
         'certonly',
+        '--register-unsafely-without-email',
         '--cert-name', 'newname',
-        '--ecdsa-account',
+        '--ecdsa-account-key',
         '-d', context.get_domain('newname'),
     ])
 
     key_path = join(context.workspace, 'key.pem')
     assert_elliptic_key(key_path, curve=SECP256R1)
+
+
+def test_certonly_ecdsa_account_flag(context: IntegrationTestsContext):
+    context.certbot([
+        'certonly',
+        '--register-unsafely-without-email',
+        '--cert-name', 'newname',
+        '--ecdsa-account-key',
+        '-d', context.get_domain('newname'),
+    ])
+
+    key_path = join(context.workspace, 'key.pem')
+    assert_elliptic_key(key_path, curve=SECP256R1)
+
+
+def test_ecdsa_account_flag_duplicate(context: IntegrationTestsContext):
+    context.certbot([
+        'register',
+        '--register-unsafely-without-email',
+        '--ecdsa-account-key',
+    ])
+
+    key_path = join(context.workspace, 'key.pem')
+    assert_elliptic_key(key_path, curve=SECP256R1)
+
+    
 
 
 def test_certonly_webroot(context: IntegrationTestsContext) -> None:

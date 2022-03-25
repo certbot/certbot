@@ -17,12 +17,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 import josepy as jose
 import OpenSSL
-from josepy import ES256
-from josepy import ES384
-from josepy import ES512
-from josepy import RS256
-from josepy.jwk import JWKEC
-from josepy.util import ComparableECKey
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -58,17 +52,17 @@ def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
     if key.typ == 'EC':
         public_key = key.key
         if public_key.key_size == 256:
-            alg = ES256
+            alg = jose.ES256
         elif public_key.key_size == 384:
-            alg = ES384
+            alg = jose.ES384
         elif public_key.key_size == 521:
-            alg = ES512
+            alg = jose.ES512
         else:
             raise errors.NotSupportedError(
                 "No matching signing algorithm can be found for the key"
             )
     else:
-        alg = RS256
+        alg = jose.RS256
     net = acme_client.ClientNetwork(key, alg=alg, account=regr,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
@@ -211,7 +205,7 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
         config.email = None
 
     # Each new registration shall use a fresh new key
-    key: Optional[jose.JWK] = None
+    key: jose.JWK
     if not config.ecdsa_account_key:
         rsa_key = rsa.generate_private_key(
             public_exponent=65537,
@@ -224,7 +218,7 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
             curve=ec.SECP256R1(),
             backend=default_backend(),
         )
-        key = JWKEC(key=ComparableECKey(ec_key))
+        key = jose.JWKEC(key=jose.ComparableECKey(ec_key))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
     regr = perform_registration(acme, config, tos_cb)

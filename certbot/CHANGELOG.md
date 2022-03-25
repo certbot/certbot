@@ -6,7 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* A flag has been introduced to create an ECDSA ([EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography))
+  account key for `certonly`, `register` and `renew`. Existing accounts will not be affected.
+  Reason for this is bandwidth usage on ACME servers, as well as increased security.
 
 ### Changed
 
@@ -16,7 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Certbot for Windows has been upgraded to use Python 3.9.11, in response to
-  https://www.openssl.org/news/secadv/20220315.txt. 
+  https://www.openssl.org/news/secadv/20220315.txt.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -24,9 +26,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* A flag has been introduced to create an ECDSA ([EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography))
-  account key for `certonly`, `register` and `renew`. Existing accounts will not be affected.
-  Reason for this is bandwidth usage on ACME servers, as well as increased security.
+*
 
 ### Changed
 
