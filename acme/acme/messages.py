@@ -82,7 +82,7 @@ def is_acme_error(err: BaseException) -> bool:
 class Error(jose.JSONObjectWithFields, errors.Error):
     """ACME error.
 
-    https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
+    https://datatracker.ietf.org/doc/html/rfc7807
 
     :ivar str typ:
     :ivar str title:
