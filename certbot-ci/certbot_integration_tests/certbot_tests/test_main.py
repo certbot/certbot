@@ -156,7 +156,7 @@ def test_certonly(context: IntegrationTestsContext) -> None:
     assert_cert_count_for_lineage(context.config_dir, 'newname', 1)
 
 
-def test_certonly_ecdsa_account_flag(context: IntegrationTestsContext):
+def test_certonly_ecdsa_account_flag(context: IntegrationTestsContext) -> None:
     context.certbot([
         'certonly',
         '--register-unsafely-without-email',
@@ -169,30 +169,31 @@ def test_certonly_ecdsa_account_flag(context: IntegrationTestsContext):
     assert_elliptic_key(key_path, curve=SECP256R1)
 
 
-def test_certonly_ecdsa_account_flag(context: IntegrationTestsContext):
-    context.certbot([
-        'certonly',
-        '--register-unsafely-without-email',
-        '--cert-name', 'newname',
-        '--ecdsa-account-key',
-        '-d', context.get_domain('newname'),
-    ])
+def test_ecdsa_account_flag_duplicate(context: IntegrationTestsContext) -> None:
+    """
+    Register and check that it fails when trying to use --ecdsa-account-key
+    for an account that was already registered with another
+    """
 
-    key_path = join(context.workspace, 'key.pem')
-    assert_elliptic_key(key_path, curve=SECP256R1)
-
-
-def test_ecdsa_account_flag_duplicate(context: IntegrationTestsContext):
     context.certbot([
         'register',
         '--register-unsafely-without-email',
         '--ecdsa-account-key',
     ])
+    # we already assert properties for the above register-call, it's just to trigger
+    # the error from the certonly call
 
-    key_path = join(context.workspace, 'key.pem')
-    assert_elliptic_key(key_path, curve=SECP256R1)
+    with pytest.raises(subprocess.CalledProcessError) as error:
+        context.certbot([
+            'certonly',
+            '--register-unsafely-without-email',
+            '--cert-name', 'newname',
+            '--ecdsa-account-key',
+            '-d', context.get_domain('newname'),
+        ])
 
-    
+    assert ("--ecdsa-account-key cannot be used because an "
+            "account has already been registered" in error.value.stderr)
 
 
 def test_certonly_webroot(context: IntegrationTestsContext) -> None:

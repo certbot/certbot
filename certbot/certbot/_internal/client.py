@@ -214,10 +214,12 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
         key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
     else:
         # RFC 8555 6.2 says only ES256 is supported, i.e., SECP256R1
-        ec_key = ec.generate_private_key(
+        # mypy complains without the cast, although
+        # EllipticCurvePrivateKeyWithSerialization = EllipticCurvePrivateKey
+        ec_key = cast(ec.EllipticCurvePrivateKeyWithSerialization, ec.generate_private_key(
             curve=ec.SECP256R1(),
             backend=default_backend(),
-        )
+        ))
         key = jose.JWKEC(key=jose.ComparableECKey(ec_key))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
