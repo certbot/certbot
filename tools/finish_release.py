@@ -33,6 +33,7 @@ import subprocess
 import sys
 import tempfile
 import getpass
+from azure.devops.connection import Connection
 from zipfile import ZipFile
 
 import requests
@@ -63,7 +64,7 @@ def parse_args(args):
     # Use the file's docstring for the help text and don't let argparse reformat it.
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--css', type=str, required=True, help='hostname of code signing server')
+    parser.add_argument('--css', type=str, help='hostname of code signing server')
     group = parser.add_mutually_exclusive_group()
     # We use 'store_false' and a destination related to the other type of
     # artifact to cause the flag being set to disable publishing of the other
@@ -167,10 +168,28 @@ def promote_snaps(version):
                 print(e.stdout)
                 raise
 
+def fetch_version_number():
+    """Retrieve version number for release from Azure Pipelines
+
+    :returns: version number
+    
+    """
+    # Create a connection to the azure org
+    organization_url = 'https://dev.azure.com/certbot'
+    connection = Connection(base_url=organization_url)
+    
+    # Find the build artifacts
+    build_client = connection.clients.get_build_client()
+    get_builds_response = build_client.get_builds('certbot', definitions='3')
+    build_id = get_builds_response.value[0].id
+    version = build_client.get_build('certbot', build_id).source_branch.split('v')[1]
+    return version
+
 def main(args):
     parsed_args = parse_args(args)
 
     css = parsed_args.css
+    version = fetch_version_number()
 
     # Once the GitHub release has been published, trying to publish it
     # again fails. Publishing the snaps can be done multiple times though

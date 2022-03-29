@@ -65,6 +65,7 @@ install_requires = [
 ]
 
 dev_extras = [
+    'azure-devops',
     'ipdb',
     # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
     # https://github.com/python-poetry/poetry/issues/1584.
