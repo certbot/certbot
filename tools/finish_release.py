@@ -14,7 +14,7 @@ Setup:
 
 Run:
 
-python tools/finish_release.py
+python tools/finish_release.py --css <URL of code signing server>
 
 Testing:
 
