@@ -300,6 +300,13 @@ class NamespaceConfig:
         """
         return self.namespace.issuance_timeout
 
+    @property
+    def new_key(self) -> bool:
+        """This option specifies whether Certbot should generate a new private
+        key when replacing a certificate, even if reuse_key is set.
+        """
+        return self.namespace.new_key
+
     # Magic methods
 
     def __deepcopy__(self, _memo: Any) -> 'NamespaceConfig':
