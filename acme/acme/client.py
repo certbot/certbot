@@ -1104,7 +1104,7 @@ class ClientNetwork:
             is ignored, but logged.
 
         :raises .messages.Error: If server response body
-            carries HTTP Problem (draft-ietf-appsawg-http-problem-00).
+            carries HTTP Problem (https://datatracker.ietf.org/doc/html/rfc7807).
         :raises .ClientError: In case of other networking errors.
 
         """
