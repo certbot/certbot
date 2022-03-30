@@ -17,6 +17,7 @@ Authors
 * [Alex Halderman](https://github.com/jhalderm)
 * [Alex Jordan](https://github.com/strugee)
 * [Alex Zorin](https://github.com/alexzorin)
+* [Amir Omidi](https://github.com/aaomidi)
 * [Amjad Mashaal](https://github.com/TheNavigat)
 * [Andrew Murray](https://github.com/radarhere)
 * [Andrzej Górski](https://github.com/andrzej3393)
