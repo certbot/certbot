@@ -729,7 +729,7 @@ def _determine_account(config: configuration.NamespaceConfig
                 raise
             except (errors.Error, acme_messages.Error) as err:
                 logger.debug("", exc_info=True)
-                if isinstance(err, acme_messages.Error):
+                if acme_messages.is_acme_error(err):
                     err_msg = f"Error returned by the ACME server: {str(err)}"
                 else:
                     err_msg = str(err)

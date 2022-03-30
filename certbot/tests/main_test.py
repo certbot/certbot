@@ -596,7 +596,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
 
     @mock.patch('certbot._internal.client.register')
     @mock.patch('certbot._internal.client.display_ops.get_email')
-    def _register_error_base(self, err_msg, exception, mock_get_email, mock_register):
+    def _register_error_common(self, err_msg, exception, mock_get_email, mock_register):
         mock_get_email.return_value = 'foo@bar.baz'
         mock_register.side_effect = exception
         try:
@@ -665,7 +665,7 @@ class DetermineAccountTest(test_util.ConfigTestCase):
 
     def test_register_error_certbot(self):
         err_msg = "Some error message raised by Certbot"
-        self._register_error_base(err_msg, errors.Error(err_msg))
+        self._register_error_common(err_msg, errors.Error(err_msg))
 
     def test_register_error_acme_type_and_detail(self):
         err_msg = ("Error returned by the ACME server: urn:ietf:params:acme:"
@@ -673,13 +673,13 @@ class DetermineAccountTest(test_util.ConfigTestCase):
                    "must agree to terms of service")
         exception = acme_error(typ = "urn:ietf:params:acme:error:malformed",
                                detail = "must agree to terms of service")
-        self._register_error_base(err_msg, exception)
+        self._register_error_common(err_msg, exception)
 
     def test_register_error_acme_type_only(self):
         err_msg = ("Error returned by the ACME server: urn:ietf:params:acme:"
                    "error:serverInternal :: The server experienced an internal error")
         exception = acme_error(typ = "urn:ietf:params:acme:error:serverInternal")
-        self._register_error_base(err_msg, exception)
+        self._register_error_common(err_msg, exception)
 
 
 class MainTest(test_util.ConfigTestCase):
