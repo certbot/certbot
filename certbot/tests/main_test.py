@@ -16,6 +16,7 @@ import unittest
 import josepy as jose
 import pytz
 
+from acme.messages import Error as acme_error
 from certbot import crypto_util, configuration
 from certbot import errors
 from certbot import interfaces
@@ -593,6 +594,17 @@ class DetermineAccountTest(test_util.ConfigTestCase):
             mock_storage.return_value = self.account_storage
             return _determine_account(self.config)
 
+    @mock.patch('certbot._internal.client.register')
+    @mock.patch('certbot._internal.client.display_ops.get_email')
+    def _register_error_common(self, err_msg, exception, mock_get_email, mock_register):
+        mock_get_email.return_value = 'foo@bar.baz'
+        mock_register.side_effect = exception
+        try:
+            self._call()
+        except errors.Error as err:
+            self.assertEqual(f"Unable to register an account with ACME server. {err_msg}",
+                             str(err))
+
     def test_args_account_set(self):
         self.account_storage.save(self.accs[1], self.mock_client)
         self.config.account = self.accs[1].id
@@ -617,6 +629,16 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self.assertEqual(self.accs[1].id, self.config.account)
         self.assertIsNone(self.config.email)
 
+    @mock.patch('certbot._internal.client.display_ops.choose_account')
+    def test_multiple_accounts_canceled(self, mock_choose_accounts):
+        for acc in self.accs:
+            self.account_storage.save(acc, self.mock_client)
+        mock_choose_accounts.return_value = None
+        try:
+            self._call()
+        except errors.Error as err:
+            self.assertIn("No account has been chosen", str(err))
+
     @mock.patch('certbot._internal.client.display_ops.get_email')
     @mock.patch('certbot._internal.main.display_util.notify')
     def test_no_accounts_no_email(self, mock_notify, mock_get_email):
@@ -640,6 +662,24 @@ class DetermineAccountTest(test_util.ConfigTestCase):
             self._call()
         self.assertEqual(self.accs[1].id, self.config.account)
         self.assertEqual('other email', self.config.email)
+
+    def test_register_error_certbot(self):
+        err_msg = "Some error message raised by Certbot"
+        self._register_error_common(err_msg, errors.Error(err_msg))
+
+    def test_register_error_acme_type_and_detail(self):
+        err_msg = ("Error returned by the ACME server: urn:ietf:params:acme:"
+                   "error:malformed :: The request message was malformed :: "
+                   "must agree to terms of service")
+        exception = acme_error(typ = "urn:ietf:params:acme:error:malformed",
+                               detail = "must agree to terms of service")
+        self._register_error_common(err_msg, exception)
+
+    def test_register_error_acme_type_only(self):
+        err_msg = ("Error returned by the ACME server: urn:ietf:params:acme:"
+                   "error:serverInternal :: The server experienced an internal error")
+        exception = acme_error(typ = "urn:ietf:params:acme:error:serverInternal")
+        self._register_error_common(err_msg, exception)
 
 
 class MainTest(test_util.ConfigTestCase):
