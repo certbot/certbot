@@ -372,6 +372,11 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         default=flag_default("issuance_timeout"),
         help=config_help("issuance_timeout"))
     helpful.add(
+        [None, "certonly", "run"], "--certificate-expiration", type=nonnegative_int,
+        dest="certificate_expiration",
+        default=flag_default("certificate_expiration"),
+        help=config_help("certificate_expiration"))
+    helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
         " Intended primarily for renewal, where it can be used to temporarily"

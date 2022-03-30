@@ -680,10 +680,11 @@ class ClientV2(ClientBase):
         self.net.account = new_regr
         return new_regr
 
-    def new_order(self, csr_pem: bytes) -> messages.OrderResource:
+    def new_order(self, csr_pem: bytes, not_after: Optional[datetime.datetime] = None) -> messages.OrderResource:
         """Request a new Order object from the server.
 
         :param bytes csr_pem: A CSR in PEM format.
+        :param not_after: Date to be sent in notAfter field.
 
         :returns: The newly created order.
         :rtype: OrderResource
@@ -700,7 +701,7 @@ class ClientV2(ClientBase):
         for ips in ipNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=ips))
-        order = messages.NewOrder(identifiers=identifiers)
+        order = messages.NewOrder(identifiers=identifiers, notAfter=not_after)
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
@@ -912,7 +913,7 @@ class BackwardsCompatibleClientV2:
                 regr = regr.update(terms_of_service_agreed=True)
             return client_v2.new_account(regr)
 
-    def new_order(self, csr_pem: bytes) -> messages.OrderResource:
+    def new_order(self, csr_pem: bytes, not_after: Optional[datetime.datetime] = None) -> messages.OrderResource:
         """Request a new Order object from the server.
 
         If using ACMEv1, returns a dummy OrderResource with only
@@ -935,8 +936,8 @@ class BackwardsCompatibleClientV2:
             authorizations = []
             for domain in dnsNames:
                 authorizations.append(client_v1.request_domain_challenges(domain))
-            return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem)
-        return cast(ClientV2, self.client).new_order(csr_pem)
+            return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem, not_after=not_after)
+        return cast(ClientV2, self.client).new_order(csr_pem, not_after=not_after)
 
     def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
                        fetch_alternative_chains: bool = False) -> messages.OrderResource:

@@ -662,6 +662,7 @@ class Order(ResourceBody):
     :ivar str finalize: URL to POST to to request issuance once all
         authorizations have "valid" status.
     :ivar datetime.datetime expires: When the order expires.
+    :ivar datetime.datetime notAfter: Optional date of when the issued certificate should expire.
     :ivar ~.Error error: Any error that occurred during finalization, if applicable.
     """
     identifiers: List[Identifier] = jose.field('identifiers', omitempty=True)
@@ -670,6 +671,7 @@ class Order(ResourceBody):
     certificate: str = jose.field('certificate', omitempty=True)
     finalize: str = jose.field('finalize', omitempty=True)
     expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
+    notAfter: datetime.datetime = fields.rfc3339('notAfter', omitempty=True)
     error: Error = jose.field('error', omitempty=True, decoder=Error.from_json)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
