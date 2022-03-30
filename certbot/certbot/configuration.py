@@ -301,12 +301,12 @@ class NamespaceConfig:
         return self.namespace.issuance_timeout
 
     @property
-    def certificate_expiration(self) -> Optional[int]:
+    def certificate_validity(self) -> Optional[int]:
         """This option specifies how long (in seconds) from the time
          of issuance, the certificate should be valid for.
          Note: Not all CAs support this feature.
         """
-        return self.namespace.certificate_expiration
+        return self.namespace.certificate_validity
 
     # Magic methods
 

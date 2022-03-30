@@ -182,8 +182,8 @@ def example_http():
     orderr = client_acme.new_order(csr_pem)
 
     # You can also define a custom notAfter value
-    # This certificate will expire in 12 hours
-    #orderr = client_acme.new_order(csr_pem, notAfter=datetime.now() + timedelta(hours=12))
+    # For example: this certificate will expire in 12 hours
+    #orderr = client_acme.new_order(csr_pem, notAfter=datetime.now(timezone.utc) + timedelta(hours=12))
 
     # Select HTTP-01 within offered challenges by the CA server
     challb = select_http01_chall(orderr)

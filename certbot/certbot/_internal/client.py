@@ -470,9 +470,9 @@ class Client:
 
         """
         not_after = None
-        if self.config.certificate_expiration:
+        if self.config.certificate_validity:
             not_after = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
-                seconds=self.config.certificate_expiration)
+                seconds=self.config.certificate_validity)
 
         if not self.acme:
             raise errors.Error("ACME client is not set.")
