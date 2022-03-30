@@ -602,8 +602,8 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         try:
             self._call()
         except errors.Error as err:
-            self.assertIn("Unable to register an account with ACME server. Error "
-                          f"returned by the ACME server: {err_msg}", str(err))
+            self.assertEqual(f"Unable to register an account with ACME server. {err_msg}",
+                             str(err))
 
     def test_args_account_set(self):
         self.account_storage.save(self.accs[1], self.mock_client)
@@ -667,12 +667,17 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         err_msg = "Some error message raised by Certbot"
         self._register_error_base(err_msg, errors.Error(err_msg))
 
-    def test_register_error_acme_detail(self):
-        err_msg = "Provided account did not agree to the terms of service"
-        self._register_error_base(err_msg, acme_error(detail = err_msg))
+    def test_register_error_acme_type_and_detail(self):
+        err_msg = ("Error returned by the ACME server: urn:ietf:params:acme:"
+                   "error:malformed :: The request message was malformed :: "
+                   "must agree to terms of service")
+        exception = acme_error(typ = "urn:ietf:params:acme:error:malformed",
+                               detail = "must agree to terms of service")
+        self._register_error_base(err_msg, exception)
 
-    def test_register_error_acme_typ(self):
-        err_msg = "The server experienced an internal error"
+    def test_register_error_acme_type_only(self):
+        err_msg = ("Error returned by the ACME server: urn:ietf:params:acme:"
+                   "error:serverInternal :: The server experienced an internal error")
         exception = acme_error(typ = "urn:ietf:params:acme:error:serverInternal")
         self._register_error_base(err_msg, exception)
 
