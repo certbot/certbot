@@ -936,7 +936,7 @@ class BackwardsCompatibleClientV2:
             authorizations = []
             for domain in dnsNames:
                 authorizations.append(client_v1.request_domain_challenges(domain))
-            return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem, not_after=not_after)
+            return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem)
         return cast(ClientV2, self.client).new_order(csr_pem, not_after=not_after)
 
     def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,

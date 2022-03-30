@@ -216,7 +216,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         with mock.patch('acme.client.ClientV2') as mock_client:
             client = self._init()
             client.new_order(mock_csr_pem)
-            mock_client().new_order.assert_called_once_with(mock_csr_pem)
+            mock_client().new_order.assert_called_once_with(mock_csr_pem, not_after=None)
 
     @mock.patch('acme.client.Client')
     def test_finalize_order_v1_success(self, mock_client):
