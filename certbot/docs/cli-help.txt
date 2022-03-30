@@ -119,6 +119,11 @@ optional arguments:
                         This option specifies how long (in seconds) Certbot
                         will wait for the server to issue a certificate.
                         (default: 90)
+  --certificate-validity CERTIFICATE_VALIDITY                        
+                        This option specifies how long (in seconds) from the time
+                        of issuance, the certificate should be valid for.
+                        Note: Not all CAs support this feature.
+                        (default: None)
   --user-agent USER_AGENT
                         Set a custom user agent string for the client. User
                         agent strings allow the CA to collect high level

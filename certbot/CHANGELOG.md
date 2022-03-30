@@ -6,7 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* ACME component now supports NewOrder's notAfter value. This permits requesting
+  certificates with a custom expiration date.
+* Certbot now supports custom certificate validity (`--certificate-validity`).
 
 ### Changed
 
