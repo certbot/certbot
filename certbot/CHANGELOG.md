@@ -8,7 +8,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * ACME component now supports NewOrder's notAfter value. This permits requesting
   certificates with a custom expiration date.
-* Certbot now supports custom certificate validity (`--certificate-validity`).
+* Certbot now supports setting a custom certificate validity (`--certificate-validity`)
+  specified in relative seconds from time of the certificate issuance request.
+  * Not currently supported by Let's Encrypt, the default CA for Certbot.
 
 ### Changed
 
@@ -18,7 +20,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Certbot for Windows has been upgraded to use Python 3.9.11, in response to
-  https://www.openssl.org/news/secadv/20220315.txt. 
+  https://www.openssl.org/news/secadv/20220315.txt.
 * Previously, when Certbot was in the process of registering a new ACME account
   and the ACME server did not present any Terms of Service, the user was asked to
   agree with a non-existent Terms of Service ("None"). This bug is now fixed, so
