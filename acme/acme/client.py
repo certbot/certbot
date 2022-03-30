@@ -680,7 +680,8 @@ class ClientV2(ClientBase):
         self.net.account = new_regr
         return new_regr
 
-    def new_order(self, csr_pem: bytes, not_after: Optional[datetime.datetime] = None) -> messages.OrderResource:
+    def new_order(self, csr_pem: bytes,
+                  not_after: Optional[datetime.datetime] = None) -> messages.OrderResource:
         """Request a new Order object from the server.
 
         :param bytes csr_pem: A CSR in PEM format.
@@ -913,7 +914,8 @@ class BackwardsCompatibleClientV2:
                 regr = regr.update(terms_of_service_agreed=True)
             return client_v2.new_account(regr)
 
-    def new_order(self, csr_pem: bytes, not_after: Optional[datetime.datetime] = None) -> messages.OrderResource:
+    def new_order(self, csr_pem: bytes,
+                  not_after: Optional[datetime.datetime] = None) -> messages.OrderResource:
         """Request a new Order object from the server.
 
         If using ACMEv1, returns a dummy OrderResource with only
