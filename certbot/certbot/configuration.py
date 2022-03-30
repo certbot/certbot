@@ -302,9 +302,9 @@ class NamespaceConfig:
 
     @property
     def certificate_validity(self) -> Optional[int]:
-        """This option specifies how long (in seconds) from the time
-         of issuance, the certificate should be valid for.
-         Note: Not all CAs support this feature.
+        """Specifies a custom certificate expiry time, in relative seconds
+        from the current time, when requesting a certificate.
+        Note: Not all CAs support this feature.
         """
         return self.namespace.certificate_validity
 
