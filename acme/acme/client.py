@@ -702,7 +702,7 @@ class ClientV2(ClientBase):
         for ips in ipNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=ips))
-        order = messages.NewOrder(identifiers=identifiers, notAfter=not_after)
+        order = messages.NewOrder(identifiers=identifiers, not_after=not_after)
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
