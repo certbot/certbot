@@ -803,7 +803,8 @@ class ClientV2Test(ClientTestBase):
             got = self.client.new_order(CSR_MIXED_PEM, self.not_after).body
             want = self.orderr_with_not_after.body
             self.assertEqual(got.identifiers, want.identifiers)
-            self.assertAlmostEqual(got.not_after, want.not_after, delta=datetime.timedelta(seconds=1))
+            self.assertAlmostEqual(got.not_after, want.not_after,
+                                   delta=datetime.timedelta(seconds=1))
 
     @mock.patch('acme.client.datetime')
     def test_poll_and_finalize(self, mock_datetime):
