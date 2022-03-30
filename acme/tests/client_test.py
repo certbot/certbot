@@ -740,6 +740,11 @@ class ClientV2Test(ClientTestBase):
             authorizations=(self.authzr.uri, self.authzr_uri2),
             finalize='https://www.letsencrypt-demo.org/acme/acct/1/order/1/finalize')
 
+        self.orderr = messages.OrderResource(
+            body=self.order,
+            uri='https://www.letsencrypt-demo.org/acme/acct/1/order/1',
+            authorizations=[self.authzr, self.authzr2], csr_pem=CSR_MIXED_PEM)
+
         self.not_after = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
 
         self.order_with_not_after = messages.Order(
