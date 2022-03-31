@@ -906,6 +906,9 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
 
 
 def test_certificate_validity(context: IntegrationTestsContext) -> None:
+    if context.acme_server == 'boulder-v2':
+        pytest.skip('Boulder does not support NewOrder notAfter.')
+
     """Test that --certificate-validity is requesting certificates of the appropirate validity"""
     context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname'),
                      '--certificate-validity', '86400'])
