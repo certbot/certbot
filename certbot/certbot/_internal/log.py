@@ -41,7 +41,6 @@ from certbot import configuration
 from certbot import errors
 from certbot import util
 from certbot._internal import constants
-from certbot._internal import display
 from certbot._internal.display import util as display_util
 from certbot.compat import os
 
