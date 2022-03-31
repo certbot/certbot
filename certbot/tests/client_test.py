@@ -352,10 +352,10 @@ class ClientTest(ClientTestCommon):
         not_after: datetime.datetime
         try:
             not_after = self.acme.new_order.call_args.kwargs['not_after']
-        except:
+        except TypeError:
             # Remove when no longer testing with python <= 3.7
             # https://stackoverflow.com/questions/60105443/how-do-i-correctly-use-mock-call-args-with-pythons-unittest-mock
-            not_after = self.acme.new_order.call_args.kwargs[0]
+            not_after = self.acme.new_order.call_args[1]['not_after']
         self.assertAlmostEqual(not_after, want_not_after, delta=datetime.timedelta(minutes=1))
         auth_handler.handle_authorizations.assert_called_with(self.eg_order, self.config, False)
 
