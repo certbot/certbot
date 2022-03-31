@@ -277,12 +277,22 @@ def read_certificate(cert_path: str) -> str:
     :param str cert_path: the path to the certificate
     :returns: the TEXT version of the certificate, as it would be displayed by openssl binary
     """
+    cert = get_certificate(cert_path)
+    return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
+
+def get_certificate(cert_path: str) -> crypto.X509:
+    """
+    Load the certificate from the provided path, and return a python representation
+    of it.
+    :param str cert_path: the path to the certificate
+    :returns: the X509 version of the certificate
+    """
     with open(cert_path, 'rb') as file:
         data = file.read()
 
     cert = crypto.load_certificate(crypto.FILETYPE_PEM, data)
-    return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
 
+    return cert
 
 def load_sample_data_path(workspace: str) -> str:
     """
