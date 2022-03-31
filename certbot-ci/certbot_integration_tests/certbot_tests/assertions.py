@@ -37,16 +37,19 @@ def assert_elliptic_key(key: str, curve: Type[EllipticCurve]) -> None:
     assert isinstance(key.curve, curve)
 
 
-def assert_rsa_key(key: str) -> None:
+def assert_rsa_key(key: str, key_size: Optional[int] = None) -> None:
     """
     Asserts that the key at the given path is an RSA key.
     :param str key: path to key
+    :param int key_size: if provided, assert that the RSA key is of this size
     """
     with open(key, 'rb') as file:
         privkey1 = file.read()
 
     key = load_pem_private_key(data=privkey1, password=None, backend=default_backend())
     assert isinstance(key, RSAPrivateKey)
+    if key_size:
+        assert key_size == key.key_size
 
 
 def assert_hook_execution(probe_path: str, probe_content: str) -> None:
