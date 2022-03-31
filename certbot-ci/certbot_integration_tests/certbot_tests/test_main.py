@@ -906,16 +906,18 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
 
 
 def test_certificate_validity(context: IntegrationTestsContext) -> None:
+    """Test that --certificate-validity is requesting certificates of the appropirate validity"""
     if context.acme_server == 'boulder-v2':
         pytest.skip('Boulder does not support NewOrder notAfter.')
 
-    """Test that --certificate-validity is requesting certificates of the appropirate validity"""
     context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname'),
                      '--certificate-validity', '86400'])
+
     want_not_after = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
 
     cert_path = join(context.config_dir, 'live', 'newname', 'cert.pem')
     cert = misc.get_certificate(cert_path)
+
     not_after_raw = cert.get_notAfter().decode('ascii')
     not_after = datetime.datetime.strptime(not_after_raw, '%Y%m%d%H%M%SZ').replace(
         tzinfo=datetime.timezone.utc)
