@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import functools
 import logging.handlers
 import sys
+from typing import cast
 from typing import Generator
 from typing import IO
 from typing import Iterable
@@ -730,7 +731,9 @@ def _determine_account(config: configuration.NamespaceConfig
             except (errors.Error, acme_messages.Error) as err:
                 logger.debug("", exc_info=True)
                 if acme_messages.is_acme_error(err):
-                    err_msg = f"Error returned by the ACME server: {str(err)}"
+                    err_msg = internal_display_util.describe_acme_error(
+                        cast(acme_messages.Error, err))
+                    err_msg = f"Error returned by the ACME server: {err_msg}"
                 else:
                     err_msg = str(err)
                 raise errors.Error(
