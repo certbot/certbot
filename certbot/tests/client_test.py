@@ -348,7 +348,14 @@ class ClientTest(ClientTestCommon):
             self.client.obtain_certificate_from_csr(
                 test_csr,
                 orderr=None))
-        not_after = self.acme.new_order.call_args.kwargs['not_after']
+
+        not_after: datetime.datetime
+        try:
+            not_after = self.acme.new_order.call_args.kwargs['not_after']
+        except:
+            # Remove when no longer testing with python <= 3.7
+            # https://stackoverflow.com/questions/60105443/how-do-i-correctly-use-mock-call-args-with-pythons-unittest-mock
+            not_after = self.acme.new_order.call_args.kwargs[0]
         self.assertAlmostEqual(not_after, want_not_after, delta=datetime.timedelta(minutes=1))
         auth_handler.handle_authorizations.assert_called_with(self.eg_order, self.config, False)
 
