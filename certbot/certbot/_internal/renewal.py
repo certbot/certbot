@@ -336,7 +336,7 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str
         domains = lineage.names()
     # The private key is the existing lineage private key if reuse_key is set.
     # Otherwise, generate a fresh private key by passing None.
-    if config.reuse_key:
+    if config.reuse_key and not config.new_key:
         new_key = os.path.normpath(lineage.privkey)
         _update_renewal_params_from_key(new_key, config)
     else:

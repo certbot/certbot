@@ -8,6 +8,7 @@ import subprocess
 import time
 from typing import Iterable
 from typing import Generator
+from typing import Tuple
 from typing import Type
 import datetime
 import unittest
@@ -463,6 +464,42 @@ def test_reuse_key(context: IntegrationTestsContext) -> None:
         cert3 = file.read()
 
     assert len({cert1, cert2, cert3}) == 3
+
+
+def test_new_key(context: IntegrationTestsContext) -> None:
+    """Tests --new-key and its interactions with --reuse-key"""
+    def private_key(generation: int) -> Tuple[str, str]:
+        pk_path = join(context.config_dir, f'archive/{certname}/privkey{generation}.pem')
+        with open(pk_path, 'r') as file:
+            return file.read(), pk_path
+
+    certname = context.get_domain('newkey')
+
+    context.certbot(['--domains', certname, '--reuse-key',
+                     '--key-type', 'rsa', '--rsa-key-size', '4096'])
+    privkey1, _ = private_key(1)
+
+    # renew: --new-key should replace the key, but keep reuse_key and the key type + params
+    context.certbot(['renew', '--cert-name', certname, '--new-key'])
+    privkey2, privkey2_path = private_key(2)
+    assert privkey1 != privkey2
+    assert_saved_lineage_option(context.config_dir, certname, 'reuse_key', 'True')
+    assert_rsa_key(privkey2_path, 4096)
+
+    # certonly: it should replace the key but the key size will change
+    context.certbot(['certonly', '-d', certname, '--reuse-key', '--new-key'])
+    privkey3, privkey3_path = private_key(3)
+    assert privkey2 != privkey3
+    assert_saved_lineage_option(context.config_dir, certname, 'reuse_key', 'True')
+    assert_rsa_key(privkey3_path, 2048)
+
+    # certonly: it should be possible to change the key type and keep reuse_key
+    context.certbot(['certonly', '-d', certname, '--reuse-key', '--new-key', '--key-type', 'ecdsa',
+                     '--cert-name', certname])
+    privkey4, privkey4_path = private_key(4)
+    assert privkey3 != privkey4
+    assert_saved_lineage_option(context.config_dir, certname, 'reuse_key', 'True')
+    assert_elliptic_key(privkey4_path, SECP256R1)
 
 
 def test_incorrect_key_type(context: IntegrationTestsContext) -> None:

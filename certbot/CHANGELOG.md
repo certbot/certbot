@@ -11,6 +11,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Certbot now supports setting a custom certificate validity (`--certificate-validity`)
   specified in relative seconds from time of the certificate issuance request.
   * Not currently supported by Let's Encrypt, the default CA for Certbot.
+* Added `--new-key`. When renewing or replacing a certificate that has `--reuse-key`
+  set, it will force a new private key to be generated.
+  Combining `--reuse-key` and `--new-key` will replace the certificate's private key
+  and then reuse it for future renewals.
 
 ### Changed
 
@@ -26,6 +30,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   agree with a non-existent Terms of Service ("None"). This bug is now fixed, so
   that if an ACME server does not provide any Terms of Service to agree with, the
   user is not asked to agree to a non-existent Terms of Service any longer.
+* If account registration fails, Certbot did not relay the error from the ACME server
+  back to the user. This is now fixed: the error message from the ACME server is now
+  presented to the user when account registration fails.
 
 More details about these changes can be found on our GitHub repo.
 
