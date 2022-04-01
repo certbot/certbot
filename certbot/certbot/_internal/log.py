@@ -30,6 +30,7 @@ import tempfile
 import traceback
 from types import TracebackType
 from typing import Any
+from typing import cast
 from typing import IO
 from typing import Optional
 from typing import Tuple
@@ -40,6 +41,7 @@ from certbot import configuration
 from certbot import errors
 from certbot import util
 from certbot._internal import constants
+from certbot._internal.display import util as display_util
 from certbot.compat import os
 
 # Logging format
@@ -365,9 +367,7 @@ def post_arg_parse_except_hook(exc_type: Type[BaseException], exc_value: BaseExc
             exit_func()
         logger.error('An unexpected error occurred:')
         if messages.is_acme_error(exc_value):
-            # Remove the ACME error prefix from the exception
-            _, _, exc_str = str(exc_value).partition(':: ')
-            logger.error(exc_str)
+            logger.error(display_util.describe_acme_error(cast(messages.Error, exc_value)))
         else:
             output = traceback.format_exception_only(exc_type, exc_value)
             # format_exception_only returns a list of strings each

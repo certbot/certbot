@@ -668,16 +668,13 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         self._register_error_common(err_msg, errors.Error(err_msg))
 
     def test_register_error_acme_type_and_detail(self):
-        err_msg = ("Error returned by the ACME server: urn:ietf:params:acme:"
-                   "error:malformed :: The request message was malformed :: "
-                   "must agree to terms of service")
+        err_msg = ("Error returned by the ACME server: must agree to terms of service")
         exception = acme_error(typ = "urn:ietf:params:acme:error:malformed",
                                detail = "must agree to terms of service")
         self._register_error_common(err_msg, exception)
 
     def test_register_error_acme_type_only(self):
-        err_msg = ("Error returned by the ACME server: urn:ietf:params:acme:"
-                   "error:serverInternal :: The server experienced an internal error")
+        err_msg = ("Error returned by the ACME server: The server experienced an internal error")
         exception = acme_error(typ = "urn:ietf:params:acme:error:serverInternal")
         self._register_error_common(err_msg, exception)
 
@@ -1155,7 +1152,7 @@ class MainTest(test_util.ConfigTestCase):
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
                              quiet_mode=False, expiry_date=datetime.datetime.now(),
-                             reuse_key=False):
+                             reuse_key=False, new_key=False):
         cert_path = test_util.vector_path('cert_512.pem')
         chain_path = os.path.normpath(os.path.join(self.config.config_dir,
                                                    'live/foo.bar/fullchain.pem'))
@@ -1205,7 +1202,7 @@ class MainTest(test_util.ConfigTestCase):
                                             traceback.format_exc())
 
             if should_renew:
-                if reuse_key:
+                if reuse_key and not new_key:
                     # The location of the previous live privkey.pem is passed
                     # to obtain_certificate
                     mock_client.obtain_certificate.assert_called_once_with(['isnot.org'],
@@ -1275,6 +1272,13 @@ class MainTest(test_util.ConfigTestCase):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--reuse-key"]
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
+
+    @mock.patch('certbot._internal.storage.RenewableCert.save_successor')
+    def test_new_key(self, unused_save_successor):
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--reuse-key", "--new-key"]
+        self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True,
+                                  new_key=True)
 
     @mock.patch('sys.stdin')
     def test_noninteractive_renewal_delay(self, stdin):

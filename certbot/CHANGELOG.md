@@ -6,7 +6,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-* RFC8555 subproblems to ACME errors
+* Added RFC8555 subproblems to ACME errors
+* Added `--new-key`. When renewing or replacing a certificate that has `--reuse-key`
+  set, it will force a new private key to be generated.
+  Combining `--reuse-key` and `--new-key` will replace the certificate's private key
+  and then reuse it for future renewals.
 
 ### Changed
 
