@@ -144,12 +144,13 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         :rtype: List[str]
         """
         codes = []
-        if self.subproblems is None:
-            self.subproblems = []
-
+        subproblems = []
+        if self.subproblems is not None:
+            subproblems = self.subproblems
         if self.code is not None:
             codes.append(self.code)
-        for error in self.subproblems:
+
+        for error in subproblems:
             if error.code:
                 codes.append(error.code)
         if len(codes) > 0:
@@ -157,8 +158,9 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         return None
 
     def __str__(self) -> str:
-        if self.subproblems is None:
-            self.subproblems = []
+        subproblems = []
+        if self.subproblems is not None:
+            subproblems = self.subproblems
 
         result = b' :: '.join(
             part.encode('ascii', 'backslashreplace') for part in
@@ -166,9 +168,9 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             if part is not None).decode()
         if self.identifier:
             result += f' :: {self.identifier}'
-        if len(self.subproblems) > 0:
+        if len(subproblems) > 0:
             result += '\nSub-problems:'
-            for subproblem in self.subproblems:
+            for subproblem in subproblems:
                 result += f'\n{subproblem}'
         return result
 
