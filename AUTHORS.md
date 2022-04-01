@@ -115,6 +115,7 @@ Authors
 * [Jacob Sachs](https://github.com/jsachs)
 * [Jairo Llopis](https://github.com/Yajo)
 * [Jakub Warmuz](https://github.com/kuba)
+* [James Balazs](https://github.com/jamesbalazs)
 * [James Kasten](https://github.com/jdkasten)
 * [Jason Grinblat](https://github.com/ptychomancer)
 * [Jay Faulkner](https://github.com/jayofdoom)

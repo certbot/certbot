@@ -17,7 +17,7 @@ class ErrorTest(unittest.TestCase):
     """Tests for acme.messages.Error."""
 
     def setUp(self):
-        from acme.messages import Error, ERROR_PREFIX
+        from acme.messages import Error, ERROR_PREFIX, Identifier, IDENTIFIER_FQDN
         self.error = Error.with_code('malformed', detail='foo', title='title')
         self.jobj = {
             'detail': 'foo',
@@ -25,6 +25,9 @@ class ErrorTest(unittest.TestCase):
             'type': ERROR_PREFIX + 'malformed',
         }
         self.error_custom = Error(typ='custom', detail='bar')
+        self.identifier = Identifier(typ=IDENTIFIER_FQDN, value='example.com')
+        self.subproblem = Error.with_code('caa', detail='bar', title='title', identifier=self.identifier)
+        self.error_with_subproblems = Error.with_code('malformed', detail='foo', title='title', subproblems=[self.subproblem])
         self.empty_error = Error()
 
     def test_default_typ(self):
@@ -48,6 +51,13 @@ class ErrorTest(unittest.TestCase):
         self.assertEqual('malformed', self.error.code)
         self.assertIsNone(self.error_custom.code)
         self.assertIsNone(Error().code)
+
+    def test_codes(self):
+        from acme.messages import Error
+        self.assertEqual(['malformed'], self.error.codes)
+        self.assertEqual(['malformed', 'caa'], self.error_with_subproblems.codes)
+        self.assertIsNone(self.error_custom.codes)
+        self.assertIsNone(Error().codes)
 
     def test_is_acme_error(self):
         from acme.messages import is_acme_error, Error
@@ -73,7 +83,12 @@ class ErrorTest(unittest.TestCase):
             str(self.error),
             u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}"
             .format(self.error))
-
+        self.assertEqual(
+            str(self.error_with_subproblems),
+            (u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}\n"+
+            "Sub-problems:\n"+
+            u"{1.typ} :: {1.description} :: {1.detail} :: {1.title} :: {1.identifier}").format(
+        self.error_with_subproblems, self.subproblem))
 
 class ConstantTest(unittest.TestCase):
     """Tests for acme.messages._Constant."""

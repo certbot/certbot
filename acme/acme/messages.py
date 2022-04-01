@@ -92,6 +92,8 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     typ: str = jose.field('type', omitempty=True, default='about:blank')
     title: str = jose.field('title', omitempty=True)
     detail: str = jose.field('detail', omitempty=True)
+    identifier: Optional['Identifier'] = jose.field('identifier', omitempty=True)
+    subproblems: Optional[List['Error']] = jose.field('subproblems', omitempty=True)
 
     @classmethod
     def with_code(cls, code: str, **kwargs: Any) -> 'Error':
@@ -134,12 +136,41 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             return code
         return None
 
+    @property
+    def codes(self) -> Optional[List[str]]:
+        """List of ACME error codes for error and all subproblems.
+
+        :returns: list of error codes if standard ACME codes or ``None``.
+        :rtype: List[str]
+        """
+        codes = []
+        if self.subproblems is None:
+            self.subproblems = []
+
+        if self.code is not None:
+            codes.append(self.code)
+        for error in self.subproblems:
+            if error.code:
+                codes.append(error.code)
+        if len(codes) > 0:
+            return codes
+        return None
+
     def __str__(self) -> str:
-        return b' :: '.join(
+        if self.subproblems is None:
+            self.subproblems = []
+
+        result = b' :: '.join(
             part.encode('ascii', 'backslashreplace') for part in
             (self.typ, self.description, self.detail, self.title)
             if part is not None).decode()
-
+        if self.identifier:
+            result += f' :: {self.identifier}'
+        if len(self.subproblems) > 0:
+            result += '\nSub-problems:'
+            for subproblem in self.subproblems:
+                result += f'\n{subproblem}'
+        return result
 
 class _Constant(jose.JSONDeSerializable, Hashable):
     """ACME constant."""
@@ -168,6 +199,9 @@ class _Constant(jose.JSONDeSerializable, Hashable):
 
     def __hash__(self) -> int:
         return hash((self.__class__, self.name))
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Status(_Constant):
@@ -204,6 +238,8 @@ class Identifier(jose.JSONObjectWithFields):
     typ: IdentifierType = jose.field('type', decoder=IdentifierType.from_json)
     value: str = jose.field('value')
 
+    def __str__(self) -> str:
+        return f'{self.typ}={self.value}'
 
 class HasResourceType(Protocol):
     """
