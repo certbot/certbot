@@ -152,28 +152,6 @@ class ClientBase:
         return self._authzr_from_response(response,
             authzr.body.identifier, authzr.uri)
 
-    # def update_account_key(self,
-    #                        regr: messages.RegistrationResource,
-    #                        response: requests.Response, uri: Optional[str] = None
-    #                        ) -> messages.KeyChange:
-    #     """
-    #     Updates the account key for the
-    #
-    #     :param messages.RegistrationResource regr:
-    #
-    #     :returns: The updated key of the account.
-    #     :rtype: `.KeyChange`
-    #     """
-    #     # response = self._post(
-    #     #     self.directory.new_cert,
-    #     #     req,
-    #     #     headers={'Accept': content_type})
-    #     resp = self._post(uri, response)
-    #     keyChange = messages.KeyChange(
-    #         oldKey=regr.keys()
-    #     )
-    #     return keyChange
-
     def _authzr_from_response(self, response: requests.Response,
                               identifier: Optional[messages.Identifier] = None,
                               uri: Optional[str] = None) -> messages.AuthorizationResource:
@@ -1125,7 +1103,7 @@ class ClientNetwork:
             is ignored, but logged.
 
         :raises .messages.Error: If server response body
-            carries HTTP Problem (RFC 7919).
+            carries HTTP Problem (draft-ietf-appsawg-http-problem-00).
         :raises .ClientError: In case of other networking errors.
 
         """

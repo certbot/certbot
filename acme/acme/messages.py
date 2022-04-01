@@ -82,7 +82,7 @@ def is_acme_error(err: BaseException) -> bool:
 class Error(jose.JSONObjectWithFields, errors.Error):
     """ACME error.
 
-    https://datatracker.ietf.org/doc/html/rfc7807
+    https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
 
     :ivar str typ:
     :ivar str title:
@@ -454,20 +454,6 @@ class UpdateRegistration(ResourceMixin, Registration):
     resource: str = fields.resource(resource_type)
 
 
-# @Directory.register
-# class KeyChange(ResourceMixin, UpdateRegistration):
-#     """
-#     RFC 8555, section 7.3.5. The account key can be changed
-#     by submitting both the old and the newly generated account
-#     key
-#     """
-#     resource_type: str = "key-change"
-#     resource: str = fields.resource(resource_type)
-#     account: str = jose.field('account', omitempty=False)
-#     newKey: jose.JWK = jose.field('newKey', omitempty=False, decoder=jose.JWK.from_json)
-#     oldKey: jose.JWK = jose.field('oldKey', omitempty=False, decoder=jose.JWK.from_json)
-
-
 class RegistrationResource(ResourceWithURI):
     """Registration Resource.
 
@@ -713,7 +699,6 @@ class OrderResource(ResourceWithURI):
     fullchain_pem: str = jose.field('fullchain_pem', omitempty=True)
     alternative_fullchains_pem: List[str] = jose.field('alternative_fullchains_pem',
                                                        omitempty=True)
-
 
 
 @Directory.register

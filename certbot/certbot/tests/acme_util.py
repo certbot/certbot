@@ -16,7 +16,8 @@ JWK = jose.JWK.load(util.load_vector('rsa512_key.pem'))
 KEY = util.load_rsa_private_key('rsa512_key.pem')
 
 # Challenges
-HTTP01 = challenges.HTTP01(token=b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
+HTTP01 = challenges.HTTP01(
+    token=b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 DNS01 = challenges.DNS01(token=b"17817c66b60ce2e4012dfad92657527a")
 DNS01_2 = challenges.DNS01(token=b"cafecafecafecafecafecafe0feedbac")
 

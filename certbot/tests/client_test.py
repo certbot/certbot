@@ -377,6 +377,7 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
             self.eg_order.fullchain_pem)
 
+    # TODO finish this test
     @mock.patch("certbot._internal.client.crypto_util")
     def test_ec_account_key(self, mock_crypto_util):
         # self.config.accounts_dir

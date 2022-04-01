@@ -151,7 +151,8 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
         return csr_matches_pubkey(*args, **kwargs)
 
     def test_valid_true(self):
-        self.assertTrue(self._call(test_util.load_vector('csr_512.pem'), RSA512_KEY))
+        self.assertTrue(self._call(
+            test_util.load_vector('csr_512.pem'), RSA512_KEY))
 
     def test_invalid_false(self):
         self.assertFalse(self._call(test_util.load_vector('csr_512.pem'), RSA256_KEY))
@@ -554,8 +555,7 @@ class FindChainWithIssuerTest(unittest.TestCase):
         matched = self._call(fullchains, "non-existent issuer",
                              warn_on_no_match=True)
         self.assertEqual(matched, fullchains[0])
-        mock_warning.assert_called_once_with(
-            "Certbot has been configured to prefer "
+        mock_warning.assert_called_once_with("Certbot has been configured to prefer "
             "certificate chains with issuer '%s', but no chain from the CA matched "
             "this issuer. Using the default certificate chain instead.",
             "non-existent issuer")

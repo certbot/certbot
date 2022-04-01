@@ -32,8 +32,8 @@ class AccountTest(unittest.TestCase):
         self.regr = mock.MagicMock()
         self.meta = Account.Meta(
             creation_host="test.certbot.org",
-            creation_dt=datetime.datetime(2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC),
-        )
+            creation_dt=datetime.datetime(
+                2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
         self.acc = Account(self.regr, self.KEY, self.meta)
         self.regr.__repr__ = mock.MagicMock(return_value="i_am_a_regr")
 
@@ -133,8 +133,8 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self.new_authzr_uri = "hi"
         self.meta = Account.Meta(
             creation_host="test.example.org",
-            creation_dt=datetime.datetime(2021, 1, 5, 14, 4, 10, tzinfo=pytz.UTC),
-        )
+            creation_dt=datetime.datetime(
+                2021, 1, 5, 14, 4, 10, tzinfo=pytz.UTC))
         self.acc = Account(
             regr=messages.RegistrationResource(
                 uri=None, body=messages.Registration(),

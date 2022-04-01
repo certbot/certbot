@@ -165,8 +165,10 @@ def test_certonly_ecdsa_account_flag(context: IntegrationTestsContext) -> None:
         '-d', context.get_domain('newname'),
     ])
 
-    key_path = join(context.workspace, 'key.pem')
-    assert_elliptic_key(key_path, curve=SECP256R1)
+    privkey = join(context.config_dir, 'live', 'newname', 'privkey.pem')
+
+    # key_path = join(context.workspace, 'key.pem')
+    assert_elliptic_key(privkey, curve=SECP256R1)
 
 
 def test_ecdsa_account_flag_duplicate(context: IntegrationTestsContext) -> None:

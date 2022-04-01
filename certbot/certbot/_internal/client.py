@@ -17,6 +17,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 import josepy as jose
 import OpenSSL
+from josepy import ES256, ES384, ES512, RS256
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -52,17 +53,17 @@ def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
     if key.typ == 'EC':
         public_key = key.key
         if public_key.key_size == 256:
-            alg = jose.ES256
+            alg = ES256
         elif public_key.key_size == 384:
-            alg = jose.ES384
+            alg = ES384
         elif public_key.key_size == 521:
-            alg = jose.ES512
+            alg = ES512
         else:
             raise errors.NotSupportedError(
                 "No matching signing algorithm can be found for the key"
             )
     else:
-        alg = jose.RS256
+        alg = RS256
     net = acme_client.ClientNetwork(key, alg=alg, account=regr,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
@@ -206,21 +207,22 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
 
     # Each new registration shall use a fresh new key
     key: jose.JWK
-    if not config.ecdsa_account_key:
-        rsa_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=config.rsa_key_size,
-            backend=default_backend())
-        key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
-    else:
+    if config.ecdsa_account_key:
         # RFC 8555 6.2 says only ES256 is supported, i.e., SECP256R1
         # mypy complains without the cast, although
         # EllipticCurvePrivateKeyWithSerialization = EllipticCurvePrivateKey
+        print("Generating an elliptic curve private key")
         ec_key = cast(ec.EllipticCurvePrivateKeyWithSerialization, ec.generate_private_key(
             curve=ec.SECP256R1(),
             backend=default_backend(),
         ))
         key = jose.JWKEC(key=jose.ComparableECKey(ec_key))
+    else:
+        rsa_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=config.rsa_key_size,
+            backend=default_backend())
+        key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
     regr = perform_registration(acme, config, tos_cb)
@@ -377,7 +379,6 @@ class Client:
 
         `.register` must be called before `.obtain_certificate`
 
-        :param str old_keypath: keypath to the old key.
         :param list domains: domains to get a certificate
 
         :returns: certificate as PEM string, chain as PEM string,

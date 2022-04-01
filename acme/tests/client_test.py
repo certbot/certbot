@@ -64,7 +64,8 @@ class ClientTestBase(unittest.TestCase):
 
         # Registration
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
-        reg = messages.Registration(contact=self.contact, key=KEY.public_key())
+        reg = messages.Registration(
+            contact=self.contact, key=KEY.public_key())
         the_arg: Dict = dict(reg)
         self.new_reg = messages.NewRegistration(**the_arg)
         self.regr = messages.RegistrationResource(
@@ -143,7 +144,6 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, client.query_registration(self.regr))
 
-    @unittest.skip("currently fails")
     def test_query_registration_client_v2_ecdsa(self):
         from acme.client import Client
         reg = messages.Registration(contact=self.contact, key=SECP256R1_KEY.public_key())
@@ -151,7 +151,6 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.client = Client(
             directory=the_arg, key=SECP256R1_KEY, alg=jose.ES256, net=self.net  # type: ignore
         )
-        # this bit fails
         self.net.get.assert_called_once_with(the_arg)
 
     def test_forwarding(self):
