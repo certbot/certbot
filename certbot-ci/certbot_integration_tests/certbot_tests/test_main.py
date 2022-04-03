@@ -907,7 +907,6 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
 
 def test_certificate_validity(context: IntegrationTestsContext) -> None:
     """Test that --certificate-validity is requesting certificates of the appropirate validity"""
-    pytest.skip('Pebble needs a new release before we can use this tool in the integration test.')
     if context.acme_server == 'boulder-v2':
         pytest.skip('Boulder does not support NewOrder notAfter.')
 
