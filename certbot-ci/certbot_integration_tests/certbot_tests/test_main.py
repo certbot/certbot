@@ -916,10 +916,22 @@ def test_certificate_validity(context: IntegrationTestsContext) -> None:
     want_not_after = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
 
     cert_path = join(context.config_dir, 'live', 'newname', 'cert.pem')
-    cert = misc.get_certificate(cert_path)
 
+    not_after_first = get_not_after(cert_path)
+    tc = unittest.TestCase()
+    tc.assertAlmostEqual(not_after_first, want_not_after, delta=datetime.timedelta(minutes=5))
+
+    context.certbot(['renew', '--force-renewal'])
+
+    not_after_renewal = get_not_after(cert_path)
+    tc = unittest.TestCase()
+    tc.assertAlmostEqual(not_after_renewal, want_not_after, delta=datetime.timedelta(minutes=5))
+
+    assert not_after_first != not_after_renewal
+
+def get_not_after(cert_path) -> datetime.datetime:
+    cert = misc.get_certificate(cert_path)
     not_after_raw = cert.get_notAfter().decode('ascii')
     not_after = datetime.datetime.strptime(not_after_raw, '%Y%m%d%H%M%SZ').replace(
         tzinfo=datetime.timezone.utc)
-    tc = unittest.TestCase()
-    tc.assertAlmostEqual(not_after, want_not_after, delta=datetime.timedelta(minutes=5))
+    return not_after
