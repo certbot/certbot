@@ -930,6 +930,7 @@ def test_certificate_validity(context: IntegrationTestsContext) -> None:
     assert not_after_first != not_after_renewal
 
 def get_not_after(cert_path) -> datetime.datetime:
+    """Gets a certificate's not_after field"""
     cert = misc.get_certificate(cert_path)
     not_after_raw = cert.get_notAfter().decode('ascii')
     not_after = datetime.datetime.strptime(not_after_raw, '%Y%m%d%H%M%SZ').replace(
