@@ -85,7 +85,7 @@ def publish_windows(css):
     """
     username = getpass.getuser()
     host = css
-    command = ["ssh", username + "@" + host, "python3", "sign.py", "~/.ssh/githubpat.txt"]
+    command = ["ssh", username + "@" + host, "certot-misc/css/venv.sh"]
     
     print("SSH into CSS to trigger signing and uploading of Windows installer...")
     subprocess.run(command.split(), check=True)
