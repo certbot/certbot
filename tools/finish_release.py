@@ -64,7 +64,7 @@ def parse_args(args):
     # Use the file's docstring for the help text and don't let argparse reformat it.
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--css', type=str, help='hostname of code signing server')
+    parser.add_argument('--css', type=str, required=True, help='hostname of code signing server')
     group = parser.add_mutually_exclusive_group()
     # We use 'store_false' and a destination related to the other type of
     # artifact to cause the flag being set to disable publishing of the other
