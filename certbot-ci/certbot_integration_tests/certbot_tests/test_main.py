@@ -945,4 +945,3 @@ def get_not_after(cert_path: str) -> datetime.datetime:
     not_after = datetime.datetime.strptime(not_after_ascii, '%Y%m%d%H%M%SZ').replace(
         tzinfo=datetime.timezone.utc)
     return not_after
-
