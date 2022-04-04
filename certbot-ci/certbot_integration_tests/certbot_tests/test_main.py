@@ -929,10 +929,20 @@ def test_certificate_validity(context: IntegrationTestsContext) -> None:
 
     assert not_after_first != not_after_renewal
 
-def get_not_after(cert_path) -> datetime.datetime:
-    """Gets a certificate's not_after field"""
+
+def get_not_after(cert_path: str) -> datetime.datetime:
+    """Gets a certificate's not_after field.
+
+    :param str cert_path: Path to a certificate
+    """
     cert = misc.get_certificate(cert_path)
-    not_after_raw = cert.get_notAfter().decode('ascii')
-    not_after = datetime.datetime.strptime(not_after_raw, '%Y%m%d%H%M%SZ').replace(
+    not_after_raw = cert.get_notAfter()
+    not_after_ascii = '1990-01-01T00:00:00+00:00'
+
+    if not_after_raw is not None:
+        not_after_ascii = not_after_raw.decode('ascii')
+
+    not_after = datetime.datetime.strptime(not_after_ascii, '%Y%m%d%H%M%SZ').replace(
         tzinfo=datetime.timezone.utc)
     return not_after
+
