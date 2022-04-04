@@ -136,6 +136,9 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     :ivar str typ:
     :ivar str title:
     :ivar str detail:
+    :ivar Identifier identifier:
+    :ivar tuple subproblems: An array of ACME Errors which may be present when the CA
+            returns multiple errors related to the same request, `tuple` of `Error`.
 
     """
     typ: str = jose.field('type', omitempty=True, default='about:blank')
