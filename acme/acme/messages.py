@@ -79,6 +79,55 @@ def is_acme_error(err: BaseException) -> bool:
     return False
 
 
+class _Constant(jose.JSONDeSerializable, Hashable):
+    """ACME constant."""
+    __slots__ = ('name',)
+    POSSIBLE_NAMES: Dict[str, '_Constant'] = NotImplemented
+
+    def __init__(self, name: str) -> None:
+        super().__init__()
+        self.POSSIBLE_NAMES[name] = self  # pylint: disable=unsupported-assignment-operation
+        self.name = name
+
+    def to_partial_json(self) -> str:
+        return self.name
+
+    @classmethod
+    def from_json(cls, jobj: str) -> '_Constant':
+        if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
+            raise jose.DeserializationError(f'{cls.__name__} not recognized')
+        return cls.POSSIBLE_NAMES[jobj]
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.name})'
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, type(self)) and other.name == self.name
+
+    def __hash__(self) -> int:
+        return hash((self.__class__, self.name))
+
+
+class IdentifierType(_Constant):
+    """ACME identifier type."""
+    POSSIBLE_NAMES: Dict[str, _Constant] = {}
+
+
+IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
+IDENTIFIER_IP = IdentifierType('ip') # IdentifierIP in pebble - not in Boulder yet
+
+
+class Identifier(jose.JSONObjectWithFields):
+    """ACME identifier.
+
+    :ivar IdentifierType typ:
+    :ivar str value:
+
+    """
+    typ: IdentifierType = jose.field('type', decoder=IdentifierType.from_json)
+    value: str = jose.field('value')
+
+
 class Error(jose.JSONObjectWithFields, errors.Error):
     """ACME error.
 
@@ -92,8 +141,15 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     typ: str = jose.field('type', omitempty=True, default='about:blank')
     title: str = jose.field('title', omitempty=True)
     detail: str = jose.field('detail', omitempty=True)
-    identifier: Optional['Identifier'] = jose.field('identifier', omitempty=True)
-    subproblems: Optional[List['Error']] = jose.field('subproblems', omitempty=True)
+    identifier: Optional['Identifier'] = jose.field(
+        'identifier', decoder=Identifier.from_json, omitempty=True)
+    subproblems: Optional[Tuple['Error', ...]] = jose.field('subproblems', omitempty=True)
+
+    # Mypy does not understand the josepy magic happening here, and falsely claims
+    # that subproblems is redefined. Let's ignore the type check here.
+    @subproblems.decoder  # type: ignore
+    def subproblems(value: List[Dict[str, Any]]) -> Tuple['Error', ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
+        return tuple(Error.from_json(subproblem) for subproblem in value)
 
     @classmethod
     def with_code(cls, code: str, **kwargs: Any) -> 'Error':
@@ -136,74 +192,17 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             return code
         return None
 
-    @property
-    def codes(self) -> Optional[List[str]]:
-        """List of ACME error codes for error and all subproblems.
-
-        :returns: list of error codes if standard ACME codes or ``None``.
-        :rtype: List[str]
-        """
-        codes = []
-        subproblems = []
-        if self.subproblems is not None:
-            subproblems = self.subproblems
-        if self.code is not None:
-            codes.append(self.code)
-
-        for error in subproblems:
-            if error.code:
-                codes.append(error.code)
-        if len(codes) > 0:
-            return codes
-        return None
-
     def __str__(self) -> str:
-        subproblems = []
-        if self.subproblems is not None:
-            subproblems = self.subproblems
-
         result = b' :: '.join(
             part.encode('ascii', 'backslashreplace') for part in
             (self.typ, self.description, self.detail, self.title)
             if part is not None).decode()
         if self.identifier:
-            result += f' :: {self.identifier}'
-        if len(subproblems) > 0:
-            result += '\nSub-problems:'
-            for subproblem in subproblems:
+            result = f'Problem for {self.identifier.value}: ' + result # pylint: disable=no-member
+        if self.subproblems and len(self.subproblems) > 0:
+            for subproblem in self.subproblems:
                 result += f'\n{subproblem}'
         return result
-
-class _Constant(jose.JSONDeSerializable, Hashable):
-    """ACME constant."""
-    __slots__ = ('name',)
-    POSSIBLE_NAMES: Dict[str, '_Constant'] = NotImplemented
-
-    def __init__(self, name: str) -> None:
-        super().__init__()
-        self.POSSIBLE_NAMES[name] = self  # pylint: disable=unsupported-assignment-operation
-        self.name = name
-
-    def to_partial_json(self) -> str:
-        return self.name
-
-    @classmethod
-    def from_json(cls, jobj: str) -> '_Constant':
-        if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
-            raise jose.DeserializationError(f'{cls.__name__} not recognized')
-        return cls.POSSIBLE_NAMES[jobj]
-
-    def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self.name})'
-
-    def __eq__(self, other: Any) -> bool:
-        return isinstance(other, type(self)) and other.name == self.name
-
-    def __hash__(self) -> int:
-        return hash((self.__class__, self.name))
-
-    def __str__(self) -> str:
-        return self.name
 
 
 class Status(_Constant):
@@ -220,28 +219,6 @@ STATUS_REVOKED = Status('revoked')
 STATUS_READY = Status('ready')
 STATUS_DEACTIVATED = Status('deactivated')
 
-
-class IdentifierType(_Constant):
-    """ACME identifier type."""
-    POSSIBLE_NAMES: Dict[str, _Constant] = {}
-
-
-IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
-IDENTIFIER_IP = IdentifierType('ip') # IdentifierIP in pebble - not in Boulder yet
-
-
-class Identifier(jose.JSONObjectWithFields):
-    """ACME identifier.
-
-    :ivar IdentifierType typ:
-    :ivar str value:
-
-    """
-    typ: IdentifierType = jose.field('type', decoder=IdentifierType.from_json)
-    value: str = jose.field('value')
-
-    def __str__(self) -> str:
-        return f'{self.typ}={self.value}'
 
 class HasResourceType(Protocol):
     """

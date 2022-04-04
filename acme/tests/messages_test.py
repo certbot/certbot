@@ -42,6 +42,14 @@ class ErrorTest(unittest.TestCase):
         from acme.messages import Error
         hash(Error.from_json(self.error.to_json()))
 
+    def test_from_json_with_subproblems(self):
+        from acme.messages import Error
+
+        parsed_error = Error.from_json(self.error_with_subproblems.to_json())
+
+        self.assertEqual(1, len(parsed_error.subproblems))
+        self.assertEqual(self.subproblem, parsed_error.subproblems[0])
+
     def test_description(self):
         self.assertEqual('The request message was malformed', self.error.description)
         self.assertIsNone(self.error_custom.description)
@@ -51,13 +59,6 @@ class ErrorTest(unittest.TestCase):
         self.assertEqual('malformed', self.error.code)
         self.assertIsNone(self.error_custom.code)
         self.assertIsNone(Error().code)
-
-    def test_codes(self):
-        from acme.messages import Error
-        self.assertEqual(['malformed'], self.error.codes)
-        self.assertEqual(['malformed', 'caa'], self.error_with_subproblems.codes)
-        self.assertIsNone(self.error_custom.codes)
-        self.assertIsNone(Error().codes)
 
     def test_is_acme_error(self):
         from acme.messages import is_acme_error, Error
@@ -86,8 +87,7 @@ class ErrorTest(unittest.TestCase):
         self.assertEqual(
             str(self.error_with_subproblems),
             (u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}\n"+
-            "Sub-problems:\n"+
-            u"{1.typ} :: {1.description} :: {1.detail} :: {1.title} :: {1.identifier}").format(
+            u"Problem for {1.identifier.value}: {1.typ} :: {1.description} :: {1.detail} :: {1.title}").format(
         self.error_with_subproblems, self.subproblem))
 
 class ConstantTest(unittest.TestCase):
