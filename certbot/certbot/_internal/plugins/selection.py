@@ -258,7 +258,7 @@ def choose_configurator_plugins(config: configuration.NamespaceConfig,
 
     # As a special case for certonly, if a user selected apache or nginx, set
     # the relevant installer (unless the user specifically specified no
-    # installer)
+    # installer or only specified an authenticator on the command line)
     if verb == "certonly" and authenticator is not None:
         # user specified --nginx or --apache on CLI
         selected_configurator = config.nginx or config.apache
