@@ -21,6 +21,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import zope.component
 
+from acme import messages as acme_messages
 from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
@@ -341,7 +342,18 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str
         _update_renewal_params_from_key(new_key, config)
     else:
         new_key = None
-    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
+    try:
+        new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
+    except acme_messages.Error as error:
+        if config.allow_subset_of_names and error.subproblems is not None:
+            failed_domains = [problem.identifier.value for problem in error.subproblems
+                                if problem.code == 'caa' and problem.identifier is not None]
+            logger.info("CAA error during finalization with --allow-subset-of-names specified: "
+                "retrying without %s", failed_domains)
+            domains = [x for x in domains if x not in failed_domains]
+            new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
+        else:
+            raise error
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s", os.path.dirname(lineage.cert))
     else:
