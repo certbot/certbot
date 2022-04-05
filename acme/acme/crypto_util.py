@@ -120,7 +120,14 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
 
         def shutdown(self, *unused_args: Any) -> bool:
             # OpenSSL.SSL.Connection.shutdown doesn't accept any args
-            return self._wrapped.shutdown()
+            try:
+                return self._wrapped.shutdown()
+            except SSL.error as error:
+                # We wrap the error so we raise the same error type as sockets
+                # in the standard library. This is useful when this object is
+                # used by code which expects a standard socket such as
+                # socketserver in the standard library.
+                raise socket.error(error)
 
     def accept(self) -> Tuple[FakeConnection, Any]:  # pylint: disable=missing-function-docstring
         sock, addr = self.sock.accept()
@@ -135,6 +142,8 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
         ssl_sock = self.FakeConnection(SSL.Connection(context, sock))
         ssl_sock.set_accept_state()
 
+        # This log line is especially desirable because without it requests to
+        # our standalone TLSALPN server would not be logged.
         logger.debug("Performing handshake with %s", addr)
         try:
             ssl_sock.do_handshake()
