@@ -153,8 +153,11 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
                  certs: List[Tuple[crypto.PKey, crypto.X509]],
                  challenge_certs: Mapping[str, Tuple[crypto.PKey, crypto.X509]],
                  ipv6: bool = False) -> None:
+        # We don't need to implement a request handler here because the work
+        # (including logging) is being done by wrapped socket set up in the
+        # parent TLSServer class.
         TLSServer.__init__(
-            self, server_address, _BaseRequestHandlerWithLogging, certs=certs,
+            self, server_address, socketserver.BaseRequestHandler, certs=certs,
             ipv6=ipv6)
         self.challenge_certs = challenge_certs
 
@@ -303,16 +306,3 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         return functools.partial(
             cls, simple_http_resources=simple_http_resources,
             timeout=timeout)
-
-
-class _BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
-    """BaseRequestHandler with logging."""
-
-    def log_message(self, format: str, *args: Any) -> None:  # pylint: disable=redefined-builtin
-        """Log arbitrary message."""
-        logger.debug("%s - - %s", self.client_address[0], format % args)
-
-    def handle(self) -> None:
-        """Handle request."""
-        self.log_message("Incoming request")
-        socketserver.BaseRequestHandler.handle(self)
