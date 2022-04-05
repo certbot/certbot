@@ -122,7 +122,7 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
             # OpenSSL.SSL.Connection.shutdown doesn't accept any args
             try:
                 return self._wrapped.shutdown()
-            except SSL.error as error:
+            except SSL.Error as error:
                 # We wrap the error so we raise the same error type as sockets
                 # in the standard library. This is useful when this object is
                 # used by code which expects a standard socket such as
