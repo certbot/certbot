@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.26.0'
+version = '1.27.0.dev0'
 
 install_requires = [
     'cloudflare>=1.5.1',
