@@ -7,8 +7,14 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * A flag has been introduced to create an ECDSA ([EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography))
-  account key for `certonly`, `register` and `renew`. Existing accounts will not be affected.
+  account key for `certonly`, `register`. Existing accounts will not be affected.
   Reason for this is bandwidth usage on ACME servers, as well as increased security.
+  Only new accounts can be registered like this.
+* Added `--new-key`. When renewing or replacing a certificate that has `--reuse-key`
+  set, it will force a new private key to be generated, one time.
+
+  As before, `--reuse-key` and `--no-reuse-key` can be used to enable and disable key
+  reuse.
 
 ### Changed
 
@@ -18,7 +24,19 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Certbot for Windows has been upgraded to use Python 3.9.11, in response to
+<<<<<<< HEAD
   https://www.openssl.org/news/secadv/20220315.txt.
+=======
+  https://www.openssl.org/news/secadv/20220315.txt.
+* Previously, when Certbot was in the process of registering a new ACME account
+  and the ACME server did not present any Terms of Service, the user was asked to
+  agree with a non-existent Terms of Service ("None"). This bug is now fixed, so
+  that if an ACME server does not provide any Terms of Service to agree with, the
+  user is not asked to agree to a non-existent Terms of Service any longer.
+* If account registration fails, Certbot did not relay the error from the ACME server
+  back to the user. This is now fixed: the error message from the ACME server is now
+  presented to the user when account registration fails.
+>>>>>>> b5a187841ea61528401aa398cb3472d6e9fd6ff5
 
 More details about these changes can be found on our GitHub repo.
 
