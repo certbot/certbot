@@ -75,7 +75,7 @@ latter by running:
 
    source venv/bin/activate
 
-After running this command, ``certbot`` and development tools like ``ipdb``,
+After running this command, ``certbot`` and development tools like ``ipdb3``,
 ``ipython``, ``pytest``, and ``tox`` are available in the shell where you ran
 the command. These tools are installed in the virtual environment and are kept
 separate from your global Python installation. This works by setting
