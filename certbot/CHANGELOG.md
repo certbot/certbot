@@ -6,6 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* Added installer plugin for [OpenVPN Access Server](https://openvpn.net/access-server/)
 * Updated Apache/NGINX TLS configs to document contents are based on ssl-config.mozilla.org
 
 ### Changed
