@@ -1,6 +1,12 @@
 """Manual authenticator plugin"""
 import logging
+from typing import Any
+from typing import Callable
 from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Tuple
+from typing import Type
 
 from acme import challenges
 from certbot import achallenges
@@ -88,23 +94,23 @@ asked to create multiple distinct TXT records with the same name. This is
 permitted by DNS standards.)
 """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]] = {}
+        self.env: Dict[achallenges.AnnotatedChallenge, Dict[str, str]] = {}
         self.subsequent_dns_challenge = False
         self.subsequent_any_challenge = False
 
     @classmethod
-    def add_parser_arguments(cls, add):
+    def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         add('auth-hook',
             help='Path or command to execute for the authentication script')
         add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
         util.add_deprecated_argument(add, 'public-ip-logging-ok', 0)
 
-    def prepare(self):  # pylint: disable=missing-function-docstring
+    def prepare(self) -> None:  # pylint: disable=missing-function-docstring
         if self.config.noninteractive_mode and not self.conf('auth-hook'):
             raise errors.PluginError(
                 'An authentication script must be provided with --{0} when '
@@ -112,7 +118,7 @@ permitted by DNS standards.)
                     self.option_name('auth-hook')))
         self._validate_hooks()
 
-    def _validate_hooks(self):
+    def _validate_hooks(self) -> None:
         if self.config.validate_hooks:
             for name in ('auth-hook', 'cleanup-hook'):
                 hook = self.conf(name)
@@ -120,13 +126,13 @@ permitted by DNS standards.)
                     hook_prefix = self.option_name(name)[:-len('-hook')]
                     hooks.validate_hook(hook, hook_prefix)
 
-    def more_info(self):  # pylint: disable=missing-function-docstring
+    def more_info(self) -> str:  # pylint: disable=missing-function-docstring
         return (
             'This plugin allows the user to customize setup for domain '
             'validation challenges either through shell scripts provided by '
             'the user or by performing the setup manually.')
 
-    def auth_hint(self, failed_achalls):
+    def auth_hint(self, failed_achalls: Iterable[achallenges.AnnotatedChallenge]) -> str:
         has_chall = lambda cls: any(isinstance(achall.chall, cls) for achall in failed_achalls)
 
         has_dns = has_chall(challenges.DNS01)
@@ -162,11 +168,12 @@ permitted by DNS standards.)
                 )
             )
 
-    def get_chall_pref(self, domain):
+    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01, challenges.DNS01]
 
-    def perform(self, achalls):  # pylint: disable=missing-function-docstring
+    def perform(self, achalls: List[achallenges.AnnotatedChallenge]
+                ) -> List[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
         responses = []
         last_dns_achall = 0
         for i, achall in enumerate(achalls):
@@ -180,11 +187,14 @@ permitted by DNS standards.)
             responses.append(achall.response(achall.account_key))
         return responses
 
-    def _perform_achall_with_script(self, achall, achalls):
-        env = dict(CERTBOT_DOMAIN=achall.domain,
-                   CERTBOT_VALIDATION=achall.validation(achall.account_key),
-                   CERTBOT_ALL_DOMAINS=','.join(one_achall.domain for one_achall in achalls),
-                   CERTBOT_REMAINING_CHALLENGES=str(len(achalls) - achalls.index(achall) - 1))
+    def _perform_achall_with_script(self, achall: achallenges.AnnotatedChallenge,
+                                    achalls: List[achallenges.AnnotatedChallenge]) -> None:
+        env = {
+            "CERTBOT_DOMAIN": achall.domain,
+            "CERTBOT_VALIDATION": achall.validation(achall.account_key),
+            "CERTBOT_ALL_DOMAINS": ','.join(one_achall.domain for one_achall in achalls),
+            "CERTBOT_REMAINING_CHALLENGES": str(len(achalls) - achalls.index(achall) - 1),
+        }
         if isinstance(achall.chall, challenges.HTTP01):
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         else:
@@ -194,7 +204,8 @@ permitted by DNS standards.)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
-    def _perform_achall_manually(self, achall, last_dns_achall=False):
+    def _perform_achall_manually(self, achall: achallenges.AnnotatedChallenge,
+                                 last_dns_achall: bool = False) -> None:
         validation = achall.validation(achall.account_key)
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
@@ -225,7 +236,7 @@ permitted by DNS standards.)
         display_util.notification(msg, wrap=False, force_interactive=True)
         self.subsequent_any_challenge = True
 
-    def cleanup(self, achalls):  # pylint: disable=missing-function-docstring
+    def cleanup(self, achalls: Iterable[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
         if self.conf('cleanup-hook'):
             for achall in achalls:
                 env = self.env.pop(achall)
@@ -235,7 +246,7 @@ permitted by DNS standards.)
                 self._execute_hook('cleanup-hook', achall.domain)
         self.reverter.recovery_routine()
 
-    def _execute_hook(self, hook_name, achall_domain):
+    def _execute_hook(self, hook_name: str, achall_domain: str) -> Tuple[str, str]:
         returncode, err, out = misc.execute_command_status(
             self.option_name(hook_name), self.conf(hook_name),
             env=util.env_no_snap_for_external_calls()

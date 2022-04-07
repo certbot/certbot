@@ -1,4 +1,7 @@
 """Apache plugin constants."""
+from typing import Dict
+from typing import List
+
 import pkg_resources
 
 from certbot.compat import os
@@ -13,7 +16,7 @@ UPDATED_MOD_SSL_CONF_DIGEST = ".updated-options-ssl-apache-conf-digest.txt"
 in `certbot.configuration.NamespaceConfig.config_dir`."""
 
 # NEVER REMOVE A SINGLE HASH FROM THIS LIST UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING!
-ALL_SSL_OPTIONS_HASHES = [
+ALL_SSL_OPTIONS_HASHES: List[str] = [
     '2086bca02db48daf93468332543c60ac6acdb6f0b58c7bfdf578a5d47092f82a',
     '4844d36c9a0f587172d9fa10f4f1c9518e3bcfa1947379f155e16a70a728c21a',
     '5a922826719981c0a234b1fbcd495f3213e49d2519e845ea0748ba513044b65b',
@@ -36,39 +39,39 @@ AUGEAS_LENS_DIR = pkg_resources.resource_filename(
     "certbot_apache", os.path.join("_internal", "augeas_lens"))
 """Path to the Augeas lens directory"""
 
-REWRITE_HTTPS_ARGS = [
+REWRITE_HTTPS_ARGS: List[str] = [
     "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,NE,R=permanent]"]
 """Apache version<2.3.9 rewrite rule arguments used for redirections to
 https vhost"""
 
-REWRITE_HTTPS_ARGS_WITH_END = [
+REWRITE_HTTPS_ARGS_WITH_END: List[str] = [
     "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[END,NE,R=permanent]"]
 """Apache version >= 2.3.9 rewrite rule arguments used for redirections to
     https vhost"""
 
-OLD_REWRITE_HTTPS_ARGS = [
+OLD_REWRITE_HTTPS_ARGS: List[List[str]] = [
     ["^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"],
     ["^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[END,QSA,R=permanent]"]]
 
-HSTS_ARGS = ["always", "set", "Strict-Transport-Security",
+HSTS_ARGS: List[str] = ["always", "set", "Strict-Transport-Security",
              "\"max-age=31536000\""]
 """Apache header arguments for HSTS"""
 
-UIR_ARGS = ["always", "set", "Content-Security-Policy",
-            "upgrade-insecure-requests"]
+UIR_ARGS: List[str] = ["always", "set", "Content-Security-Policy", "upgrade-insecure-requests"]
 
-HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
-               "Upgrade-Insecure-Requests": UIR_ARGS}
+HEADER_ARGS: Dict[str, List[str]] = {
+    "Strict-Transport-Security": HSTS_ARGS, "Upgrade-Insecure-Requests": UIR_ARGS,
+}
 
-AUTOHSTS_STEPS = [60, 300, 900, 3600, 21600, 43200, 86400]
+AUTOHSTS_STEPS: List[int] = [60, 300, 900, 3600, 21600, 43200, 86400]
 """AutoHSTS increase steps: 1min, 5min, 15min, 1h, 6h, 12h, 24h"""
 
-AUTOHSTS_PERMANENT = 31536000
+AUTOHSTS_PERMANENT: int = 31536000
 """Value for the last max-age of HSTS"""
 
-AUTOHSTS_FREQ = 172800
+AUTOHSTS_FREQ: int = 172800
 """Minimum time since last increase to perform a new one: 48h"""
 
-MANAGED_COMMENT = "DO NOT REMOVE - Managed by Certbot"
-MANAGED_COMMENT_ID = MANAGED_COMMENT+", VirtualHost id: {0}"
+MANAGED_COMMENT: str = "DO NOT REMOVE - Managed by Certbot"
+MANAGED_COMMENT_ID: str = MANAGED_COMMENT + ", VirtualHost id: {0}"
 """Managed by Certbot comments and the VirtualHost identification template"""

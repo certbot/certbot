@@ -22,7 +22,7 @@ from certbot_integration_tests.utils.misc import GracefulTCPServer
 
 class _ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     # pylint: disable=missing-function-docstring
-    def do_POST(self):
+    def do_POST(self) -> None:
         request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediate-keys/0', verify=False)
         issuer_key = serialization.load_pem_private_key(request.content, None, default_backend())
 

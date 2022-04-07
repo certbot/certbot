@@ -11,7 +11,14 @@ import subprocess
 import sys
 import tempfile
 import time
+from types import TracebackType
+from typing import Any
+from typing import cast
+from typing import Dict
 from typing import List
+from typing import Mapping
+from typing import Optional
+from typing import Type
 
 import requests
 
@@ -34,11 +41,12 @@ class ACMEServer:
     ACMEServer is also a context manager, and so can be used to ensure ACME server is
     started/stopped upon context enter/exit.
     """
-    def __init__(self, acme_server, nodes, http_proxy=True, stdout=False,
-                 dns_server=None, http_01_port=DEFAULT_HTTP_01_PORT):
+    def __init__(self, acme_server: str, nodes: List[str], http_proxy: bool = True,
+                 stdout: bool = False, dns_server: Optional[str] = None,
+                 http_01_port: int = DEFAULT_HTTP_01_PORT) -> None:
         """
         Create an ACMEServer instance.
-        :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
+        :param str acme_server: the type of acme server used (boulder-v2 or pebble)
         :param list nodes: list of node names that will be setup by pytest xdist
         :param bool http_proxy: if False do not start the HTTP proxy
         :param bool stdout: if True stream all subprocesses stdout to standard stdout
@@ -60,7 +68,7 @@ class ACMEServer:
                 raise ValueError('setting http_01_port is not currently supported '
                                   'with boulder or the HTTP proxy')
 
-    def start(self):
+    def start(self) -> None:
         """Start the test stack"""
         try:
             if self._proxy:
@@ -73,7 +81,7 @@ class ACMEServer:
             self.stop()
             raise e
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the test stack, and clean its resources"""
         print('=> Tear down the test infrastructure...')
         try:
@@ -104,24 +112,26 @@ class ACMEServer:
             self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')
 
-    def __enter__(self):
+    def __enter__(self) -> Dict[str, Any]:
         self.start()
         return self.acme_xdist
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> None:
         self.stop()
 
-    def _construct_acme_xdist(self, acme_server, nodes):
+    def _construct_acme_xdist(self, acme_server: str, nodes: List[str]) -> None:
         """Generate and return the acme_xdist dict"""
-        acme_xdist = {'acme_server': acme_server, 'challtestsrv_port': CHALLTESTSRV_PORT}
+        acme_xdist: Dict[str, Any] = {'acme_server': acme_server}
 
         # Directory and ACME port are set implicitly in the docker-compose.yml
         # files of Boulder/Pebble.
         if acme_server == 'pebble':
             acme_xdist['directory_url'] = PEBBLE_DIRECTORY_URL
+            acme_xdist['challtestsrv_url'] = PEBBLE_CHALLTESTSRV_URL
         else:  # boulder
-            acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL \
-                if acme_server == 'boulder-v2' else BOULDER_V1_DIRECTORY_URL
+            acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL
+            acme_xdist['challtestsrv_url'] = BOULDER_V2_CHALLTESTSRV_URL
 
         acme_xdist['http_port'] = {
             node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
@@ -138,7 +148,7 @@ class ACMEServer:
 
         self.acme_xdist = acme_xdist
 
-    def _prepare_pebble_server(self):
+    def _prepare_pebble_server(self) -> None:
         """Configure and launch the Pebble server"""
         print('=> Starting pebble instance deployment...')
         pebble_artifacts_rv = pebble_artifacts.fetch(self._workspace, self._http_01_port)
@@ -178,7 +188,7 @@ class ACMEServer:
 
         print('=> Finished pebble instance deployment.')
 
-    def _prepare_boulder_server(self):
+    def _prepare_boulder_server(self) -> None:
         """Configure and launch the Boulder server"""
         print('=> Starting boulder instance deployment...')
         instance_path = join(self._workspace, 'boulder')
@@ -207,12 +217,14 @@ class ACMEServer:
 
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
-            misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=300)
+            misc.check_until_timeout(
+                self.acme_xdist['directory_url'], attempts=300)
 
             if not self._dns_server:
                 # Configure challtestsrv to answer any A record request with ip of the docker host.
-                response = requests.post('http://localhost:{0}/set-default-ipv4'.format(
-                    CHALLTESTSRV_PORT), json={'ip': '10.77.77.1'}
+                response = requests.post(
+                    f'{BOULDER_V2_CHALLTESTSRV_URL}/set-default-ipv4',
+                    json={'ip': '10.77.77.1'}
                 )
                 response.raise_for_status()
         except BaseException:
@@ -226,16 +238,19 @@ class ACMEServer:
 
         print('=> Finished boulder instance deployment.')
 
-    def _prepare_http_proxy(self):
+    def _prepare_http_proxy(self) -> None:
         """Configure and launch an HTTP proxy"""
         print('=> Configuring the HTTP proxy...')
+        http_port_map = cast(Dict[str, int], self.acme_xdist['http_port'])
         mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
-                   for node, port in self.acme_xdist['http_port'].items()}
+                   for node, port in http_port_map.items()}
         command = [sys.executable, proxy.__file__, str(DEFAULT_HTTP_01_PORT), json.dumps(mapping)]
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')
 
-    def _launch_process(self, command, cwd=os.getcwd(), env=None, force_stderr=False):
+    def _launch_process(self, command: List[str], cwd: str = os.getcwd(),
+                        env: Optional[Mapping[str, str]] = None,
+                        force_stderr: bool = False) -> subprocess.Popen:
         """Launch silently a subprocess OS command"""
         if not env:
             env = os.environ
@@ -248,14 +263,14 @@ class ACMEServer:
         return process
 
 
-def main():
+def main() -> None:
     # pylint: disable=missing-function-docstring
     parser = argparse.ArgumentParser(
         description='CLI tool to start a local instance of Pebble or Boulder CA server.')
     parser.add_argument('--server-type', '-s',
-                        choices=['pebble', 'boulder-v1', 'boulder-v2'], default='pebble',
-                        help='type of CA server to start: can be Pebble or Boulder '
-                             '(in ACMEv1 or ACMEv2 mode), Pebble is used if not set.')
+                        choices=['pebble', 'boulder-v2'], default='pebble',
+                        help='type of CA server to start: can be Pebble or Boulder. '
+                             'Pebble is used if not set.')
     parser.add_argument('--dns-server', '-d',
                         help='specify the DNS server as `IP:PORT` to use by '
                              'Pebble; if not specified, a local mock DNS server will be used to '

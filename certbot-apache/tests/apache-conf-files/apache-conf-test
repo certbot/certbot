@@ -51,9 +51,9 @@ function Cleanup() {
 
 # if our environment asks us to enable modules, do our best!
 if [ "$1" = --debian-modules ] ; then
-    sudo apt-get install -y apache2
-    sudo apt-get install -y libapache2-mod-wsgi-py3
-    sudo apt-get install -y libapache2-mod-macro
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apache2
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libapache2-mod-wsgi-py3
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libapache2-mod-macro
 
     for mod in  ssl rewrite macro wsgi deflate userdir version mime setenvif ; do
         echo -n enabling $mod

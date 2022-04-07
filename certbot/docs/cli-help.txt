@@ -1,4 +1,4 @@
-usage:
+usage: 
   certbot [SUBCOMMAND] [options] [-d DOMAIN] [-d DOMAIN] ...
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
@@ -31,10 +31,11 @@ manage your account:
     register        Create an ACME account
     unregister      Deactivate an ACME account
     update_account  Update an ACME account
+    show_account    Display account details
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -96,7 +97,9 @@ optional arguments:
                         necessary to accurately simulate renewal. --deploy-
                         hook commands are not called. (default: False)
   --debug-challenges    After setting up challenges, wait for user input
-                        before submitting to CA (default: False)
+                        before submitting to CA. When used in combination with
+                        the `-v` option, the challenge URLs or FQDNs and their
+                        expected return values are shown. (default: False)
   --preferred-chain PREFERRED_CHAIN
                         Set the preferred certificate chain. If the CA offers
                         multiple certificate chains, prefer the chain whose
@@ -112,6 +115,10 @@ optional arguments:
                         for details. ACME Challenges are versioned, but if you
                         pick "http" rather than "http-01", Certbot will select
                         the latest version automatically. (default: [])
+  --issuance-timeout ISSUANCE_TIMEOUT
+                        This option specifies how long (in seconds) Certbot
+                        will wait for the server to issue a certificate.
+                        (default: 90)
   --user-agent USER_AGENT
                         Set a custom user agent string for the client. User
                         agent strings allow the CA to collect high level
@@ -119,7 +126,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.20.0 (certbot;
+                        "". (default: CertbotACMEClient/1.26.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -161,6 +168,11 @@ automation:
                         default behavior of Certbot. This option may be used
                         to unset --reuse-key on an existing certificate.
                         (default: False)
+  --new-key             When renewing or replacing a certificate, generate a
+                        new private key, even if --reuse-key is set on the
+                        existing certificate. Combining --new-key and --reuse-
+                        key will result in the private key being replaced and
+                        then reused in future renewals. (default: False)
   --allow-subset-of-names
                         When performing domain validation, do not consider it
                         a failure if authorizations can not be obtained for a
@@ -187,7 +199,7 @@ security:
                         rsa)
   --elliptic-curve N    The SECG elliptic curve name to use. Please see RFC
                         8446 for supported values. (default: secp256r1)
-  --must-staple         Adds the OCSP Must Staple extension to the
+  --must-staple         Adds the OCSP Must-Staple extension to the
                         certificate. Autoconfigures OCSP Stapling for
                         supported setups (Apache version >= 2.3.3 ). (default:
                         False)
@@ -415,6 +427,9 @@ enhance:
   Helps to harden the TLS configuration by adding security enhancements to
   already existing configuration.
 
+show_account:
+  Options useful for the "show_account" subcommand:
+
 plugins:
   Plugin Selection: Certbot client supports an extensible plugins
   architecture. See 'certbot plugins' for a list of all installed plugins
@@ -628,7 +643,7 @@ dns-ovh:
   --dns-ovh-propagation-seconds DNS_OVH_PROPAGATION_SECONDS
                         The number of seconds to wait for DNS to propagate
                         before asking the ACME server to verify the DNS
-                        record. (default: 30)
+                        record. (default: 120)
   --dns-ovh-credentials DNS_OVH_CREDENTIALS
                         OVH credentials INI file. (default: None)
 

@@ -10,7 +10,7 @@ Certbot is meant to be run directly on your web server, not on your personal com
 
 Certbot is a fully-featured, extensible client for the Let's
 Encrypt CA (or any other CA that speaks the `ACME
-<https://github.com/ietf-wg-acme/acme/blob/master/draft-ietf-acme-acme.md>`_
+<https://datatracker.ietf.org/doc/html/rfc8555>`_
 protocol) that can automate the tasks of obtaining certificates and
 configuring webservers to use them. This client runs on Unix-based operating
 systems.

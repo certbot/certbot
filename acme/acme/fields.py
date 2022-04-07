@@ -1,4 +1,7 @@
 """ACME JSON fields."""
+import datetime
+from typing import Any
+
 import logging
 
 import josepy as jose
@@ -10,17 +13,17 @@ logger = logging.getLogger(__name__)
 class Fixed(jose.Field):
     """Fixed field."""
 
-    def __init__(self, json_name, value):
+    def __init__(self, json_name: str, value: Any) -> None:
         self.value = value
         super().__init__(
             json_name=json_name, default=value, omitempty=False)
 
-    def decode(self, value):
+    def decode(self, value: Any) -> Any:
         if value != self.value:
             raise jose.DeserializationError('Expected {0!r}'.format(self.value))
         return self.value
 
-    def encode(self, value):
+    def encode(self, value: Any) -> Any:
         if value != self.value:
             logger.warning(
                 'Overriding fixed field (%s) with %r', self.json_name, value)
@@ -37,11 +40,11 @@ class RFC3339Field(jose.Field):
     """
 
     @classmethod
-    def default_encoder(cls, value):
+    def default_encoder(cls, value: datetime.datetime) -> str:
         return pyrfc3339.generate(value)
 
     @classmethod
-    def default_decoder(cls, value):
+    def default_decoder(cls, value: str) -> datetime.datetime:
         try:
             return pyrfc3339.parse(value)
         except ValueError as error:
@@ -51,14 +54,29 @@ class RFC3339Field(jose.Field):
 class Resource(jose.Field):
     """Resource MITM field."""
 
-    def __init__(self, resource_type, *args, **kwargs):
+    def __init__(self, resource_type: str, *args: Any, **kwargs: Any) -> None:
         self.resource_type = resource_type
-        super().__init__(
-            'resource', default=resource_type, *args, **kwargs)
+        kwargs['default'] = resource_type
+        super().__init__('resource', *args, **kwargs)
 
-    def decode(self, value):
+    def decode(self, value: Any) -> Any:
         if value != self.resource_type:
             raise jose.DeserializationError(
                 'Wrong resource type: {0} instead of {1}'.format(
                     value, self.resource_type))
         return value
+
+
+def fixed(json_name: str, value: Any) -> Any:
+    """Generates a type-friendly Fixed field."""
+    return Fixed(json_name, value)
+
+
+def rfc3339(json_name: str, omitempty: bool = False) -> Any:
+    """Generates a type-friendly RFC3339 field."""
+    return RFC3339Field(json_name, omitempty=omitempty)
+
+
+def resource(resource_type: str) -> Any:
+    """Generates a type-friendly Resource field."""
+    return Resource(resource_type)

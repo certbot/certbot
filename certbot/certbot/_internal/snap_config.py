@@ -1,7 +1,9 @@
 """Module configuring Certbot in a snap environment"""
 import logging
 import socket
+from typing import Iterable
 from typing import List
+from typing import Optional
 
 from requests import Session
 from requests.adapters import HTTPAdapter
@@ -16,8 +18,8 @@ try:
     from urllib3.connectionpool import HTTPConnectionPool
 except ImportError:
     # Stub imports for oldest requirements, that will never be used in snaps.
-    HTTPConnection = object
-    HTTPConnectionPool = object
+    HTTPConnection = object  # type: ignore[misc,assignment]
+    HTTPConnectionPool = object  # type: ignore[misc,assignment]
 
 
 _ARCH_TRIPLET_MAP = {
@@ -52,7 +54,8 @@ def prepare_env(cli_args: List[str]) -> List[str]:
         session.mount('http://snapd/', _SnapdAdapter())
 
         try:
-            response = session.get('http://snapd/v2/connections?snap=certbot&interface=content')
+            response = session.get('http://snapd/v2/connections?snap=certbot&interface=content',
+                                   timeout=30.0)
             response.raise_for_status()
         except RequestException as e:
             if isinstance(e, HTTPError) and e.response.status_code == 404:
@@ -79,23 +82,24 @@ def prepare_env(cli_args: List[str]) -> List[str]:
 
 
 class _SnapdConnection(HTTPConnection):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("localhost")
-        self.sock = None
+        self.sock: Optional[socket.socket] = None
 
-    def connect(self):
+    def connect(self) -> None:
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.connect("/run/snapd.socket")
 
 
 class _SnapdConnectionPool(HTTPConnectionPool):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("localhost")
 
-    def _new_conn(self):
+    def _new_conn(self) -> _SnapdConnection:
         return _SnapdConnection()
 
 
 class _SnapdAdapter(HTTPAdapter):
-    def get_connection(self, url, proxies=None):
+    def get_connection(self, url: str,
+                       proxies: Optional[Iterable[str]] = None) -> _SnapdConnectionPool:
         return _SnapdConnectionPool()

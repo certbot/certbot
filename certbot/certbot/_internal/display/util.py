@@ -1,12 +1,14 @@
 """Internal Certbot display utilities."""
-from typing import List
-import textwrap
 import sys
+import textwrap
+from typing import List
+from typing import Optional
 
+from acme import messages as acme_messages
 from certbot.compat import misc
 
 
-def wrap_lines(msg):
+def wrap_lines(msg: str) -> str:
     """Format lines nicely to 80 chars.
 
     :param str msg: Original message
@@ -28,7 +30,7 @@ def wrap_lines(msg):
     return '\n'.join(fixed_l)
 
 
-def parens_around_char(label):
+def parens_around_char(label: str) -> str:
     """Place parens around first character of label.
 
     :param str label: Must contain at least one character
@@ -37,7 +39,7 @@ def parens_around_char(label):
     return "({first}){rest}".format(first=label[0], rest=label[1:])
 
 
-def input_with_timeout(prompt=None, timeout=36000.0):
+def input_with_timeout(prompt: Optional[str] = None, timeout: float = 36000.0) -> str:
     """Get user input with a timeout.
 
     Behaves the same as the builtin input, however, an error is raised if
@@ -67,7 +69,7 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     return line.rstrip('\n')
 
 
-def separate_list_input(input_):
+def separate_list_input(input_: str) -> List[str]:
     """Separate a comma or space separated list.
 
     :param str input_: input from the user
@@ -97,10 +99,25 @@ def summarize_domain_list(domains: List[str]) -> str:
     if not domains:
         return ""
 
-    l = len(domains)
-    if l == 1:
+    length = len(domains)
+    if length == 1:
         return domains[0]
-    elif l == 2:
+    elif length == 2:
         return " and ".join(domains)
     else:
-        return "{0} and {1} more domains".format(domains[0], l-1)
+        return "{0} and {1} more domains".format(domains[0], length-1)
+
+
+def describe_acme_error(error: acme_messages.Error) -> str:
+    """Returns a human-readable description of an RFC7807 error.
+
+    :param error: The ACME error
+    :returns: a string describing the error, suitable for human consumption.
+    :rtype: str
+    """
+    parts = (error.title, error.detail)
+    if any(parts):
+        return ' :: '.join(part for part in parts if part is not None)
+    if error.description:
+        return error.description
+    return error.typ

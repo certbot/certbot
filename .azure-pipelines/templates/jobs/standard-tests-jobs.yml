@@ -1,52 +1,52 @@
 jobs:
   - job: test
     variables:
-      PYTHON_VERSION: 3.9
+      PYTHON_VERSION: 3.10
     strategy:
       matrix:
-        macos-py36:
+        macos-py37-cover:
           IMAGE_NAME: macOS-10.15
-          PYTHON_VERSION: 3.6
-          TOXENV: py36
-        macos-py39:
+          PYTHON_VERSION: 3.7
+          TOXENV: py37-cover
+        macos-py310-cover:
           IMAGE_NAME: macOS-10.15
-          PYTHON_VERSION: 3.9
-          TOXENV: py39
-        windows-py36:
-          IMAGE_NAME: vs2017-win2016
-          PYTHON_VERSION: 3.6
-          TOXENV: py36-win
+          PYTHON_VERSION: 3.10
+          TOXENV: py310-cover
+        windows-py37:
+          IMAGE_NAME: windows-2019
+          PYTHON_VERSION: 3.7
+          TOXENV: py37-win
         windows-py39-cover:
-          IMAGE_NAME: vs2017-win2016
+          IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.9
           TOXENV: py39-cover-win
         windows-integration-certbot:
-          IMAGE_NAME: vs2017-win2016
+          IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.9
           TOXENV: integration-certbot
         linux-oldest-tests-1:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.7
           TOXENV: '{acme,apache,apache-v2,certbot}-oldest'
         linux-oldest-tests-2:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.7
           TOXENV: '{dns,nginx}-oldest'
-        linux-py36:
+        linux-py37:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
-          TOXENV: py36
-        linux-py39-cover:
+          PYTHON_VERSION: 3.7
+          TOXENV: py37
+        linux-py310-cover:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.9
-          TOXENV: py39-cover
-        linux-py39-lint:
+          PYTHON_VERSION: 3.10
+          TOXENV: py310-cover
+        linux-py310-lint:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.9
+          PYTHON_VERSION: 3.10
           TOXENV: lint-posix
-        linux-py39-mypy:
+        linux-py310-mypy:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.9
+          PYTHON_VERSION: 3.10
           TOXENV: mypy-posix
         linux-integration:
           IMAGE_NAME: ubuntu-18.04
@@ -58,11 +58,9 @@ jobs:
           TOXENV: apache_compat
         apacheconftest:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
           TOXENV: apacheconftest-with-pebble
         nginxroundtrip:
           IMAGE_NAME: ubuntu-18.04
-          PYTHON_VERSION: 3.6
           TOXENV: nginxroundtrip
     pool:
       vmImage: $(IMAGE_NAME)

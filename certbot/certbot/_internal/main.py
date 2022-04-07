@@ -5,12 +5,14 @@ from contextlib import contextmanager
 import functools
 import logging.handlers
 import sys
+from typing import cast
 from typing import Generator
 from typing import IO
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import TypeVar
 from typing import Union
 
 import configobj
@@ -18,7 +20,9 @@ import josepy as jose
 import zope.component
 import zope.interface
 
+from acme import client as acme_client
 from acme import errors as acme_errors
+from acme import messages as acme_messages
 import certbot
 from certbot import configuration
 from certbot import crypto_util
@@ -56,7 +60,7 @@ USER_CANCELLED = ("User chose to cancel the operation and may "
 logger = logging.getLogger(__name__)
 
 
-def _suggest_donation_if_appropriate(config):
+def _suggest_donation_if_appropriate(config: configuration.NamespaceConfig) -> None:
     """Potentially suggest a donation to support Certbot.
 
     :param config: Configuration object
@@ -82,7 +86,10 @@ def _suggest_donation_if_appropriate(config):
     )
 
 
-def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=None):
+def _get_and_save_cert(le_client: client.Client, config: configuration.NamespaceConfig,
+                       domains: Optional[List[str]] = None, certname: Optional[str] = None,
+                       lineage: Optional[storage.RenewableCert] = None
+                       ) -> Optional[storage.RenewableCert]:
     """Authenticate and enroll certificate.
 
     This method finds the relevant lineage, figures out what to do with it,
@@ -115,14 +122,15 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
             display_util.notify(
                 "{action} for {domains}".format(
                     action="Simulating renewal of an existing certificate"
-                            if config.dry_run else "Renewing an existing certificate",
+                    if config.dry_run else "Renewing an existing certificate",
                     domains=internal_display_util.summarize_domain_list(domains or lineage.names())
                 )
             )
             renewal.renew_cert(config, domains, le_client, lineage)
         else:
             # TREAT AS NEW REQUEST
-            assert domains is not None
+            if domains is None:
+                raise errors.Error("Domain list cannot be none if the lineage is not set.")
             display_util.notify(
                 "{action} for {domains}".format(
                     action="Simulating a certificate request" if config.dry_run else
@@ -150,21 +158,43 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
     :param config: Current configuration provided by the client
     :param cert: Matching certificate that could be renewed
     """
-    if not cli.set_by_cli("key_type") or not cli.set_by_cli("certname"):
+    new_key_type = config.key_type.upper()
+    cur_key_type = cert.private_key_type.upper()
 
-        new_key_type = config.key_type.upper()
-        cur_key_type = cert.private_key_type.upper()
+    if new_key_type == cur_key_type:
+        return
 
-        if new_key_type != cur_key_type:
-            msg = ('Are you trying to change the key type of the certificate named {0} '
-                   'from {1} to {2}? Please provide both --cert-name and --key-type on '
-                   'the command line to confirm the change you are trying to make.')
-            msg = msg.format(cert.lineagename, cur_key_type, new_key_type)
-            raise errors.Error(msg)
+    # If both --key-type and --cert-name are provided, we consider the user's intent to
+    # be unambiguous: to change the key type of this lineage.
+    is_confirmed_via_cli = cli.set_by_cli("key_type") and cli.set_by_cli("certname")
+
+    # Failing that, we interactively prompt the user to confirm the change.
+    if is_confirmed_via_cli or display_util.yesno(
+        f'An {cur_key_type} certificate named {cert.lineagename} already exists. Do you want to '
+        f'update its key type to {new_key_type}?',
+        yes_label='Update key type', no_label='Keep existing key type',
+        default=False, force_interactive=False,
+    ):
+        return
+
+    # If --key-type was set on the CLI but the user did not confirm the key type change using
+    # one of the two above methods, their intent is ambiguous. Error out.
+    if cli.set_by_cli("key_type"):
+        raise errors.Error(
+            'Are you trying to change the key type of the certificate named '
+            f'{cert.lineagename} from {cur_key_type} to {new_key_type}? Please provide '
+            'both --cert-name and --key-type on the command line to confirm the change '
+            'you are trying to make.'
+        )
+
+    # The mismatch between the lineage's key type and config.key_type is caused by Certbot's
+    # default value. The user is not asking for a key change: keep the key type of the existing
+    # lineage.
+    config.key_type = cur_key_type.lower()
 
 
 def _handle_subset_cert_request(config: configuration.NamespaceConfig,
-                                domains: List[str],
+                                domains: Iterable[str],
                                 cert: storage.RenewableCert
                                 ) -> Tuple[str, Optional[storage.RenewableCert]]:
     """Figure out what to do if a previous cert had a subset of the names now requested
@@ -264,7 +294,8 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     raise AssertionError('This is impossible')
 
 
-def _find_lineage_for_domains(config, domains):
+def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: List[str]
+                              ) -> Tuple[Optional[str], Optional[storage.RenewableCert]]:
     """Determine whether there are duplicated names and how to handle
     them (renew, reinstall, newcert, or raising an error to stop
     the client run if the user chooses to cancel the operation when
@@ -304,7 +335,8 @@ def _find_lineage_for_domains(config, domains):
     return None, None
 
 
-def _find_cert(config, domains, certname):
+def _find_cert(config: configuration.NamespaceConfig, domains: List[str], certname: str
+               ) -> Tuple[bool, Optional[storage.RenewableCert]]:
     """Finds an existing certificate object given domains and/or a certificate name.
 
     :param config: Configuration object
@@ -328,10 +360,9 @@ def _find_cert(config, domains, certname):
     return (action != "reinstall"), lineage
 
 
-def _find_lineage_for_domains_and_certname(config: configuration.NamespaceConfig,
-                                           domains: List[str],
-                                           certname: str
-                                           ) -> Tuple[str, Optional[storage.RenewableCert]]:
+def _find_lineage_for_domains_and_certname(
+        config: configuration.NamespaceConfig, domains: List[str],
+        certname: str) -> Tuple[Optional[str], Optional[storage.RenewableCert]]:
     """Find appropriate lineage based on given domains and/or certname.
 
     :param config: Configuration object
@@ -357,7 +388,8 @@ def _find_lineage_for_domains_and_certname(config: configuration.NamespaceConfig
     lineage = cert_manager.lineage_for_certname(config, certname)
     if lineage:
         if domains:
-            if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
+            computed_domains = cert_manager.domains_for_certname(config, certname)
+            if computed_domains and set(computed_domains) != set(domains):
                 _handle_unexpected_key_type_migration(config, lineage)
                 _ask_user_to_confirm_new_names(config, domains, certname,
                                                lineage.names())  # raises if no
@@ -367,10 +399,14 @@ def _find_lineage_for_domains_and_certname(config: configuration.NamespaceConfig
     elif domains:
         return "newcert", None
     raise errors.ConfigurationError("No certificate with name {0} found. "
-        "Use -d to specify domains, or run certbot certificates to see "
-        "possible certificate names.".format(certname))
+                                    "Use -d to specify domains, or run certbot certificates to see "
+                                    "possible certificate names.".format(certname))
 
-def _get_added_removed(after, before):
+
+T = TypeVar("T")
+
+
+def _get_added_removed(after: Iterable[T], before: Iterable[T]) -> Tuple[List[T], List[T]]:
     """Get lists of items removed from `before`
     and a lists of items added to `after`
     """
@@ -380,7 +416,8 @@ def _get_added_removed(after, before):
     removed.sort()
     return added, removed
 
-def _format_list(character, strings):
+
+def _format_list(character: str, strings: Iterable[str]) -> str:
     """Format list with given character
     """
     if not strings:
@@ -392,7 +429,10 @@ def _format_list(character, strings):
         br=os.linesep
     )
 
-def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
+
+def _ask_user_to_confirm_new_names(config: configuration.NamespaceConfig,
+                                   new_domains: Iterable[str], certname: str,
+                                   old_domains: Iterable[str]) -> None:
     """Ask user to confirm update cert certname to contain new_domains.
 
     :param config: Configuration object
@@ -429,7 +469,9 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
         raise errors.ConfigurationError("Specified mismatched certificate name and domains.")
 
 
-def _find_domains_or_certname(config, installer, question=None):
+def _find_domains_or_certname(config: configuration.NamespaceConfig,
+                              installer: Optional[interfaces.Installer],
+                              question: Optional[str] = None) -> Tuple[List[str], str]:
     """Retrieve domains and certname from config or user input.
 
     :param config: Configuration object
@@ -596,7 +638,7 @@ def _is_interactive_only_auth(config: configuration.NamespaceConfig) -> bool:
 
 
 def _csr_report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[str],
-                         chain_path: Optional[str], fullchain_path: Optional[str]):
+                         chain_path: Optional[str], fullchain_path: Optional[str]) -> None:
     """ --csr variant of _report_new_cert.
 
     Until --csr is overhauled (#8332) this is transitional function to report the creation
@@ -633,7 +675,9 @@ def _csr_report_new_cert(config: configuration.NamespaceConfig, cert_path: Optio
     )
 
 
-def _determine_account(config):
+def _determine_account(config: configuration.NamespaceConfig
+                       ) -> Tuple[account.Account,
+                                  Optional[acme_client.ClientV2]]:
     """Determine which account to use.
 
     If ``config.account`` is ``None``, it will be updated based on the
@@ -649,9 +693,9 @@ def _determine_account(config):
     :raises errors.Error: If unable to register an account with ACME server
 
     """
-    def _tos_cb(terms_of_service):
+    def _tos_cb(terms_of_service: str) -> None:
         if config.tos:
-            return True
+            return
         msg = ("Please read the Terms of Service at {0}. You "
                "must agree in order to register with the ACME "
                "server. Do you agree?".format(terms_of_service))
@@ -660,17 +704,19 @@ def _determine_account(config):
             raise errors.Error(
                 "Registration cannot proceed without accepting "
                 "Terms of Service.")
-        return None
 
     account_storage = account.AccountFileStorage(config)
-    acme = None
+    acme: Optional[acme_client.ClientV2] = None
 
     if config.account is not None:
         acc = account_storage.load(config.account)
     else:
         accounts = account_storage.find_all()
         if len(accounts) > 1:
-            acc = display_ops.choose_account(accounts)
+            potential_acc = display_ops.choose_account(accounts)
+            if not potential_acc:
+                raise errors.Error("No account has been chosen.")
+            acc = potential_acc
         elif len(accounts) == 1:
             acc = accounts[0]
         else:  # no account registered yet
@@ -682,16 +728,22 @@ def _determine_account(config):
                 display_util.notify("Account registered.")
             except errors.MissingCommandlineFlag:
                 raise
-            except errors.Error:
+            except (errors.Error, acme_messages.Error) as err:
                 logger.debug("", exc_info=True)
+                if acme_messages.is_acme_error(err):
+                    err_msg = internal_display_util.describe_acme_error(
+                        cast(acme_messages.Error, err))
+                    err_msg = f"Error returned by the ACME server: {err_msg}"
+                else:
+                    err_msg = str(err)
                 raise errors.Error(
-                    "Unable to register an account with ACME server")
+                    f"Unable to register an account with ACME server. {err_msg}")
 
     config.account = acc.id
     return acc, acme
 
 
-def _delete_if_appropriate(config):
+def _delete_if_appropriate(config: configuration.NamespaceConfig) -> None:
     """Does the user want to delete their now-revoked certs? If run in non-interactive mode,
     deleting happens automatically.
 
@@ -729,21 +781,23 @@ def _delete_if_appropriate(config):
             config, config.certname)
     try:
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
-            lambda x: x.archive_dir, lambda x: x)
+                                              lambda x: x.archive_dir, lambda x: x.lineagename)
     except errors.OverlappingMatchFound:
         logger.warning("Not deleting revoked certificates due to overlapping archive dirs. "
                        "More than one certificate is using %s", archive_dir)
         return
     except Exception as e:
         msg = ('config.default_archive_dir: {0}, config.live_dir: {1}, archive_dir: {2},'
-        'original exception: {3}')
+               'original exception: {3}')
         msg = msg.format(config.default_archive_dir, config.live_dir, archive_dir, e)
         raise errors.Error(msg)
 
     cert_manager.delete(config)
 
 
-def _init_le_client(config, authenticator, installer):
+def _init_le_client(config: configuration.NamespaceConfig,
+                    authenticator: Optional[interfaces.Authenticator],
+                    installer: Optional[interfaces.Installer]) -> client.Client:
     """Initialize Let's Encrypt Client
 
     :param config: Configuration object
@@ -758,19 +812,19 @@ def _init_le_client(config, authenticator, installer):
     :rtype: client.Client
 
     """
+    acc: Optional[account.Account]
     if authenticator is not None:
         # if authenticator was given, then we will need account...
         acc, acme = _determine_account(config)
         logger.debug("Picked account: %r", acc)
-        # XXX
-        #crypto_util.validate_key_csr(acc.key)
     else:
         acc, acme = None, None
 
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
-def unregister(config, unused_plugins):
+def unregister(config: configuration.NamespaceConfig,
+               unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Deactivate account on server
 
     :param config: Configuration object
@@ -779,15 +833,15 @@ def unregister(config, unused_plugins):
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None`
-    :rtype: None
+    :returns: `None` or a string indicating an error
+    :rtype: None or str
 
     """
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
 
     if not accounts:
-        return "Could not find existing account to deactivate."
+        return f"Could not find existing account for server {config.server}."
     prompt = ("Are you sure you would like to irrevocably deactivate "
               "your account?")
     wants_deactivate = display_util.yesno(prompt, yes_label='Deactivate', no_label='Abort',
@@ -799,6 +853,9 @@ def unregister(config, unused_plugins):
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
 
+    if not cb_client.acme:
+        raise errors.Error("ACME client is not set.")
+
     # delete on boulder
     cb_client.acme.deactivate_registration(acc.regr)
     account_files = account.AccountFileStorage(config)
@@ -809,7 +866,8 @@ def unregister(config, unused_plugins):
     return None
 
 
-def register(config, unused_plugins):
+def register(config: configuration.NamespaceConfig,
+             unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Create accounts on the server.
 
     :param config: Configuration object
@@ -818,7 +876,7 @@ def register(config, unused_plugins):
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None` or a string indicating and error
+    :returns: `None` or a string indicating an error
     :rtype: None or str
 
     """
@@ -839,7 +897,8 @@ def register(config, unused_plugins):
     return None
 
 
-def update_account(config, unused_plugins):
+def update_account(config: configuration.NamespaceConfig,
+                   unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Modify accounts on the server.
 
     :param config: Configuration object
@@ -848,7 +907,7 @@ def update_account(config, unused_plugins):
     :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None` or a string indicating and error
+    :returns: `None` or a string indicating an error
     :rtype: None or str
 
     """
@@ -858,14 +917,17 @@ def update_account(config, unused_plugins):
     accounts = account_storage.find_all()
 
     if not accounts:
-        return "Could not find an existing account to update."
+        return f"Could not find an existing account for server {config.server}."
     if config.email is None and not config.register_unsafely_without_email:
         config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
-    # Empty list of contacts in case the user is removing all emails
 
+    if not cb_client.acme:
+        raise errors.Error("ACME client is not set.")
+
+    # Empty list of contacts in case the user is removing all emails
     acc_contacts: Iterable[str] = ()
     if config.email:
         acc_contacts = ['mailto:' + email for email in config.email.split(',')]
@@ -889,6 +951,53 @@ def update_account(config, unused_plugins):
     return None
 
 
+def show_account(config: configuration.NamespaceConfig,
+                   unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
+    """Fetch account info from the ACME server and show it to the user.
+
+    :param config: Configuration object
+    :type config: configuration.NamespaceConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: plugins_disco.PluginsRegistry
+
+    :returns: `None` or a string indicating an error
+    :rtype: None or str
+
+    """
+    # Portion of _determine_account logic to see whether accounts already
+    # exist or not.
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+
+    if not accounts:
+        return f"Could not find an existing account for server {config.server}."
+
+    acc, acme = _determine_account(config)
+    cb_client = client.Client(config, acc, None, None, acme=acme)
+
+    if not cb_client.acme:
+        raise errors.Error("ACME client is not set.")
+
+    regr = cb_client.acme.query_registration(acc.regr)
+    output = [f"Account details for server {config.server}:",
+              f"  Account URL: {regr.uri}"]
+
+    emails = []
+
+    for contact in regr.body.contact:
+        if contact.startswith('mailto:'):
+            emails.append(contact[7:])
+
+    output.append("  Email contact{}: {}".format(
+                            "s" if len(emails) > 1 else "",
+                            ", ".join(emails) if len(emails) > 0 else "none"))
+
+    display_util.notify("\n".join(output))
+
+    return None
+
+
 def _cert_name_from_config_or_lineage(config: configuration.NamespaceConfig,
                                       lineage: Optional[storage.RenewableCert]) -> Optional[str]:
     if lineage:
@@ -904,7 +1013,8 @@ def _cert_name_from_config_or_lineage(config: configuration.NamespaceConfig,
     return None
 
 
-def _install_cert(config, le_client, domains, lineage=None):
+def _install_cert(config: configuration.NamespaceConfig, le_client: client.Client,
+                  domains: List[str], lineage: Optional[storage.RenewableCert] = None) -> None:
     """Install a cert
 
     :param config: Configuration object
@@ -923,7 +1033,8 @@ def _install_cert(config, le_client, domains, lineage=None):
     :rtype: None
 
     """
-    path_provider = lineage if lineage else config
+    path_provider: Union[storage.RenewableCert,
+                         configuration.NamespaceConfig] = lineage if lineage else config
     assert path_provider.cert_path is not None
 
     le_client.deploy_certificate(domains, path_provider.key_path, path_provider.cert_path,
@@ -931,7 +1042,8 @@ def _install_cert(config, le_client, domains, lineage=None):
     le_client.enhance_config(domains, path_provider.chain_path)
 
 
-def install(config, plugins):
+def install(config: configuration.NamespaceConfig,
+            plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Install a previously obtained cert in a server.
 
     :param config: Configuration object
@@ -940,8 +1052,8 @@ def install(config, plugins):
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None`
-    :rtype: None
+    :returns: `None` or the error message
+    :rtype: None or str
 
     """
     # XXX: Update for renewer/RenewableCert
@@ -990,7 +1102,8 @@ def install(config, plugins):
 
     return None
 
-def _populate_from_certname(config):
+
+def _populate_from_certname(config: configuration.NamespaceConfig) -> configuration.NamespaceConfig:
     """Helper function for install to populate missing config values from lineage
     defined by --cert-name."""
 
@@ -1007,14 +1120,18 @@ def _populate_from_certname(config):
         config.namespace.fullchain_path = lineage.fullchain_path
     return config
 
-def _check_certificate_and_key(config):
+
+def _check_certificate_and_key(config: configuration.NamespaceConfig) -> None:
     if not os.path.isfile(filesystem.realpath(config.cert_path)):
         raise errors.ConfigurationError("Error while reading certificate from path "
                                         "{0}".format(config.cert_path))
     if not os.path.isfile(filesystem.realpath(config.key_path)):
         raise errors.ConfigurationError("Error while reading private key from path "
                                         "{0}".format(config.key_path))
-def plugins_cmd(config, plugins):
+
+
+def plugins_cmd(config: configuration.NamespaceConfig,
+                plugins: plugins_disco.PluginsRegistry) -> None:
     """List server software plugins.
 
     :param config: Configuration object
@@ -1052,7 +1169,8 @@ def plugins_cmd(config, plugins):
     notify(str(available))
 
 
-def enhance(config, plugins):
+def enhance(config: configuration.NamespaceConfig,
+            plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Add security enhancements to existing configuration
 
     :param config: Configuration object
@@ -1061,8 +1179,8 @@ def enhance(config, plugins):
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None`
-    :rtype: None
+    :returns: `None` or a string indicating an error
+    :rtype: None or str
 
     """
     supported_enhancements = ["hsts", "redirect", "uir", "staple"]
@@ -1089,6 +1207,8 @@ def enhance(config, plugins):
         config, "enhance", allow_multiple=False,
         custom_prompt=certname_question)[0]
     cert_domains = cert_manager.domains_for_certname(config, config.certname)
+    if cert_domains is None:
+        raise errors.Error("Could not find the list of domains for the given certificate name.")
     if config.noninteractive_mode:
         domains = cert_domains
     else:
@@ -1100,6 +1220,8 @@ def enhance(config, plugins):
                                "defined, exiting.")
 
     lineage = cert_manager.lineage_for_certname(config, config.certname)
+    if not lineage:
+        raise errors.Error("Could not find the lineage for the given certificate name.")
     if not config.chain_path:
         config.chain_path = lineage.chain_path
     if oldstyle_enh:
@@ -1111,7 +1233,7 @@ def enhance(config, plugins):
     return None
 
 
-def rollback(config, plugins):
+def rollback(config: configuration.NamespaceConfig, plugins: plugins_disco.PluginsRegistry) -> None:
     """Rollback server configuration changes made during install.
 
     :param config: Configuration object
@@ -1126,7 +1248,9 @@ def rollback(config, plugins):
     """
     client.rollback(config.installer, config.checkpoints, config, plugins)
 
-def update_symlinks(config, unused_plugins):
+
+def update_symlinks(config: configuration.NamespaceConfig,
+                    unused_plugins: plugins_disco.PluginsRegistry) -> None:
     """Update the certificate file family symlinks
 
     Use the information in the config file to make symlinks point to
@@ -1144,7 +1268,9 @@ def update_symlinks(config, unused_plugins):
     """
     cert_manager.update_live_symlinks(config)
 
-def rename(config, unused_plugins):
+
+def rename(config: configuration.NamespaceConfig,
+           unused_plugins: plugins_disco.PluginsRegistry) -> None:
     """Rename a certificate
 
     Use the information in the config file to rename an existing
@@ -1162,7 +1288,9 @@ def rename(config, unused_plugins):
     """
     cert_manager.rename_lineage(config)
 
-def delete(config, unused_plugins):
+
+def delete(config: configuration.NamespaceConfig,
+           unused_plugins: plugins_disco.PluginsRegistry) -> None:
     """Delete a certificate
 
     Use the information in the config file to delete an existing
@@ -1181,7 +1309,8 @@ def delete(config, unused_plugins):
     cert_manager.delete(config)
 
 
-def certificates(config, unused_plugins):
+def certificates(config: configuration.NamespaceConfig,
+                 unused_plugins: plugins_disco.PluginsRegistry) -> None:
     """Display information about certs configured with Certbot
 
     :param config: Configuration object
@@ -1197,7 +1326,8 @@ def certificates(config, unused_plugins):
     cert_manager.certificates(config)
 
 
-def revoke(config, unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
+def revoke(config: configuration.NamespaceConfig,
+           unused_plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Revoke a previously obtained certificate.
 
     :param config: Configuration object
@@ -1251,7 +1381,8 @@ def revoke(config, unused_plugins: plugins_disco.PluginsRegistry) -> Optional[st
     return None
 
 
-def run(config, plugins):
+def run(config: configuration.NamespaceConfig,
+        plugins: plugins_disco.PluginsRegistry) -> Optional[str]:
     """Obtain a certificate and install.
 
     :param config: Configuration object
@@ -1270,6 +1401,20 @@ def run(config, plugins):
         installer, authenticator = plug_sel.choose_configurator_plugins(config, plugins, "run")
     except errors.PluginSelectionError as e:
         return str(e)
+
+    if config.must_staple and installer and "staple-ocsp" not in installer.supported_enhancements():
+        raise errors.NotSupportedError(
+            "Must-Staple extension requested, but OCSP stapling is not supported by the selected "
+            f"installer ({config.installer})\n\n"
+            "You can either:\n"
+            " * remove the --must-staple option from the command line and obtain a certificate "
+            "without the Must-Staple extension, or;\n"
+            " * use the `certonly` subcommand and manually install the certificate into the  "
+            "intended service (e.g. webserver). You must also then manually enable OCSP stapling, "
+            "as it is required for certificates with the Must-Staple extension to "
+            "function properly.\n"
+            " * choose a different installer plugin (such as --nginx or --apache), if possible."
+        )
 
     # Preflight check for enhancement support by the selected installer
     if not enhancements.are_supported(config, installer):
@@ -1361,7 +1506,8 @@ def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
     return cert_path, chain_path, fullchain_path
 
 
-def renew_cert(config, plugins, lineage):
+def renew_cert(config: configuration.NamespaceConfig, plugins: plugins_disco.PluginsRegistry,
+               lineage: storage.RenewableCert) -> None:
     """Renew & save an existing cert. Do not install it.
 
     :param config: Configuration object
@@ -1385,6 +1531,9 @@ def renew_cert(config, plugins, lineage):
 
     renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
 
+    if not renewed_lineage:
+        raise errors.Error("An existing certificate for the given name could not be found.")
+
     if installer and not config.dry_run:
         # In case of a renewal, reload server to pick up new certificate.
         updater.run_renewal_deployer(config, renewed_lineage, installer)
@@ -1392,7 +1541,7 @@ def renew_cert(config, plugins, lineage):
         installer.restart()
 
 
-def certonly(config, plugins):
+def certonly(config: configuration.NamespaceConfig, plugins: plugins_disco.PluginsRegistry) -> None:
     """Authenticate & obtain cert, but do not install it.
 
     This implements the 'certonly' subcommand.
@@ -1412,7 +1561,6 @@ def certonly(config, plugins):
     # SETUP: Select plugins and construct a client instance
     # installers are used in auth mode to determine domain names
     installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-
     le_client = _init_le_client(config, auth, installer)
 
     if config.csr:
@@ -1443,7 +1591,8 @@ def certonly(config, plugins):
     eff.handle_subscription(config, le_client.account)
 
 
-def renew(config, unused_plugins):
+def renew(config: configuration.NamespaceConfig,
+          unused_plugins: plugins_disco.PluginsRegistry) -> None:
     """Renew previously-obtained certificates.
 
     :param config: Configuration object
@@ -1462,7 +1611,7 @@ def renew(config, unused_plugins):
         hooks.run_saved_post_hooks()
 
 
-def make_or_verify_needed_dirs(config):
+def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
     """Create or verify existence of config, work, and hook directories.
 
     :param config: Configuration object
@@ -1514,7 +1663,7 @@ def make_displayer(config: configuration.NamespaceConfig
             devnull.close()
 
 
-def main(cli_args=None):
+def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
     """Run Certbot.
 
     :param cli_args: command line to Certbot, defaults to ``sys.argv[1:]``

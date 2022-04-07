@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
+"""Module executing integration tests against certbot snap."""
 import glob
 import os
 import re
 import subprocess
+from typing import Generator
 
 import pytest
 
 
 @pytest.fixture(autouse=True, scope="module")
-def install_certbot_snap(request):
+def install_certbot_snap(request: pytest.FixtureRequest) -> Generator[None, None, None]:
+    """Fixture ensuring the certbot snap is installed before each test."""
     with pytest.raises(Exception):
         subprocess.check_call(['certbot', '--version'])
     try:
@@ -22,13 +25,14 @@ def install_certbot_snap(request):
         subprocess.call(['snap', 'remove', 'certbot'])
 
 
-def test_dns_plugin_install(dns_snap_path):
+def test_dns_plugin_install(dns_snap_path: str) -> None:
     """
     Test that each DNS plugin Certbot snap can be installed
     and is usable with the Certbot snap.
     """
-    plugin_name = re.match(r'^certbot-(dns-\w+)_.*\.snap$',
-                           os.path.basename(dns_snap_path)).group(1)
+    match = re.match(r'^certbot-(dns-\w+)_.*\.snap$', os.path.basename(dns_snap_path))
+    assert match
+    plugin_name = match.group(1)
     snap_name = 'certbot-{0}'.format(plugin_name)
     assert plugin_name not in subprocess.check_output(['certbot', 'plugins', '--prepare'],
                                                       universal_newlines=True)

@@ -7,5 +7,8 @@
 # in --editable mode (-e), just "pip install .[docs]" does not work as
 # expected and "pip install -e certbot[docs]" must be used instead
 
+# We also pin our dependencies for increased stability.
+
+-c ../tools/requirements.txt
 -e acme
 -e certbot[docs]

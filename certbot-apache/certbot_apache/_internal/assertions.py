@@ -1,12 +1,21 @@
 """Dual parser node assertions"""
 import fnmatch
+from typing import Any
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Union
 
 from certbot_apache._internal import interfaces
+from certbot_apache._internal.interfaces import CommentNode
+from certbot_apache._internal.interfaces import DirectiveNode
+from certbot_apache._internal.interfaces import ParserNode
+from certbot_apache._internal.obj import VirtualHost
 
 PASS = "CERTBOT_PASS_ASSERT"
 
 
-def assertEqual(first, second):
+def assertEqual(first: ParserNode, second: ParserNode) -> None:
     """ Equality assertion """
 
     if isinstance(first, interfaces.CommentNode):
@@ -29,84 +38,98 @@ def assertEqual(first, second):
         # (but identical) directory structures.
         assert first.filepath == second.filepath
 
-def assertEqualComment(first, second): # pragma: no cover
+
+def assertEqualComment(first: ParserNode, second: ParserNode) -> None:  # pragma: no cover
     """ Equality assertion for CommentNode """
 
     assert isinstance(first, interfaces.CommentNode)
     assert isinstance(second, interfaces.CommentNode)
 
-    if not isPass(first.comment) and not isPass(second.comment):  # type: ignore
-        assert first.comment == second.comment  # type: ignore
+    if not isPass(first.comment) and not isPass(second.comment):
+        assert first.comment == second.comment
 
-def _assertEqualDirectiveComponents(first, second): # pragma: no cover
+
+def _assertEqualDirectiveComponents(first: ParserNode,  # pragma: no cover
+                                    second: ParserNode) -> None:
     """ Handles assertion for instance variables for DirectiveNode and BlockNode"""
 
     # Enabled value cannot be asserted, because Augeas implementation
     # is unable to figure that out.
     # assert first.enabled == second.enabled
+    assert isinstance(first, DirectiveNode)
+    assert isinstance(second, DirectiveNode)
+
     if not isPass(first.name) and not isPass(second.name):
         assert first.name == second.name
 
     if not isPass(first.parameters) and not isPass(second.parameters):
         assert first.parameters == second.parameters
 
-def assertEqualDirective(first, second):
+
+def assertEqualDirective(first: ParserNode, second: ParserNode) -> None:
     """ Equality assertion for DirectiveNode """
 
     assert isinstance(first, interfaces.DirectiveNode)
     assert isinstance(second, interfaces.DirectiveNode)
     _assertEqualDirectiveComponents(first, second)
 
-def isPass(value): # pragma: no cover
+
+def isPass(value: Any) -> bool:  # pragma: no cover
     """Checks if the value is set to PASS"""
     if isinstance(value, bool):
         return True
     return PASS in value
 
-def isPassDirective(block):
+
+def isPassDirective(block: DirectiveNode) -> bool:
     """ Checks if BlockNode or DirectiveNode should pass the assertion """
 
     if isPass(block.name):
         return True
-    if isPass(block.parameters): # pragma: no cover
+    if isPass(block.parameters):  # pragma: no cover
         return True
-    if isPass(block.filepath): # pragma: no cover
+    if isPass(block.filepath):  # pragma: no cover
         return True
     return False
 
-def isPassComment(comment):
+
+def isPassComment(comment: CommentNode) -> bool:
     """ Checks if CommentNode should pass the assertion """
 
     if isPass(comment.comment):
         return True
-    if isPass(comment.filepath): # pragma: no cover
+    if isPass(comment.filepath):  # pragma: no cover
         return True
     return False
 
-def isPassNodeList(nodelist): # pragma: no cover
+
+def isPassNodeList(nodelist: List[Union[DirectiveNode, CommentNode]]) -> bool:  # pragma: no cover
     """ Checks if a ParserNode in the nodelist should pass the assertion,
     this function is used for results of find_* methods. Unimplemented find_*
     methods should return a sequence containing a single ParserNode instance
     with assertion pass string."""
 
+    node: Optional[Union[DirectiveNode, CommentNode]]
     try:
         node = nodelist[0]
     except IndexError:
         node = None
 
-    if not node: # pragma: no cover
+    if not node:  # pragma: no cover
         return False
 
     if isinstance(node, interfaces.DirectiveNode):
         return isPassDirective(node)
     return isPassComment(node)
 
-def assertEqualSimple(first, second):
+
+def assertEqualSimple(first: Any, second: Any) -> None:
     """ Simple assertion """
     if not isPass(first) and not isPass(second):
         assert first == second
 
-def isEqualVirtualHost(first, second):
+
+def isEqualVirtualHost(first: VirtualHost, second: VirtualHost) -> bool:
     """
     Checks that two VirtualHost objects are similar. There are some built
     in differences with the implementations: VirtualHost created by ParserNode
@@ -126,7 +149,8 @@ def isEqualVirtualHost(first, second):
         first.ancestor == second.ancestor
     )
 
-def assertEqualPathsList(first, second):  # pragma: no cover
+
+def assertEqualPathsList(first: Iterable[str], second: Iterable[str]) -> None:  # pragma: no cover
     """
     Checks that the two lists of file paths match. This assertion allows for wildcard
     paths.

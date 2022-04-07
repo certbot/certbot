@@ -6,7 +6,7 @@ authors = ["Certbot Project"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -43,7 +43,7 @@ windows-installer = {path = "../../../windows-installer"}
 # versions of awscli on PyPI so this process takes too long. Providing a high
 # minimum version here prevents poetry from searching this path and it fairly
 # quickly resolves the dependency conflict in another way.
-awscli = ">=1.19.62"
+awscli = ">=1.22.76"
 # As of writing this, cython is a build dependency of pyyaml. Since there
 # doesn't appear to be a good way to automatically track down and pin build
 # dependencies in Python (see
@@ -63,11 +63,17 @@ mock = "*"
 # here in addition to certbot/setup.py because otherwise the pre-release
 # version of poetry will not be installed.
 poetry = ">=1.2.0a1"
-# Library traitlets is a transitive dependency of ipdb (traitlets -> ipython -> ipdb).
-# Version 5.x is incompatible with Python 3.6 but for some reasons, poetry fails to
-# add the appropriate marker and allows this version to be installed under Python 3.6.
-# We add a pinning to not create a set of requirements incompatible with Python 3.6.
-traitlets = "<5"
+# setuptools-rust is a build dependency of cryptography, and since we don't have
+# a great way of pinning build dependencies, we simply list it here to ensure a
+# working version. Note: if build dependencies of setuptools-rust break at some
+# point, it's probably worth enumerating and pinning them (and recursing to
+# THEIR build dependencies) as well.
+setuptools-rust = "*"
+# A bad python_requires constraint in pylint 2.6.2 can sometimes crash poetry
+# before it has finished resolving. No newer releases have the same issue. Remove
+# this once we can upgrade to a release of Poetry containing this commit:
+# https://github.com/python-poetry/poetry-core/commit/4e1f2ab582d1fef0033c0d3f35a3f2f2365a4bc9
+pylint = ">2.6.2"
 
 [tool.poetry.dev-dependencies]
 

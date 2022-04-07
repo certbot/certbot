@@ -47,7 +47,7 @@ class AutoHSTSTest(util.ApacheTest):
         self.config.parser.modules.pop("headers_module", None)
         self.config.parser.modules.pop("mod_header.c", None)
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
-        self.assertTrue(mock_enable.called)
+        self.assertIs(mock_enable.called, True)
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
     def test_autohsts_deploy_already_exists(self, _restart):
@@ -74,7 +74,7 @@ class AutoHSTSTest(util.ApacheTest):
         # Verify increased value
         self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
                           inc_val)
-        self.assertTrue(mock_prepare.called)
+        self.assertIs(mock_prepare.called, True)
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator._autohsts_increase")
@@ -88,7 +88,7 @@ class AutoHSTSTest(util.ApacheTest):
 
         self.config.update_autohsts(mock.MagicMock())
         # Freq not patched, so value shouldn't increase
-        self.assertFalse(mock_increase.called)
+        self.assertIs(mock_increase.called, False)
 
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
@@ -135,13 +135,13 @@ class AutoHSTSTest(util.ApacheTest):
             # Time mock is used to make sure that the execution does not
             # continue when no autohsts entries exist in pluginstorage
             self.config.update_autohsts(mock.MagicMock())
-            self.assertFalse(mock_time.called)
+            self.assertIs(mock_time.called, False)
 
     def test_autohsts_make_permanent_noop(self):
         self.config.storage.put = mock.MagicMock()
         self.config.deploy_autohsts(mock.MagicMock())
         # Make sure that the execution does not continue when no entries in store
-        self.assertFalse(self.config.storage.put.called)
+        self.assertIs(self.config.storage.put.called, False)
 
     @mock.patch("certbot_apache._internal.display_ops.select_vhost")
     def test_autohsts_no_ssl_vhost(self, mock_select):
@@ -150,15 +150,13 @@ class AutoHSTSTest(util.ApacheTest):
             self.assertRaises(errors.PluginError,
                               self.config.enable_autohsts,
                               mock.MagicMock(), "invalid.example.com")
-            self.assertTrue(
-                "Certbot was not able to find SSL" in mock_log.call_args[0][0])
+            self.assertIn("Certbot was not able to find SSL", mock_log.call_args[0][0])
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.add_vhost_id")
     def test_autohsts_dont_enhance_twice(self, mock_id, _restart):
         mock_id.return_value = "1234567"
-        self.config.enable_autohsts(mock.MagicMock(),
-                                    ["ocspvhost.com", "ocspvhost.com"])
+        self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com", "ocspvhost.com"])
         self.assertEqual(mock_id.call_count, 1)
 
     def test_autohsts_remove_orphaned(self):
@@ -168,7 +166,7 @@ class AutoHSTSTest(util.ApacheTest):
 
         self.config._autohsts_save_state()
         self.config.update_autohsts(mock.MagicMock())
-        self.assertFalse("orphan_id" in self.config._autohsts)
+        self.assertNotIn("orphan_id", self.config._autohsts)
         # Make sure it's removed from the pluginstorage file as well
         self.config._autohsts = None
         self.config._autohsts_fetch_state()
@@ -181,9 +179,8 @@ class AutoHSTSTest(util.ApacheTest):
         self.config._autohsts_save_state()
         with mock.patch("certbot_apache._internal.configurator.logger.error") as mock_log:
             self.config.deploy_autohsts(mock.MagicMock())
-            self.assertTrue(mock_log.called)
-            self.assertTrue(
-                "VirtualHost with id orphan_id was not" in mock_log.call_args[0][0])
+            self.assertIs(mock_log.called, True)
+            self.assertIn("VirtualHost with id orphan_id was not", mock_log.call_args[0][0])
 
 
 if __name__ == "__main__":

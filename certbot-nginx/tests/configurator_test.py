@@ -24,7 +24,6 @@ import test_util as util
 class NginxConfiguratorTest(util.NginxTest):
     """Test a semi complex vhost configuration."""
 
-
     def setUp(self):
         super().setUp()
 
@@ -79,8 +78,8 @@ class NginxConfiguratorTest(util.NginxTest):
             self.config.prepare()
         except errors.PluginError as err:
             err_msg = str(err)
-            self.assertTrue("lock" in err_msg)
-            self.assertTrue(self.config.conf("server-root") in err_msg)
+            self.assertIn("lock", err_msg)
+            self.assertIn(self.config.conf("server-root"), err_msg)
         else:  # pragma: no cover
             self.fail("Exception wasn't raised!")
 
@@ -192,8 +191,9 @@ class NginxConfiguratorTest(util.NginxTest):
                        '69.255.225.155']
 
         for name in bad_results:
-            self.assertRaises(errors.MisconfigurationError,
-                              self.config.choose_vhosts, name)
+            with self.subTest(name=name):
+                self.assertRaises(errors.MisconfigurationError,
+                                  self.config.choose_vhosts, name)
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
@@ -215,7 +215,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertFalse(addr.ipv6only)
 
     def test_more_info(self):
-        self.assertTrue('nginx.conf' in self.config.more_info())
+        self.assertIn('nginx.conf', self.config.more_info())
 
     def test_deploy_cert_requires_fullchain_path(self):
         self.config.version = (1, 3, 1)
@@ -547,7 +547,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.enhance("www.example.com", "redirect")
 
         generated_conf = self.config.parser.parsed[example_conf]
-        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+        self.assertIs(util.contains_at_depth(generated_conf, expected, 2), True)
 
         # Test that we successfully add a redirect when there is
         # no listen directive
@@ -557,7 +557,7 @@ class NginxConfiguratorTest(util.NginxTest):
         expected = UnspacedList(_redirect_block_for_domain("migration.com"))[0]
 
         generated_conf = self.config.parser.parsed[migration_conf]
-        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+        self.assertIs(util.contains_at_depth(generated_conf, expected, 2), True)
 
     def test_split_for_redirect(self):
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
@@ -627,7 +627,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             "Strict-Transport-Security")
         expected = ['add_header', 'Strict-Transport-Security', '"max-age=31536000"', 'always']
         generated_conf = self.config.parser.parsed[example_conf]
-        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+        self.assertIs(util.contains_at_depth(generated_conf, expected, 2), True)
 
     def test_multiple_headers_hsts(self):
         headers_conf = self.config.parser.abs_path('sites-enabled/headers.com')
@@ -635,7 +635,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             "Strict-Transport-Security")
         expected = ['add_header', 'Strict-Transport-Security', '"max-age=31536000"', 'always']
         generated_conf = self.config.parser.parsed[headers_conf]
-        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+        self.assertIs(util.contains_at_depth(generated_conf, expected, 2), True)
 
     def test_http_header_hsts_twice(self):
         self.config.enhance("www.example.com", "ensure-http-header",
@@ -644,7 +644,6 @@ class NginxConfiguratorTest(util.NginxTest):
             errors.PluginEnhancementAlreadyPresent,
             self.config.enhance, "www.example.com",
             "ensure-http-header", "Strict-Transport-Security")
-
 
     @mock.patch('certbot_nginx._internal.obj.VirtualHost.contains_list')
     def test_certbot_redirect_exists(self, mock_contains_list):
@@ -867,7 +866,7 @@ class NginxConfiguratorTest(util.NginxTest):
             vhs = self.config._choose_vhosts_wildcard("*.com",
                                                      prefer_ssl=True)
             # Check that the dialog was called with migration.com
-            self.assertTrue(vhost in mock_select_vhs.call_args[0][0])
+            self.assertIn(vhost, mock_select_vhs.call_args[0][0])
 
             # And the actual returned values
             self.assertEqual(len(vhs), 1)
@@ -883,7 +882,7 @@ class NginxConfiguratorTest(util.NginxTest):
             vhs = self.config._choose_vhosts_wildcard("*.com",
                                                      prefer_ssl=False)
             # Check that the dialog was called with migration.com
-            self.assertTrue(vhost in mock_select_vhs.call_args[0][0])
+            self.assertIn(vhost, mock_select_vhs.call_args[0][0])
 
             # And the actual returned values
             self.assertEqual(len(vhs), 1)
@@ -928,7 +927,7 @@ class NginxConfiguratorTest(util.NginxTest):
             if 'summer.com' in x.names][0]
         mock_dialog.return_value = [vhost]
         self.config.enhance("*.com", "staple-ocsp", "example/chain.pem")
-        self.assertTrue(mock_dialog.called)
+        self.assertIs(mock_dialog.called, True)
 
     @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
     def test_enhance_wildcard_double_redirect(self, mock_dialog):
@@ -1042,7 +1041,8 @@ class InstallSslOptionsConfTest(util.NginxTest):
             f.write("hashofanoldversion")
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
-            self.assertEqual(mock_logger.warning.call_args[0][0],
+            self.assertEqual(
+                mock_logger.warning.call_args[0][0],
                 "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
         self.assertEqual(crypto_util.sha256sum(self.config.mod_ssl_conf_src),
@@ -1054,9 +1054,11 @@ class InstallSslOptionsConfTest(util.NginxTest):
 
     def test_current_file_hash_in_all_hashes(self):
         from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
-        self.assertTrue(self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES,
+        self.assertIn(
+            self._current_ssl_options_hash(), ALL_SSL_OPTIONS_HASHES,
             "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
-            " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
+            " with the sha256 hash of self.config.mod_ssl_conf when it is updated."
+        )
 
     def test_ssl_config_files_hash_in_all_hashes(self):
         """
@@ -1077,9 +1079,11 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self.assertTrue(all_files)
         for one_file in all_files:
             file_hash = crypto_util.sha256sum(one_file)
-            self.assertTrue(file_hash in ALL_SSL_OPTIONS_HASHES,
-                            "Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 "
-                            "hash of {0} when it is updated.".format(one_file))
+            self.assertIn(
+                file_hash, ALL_SSL_OPTIONS_HASHES,
+                f"Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 "
+                f"hash of {one_file} when it is updated."
+            )
 
     def test_nginx_version_uses_correct_config(self):
         self.config.version = (1, 5, 8)
@@ -1127,7 +1131,7 @@ class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
             self.assertIn("/usr/local/etc/nginx", server_root)
             self.assertIn("/etc/nginx", server_root)
         else:
-            self.assertTrue(server_root in ("/etc/nginx", "/usr/local/etc/nginx"))
+            self.assertIn(server_root, ("/etc/nginx", "/usr/local/etc/nginx"))
 
 
 if __name__ == "__main__":

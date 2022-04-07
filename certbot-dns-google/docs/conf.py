@@ -177,5 +177,5 @@ texinfo_documents = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
     'acme': ('https://acme-python.readthedocs.org/en/latest/', None),
-    'certbot': ('https://certbot.eff.org/docs/', None),
+    'certbot': ('https://eff-certbot.readthedocs.io/en/stable/', None),
 }

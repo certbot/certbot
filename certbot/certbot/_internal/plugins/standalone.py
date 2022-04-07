@@ -3,14 +3,19 @@ import collections
 import errno
 import logging
 import socket
+from typing import Any
+from typing import Callable
 from typing import DefaultDict
 from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Set
 from typing import Tuple
+from typing import Type
 from typing import TYPE_CHECKING
 
-import OpenSSL
+from OpenSSL import crypto
 
 from acme import challenges
 from acme import standalone as acme_standalone
@@ -25,7 +30,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     ServedType = DefaultDict[
         acme_standalone.BaseDualNetworkedServers,
-        Set[achallenges.KeyAuthorizationAnnotatedChallenge]
+        Set[achallenges.AnnotatedChallenge]
     ]
 
 
@@ -42,12 +47,15 @@ class ServerManager:
     will serve the same URLs!
 
     """
-    def __init__(self, certs, http_01_resources):
-        self._instances: Dict[int, acme_standalone.BaseDualNetworkedServers] = {}
+    def __init__(self, certs: Mapping[bytes, Tuple[crypto.PKey, crypto.X509]],
+                 http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
+                 ) -> None:
+        self._instances: Dict[int, acme_standalone.HTTP01DualNetworkedServers] = {}
         self.certs = certs
         self.http_01_resources = http_01_resources
 
-    def run(self, port, challenge_type, listenaddr=""):
+    def run(self, port: int, challenge_type: Type[challenges.Challenge],
+            listenaddr: str = "") -> acme_standalone.HTTP01DualNetworkedServers:
         """Run ACME server on specified ``port``.
 
         This method is idempotent, i.e. all calls with the same pair of
@@ -81,7 +89,7 @@ class ServerManager:
         self._instances[real_port] = servers
         return servers
 
-    def stop(self, port):
+    def stop(self, port: int) -> None:
         """Stop ACME server running on the specified ``port``.
 
         :param int port:
@@ -94,7 +102,7 @@ class ServerManager:
         instance.shutdown_and_server_close()
         del self._instances[port]
 
-    def running(self):
+    def running(self) -> Dict[int, acme_standalone.HTTP01DualNetworkedServers]:
         """Return all running instances.
 
         Once the server is stopped using `stop`, it will not be
@@ -118,7 +126,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
 
     description = "Spin up a temporary webserver"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         self.served: ServedType = collections.defaultdict(set)
@@ -127,44 +135,49 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         # values, main thread writes). Due to the nature of CPython's
         # GIL, the operations are safe, c.f.
         # https://docs.python.org/2/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
-        self.certs: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]] = {}
+        self.certs: Mapping[bytes, Tuple[crypto.PKey, crypto.X509]] = {}
         self.http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = set()
 
         self.servers = ServerManager(self.certs, self.http_01_resources)
 
     @classmethod
-    def add_parser_arguments(cls, add):
+    def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         pass  # No additional argument for the standalone plugin parser
 
-    def more_info(self):  # pylint: disable=missing-function-docstring
+    def more_info(self) -> str:  # pylint: disable=missing-function-docstring
         return("This authenticator creates its own ephemeral TCP listener "
                "on the necessary port in order to respond to incoming "
                "http-01 challenges from the certificate authority. Therefore, "
                "it does not rely on any existing server program.")
 
-    def prepare(self):  # pylint: disable=missing-function-docstring
+    def prepare(self) -> None:  # pylint: disable=missing-function-docstring
         pass
 
-    def get_chall_pref(self, domain):
+    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01]
 
-    def perform(self, achalls):  # pylint: disable=missing-function-docstring
+    def perform(self, achalls: Iterable[achallenges.AnnotatedChallenge]
+                ) -> List[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
         return [self._try_perform_single(achall) for achall in achalls]
 
-    def _try_perform_single(self, achall):
+    def _try_perform_single(self,
+                            achall: achallenges.AnnotatedChallenge) -> challenges.ChallengeResponse:
         while True:
             try:
                 return self._perform_single(achall)
             except errors.StandaloneBindError as error:
                 _handle_perform_error(error)
 
-    def _perform_single(self, achall):
+    def _perform_single(self,
+                        achall: achallenges.AnnotatedChallenge) -> challenges.ChallengeResponse:
         servers, response = self._perform_http_01(achall)
         self.served[servers].add(achall)
         return response
 
-    def _perform_http_01(self, achall):
+    def _perform_http_01(self, achall: achallenges.AnnotatedChallenge
+                         ) -> Tuple[acme_standalone.HTTP01DualNetworkedServers,
+                                    challenges.ChallengeResponse]:
         port = self.config.http01_port
         addr = self.config.http01_address
         servers = self.servers.run(port, challenges.HTTP01, listenaddr=addr)
@@ -174,7 +187,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         self.http_01_resources.add(resource)
         return servers, response
 
-    def cleanup(self, achalls):  # pylint: disable=missing-function-docstring
+    def cleanup(self, achalls: Iterable[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
         # reduce self.served and close servers if no challenges are served
         for unused_servers, server_achalls in self.served.items():
             for achall in achalls:
@@ -193,7 +206,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
                 "accept inbound connections from the internet.")
 
 
-def _handle_perform_error(error):
+def _handle_perform_error(error: errors.StandaloneBindError) -> None:
     if error.socket_error.errno == errno.EACCES:
         raise errors.PluginError(
             "Could not bind TCP port {0} because you don't have "

@@ -8,7 +8,12 @@ import subprocess
 import sys
 import tempfile
 import time
+from types import TracebackType
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Type
 
 from pkg_resources import resource_filename
 
@@ -30,7 +35,7 @@ class DNSServer:
     future to support parallelization (https://github.com/certbot/certbot/issues/8455).
     """
 
-    def __init__(self, unused_nodes, show_output=False):
+    def __init__(self, unused_nodes: List[str], show_output: bool = False) -> None:
         """
         Create an DNSServer instance.
         :param list nodes: list of node names that will be setup by pytest xdist
@@ -48,7 +53,7 @@ class DNSServer:
         # pylint: disable=consider-using-with
         self._output = sys.stderr if show_output else open(os.devnull, "w")
 
-    def start(self):
+    def start(self) -> None:
         """Start the DNS server"""
         try:
             self._configure_bind()
@@ -57,7 +62,7 @@ class DNSServer:
             self.stop()
             raise
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the DNS server, and clean its resources"""
         if self.process:
             try:
@@ -71,7 +76,7 @@ class DNSServer:
         if self._output != sys.stderr:
             self._output.close()
 
-    def _configure_bind(self):
+    def _configure_bind(self) -> None:
         """Configure the BIND9 server based on the prebaked configuration"""
         bind_conf_src = resource_filename(
             "certbot_integration_tests", "assets/bind-config"
@@ -81,7 +86,7 @@ class DNSServer:
                 os.path.join(bind_conf_src, directory), os.path.join(self.bind_root, directory)
             )
 
-    def _start_bind(self):
+    def _start_bind(self) -> None:
         """Launch the BIND9 server as a Docker container"""
         addr_str = "{}:{}".format(BIND_BIND_ADDRESS[0], BIND_BIND_ADDRESS[1])
         # pylint: disable=consider-using-with
@@ -150,9 +155,10 @@ class DNSServer:
             "Gave up waiting for DNS server {} to respond".format(BIND_BIND_ADDRESS)
         )
 
-    def __enter__(self):
+    def __start__(self) -> Dict[str, Any]:
         self.start()
         return self.dns_xdist
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> None:
         self.stop()

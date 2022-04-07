@@ -7,6 +7,9 @@
 # in --editable mode (-e), just "pip install certbot-dns-cloudflare[docs]" does not work as
 # expected and "pip install -e certbot-dns-cloudflare[docs]" must be used instead
 
+# We also pin our dependencies for increased stability.
+
+-c ../tools/requirements.txt
 -e acme
 -e certbot
 -e certbot-dns-cloudflare[docs]

@@ -4,6 +4,7 @@ import socket
 import tempfile
 import unittest
 
+from acme import messages as acme_messages
 from certbot import errors
 
 try:
@@ -123,6 +124,29 @@ class SummarizeDomainListTest(unittest.TestCase):
     def test_empty_domains(self):
         self.assertEqual("", self._call([]))
 
+
+class DescribeACMEErrorTest(unittest.TestCase):
+    @classmethod
+    def _call(cls, typ: str = "urn:ietf:params:acme:error:badCSR",
+              title: str = "Unacceptable CSR",
+              detail: str = "CSR contained unknown extensions"):
+        from certbot._internal.display.util import describe_acme_error
+        return describe_acme_error(
+            acme_messages.Error(typ=typ, title=title, detail=detail))
+
+    def test_title_and_detail(self):
+        self.assertEqual("Unacceptable CSR :: CSR contained unknown extensions", self._call())
+
+    def test_detail(self):
+        self.assertEqual("CSR contained unknown extensions", self._call(title=None))
+
+    def test_description(self):
+        self.assertEqual(acme_messages.ERROR_CODES["badCSR"], self._call(title=None, detail=None))
+
+    def test_unknown_type(self):
+        self.assertEqual(
+            "urn:ietf:params:acme:error:unknownErrorType",
+            self._call(typ="urn:ietf:params:acme:error:unknownErrorType", title=None, detail=None))
 
 
 if __name__ == "__main__":

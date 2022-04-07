@@ -9,7 +9,8 @@ import tempfile
 import threading
 import time
 import unittest
-import warnings
+from typing import Any
+from typing import Generator
 
 import pkg_resources
 import pytest
@@ -19,7 +20,7 @@ GITHUB_FAKE_API_PORT = 8009
 
 
 @pytest.fixture
-def signing_cert():
+def signing_cert() -> Generator[str, None, None]:
     """
     This fixture returns the path of a test signing certificate that is loaded into the
     Trusted Root Certification Authorities group of the Windows certificate store, in order
@@ -42,7 +43,7 @@ def signing_cert():
 
 
 @pytest.fixture
-def installer(request, signing_cert):
+def installer(request: pytest.FixtureRequest, signing_cert: str) -> Generator[str, None, None]:
     """
     This fixture returns the path of the Certbot Windows installer to use during the tests.
     It is signed with a test signing certificate that is accepted by the current system and
@@ -63,7 +64,7 @@ class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 
 @pytest.fixture
-def github_mock(installer):
+def github_mock(installer: str) -> Generator[str, None, None]:
     """
     This fixture starts a GitHub release API mock on localhost using the port GITHUB_FAKE_API_PORT.
     This mock returns a compliant GitHub release payload declaring that Certbot v99.9.9 is available.
@@ -73,10 +74,10 @@ def github_mock(installer):
     server = None
     try:
         class GitHubMock(BaseHTTPRequestHandler):
-            def log_message(self, log_format, *args):
+            def log_message(self, log_format: str, *args: Any) -> None:
                 pass
 
-            def do_GET(self):
+            def do_GET(self) -> None:
                 if re.match(r'^.*/releases/latest$', self.path):
                     self.send_response(200)
                     self.send_header('Content-type', 'application/json')
@@ -115,7 +116,7 @@ def github_mock(installer):
 
 
 @pytest.fixture
-def upgrade_env(signing_cert, github_mock):
+def upgrade_env(signing_cert: str, github_mock: str) -> Generator[bool, None, None]:
     """
     This fixture prepares the current Windows system Registry for a proper blackbox testing
     of the auto-upgrade mechanism. GitHub release API is set to use the local GitHub release
@@ -138,7 +139,7 @@ def upgrade_env(signing_cert, github_mock):
 
 
 @unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
-def test_base(installer):
+def test_base(installer: str) -> None:
     """
     This test checks that the Certbot installer installs correctly Certbot, including a fully
     functional automated renewal mechanism through a Windows scheduled task.
@@ -174,7 +175,7 @@ def test_base(installer):
 # NB: This test must be declared after test_base, and so will be started after test_base,
 # because it requires a working installation of Certbot, and test_base provides that.
 @unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
-def test_upgrade(upgrade_env):
+def test_upgrade(upgrade_env: bool) -> None:
     """
     This tests checks that Certbot installed with the current tested installer can upgrade
     or repair itself through a Windows scheduled task.
@@ -194,7 +195,7 @@ def test_upgrade(upgrade_env):
     subprocess.check_output(['certbot', '--version'])
 
 
-def _assert_certbot_is_missing():
+def _assert_certbot_is_missing() -> None:
     try:
         subprocess.check_output(['certbot', '--version'])
     except (subprocess.CalledProcessError, OSError):
@@ -203,7 +204,7 @@ def _assert_certbot_is_missing():
         raise AssertionError('Expect certbot to not be available in the PATH.')
 
 
-def _wait_for_task_completion():
+def _wait_for_task_completion() -> None:
     status = 'Running'
     while status != 'Ready':
         status = _ps('(Get-ScheduledTask -TaskName "{}").State'
@@ -211,6 +212,7 @@ def _wait_for_task_completion():
         time.sleep(1)
 
 
-def _ps(powershell_str, capture_stdout=False):
+def _ps(powershell_str: str, capture_stdout: bool = False) -> Any:
     fn = subprocess.check_output if capture_stdout else subprocess.check_call
-    return fn(['powershell.exe', '-c', powershell_str], universal_newlines=True)
+    return fn(['powershell.exe', '-c', powershell_str],  # type: ignore[operator]
+              universal_newlines=True)

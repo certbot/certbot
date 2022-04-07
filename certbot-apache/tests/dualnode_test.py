@@ -53,20 +53,20 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
                                          primary=self.block.secondary,
                                          secondary=self.block.primary)
         # Switched around
-        self.assertTrue(cnode.primary is self.comment.secondary)
-        self.assertTrue(cnode.secondary is self.comment.primary)
-        self.assertTrue(dnode.primary is self.directive.secondary)
-        self.assertTrue(dnode.secondary is self.directive.primary)
-        self.assertTrue(bnode.primary is self.block.secondary)
-        self.assertTrue(bnode.secondary is self.block.primary)
+        self.assertEqual(cnode.primary, self.comment.secondary)
+        self.assertEqual(cnode.secondary, self.comment.primary)
+        self.assertEqual(dnode.primary, self.directive.secondary)
+        self.assertEqual(dnode.secondary, self.directive.primary)
+        self.assertEqual(bnode.primary, self.block.secondary)
+        self.assertEqual(bnode.secondary, self.block.primary)
 
     def test_set_params(self):
         params = ("first", "second")
         self.directive.primary.set_parameters = mock.Mock()
         self.directive.secondary.set_parameters = mock.Mock()
         self.directive.set_parameters(params)
-        self.assertTrue(self.directive.primary.set_parameters.called)
-        self.assertTrue(self.directive.secondary.set_parameters.called)
+        self.assertIs(self.directive.primary.set_parameters.called, True)
+        self.assertIs(self.directive.secondary.set_parameters.called, True)
 
     def test_set_parameters(self):
         pparams = mock.MagicMock()
@@ -76,8 +76,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.directive.primary.set_parameters = pparams
         self.directive.secondary.set_parameters = sparams
         self.directive.set_parameters(("param", "seq"))
-        self.assertTrue(pparams.called)
-        self.assertTrue(sparams.called)
+        self.assertIs(pparams.called, True)
+        self.assertIs(sparams.called, True)
 
     def test_delete_child(self):
         pdel = mock.MagicMock()
@@ -85,8 +85,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.block.primary.delete_child = pdel
         self.block.secondary.delete_child = sdel
         self.block.delete_child(self.comment)
-        self.assertTrue(pdel.called)
-        self.assertTrue(sdel.called)
+        self.assertIs(pdel.called, True)
+        self.assertIs(sdel.called, True)
 
     def test_unsaved_files(self):
         puns = mock.MagicMock()
@@ -96,8 +96,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.block.primary.unsaved_files = puns
         self.block.secondary.unsaved_files = suns
         self.block.unsaved_files()
-        self.assertTrue(puns.called)
-        self.assertTrue(suns.called)
+        self.assertIs(puns.called, True)
+        self.assertIs(suns.called, True)
 
     def test_getattr_equality(self):
         self.directive.primary.variableexception = "value"
@@ -140,8 +140,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.block.primary.add_child_block = mock_first
         self.block.secondary.add_child_block = mock_second
         self.block.add_child_block("Block")
-        self.assertTrue(mock_first.called)
-        self.assertTrue(mock_second.called)
+        self.assertIs(mock_first.called, True)
+        self.assertIs(mock_second.called, True)
 
     def test_add_child_directive(self):
         mock_first = mock.MagicMock(return_value=self.directive.primary)
@@ -149,8 +149,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.block.primary.add_child_directive = mock_first
         self.block.secondary.add_child_directive = mock_second
         self.block.add_child_directive("Directive")
-        self.assertTrue(mock_first.called)
-        self.assertTrue(mock_second.called)
+        self.assertIs(mock_first.called, True)
+        self.assertIs(mock_second.called, True)
 
     def test_add_child_comment(self):
         mock_first = mock.MagicMock(return_value=self.comment.primary)
@@ -158,8 +158,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.block.primary.add_child_comment = mock_first
         self.block.secondary.add_child_comment = mock_second
         self.block.add_child_comment("Comment")
-        self.assertTrue(mock_first.called)
-        self.assertTrue(mock_second.called)
+        self.assertIs(mock_first.called, True)
+        self.assertIs(mock_second.called, True)
 
     def test_find_comments(self):
         pri_comments = [augeasparser.AugeasCommentNode(comment="some comment",
@@ -183,9 +183,9 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         # Check that every comment response is represented in the list of
         # DualParserNode instances.
         for p in p_dcoms:
-            self.assertTrue(p in p_coms)
+            self.assertIn(p, p_coms)
         for s in s_dcoms:
-            self.assertTrue(s in s_coms)
+            self.assertIn(s, s_coms)
 
     def test_find_blocks_first_passing(self):
         youshallnotpass = [augeasparser.AugeasBlockNode(name="notpassing",
@@ -207,8 +207,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
                 assertions.assertEqual(block.primary, block.secondary)
             except AssertionError: # pragma: no cover
                 self.fail("Assertion should have passed")
-            self.assertTrue(assertions.isPassDirective(block.primary))
-            self.assertFalse(assertions.isPassDirective(block.secondary))
+            self.assertIs(assertions.isPassDirective(block.primary), True)
+            self.assertIs(assertions.isPassDirective(block.secondary), False)
 
     def test_find_blocks_second_passing(self):
         youshallnotpass = [augeasparser.AugeasBlockNode(name="notpassing",
@@ -230,8 +230,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
                 assertions.assertEqual(block.primary, block.secondary)
             except AssertionError: # pragma: no cover
                 self.fail("Assertion should have passed")
-            self.assertFalse(assertions.isPassDirective(block.primary))
-            self.assertTrue(assertions.isPassDirective(block.secondary))
+            self.assertIs(assertions.isPassDirective(block.primary), False)
+            self.assertIs(assertions.isPassDirective(block.secondary), True)
 
     def test_find_dirs_first_passing(self):
         notpassing = [augeasparser.AugeasDirectiveNode(name="notpassing",
@@ -253,8 +253,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
                 assertions.assertEqual(directive.primary, directive.secondary)
             except AssertionError: # pragma: no cover
                 self.fail("Assertion should have passed")
-            self.assertTrue(assertions.isPassDirective(directive.primary))
-            self.assertFalse(assertions.isPassDirective(directive.secondary))
+            self.assertIs(assertions.isPassDirective(directive.primary), True)
+            self.assertIs(assertions.isPassDirective(directive.secondary), False)
 
     def test_find_dirs_second_passing(self):
         notpassing = [augeasparser.AugeasDirectiveNode(name="notpassing",
@@ -276,8 +276,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
                 assertions.assertEqual(directive.primary, directive.secondary)
             except AssertionError: # pragma: no cover
                 self.fail("Assertion should have passed")
-            self.assertFalse(assertions.isPassDirective(directive.primary))
-            self.assertTrue(assertions.isPassDirective(directive.secondary))
+            self.assertIs(assertions.isPassDirective(directive.primary), False)
+            self.assertIs(assertions.isPassDirective(directive.secondary), True)
 
     def test_find_coms_first_passing(self):
         notpassing = [augeasparser.AugeasCommentNode(comment="notpassing",
@@ -299,8 +299,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
                 assertions.assertEqual(comment.primary, comment.secondary)
             except AssertionError: # pragma: no cover
                 self.fail("Assertion should have passed")
-            self.assertTrue(assertions.isPassComment(comment.primary))
-            self.assertFalse(assertions.isPassComment(comment.secondary))
+            self.assertIs(assertions.isPassComment(comment.primary), True)
+            self.assertIs(assertions.isPassComment(comment.secondary), False)
 
     def test_find_coms_second_passing(self):
         notpassing = [augeasparser.AugeasCommentNode(comment="notpassing",
@@ -322,8 +322,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
                 assertions.assertEqual(comment.primary, comment.secondary)
             except AssertionError: # pragma: no cover
                 self.fail("Assertion should have passed")
-            self.assertFalse(assertions.isPassComment(comment.primary))
-            self.assertTrue(assertions.isPassComment(comment.secondary))
+            self.assertIs(assertions.isPassComment(comment.primary), False)
+            self.assertIs(assertions.isPassComment(comment.secondary), True)
 
     def test_find_blocks_no_pass_equal(self):
         notpassing1 = [augeasparser.AugeasBlockNode(name="notpassing",
@@ -341,8 +341,9 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
 
         blocks = self.block.find_blocks("anything")
         for block in blocks:
-            self.assertEqual(block.primary, block.secondary)
-            self.assertTrue(block.primary is not block.secondary)
+            with self.subTest(block=block):
+                self.assertEqual(block.primary, block.secondary)
+                self.assertIsNot(block.primary, block.secondary)
 
     def test_find_dirs_no_pass_equal(self):
         notpassing1 = [augeasparser.AugeasDirectiveNode(name="notpassing",
@@ -360,8 +361,9 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
 
         directives = self.block.find_directives("anything")
         for directive in directives:
-            self.assertEqual(directive.primary, directive.secondary)
-            self.assertTrue(directive.primary is not directive.secondary)
+            with self.subTest(directive=directive):
+                self.assertEqual(directive.primary, directive.secondary)
+                self.assertIsNot(directive.primary, directive.secondary)
 
     def test_find_comments_no_pass_equal(self):
         notpassing1 = [augeasparser.AugeasCommentNode(comment="notpassing",
@@ -379,8 +381,9 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
 
         comments = self.block.find_comments("anything")
         for comment in comments:
-            self.assertEqual(comment.primary, comment.secondary)
-            self.assertTrue(comment.primary is not comment.secondary)
+            with self.subTest(comment=comment):
+                self.assertEqual(comment.primary, comment.secondary)
+                self.assertIsNot(comment.primary, comment.secondary)
 
     def test_find_blocks_no_pass_notequal(self):
         notpassing1 = [augeasparser.AugeasBlockNode(name="notpassing",
@@ -424,8 +427,8 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.block.primary.parsed_paths = mock_p
         self.block.secondary.parsed_paths = mock_s
         self.block.parsed_paths()
-        self.assertTrue(mock_p.called)
-        self.assertTrue(mock_s.called)
+        self.assertIs(mock_p.called, True)
+        self.assertIs(mock_s.called, True)
 
     def test_parsed_paths_error(self):
         mock_p = mock.MagicMock(return_value=['/path/file.conf'])
@@ -441,5 +444,5 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.block.primary.find_ancestors = primarymock
         self.block.secondary.find_ancestors = secondarymock
         self.block.find_ancestors("anything")
-        self.assertTrue(primarymock.called)
-        self.assertTrue(secondarymock.called)
+        self.assertIs(primarymock.called, True)
+        self.assertIs(secondarymock.called, True)

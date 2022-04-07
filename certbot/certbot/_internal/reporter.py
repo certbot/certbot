@@ -5,6 +5,7 @@ import queue
 import sys
 import textwrap
 
+from certbot import configuration
 from certbot import util
 
 logger = logging.getLogger(__name__)
@@ -27,11 +28,11 @@ class Reporter:
 
     _msg_type = collections.namedtuple('_msg_type', 'priority text on_crash')
 
-    def __init__(self, config):
-        self.messages: queue.PriorityQueue[Reporter._msg_type] = queue.PriorityQueue()
+    def __init__(self, config: configuration.NamespaceConfig) -> None:
+        self.messages: "queue.PriorityQueue[Reporter._msg_type]" = queue.PriorityQueue()
         self.config = config
 
-    def add_message(self, msg, priority, on_crash=True):
+    def add_message(self, msg: str, priority: int, on_crash: bool = True) -> None:
         """Adds msg to the list of messages to be printed.
 
         :param str msg: Message to be displayed to the user.
@@ -47,7 +48,7 @@ class Reporter:
         self.messages.put(self._msg_type(priority, msg, on_crash))
         logger.debug("Reporting to user: %s", msg)
 
-    def print_messages(self):
+    def print_messages(self) -> None:
         """Prints messages to the user and clears the message queue.
 
         If there is an unhandled exception, only messages for which

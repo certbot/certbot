@@ -592,6 +592,19 @@ class OsInfoTest(unittest.TestCase):
         self.assertEqual(cbutil.get_python_os_info(), ("testdist", "42"))
 
 
+class GetStrictVersionTest(unittest.TestCase):
+    """Test for certbot.util.get_strict_version."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.util import get_strict_version
+        return get_strict_version(*args, **kwargs)
+
+    def test_it(self):
+        with self.assertWarnsRegex(DeprecationWarning, "get_strict_version"):
+            self._call("1.2.3")
+
+
 class AtexitRegisterTest(unittest.TestCase):
     """Tests for certbot.util.atexit_register."""
     def setUp(self):
@@ -622,6 +635,39 @@ class AtexitRegisterTest(unittest.TestCase):
             args, kwargs = mock_atexit.register.call_args
             atexit_func = args[0]
             atexit_func(*args[1:], **kwargs)
+
+
+class ParseLooseVersionTest(unittest.TestCase):
+    """Test for certbot.util.parse_loose_version.
+
+    These tests are based on the original tests for
+    distutils.version.LooseVersion at
+    https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/tests/test_version.py#L58-L81.
+
+    """
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.util import parse_loose_version
+        return parse_loose_version(*args, **kwargs)
+
+    def test_less_than(self):
+        comparisons = (('1.5.1', '1.5.2b2'),
+            ('3.4j', '1996.07.12'),
+            ('2g6', '11g'),
+            ('0.960923', '2.2beta29'),
+            ('1.13++', '5.5.kw'))
+        for v1, v2 in comparisons:
+            self.assertLess(self._call(v1), self._call(v2))
+
+    def test_equal(self):
+        self.assertEqual(self._call('8.02'), self._call('8.02'))
+
+    def test_greater_than(self):
+        comparisons = (('161', '3.10a'),
+            ('3.2.pl0', '3.1.1.6'))
+        for v1, v2 in comparisons:
+            self.assertGreater(self._call(v1), self._call(v2))
 
 
 if __name__ == "__main__":

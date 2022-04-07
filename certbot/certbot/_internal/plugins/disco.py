@@ -1,9 +1,14 @@
 """Utilities for plugins discovery and selection."""
-from collections.abc import Mapping
 import itertools
 import logging
 import sys
+from typing import Callable
+from typing import cast
 from typing import Dict
+from typing import Iterable
+from typing import Iterator
+from typing import List
+from typing import Mapping
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -13,6 +18,7 @@ import pkg_resources
 import zope.interface
 import zope.interface.verify
 
+from certbot import configuration
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
@@ -49,7 +55,7 @@ class PluginEntryPoint:
     # this object is mutable, don't allow it to be hashed!
     __hash__ = None  # type: ignore
 
-    def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix=False):
+    def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix: bool = False) -> None:
         self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
         self.plugin_cls: Type[interfaces.Plugin] = entry_point.load()
         self.entry_point = entry_point
@@ -59,7 +65,7 @@ class PluginEntryPoint:
         self._hidden = False
         self._long_description: Optional[str] = None
 
-    def check_name(self, name):
+    def check_name(self, name: Optional[str]) -> bool:
         """Check if the name refers to this plugin."""
         if name == self.name:
             if self.warning_message:
@@ -68,43 +74,46 @@ class PluginEntryPoint:
         return False
 
     @classmethod
-    def entry_point_to_plugin_name(cls, entry_point, with_prefix):
+    def entry_point_to_plugin_name(cls, entry_point: pkg_resources.EntryPoint,
+                                   with_prefix: bool) -> str:
         """Unique plugin name for an ``entry_point``"""
         if with_prefix:
+            if not entry_point.dist:
+                raise errors.Error(f"Entrypoint {entry_point.name} has no distribution!")
             return entry_point.dist.key + ":" + entry_point.name
         return entry_point.name
 
     @property
-    def description(self):
+    def description(self) -> str:
         """Description of the plugin."""
         return self.plugin_cls.description
 
     @property
-    def description_with_name(self):
+    def description_with_name(self) -> str:
         """Description with name. Handy for UI."""
         return "{0} ({1})".format(self.description, self.name)
 
     @property
-    def long_description(self):
+    def long_description(self) -> str:
         """Long description of the plugin."""
         if self._long_description:
             return self._long_description
         return getattr(self.plugin_cls, "long_description", self.description)
 
     @long_description.setter
-    def long_description(self, description):
+    def long_description(self, description: str) -> None:
         self._long_description = description
 
     @property
-    def hidden(self):
+    def hidden(self) -> bool:
         """Should this plugin be hidden from UI?"""
         return self._hidden or getattr(self.plugin_cls, "hidden", False)
 
     @hidden.setter
-    def hidden(self, hide):
+    def hidden(self, hide: bool) -> None:
         self._hidden = hide
 
-    def ifaces(self, *ifaces_groups):
+    def ifaces(self, *ifaces_groups: Iterable[Type]) -> bool:
         """Does plugin implements specified interface groups?"""
         return not ifaces_groups or any(
             all(_implements(self.plugin_cls, iface)
@@ -112,20 +121,20 @@ class PluginEntryPoint:
             for ifaces in ifaces_groups)
 
     @property
-    def initialized(self):
+    def initialized(self) -> bool:
         """Has the plugin been initialized already?"""
         return self._initialized is not None
 
-    def init(self, config=None):
+    def init(self, config: Optional[configuration.NamespaceConfig] = None) -> interfaces.Plugin:
         """Memoized plugin initialization."""
-        if not self.initialized:
+        if not self._initialized:
             self.entry_point.require()  # fetch extras!
             # For plugins implementing ABCs Plugin, Authenticator or Installer, the following
             # line will raise an exception if some implementations of abstract methods are missing.
             self._initialized = self.plugin_cls(config, self.name)
         return self._initialized
 
-    def verify(self, ifaces):
+    def verify(self, ifaces: Iterable[Type]) -> bool:
         """Verify that the plugin conforms to the specified interfaces."""
         if not self.initialized:
             raise ValueError("Plugin is not initialized.")
@@ -136,13 +145,13 @@ class PluginEntryPoint:
         return True
 
     @property
-    def prepared(self):
+    def prepared(self) -> bool:
         """Has the plugin been prepared already?"""
         if not self.initialized:
             logger.debug(".prepared called on uninitialized %r", self)
         return self._prepared is not None
 
-    def prepare(self):
+    def prepare(self) -> Union[bool, Error]:
         """Memoized plugin preparation."""
         if self._initialized is None:
             raise ValueError("Plugin is not initialized.")
@@ -161,29 +170,30 @@ class PluginEntryPoint:
                 self._prepared = error
             else:
                 self._prepared = True
-        return self._prepared
+        # Mypy seems to fail to understand the actual type here, let's help it.
+        return cast(Union[bool, Error], self._prepared)
 
     @property
-    def misconfigured(self):
+    def misconfigured(self) -> bool:
         """Is plugin misconfigured?"""
         return isinstance(self._prepared, errors.MisconfigurationError)
 
     @property
-    def problem(self):
+    def problem(self) -> Optional[Exception]:
         """Return the Exception raised during plugin setup, or None if all is well"""
         if isinstance(self._prepared, Exception):
             return self._prepared
         return None
 
     @property
-    def available(self):
+    def available(self) -> bool:
         """Is plugin available, i.e. prepared or misconfigured?"""
         return self._prepared is True or self.misconfigured
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "PluginEntryPoint#{0}".format(self.name)
 
-    def __str__(self):
+    def __str__(self) -> str:
         lines = [
             "* {0}".format(self.name),
             "Description: {0}".format(self.plugin_cls.description),
@@ -205,7 +215,7 @@ class PluginEntryPoint:
 class PluginsRegistry(Mapping):
     """Plugins registry."""
 
-    def __init__(self, plugins):
+    def __init__(self, plugins: Mapping[str, PluginEntryPoint]) -> None:
         # plugins are sorted so the same order is used between runs.
         # This prevents deadlock caused by plugins acquiring a lock
         # and ensures at least one concurrent Certbot instance will run
@@ -213,7 +223,7 @@ class PluginsRegistry(Mapping):
         self._plugins = dict(sorted(plugins.items()))
 
     @classmethod
-    def find_all(cls):
+    def find_all(cls) -> 'PluginsRegistry':
         """Find plugins using setuptools entry points."""
         plugins: Dict[str, PluginEntryPoint] = {}
         plugin_paths_string = os.getenv('CERTBOT_PLUGIN_PATH')
@@ -245,7 +255,9 @@ class PluginsRegistry(Mapping):
         return cls(plugins)
 
     @classmethod
-    def _load_entry_point(cls, entry_point, plugins, with_prefix):
+    def _load_entry_point(cls, entry_point: pkg_resources.EntryPoint,
+                          plugins: Dict[str, PluginEntryPoint],
+                          with_prefix: bool) -> PluginEntryPoint:
         plugin_ep = PluginEntryPoint(entry_point, with_prefix)
         if plugin_ep.name in plugins:
             other_ep = plugins[plugin_ep.name]
@@ -261,47 +273,47 @@ class PluginsRegistry(Mapping):
 
         return plugin_ep
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> PluginEntryPoint:
         return self._plugins[name]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self._plugins)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._plugins)
 
-    def init(self, config):
+    def init(self, config: configuration.NamespaceConfig) -> List[interfaces.Plugin]:
         """Initialize all plugins in the registry."""
         return [plugin_ep.init(config) for plugin_ep
                 in self._plugins.values()]
 
-    def filter(self, pred):
+    def filter(self, pred: Callable[[PluginEntryPoint], bool]) -> "PluginsRegistry":
         """Filter plugins based on predicate."""
         return type(self)({name: plugin_ep for name, plugin_ep
-                               in self._plugins.items() if pred(plugin_ep)})
+                           in self._plugins.items() if pred(plugin_ep)})
 
-    def visible(self):
+    def visible(self) -> "PluginsRegistry":
         """Filter plugins based on visibility."""
         return self.filter(lambda plugin_ep: not plugin_ep.hidden)
 
-    def ifaces(self, *ifaces_groups):
+    def ifaces(self, *ifaces_groups: Iterable[Type]) -> "PluginsRegistry":
         """Filter plugins based on interfaces."""
         return self.filter(lambda p_ep: p_ep.ifaces(*ifaces_groups))
 
-    def verify(self, ifaces):
+    def verify(self, ifaces: Iterable[Type]) -> "PluginsRegistry":
         """Filter plugins based on verification."""
         return self.filter(lambda p_ep: p_ep.verify(ifaces))
 
-    def prepare(self):
+    def prepare(self) -> List[Union[bool, Error]]:
         """Prepare all plugins in the registry."""
         return [plugin_ep.prepare() for plugin_ep in self._plugins.values()]
 
-    def available(self):
+    def available(self) -> "PluginsRegistry":
         """Filter plugins based on availability."""
         return self.filter(lambda p_ep: p_ep.available)
         # successfully prepared + misconfigured
 
-    def find_init(self, plugin):
+    def find_init(self, plugin: interfaces.Plugin) -> Optional[PluginEntryPoint]:
         """Find an initialized plugin.
 
         This is particularly useful for finding a name for the plugin::
@@ -321,12 +333,12 @@ class PluginsRegistry(Mapping):
             return candidates[0]
         return None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{0}({1})".format(
             self.__class__.__name__, ','.join(
                 repr(p_ep) for p_ep in self._plugins.values()))
 
-    def __str__(self):
+    def __str__(self) -> str:
         if not self._plugins:
             return "No plugins"
         return "\n\n".join(str(p_ep) for p_ep in self._plugins.values())

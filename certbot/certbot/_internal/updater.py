@@ -1,14 +1,19 @@
 """Updaters run at renewal"""
 import logging
 
+from certbot import configuration
 from certbot import errors
 from certbot import interfaces
+from certbot._internal import storage
+from certbot._internal.plugins import disco as plugin_disco
 from certbot._internal.plugins import selection as plug_sel
 from certbot.plugins import enhancements
 
 logger = logging.getLogger(__name__)
 
-def run_generic_updaters(config, lineage, plugins):
+
+def run_generic_updaters(config: configuration.NamespaceConfig, lineage: storage.RenewableCert,
+                         plugins: plugin_disco.PluginsRegistry) -> None:
     """Run updaters that the plugin supports
 
     :param config: Configuration object
@@ -35,7 +40,9 @@ def run_generic_updaters(config, lineage, plugins):
         _run_updaters(lineage, installer, config)
         _run_enhancement_updaters(lineage, installer, config)
 
-def run_renewal_deployer(config, lineage, installer):
+
+def run_renewal_deployer(config: configuration.NamespaceConfig, lineage: storage.RenewableCert,
+                         installer: interfaces.Installer) -> None:
     """Helper function to run deployer interface method if supported by the used
     installer plugin.
 
@@ -60,7 +67,9 @@ def run_renewal_deployer(config, lineage, installer):
         installer.renew_deploy(lineage)
     _run_enhancement_deployers(lineage, installer, config)
 
-def _run_updaters(lineage, installer, config):
+
+def _run_updaters(lineage: storage.RenewableCert, installer: interfaces.Installer,
+                  config: configuration.NamespaceConfig) -> None:
     """Helper function to run the updater interface methods if supported by the
     used installer plugin.
 
@@ -77,7 +86,9 @@ def _run_updaters(lineage, installer, config):
         if isinstance(installer, interfaces.GenericUpdater):
             installer.generic_updates(lineage)
 
-def _run_enhancement_updaters(lineage, installer, config):
+
+def _run_enhancement_updaters(lineage: storage.RenewableCert, installer: interfaces.Installer,
+                              config: configuration.NamespaceConfig) -> None:
     """Iterates through known enhancement interfaces. If the installer implements
     an enhancement interface and the enhance interface has an updater method, the
     updater method gets run.
@@ -99,7 +110,8 @@ def _run_enhancement_updaters(lineage, installer, config):
             getattr(installer, enh["updater_function"])(lineage)
 
 
-def _run_enhancement_deployers(lineage, installer, config):
+def _run_enhancement_deployers(lineage: storage.RenewableCert, installer: interfaces.Installer,
+                               config: configuration.NamespaceConfig) -> None:
     """Iterates through known enhancement interfaces. If the installer implements
     an enhancement interface and the enhance interface has an deployer method, the
     deployer method gets run.

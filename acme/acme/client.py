@@ -13,11 +13,17 @@ import re
 import sys
 import time
 from types import ModuleType
+from typing import Any
+from typing import Callable
 from typing import cast
 from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Mapping
+from typing import Optional
 from typing import Set
 from typing import Text
+from typing import Tuple
 from typing import Union
 import warnings
 
@@ -28,6 +34,7 @@ from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
 from requests_toolbelt.adapters.source import SourceAddressAdapter
 
+from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jws
@@ -48,7 +55,8 @@ class ClientBase:
     :ivar .ClientNetwork net: Client network.
     :ivar int acme_version: ACME protocol version. 1 or 2.
     """
-    def __init__(self, directory, net, acme_version):
+    def __init__(self, directory: messages.Directory, net: 'ClientNetwork',
+                 acme_version: int) -> None:
         """Initialize.
 
         :param .messages.Directory directory: Directory Resource
@@ -60,7 +68,9 @@ class ClientBase:
         self.acme_version = acme_version
 
     @classmethod
-    def _regr_from_response(cls, response, uri=None, terms_of_service=None):
+    def _regr_from_response(cls, response: requests.Response, uri: Optional[str] = None,
+                            terms_of_service: Optional[str] = None
+                            ) -> messages.RegistrationResource:
         if 'terms-of-service' in response.links:
             terms_of_service = response.links['terms-of-service']['url']
 
@@ -69,7 +79,8 @@ class ClientBase:
             uri=response.headers.get('Location', uri),
             terms_of_service=terms_of_service)
 
-    def _send_recv_regr(self, regr, body):
+    def _send_recv_regr(self, regr: messages.RegistrationResource,
+                        body: messages.Registration) -> messages.RegistrationResource:
         response = self._post(regr.uri, body)
 
         # TODO: Boulder returns httplib.ACCEPTED
@@ -82,7 +93,7 @@ class ClientBase:
             response, uri=regr.uri,
             terms_of_service=regr.terms_of_service)
 
-    def _post(self, *args, **kwargs):
+    def _post(self, *args: Any, **kwargs: Any) -> requests.Response:
         """Wrapper around self.net.post that adds the acme_version.
 
         """
@@ -91,7 +102,9 @@ class ClientBase:
             kwargs.setdefault('new_nonce_url', getattr(self.directory, 'newNonce'))
         return self.net.post(*args, **kwargs)
 
-    def update_registration(self, regr, update=None):
+    def update_registration(self, regr: messages.RegistrationResource,
+                            update: Optional[messages.Registration] = None
+                            ) -> messages.RegistrationResource:
         """Update registration.
 
         :param messages.RegistrationResource regr: Registration Resource.
@@ -108,7 +121,8 @@ class ClientBase:
         self.net.account = updated_regr
         return updated_regr
 
-    def deactivate_registration(self, regr):
+    def deactivate_registration(self, regr: messages.RegistrationResource
+                                ) -> messages.RegistrationResource:
         """Deactivate registration.
 
         :param messages.RegistrationResource regr: The Registration Resource
@@ -118,7 +132,8 @@ class ClientBase:
         :rtype: `.RegistrationResource`
 
         """
-        return self.update_registration(regr, update={'status': 'deactivated'})
+        return self.update_registration(regr, messages.Registration.from_json(
+            {"status": "deactivated", "contact": None}))
 
     def deactivate_authorization(self,
                                  authzr: messages.AuthorizationResource
@@ -137,15 +152,18 @@ class ClientBase:
         return self._authzr_from_response(response,
             authzr.body.identifier, authzr.uri)
 
-    def _authzr_from_response(self, response, identifier=None, uri=None):
+    def _authzr_from_response(self, response: requests.Response,
+                              identifier: Optional[messages.Identifier] = None,
+                              uri: Optional[str] = None) -> messages.AuthorizationResource:
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri))
-        if identifier is not None and authzr.body.identifier != identifier:
+        if identifier is not None and authzr.body.identifier != identifier:  # pylint: disable=no-member
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def answer_challenge(self, challb, response):
+    def answer_challenge(self, challb: messages.ChallengeBody,
+                         response: challenges.ChallengeResponse) -> messages.ChallengeResource:
         """Answer challenge.
 
         :param challb: Challenge Resource body.
@@ -160,21 +178,21 @@ class ClientBase:
         :raises .UnexpectedUpdate:
 
         """
-        response = self._post(challb.uri, response)
+        resp = self._post(challb.uri, response)
         try:
-            authzr_uri = response.links['up']['url']
+            authzr_uri = resp.links['up']['url']
         except KeyError:
             raise errors.ClientError('"up" Link header missing')
         challr = messages.ChallengeResource(
             authzr_uri=authzr_uri,
-            body=messages.ChallengeBody.from_json(response.json()))
-        # TODO: check that challr.uri == response.headers['Location']?
+            body=messages.ChallengeBody.from_json(resp.json()))
+        # TODO: check that challr.uri == resp.headers['Location']?
         if challr.uri != challb.uri:
             raise errors.UnexpectedUpdate(challr.uri)
         return challr
 
     @classmethod
-    def retry_after(cls, response, default):
+    def retry_after(cls, response: requests.Response, default: int) -> datetime.datetime:
         """Compute next `poll` time based on response ``Retry-After`` header.
 
         Handles integers and various datestring formats per
@@ -205,7 +223,7 @@ class ClientBase:
 
         return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 
-    def _revoke(self, cert, rsn, url):
+    def _revoke(self, cert: jose.ComparableX509, rsn: int, url: str) -> None:
         """Revoke certificate.
 
         :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
@@ -247,8 +265,9 @@ class Client(ClientBase):
 
     """
 
-    def __init__(self, directory, key, alg=jose.RS256, verify_ssl=True,
-                 net=None):
+    def __init__(self, directory: messages.Directory, key: jose.JWK,
+                 alg: jose.JWASignature=jose.RS256, verify_ssl: bool = True,
+                 net: Optional['ClientNetwork'] = None) -> None:
         """Initialize.
 
         :param directory: Directory Resource (`.messages.Directory`) or
@@ -263,9 +282,10 @@ class Client(ClientBase):
             directory = messages.Directory.from_json(
                 net.get(directory).json())
         super().__init__(directory=directory,
-            net=net, acme_version=1)
+                         net=net, acme_version=1)
 
-    def register(self, new_reg=None):
+    def register(self, new_reg: Optional[messages.NewRegistration] = None
+                 ) -> messages.RegistrationResource:
         """Register.
 
         :param .NewRegistration new_reg:
@@ -282,16 +302,18 @@ class Client(ClientBase):
         # "Instance of 'Field' has no key/contact member" bug:
         return self._regr_from_response(response)
 
-    def query_registration(self, regr):
+    def query_registration(self, regr: messages.RegistrationResource
+                           ) -> messages.RegistrationResource:
         """Query server about registration.
 
-        :param messages.RegistrationResource: Existing Registration
+        :param messages.RegistrationResource regr: Existing Registration
             Resource.
 
         """
         return self._send_recv_regr(regr, messages.UpdateRegistration())
 
-    def agree_to_tos(self, regr):
+    def agree_to_tos(self, regr: messages.RegistrationResource
+                     ) -> messages.RegistrationResource:
         """Agree to the terms-of-service.
 
         Agree to the terms-of-service in a Registration Resource.
@@ -306,7 +328,8 @@ class Client(ClientBase):
         return self.update_registration(
             regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
 
-    def request_challenges(self, identifier, new_authzr_uri=None):
+    def request_challenges(self, identifier: messages.Identifier,
+                           new_authzr_uri: Optional[str] = None) -> messages.AuthorizationResource:
         """Request challenges.
 
         :param .messages.Identifier identifier: Identifier to be challenged.
@@ -332,7 +355,8 @@ class Client(ClientBase):
         assert response.status_code == http_client.CREATED
         return self._authzr_from_response(response, identifier)
 
-    def request_domain_challenges(self, domain, new_authzr_uri=None):
+    def request_domain_challenges(self, domain: str,new_authzr_uri: Optional[str] = None
+                                  ) -> messages.AuthorizationResource:
         """Request challenges for domain names.
 
         This is simply a convenience function that wraps around
@@ -352,7 +376,9 @@ class Client(ClientBase):
         return self.request_challenges(messages.Identifier(
             typ=messages.IDENTIFIER_FQDN, value=domain), new_authzr_uri)
 
-    def request_issuance(self, csr, authzrs):
+    def request_issuance(self, csr: jose.ComparableX509,
+                         authzrs: Iterable[messages.AuthorizationResource]
+                         ) -> messages.CertificateResource:
         """Request issuance.
 
         :param csr: CSR
@@ -389,7 +415,8 @@ class Client(ClientBase):
             body=jose.ComparableX509(OpenSSL.crypto.load_certificate(
                 OpenSSL.crypto.FILETYPE_ASN1, response.content)))
 
-    def poll(self, authzr):
+    def poll(self, authzr: messages.AuthorizationResource
+             ) -> Tuple[messages.AuthorizationResource, requests.Response]:
         """Poll Authorization Resource for status.
 
         :param authzr: Authorization Resource
@@ -405,8 +432,11 @@ class Client(ClientBase):
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
 
-    def poll_and_request_issuance(
-            self, csr, authzrs, mintime=5, max_attempts=10):
+    def poll_and_request_issuance(self, csr: jose.ComparableX509,
+                                  authzrs: Iterable[messages.AuthorizationResource],
+                                  mintime: int = 5, max_attempts: int = 10
+                                  ) -> Tuple[messages.CertificateResource,
+                                             Tuple[messages.AuthorizationResource, ...]]:
         """Poll and request issuance.
 
         This function polls all provided Authorization Resource URIs
@@ -464,7 +494,7 @@ class Client(ClientBase):
             updated[authzr] = updated_authzr
 
             attempts[authzr] += 1
-            if updated_authzr.body.status not in (
+            if updated_authzr.body.status not in (  # pylint: disable=no-member
                     messages.STATUS_VALID, messages.STATUS_INVALID):
                 if attempts[authzr] < max_attempts:
                     # push back to the priority queue, with updated retry_after
@@ -480,7 +510,7 @@ class Client(ClientBase):
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
         return self.request_issuance(csr, updated_authzrs), updated_authzrs
 
-    def _get_cert(self, uri):
+    def _get_cert(self, uri: str) -> Tuple[requests.Response, jose.ComparableX509]:
         """Returns certificate from URI.
 
         :param str uri: URI of certificate
@@ -496,7 +526,7 @@ class Client(ClientBase):
         return response, jose.ComparableX509(OpenSSL.crypto.load_certificate(
             OpenSSL.crypto.FILETYPE_ASN1, response.content))
 
-    def check_cert(self, certr):
+    def check_cert(self, certr: messages.CertificateResource) -> messages.CertificateResource:
         """Check for new cert.
 
         :param certr: Certificate Resource
@@ -515,7 +545,7 @@ class Client(ClientBase):
             raise errors.UnexpectedUpdate(response.text)
         return certr.update(body=cert)
 
-    def refresh(self, certr):
+    def refresh(self, certr: messages.CertificateResource) -> messages.CertificateResource:
         """Refresh certificate.
 
         :param certr: Certificate Resource
@@ -530,7 +560,8 @@ class Client(ClientBase):
         # respond with status code 403 (Forbidden)
         return self.check_cert(certr)
 
-    def fetch_chain(self, certr, max_length=10):
+    def fetch_chain(self, certr: messages.CertificateResource,
+                    max_length: int = 10) -> List[jose.ComparableX509]:
         """Fetch chain for certificate.
 
         :param .CertificateResource certr: Certificate Resource
@@ -559,7 +590,7 @@ class Client(ClientBase):
                 "Recursion limit reached. Didn't get {0}".format(uri))
         return chain
 
-    def revoke(self, cert, rsn):
+    def revoke(self, cert: jose.ComparableX509, rsn: int) -> None:
         """Revoke certificate.
 
         :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
@@ -570,7 +601,7 @@ class Client(ClientBase):
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        return self._revoke(cert, rsn, self.directory[messages.Revocation])
+        self._revoke(cert, rsn, self.directory[messages.Revocation])
 
 
 class ClientV2(ClientBase):
@@ -580,16 +611,15 @@ class ClientV2(ClientBase):
     :ivar .ClientNetwork net: Client network.
     """
 
-    def __init__(self, directory, net):
+    def __init__(self, directory: messages.Directory, net: 'ClientNetwork') -> None:
         """Initialize.
 
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
         """
-        super().__init__(directory=directory,
-            net=net, acme_version=2)
+        super().__init__(directory=directory, net=net, acme_version=2)
 
-    def new_account(self, new_account):
+    def new_account(self, new_account: messages.NewRegistration) -> messages.RegistrationResource:
         """Register.
 
         :param .NewRegistration new_account:
@@ -602,16 +632,17 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newAccount'], new_account)
         # if account already exists
         if response.status_code == 200 and 'Location' in response.headers:
-            raise errors.ConflictError(response.headers.get('Location'))
+            raise errors.ConflictError(response.headers['Location'])
         # "Instance of 'Field' has no key/contact member" bug:
         regr = self._regr_from_response(response)
         self.net.account = regr
         return regr
 
-    def query_registration(self, regr):
+    def query_registration(self, regr: messages.RegistrationResource
+                           ) -> messages.RegistrationResource:
         """Query server about registration.
 
-        :param messages.RegistrationResource: Existing Registration
+        :param messages.RegistrationResource regr: Existing Registration
             Resource.
 
         """
@@ -623,7 +654,9 @@ class ClientV2(ClientBase):
                                                     terms_of_service=regr.terms_of_service)
         return self.net.account
 
-    def update_registration(self, regr, update=None):
+    def update_registration(self, regr: messages.RegistrationResource,
+                            update: Optional[messages.Registration] = None
+                            ) -> messages.RegistrationResource:
         """Update registration.
 
         :param messages.RegistrationResource regr: Registration Resource.
@@ -638,7 +671,7 @@ class ClientV2(ClientBase):
         new_regr = self._get_v2_account(regr)
         return super().update_registration(new_regr, update)
 
-    def _get_v2_account(self, regr):
+    def _get_v2_account(self, regr: messages.RegistrationResource) -> messages.RegistrationResource:
         self.net.account = None
         only_existing_reg = regr.body.update(only_return_existing=True)
         response = self._post(self.directory['newAccount'], only_existing_reg)
@@ -647,10 +680,10 @@ class ClientV2(ClientBase):
         self.net.account = new_regr
         return new_regr
 
-    def new_order(self, csr_pem):
+    def new_order(self, csr_pem: bytes) -> messages.OrderResource:
         """Request a new Order object from the server.
 
-        :param str csr_pem: A CSR in PEM format.
+        :param bytes csr_pem: A CSR in PEM format.
 
         :returns: The newly created order.
         :rtype: OrderResource
@@ -682,7 +715,8 @@ class ClientV2(ClientBase):
             authorizations=authorizations,
             csr_pem=csr_pem)
 
-    def poll(self, authzr):
+    def poll(self, authzr: messages.AuthorizationResource
+             ) -> Tuple[messages.AuthorizationResource, requests.Response]:
         """Poll Authorization Resource for status.
 
         :param authzr: Authorization Resource
@@ -698,7 +732,8 @@ class ClientV2(ClientBase):
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
 
-    def poll_and_finalize(self, orderr, deadline=None):
+    def poll_and_finalize(self, orderr: messages.OrderResource,
+                          deadline: Optional[datetime.datetime] = None) -> messages.OrderResource:
         """Poll authorizations and finalize the order.
 
         If no deadline is provided, this method will timeout after 90
@@ -716,13 +751,14 @@ class ClientV2(ClientBase):
         orderr = self.poll_authorizations(orderr, deadline)
         return self.finalize_order(orderr, deadline)
 
-    def poll_authorizations(self, orderr, deadline):
+    def poll_authorizations(self, orderr: messages.OrderResource, deadline: datetime.datetime
+                            ) -> messages.OrderResource:
         """Poll Order Resource for status."""
         responses = []
         for url in orderr.body.authorizations:
             while datetime.datetime.now() < deadline:
                 authzr = self._authzr_from_response(self._post_as_get(url), uri=url)
-                if authzr.body.status != messages.STATUS_PENDING:
+                if authzr.body.status != messages.STATUS_PENDING:  # pylint: disable=no-member
                     responses.append(authzr)
                     break
                 time.sleep(1)
@@ -740,7 +776,8 @@ class ClientV2(ClientBase):
             raise errors.ValidationError(failed)
         return orderr.update(authorizations=responses)
 
-    def finalize_order(self, orderr, deadline, fetch_alternative_chains=False):
+    def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
+                       fetch_alternative_chains: bool = False) -> messages.OrderResource:
         """Finalize an order and obtain a certificate.
 
         :param messages.OrderResource orderr: order to finalize
@@ -772,7 +809,7 @@ class ClientV2(ClientBase):
                 return orderr
         raise errors.TimeoutError()
 
-    def revoke(self, cert, rsn):
+    def revoke(self, cert: jose.ComparableX509, rsn: int) -> None:
         """Revoke certificate.
 
         :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
@@ -783,13 +820,13 @@ class ClientV2(ClientBase):
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        return self._revoke(cert, rsn, self.directory['revokeCert'])
+        self._revoke(cert, rsn, self.directory['revokeCert'])
 
-    def external_account_required(self):
+    def external_account_required(self) -> bool:
         """Checks if ACME server requires External Account Binding authentication."""
         return hasattr(self.directory, 'meta') and self.directory.meta.external_account_required
 
-    def _post_as_get(self, *args, **kwargs):
+    def _post_as_get(self, *args: Any, **kwargs: Any) -> requests.Response:
         """
         Send GET request using the POST-as-GET protocol.
         :param args:
@@ -799,7 +836,7 @@ class ClientV2(ClientBase):
         new_args = args[:1] + (None,) + args[1:]
         return self._post(*new_args, **kwargs)
 
-    def _get_links(self, response, relation_type):
+    def _get_links(self, response: requests.Response, relation_type: str) -> List[str]:
         """
         Retrieves all Link URIs of relation_type from the response.
         :param requests.Response response: The requests HTTP response.
@@ -836,7 +873,7 @@ class BackwardsCompatibleClientV2:
     :ivar .ClientBase client: either Client or ClientV2
     """
 
-    def __init__(self, net, key, server):
+    def __init__(self, net: 'ClientNetwork', key: jose.JWK, server: str) -> None:
         directory = messages.Directory.from_json(net.get(server).json())
         self.acme_version = self._acme_version_from_directory(directory)
         self.client: Union[Client, ClientV2]
@@ -845,40 +882,43 @@ class BackwardsCompatibleClientV2:
         else:
             self.client = ClientV2(directory, net=net)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         return getattr(self.client, name)
 
-    def new_account_and_tos(self, regr, check_tos_cb=None):
+    def new_account_and_tos(self, regr: messages.NewRegistration,
+                            check_tos_cb: Optional[Callable[[str], None]] = None
+                            ) -> messages.RegistrationResource:
         """Combined register and agree_tos for V1, new_account for V2
 
         :param .NewRegistration regr:
         :param callable check_tos_cb: callback that raises an error if
             the check does not work
         """
-        def _assess_tos(tos):
+        def _assess_tos(tos: str) -> None:
             if check_tos_cb is not None:
                 check_tos_cb(tos)
         if self.acme_version == 1:
             client_v1 = cast(Client, self.client)
-            regr = client_v1.register(regr)
-            if regr.terms_of_service is not None:
-                _assess_tos(regr.terms_of_service)
-                return client_v1.agree_to_tos(regr)
-            return regr
+            regr_res = client_v1.register(regr)
+            if regr_res.terms_of_service is not None:
+                _assess_tos(regr_res.terms_of_service)
+                return client_v1.agree_to_tos(regr_res)
+            return regr_res
         else:
             client_v2 = cast(ClientV2, self.client)
-            if "terms_of_service" in client_v2.directory.meta:
+            if ("terms_of_service" in client_v2.directory.meta and
+                client_v2.directory.meta.terms_of_service is not None):
                 _assess_tos(client_v2.directory.meta.terms_of_service)
                 regr = regr.update(terms_of_service_agreed=True)
             return client_v2.new_account(regr)
 
-    def new_order(self, csr_pem):
+    def new_order(self, csr_pem: bytes) -> messages.OrderResource:
         """Request a new Order object from the server.
 
         If using ACMEv1, returns a dummy OrderResource with only
         the authorizations field filled in.
 
-        :param str csr_pem: A CSR in PEM format.
+        :param bytes csr_pem: A CSR in PEM format.
 
         :returns: The newly created order.
         :rtype: OrderResource
@@ -898,7 +938,8 @@ class BackwardsCompatibleClientV2:
             return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem)
         return cast(ClientV2, self.client).new_order(csr_pem)
 
-    def finalize_order(self, orderr, deadline, fetch_alternative_chains=False):
+    def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
+                       fetch_alternative_chains: bool = False) -> messages.OrderResource:
         """Finalize an order and obtain a certificate.
 
         :param messages.OrderResource orderr: order to finalize
@@ -932,14 +973,15 @@ class BackwardsCompatibleClientV2:
                     'certificate, please rerun the command for a new one.')
 
             cert = OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()
-            chain = crypto_util.dump_pyopenssl_chain(chain).decode()
+                OpenSSL.crypto.FILETYPE_PEM,
+                cast(OpenSSL.crypto.X509, cast(jose.ComparableX509, certr.body).wrapped)).decode()
+            chain_str = crypto_util.dump_pyopenssl_chain(chain).decode()
 
-            return orderr.update(fullchain_pem=(cert + chain))
+            return orderr.update(fullchain_pem=(cert + chain_str))
         return cast(ClientV2, self.client).finalize_order(
             orderr, deadline, fetch_alternative_chains)
 
-    def revoke(self, cert, rsn):
+    def revoke(self, cert: jose.ComparableX509, rsn: int) -> None:
         """Revoke certificate.
 
         :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
@@ -950,14 +992,14 @@ class BackwardsCompatibleClientV2:
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        return self.client.revoke(cert, rsn)
+        self.client.revoke(cert, rsn)
 
-    def _acme_version_from_directory(self, directory):
+    def _acme_version_from_directory(self, directory: messages.Directory) -> int:
         if hasattr(directory, 'newNonce'):
             return 2
         return 1
 
-    def external_account_required(self):
+    def external_account_required(self) -> bool:
         """Checks if the server requires an external account for ACMEv2 servers.
 
         Always return False for ACMEv1 servers, as it doesn't use External Account Binding."""
@@ -989,9 +1031,10 @@ class ClientNetwork:
     :param source_address: Optional source address to bind to when making requests.
     :type source_address: str or tuple(str, int)
     """
-    def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
-                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
-                 source_address=None):
+    def __init__(self, key: jose.JWK, account: Optional[messages.RegistrationResource] = None,
+                 alg: jose.JWASignature = jose.RS256, verify_ssl: bool = True,
+                 user_agent: str = 'acme-python', timeout: int = DEFAULT_NETWORK_TIMEOUT,
+                 source_address: Optional[Union[str, Tuple[str, int]]] = None) -> None:
         self.key = key
         self.account = account
         self.alg = alg
@@ -1008,7 +1051,7 @@ class ClientNetwork:
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
 
-    def __del__(self):
+    def __del__(self) -> None:
         # Try to close the session, but don't show exceptions to the
         # user if the call to close() fails. See #4840.
         try:
@@ -1016,15 +1059,16 @@ class ClientNetwork:
         except Exception:  # pylint: disable=broad-except
             pass
 
-    def _wrap_in_jws(self, obj, nonce, url, acme_version):
+    def _wrap_in_jws(self, obj: jose.JSONDeSerializable, nonce: str, url: str,
+                     acme_version: int) -> str:
         """Wrap `JSONDeSerializable` object in JWS.
 
         .. todo:: Implement ``acmePath``.
 
         :param josepy.JSONDeSerializable obj:
         :param str url: The URL to which this object will be POSTed
-        :param bytes nonce:
-        :rtype: `josepy.JWS`
+        :param str nonce:
+        :rtype: str
 
         """
         if isinstance(obj, VersionedLEACMEMixin):
@@ -1033,7 +1077,7 @@ class ClientNetwork:
         logger.debug('JWS payload:\n%s', jobj)
         kwargs = {
             "alg": self.alg,
-            "nonce": nonce
+            "nonce": nonce,
         }
         if acme_version == 2:
             kwargs["url"] = url
@@ -1042,10 +1086,11 @@ class ClientNetwork:
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
-        return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
+        return jws.JWS.sign(jobj, **cast(Mapping[str, Any], kwargs)).json_dumps(indent=2)
 
     @classmethod
-    def _check_response(cls, response, content_type=None):
+    def _check_response(cls, response: requests.Response,
+                        content_type: Optional[str] = None) -> requests.Response:
         """Check response content and its type.
 
         .. note::
@@ -1059,7 +1104,7 @@ class ClientNetwork:
             is ignored, but logged.
 
         :raises .messages.Error: If server response body
-            carries HTTP Problem (draft-ietf-appsawg-http-problem-00).
+            carries HTTP Problem (https://datatracker.ietf.org/doc/html/rfc7807).
         :raises .ClientError: In case of other networking errors.
 
         """
@@ -1075,7 +1120,7 @@ class ClientNetwork:
             jobj = None
 
         if response.status_code == 409:
-            raise errors.ConflictError(response.headers.get('Location'))
+            raise errors.ConflictError(response.headers.get('Location', 'UNKNOWN-LOCATION'))
 
         if not response.ok:
             if jobj is not None:
@@ -1098,12 +1143,11 @@ class ClientNetwork:
                     'response', response_ct)
 
             if content_type == cls.JSON_CONTENT_TYPE and jobj is None:
-                raise errors.ClientError(
-                    'Unexpected response Content-Type: {0}'.format(response_ct))
+                raise errors.ClientError(f'Unexpected response Content-Type: {response_ct}')
 
         return response
 
-    def _send_request(self, method, url, *args, **kwargs):
+    def _send_request(self, method: str, url: str, *args: Any, **kwargs: Any) -> requests.Response:
         """Send HTTP request.
 
         Makes sure that `verify_ssl` is respected. Logs request and
@@ -1152,7 +1196,7 @@ class ClientNetwork:
             if m is None:
                 raise  # pragma: no cover
             host, path, _err_no, err_msg = m.groups()
-            raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
+            raise ValueError(f"Requesting {host}{path}:{err_msg}")
 
         # If the Content-Type is DER or an Accept header was sent in the
         # request, the response may not be UTF-8 encoded. In this case, we
@@ -1178,7 +1222,7 @@ class ClientNetwork:
                      debug_content)
         return response
 
-    def head(self, *args, **kwargs):
+    def head(self, *args: Any, **kwargs: Any) -> requests.Response:
         """Send HEAD request without checking the response.
 
         Note, that `_check_response` is not called, as it is expected
@@ -1188,12 +1232,13 @@ class ClientNetwork:
         """
         return self._send_request('HEAD', *args, **kwargs)
 
-    def get(self, url, content_type=JSON_CONTENT_TYPE, **kwargs):
+    def get(self, url: str, content_type: str = JSON_CONTENT_TYPE,
+            **kwargs: Any) -> requests.Response:
         """Send GET request and check response."""
         return self._check_response(
             self._send_request('GET', url, **kwargs), content_type=content_type)
 
-    def _add_nonce(self, response):
+    def _add_nonce(self, response: requests.Response) -> None:
         if self.REPLAY_NONCE_HEADER in response.headers:
             nonce = response.headers[self.REPLAY_NONCE_HEADER]
             try:
@@ -1205,7 +1250,7 @@ class ClientNetwork:
         else:
             raise errors.MissingNonce(response)
 
-    def _get_nonce(self, url, new_nonce_url):
+    def _get_nonce(self, url: str, new_nonce_url: str) -> str:
         if not self._nonces:
             logger.debug('Requesting fresh nonce')
             if new_nonce_url is None:
@@ -1216,7 +1261,7 @@ class ClientNetwork:
             self._add_nonce(response)
         return self._nonces.pop()
 
-    def post(self, *args, **kwargs):
+    def post(self, *args: Any, **kwargs: Any) -> requests.Response:
         """POST object wrapped in `.JWS` and check response.
 
         If the server responded with a badNonce error, the request will
@@ -1231,8 +1276,9 @@ class ClientNetwork:
                 return self._post_once(*args, **kwargs)
             raise
 
-    def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
-            acme_version=1, **kwargs):
+    def _post_once(self, url: str, obj: jose.JSONDeSerializable,
+                   content_type: str = JOSE_CONTENT_TYPE, acme_version: int = 1,
+                   **kwargs: Any) -> requests.Response:
         new_nonce_url = kwargs.pop('new_nonce_url', None)
         data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
@@ -1250,23 +1296,23 @@ class _ClientDeprecationModule:
     Internal class delegating to a module, and displaying warnings when attributes
     related to deprecated attributes in the acme.client module.
     """
-    def __init__(self, module):
+    def __init__(self, module: ModuleType) -> None:
         self.__dict__['_module'] = module
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> Any:
         if attr in ('Client', 'BackwardsCompatibleClientV2'):
             warnings.warn('The {0} attribute in acme.client is deprecated '
                           'and will be removed soon.'.format(attr),
                           DeprecationWarning, stacklevel=2)
         return getattr(self._module, attr)
 
-    def __setattr__(self, attr, value):  # pragma: no cover
+    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
         setattr(self._module, attr, value)
 
-    def __delattr__(self, attr):  # pragma: no cover
+    def __delattr__(self, attr: str) -> None:  # pragma: no cover
         delattr(self._module, attr)
 
-    def __dir__(self):  # pragma: no cover
+    def __dir__(self) -> List[str]:  # pragma: no cover
         return ['_module'] + dir(self._module)
 
 
