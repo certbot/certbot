@@ -6,6 +6,7 @@ from acme import challenges, messages
 from certbot import errors, configuration
 from certbot._internal import storage
 import certbot.tests.util as test_util
+from certbot.compat import os
 
 try:
     import mock
@@ -139,6 +140,7 @@ class RenewalTest(test_util.ConfigTestCase):
         le_client = mock.MagicMock()
         le_client.obtain_certificate.side_effect = [error_with_subproblems, [None, None, None, None]]
         mock_lineage.names.return_value = ['isnot.org','example.com']
+        mock_lineage.cert.return_value = os.path.join(self.config.config_dir, 'some-cert')
 
         from certbot._internal import renewal
 
