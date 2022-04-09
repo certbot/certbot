@@ -24,9 +24,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Certbot for Windows has been upgraded to use Python 3.9.11, in response to
-<<<<<<< HEAD
-  https://www.openssl.org/news/secadv/20220315.txt.
-=======
   https://www.openssl.org/news/secadv/20220315.txt.
 * Previously, when Certbot was in the process of registering a new ACME account
   and the ACME server did not present any Terms of Service, the user was asked to
@@ -36,7 +33,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * If account registration fails, Certbot did not relay the error from the ACME server
   back to the user. This is now fixed: the error message from the ACME server is now
   presented to the user when account registration fails.
->>>>>>> b5a187841ea61528401aa398cb3472d6e9fd6ff5
 
 More details about these changes can be found on our GitHub repo.
 
