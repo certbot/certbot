@@ -776,6 +776,31 @@ class ClientV2(ClientBase):
             raise errors.ValidationError(failed)
         return orderr.update(authorizations=responses)
 
+    def _determine_sleep_seconds(self, response: Optional[requests.Response],
+                                 deadline: datetime.datetime,
+                                 default_wait: int = 1) -> int:
+        """Determine sleep seconds based on Retry-After HTTP header.
+
+        :param requests.Response response: response from ACME server
+        :param datetime.datetime deadline: when to stop polling and timeout
+
+        :returns: time in seconds
+        :rtype: int
+        """
+
+        if response is None:
+            return default_wait
+
+        retry_after = self.retry_after(response, default_wait)
+        current_time = datetime.datetime.now()
+
+        if retry_after > deadline:
+            return int((deadline - current_time).total_seconds())
+        elif current_time > retry_after:
+            return default_wait
+        else: # current_time <= retry_after AND retry_after <= deadline
+            return int((retry_after - current_time).total_seconds())
+
     def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
                        fetch_alternative_chains: bool = False) -> messages.OrderResource:
         """Finalize an order and obtain a certificate.
@@ -793,8 +818,9 @@ class ClientV2(ClientBase):
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
         wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
         self._post(orderr.body.finalize, wrapped_csr)
+        response = None
         while datetime.datetime.now() < deadline:
-            time.sleep(1)
+            time.sleep(self._determine_sleep_seconds(response, deadline))
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.error is not None:

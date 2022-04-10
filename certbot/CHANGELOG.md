@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Fixed to respect Retry-After values when finalizing orders to avoid frequent polling.
 
 ### Fixed
 

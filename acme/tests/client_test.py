@@ -842,6 +842,31 @@ class ClientV2Test(ClientTestBase):
         deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
         self.assertRaises(errors.TimeoutError, self.client.finalize_order, self.orderr, deadline)
 
+    @mock.patch('acme.client.datetime')
+    @mock.patch('acme.client.ClientV2.retry_after')
+    def test_determine_sleep_seconds(self, retry_after_mock, dt_mock):
+        self.response.headers['Retry-After'] = 'Tue, 19 Apr 2022 09:00:10 GMT'
+        retry_after_mock.return_value = datetime.datetime(2022, 4, 19, 9, 0, 10)
+
+        deadline1 = datetime.datetime(2022, 4, 19, 9, 0, 5)
+        dt_mock.datetime.now.return_value = datetime.datetime(2022, 4, 19, 9, 0, 0)
+        self.assertEqual(5,
+                         self.client._determine_sleep_seconds(self.response,
+                                                              deadline1))
+
+        deadline2 = datetime.datetime(2022, 4, 19, 9, 10, 5)
+        dt_mock.datetime.now.return_value = datetime.datetime(2022, 4, 19, 9, 10, 0)
+        self.assertEqual(3,
+                         self.client._determine_sleep_seconds(self.response,
+                                                              deadline2,
+                                                              3))
+
+        deadline3 = datetime.datetime(2022, 4, 19, 9, 15, 0)
+        dt_mock.datetime.now.return_value = datetime.datetime(2022, 4, 19, 8, 55, 0)
+        self.assertEqual(310,
+                         self.client._determine_sleep_seconds(self.response,
+                                                              deadline3))
+
     def test_finalize_order_alt_chains(self):
         updated_order = self.order.update(
             certificate='https://www.letsencrypt-demo.org/acme/cert/',
