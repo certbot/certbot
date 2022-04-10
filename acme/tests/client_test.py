@@ -848,12 +848,14 @@ class ClientV2Test(ClientTestBase):
         self.response.headers['Retry-After'] = 'Tue, 19 Apr 2022 09:00:10 GMT'
         retry_after_mock.return_value = datetime.datetime(2022, 4, 19, 9, 0, 10)
 
+        # now < deadline < retry_after -> sleep until deadline
         deadline1 = datetime.datetime(2022, 4, 19, 9, 0, 5)
         dt_mock.datetime.now.return_value = datetime.datetime(2022, 4, 19, 9, 0, 0)
         self.assertEqual(5,
                          self.client._determine_sleep_seconds(self.response,
                                                               deadline1))
 
+        # retry_after < now < deadline -> sleep default seconds
         deadline2 = datetime.datetime(2022, 4, 19, 9, 10, 5)
         dt_mock.datetime.now.return_value = datetime.datetime(2022, 4, 19, 9, 10, 0)
         self.assertEqual(3,
@@ -861,11 +863,20 @@ class ClientV2Test(ClientTestBase):
                                                               deadline2,
                                                               3))
 
+        # now < retry_after < deadline -> sleep until retry_after
         deadline3 = datetime.datetime(2022, 4, 19, 9, 15, 0)
         dt_mock.datetime.now.return_value = datetime.datetime(2022, 4, 19, 8, 55, 0)
         self.assertEqual(310,
                          self.client._determine_sleep_seconds(self.response,
                                                               deadline3))
+
+        # deadline < now -> sleep default seconds
+        deadline4 = datetime.datetime(2022, 4, 19, 9, 0, 11)
+        dt_mock.datetime.now.return_value = datetime.datetime(2022, 4, 19, 9, 0, 12)
+        self.assertEqual(2,
+                         self.client._determine_sleep_seconds(self.response,
+                                                              deadline4,
+                                                              2))
 
     def test_finalize_order_alt_chains(self):
         updated_order = self.order.update(

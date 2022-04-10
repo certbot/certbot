@@ -794,7 +794,9 @@ class ClientV2(ClientBase):
         retry_after = self.retry_after(response, default_wait)
         current_time = datetime.datetime.now()
 
-        if retry_after > deadline:
+        if current_time > deadline:
+            return default_wait
+        elif retry_after > deadline:
             return int((deadline - current_time).total_seconds())
         elif current_time > retry_after:
             return default_wait
