@@ -462,9 +462,11 @@ class ClientTest(ClientTestBase):
             self.challr.body, challenges.DNSResponse(validation=None))
 
     def test_retry_after_date(self):
+        from dateutil.tz import tzlocal
+        to_local = datetime.datetime.now(tzlocal()).utcoffset()
         self.response.headers['Retry-After'] = 'Fri, 31 Dec 1999 23:59:59 GMT'
         self.assertEqual(
-            datetime.datetime(1999, 12, 31, 23, 59, 59),
+            datetime.datetime(1999, 12, 31, 23, 59, 59) + to_local,
             self.client.retry_after(response=self.response, default=10))
 
     @mock.patch('acme.client.datetime')
