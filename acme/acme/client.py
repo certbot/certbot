@@ -216,16 +216,8 @@ class ClientBase:
             if when is not None:
                 try:
                     tz_secs = datetime.timedelta(seconds=when[-1] if when[-1] is not None else 0)
-                    local_tz = datetime.datetime.now().astimezone().tzinfo
-                    if local_tz:
-                        utc_to_local = local_tz.utcoffset(None)
-                        if utc_to_local:
-                            offset = tz_secs - utc_to_local
-                        else:
-                            offset = tz_secs
-                    else:
-                        offset = tz_secs
-                    return datetime.datetime(*when[:7]) - offset
+                    local_tz_offset = datetime.datetime.now().astimezone().tzinfo.utcoffset(None) # type: ignore[union-attr] # pylint: disable=line-too-long
+                    return datetime.datetime(*when[:7]) - tz_secs + local_tz_offset # type: ignore[operator] # pylint: disable=line-too-long
                 except (ValueError, OverflowError):
                     pass
             seconds = default
