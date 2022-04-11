@@ -5,7 +5,6 @@
 import base64
 import collections
 import datetime
-from dateutil.tz import tzlocal
 from email.utils import parsedate_tz
 import heapq
 import http.client as http_client
@@ -217,9 +216,13 @@ class ClientBase:
             if when is not None:
                 try:
                     tz_secs = datetime.timedelta(seconds=when[-1] if when[-1] is not None else 0)
-                    to_local = datetime.datetime.now(tzlocal()).utcoffset()
-                    if to_local:
-                        offset = tz_secs - to_local
+                    local_tz = datetime.datetime.now().astimezone().tzinfo
+                    if local_tz:
+                        utc_to_local = local_tz.utcoffset(None)
+                        if utc_to_local:
+                            offset = tz_secs - utc_to_local
+                        else:
+                            offset = tz_secs
                     else:
                         offset = tz_secs
                     return datetime.datetime(*when[:7]) - offset
