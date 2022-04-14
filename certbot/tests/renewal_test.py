@@ -126,8 +126,7 @@ class RenewalTest(test_util.ConfigTestCase):
         # None is passed as the existing key, i.e. the key is not actually being reused.
         le_client.obtain_certificate.assert_called_with(mock.ANY, None)
 
-    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
-    def test_allow_subset_of_names_caa_error(self, mock_lineage):
+    def test_allow_subset_of_names_caa_error(self):
         self.config.rsa_key_size = 'INVALID_VALUE'
         self.config.dry_run = True
         self.config.allow_subset_of_names = True
@@ -139,13 +138,17 @@ class RenewalTest(test_util.ConfigTestCase):
 
         le_client = mock.MagicMock()
         le_client.obtain_certificate.side_effect = [error_with_subproblems, [None, None, None, None]]
-        mock_lineage.names.return_value = ['isnot.org','example.com']
-        mock_lineage.cert.return_value = os.path.join(self.config.config_dir, 'some-cert')
-
-        from certbot._internal import renewal
-
-        with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
-            renewal.renew_cert(self.config, None, le_client, mock_lineage)
+        mock_lineage = mock.MagicMock(cert_path=test_util.temp_join('cert'),
+                                      chain_path=test_util.temp_join('chain'),
+                                      fullchain_path=test_util.temp_join('chain'),
+                                      key_path=test_util.temp_join('privkey'),
+                                      cert=os.path.join(test_util.temp_join('cert'), 'some-cert'))
+        with mock.patch("certbot._internal.cert_manager.lineage_for_certname") as mock_getlin:
+            mock_getlin.return_value = mock_lineage
+            mock_lineage.names.return_value = names=['isnot.org','example.com']
+            from certbot._internal import renewal
+            with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
+                renewal.renew_cert(self.config, None, le_client, mock_lineage)
 
         le_client.obtain_certificate.assert_has_calls([
             mock.call(['isnot.org','example.com'], None),
