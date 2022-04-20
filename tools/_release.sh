@@ -38,7 +38,7 @@ if [ "$RELEASE_GPG_KEY" = "" ]; then
         20F201346BF8F3F455A73F9A780CC99432A28621
     "
     for key in $TRUSTED_KEYS; do
-        if gpg2 --with-colons --card-status | grep -q "$key"; then
+        if gpg --with-colons --card-status | grep -q "$key"; then
             RELEASE_GPG_KEY="$key"
             break
         fi
@@ -147,7 +147,7 @@ do
   echo "Signing ($pkg_dir)"
   for x in dist/*.tar.gz dist/*.whl
   do
-      gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 $x
+      gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 $x
   done
 
   cd -
@@ -189,8 +189,8 @@ deactivate
 git add certbot/docs/cli-help.txt
 while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     echo "Unable to sign the release commit using git."
-    echo "You may have to configure git to use gpg2 by running:"
-    echo 'git config --global gpg.program $(command -v gpg2)'
+    echo "You may have to configure git to use gpg by running:"
+    echo 'git config --global gpg.program $(command -v gpg)'
     read -p "Press enter to try signing again."
 done
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
