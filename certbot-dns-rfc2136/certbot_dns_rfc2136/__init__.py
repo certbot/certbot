@@ -143,9 +143,9 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
 Special considerations for multiple views in BIND
 '''''''''''''''''''''''''''''''''''''''''''''''''
 
-If your BIND configuration leverages multiple views, certbot may fail with an
+If your BIND configuration leverages multiple views, Certbot may fail with an
 ``Unable to determine base domain for _acme-challenge.example.com`` error.
-This error occurs when certbot isn't able to communicate with an authorative
+This error occurs when Certbot isn't able to communicate with an authorative
 nameserver for the zone, one that answers with the AA (Authorative Answer) flag
 set in the response.
 
@@ -153,17 +153,17 @@ A common multiple view configuration with two views, external and internal,
 can cause this error.  If the zone is only present in the external view, and
 the credentials_ ``dns_rfc2136_server`` setting is set (e.g. 127.0.0.1) so the
 DNS server's ``match-clients`` view option causes the DNS server to route
-certbot's query to the internal view; the internal view doesn't contain the
+Certbot's query to the internal view; the internal view doesn't contain the
 zone, so the response won't have the AA flag set.
 
-One solution is to logically place the zone into the view certbot is sending
+One solution is to logically place the zone into the view Certbot is sending
 queries to, with an
 `in-view <https://bind9.readthedocs.io/en/latest/reference.html#multiple-views>`_
 zone option.  The zone will be then visible in both zones with exactly the same content.
 
 .. note::
    Order matters in BIND views, the ``in-view`` zone option must refer to a
-view defined preceeding it, it cannot refer to a view defined later in the configuration file.
+   view defined preceeding it, it cannot refer to a view defined later in the configuration file.
 
 .. code-block:: none
    :caption: Split-view BIND configuration
