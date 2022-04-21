@@ -7,6 +7,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * Updated Apache/NGINX TLS configs to document contents are based on ssl-config.mozilla.org
+* Added `--autorenew` option to re-enable autorenewal again if autorenewal was previously
+  disabled using the `--no-autorenew` option. Note that autorenewal is enabled by default and
+  therefore most of the time usage of this option isn't necessary.
 
 ### Changed
 
