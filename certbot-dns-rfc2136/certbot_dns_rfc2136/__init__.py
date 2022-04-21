@@ -65,6 +65,38 @@ file. This warning will be emitted each time Certbot uses the credentials file,
 including for renewal, and cannot be silenced except by addressing the issue
 (e.g., by using a command like ``chmod 600`` to restrict access to the file).
 
+Examples
+--------
+
+.. code-block:: bash
+   :caption: To acquire a certificate for ``example.com``
+
+   certbot certonly \\
+     --dns-rfc2136 \\
+     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
+     -d example.com
+
+.. code-block:: bash
+   :caption: To acquire a single certificate for both ``example.com`` and
+             ``www.example.com``
+
+   certbot certonly \\
+     --dns-rfc2136 \\
+     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
+     -d example.com \\
+     -d www.example.com
+
+.. code-block:: bash
+   :caption: To acquire a certificate for ``example.com``, waiting 30 seconds
+             for DNS propagation
+
+   certbot certonly \\
+     --dns-rfc2136 \\
+     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
+     --dns-rfc2136-propagation-seconds 30 \\
+     -d example.com
+
+
 Sample BIND configuration
 '''''''''''''''''''''''''
 
@@ -125,7 +157,8 @@ certbot's query to the internal view; the internal view doesn't contain the
 zone, so the response won't have the AA flag set.
 
 One solution is to logically place the zone into the view certbot is sending
-queries to, with an `in-view <https://bind9.readthedocs.io/en/latest/reference.html#multiple-views>`_
+queries to, with an
+`in-view <https://bind9.readthedocs.io/en/latest/reference.html#multiple-views>`_
 zone option.  The zone will be then visible in both zones with exactly the same content.
 
 .. note::
@@ -161,36 +194,5 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
        in-view external;
      };
    };
-
-Examples
---------
-
-.. code-block:: bash
-   :caption: To acquire a certificate for ``example.com``
-
-   certbot certonly \\
-     --dns-rfc2136 \\
-     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
-     -d example.com
-
-.. code-block:: bash
-   :caption: To acquire a single certificate for both ``example.com`` and
-             ``www.example.com``
-
-   certbot certonly \\
-     --dns-rfc2136 \\
-     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
-     -d example.com \\
-     -d www.example.com
-
-.. code-block:: bash
-   :caption: To acquire a certificate for ``example.com``, waiting 30 seconds
-             for DNS propagation
-
-   certbot certonly \\
-     --dns-rfc2136 \\
-     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
-     --dns-rfc2136-propagation-seconds 30 \\
-     -d example.com
 
 """
