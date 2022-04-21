@@ -148,7 +148,7 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
      zone "example.com." IN {
        in-view external;
      };
-   }
+   };
 
 Examples
 --------
