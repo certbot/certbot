@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Added a new signing key, `F2871B4152AE13C49519111F447BF683AA3B26C3`
 
 ### Fixed
 
