@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* When `certonly` is run with an installer specified (e.g.  `--nginx`),
+  `certonly` will now also run `restart` for that installer
 
 ### Fixed
 
@@ -99,9 +100,6 @@ More details about these changes can be found on our GitHub repo.
 More details about these changes can be found on our GitHub repo.
 
 ## 1.23.0 - 2022-02-08
-
-* When `certonly` is run with an installer specified (e.g.  `--nginx`),
-  `certonly` will now also run `restart` for that installer
 
 ### Added
 
