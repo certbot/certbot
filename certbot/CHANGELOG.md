@@ -100,6 +100,9 @@ More details about these changes can be found on our GitHub repo.
 
 ## 1.23.0 - 2022-02-08
 
+* When `certonly` is run with an installer specified (e.g.  `--nginx`),
+  `certonly` will now also run `restart` for that installer
+
 ### Added
 
 * Added `show_account` subcommand, which will fetch the account information
