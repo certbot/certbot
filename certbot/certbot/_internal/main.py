@@ -536,12 +536,21 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
 
     # If the installation or enhancement raised an error, show advice on trying again
     if installer_err:
-        steps.append(
-            "The certificate was saved, but could not be installed (installer: "
-            f"{config.installer}). After fixing the error shown below, try installing it again "
-            f"by running:\n  {cli.cli_command} install --cert-name "
-            f"{_cert_name_from_config_or_lineage(config, lineage)}"
-        )
+        # Special case where either --nginx or --apache were used, causing us to
+        # run the "installer" (i.e. reloading the nginx/apache config)
+        if config.verb == 'certonly':
+            steps.append(
+                "The certificate was saved, but was not successfully loaded by the installer "
+                f"({config.installer}) due to the installer failing to reload. "
+                f"After fixing the error shown below, try reloading {config.installer} manually."
+            )
+        else:
+            steps.append(
+                "The certificate was saved, but could not be installed (installer: "
+                f"{config.installer}). After fixing the error shown below, try installing it again "
+                f"by running:\n  {cli.cli_command} install --cert-name "
+                f"{_cert_name_from_config_or_lineage(config, lineage)}"
+            )
 
     # If a certificate was obtained or renewed, show applicable renewal advice
     if new_or_renewed_cert:
@@ -1581,12 +1590,24 @@ def certonly(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
 
     lineage = _get_and_save_cert(le_client, config, domains, certname, lineage)
 
+    # If a new cert was issued and we were passed an installer, we can safely
+    # run `installer.restart()` to load the newly issued certificate
+    installer_err: Optional[errors.Error] = None
+    if lineage and installer and not config.dry_run:
+        logger.info("Reloading %s server after certificate issuance", config.installer)
+        try:
+            installer.restart()
+        except errors.Error as e:
+            installer_err = e
+
     cert_path = lineage.cert_path if lineage else None
     fullchain_path = lineage.fullchain_path if lineage else None
     key_path = lineage.key_path if lineage else None
     _report_new_cert(config, cert_path, fullchain_path, key_path)
-    _report_next_steps(config, None, lineage,
+    _report_next_steps(config, installer_err, lineage,
                        new_or_renewed_cert=should_get_cert and not config.dry_run)
+    if installer_err:
+        raise installer_err
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
 
