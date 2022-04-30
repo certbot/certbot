@@ -152,13 +152,9 @@ DEFAULT_LOGGING_LEVEL = logging.WARNING
 """Default logging level to use when not in quiet mode."""
 
 RENEWER_DEFAULTS = {
-    "renewer_enabled": "yes",
     "renew_before_expiry": "30 days",
-    # This value should ensure that there is never a deployment delay by
-    # default.
-    "deploy_before_expiry": "99 years",
 }
-"""Defaults for renewer script."""
+"""Defaults for `certbot renew`."""
 
 ARCHIVE_DIR = "archive"
 """Archive directory, relative to `certbot.configuration.NamespaceConfig.config_dir`."""

@@ -2,7 +2,26 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.26.0 - master
+## 1.27.0 - master
+
+### Added
+
+* Added support for RFC8555 subproblems to our acme library.
+
+### Changed
+
+* The PGP key `F2871B4152AE13C49519111F447BF683AA3B26C3` was added as an
+  additional trusted key to sign our PyPI packages
+* When `certonly` is run with an installer specified (e.g.  `--nginx`),
+  `certonly` will now also run `restart` for that installer
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.26.0 - 2022-04-05
 
 ### Added
 
