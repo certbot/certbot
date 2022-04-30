@@ -1,5 +1,7 @@
 """Module executing integration tests against certbot core."""
+import json
 import os
+from glob import glob
 from os.path import exists
 from os.path import join
 import re
@@ -17,6 +19,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import SECP384R1
 from cryptography.hazmat.primitives.asymmetric.ec import SECP521R1
 from cryptography.x509 import NameOID
 import pytest
+from josepy import JWKEC
 
 from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
@@ -25,6 +28,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_equals_gro
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_hook_execution
+from certbot_integration_tests.certbot_tests.assertions import assert_jwk_type
 from certbot_integration_tests.certbot_tests.assertions import assert_rsa_key
 from certbot_integration_tests.certbot_tests.assertions import assert_saved_lineage_option
 from certbot_integration_tests.certbot_tests.assertions import assert_saved_renew_hook
@@ -157,20 +161,16 @@ def test_certonly(context: IntegrationTestsContext) -> None:
     assert_cert_count_for_lineage(context.config_dir, 'newname', 1)
 
 
-@pytest.skip("Fails")
 def test_certonly_ecdsa_account_flag(context: IntegrationTestsContext) -> None:
     context.certbot([
         'certonly',
-        '--register-unsafely-without-email',
         '--cert-name', 'newname',
         '--ecdsa-account-key',
         '-d', context.get_domain('newname'),
     ])
 
-    privkey = join(context.config_dir, 'live', 'newname', 'privkey.pem')
-
-    # key_path = join(context.workspace, 'key.pem')
-    assert_elliptic_key(privkey, curve=SECP256R1)
+    key_path = misc.get_account_key_path(context)
+    assert_jwk_type(key_path, JWKEC)
 
 
 def test_ecdsa_account_flag_duplicate(context: IntegrationTestsContext) -> None:
@@ -184,8 +184,8 @@ def test_ecdsa_account_flag_duplicate(context: IntegrationTestsContext) -> None:
         '--register-unsafely-without-email',
         '--ecdsa-account-key',
     ])
-    # we already assert properties for the above register-call, it's just to trigger
-    # the error from the certonly call
+    key_path = misc.get_account_key_path(context)
+    assert_jwk_type(key_path, JWKEC)
 
     with pytest.raises(subprocess.CalledProcessError) as error:
         context.certbot([

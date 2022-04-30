@@ -20,4 +20,3 @@ and for the elliptic key curves:
 
   openssl genpkey -algorithm EC -out ec_secp256r1.pem -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve
   openssl genpkey -algorithm EC -out ec_secp384r1.pem -pkeyopt ec_paramgen_curve:P-384 -pkeyopt ec_param_enc:named_curve
-  openssl genpkey -algorithm EC -out ec_secp521r1.pem -pkeyopt ec_paramgen_curve:P-521 -pkeyopt ec_param_enc:named_curve

@@ -442,8 +442,8 @@ class RenameLineageTest(BaseCertManagerTest):
         self.config.certname = "one"
         self.config.new_certname = "two"
         mock_lineage_for_certname.return_value = None
-        self.assertRaises(
-            errors.ConfigurationError, self._call, self.config)
+        self.assertRaises(errors.ConfigurationError,
+            self._call, self.config)
 
     @test_util.patch_display_util()
     @mock.patch("certbot._internal.storage.RenewableCert._check_symlinks")

@@ -1,9 +1,11 @@
 """This module contains advanced assertions for the certbot integration tests."""
 import io
+import json
 import os
 from typing import Optional
 from typing import Type
 
+import josepy
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey, EllipticCurve
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
@@ -204,3 +206,17 @@ def assert_world_read_permissions(file: str) -> None:
         assert not mode & ntsecuritycon.FILE_GENERIC_WRITE
         assert not mode & ntsecuritycon.FILE_GENERIC_EXECUTE
         assert mode & ntsecuritycon.FILE_GENERIC_READ == ntsecuritycon.FILE_GENERIC_READ
+
+
+def assert_jwk_type(file: str, key_type: Type[josepy.JWK]):
+    """
+    Assert that the given file is world-readable, but not world-writable or world-executable.
+    :param str file: path of the file to check
+    """
+
+    with open(file, "r") as file:
+        jobj = json.loads(file.read())
+
+    jwk = josepy.JWK.from_json(jobj=jobj)
+
+    assert isinstance(jwk, key_type)

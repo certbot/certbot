@@ -33,6 +33,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * If account registration fails, Certbot did not relay the error from the ACME server
   back to the user. This is now fixed: the error message from the ACME server is now
   presented to the user when account registration fails.
+*
 
 More details about these changes can be found on our GitHub repo.
 
@@ -82,6 +83,7 @@ More details about these changes can be found on our GitHub repo.
 ### Fixed
 
 * Nginx plugin now checks included files for the singleton server_names_hash_bucket_size directive.
+*
 
 More details about these changes can be found on our GitHub repo.
 

@@ -362,7 +362,8 @@ class ClientTest(ClientTestBase):
         mock_net.return_value = mock.sentinel.net
         alg = jose.RS256
         from acme.client import Client
-        self.client = Client(directory=self.directory, key=KEY, alg=alg)
+        self.client = Client(
+            directory=self.directory, key=KEY, alg=alg)
         mock_net.called_once_with(KEY, alg=alg, verify_ssl=True)
         self.assertEqual(self.client.net, mock.sentinel.net)
 
@@ -917,11 +918,6 @@ class ClientV2Test(ClientTestBase):
         })
 
         self.assertFalse(self.client.external_account_required())
-
-    def test_key_change(self):
-        self.client.directory = messages.Directory({
-            'meta': messages.Directory.Meta(external_account_required=False)
-        })
 
     def test_external_account_required_default(self):
         self.assertFalse(self.client.external_account_required())
