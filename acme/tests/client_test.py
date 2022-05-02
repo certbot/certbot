@@ -116,11 +116,10 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.orderr = messages.OrderResource(
             csr_pem=CSR_SAN_PEM)
 
-    def _init(self):
+    def _init(self, key=KEY):
         uri = 'http://www.letsencrypt-demo.org/directory'
         from acme.client import BackwardsCompatibleClientV2
-        return BackwardsCompatibleClientV2(net=self.net,
-            key=KEY, server=uri)
+        return BackwardsCompatibleClientV2(net=self.net, key=key, server=uri)
 
     def test_init_downloads_directory(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
@@ -145,13 +144,13 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.assertEqual(self.regr, client.query_registration(self.regr))
 
     def test_query_registration_client_v2_ecdsa(self):
-        from acme.client import Client
-        reg = messages.Registration(contact=self.contact, key=SECP256R1_KEY.public_key())
+        from acme.client import ClientV2
+        reg = messages.NewRegistration(contact=self.contact, key=SECP256R1_KEY.public_key())
         the_arg: Dict[Any, Any] = dict(reg)
-        self.client = Client(
-            directory=the_arg, key=SECP256R1_KEY, alg=jose.ES256, net=self.net  # type: ignore
+        self.client = ClientV2(
+            directory=the_arg, net=self.net  # type: ignore
         )
-        self.net.get.assert_called_once_with(the_arg)
+        self.net.post.assert_called_once_with(the_arg)
 
     def test_forwarding(self):
         self.response.json.return_value = DIRECTORY_V1.to_json()
@@ -382,8 +381,8 @@ class ClientTest(ClientTestBase):
     @mock.patch('acme.client.ClientNetwork')
     def test_register_ec_keys(self, mock_net):
         mock_net.return_value = mock.sentinel.net
-        from acme.client import Client
-        self.client = Client(directory=self.directory, key=SECP256R1_KEY, alg=jose.ES256)
+        from acme.client import ClientV2
+        self.client = ClientV2(directory=self.directory)
         mock_net.called_once_with(KEY, alg=jose.ES256, verify_ssl=True)
         self.assertEqual(self.client.net, mock.sentinel.net)
 

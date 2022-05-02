@@ -352,5 +352,10 @@ def get_acme_issuers(context: IntegrationTestsContext) -> List[Certificate]:
 
 
 def get_account_key_path(context: IntegrationTestsContext) -> str:
+    """
+    Get the account key. Useful for the integration
+
+    :return: The path to the private key of the ACME account
+    """
     accounts = glob.glob(os.path.join(context.config_dir, "accounts", "*", "*", "*"))
     return os.path.join(accounts[0], 'private_key.json')

@@ -104,11 +104,12 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
     helpful.add(
-        [None, "certonly", "register"],
+        [None, "register", "certonly"],
         "--ecdsa-account-key",
         dest="ecdsa_account_key", action="store_true",
         default=flag_default("ecdsa_account_key"),
-        help="Create an ECDSA key for the account registration",
+        help="Create an ECDSA key for the account registration? "
+             "Can only be used for new accounts.",
     )
     helpful.add(
         [None, "register", "run", "certonly", "enhance"],

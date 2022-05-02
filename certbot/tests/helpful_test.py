@@ -179,6 +179,7 @@ class TestParseArgsErrors(unittest.TestCase):
         # The following arguments are added because they have to be defined
         # in order for arg_parser to run completely. They are not used for the
         # test.
+        arg_parser.add(None, "--ecdsa-account-key", dest="ecdsa_account_key", action="store_true")
         arg_parser.add(
             None, constants.FORCE_INTERACTIVE_FLAG, action="store_true")
         arg_parser.add(
