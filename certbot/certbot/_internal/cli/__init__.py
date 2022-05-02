@@ -409,7 +409,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         ' the new certificates and keys; the shell variable'
         ' $RENEWED_DOMAINS will contain a space-delimited list of'
         ' renewed certificate domains (for example, "example.com'
-        ' www.example.com"')
+        ' www.example.com")')
     helpful.add(
         "renew", "--disable-hook-validation",
         action="store_false", dest="validate_hooks",
