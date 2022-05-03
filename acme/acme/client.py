@@ -801,7 +801,7 @@ class ClientV2(ClientBase):
         elif current_time > retry_after:
             return default_wait
         else: # current_time <= retry_after AND retry_after <= deadline
-            return int((retry_after - current_time).total_seconds())
+            return max(int((retry_after - current_time).total_seconds()), 1)
 
     def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
                        fetch_alternative_chains: bool = False) -> messages.OrderResource:
