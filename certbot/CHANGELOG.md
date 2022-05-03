@@ -2,7 +2,26 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.26.0 - master
+## 1.27.0 - master
+
+### Added
+
+* Added support for RFC8555 subproblems to our acme library.
+
+### Changed
+
+* The PGP key `F2871B4152AE13C49519111F447BF683AA3B26C3` was added as an
+  additional trusted key to sign our PyPI packages
+* When `certonly` is run with an installer specified (e.g.  `--nginx`),
+  `certonly` will now also run `restart` for that installer
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.26.0 - 2022-04-05
 
 ### Added
 
@@ -20,7 +39,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Certbot for Windows has been upgraded to use Python 3.9.11, in response to
-  https://www.openssl.org/news/secadv/20220315.txt. 
+  https://www.openssl.org/news/secadv/20220315.txt.
 * Previously, when Certbot was in the process of registering a new ACME account
   and the ACME server did not present any Terms of Service, the user was asked to
   agree with a non-existent Terms of Service ("None"). This bug is now fixed, so

@@ -314,6 +314,36 @@ class CertonlyTest(unittest.TestCase):
                 mock.ANY, mock.ANY, mock.ANY, new_or_renewed_cert=False)
             mock_report_next_steps.reset_mock()
 
+    @mock.patch('certbot._internal.main._report_next_steps')
+    @mock.patch('certbot._internal.main._report_new_cert')
+    @mock.patch('certbot._internal.main._find_cert')
+    @mock.patch('certbot._internal.main._get_and_save_cert')
+    @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
+    def test_installer_runs_restart(self, mock_sel, mock_get_cert, mock_find_cert,
+                                    unused_report_new, unused_report_next):
+        mock_installer = mock.MagicMock()
+        mock_sel.return_value = (mock_installer, None)
+        mock_get_cert.return_value = mock.MagicMock()
+        mock_find_cert.return_value = (True, None)
+
+        self._call('certonly --nginx -d example.com'.split())
+        mock_installer.restart.assert_called_once()
+
+    @mock.patch('certbot._internal.main._report_next_steps')
+    @mock.patch('certbot._internal.main._report_new_cert')
+    @mock.patch('certbot._internal.main._find_cert')
+    @mock.patch('certbot._internal.main._get_and_save_cert')
+    @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
+    def test_dryrun_installer_doesnt_restart(self, mock_sel, mock_get_cert, mock_find_cert,
+                                             unused_report_new, unused_report_next):
+        mock_installer = mock.MagicMock()
+        mock_sel.return_value = (mock_installer, None)
+        mock_get_cert.return_value = mock.MagicMock()
+        mock_find_cert.return_value = (True, None)
+
+        self._call('certonly --nginx -d example.com --dry-run'.split())
+        mock_installer.restart.assert_not_called()
+
 
 class FindDomainsOrCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.main._find_domains_or_certname."""
