@@ -35,7 +35,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -126,7 +126,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.26.0 (certbot;
+                        "". (default: CertbotACMEClient/1.27.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -332,7 +332,7 @@ renew:
                         new certificates and keys; the shell variable
                         $RENEWED_DOMAINS will contain a space-delimited list
                         of renewed certificate domains (for example,
-                        "example.com www.example.com" (default: None)
+                        "example.com www.example.com") (default: None)
   --disable-hook-validation
                         Ordinarily the commands specified for --pre-
                         hook/--post-hook/--deploy-hook will be checked for
