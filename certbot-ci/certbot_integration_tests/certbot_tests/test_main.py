@@ -501,7 +501,8 @@ def test_new_key(context: IntegrationTestsContext) -> None:
 
     # certonly: it should not be possible to change a key parameter without --new-key
     with pytest.raises(subprocess.CalledProcessError) as error:
-        context.certbot(['certonly', '-d', certname, '--reuse-key', '--elliptic-curve', 'secp384r1'])
+        context.certbot(['certonly', '-d', certname, '--reuse-key',
+                         '--elliptic-curve', 'secp384r1'])
     assert 'Unable to change the --elliptic-curve' in error.value.stderr
 
     # certonly: not specifying --key-type should keep the existing key type (non-interactively).
