@@ -129,6 +129,38 @@ class RenewalTest(test_util.ConfigTestCase):
         # None is passed as the existing key, i.e. the key is not actually being reused.
         le_client.obtain_certificate.assert_called_with(mock.ANY, None)
 
+    @mock.patch('certbot._internal.renewal.hooks.renew_hook')
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_reuse_key_conflicts(self, mock_set_by_cli, unused_mock_renew_hook):
+        mock_set_by_cli.return_value = False
+
+        # When renewing with reuse_key and a conflicting key parameter (size, curve)
+        # an error should be raised ...
+        self.config.reuse_key = True
+        self.config.key_type = "rsa"
+        self.config.rsa_key_size = 4096
+        self.config.dry_run = True
+
+        config = configuration.NamespaceConfig(self.config)
+
+        rc_path = test_util.make_lineage(
+            self.config.config_dir, 'sample-renewal.conf')
+        lineage = storage.RenewableCert(rc_path, config)
+        lineage.configuration["renewalparams"]["reuse_key"] = True
+
+        le_client = mock.MagicMock()
+        le_client.obtain_certificate.return_value = (None, None, None, None)
+
+        from certbot._internal import renewal
+
+        with self.assertRaisesRegex(errors.Error, "Unable to change the --rsa-key-type"):
+            renewal.renew_cert(self.config, None, le_client, lineage)
+
+        # ... unless --no-reuse-key is set
+        mock_set_by_cli.side_effect = lambda var: var == "reuse_key"
+        self.config.reuse_key = False
+        renewal.renew_cert(self.config, None, le_client, lineage)
+
     @test_util.patch_display_util()
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_remove_deprecated_config_elements(self, mock_set_by_cli, unused_mock_get_utility):
