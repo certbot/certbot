@@ -776,7 +776,7 @@ class ClientV2(ClientBase):
             raise errors.ValidationError(failed)
         return orderr.update(authorizations=responses)
 
-    def _determine_sleep_seconds(self, response: Optional[requests.Response],
+    def _determine_sleep_seconds(self, response: requests.Response,
                                  deadline: datetime.datetime,
                                  default_wait: int = 1) -> int:
         """Determine sleep seconds based on Retry-After HTTP header.
@@ -787,9 +787,6 @@ class ClientV2(ClientBase):
         :returns: time in seconds
         :rtype: int
         """
-
-        if response is None:
-            return default_wait
 
         retry_after = self.retry_after(response, default_wait)
         current_time = datetime.datetime.now()
@@ -819,8 +816,7 @@ class ClientV2(ClientBase):
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
         wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
-        self._post(orderr.body.finalize, wrapped_csr)
-        response = None
+        response = self._post(orderr.body.finalize, wrapped_csr)
         while datetime.datetime.now() < deadline:
             time.sleep(self._determine_sleep_seconds(response, deadline))
             response = self._post_as_get(orderr.uri)

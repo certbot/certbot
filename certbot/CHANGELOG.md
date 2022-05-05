@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Fixed to respect Retry-After values when finalizing orders to avoid frequent polling.
 
 ### Fixed
 
@@ -30,7 +30,6 @@ More details about these changes can be found on our GitHub repo.
   additional trusted key to sign our PyPI packages
 * When `certonly` is run with an installer specified (e.g.  `--nginx`),
   `certonly` will now also run `restart` for that installer
-* Fixed to respect Retry-After values when finalizing orders to avoid frequent polling.
 
 ### Fixed
 
