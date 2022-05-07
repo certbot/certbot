@@ -4,8 +4,8 @@ or outside during setup/teardown of the integration tests environment.
 """
 import contextlib
 import errno
+import functools
 import http.server as SimpleHTTPServer
-import multiprocessing
 import os
 import re
 import shutil
@@ -13,6 +13,7 @@ import socketserver
 import stat
 import sys
 import tempfile
+import threading
 import time
 import warnings
 from typing import Generator
@@ -80,10 +81,6 @@ class GracefulTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
 
 
-def _run_server(port: int) -> None:
-    GracefulTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
-
-
 @contextlib.contextmanager
 def create_http_server(port: int) -> Generator[str, None, None]:
     """
@@ -93,30 +90,20 @@ def create_http_server(port: int) -> Generator[str, None, None]:
     :param int port: the TCP port to use
     :return str: the temporary webroot attached to this server
     """
-    current_cwd = os.getcwd()
-    webroot = tempfile.mkdtemp()
-
-    process = multiprocessing.Process(target=_run_server, args=(port,))
-
-    try:
-        # SimpleHTTPServer is designed to serve files from the current working directory at the
-        # time it starts. So we temporarily change the cwd to our crafted webroot before launch.
+    with tempfile.TemporaryDirectory() as webroot:
+        # Setting the directory argument of SimpleHTTPRequestHandler causes
+        # files to be served from that directory.
+        handler = functools.partial(SimpleHTTPServer.SimpleHTTPRequestHandler, directory=webroot)
+        server = GracefulTCPServer(('', port), handler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
         try:
-            os.chdir(webroot)
-            process.start()
+            check_until_timeout('http://localhost:{0}/'.format(port))
+            yield webroot
         finally:
-            os.chdir(current_cwd)
-
-        check_until_timeout('http://localhost:{0}/'.format(port))
-
-        yield webroot
-    finally:
-        try:
-            if process.is_alive():
-                process.terminate()
-                process.join()  # Block until process is effectively terminated
-        finally:
-            shutil.rmtree(webroot)
+            server.shutdown()
+            thread.join()
+            server.server_close()
 
 
 def list_renewal_hooks_dirs(config_dir: str) -> List[str]:
