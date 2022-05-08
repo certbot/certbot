@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Updated Apache/NGINX TLS configs to show contents are based on ssl-config.mozilla.org
 
 ### Changed
 
