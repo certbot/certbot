@@ -10,7 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* A change to order finalization has been made to the `acme` module and Certbot:
+  - An order's `certificate` field will only be processed if the order's `status` is `valid`.
+  - An order's `error` field will only be processed if the order's `status` is `invalid`.
 
 ### Fixed
 
