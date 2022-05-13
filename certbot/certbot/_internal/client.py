@@ -454,7 +454,22 @@ class Client:
                 os.remove(csr.file)
             return self.obtain_certificate(successful_domains)
         else:
-            cert, chain = self.obtain_certificate_from_csr(csr, orderr)
+            try:
+                cert, chain = self.obtain_certificate_from_csr(csr, orderr)
+            except messages.Error as error:
+                if self.config.allow_subset_of_names and error.subproblems is not None:
+                    failed_domains = [problem.identifier.value for problem in error.subproblems
+                                        if problem.identifier is not None]
+                    logger.info("CAA error during finalization with --allow-subset-of-names specified: "
+                        "retrying without %s", failed_domains)
+                    successful_domains = [x for x in domains if x not in failed_domains]
+                    if successful_domains != domains:
+                        if not self.config.dry_run:
+                            os.remove(key.file)
+                            os.remove(csr.file)
+                        cert, chain, key, csr = self.obtain_certificate(successful_domains)
+                else:
+                    raise error
             return cert, chain, key, csr
 
     def _get_order_and_authorizations(self, csr_pem: bytes,
