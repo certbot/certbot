@@ -65,6 +65,38 @@ file. This warning will be emitted each time Certbot uses the credentials file,
 including for renewal, and cannot be silenced except by addressing the issue
 (e.g., by using a command like ``chmod 600`` to restrict access to the file).
 
+Examples
+--------
+
+.. code-block:: bash
+   :caption: To acquire a certificate for ``example.com``
+
+   certbot certonly \\
+     --dns-rfc2136 \\
+     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
+     -d example.com
+
+.. code-block:: bash
+   :caption: To acquire a single certificate for both ``example.com`` and
+             ``www.example.com``
+
+   certbot certonly \\
+     --dns-rfc2136 \\
+     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
+     -d example.com \\
+     -d www.example.com
+
+.. code-block:: bash
+   :caption: To acquire a certificate for ``example.com``, waiting 30 seconds
+             for DNS propagation
+
+   certbot certonly \\
+     --dns-rfc2136 \\
+     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
+     --dns-rfc2136-propagation-seconds 30 \\
+     -d example.com
+
+
 Sample BIND configuration
 '''''''''''''''''''''''''
 
@@ -108,35 +140,59 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
    <https://bind9.readthedocs.io/en/latest/reference.html#dynamic-update-policies>`_
    for details.
 
-Examples
---------
+Special considerations for multiple views in BIND
+'''''''''''''''''''''''''''''''''''''''''''''''''
 
-.. code-block:: bash
-   :caption: To acquire a certificate for ``example.com``
+If your BIND configuration leverages multiple views, Certbot may fail with an
+``Unable to determine base domain for _acme-challenge.example.com`` error.
+This error occurs when Certbot isn't able to communicate with an authorative
+nameserver for the zone, one that answers with the AA (Authorative Answer) flag
+set in the response.
 
-   certbot certonly \\
-     --dns-rfc2136 \\
-     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
-     -d example.com
+A common multiple view configuration with two views, external and internal,
+can cause this error.  If the zone is only present in the external view, and
+the credentials_ ``dns_rfc2136_server`` setting is set (e.g. 127.0.0.1) so the
+DNS server's ``match-clients`` view option causes the DNS server to route
+Certbot's query to the internal view; the internal view doesn't contain the
+zone, so the response won't have the AA flag set.
 
-.. code-block:: bash
-   :caption: To acquire a single certificate for both ``example.com`` and
-             ``www.example.com``
+One solution is to logically place the zone into the view Certbot is sending
+queries to, with an
+`in-view <https://bind9.readthedocs.io/en/latest/reference.html#multiple-views>`_
+zone option.  The zone will be then visible in both zones with exactly the same content.
 
-   certbot certonly \\
-     --dns-rfc2136 \\
-     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
-     -d example.com \\
-     -d www.example.com
+.. note::
+   Order matters in BIND views, the ``in-view`` zone option must refer to a
+   view defined preceeding it, it cannot refer to a view defined later in the configuration file.
 
-.. code-block:: bash
-   :caption: To acquire a certificate for ``example.com``, waiting 30 seconds
-             for DNS propagation
+.. code-block:: none
+   :caption: Split-view BIND configuration
 
-   certbot certonly \\
-     --dns-rfc2136 \\
-     --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
-     --dns-rfc2136-propagation-seconds 30 \\
-     -d example.com
+   key "keyname." {
+     algorithm hmac-sha512;
+     secret "4q4wM/2I180UXoMyN4INVhJNi8V9BCV+jMw2mXgZw/CSuxUT8C7NKKFs \
+AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
+   };
+
+   // adjust internal-addresses to suit your needs
+   acl internal-address { 127.0.0.0/8; 10.0.0.0/8; 192.168.0.0/16; 172.16.0.0/12; };
+
+   view "external" {
+     match-clients { !internal-addresses; any; };
+
+     zone "example.com." IN {
+       type master;
+       file "named.example.com";
+       update-policy {
+         grant keyname. name _acme-challenge.example.com. txt;
+       };
+     };
+   };
+
+   view "internal" {
+     zone "example.com." IN {
+       in-view external;
+     };
+   };
 
 """

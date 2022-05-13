@@ -199,5 +199,71 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
         self.assertRaises(errors.PluginSelectionError, self._call)
 
 
+class TestChooseConfiguratorPlugins(unittest.TestCase):
+    """Tests for certbot._internal.plugins.selection.choose_configurator_plugins."""
+
+    def _setupMockPlugin(self, name):
+        mock_ep = mock.Mock(
+            description_with_name=name)
+        mock_ep.check_name = lambda n: n == name
+        mock_plugin = mock.MagicMock()
+        mock_plugin.name = name
+        mock_ep.init.return_value = mock_plugin
+        mock_ep.misconfigured = False
+        return mock_ep
+
+    def _parseArgs(self, args):
+        from certbot import configuration
+        from certbot._internal import cli
+        return configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(self.plugins, args.split()))
+
+    def setUp(self):
+        self.plugins = PluginsRegistry({
+            "nginx": self._setupMockPlugin("nginx"),
+            "apache": self._setupMockPlugin("apache"),
+            "manual": self._setupMockPlugin("manual"),
+        })
+
+    def _runWithArgs(self, args):
+        from certbot._internal.plugins.selection import choose_configurator_plugins
+        return choose_configurator_plugins(self._parseArgs(args), self.plugins, "certonly")
+
+    def test_noninteractive_configurator(self):
+        # For certonly, setting either the nginx or apache configurators should
+        # return both an installer and authenticator
+        inst, auth = self._runWithArgs("certonly --nginx")
+        self.assertEqual(inst.name, "nginx")
+        self.assertEqual(auth.name, "nginx")
+
+        inst, auth = self._runWithArgs("certonly --apache")
+        self.assertEqual(inst.name, "apache")
+        self.assertEqual(auth.name, "apache")
+    
+    def test_noninteractive_inst_arg(self):
+        # For certonly, if an installer arg is set, it should be returned as expected
+        inst, auth = self._runWithArgs("certonly -a nginx -i nginx")
+        self.assertEqual(inst.name, "nginx")
+        self.assertEqual(auth.name, "nginx")
+
+        inst, auth = self._runWithArgs("certonly -a apache -i apache")
+        self.assertEqual(inst.name, "apache")
+        self.assertEqual(auth.name, "apache")
+
+        # if no installer arg is set (or it's set to none), one shouldn't be returned
+        inst, auth = self._runWithArgs("certonly -a nginx")
+        self.assertEqual(inst, None)
+        self.assertEqual(auth.name, "nginx")
+        inst, auth = self._runWithArgs("certonly -a nginx -i none")
+        self.assertEqual(inst, None)
+        self.assertEqual(auth.name, "nginx")
+
+        inst, auth = self._runWithArgs("certonly -a apache")
+        self.assertEqual(inst, None)
+        self.assertEqual(auth.name, "apache")
+        inst, auth = self._runWithArgs("certonly -a apache -i none")
+        self.assertEqual(inst, None)
+        self.assertEqual(auth.name, "apache")
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
