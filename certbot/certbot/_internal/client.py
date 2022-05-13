@@ -460,10 +460,10 @@ class Client:
                 if self.config.allow_subset_of_names and error.subproblems is not None:
                     failed_domains = [problem.identifier.value for problem in error.subproblems
                                         if problem.identifier is not None]
-                    logger.info("CAA error during finalization with --allow-subset-of-names "
-                        "specified: retrying without %s", failed_domains)
                     successful_domains = [x for x in domains if x not in failed_domains]
                     if successful_domains != domains:
+                        logger.info("error obtaining certificate with --allow-subset-of-names "
+                            "specified: retrying without %s", failed_domains)
                         if not self.config.dry_run:
                             os.remove(key.file)
                             os.remove(csr.file)
