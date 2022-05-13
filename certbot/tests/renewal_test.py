@@ -2,11 +2,10 @@
 import copy
 import unittest
 
-from acme import challenges, messages
+from acme import challenges
 from certbot import errors, configuration
 from certbot._internal import storage
 import certbot.tests.util as test_util
-from certbot.compat import os
 
 try:
     import mock
