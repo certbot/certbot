@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* `--allow-subset-of-names` will now retry without failed domains if an error with subproblems occurs during order finalization
 
 ### Fixed
 
