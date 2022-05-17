@@ -797,9 +797,13 @@ class ClientV2(ClientBase):
             time.sleep(1)
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
-            if body.error is not None:
-                raise errors.IssuanceError(body.error)
-            if body.certificate is not None:
+            if body.status == messages.STATUS_INVALID:
+                if body.error is not None:
+                    raise errors.IssuanceError(body.error)
+                raise errors.Error(
+                    "The certificate order failed. No further information was provided "
+                    "by the server.")
+            elif body.status == messages.STATUS_VALID and body.certificate is not None:
                 certificate_response = self._post_as_get(body.certificate)
                 orderr = orderr.update(body=body, fullchain_pem=certificate_response.text)
                 if fetch_alternative_chains:
