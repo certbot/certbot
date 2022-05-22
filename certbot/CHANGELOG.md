@@ -6,10 +6,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Updated Apache/NGINX TLS configs to document contents are based on ssl-config.mozilla.org
 
 ### Changed
 
+* A change to order finalization has been made to the `acme` module and Certbot:
+  - An order's `certificate` field will only be processed if the order's `status` is `valid`.
+  - An order's `error` field will only be processed if the order's `status` is `invalid`.
 * Fixed to respect Retry-After values when finalizing orders to avoid frequent polling.
 
 ### Fixed

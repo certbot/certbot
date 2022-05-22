@@ -822,7 +822,8 @@ class ClientV2Test(ClientTestBase):
 
     def test_finalize_order_success(self):
         updated_order = self.order.update(
-            certificate='https://www.letsencrypt-demo.org/acme/cert/')
+            certificate='https://www.letsencrypt-demo.org/acme/cert/',
+            status=messages.STATUS_VALID)
         updated_orderr = self.orderr.update(body=updated_order, fullchain_pem=CERT_SAN_PEM)
 
         self.response.json.return_value = updated_order.to_json()
@@ -832,11 +833,21 @@ class ClientV2Test(ClientTestBase):
         self.assertEqual(self.client.finalize_order(self.orderr, deadline), updated_orderr)
 
     def test_finalize_order_error(self):
-        updated_order = self.order.update(error=messages.Error.with_code('unauthorized'))
+        updated_order = self.order.update(
+            error=messages.Error.with_code('unauthorized'),
+            status=messages.STATUS_INVALID)
         self.response.json.return_value = updated_order.to_json()
 
         deadline = datetime.datetime(9999, 9, 9)
         self.assertRaises(errors.IssuanceError, self.client.finalize_order, self.orderr, deadline)
+
+    def test_finalize_order_invalid_status(self):
+        # https://github.com/certbot/certbot/issues/9296
+        order = self.order.update(error=None, status=messages.STATUS_INVALID)
+        self.response.json.return_value = order.to_json()
+        with self.assertRaises(errors.Error) as error:
+            self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
+        self.assertIn("The certificate order failed", str(error.exception))
 
     def test_finalize_order_timeout(self):
         deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
@@ -881,6 +892,7 @@ class ClientV2Test(ClientTestBase):
     def test_finalize_order_alt_chains(self):
         updated_order = self.order.update(
             certificate='https://www.letsencrypt-demo.org/acme/cert/',
+            status=messages.STATUS_VALID
         )
         updated_orderr = self.orderr.update(body=updated_order,
                                             fullchain_pem=CERT_SAN_PEM,
