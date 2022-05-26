@@ -591,7 +591,7 @@ class ClientTest(ClientTestCommon):
         self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
 
     @mock.patch("certbot._internal.client.crypto_util")
-    def test_obtain_certificate_get_order_partial_success(self, mock_crypto_util):
+    def test_obtain_certificate_get_order_rejected_identifier_no_subproblems(self, mock_crypto_util):
         from acme import messages
         csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
         key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
