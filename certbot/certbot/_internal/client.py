@@ -541,13 +541,13 @@ class Client:
             failed_domains = [problem.identifier.value for problem in error.subproblems
                                 if problem.identifier is not None]
             successful_domains = [x for x in domains if x not in failed_domains]
-        if successful_domains != domains and len(successful_domains) != 0:
-            display_util.notify("Unable to obtain a certificate with every requested "
-                "domain. Retrying without: {0}".format(failed_domains))
-            if not self.config.dry_run:
-                os.remove(key.file)
-                os.remove(csr.file)
-            return self.obtain_certificate(successful_domains)
+            if successful_domains != domains and len(successful_domains) != 0:
+                display_util.notify("Unable to obtain a certificate with every requested "
+                    f"domain. Retrying without: {failed_domains}")
+                if not self.config.dry_run:
+                    os.remove(key.file)
+                    os.remove(csr.file)
+                return self.obtain_certificate(successful_domains)
         raise error
 
     def _choose_lineagename(self, domains: List[str], certname: Optional[str]) -> str:
