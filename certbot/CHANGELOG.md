@@ -16,7 +16,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* The `show_account` now uses the "newAccount" ACME endpoint to fetch the account data, so it
+  doesn't rely on the account URL. This fixes situations where Certbot would use old ACMEv1
+  registration information.
 
 More details about these changes can be found on our GitHub repo.
 

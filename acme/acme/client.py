@@ -646,12 +646,8 @@ class ClientV2(ClientBase):
             Resource.
 
         """
-        self.net.account = regr  # See certbot/certbot#6258
-        # ACME v2 requires to use a POST-as-GET request (POST an empty JWS) here.
-        # This is done by passing None instead of an empty UpdateRegistration to _post().
-        response = self._post(regr.uri, None)
-        self.net.account = self._regr_from_response(response, uri=regr.uri,
-                                                    terms_of_service=regr.terms_of_service)
+        self.net.account = self._get_v2_account(regr)
+
         return self.net.account
 
     def update_registration(self, regr: messages.RegistrationResource,
@@ -676,7 +672,8 @@ class ClientV2(ClientBase):
         only_existing_reg = regr.body.update(only_return_existing=True)
         response = self._post(self.directory['newAccount'], only_existing_reg)
         updated_uri = response.headers['Location']
-        new_regr = regr.update(uri=updated_uri)
+        new_regr = regr.update(body=messages.Registration.from_json(response.json()),
+                               uri=updated_uri)
         self.net.account = new_regr
         return new_regr
 
