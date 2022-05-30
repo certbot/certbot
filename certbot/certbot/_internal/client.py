@@ -542,9 +542,9 @@ class Client:
                                 if problem.identifier is not None]
             successful_domains = [x for x in domains if x not in failed_domains]
             if successful_domains != domains and len(successful_domains) != 0:
-                domains_summary = display_util.summarize_domain_list(failed_domains)
+                domains_list = ", ".join(failed_domains)
                 display_util.notify("Unable to obtain a certificate with every requested "
-                    f"domain. Retrying without: {domains_summary}")
+                    f"domain. Retrying without: {domains_list}")
                 if not self.config.dry_run:
                     os.remove(key.file)
                     os.remove(csr.file)

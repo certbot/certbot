@@ -460,7 +460,6 @@ class ClientTest(ClientTestCommon):
         self.assertRaises(messages.Error, self.client.obtain_certificate, self.eg_domains)
         self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 1)
         self.assertEqual(self.acme.finalize_order.call_count, 1)
-        successful_domains = [d for d in self.eg_domains if d != 'example.com']
         self.assertEqual(mock_crypto_util.generate_key.call_count, 1)
         self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 0)
 
