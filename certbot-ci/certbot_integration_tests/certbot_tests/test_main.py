@@ -78,12 +78,15 @@ def test_registration_override(context: IntegrationTestsContext) -> None:
     context.certbot(['register', '--email', 'ex1@domain.org,ex2@domain.org'])
 
     context.certbot(['update_account', '--email', 'example@domain.org'])
-    stdout, _ = context.certbot(['show_account'])
-    assert 'example@domain.org' in stdout, "New email should be present"
+    stdout1, _ = context.certbot(['show_account'])
     context.certbot(['update_account', '--email', 'ex1@domain.org,ex2@domain.org'])
-    stdout, _ = context.certbot(['show_account'])
-    assert 'example@domain.org' not in stdout, "Old email should not be present"
-    assert 'ex1@domain.org, ex2@domain.org' in stdout, "New emails should be present"
+    stdout2, _ = context.certbot(['show_account'])
+
+    # https://github.com/letsencrypt/boulder/issues/6144
+    if context.acme_server != 'boulder-v2':
+        assert 'example@domain.org' in stdout1, "New email should be present"
+        assert 'example@domain.org' not in stdout2, "Old email should not be present"
+        assert 'ex1@domain.org, ex2@domain.org' in stdout2, "New emails should be present"
 
 
 def test_prepare_plugins(context: IntegrationTestsContext) -> None:
