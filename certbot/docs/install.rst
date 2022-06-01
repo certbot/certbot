@@ -99,7 +99,7 @@ Alternative 2: Pip
 ------------------
 
 Installing Certbot through pip is only supported on a best effort basis and
-when using a virtual environment. Instructions for installing Certbot through
+when using a Python virtual environment. Instructions for installing Certbot through
 pip can be found at https://certbot.eff.org/instructions by selecting your
 server software and then choosing "pip" in the "System" dropdown menu.
 
