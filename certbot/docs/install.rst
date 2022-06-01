@@ -12,7 +12,6 @@ Get Certbot
 System Requirements
 ===================
 
-- Python 3.7+
 - UNIX-like operating system
 - Root access
 - Port 80 Open
