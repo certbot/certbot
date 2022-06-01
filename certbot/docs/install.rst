@@ -34,8 +34,7 @@ Our instructions are the same across all systems that use Snap. You can find ins
 
 Most modern Linux distributions (basically any that use systemd) can install Certbot packaged as a snap. Snaps are available for x86_64, ARMv7 and ARMv8 architectures. The Certbot snap provides an easy way to ensure you have the latest version of Certbot with features like automated certificate renewal preconfigured.
 
-If you are offline or your operating system doesn't provide a package, you can use
-an alternate method for installing ``certbot``.
+If you unable to use snaps, you can use an alternate method for installing ``certbot``.
 
 
 .. _docker-user:
