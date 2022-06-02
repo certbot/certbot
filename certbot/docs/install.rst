@@ -12,17 +12,16 @@ Get Certbot
 System Requirements
 ===================
 
-- Python 3.7+
-- UNIX-like operating system
-- Root access
+- Linux, macOS, *BSD and Windows
+- Root access on Linux/*BSD (recommended), Administrator access on Windows (required)
 - Port 80 Open
 
-.. Note:: To run without root privileges, but for most users who want to avoid running an ACME client as root, either letsencrypt-nosudo or simp_le are more appropriate choices.
-
-.. Note:: The Apache plugin currently requires an OS with augeas version 1.0; currently `it supports <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/constants.py>`_ modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin. 
+.. Note:: Certbot is most useful when run with root privileges, because it is then able to automatically configure TLS/SSL for Apache and nginx. \
+   
+   *Certbot is meant to be run directly on a web server*, normally by a system administrator. In most cases, running Certbot on your personal computer is not a useful option. The instructions below relate to installing and running Certbot on a server.
 
 Installation
-=============
+------------
 
 Unless you have very specific requirements, we kindly suggest that you use the installation instructions for your system found at https://certbot.eff.org/instructions.
 
@@ -30,7 +29,7 @@ Unless you have very specific requirements, we kindly suggest that you use the i
 
 Snap (Recommended)
 ------------------
-Our instructions are the same across all systems that use Snap. You can find instructions for installing the Certbot snap at https://certbot.eff.org/instructions?ws=other&os=snap
+Our instructions are the same across all systems that use Snap. You can find instructions for installing Certbot through Snap can be found at https://certbot.eff.org/instructions by selecting your server software and then choosing "snapd" in the "System" dropdown menu.
 
 Most modern Linux distributions (basically any that use systemd) can install Certbot packaged as a snap. Snaps are available for x86_64, ARMv7 and ARMv8 architectures. The Certbot snap provides an easy way to ensure you have the latest version of Certbot with features like automated certificate renewal preconfigured.
 
