@@ -3,11 +3,11 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.25.0.dev0'
+version = '1.28.0.dev0'
 
 install_requires = [
     'cryptography>=2.5.0',
-    'josepy>=1.10.0',
+    'josepy>=1.13.0',
     'PyOpenSSL>=17.3.0',
     'pyrfc3339',
     'pytz>=2019.3',

@@ -126,7 +126,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.24.0 (certbot;
+                        "". (default: CertbotACMEClient/1.27.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -168,6 +168,11 @@ automation:
                         default behavior of Certbot. This option may be used
                         to unset --reuse-key on an existing certificate.
                         (default: False)
+  --new-key             When renewing or replacing a certificate, generate a
+                        new private key, even if --reuse-key is set on the
+                        existing certificate. Combining --new-key and --reuse-
+                        key will result in the private key being replaced and
+                        then reused in future renewals. (default: False)
   --allow-subset-of-names
                         When performing domain validation, do not consider it
                         a failure if authorizations can not be obtained for a
@@ -194,7 +199,7 @@ security:
                         rsa)
   --elliptic-curve N    The SECG elliptic curve name to use. Please see RFC
                         8446 for supported values. (default: secp256r1)
-  --must-staple         Adds the OCSP Must Staple extension to the
+  --must-staple         Adds the OCSP Must-Staple extension to the
                         certificate. Autoconfigures OCSP Stapling for
                         supported setups (Apache version >= 2.3.3 ). (default:
                         False)
@@ -327,7 +332,7 @@ renew:
                         new certificates and keys; the shell variable
                         $RENEWED_DOMAINS will contain a space-delimited list
                         of renewed certificate domains (for example,
-                        "example.com www.example.com" (default: None)
+                        "example.com www.example.com") (default: None)
   --disable-hook-validation
                         Ordinarily the commands specified for --pre-
                         hook/--post-hook/--deploy-hook will be checked for
@@ -638,7 +643,7 @@ dns-ovh:
   --dns-ovh-propagation-seconds DNS_OVH_PROPAGATION_SECONDS
                         The number of seconds to wait for DNS to propagate
                         before asking the ACME server to verify the DNS
-                        record. (default: 30)
+                        record. (default: 120)
   --dns-ovh-credentials DNS_OVH_CREDENTIALS
                         OVH credentials INI file. (default: None)
 

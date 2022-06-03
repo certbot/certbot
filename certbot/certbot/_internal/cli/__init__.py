@@ -223,6 +223,13 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
              "certificate. Not reusing private keys is the default behavior of "
              "Certbot. This option may be used to unset --reuse-key on an "
              "existing certificate.")
+    helpful.add(
+        "automation", "--new-key",
+        dest="new_key", action="store_true", default=flag_default("new_key"),
+        help="When renewing or replacing a certificate, generate a new private key, "
+             "even if --reuse-key is set on the existing certificate. Combining "
+             "--new-key and --reuse-key will result in the private key being replaced and "
+             "then reused in future renewals.")
 
     helpful.add(
         ["automation", "renew", "certonly"],
@@ -402,7 +409,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         ' the new certificates and keys; the shell variable'
         ' $RENEWED_DOMAINS will contain a space-delimited list of'
         ' renewed certificate domains (for example, "example.com'
-        ' www.example.com"')
+        ' www.example.com")')
     helpful.add(
         "renew", "--disable-hook-validation",
         action="store_false", dest="validate_hooks",

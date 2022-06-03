@@ -2,7 +2,74 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.25.0 - master
+## 1.28.0 - master
+
+### Added
+
+* Updated Apache/NGINX TLS configs to document contents are based on ssl-config.mozilla.org
+
+### Changed
+
+* A change to order finalization has been made to the `acme` module and Certbot:
+  - An order's `certificate` field will only be processed if the order's `status` is `valid`.
+  - An order's `error` field will only be processed if the order's `status` is `invalid`.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.27.0 - 2022-05-03
+
+### Added
+
+* Added support for RFC8555 subproblems to our acme library.
+
+### Changed
+
+* The PGP key `F2871B4152AE13C49519111F447BF683AA3B26C3` was added as an
+  additional trusted key to sign our PyPI packages
+* When `certonly` is run with an installer specified (e.g.  `--nginx`),
+  `certonly` will now also run `restart` for that installer
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.26.0 - 2022-04-05
+
+### Added
+
+* Added `--new-key`. When renewing or replacing a certificate that has `--reuse-key`
+  set, it will force a new private key to be generated, one time.
+
+  As before, `--reuse-key` and `--no-reuse-key` can be used to enable and disable key
+  reuse.
+
+### Changed
+
+* The default propagation timeout for the OVH DNS plugin (`--dns-ovh-propagation-seconds`)
+  has been increased from 30 seconds to 120 seconds, based on user feedback.
+
+### Fixed
+
+* Certbot for Windows has been upgraded to use Python 3.9.11, in response to
+  https://www.openssl.org/news/secadv/20220315.txt.
+* Previously, when Certbot was in the process of registering a new ACME account
+  and the ACME server did not present any Terms of Service, the user was asked to
+  agree with a non-existent Terms of Service ("None"). This bug is now fixed, so
+  that if an ACME server does not provide any Terms of Service to agree with, the
+  user is not asked to agree to a non-existent Terms of Service any longer.
+* If account registration fails, Certbot did not relay the error from the ACME server
+  back to the user. This is now fixed: the error message from the ACME server is now
+  presented to the user when account registration fails.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.25.0 - 2022-03-16
 
 ### Added
 
@@ -13,10 +80,17 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Dropped 32 bit support for the Windows beta installer
 * Windows beta installer is now distributed as "certbot-beta-installer-win_amd64.exe".
   Users of the Windows beta should uninstall the old version before running this.
+* Added a check whether OCSP stapling is supported by the installer when requesting a
+  certificate with the `run` subcommand in combination with the `--must-staple` option.
+  If the installer does not support OCSP and the `--must-staple` option is used, Certbot
+  will raise an error and quit.
+* Certbot and its acme module now depend on josepy>=1.13.0 due to better type annotation
+  support.
 
 ### Fixed
 
-*
+* Updated dependencies to use new version of cryptography that uses OpenSSL 1.1.1n, in
+  response to https://www.openssl.org/news/secadv/20220315.txt.
 
 More details about these changes can be found on our GitHub repo.
 

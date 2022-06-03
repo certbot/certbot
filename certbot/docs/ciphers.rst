@@ -188,12 +188,17 @@ BetterCrypto.org, a collaboration of mostly European IT security experts, has pu
 
 https://bettercrypto.org/
 
-FF-DHE Internet-Draft
-~~~~~~~~~~~~~~~~~~~~~
+RFC 7919
+~~~~~~~~
 
-Gillmor's Internet-Draft "Negotiated Discrete Log Diffie-Hellman Ephemeral Parameters for TLS" is being developed at the IETF TLS WG.  It advocates using *standardized* DH groups in all cases, not individually-chosen ones (mostly because of the Triple Handshake attack which can involve maliciously choosing invalid DH groups).  The draft provides a list of recommended groups, with primes beginning at 2048 bits and going up from there.  It also has a new protocol mechanism for agreeing to use these groups, with the possibility of backwards compatibility (and use of weaker DH groups) for older clients and servers that don't know about this mechanism.
+IETF has published a document, RFC 7919, "Negotiated Discrete Log Diffie-Hellman Ephemeral Parameters for TLS".
+It advocates using *standardized* DH groups in all cases, not individually-chosen ones (mostly because of the Triple
+Handshake attack which can involve maliciously choosing invalid DH groups).  The RFC provides a list of recommended
+groups, with primes beginning at 2048 bits and going up from there.  It also has a new protocol mechanism for agreeing
+to use these groups, with the possibility of backwards compatibility (and use of weaker DH groups) for older clients
+and servers that don't know about this mechanism.
 
-https://tools.ietf.org/html/draft-ietf-tls-negotiated-ff-dhe-10
+https://datatracker.ietf.org/doc/html/rfc7919
 
 Mozilla
 ~~~~~~~

@@ -120,7 +120,7 @@ class NamespaceConfig:
 
     @property
     def must_staple(self) -> bool:
-        """Adds the OCSP Must Staple extension to the certificate.
+        """Adds the OCSP Must-Staple extension to the certificate.
 
         Autoconfigures OCSP Stapling for supported setups
         (Apache version >= 2.3.3 ).
@@ -299,6 +299,13 @@ class NamespaceConfig:
         for the server to issue a certificate.
         """
         return self.namespace.issuance_timeout
+
+    @property
+    def new_key(self) -> bool:
+        """This option specifies whether Certbot should generate a new private
+        key when replacing a certificate, even if reuse_key is set.
+        """
+        return self.namespace.new_key
 
     # Magic methods
 

@@ -4,6 +4,7 @@ import textwrap
 from typing import List
 from typing import Optional
 
+from acme import messages as acme_messages
 from certbot.compat import misc
 
 
@@ -105,3 +106,18 @@ def summarize_domain_list(domains: List[str]) -> str:
         return " and ".join(domains)
     else:
         return "{0} and {1} more domains".format(domains[0], length-1)
+
+
+def describe_acme_error(error: acme_messages.Error) -> str:
+    """Returns a human-readable description of an RFC7807 error.
+
+    :param error: The ACME error
+    :returns: a string describing the error, suitable for human consumption.
+    :rtype: str
+    """
+    parts = (error.title, error.detail)
+    if any(parts):
+        return ' :: '.join(part for part in parts if part is not None)
+    if error.description:
+        return error.description
+    return error.typ
