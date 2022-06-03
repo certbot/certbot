@@ -7,6 +7,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * Updated Apache/NGINX TLS configs to document contents are based on ssl-config.mozilla.org
+* Updated Windows installer to be signed and trusted in Windows 
 
 ### Changed
 
@@ -73,7 +74,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* Made our Windows installer signed and trusted in Windows 
+
 
 ### Changed
 

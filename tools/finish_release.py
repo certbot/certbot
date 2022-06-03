@@ -85,10 +85,10 @@ def publish_windows(css):
     """
     username = getpass.getuser()
     host = css
-    command = ["ssh", username + "@" + host, "./certot-misc/css/venv.sh"]
+    command = "ssh -t", username + "@" + host, "bash /opt/certot-misc/css/venv.sh"
     
     print("SSH into CSS to trigger signing and uploading of Windows installer...")
-    subprocess.run(command, check=True, universal_newlines=True)
+    subprocess.run(command, check=True, universal_newlines=True, shell=True)
 
 
 def assert_logged_into_snapcraft():
