@@ -549,7 +549,7 @@ class Client:
         return []
 
     def _retry_obtain_certificate(self, key: util.Key,
-                                csr: util.CSR, domains: List[str], successful_domains: list[str]
+                                csr: util.CSR, domains: List[str], successful_domains: List[str]
                                 ) -> Tuple[bytes, bytes, util.Key, util.CSR]:
         failed_domains = [d for d in domains if d not in successful_domains]
         domains_list = ", ".join(failed_domains)
