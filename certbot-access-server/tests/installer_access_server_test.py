@@ -17,6 +17,13 @@ from certbot_access_server._internal import installer_access_server
 from certbot_access_server._internal.installer_access_server import Installer
 from certbot_access_server._internal import asxmlrpcapi
 
+
+# Backport of 3.8+ fspath support
+class MagicMock(mock.MagicMock):
+    def __fspath__(self):
+        return f"{type(self).__name__}/{self._extract_mock_name()}/{id(self)}"
+
+
 CERT_PATH = 'testdata/cert.txt'
 CA_BUNDLE_PATH = 'testdata/ca_bundle.txt'
 PRIV_KEY_PATH = 'testdata/priv_key.txt'
@@ -62,10 +69,10 @@ class MockResponse:
 
 def test_prepare(sock, monkeypatch):
     with monkeypatch.context() as m:
-        test_mock = mock.MagicMock()
+        test_mock = MagicMock()
         m.setattr(socket, 'socket', test_mock)
         m.setattr(asxmlrpcapi.HTTPConnection, 'getresponse', lambda _: MockResponse())
-        config = mock.MagicMock(access_server_socket=sock)
+        config = MagicMock(access_server_socket=sock)
         installer = Installer(config, 'access-server')
         installer.prepare()
         test_mock.assert_has_calls([
@@ -98,12 +105,12 @@ def sock():
 @pytest.fixture(params=[{}])
 def make_installer(sock, request, monkeypatch):
     with monkeypatch.context() as m:
-        rpc_mock = mock.MagicMock()
-        transport_mock = mock.MagicMock()
+        rpc_mock = MagicMock()
+        transport_mock = MagicMock()
         m.setattr(xmlrpc.client, 'ServerProxy', rpc_mock)
         m.setattr(installer_access_server, 'UnixStreamTransport', transport_mock)
         config_params = dict(access_server_socket=sock, **request.param)
-        config = mock.MagicMock(**config_params)
+        config = MagicMock(**config_params)
         installer = Installer(config, 'access-server')
         installer.prepare()
         rpc_mock.assert_has_calls([
@@ -159,7 +166,7 @@ def test_restart(make_installer):
 
 def test_get_all_names(make_installer):
     rpc_mock, installer = make_installer
-    rpc_mock().ConfigQuery = mock.MagicMock(
+    rpc_mock().ConfigQuery = MagicMock(
         return_value={'host.name': 'test_host_name'})
     expected_calls = [
         mock.call().ConfigQuery(None, ['host.name']),
@@ -168,7 +175,7 @@ def test_get_all_names(make_installer):
     assert result == ['test_host_name']
     rpc_mock.assert_has_calls(expected_calls)
     rpc_mock.reset_mock()
-    rpc_mock().ConfigQuery = mock.MagicMock(return_value={})
+    rpc_mock().ConfigQuery = MagicMock(return_value={})
     result = installer.get_all_names()
     assert result == ['']
     rpc_mock.assert_has_calls(expected_calls)
@@ -176,6 +183,6 @@ def test_get_all_names(make_installer):
 
 def test_incorrect_socket():
     with pytest.raises(errors.MisconfigurationError):
-        config = mock.MagicMock(access_server_socket='/incorrect/socket/path/')
+        config = MagicMock(access_server_socket='/incorrect/socket/path/')
         installer = Installer(config, 'access-server')
         installer.prepare()
