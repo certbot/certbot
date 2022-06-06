@@ -646,7 +646,7 @@ class ClientV2(ClientBase):
             Resource.
 
         """
-        self.net.account = self._get_v2_account(regr)
+        self.net.account = self._get_v2_account(regr, True)
 
         return self.net.account
 
@@ -667,12 +667,14 @@ class ClientV2(ClientBase):
         new_regr = self._get_v2_account(regr)
         return super().update_registration(new_regr, update)
 
-    def _get_v2_account(self, regr: messages.RegistrationResource) -> messages.RegistrationResource:
+    def _get_v2_account(self, regr: messages.RegistrationResource, update_body: bool = False
+                       ) -> messages.RegistrationResource:
         self.net.account = None
         only_existing_reg = regr.body.update(only_return_existing=True)
         response = self._post(self.directory['newAccount'], only_existing_reg)
         updated_uri = response.headers['Location']
-        new_regr = regr.update(body=messages.Registration.from_json(response.json()),
+        new_regr = regr.update(body=messages.Registration.from_json(response.json())
+                               if update_body else regr.body,
                                uri=updated_uri)
         self.net.account = new_regr
         return new_regr
