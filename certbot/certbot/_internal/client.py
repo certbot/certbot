@@ -452,6 +452,10 @@ class Client:
         # domains contains a wildcard because the ACME spec forbids identifiers
         # in authzs from containing a wildcard character.
         if self.config.allow_subset_of_names and successful_domains != domains:
+            failed_domains = [d for d in domains if d not in successful_domains]
+            domains_list = ", ".join(failed_domains)
+            display_util.notify("Unable to obtain a certificate with every requested "
+                f"domain. Retrying without: {domains_list}")
             if not self.config.dry_run:
                 os.remove(key.file)
                 os.remove(csr.file)
