@@ -8,7 +8,6 @@ import datetime
 from email.utils import parsedate_tz
 import heapq
 import http.client as http_client
-import json
 import logging
 import re
 import sys
@@ -673,19 +672,7 @@ class ClientV2(ClientBase):
         only_existing_reg = regr.body.update(only_return_existing=True)
         response = self._post(self.directory['newAccount'], only_existing_reg)
         updated_uri = response.headers['Location']
-
-        # Check for an empty `regr.body` by using the `json_dumps()` method to remove all the
-        # `None` fields from the `regr.body` (subclass of `jose.JSONObjectWithFields`) object
-        # which only leaves a `contact` field if everything else is `None`. The `contact` field
-        # contains an empty list if the `regr.body` is empty.
-        regr_body = json.loads(regr.body.json_dumps())
-        regr_body_empty = bool(len(regr_body) == 1 and not regr_body['contact'])
-
-        # If the original `regr.body` was empty, populate it with info received from the
-        # ACME server. If it isn't empty, pass through the original body, as it might be
-        # an updated body in `certbot.main.update_account()`.
-        new_regr = regr.update(body=messages.Registration.from_json(response.json())
-                               if regr_body_empty else regr.body,
+        new_regr = regr.update(body=messages.Registration.from_json(response.json()),
                                uri=updated_uri)
         self.net.account = new_regr
         return new_regr
