@@ -24,6 +24,7 @@ class MagicMock(mock.MagicMock):
         return f"{type(self).__name__}/{self._extract_mock_name()}/{id(self)}"
 
 
+BACKUP_DIR = 'test/backup'
 CERT_PATH = 'testdata/cert.txt'
 CA_BUNDLE_PATH = 'testdata/ca_bundle.txt'
 PRIV_KEY_PATH = 'testdata/priv_key.txt'
@@ -72,7 +73,7 @@ def test_prepare(sock, monkeypatch):
         test_mock = MagicMock()
         m.setattr(socket, 'socket', test_mock)
         m.setattr(asxmlrpcapi.HTTPConnection, 'getresponse', lambda _: MockResponse())
-        config = MagicMock(access_server_socket=sock)
+        config = MagicMock(access_server_socket=sock, backup_dir=BACKUP_DIR)
         installer = Installer(config, 'access-server')
         installer.prepare()
         test_mock.assert_has_calls([
@@ -109,7 +110,7 @@ def make_installer(sock, request, monkeypatch):
         transport_mock = MagicMock()
         m.setattr(xmlrpc.client, 'ServerProxy', rpc_mock)
         m.setattr(installer_access_server, 'UnixStreamTransport', transport_mock)
-        config_params = dict(access_server_socket=sock, **request.param)
+        config_params = dict(access_server_socket=sock, backup_dir=BACKUP_DIR, **request.param)
         config = MagicMock(**config_params)
         installer = Installer(config, 'access-server')
         installer.prepare()
@@ -183,6 +184,6 @@ def test_get_all_names(make_installer):
 
 def test_incorrect_socket():
     with pytest.raises(errors.MisconfigurationError):
-        config = MagicMock(access_server_socket='/incorrect/socket/path/')
+        config = MagicMock(access_server_socket='/incorrect/socket/path/', backup_dir=BACKUP_DIR)
         installer = Installer(config, 'access-server')
         installer.prepare()
