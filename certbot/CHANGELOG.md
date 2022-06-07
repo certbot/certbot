@@ -13,6 +13,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * A change to order finalization has been made to the `acme` module and Certbot:
   - An order's `certificate` field will only be processed if the order's `status` is `valid`.
   - An order's `error` field will only be processed if the order's `status` is `invalid`.
+* Removed deprecated functions `certbot.crypto_util.init_save_csr`, `certbot.crypto_util.init_save_key`,
+  and `certbot.compat.misc.execute_command`
 
 ### Fixed
 
