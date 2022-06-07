@@ -59,6 +59,7 @@ setup(
     ],
 
     packages=find_packages(),
+    platforms=['Posix', 'MacOS X'],
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
