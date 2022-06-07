@@ -35,7 +35,7 @@ COVER_THRESHOLDS = {
     'certbot_nginx': {'linux': 97, 'windows': 97},
 }
 
-SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache']
+SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache', 'certbot-access-server']
 
 
 def cover(package):
