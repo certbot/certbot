@@ -611,24 +611,6 @@ def is_wildcard_domain(domain: Union[str, bytes]) -> bool:
     return domain.startswith(b"*.")
 
 
-def get_strict_version(normalized: str) -> "distutils.version.StrictVersion":
-    """Converts a normalized version to a strict version.
-
-    :param str normalized: normalized version string
-
-    :returns: An equivalent strict version
-    :rtype: distutils.version.StrictVersion
-
-    """
-    warnings.warn("certbot.util.get_strict_version is deprecated and will be "
-                  "removed in a future release.", DeprecationWarning)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        import distutils.version
-        # strict version ending with "a" and a number designates a pre-release
-        return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
-
-
 def is_staging(srv: str) -> bool:
     """
     Determine whether a given ACME server is a known test / staging server.
