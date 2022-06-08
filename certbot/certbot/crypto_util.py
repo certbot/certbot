@@ -15,7 +15,6 @@ from typing import Set
 from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
-import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -35,7 +34,6 @@ import josepy
 from OpenSSL import crypto
 from OpenSSL import SSL
 import pyrfc3339
-import zope.component
 
 from acme import crypto_util as acme_crypto_util
 from certbot import errors
