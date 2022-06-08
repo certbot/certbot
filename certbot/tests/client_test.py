@@ -396,6 +396,193 @@ class ClientTest(ClientTestCommon):
         self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
 
     @mock.patch("certbot._internal.client.crypto_util")
+    @mock.patch("certbot.compat.os.remove")
+    def test_obtain_certificate_finalize_order_partial_success(self, mock_remove, mock_crypto_util):
+        from acme import messages
+        csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
+        key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self._mock_obtain_certificate()
+        authzr = self._authzr_from_domains(self.eg_domains)
+        self.eg_order.authorizations = authzr
+        self.client.auth_handler.handle_authorizations.return_value = authzr
+
+        identifier = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value='example.com')
+        subproblem = messages.Error.with_code('caa', detail='bar', title='title', identifier=identifier)
+        error_with_subproblems = messages.Error.with_code('malformed', detail='foo', title='title', subproblems=[subproblem])
+        self.client.acme.finalize_order.side_effect = [error_with_subproblems, mock.DEFAULT]
+
+        self.config.allow_subset_of_names = True
+
+        with test_util.patch_display_util():
+            result = self.client.obtain_certificate(self.eg_domains)
+
+        self.assertEqual(
+            result,
+            (mock.sentinel.cert, mock.sentinel.chain, key, csr))
+        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 2)
+        self.assertEqual(self.acme.finalize_order.call_count, 2)
+
+        successful_domains = [d for d in self.eg_domains if d != 'example.com']
+        self.assertEqual(mock_crypto_util.generate_key.call_count, 2)
+        mock_crypto_util.generate_csr.assert_has_calls([
+            mock.call(key, self.eg_domains, self.config.csr_dir, self.config.must_staple, self.config.strict_permissions),
+            mock.call(key, successful_domains, self.config.csr_dir, self.config.must_staple, self.config.strict_permissions)])
+        self.assertEqual(mock_remove.call_count, 2)
+        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
+
+    @mock.patch("certbot._internal.client.crypto_util")
+    def test_obtain_certificate_finalize_order_no_retryable_domains(self, mock_crypto_util):
+        from acme import messages
+        csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
+        key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self._mock_obtain_certificate()
+        authzr = self._authzr_from_domains(self.eg_domains)
+        self.eg_order.authorizations = authzr
+        self.client.auth_handler.handle_authorizations.return_value = authzr
+
+        identifier1 = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value='example.com')
+        identifier2 = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value='www.example.com')
+        subproblem1 = messages.Error.with_code('caa', detail='bar', title='title', identifier=identifier1)
+        subproblem2 = messages.Error.with_code('caa', detail='bar', title='title', identifier=identifier2)
+        error_with_subproblems = messages.Error.with_code('malformed', detail='foo', title='title', subproblems=[subproblem1, subproblem2])
+        self.client.acme.finalize_order.side_effect = error_with_subproblems
+
+        self.config.allow_subset_of_names = True
+
+        self.assertRaises(messages.Error, self.client.obtain_certificate, self.eg_domains)
+        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 1)
+        self.assertEqual(self.acme.finalize_order.call_count, 1)
+        self.assertEqual(mock_crypto_util.generate_key.call_count, 1)
+        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 0)
+
+    @mock.patch("certbot._internal.client.crypto_util")
+    def test_obtain_certificate_finalize_order_rejected_identifier_no_subproblems(self, mock_crypto_util):
+        from acme import messages
+        csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
+        key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self._mock_obtain_certificate()
+        authzr = self._authzr_from_domains(self.eg_domains)
+        self.eg_order.authorizations = authzr
+        self.client.auth_handler.handle_authorizations.return_value = authzr
+
+        error = messages.Error.with_code('caa', detail='foo', title='title')
+        self.client.acme.finalize_order.side_effect = error
+
+        self.config.allow_subset_of_names = True
+
+        self.assertRaises(messages.Error, self.client.obtain_certificate,
+                          self.eg_domains)
+        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 1)
+        self.assertEqual(self.acme.finalize_order.call_count, 1)
+        self.assertEqual(mock_crypto_util.generate_key.call_count, 1)
+        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 0)
+
+    @mock.patch("certbot._internal.client.crypto_util")
+    @mock.patch("certbot.compat.os.remove")
+    def test_obtain_certificate_get_order_partial_success(self, mock_remove, mock_crypto_util):
+        from acme import messages
+        csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
+        key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self._mock_obtain_certificate()
+        authzr = self._authzr_from_domains(self.eg_domains)
+        self.eg_order.authorizations = authzr
+        self.client.auth_handler.handle_authorizations.return_value = authzr
+
+        identifier = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value='example.com')
+        subproblem = messages.Error.with_code('caa', detail='bar', title='title', identifier=identifier)
+        error_with_subproblems = messages.Error.with_code('malformed', detail='foo', title='title', subproblems=[subproblem])
+        self.client.acme.new_order.side_effect = [error_with_subproblems, mock.DEFAULT]
+
+        self.config.allow_subset_of_names = True
+
+        with test_util.patch_display_util():
+            result = self.client.obtain_certificate(self.eg_domains)
+
+        self.assertEqual(
+            result,
+            (mock.sentinel.cert, mock.sentinel.chain, key, csr))
+        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 1)
+        self.assertEqual(self.acme.new_order.call_count, 2)
+
+        successful_domains = [d for d in self.eg_domains if d != 'example.com']
+        self.assertEqual(mock_crypto_util.generate_key.call_count, 2)
+        mock_crypto_util.generate_csr.assert_has_calls([
+            mock.call(key, self.eg_domains, self.config.csr_dir, self.config.must_staple, self.config.strict_permissions),
+            mock.call(key, successful_domains, self.config.csr_dir, self.config.must_staple, self.config.strict_permissions)])
+        self.assertEqual(mock_remove.call_count, 2)
+        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
+
+    @mock.patch("certbot._internal.client.crypto_util")
+    def test_obtain_certificate_get_order_no_retryable_domains(self, mock_crypto_util):
+        from acme import messages
+        csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
+        key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self._mock_obtain_certificate()
+        authzr = self._authzr_from_domains(self.eg_domains)
+        self.eg_order.authorizations = authzr
+        self.client.auth_handler.handle_authorizations.return_value = authzr
+
+        identifier1 = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value='example.com')
+        identifier2 = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value='www.example.com')
+        subproblem1 = messages.Error.with_code('caa', detail='bar', title='title', identifier=identifier1)
+        subproblem2 = messages.Error.with_code('caa', detail='bar', title='title', identifier=identifier2)
+        error_with_subproblems = messages.Error.with_code('malformed', detail='foo', title='title', subproblems=[subproblem1, subproblem2])
+        self.client.acme.new_order.side_effect = error_with_subproblems
+
+        self.config.allow_subset_of_names = True
+
+        self.assertRaises(messages.Error, self.client.obtain_certificate, self.eg_domains)
+        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 0)
+        self.assertEqual(self.acme.new_order.call_count, 1)
+        self.assertEqual(mock_crypto_util.generate_key.call_count, 1)
+        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 0)
+
+    @mock.patch("certbot._internal.client.crypto_util")
+    def test_obtain_certificate_get_order_rejected_identifier_no_subproblems(self, mock_crypto_util):
+        from acme import messages
+        csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
+        key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self._mock_obtain_certificate()
+        authzr = self._authzr_from_domains(self.eg_domains)
+        self.eg_order.authorizations = authzr
+        self.client.auth_handler.handle_authorizations.return_value = authzr
+
+        error = messages.Error.with_code('caa', detail='foo', title='title')
+        self.client.acme.new_order.side_effect = error
+
+        self.config.allow_subset_of_names = True
+
+        self.assertRaises(messages.Error, self.client.obtain_certificate, self.eg_domains)
+        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 0)
+        self.assertEqual(self.acme.new_order.call_count, 1)
+        self.assertEqual(mock_crypto_util.generate_key.call_count, 1)
+        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 0)
+
+    @mock.patch("certbot._internal.client.crypto_util")
     @mock.patch("certbot._internal.client.acme_crypto_util")
     def test_obtain_certificate_dry_run(self, mock_acme_crypto, mock_crypto):
         csr = util.CSR(form="pem", file=None, data=CSR_SAN)
