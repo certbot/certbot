@@ -448,7 +448,7 @@ class Client:
                 successful_domains = self._successful_domains_from_error(error, domains)
                 if successful_domains != domains and len(successful_domains) != 0:
                     return self._retry_obtain_certificate(key, csr, domains, successful_domains)
-            raise error
+            raise
         authzr = orderr.authorizations
         auth_domains = {a.body.identifier.value for a in authzr}
         successful_domains = [d for d in domains if d in auth_domains]
@@ -472,7 +472,7 @@ class Client:
                     successful_domains = self._successful_domains_from_error(error, domains)
                     if successful_domains != domains and len(successful_domains) != 0:
                         return self._retry_obtain_certificate(key, csr, domains, successful_domains)
-                raise error
+                raise
 
     def _get_order_and_authorizations(self, csr_pem: bytes,
                                       best_effort: bool) -> messages.OrderResource:
