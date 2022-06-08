@@ -441,6 +441,9 @@ class Client:
         try:
             orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         except messages.Error as error:
+            # Some domains may be rejected during order creation.
+            # Certbot can retry the operation without the rejected
+            # domains contained within subproblems.
             if self.config.allow_subset_of_names:
                 successful_domains = self._successful_domains_from_error(error, domains)
                 if successful_domains != domains and len(successful_domains) != 0:
@@ -462,6 +465,9 @@ class Client:
                 cert, chain = self.obtain_certificate_from_csr(csr, orderr)
                 return cert, chain, key, csr
             except messages.Error as error:
+                # Some domains may be rejected during the very late stage of
+                # order finalization. Certbot can retry the operation without
+                # the rejected domains contained within subproblems.
                 if self.config.allow_subset_of_names:
                     successful_domains = self._successful_domains_from_error(error, domains)
                     if successful_domains != domains and len(successful_domains) != 0:
