@@ -149,7 +149,7 @@ jobs:
           git config --global user.name "$(Build.RequestedFor)"
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
           cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
-          python3 tools/snap/build_remote.py ALL --archs ${SNAP_ARCH} --timeout 19800
+          python3 tools/snap/build_remote.py ALL --archs ${SNAP_ARCH} --timeout 5400
         displayName: Build snaps
       - script: |
           set -e
