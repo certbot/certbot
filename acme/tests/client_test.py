@@ -140,6 +140,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.response.json.return_value = DIRECTORY_V2.to_json()
         client = self._init()
         self.response.json.return_value = self.regr.body.to_json()
+        self.response.headers = {'Location': 'https://www.letsencrypt-demo.org/acme/reg/1'}
         self.assertEqual(self.regr, client.query_registration(self.regr))
 
     def test_forwarding(self):
