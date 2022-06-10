@@ -11,6 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * `--allow-subset-of-names` will now additionally retry in cases where domains are rejected while creating or finalizing orders. This requires subproblem support from the ACME server.
+* Fixed to respect Retry-After values when finalizing orders to avoid frequent polling.
 
 ### Fixed
 
@@ -31,7 +32,6 @@ More details about these changes can be found on our GitHub repo.
 * A change to order finalization has been made to the `acme` module and Certbot:
   - An order's `certificate` field will only be processed if the order's `status` is `valid`.
   - An order's `error` field will only be processed if the order's `status` is `invalid`.
-* Fixed to respect Retry-After values when finalizing orders to avoid frequent polling.
 
 ### Fixed
 
