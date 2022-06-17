@@ -59,3 +59,4 @@ certbot-dns*/certbot-dns*_arm*.txt
 /certbot_amd64*.txt
 /certbot_arm*.txt
 certbot-dns*/snap
+snapcraft.cfg
