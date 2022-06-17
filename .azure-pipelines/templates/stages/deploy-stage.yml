@@ -67,7 +67,6 @@ stages:
               snapcraft --version
               export SNAPCRAFT_STORE_CREDENTIALS=$(cat $(snapcraftCfg.secureFilePath))
               snapcraft whoami
-              snapcraft login
               for SNAP_FILE in snap/*.snap; do
                 tools/retry.sh eval snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
               done
