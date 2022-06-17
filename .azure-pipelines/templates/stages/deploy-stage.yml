@@ -13,8 +13,8 @@ stages:
       # credential file was created by running:
       #
       #   snapcraft logout
-      #   snapcraft login (provide the shared snapcraft credentials when prompted)
       #   snapcraft export-login --channels=beta,edge snapcraft.cfg
+      #     (provide the shared snapcraft credentials when prompted)
       #
       # Then the file was added as a secure file in Azure pipelines
       # with the name snapcraft.cfg by following the instructions at
@@ -24,7 +24,7 @@ stages:
       # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/secure-files?view=azure-devops#q-how-do-i-authorize-a-secure-file-for-use-in-a-specific-pipeline.
       #
       # This file has a maximum lifetime of one year and the current
-      # file will expire on 2022-07-25 which is also tracked by
+      # file will expire on 2023-06-17 which is also tracked by
       # https://github.com/certbot/certbot/issues/7931. The file will
       # need to be updated before then to prevent automated deploys
       # from breaking.
