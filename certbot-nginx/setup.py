@@ -9,7 +9,7 @@ install_requires = [
     # https://github.com/certbot/certbot/issues/8761 for more info.
     f'acme>={version}',
     f'certbot>={version}',
-    'PyOpenSSL>=17.3.0',
+    'PyOpenSSL>=17.5.0',
     'pyparsing>=2.2.1',
     'setuptools>=41.6.0',
 ]
