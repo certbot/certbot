@@ -4,12 +4,9 @@ import datetime
 import shutil
 import stat
 import unittest
+from unittest import mock
 
 import configobj
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 import pytz
 
 import certbot

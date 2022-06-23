@@ -5,6 +5,7 @@ from importlib import reload as reload_module
 import io
 import tempfile
 import unittest
+from unittest import mock
 
 from acme import challenges
 from certbot import errors
@@ -15,11 +16,6 @@ from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 
 
 PLUGINS = disco.PluginsRegistry.find_all()

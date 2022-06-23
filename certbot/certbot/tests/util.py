@@ -16,6 +16,7 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 import unittest
+from unittest import mock
 import warnings
 
 from cryptography.hazmat.backends import default_backend
@@ -34,20 +35,6 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins import common
-
-try:
-    # When we remove this deprecated import, we should also remove the
-    # "external-mock" test environment and the mock dependency listed in
-    # tools/pinning/pyproject.toml.
-    import mock
-    warnings.warn(
-        "The external mock module is being used for backwards compatibility "
-        "since it is available, however, future versions of Certbot's tests will "
-        "use unittest.mock. Be sure to update your code accordingly.",
-        PendingDeprecationWarning
-    )
-except ImportError:  # pragma: no cover
-    from unittest import mock  # type: ignore
 
 
 class DummyInstaller(common.Installer):

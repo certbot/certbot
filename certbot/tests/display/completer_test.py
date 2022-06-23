@@ -9,16 +9,11 @@ from importlib import reload as reload_module
 import string
 import sys
 import unittest
+from unittest import mock
 
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-
 
 
 class CompleterTest(test_util.TempDirTestCase):

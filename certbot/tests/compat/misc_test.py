@@ -1,9 +1,6 @@
 """Tests for certbot.compat.misc"""
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock  # type: ignore
 import unittest
+from unittest import mock  # type: ignore
 import warnings
 
 from certbot.compat import os

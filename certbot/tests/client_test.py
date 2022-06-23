@@ -5,6 +5,7 @@ import platform
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 from unittest.mock import MagicMock
 
 from josepy import interfaces
@@ -16,11 +17,6 @@ from certbot._internal import account
 from certbot._internal import constants
 from certbot.compat import os
 import certbot.tests.util as test_util
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 
 
 KEY = test_util.load_vector("rsa512_key.pem")

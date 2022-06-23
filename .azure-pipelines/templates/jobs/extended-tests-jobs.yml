@@ -18,8 +18,6 @@ jobs:
           PYTHON_VERSION: 3.7
           TOXENV: py37
           CERTBOT_NO_PIN: 1
-        linux-external-mock:
-          TOXENV: external-mock
         linux-boulder-v2-integration-certbot-oldest:
           PYTHON_VERSION: 3.7
           TOXENV: integration-certbot-oldest

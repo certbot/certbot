@@ -1,11 +1,8 @@
 """Tests for certbot._internal.eff."""
 import datetime
 import unittest
+from unittest import mock
 
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 import josepy
 import pytz
 import requests

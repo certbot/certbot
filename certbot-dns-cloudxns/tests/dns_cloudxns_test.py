@@ -1,11 +1,8 @@
 """Tests for certbot_dns_cloudxns._internal.dns_cloudxns."""
 
 import unittest
+from unittest import mock # type: ignore
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 

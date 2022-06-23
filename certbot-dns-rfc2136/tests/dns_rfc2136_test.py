@@ -1,14 +1,11 @@
 """Tests for certbot_dns_rfc2136._internal.dns_rfc2136."""
 
 import unittest
+from unittest import mock # type: ignore
 
 import dns.flags
 import dns.rcode
 import dns.tsig
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import os

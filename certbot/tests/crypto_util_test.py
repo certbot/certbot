@@ -1,13 +1,10 @@
 """Tests for certbot.crypto_util."""
 import logging
 import unittest
+from unittest import mock
 
 import certbot.util
 
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 import OpenSSL
 
 from certbot import errors

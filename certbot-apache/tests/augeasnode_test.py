@@ -1,13 +1,9 @@
 """Tests for AugeasParserNode classes"""
 from typing import List
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
-
 import os
 import util
+from unittest import mock # type: ignore
 
 from certbot import errors
 

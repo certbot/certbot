@@ -4,10 +4,7 @@ import logging
 import unittest
 
 from josepy import b64encode
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
+from unittest import mock
 
 from acme import challenges
 from acme import client as acme_client
