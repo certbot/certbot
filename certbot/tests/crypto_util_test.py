@@ -155,7 +155,8 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
             test_util.load_vector('csr_512.pem'), RSA512_KEY))
 
     def test_invalid_false(self):
-        self.assertFalse(self._call(test_util.load_vector('csr_512.pem'), RSA256_KEY))
+        self.assertFalse(self._call(
+            test_util.load_vector('csr_512.pem'), RSA256_KEY))
 
 
 class ImportCSRFileTest(unittest.TestCase):

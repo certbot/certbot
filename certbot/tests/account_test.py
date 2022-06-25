@@ -59,19 +59,21 @@ class AccountTest(unittest.TestCase):
           "<Account(i_am_a_regr, 7adac10320f585ddf118429c0c4af2cd, Meta("))
 
 
-# class AccountTestECKey(AccountTest, test_util.ConfigTestCase):
-#
-#     # more tests needed here?
-#
-#     @classmethod
-#     def setUpClass(cls) -> None:
-#         cls.KEY = cls.KEY = jose.JWKEC.load(test_util.load_vector("nistp256_key.pem"))
-#
-#     def test_ec_key_type(self):
-#         self.assertEqual(self.acc.key.typ, "ec")
-#
-#     def test_id(self):
-#         self.assertEqual(self.acc.id, "7adac10320f585ddf118429c0c4af2cd")
+class AccountTestECKey(AccountTest, test_util.ConfigTestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.KEY = cls.KEY = jose.JWKEC.load(test_util.load_vector("nistp256_key.pem"))
+
+    def test_ec_key_type(self):
+        self.assertEqual(self.acc.key.typ, "ec")
+
+    def test_id(self):
+        self.assertEqual(self.acc.id, "7adac10320f585ddf118429c0c4af2cd")
+
+    def test_repr(self):
+        self.assertTrue(repr(self.acc).startswith(
+          "<Account(i_am_a_regr, 7adac10320f585ddf118429c0c4af2cd, Meta("))
 
 
 class MetaTest(unittest.TestCase):

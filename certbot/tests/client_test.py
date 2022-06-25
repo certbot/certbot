@@ -24,6 +24,7 @@ except ImportError:  # pragma: no cover
 
 
 KEY = test_util.load_vector("rsa512_key.pem")
+NIST_P256_KEY = test_util.load_vector("nistp256_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
 
 # pylint: disable=line-too-long
@@ -105,6 +106,21 @@ class RegisterTest(test_util.ConfigTestCase):
             yield mock_acme_client.BackwardsCompatibleClientV2
 
     def test_no_tos(self):
+        with self._patched_acme_client() as mock_client:
+            mock_client.new_account_and_tos().terms_of_service = "http://tos"
+            mock_client().external_account_required.side_effect = self._false_mock
+            with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
+                mock_client().new_account_and_tos.side_effect = errors.Error
+                self.assertRaises(errors.Error, self._call)
+                self.assertIs(mock_prepare.called, False)
+
+                mock_client().new_account_and_tos.side_effect = None
+                self._call()
+                self.assertIs(mock_prepare.called, True)
+
+    def test_ecda_account_key(self):
+        self.config.ecdsa_account_key = True
+        self.config.rsa_key_size = 2048
         with self._patched_acme_client() as mock_client:
             mock_client.new_account_and_tos().terms_of_service = "http://tos"
             mock_client().external_account_required.side_effect = self._false_mock
@@ -236,16 +252,22 @@ class RegisterTest(test_util.ConfigTestCase):
 class ClientTestCommon(test_util.ConfigTestCase):
     """Common base class for certbot._internal.client.Client tests."""
 
+    backwards_compatible = True
+    account_key = KEY
+
     def setUp(self):
         super().setUp()
         self.config.no_verify_ssl = False
         self.config.allow_subset_of_names = False
 
-        self.account = mock.MagicMock(**{"key.pem": KEY})
+        self.account = mock.MagicMock(**{"key.pem": self.account_key})
 
         from certbot._internal.client import Client
         with mock.patch("certbot._internal.client.acme_client") as acme:
-            self.acme_client = acme.BackwardsCompatibleClientV2
+            if self.backwards_compatible:
+                self.acme_client = acme.BackwardsCompatibleClientV2
+            else:
+                self.acme_client = acme.ClientV2
             self.acme = self.acme_client.return_value = mock.MagicMock()
             self.client_network = acme.ClientNetwork
             self.client = Client(
@@ -377,11 +399,24 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
             self.eg_order.fullchain_pem)
 
-    # TODO finish this test
     @mock.patch("certbot._internal.client.crypto_util")
     def test_ec_account_key(self, mock_crypto_util):
-        # self.config.accounts_dir
-        pass
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = mock.sentinel.key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self._test_obtain_certificate_common(mock.sentinel.key, csr)
+
+        mock_crypto_util.generate_key.assert_called_once_with(
+            key_type=self.config.key_type,
+            elliptic_curve="secp256r1",
+            strict_permissions=True,
+        )
+        mock_crypto_util.generate_csr.assert_called_once_with(
+            mock.sentinel.key, self.eg_domains, self.config.csr_dir, False, True)
+        mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
+            self.eg_order.fullchain_pem)
 
     @mock.patch("certbot._internal.client.crypto_util")
     @mock.patch("certbot.compat.os.remove")

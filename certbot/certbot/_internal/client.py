@@ -211,7 +211,6 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
         # RFC 8555 6.2 says only ES256 is supported, i.e., SECP256R1
         # mypy complains without the cast, although
         # EllipticCurvePrivateKeyWithSerialization = EllipticCurvePrivateKey
-        print("Generating an elliptic curve private key")
         ec_key = cast(ec.EllipticCurvePrivateKeyWithSerialization, ec.generate_private_key(
             curve=ec.SECP256R1(),
             backend=default_backend(),

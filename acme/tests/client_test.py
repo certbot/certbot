@@ -143,15 +143,6 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, client.query_registration(self.regr))
 
-    def test_query_registration_client_v2_ecdsa(self):
-        from acme.client import ClientV2
-        reg = messages.NewRegistration(contact=self.contact, key=SECP256R1_KEY.public_key())
-        the_arg: Dict[Any, Any] = dict(reg)
-        self.client = ClientV2(
-            directory=the_arg, net=self.net  # type: ignore
-        )
-        self.net.post.assert_called_once_with(the_arg)
-
     def test_forwarding(self):
         self.response.json.return_value = DIRECTORY_V1.to_json()
         client = self._init()
@@ -377,14 +368,6 @@ class ClientTest(ClientTestBase):
 
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
-
-    @mock.patch('acme.client.ClientNetwork')
-    def test_register_ec_keys(self, mock_net):
-        mock_net.return_value = mock.sentinel.net
-        from acme.client import ClientV2
-        self.client = ClientV2(directory=self.directory)
-        mock_net.called_once_with(KEY, alg=jose.ES256, verify_ssl=True)
-        self.assertEqual(self.client.net, mock.sentinel.net)
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -837,6 +820,30 @@ class ClientV2Test(ClientTestBase):
         self.response.json.side_effect = (
             self.authz.to_json(), self.authz2.to_json(), updated_authz2.to_json())
         self.assertEqual(self.client.poll_authorizations(self.orderr, deadline), updated_orderr)
+
+    def test_query_registration_client_v2_ecdsa(self):
+        from acme.client import ClientV2
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        regr = messages.NewRegistration(
+            key=SECP256R1_KEY.public_key(),
+        )
+        self.client = ClientV2(
+            directory=self.directory, net=self.net  # type: ignore
+        )
+        self.client.new_account(regr.to_json())
+        self.net.post.assert_called_once_with(
+            DIRECTORY_V2['newAccount'],
+            regr.to_json(),
+            acme_version=2,
+            new_nonce_url=DIRECTORY_V2['newNonce'],
+        )
+
+    @mock.patch('acme.client.ClientNetwork')
+    def test_register_ec_keys(self, mock_net):
+        mock_net.return_value = mock.sentinel.net
+        from acme.client import ClientV2
+        self.client = ClientV2(directory=self.directory, net=self.net)
+        mock_net.called_once_with(SECP256R1_KEY.public_key(), alg=jose.ES256, verify_ssl=True)
 
     def test_finalize_order_success(self):
         updated_order = self.order.update(
