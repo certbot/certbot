@@ -2,7 +2,43 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.27.0 - master
+## 1.29.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* `--allow-subset-of-names` will now additionally retry in cases where domains are rejected while creating or finalizing orders. This requires subproblem support from the ACME server.
+
+### Fixed
+
+* The `show_account` subcommand now uses the "newAccount" ACME endpoint to fetch the account
+  data, so it doesn't rely on the locally stored account URL. This fixes situations where Certbot
+  would use old ACMEv1 registration info with non-functional account URLs.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.28.0 - 2022-06-07
+
+### Added
+
+* Updated Apache/NGINX TLS configs to document contents are based on ssl-config.mozilla.org
+
+### Changed
+
+* A change to order finalization has been made to the `acme` module and Certbot:
+  - An order's `certificate` field will only be processed if the order's `status` is `valid`.
+  - An order's `error` field will only be processed if the order's `status` is `invalid`.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.27.0 - 2022-05-03
 
 ### Added
 

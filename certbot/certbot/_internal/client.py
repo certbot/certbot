@@ -446,7 +446,17 @@ class Client:
             csr = crypto_util.generate_csr(key, domains, self.config.csr_dir,
                                            self.config.must_staple, self.config.strict_permissions)
 
-        orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
+        try:
+            orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
+        except messages.Error as error:
+            # Some domains may be rejected during order creation.
+            # Certbot can retry the operation without the rejected
+            # domains contained within subproblems.
+            if self.config.allow_subset_of_names:
+                successful_domains = self._successful_domains_from_error(error, domains)
+                if successful_domains != domains and len(successful_domains) != 0:
+                    return self._retry_obtain_certificate(key, csr, domains, successful_domains)
+            raise
         authzr = orderr.authorizations
         auth_domains = {a.body.identifier.value for a in authzr}
         successful_domains = [d for d in domains if d in auth_domains]
@@ -457,13 +467,20 @@ class Client:
         # domains contains a wildcard because the ACME spec forbids identifiers
         # in authzs from containing a wildcard character.
         if self.config.allow_subset_of_names and successful_domains != domains:
-            if not self.config.dry_run:
-                os.remove(key.file)
-                os.remove(csr.file)
-            return self.obtain_certificate(successful_domains)
+            return self._retry_obtain_certificate(key, csr, domains, successful_domains)
         else:
-            cert, chain = self.obtain_certificate_from_csr(csr, orderr)
-            return cert, chain, key, csr
+            try:
+                cert, chain = self.obtain_certificate_from_csr(csr, orderr)
+                return cert, chain, key, csr
+            except messages.Error as error:
+                # Some domains may be rejected during the very late stage of
+                # order finalization. Certbot can retry the operation without
+                # the rejected domains contained within subproblems.
+                if self.config.allow_subset_of_names:
+                    successful_domains = self._successful_domains_from_error(error, domains)
+                    if successful_domains != domains and len(successful_domains) != 0:
+                        return self._retry_obtain_certificate(key, csr, domains, successful_domains)
+                raise
 
     def _get_order_and_authorizations(self, csr_pem: bytes,
                                       best_effort: bool) -> messages.OrderResource:
@@ -535,6 +552,27 @@ class Client:
             new_name, cert,
             key.pem, chain,
             self.config)
+
+    def _successful_domains_from_error(self, error: messages.Error, domains: List[str],
+                                ) -> List[str]:
+        if error.subproblems is not None:
+            failed_domains = [problem.identifier.value for problem in error.subproblems
+                                if problem.identifier is not None]
+            successful_domains = [x for x in domains if x not in failed_domains]
+            return successful_domains
+        return []
+
+    def _retry_obtain_certificate(self, key: util.Key,
+                                csr: util.CSR, domains: List[str], successful_domains: List[str]
+                                ) -> Tuple[bytes, bytes, util.Key, util.CSR]:
+        failed_domains = [d for d in domains if d not in successful_domains]
+        domains_list = ", ".join(failed_domains)
+        display_util.notify("Unable to obtain a certificate with every requested "
+            f"domain. Retrying without: {domains_list}")
+        if not self.config.dry_run:
+            os.remove(key.file)
+            os.remove(csr.file)
+        return self.obtain_certificate(successful_domains)
 
     def _choose_lineagename(self, domains: List[str], certname: Optional[str]) -> str:
         """Chooses a name for the new lineage.

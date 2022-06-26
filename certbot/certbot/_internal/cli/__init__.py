@@ -446,7 +446,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     helpful.add(
         "renew", "--no-autorenew", action="store_false",
         default=flag_default("autorenew"), dest="autorenew",
-        help="Disable auto renewal of certificates.")
+        help="Disable auto renewal of certificates. (default: False)")
 
     # Deprecated arguments
     helpful.add_deprecated_argument("--os-packages-only", 0)

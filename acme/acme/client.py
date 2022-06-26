@@ -646,12 +646,8 @@ class ClientV2(ClientBase):
             Resource.
 
         """
-        self.net.account = regr  # See certbot/certbot#6258
-        # ACME v2 requires to use a POST-as-GET request (POST an empty JWS) here.
-        # This is done by passing None instead of an empty UpdateRegistration to _post().
-        response = self._post(regr.uri, None)
-        self.net.account = self._regr_from_response(response, uri=regr.uri,
-                                                    terms_of_service=regr.terms_of_service)
+        self.net.account = self._get_v2_account(regr, True)
+
         return self.net.account
 
     def update_registration(self, regr: messages.RegistrationResource,
@@ -671,12 +667,15 @@ class ClientV2(ClientBase):
         new_regr = self._get_v2_account(regr)
         return super().update_registration(new_regr, update)
 
-    def _get_v2_account(self, regr: messages.RegistrationResource) -> messages.RegistrationResource:
+    def _get_v2_account(self, regr: messages.RegistrationResource, update_body: bool = False
+                       ) -> messages.RegistrationResource:
         self.net.account = None
         only_existing_reg = regr.body.update(only_return_existing=True)
         response = self._post(self.directory['newAccount'], only_existing_reg)
         updated_uri = response.headers['Location']
-        new_regr = regr.update(uri=updated_uri)
+        new_regr = regr.update(body=messages.Registration.from_json(response.json())
+                               if update_body else regr.body,
+                               uri=updated_uri)
         self.net.account = new_regr
         return new_regr
 
@@ -797,9 +796,13 @@ class ClientV2(ClientBase):
             time.sleep(1)
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
-            if body.error is not None:
-                raise errors.IssuanceError(body.error)
-            if body.certificate is not None:
+            if body.status == messages.STATUS_INVALID:
+                if body.error is not None:
+                    raise errors.IssuanceError(body.error)
+                raise errors.Error(
+                    "The certificate order failed. No further information was provided "
+                    "by the server.")
+            elif body.status == messages.STATUS_VALID and body.certificate is not None:
                 certificate_response = self._post_as_get(body.certificate)
                 orderr = orderr.update(body=body, fullchain_pem=certificate_response.text)
                 if fetch_alternative_chains:
