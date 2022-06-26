@@ -400,25 +400,6 @@ class ClientTest(ClientTestCommon):
             self.eg_order.fullchain_pem)
 
     @mock.patch("certbot._internal.client.crypto_util")
-    def test_ec_account_key(self, mock_crypto_util):
-        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
-        mock_crypto_util.generate_csr.return_value = csr
-        mock_crypto_util.generate_key.return_value = mock.sentinel.key
-        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
-
-        self._test_obtain_certificate_common(mock.sentinel.key, csr)
-
-        mock_crypto_util.generate_key.assert_called_once_with(
-            key_type=self.config.key_type,
-            elliptic_curve="secp256r1",
-            strict_permissions=True,
-        )
-        mock_crypto_util.generate_csr.assert_called_once_with(
-            mock.sentinel.key, self.eg_domains, self.config.csr_dir, False, True)
-        mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
-            self.eg_order.fullchain_pem)
-
-    @mock.patch("certbot._internal.client.crypto_util")
     @mock.patch("certbot.compat.os.remove")
     def test_obtain_certificate_partial_success(self, mock_remove, mock_crypto_util):
         csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
