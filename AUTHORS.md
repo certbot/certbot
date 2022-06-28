@@ -201,6 +201,7 @@ Authors
 * [osirisinferi](https://github.com/osirisinferi)
 * Patrick Figel
 * [Patrick Heppler](https://github.com/PatrickHeppler)
+* [Paul Buonopane](https://github.com/Zenexer)
 * [Paul Feitzinger](https://github.com/pfeyz)
 * [Pavan Gupta](https://github.com/pavgup)
 * [Pavel Pavlov](https://github.com/ghost355)
