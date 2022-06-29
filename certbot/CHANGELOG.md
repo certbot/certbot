@@ -2,12 +2,32 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.28.0 - master
+## 1.29.0 - master
+
+### Added
+
+* Updated Windows installer to be signed and trusted in Windows 
+
+### Changed
+
+* `--allow-subset-of-names` will now additionally retry in cases where domains are rejected while creating or finalizing orders. This requires subproblem support from the ACME server.
+
+### Fixed
+
+* The `show_account` subcommand now uses the "newAccount" ACME endpoint to fetch the account
+  data, so it doesn't rely on the locally stored account URL. This fixes situations where Certbot
+  would use old ACMEv1 registration info with non-functional account URLs.
+
+* The generated Certificate Signing Requests are now generated as version 1 instead of version 3. This resolves situations in where strict enforcement of PKCS#10 meant that CSRs that were generated as version 3 were rejected.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.28.0 - 2022-06-07
 
 ### Added
 
 * Updated Apache/NGINX TLS configs to document contents are based on ssl-config.mozilla.org
-* Updated Windows installer to be signed and trusted in Windows 
+
 
 ### Changed
 

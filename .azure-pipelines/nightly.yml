@@ -11,6 +11,7 @@ schedules:
 
 variables:
   dockerTag: nightly
+  snapBuildTimeout: 19800
 
 stages:
   - template: templates/stages/test-and-package-stage.yml

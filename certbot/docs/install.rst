@@ -125,21 +125,6 @@ of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 .. _Docker: https://docker.com
 .. _`install Docker`: https://docs.docker.com/engine/installation/
 
-.. _certbot-auto:
-
-Certbot-Auto
-------------
-.. toctree::
-   :hidden:
-
-   uninstall
-
-
-We used to have a shell script named ``certbot-auto`` to help people install
-Certbot on UNIX operating systems, however, this script is no longer supported.
-If you want to uninstall ``certbot-auto``, you can follow our instructions
-:doc:`here <uninstall>`.
-
 Pip
 ---
 
