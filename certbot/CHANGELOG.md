@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* DNS01 challenge will now follow CNAME records when resolving the challenge zone
 
 ### Changed
 

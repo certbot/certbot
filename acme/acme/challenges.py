@@ -20,6 +20,7 @@ import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
 import requests
+import dns.resolver
 
 from acme import crypto_util
 from acme import errors
@@ -279,7 +280,13 @@ class DNS01(KeyAuthorizationChallenge):
         :rtype: str
 
         """
-        return f"{self.LABEL}.{name}"
+        name = f"{self.LABEL}.{name}"
+        try:
+            name = str(dns.resolver.resolve(name, "CNAME")[0])[:-1]
+        except dns.exception.DNSException:
+            pass
+
+        return name
 
 
 @ChallengeResponse.register
