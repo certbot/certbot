@@ -14,7 +14,7 @@ install_requires = [
     'requests>=2.20.0',
     'requests-toolbelt>=0.3.0',
     'setuptools>=41.6.0',
-    'dnspython>=2.2.1',
+    'dnspython>=1.15.0',
 ]
 
 docs_extras = [
