@@ -486,10 +486,15 @@ class Client:
         :rtype: acme.messages.OrderResource
 
         """
+        not_after = None
+        if self.config.certificate_validity:
+            not_after = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+                seconds=self.config.certificate_validity)
+
         if not self.acme:
             raise errors.Error("ACME client is not set.")
         try:
-            orderr = self.acme.new_order(csr_pem)
+            orderr = self.acme.new_order(csr_pem, not_after=not_after)
         except acme_errors.WildcardUnsupportedError:
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")
@@ -502,7 +507,7 @@ class Client:
             deactivated, failed = self.auth_handler.deactivate_valid_authorizations(orderr)
             if deactivated:
                 logger.debug("Recreating order after authz deactivations")
-                orderr = self.acme.new_order(csr_pem)
+                orderr = self.acme.new_order(csr_pem, not_after=not_after)
             if failed:
                 logger.warning("Certbot was unable to obtain fresh authorizations for every domain"
                                ". The dry run will continue, but results may not be accurate.")

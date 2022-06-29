@@ -340,12 +340,23 @@ class ClientTest(ClientTestCommon):
         self.assertTrue(
             abs(expected_deadline - deadline) <= datetime.timedelta(seconds=1))
 
-        # Test for orderr=None
+        # Test for orderr=None and certificate_validity
+        self.config.certificate_validity = 86400
+        want_not_after = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
         self.assertEqual(
             (mock.sentinel.cert, mock.sentinel.chain),
             self.client.obtain_certificate_from_csr(
                 test_csr,
                 orderr=None))
+
+        not_after: datetime.datetime
+        try:
+            not_after = self.acme.new_order.call_args.kwargs['not_after']
+        except TypeError:
+            # Remove when no longer testing with python <= 3.7
+            # https://stackoverflow.com/questions/60105443/how-do-i-correctly-use-mock-call-args-with-pythons-unittest-mock
+            not_after = self.acme.new_order.call_args[1]['not_after']
+        self.assertAlmostEqual(not_after, want_not_after, delta=datetime.timedelta(minutes=1))
         auth_handler.handle_authorizations.assert_called_with(self.eg_order, self.config, False)
 
         # Test for no auth_handler

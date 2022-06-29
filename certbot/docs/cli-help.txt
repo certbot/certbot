@@ -1,4 +1,4 @@
-usage: 
+usage:
   certbot [SUBCOMMAND] [options] [-d DOMAIN] [-d DOMAIN] ...
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,

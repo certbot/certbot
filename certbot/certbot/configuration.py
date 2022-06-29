@@ -301,6 +301,14 @@ class NamespaceConfig:
         return self.namespace.issuance_timeout
 
     @property
+    def certificate_validity(self) -> Optional[int]:
+        """Specifies a custom certificate expiry time, in relative seconds
+        from the current time, when requesting a certificate.
+        Note: Not all CAs support this feature.
+        """
+        return self.namespace.certificate_validity
+
+    @property
     def new_key(self) -> bool:
         """This option specifies whether Certbot should generate a new private
         key when replacing a certificate, even if reuse_key is set.

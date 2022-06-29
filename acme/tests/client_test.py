@@ -217,7 +217,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         with mock.patch('acme.client.ClientV2') as mock_client:
             client = self._init()
             client.new_order(mock_csr_pem)
-            mock_client().new_order.assert_called_once_with(mock_csr_pem)
+            mock_client().new_order.assert_called_once_with(mock_csr_pem, not_after=None)
 
     @mock.patch('acme.client.Client')
     def test_finalize_order_v1_success(self, mock_client):
@@ -740,8 +740,23 @@ class ClientV2Test(ClientTestBase):
             status=messages.STATUS_PENDING,
             authorizations=(self.authzr.uri, self.authzr_uri2),
             finalize='https://www.letsencrypt-demo.org/acme/acct/1/order/1/finalize')
+
         self.orderr = messages.OrderResource(
             body=self.order,
+            uri='https://www.letsencrypt-demo.org/acme/acct/1/order/1',
+            authorizations=[self.authzr, self.authzr2], csr_pem=CSR_MIXED_PEM)
+
+        self.not_after = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+
+        self.order_with_not_after = messages.Order(
+            identifiers=(self.authz.identifier, self.authz2.identifier),
+            status=messages.STATUS_PENDING,
+            authorizations=(self.authzr.uri, self.authzr_uri2),
+            finalize='https://www.letsencrypt-demo.org/acme/acct/1/order/1/finalize',
+            not_after=self.not_after)
+
+        self.orderr_with_not_after = messages.OrderResource(
+            body=self.order_with_not_after,
             uri='https://www.letsencrypt-demo.org/acme/acct/1/order/1',
             authorizations=[self.authzr, self.authzr2], csr_pem=CSR_MIXED_PEM)
 
@@ -774,6 +789,28 @@ class ClientV2Test(ClientTestBase):
         with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
             mock_post_as_get.side_effect = (authz_response, authz_response2)
             self.assertEqual(self.client.new_order(CSR_MIXED_PEM), self.orderr)
+
+    def test_new_order_with_not_after(self):
+        order_response = copy.deepcopy(self.response)
+        order_response.status_code = http_client.CREATED
+        order_response.json.return_value = self.order_with_not_after.to_json()
+        order_response.headers['Location'] = self.orderr_with_not_after.uri
+        self.net.post.return_value = order_response
+
+        authz_response = copy.deepcopy(self.response)
+        authz_response.json.return_value = self.authz.to_json()
+        authz_response.headers['Location'] = self.authzr.uri
+        authz_response2 = self.response
+        authz_response2.json.return_value = self.authz2.to_json()
+        authz_response2.headers['Location'] = self.authzr2.uri
+
+        with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
+            mock_post_as_get.side_effect = (authz_response, authz_response2)
+            got = self.client.new_order(CSR_MIXED_PEM, self.not_after).body
+            want = self.orderr_with_not_after.body
+            self.assertEqual(got.identifiers, want.identifiers)
+            self.assertAlmostEqual(got.not_after, want.not_after,
+                                   delta=datetime.timedelta(seconds=1))
 
     @mock.patch('acme.client.datetime')
     def test_poll_and_finalize(self, mock_datetime):

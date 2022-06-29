@@ -63,6 +63,11 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
+* ACME component now supports NewOrder's notAfter value. This permits requesting
+  certificates with a custom expiration date.
+* Certbot now supports setting a custom certificate validity (`--certificate-validity`)
+  specified in relative seconds from time of the certificate issuance request.
+  * Not currently supported by Let's Encrypt, the default CA for Certbot.
 * Added `--new-key`. When renewing or replacing a certificate that has `--reuse-key`
   set, it will force a new private key to be generated, one time.
 

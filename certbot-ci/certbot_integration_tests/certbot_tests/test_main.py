@@ -10,6 +10,8 @@ from typing import Iterable
 from typing import Generator
 from typing import Tuple
 from typing import Type
+import datetime
+import unittest
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
@@ -448,7 +450,7 @@ def test_reuse_key(context: IntegrationTestsContext) -> None:
     assert privkey2 != privkey3
 
     context.certbot(['--cert-name', certname, '--domains', certname,
-                     '--reuse-key','--force-renewal'])
+                     '--reuse-key', '--force-renewal'])
     context.certbot(['renew', '--cert-name', certname, '--no-reuse-key', '--force-renewal'])
     context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
 
@@ -904,8 +906,50 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
 
         dumped = misc.read_certificate(cert_path)
         assert 'Issuer: CN={}'.format(expected) in dumped, \
-               'Expected chain issuer to be {} when preferring {}'.format(expected, requested)
+            'Expected chain issuer to be {} when preferring {}'.format(expected, requested)
 
         with open(conf_path, 'r') as f:
             assert 'preferred_chain = {}'.format(requested) in f.read(), \
-                   'Expected preferred_chain to be set in renewal config'
+                'Expected preferred_chain to be set in renewal config'
+
+
+def test_certificate_validity(context: IntegrationTestsContext) -> None:
+    """Test that --certificate-validity is requesting certificates of the appropirate validity"""
+    if context.acme_server == 'boulder-v2':
+        pytest.skip('Boulder does not support NewOrder notAfter.')
+
+    context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname'),
+                     '--certificate-validity', '86400'])
+
+    want_not_after = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
+
+    cert_path = join(context.config_dir, 'live', 'newname', 'cert.pem')
+
+    not_after_first = get_not_after(cert_path)
+    tc = unittest.TestCase()
+    tc.assertAlmostEqual(not_after_first, want_not_after, delta=datetime.timedelta(minutes=5))
+
+    context.certbot(['renew', '--force-renewal'])
+
+    not_after_renewal = get_not_after(cert_path)
+    tc = unittest.TestCase()
+    tc.assertAlmostEqual(not_after_renewal, want_not_after, delta=datetime.timedelta(minutes=5))
+
+    assert not_after_first != not_after_renewal
+
+
+def get_not_after(cert_path: str) -> datetime.datetime:
+    """Gets a certificate's not_after field.
+
+    :param str cert_path: Path to a certificate
+    """
+    cert = misc.get_certificate(cert_path)
+    not_after_raw = cert.get_notAfter()
+    not_after_ascii = '1990-01-01T00:00:00+00:00'
+
+    if not_after_raw is not None:
+        not_after_ascii = not_after_raw.decode('ascii')
+
+    not_after = datetime.datetime.strptime(not_after_ascii, '%Y%m%d%H%M%SZ').replace(
+        tzinfo=datetime.timezone.utc)
+    return not_after
