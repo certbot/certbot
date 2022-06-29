@@ -17,11 +17,8 @@ Authors
 * [Alex Halderman](https://github.com/jhalderm)
 * [Alex Jordan](https://github.com/strugee)
 * [Alex Zorin](https://github.com/alexzorin)
-<<<<<<< HEAD
 * [Alexis Hancock](https://github.com/zoracon)
-=======
 * [Amir Omidi](https://github.com/aaomidi)
->>>>>>> dedbdea1d9854761df9ba28d26e368bdd78d72c9
 * [Amjad Mashaal](https://github.com/TheNavigat)
 * [amplifi](https://github.com/amplifi)
 * [Andrew Murray](https://github.com/radarhere)
