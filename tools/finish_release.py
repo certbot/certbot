@@ -83,7 +83,7 @@ def publish_windows(css):
     :param str css: CSS host name
 
     """
-    username = getpass.getuser()
+    username = input("CSS username (usually EFF username): ")
     host = css
     command = "ssh -t {}@{} bash /opt/certbot-misc/css/venv.sh".format(username,host)
     
