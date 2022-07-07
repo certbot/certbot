@@ -130,9 +130,9 @@ def get_snap_revisions(snap, version):
     print('Getting revision numbers for', snap, version)
     cmd = ['snapcraft', 'status', snap]
     process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, universal_newlines=True)
-    pattern = f'^\s+beta\s+{version}\s+(\d+)\s*$'
+    pattern = f'^\s+beta\s+{version}\s+(\d+)\s*'
     revisions = re.findall(pattern, process.stdout, re.MULTILINE)
-    assert len(revisions) == SNAP_ARCH_COUNT, f'Unexpected number of snaps found for {snap} {version}'
+    assert len(revisions) == SNAP_ARCH_COUNT, f'Unexpected number of snaps found for {snap} {version} (expected {SNAP_ARCH_COUNT}, found {len(revisions)})'
     return revisions
 
 
