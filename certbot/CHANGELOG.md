@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed to respect Retry-After values when finalizing orders to avoid frequent polling.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -27,7 +27,6 @@ More details about these changes can be found on our GitHub repo.
 ### Changed
 
 * `--allow-subset-of-names` will now additionally retry in cases where domains are rejected while creating or finalizing orders. This requires subproblem support from the ACME server.
-* Fixed to respect Retry-After values when finalizing orders to avoid frequent polling.
 
 ### Fixed
 
