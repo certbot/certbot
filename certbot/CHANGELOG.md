@@ -2,11 +2,27 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.29.0 - master
+## 1.30.0 - master
 
 ### Added
 
 *
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.29.0 - 2022-07-05
+
+### Added
+
+* Updated Windows installer to be signed and trusted in Windows 
 
 ### Changed
 
@@ -28,6 +44,7 @@ More details about these changes can be found on our GitHub repo.
 ### Added
 
 * Updated Apache/NGINX TLS configs to document contents are based on ssl-config.mozilla.org
+
 
 ### Changed
 
