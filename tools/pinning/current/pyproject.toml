@@ -76,7 +76,7 @@ setuptools-rust = "*"
 pylint = ">2.6.2"
 
 # Bug in poetry, where still installes yanked versions from pypi (source: https://github.com/python-poetry/poetry/issues/2453)
-# this version of cryptography intreduced a security vulnrability.
+# this version of cryptography introduced a security vulnrability.
 # Making sure that it would not get installed (Fixing https://github.com/certbot/certbot/issues/9336)
 cryptography = "!= 37.0.3"
 
