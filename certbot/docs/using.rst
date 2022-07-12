@@ -555,6 +555,11 @@ Deleting certificates
 
 If you need to delete a certificate, use the ``delete`` subcommand.
 
+Certbot does not automatically revoke a certificate before deleting it. If you're no longer using a certificate and don't
+plan to use it anywhere else, you may want to follow the instructions in `Revoking certificates`_ first. Generally, there's
+no need to revoke a certificate if its private key has not been compromised, but you may still receive expiration emails
+from Let's Encrypt unless you revoke.
+
 .. note:: Read this and the `Safely deleting certificates`_ sections carefully. This is an irreversible operation and must
           be done with care.
 
