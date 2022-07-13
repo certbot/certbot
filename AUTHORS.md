@@ -289,3 +289,4 @@ Authors
 * [Yuseong Cho](https://github.com/g6123)
 * [Zach Shepherd](https://github.com/zjs)
 * [陈三](https://github.com/chenxsan)
+* [Shahar Naveh](https://github.com/ShaharNaveh)
