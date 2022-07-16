@@ -16,6 +16,7 @@ from certbot import util
 
 OVERRIDE_CLASSES: Dict[str, Type[configurator.ApacheConfigurator]] = {
     "arch": override_arch.ArchConfigurator,
+    "alinux":override_centos.CentOSConfigurator,
     "cloudlinux": override_centos.CentOSConfigurator,
     "darwin": override_darwin.DarwinConfigurator,
     "debian": override_debian.DebianConfigurator,
