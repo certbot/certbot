@@ -354,12 +354,9 @@ class ApacheConfigurator(common.Configurator):
             self.version = self.get_version()
             logger.debug('Apache version is %s',
                          '.'.join(str(i) for i in self.version))
-        if self.version < (2, 2):
+        if self.version < (2, 4):
             raise errors.NotSupportedError(
                 "Apache Version {0} not supported.".format(str(self.version)))
-        elif self.version < (2, 4):
-            logger.warning('Support for Apache 2.2 is deprecated and will be removed in a '
-                           'future release.')
 
         # Recover from previous crash before Augeas initialization to have the
         # correct parse tree from the get go.
@@ -1176,46 +1173,6 @@ class ApacheConfigurator(common.Configurator):
                     vhost.aliases.add(serveralias)
             vhost.name = servername
 
-    def is_name_vhost(self, target_addr: obj.Addr) -> bool:
-        """Returns if vhost is a name based vhost
-
-        NameVirtualHost was deprecated in Apache 2.4 as all VirtualHosts are
-        now NameVirtualHosts. If version is earlier than 2.4, check if addr
-        has a NameVirtualHost directive in the Apache config
-
-        :param certbot_apache._internal.obj.Addr target_addr: vhost address
-
-        :returns: Success
-        :rtype: bool
-
-        """
-        # Mixed and matched wildcard NameVirtualHost with VirtualHost
-        # behavior is undefined. Make sure that an exact match exists
-
-        # search for NameVirtualHost directive for ip_addr
-        # note ip_addr can be FQDN although Apache does not recommend it
-        return (self.version >= (2, 4) or
-                bool(self.parser.find_dir("NameVirtualHost", str(target_addr))))
-
-    def add_name_vhost(self, addr: obj.Addr) -> None:
-        """Adds NameVirtualHost directive for given address.
-
-        :param addr: Address that will be added as NameVirtualHost directive
-        :type addr: :class:`~certbot_apache._internal.obj.Addr`
-
-        """
-
-        loc = parser.get_aug_path(self.parser.loc["name"])
-        if addr.get_port() == "443":
-            self.parser.add_dir_to_ifmodssl(
-                loc, "NameVirtualHost", [str(addr)])
-        else:
-            self.parser.add_dir(loc, "NameVirtualHost", [str(addr)])
-
-        msg = "Setting {0} to be NameBasedVirtualHost\n".format(addr)
-        logger.debug(msg)
-        self.save_notes += msg
-
     def prepare_server_https(self, port: str, temp: bool = False) -> None:
         """Prepare the server for HTTPS.
 
@@ -1363,8 +1320,7 @@ class ApacheConfigurator(common.Configurator):
         """
 
         if self.options.handle_modules:
-            if self.version >= (2, 4) and ("socache_shmcb_module" not in
-                                           self.parser.modules):
+            if "socache_shmcb_module" not in self.parser.modules:
                 self.enable_mod("socache_shmcb", temp=temp)
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
@@ -1450,10 +1406,6 @@ class ApacheConfigurator(common.Configurator):
         #       The configuration must also be saved before being searched
         #       for the new directives; For these reasons... this is tacked
         #       on after fully creating the new vhost
-
-        # Now check if addresses need to be added as NameBasedVhost addrs
-        # This is for compliance with versions of Apache < 2.4
-        self._add_name_vhost_if_necessary(ssl_vhost)
 
         return ssl_vhost
 
@@ -1753,40 +1705,6 @@ class ApacheConfigurator(common.Configurator):
         aliases = (self.parser.aug.get(match) for match in matches)
         return self.domain_in_names(aliases, target_name)
 
-    def _add_name_vhost_if_necessary(self, vhost: obj.VirtualHost) -> None:
-        """Add NameVirtualHost Directives if necessary for new vhost.
-
-        NameVirtualHosts was a directive in Apache < 2.4
-        https://httpd.apache.org/docs/2.2/mod/core.html#namevirtualhost
-
-        :param vhost: New virtual host that was recently created.
-        :type vhost: :class:`~certbot_apache._internal.obj.VirtualHost`
-
-        """
-        need_to_save: bool = False
-
-        # See if the exact address appears in any other vhost
-        # Remember 1.1.1.1:* == 1.1.1.1 -> hence any()
-        for addr in vhost.addrs:
-            # In Apache 2.2, when a NameVirtualHost directive is not
-            # set, "*" and "_default_" will conflict when sharing a port
-            addrs = {addr,}
-            if addr.get_addr() in ("*", "_default_"):
-                addrs.update(obj.Addr((a, addr.get_port(),))
-                             for a in ("*", "_default_"))
-
-            for test_vh in self.vhosts:
-                if (vhost.filep != test_vh.filep and
-                    any(test_addr in addrs for
-                        test_addr in test_vh.addrs) and not self.is_name_vhost(addr)):
-                    self.add_name_vhost(addr)
-                    logger.info("Enabling NameVirtualHosts on %s", addr)
-                    need_to_save = True
-                    break
-
-        if need_to_save:
-            self.save()
-
     def find_vhost_by_id(self, id_str: str) -> obj.VirtualHost:
         """
         Searches through VirtualHosts and tries to match the id in a comment
@@ -2002,12 +1920,6 @@ class ApacheConfigurator(common.Configurator):
         :param unused_options: Not currently used
         :type unused_options: Not Available
         """
-        min_apache_ver = (2, 3, 3)
-        if self.get_version() < min_apache_ver:
-            raise errors.PluginError(
-                "Unable to set OCSP directives.\n"
-                "Apache version is below 2.3.3.")
-
         if "socache_shmcb_module" not in self.parser.modules:
             self.enable_mod("socache_shmcb")
 
@@ -2188,10 +2100,7 @@ class ApacheConfigurator(common.Configurator):
                         general_vh.filep, ssl_vhost.filep)
 
     def _set_https_redirection_rewrite_rule(self, vhost: obj.VirtualHost) -> None:
-        if self.get_version() >= (2, 3, 9):
-            self.parser.add_dir(vhost.path, "RewriteRule", constants.REWRITE_HTTPS_ARGS_WITH_END)
-        else:
-            self.parser.add_dir(vhost.path, "RewriteRule", constants.REWRITE_HTTPS_ARGS)
+        self.parser.add_dir(vhost.path, "RewriteRule", constants.REWRITE_HTTPS_ARGS_WITH_END)
 
     def _verify_no_certbot_redirect(self, vhost: obj.VirtualHost) -> None:
         """Checks to see if a redirect was already installed by certbot.
@@ -2306,12 +2215,6 @@ class ApacheConfigurator(common.Configurator):
         if ssl_vhost.aliases:
             serveralias = "ServerAlias " + " ".join(ssl_vhost.aliases)
 
-        rewrite_rule_args: List[str]
-        if self.get_version() >= (2, 3, 9):
-            rewrite_rule_args = constants.REWRITE_HTTPS_ARGS_WITH_END
-        else:
-            rewrite_rule_args = constants.REWRITE_HTTPS_ARGS
-
         return (
             f"<VirtualHost {' '.join(str(addr) for addr in self._get_proposed_addrs(ssl_vhost))}>\n"
             f"{servername} \n"
@@ -2319,7 +2222,7 @@ class ApacheConfigurator(common.Configurator):
             f"ServerSignature Off\n"
             f"\n"
             f"RewriteEngine On\n"
-            f"RewriteRule {' '.join(rewrite_rule_args)}\n"
+            f"RewriteRule {' '.join(constants.REWRITE_HTTPS_ARGS_WITH_END)}\n"
             "\n"
             f"ErrorLog {self.options.logs_root}/redirect.error.log\n"
             f"LogLevel warn\n"

@@ -47,6 +47,7 @@ class ApacheParser:
     arg_var_interpreter: Pattern = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars: Set[str] = {"*", "?", "\\", "[", "]"}
 
+    # pylint: disable=unused-argument
     def __init__(self, root: str, configurator: "ApacheConfigurator",
                  vhostroot: str, version: Tuple[int, ...] = (2, 4)) -> None:
         # Note: Order is important here.
@@ -74,9 +75,8 @@ class ApacheParser:
         self.loc: Dict[str, str] = {"root": self._find_config_root()}
         self.parse_file(self.loc["root"])
 
-        if version >= (2, 4):
-            # Look up variables from httpd and add to DOM if not already parsed
-            self.update_runtime_variables()
+        # Look up variables from httpd and add to DOM if not already parsed
+        self.update_runtime_variables()
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
@@ -94,11 +94,6 @@ class ApacheParser:
         if vhostroot:
             self.parse_file(os.path.abspath(vhostroot) + "/" +
                             self.configurator.options.vhost_files)
-
-        # check to see if there were unparsed define statements
-        if version < (2, 4):
-            if self.find_dir("Define", exclude=False):
-                raise errors.PluginError("Error parsing runtime variables")
 
     def check_parsing_errors(self, lens: str) -> None:
         """Verify Augeas can parse all of the lens files.

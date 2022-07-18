@@ -1,9 +1,0 @@
-
-This directory holds Apache 2.0 module-specific configuration files;
-any files in this directory which have the ".conf" extension will be
-processed as Apache configuration files.
-
-Files are processed in alphabetical order, so if using configuration
-directives which depend on, say, mod_perl being loaded, ensure that
-these are placed in a filename later in the sort order than "perl.conf".
-
