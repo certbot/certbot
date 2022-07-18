@@ -1669,26 +1669,6 @@ def reconfigure(config: configuration.NamespaceConfig,
     cert_manager.reconfigure(config)
 
 
-def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
-    """Create or verify existence of config, work, and hook directories.
-
-    :param config: Configuration object
-    :type config: configuration.NamespaceConfig
-
-    :returns: `None`
-    :rtype: None
-
-    """
-    util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE, config.strict_permissions)
-    util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE, config.strict_permissions)
-
-    hook_dirs = (config.renewal_pre_hooks_dir,
-                 config.renewal_deploy_hooks_dir,
-                 config.renewal_post_hooks_dir,)
-    for hook_dir in hook_dirs:
-        util.make_or_verify_dir(hook_dir, strict=config.strict_permissions)
-
-
 @contextmanager
 def make_displayer(config: configuration.NamespaceConfig
                    ) -> Generator[Union[display_util.NoninteractiveDisplay,
