@@ -117,7 +117,43 @@ def delete(config: configuration.NamespaceConfig) -> None:
                             .format(certname))
 
 def reconfigure(config: configuration.NamespaceConfig) -> None:
-    """Update certbot config files without issuing a new cert."""
+    """Update certbot config files without issuing or renewing a cert."""
+    # choose an existing cert
+    certname = get_certnames(config, "reconfigure", allow_multiple=False)[0]
+    ## FIXME allow multiple???
+    ## TODO add a better message idk whatever
+    conf_file = storage.renewal_file_for_certname(config, config.certname)
+    display_util.notification("Processing " + renewal_file, pause=False)
+    lineage_config = copy.deepcopy(config)
+
+    # Note that this modifies config (to add back the configuration
+    # elements from within the renewal configuration file).
+    try:
+        lineage = _reconstitute(lineage_config, renewal_file)
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error("Renewal configuration file %s (cert: %s) "
+                       "produced an unexpected error: %s. Skipping.",
+                       renewal_file, certname, e)
+        logger.debug("Traceback was:\n%s", traceback.format_exc())
+        return
+
+    if not lineage:
+        """TODO: print some error, how does this even happen idk"""
+    else:
+        # installers are used in auth mode to determine domain names
+        # installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
+        # le_client = _init_le_client(lineage_config, auth, installer)
+        # just saving this in case we want it for dry run, agian, idk
+
+        # actually we do want this bit, guess this method's going public lol
+        renewal_params = lineage.configuration["renewalparams"]
+        original_server = renewal_params.get("server", cli.flag_default("server"))
+        renewal._avoid_invalidating_lineage(lineage_config, lineage, original_server)
+
+
+        # uhhh idk do a dry run here?????
+
+        lineage.save_new_config_values(lineage_config)
 
 
 ###################

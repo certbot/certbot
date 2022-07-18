@@ -1210,3 +1210,17 @@ class RenewableCert(interfaces.RenewableCert):
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version
+
+
+    def save_new_config_values(self, cli_config: configuration.NamespaceConfig) -> None:
+        """Save new cert and chain as a successor of a prior version.
+
+        :param .NamespaceConfig cli_config: parsed command line
+            arguments
+        """
+        self.cli_config = cli_config
+        symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
+        # Update renewal config file
+        self.configfile = update_configuration(
+            self.lineagename, self.archive_dir, symlinks, cli_config)
+        self.configuration = config_with_defaults(self.configfile)

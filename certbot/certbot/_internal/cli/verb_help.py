@@ -102,6 +102,11 @@ VERB_HELP = [
         "opts": 'Options useful for the "show_account" subcommand:',
         "usage": "\n\n  certbot show_account [options]\n\n"
     }),
+    ("reconfigure", {
+        "short": "todo",
+        "opts": 'Options useful for the "show_account" subcommand:',
+        "usage": "\n\n  certbot reconfigure [options]\n\n"
+    }),
 ]
 
 

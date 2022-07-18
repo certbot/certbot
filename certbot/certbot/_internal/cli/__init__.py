@@ -140,7 +140,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     )
     helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates",
-         "renew", "enhance"], "--cert-name", dest="certname",
+         "renew", "enhance", "reconfigure"], "--cert-name", dest="certname",
         metavar="CERTNAME", default=flag_default("certname"),
         help="Certificate name to apply. This name is used by Certbot for housekeeping "
              "and in file paths; it doesn't affect the content of the certificate itself. "

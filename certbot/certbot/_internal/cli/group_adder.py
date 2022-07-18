@@ -16,7 +16,7 @@ def _add_all_groups(helpful: "helpful.HelpfulArgumentParser") -> None:
     helpful.add_group("paths", description="Flags for changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
-        verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
+        verbs=["certificates", "delete", "renew", "revoke", "update_symlinks", "reconfigure"])
 
     # VERBS
     for verb, docs in VERB_HELP:
