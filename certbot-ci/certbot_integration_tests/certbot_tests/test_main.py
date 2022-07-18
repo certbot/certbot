@@ -112,7 +112,7 @@ def test_http_01(context: IntegrationTestsContext) -> None:
 
     assert_hook_execution(context.hook_probe, 'deploy')
     assert_saved_renew_hook(context.config_dir, certname)
-    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'rsa')
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
 
 def test_manual_http_auth(context: IntegrationTestsContext) -> None:
@@ -315,23 +315,23 @@ def test_graceful_renew_it_is_time(context: IntegrationTestsContext) -> None:
 def test_renew_with_changed_private_key_complexity(context: IntegrationTestsContext) -> None:
     """Test proper renew with updated private key complexity."""
     certname = context.get_domain('renew')
-    context.certbot(['-d', certname, '--rsa-key-size', '4096'])
+    context.certbot(['-d', certname, '--key-type', 'rsa', '--rsa-key-size', '4096'])
 
     key1 = join(context.config_dir, 'archive', certname, 'privkey1.pem')
-    assert os.stat(key1).st_size > 3000  # 4096 bits keys takes more than 3000 bytes
+    assert_rsa_key(key1, 4096)
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     key2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
-    assert os.stat(key2).st_size > 3000
+    assert_rsa_key(key2, 4096)
 
     context.certbot(['renew', '--rsa-key-size', '2048'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 3)
     key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
-    assert os.stat(key3).st_size < 1800  # 2048 bits keys takes less than 1800 bytes
+    assert_rsa_key(key3, 2048)
 
 
 def test_renew_ignoring_directory_hooks(context: IntegrationTestsContext) -> None:
@@ -535,24 +535,24 @@ def test_ecdsa(context: IntegrationTestsContext) -> None:
 
 
 def test_default_key_type(context: IntegrationTestsContext) -> None:
-    """Test default key type is RSA"""
+    """Test default key type is ECDSA"""
     certname = context.get_domain('renew')
     context.certbot([
         'certonly',
         '--cert-name', certname, '-d', certname
     ])
     filename = join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname)
-    assert_rsa_key(filename)
+    assert_elliptic_key(filename, SECP256R1)
 
 
-def test_default_curve_type(context: IntegrationTestsContext) -> None:
-    """test that the curve used when not specifying any is secp256r1"""
+def test_default_rsa_size(context: IntegrationTestsContext) -> None:
+    """test that the RSA key size used when not specifying any is 2048"""
     certname = context.get_domain('renew')
     context.certbot([
-        '--key-type', 'ecdsa', '--cert-name', certname, '-d', certname
+        '--key-type', 'rsa', '--cert-name', certname, '-d', certname
     ])
     key1 = join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname))
-    assert_elliptic_key(key1, SECP256R1)
+    assert_rsa_key(key1, 2048)
 
 
 @pytest.mark.parametrize('curve,curve_cls,skip_servers', [

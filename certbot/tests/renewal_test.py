@@ -119,8 +119,8 @@ class RenewalTest(test_util.ConfigTestCase):
         with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
-        self.assertEqual(self.config.rsa_key_size, 2048)
-        self.assertEqual(self.config.key_type, 'rsa')
+        self.assertEqual(self.config.elliptic_curve, 'secp256r1')
+        self.assertEqual(self.config.key_type, 'ecdsa')
         self.assertTrue(self.config.reuse_key)
         # None is passed as the existing key, i.e. the key is not actually being reused.
         le_client.obtain_certificate.assert_called_with(mock.ANY, None)
