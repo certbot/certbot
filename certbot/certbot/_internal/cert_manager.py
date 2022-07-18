@@ -116,6 +116,10 @@ def delete(config: configuration.NamespaceConfig) -> None:
         display_util.notify("Deleted all files relating to certificate {0}."
                             .format(certname))
 
+def reconfigure(config: configuration.NamespaceConfig) -> None:
+    """Update certbot config files without issuing a new cert."""
+
+
 ###################
 # Public Helpers
 ###################
