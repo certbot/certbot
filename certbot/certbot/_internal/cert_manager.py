@@ -1,4 +1,5 @@
 """Tools for managing certificates."""
+import copy
 import datetime
 import logging
 import re
