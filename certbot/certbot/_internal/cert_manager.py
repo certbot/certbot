@@ -120,6 +120,7 @@ def reconfigure(config: configuration.NamespaceConfig) -> None:
     """Update certbot config files without issuing or renewing a cert."""
     # choose an existing cert
     certname = get_certnames(config, "reconfigure", allow_multiple=False)[0]
+    config.certname = certname
     ## FIXME allow multiple???
     ## TODO add a better message idk whatever
     conf_file = storage.renewal_file_for_certname(config, config.certname)
