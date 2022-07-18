@@ -212,10 +212,7 @@ class ApacheHttp01Test(util.ApacheTest):
         self.assertIn("RewriteRule", pre_conf_contents)
 
         self.assertIn(self.http.challenge_dir, post_conf_contents)
-        if self.config.version < (2, 4):
-            self.assertIn("Allow from all", post_conf_contents)
-        else:
-            self.assertIn("Require all granted", post_conf_contents)
+        self.assertIn("Require all granted", post_conf_contents)
 
     def _test_challenge_file(self, achall):
         name = os.path.join(self.http.challenge_dir, achall.chall.encode("token"))
