@@ -20,6 +20,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import ocsp
 from certbot import util
+from certbot._internal import cli
 from certbot._internal import renewal
 from certbot._internal import storage
 from certbot.compat import os
