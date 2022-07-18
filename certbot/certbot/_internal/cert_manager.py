@@ -123,8 +123,8 @@ def reconfigure(config: configuration.NamespaceConfig) -> None:
     config.certname = certname
     ## FIXME allow multiple???
     ## TODO add a better message idk whatever
-    conf_file = storage.renewal_file_for_certname(config, config.certname)
-    display_util.notification("Processing " + renewal_file, pause=False)
+    renewal_file = storage.renewal_file_for_certname(config, config.certname)
+    # display_util.notification("Processing " + renewal_file, pause=False)
     lineage_config = copy.deepcopy(config)
 
     # Note that this modifies config (to add back the configuration
