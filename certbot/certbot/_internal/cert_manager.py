@@ -130,8 +130,9 @@ def reconfigure(config: configuration.NamespaceConfig) -> None:
 
     # Note that this modifies config (to add back the configuration
     # elements from within the renewal configuration file).
+    # another delightful internal method call!
     try:
-        lineage = _reconstitute(lineage_config, renewal_file)
+        lineage = renewal._reconstitute(lineage_config, renewal_file)
     except Exception as e:  # pylint: disable=broad-except
         logger.error("Renewal configuration file %s (cert: %s) "
                        "produced an unexpected error: %s. Skipping.",
