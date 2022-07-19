@@ -1082,7 +1082,7 @@ If Certbot does not trust the SSL certificate used by the ACME server, you
 can use the `REQUESTS_CA_BUNDLE
 <https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification>`_
 environment variable to override the root certificates trusted by Certbot. Certbot
-does not use the operating system trusted root store.
+uses the ``requests`` library, which does not use the operating system trusted root store.
 
 If you use ``--server`` to specify an ACME CA that implements the standardized
 version of the spec, you may be able to obtain a certificate for a
