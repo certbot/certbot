@@ -1654,8 +1654,8 @@ def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
 
 @contextmanager
 def make_displayer(config: configuration.NamespaceConfig
-                   ) -> Generator[Union[display_util.NoninteractiveDisplay,
-                                        display_util.FileDisplay], None, None]:
+                   ) -> Generator[Union[display_obj.NoninteractiveDisplay,
+                                        display_obj.FileDisplay], None, None]:
     """Creates a display object appropriate to the flags in the supplied config.
 
     :param config: Configuration object
@@ -1663,18 +1663,18 @@ def make_displayer(config: configuration.NamespaceConfig
     :returns: Display object
 
     """
-    displayer: Union[None, display_util.NoninteractiveDisplay,
-                     display_util.FileDisplay] = None
+    displayer: Union[None, display_obj.NoninteractiveDisplay,
+                     display_obj.FileDisplay] = None
     devnull: Optional[IO] = None
 
     if config.quiet:
         config.noninteractive_mode = True
         devnull = open(os.devnull, "w")  # pylint: disable=consider-using-with
-        displayer = display_util.NoninteractiveDisplay(devnull)
+        displayer = display_obj.NoninteractiveDisplay(devnull)
     elif config.noninteractive_mode:
-        displayer = display_util.NoninteractiveDisplay(sys.stdout)
+        displayer = display_obj.NoninteractiveDisplay(sys.stdout)
     else:
-        displayer = display_util.FileDisplay(
+        displayer = display_obj.FileDisplay(
             sys.stdout, config.force_interactive)
 
     try:
