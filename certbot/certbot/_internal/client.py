@@ -10,7 +10,6 @@ from typing import IO
 from typing import List
 from typing import Optional
 from typing import Tuple
-import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
@@ -70,16 +69,8 @@ def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-
-        client = acme_client.BackwardsCompatibleClientV2(net, key, config.server)
-        if client.acme_version == 1:
-            logger.warning(
-                "Certbot is configured to use an ACMEv1 server (%s). ACMEv1 support is deprecated"
-                " and will soon be removed. See https://community.letsencrypt.org/t/143839 for "
-                "more information.", config.server)
-        return cast(acme_client.ClientV2, client)
+    directory = messages.Directory.from_json(net.get(config.server).json())
+    return acme_client.ClientV2(directory, net)
 
 
 def determine_user_agent(config: configuration.NamespaceConfig) -> str:
@@ -259,15 +250,13 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
     try:
         newreg = messages.NewRegistration.from_data(
             email=config.email, external_account_binding=eab)
-        # Until ACME v1 support is removed from Certbot, we actually need the provided
-        # ACME client to be a wrapper of type BackwardsCompatibleClientV2.
-        # TODO: Remove this cast and rewrite the logic when the client is actually a ClientV2
-        try:
-            return cast(acme_client.BackwardsCompatibleClientV2,
-                        acme).new_account_and_tos(newreg, tos_cb)
-        except AttributeError:
-            raise errors.Error("The ACME client must be an instance of "
-                               "acme.client.BackwardsCompatibleClientV2")
+
+        if tos_cb and "terms_of_service" in acme.directory.meta and \
+            acme.directory.meta.terms_of_service:
+            tos_cb(acme.directory.meta.terms_of_service)
+            newreg = newreg.update(terms_of_service_agreed=True)
+
+        return acme.new_account(newreg)
     except messages.Error as e:
         if e.code in ("invalidEmail", "invalidContact"):
             if config.noninteractive_mode:
@@ -291,8 +280,8 @@ class Client:
     :ivar .Authenticator auth: Prepared (`.Authenticator.prepare`)
         authenticator that can solve ACME challenges.
     :ivar .Installer installer: Installer.
-    :ivar acme.client.BackwardsCompatibleClientV2 acme: Optional ACME
-        client API handle. You might already have one from `register`.
+    :ivar acme.client.ClientV2 acme: Optional ACME client API handle. You might
+        already have one from `register`.
 
     """
 

@@ -98,22 +98,19 @@ class RegisterTest(test_util.ConfigTestCase):
     @staticmethod
     @contextlib.contextmanager
     def _patched_acme_client():
-        # This function is written this way to avoid deprecation warnings that
-        # are raised when BackwardsCompatibleClientV2 is accessed on the real
-        # acme.client module.
         with mock.patch('certbot._internal.client.acme_client') as mock_acme_client:
-            yield mock_acme_client.BackwardsCompatibleClientV2
+            yield mock_acme_client.ClientV2
 
     def test_no_tos(self):
         with self._patched_acme_client() as mock_client:
-            mock_client.new_account_and_tos().terms_of_service = "http://tos"
+            mock_client.new_account().terms_of_service = "http://tos"
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
-                mock_client().new_account_and_tos.side_effect = errors.Error
+                mock_client().new_account.side_effect = errors.Error
                 self.assertRaises(errors.Error, self._call)
                 self.assertIs(mock_prepare.called, False)
 
-                mock_client().new_account_and_tos.side_effect = None
+                mock_client().new_account.side_effect = None
                 self._call()
                 self.assertIs(mock_prepare.called, True)
 
@@ -133,7 +130,7 @@ class RegisterTest(test_util.ConfigTestCase):
         with self._patched_acme_client() as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
-                mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
+                mock_client().new_account.side_effect = [mx_err, mock.MagicMock()]
                 self._call()
                 self.assertEqual(mock_get_email.call_count, 1)
                 self.assertIs(mock_prepare.called, True)
@@ -146,7 +143,7 @@ class RegisterTest(test_util.ConfigTestCase):
         with self._patched_acme_client() as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
-                mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
+                mock_client().new_account.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(errors.Error, self._call)
 
     def test_needs_email(self):
@@ -176,7 +173,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 # check Certbot did not ask the user to provide an email
                 self.assertIs(mock_get_email.called, False)
                 # check Certbot created an account with no email. Contact should return empty
-                self.assertFalse(mock_client().new_account_and_tos.call_args[0][0].contact)
+                self.assertFalse(mock_client().new_account.call_args[0][0].contact)
 
     @test_util.patch_display_util()
     def test_with_eab_arguments(self, unused_mock_get_utility):
@@ -228,7 +225,7 @@ class RegisterTest(test_util.ConfigTestCase):
             )
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription") as mock_handle:
-                mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
+                mock_client().new_account.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(messages.Error, self._call)
         self.assertIs(mock_handle.called, False)
 
@@ -245,7 +242,7 @@ class ClientTestCommon(test_util.ConfigTestCase):
 
         from certbot._internal.client import Client
         with mock.patch("certbot._internal.client.acme_client") as acme:
-            self.acme_client = acme.BackwardsCompatibleClientV2
+            self.acme_client = acme.ClientV2
             self.acme = self.acme_client.return_value = mock.MagicMock()
             self.client_network = acme.ClientNetwork
             self.client = Client(

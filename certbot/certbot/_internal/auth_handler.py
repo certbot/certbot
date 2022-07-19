@@ -36,7 +36,7 @@ class AuthHandler:
         :class:`~acme.challenges.Challenge` types
     :type auth: certbot.interfaces.Authenticator
 
-    :ivar acme.client.BackwardsCompatibleClientV2 acme_client: ACME client API.
+    :ivar acme.client.ClientV2 acme_client: ACME client API.
 
     :ivar account: Client's Account
     :type account: :class:`certbot._internal.account.Account`
