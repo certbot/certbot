@@ -55,32 +55,23 @@ class PluginEntryPoint:
     # this object is mutable, don't allow it to be hashed!
     __hash__ = None  # type: ignore
 
-    def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix: bool = False) -> None:
-        self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
+    def __init__(self, entry_point: pkg_resources.EntryPoint) -> None:
+        self.name = self.entry_point_to_plugin_name(entry_point)
         self.plugin_cls: Type[interfaces.Plugin] = entry_point.load()
         self.entry_point = entry_point
         self.warning_message: Optional[str] = None
         self._initialized: Optional[interfaces.Plugin] = None
         self._prepared: Optional[Union[bool, Error]] = None
-        self._hidden = False
-        self._long_description: Optional[str] = None
 
     def check_name(self, name: Optional[str]) -> bool:
         """Check if the name refers to this plugin."""
         if name == self.name:
-            if self.warning_message:
-                logger.warning(self.warning_message)
             return True
         return False
 
     @classmethod
-    def entry_point_to_plugin_name(cls, entry_point: pkg_resources.EntryPoint,
-                                   with_prefix: bool) -> str:
+    def entry_point_to_plugin_name(cls, entry_point: pkg_resources.EntryPoint) -> str:
         """Unique plugin name for an ``entry_point``"""
-        if with_prefix:
-            if not entry_point.dist:
-                raise errors.Error(f"Entrypoint {entry_point.name} has no distribution!")
-            return entry_point.dist.key + ":" + entry_point.name
         return entry_point.name
 
     @property
@@ -96,22 +87,12 @@ class PluginEntryPoint:
     @property
     def long_description(self) -> str:
         """Long description of the plugin."""
-        if self._long_description:
-            return self._long_description
         return getattr(self.plugin_cls, "long_description", self.description)
-
-    @long_description.setter
-    def long_description(self, description: str) -> None:
-        self._long_description = description
 
     @property
     def hidden(self) -> bool:
         """Should this plugin be hidden from UI?"""
-        return self._hidden or getattr(self.plugin_cls, "hidden", False)
-
-    @hidden.setter
-    def hidden(self, hide: bool) -> None:
-        self._hidden = hide
+        return getattr(self.plugin_cls, "hidden", False)
 
     def ifaces(self, *ifaces_groups: Iterable[Type]) -> bool:
         """Does plugin implements specified interface groups?"""
@@ -238,27 +219,14 @@ class PluginsRegistry(Mapping):
             pkg_resources.iter_entry_points(
                 constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
         for entry_point in entry_points:
-            plugin_ep = cls._load_entry_point(entry_point, plugins, with_prefix=False)
-            # entry_point.dist cannot be None here, we would have blown up
-            # earlier, however, this assertion is needed for mypy.
-            assert entry_point.dist is not None
-            if entry_point.dist.key not in PREFIX_FREE_DISTRIBUTIONS:
-                prefixed_plugin_ep = cls._load_entry_point(entry_point, plugins, with_prefix=True)
-                prefixed_plugin_ep.hidden = True
-                message = (
-                    "Plugin legacy name {0} may be removed in a future version. "
-                    "Please use {1} instead.").format(prefixed_plugin_ep.name, plugin_ep.name)
-                prefixed_plugin_ep.warning_message = message
-                prefixed_plugin_ep.long_description = "(WARNING: {0}) {1}".format(
-                    message, prefixed_plugin_ep.long_description)
+            _ = cls._load_entry_point(entry_point, plugins)
 
         return cls(plugins)
 
     @classmethod
     def _load_entry_point(cls, entry_point: pkg_resources.EntryPoint,
-                          plugins: Dict[str, PluginEntryPoint],
-                          with_prefix: bool) -> PluginEntryPoint:
-        plugin_ep = PluginEntryPoint(entry_point, with_prefix)
+                          plugins: Dict[str, PluginEntryPoint]) -> PluginEntryPoint:
+        plugin_ep = PluginEntryPoint(entry_point)
         if plugin_ep.name in plugins:
             other_ep = plugins[plugin_ep.name]
             plugin1 = plugin_ep.entry_point.dist.key if plugin_ep.entry_point.dist else "unknown"
