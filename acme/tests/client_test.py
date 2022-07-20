@@ -19,23 +19,9 @@ from acme.mixins import VersionedLEACMEMixin
 import messages_test
 import test_util
 
-CERT_DER = test_util.load_vector('cert.der')
 CERT_SAN_PEM = test_util.load_vector('cert-san.pem')
-CSR_SAN_PEM = test_util.load_vector('csr-san.pem')
 CSR_MIXED_PEM = test_util.load_vector('csr-mixed.pem')
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
-KEY2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
-
-DIRECTORY_V1 = messages.Directory({
-    messages.NewRegistration:
-        'https://www.letsencrypt-demo.org/acme/new-reg',
-    messages.Revocation:
-        'https://www.letsencrypt-demo.org/acme/revoke-cert',
-    messages.NewAuthorization:
-        'https://www.letsencrypt-demo.org/acme/new-authz',
-    messages.CertificateRequest:
-        'https://www.letsencrypt-demo.org/acme/new-cert',
-})
 
 DIRECTORY_V2 = messages.Directory({
     'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
@@ -45,8 +31,8 @@ DIRECTORY_V2 = messages.Directory({
 })
 
 
-class ClientTestBase(unittest.TestCase):
-    """Base for tests in acme.client."""
+class ClientV2Test(unittest.TestCase):
+    """Tests for acme.client.ClientV2."""
 
     def setUp(self):
         self.response = mock.MagicMock(
@@ -84,13 +70,6 @@ class ClientTestBase(unittest.TestCase):
 
         # Reason code for revocation
         self.rsn = 1
-
-
-class ClientV2Test(ClientTestBase):
-    """Tests for acme.client.ClientV2."""
-
-    def setUp(self):
-        super().setUp()
 
         self.directory = DIRECTORY_V2
 
