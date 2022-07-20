@@ -457,7 +457,9 @@ class ClientV2(ClientBase):
 
     def external_account_required(self) -> bool:
         """Checks if ACME server requires External Account Binding authentication."""
-        return hasattr(self.directory, 'meta') and self.directory.meta.external_account_required
+        return hasattr(self.directory, 'meta') and \
+               hasattr(self.directory.meta, 'external_account_required') and \
+               self.directory.meta.external_account_required
 
     def _post_as_get(self, *args: Any, **kwargs: Any) -> requests.Response:
         """
@@ -482,6 +484,18 @@ class ClientV2(ClientBase):
         links = parse_header_links(response.headers['Link'])
         return [l['url'] for l in links
                 if 'rel' in l and 'url' in l and l['rel'] == relation_type]
+
+    @classmethod
+    def get_directory(cls, url: str, net: 'ClientNetwork') -> messages.Directory:
+        """
+        Retrieves the ACME directory (RFC 8555 section 7.1.1) from the ACME server.
+        :param str url: the URL where the ACME directory is available
+        :param ClientNetwork net: the ClientNetwork to use to make the request
+
+        :returns: the ACME directory object
+        :rtype: messages.Directory
+        """
+        return messages.Directory.from_json(net.get(url).json())
 
 
 class ClientNetwork:

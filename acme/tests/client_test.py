@@ -15,6 +15,7 @@ from acme import challenges
 from acme import errors
 from acme import jws as acme_jws
 from acme import messages
+from acme.client import ClientV2
 from acme.mixins import VersionedLEACMEMixin
 import messages_test
 import test_util
@@ -28,6 +29,7 @@ DIRECTORY_V2 = messages.Directory({
     'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce',
     'newOrder': 'https://www.letsencrypt-demo.org/acme/new-order',
     'revokeCert': 'https://www.letsencrypt-demo.org/acme/revoke-cert',
+    'meta': messages.Directory.Meta(),
 })
 
 
@@ -73,7 +75,6 @@ class ClientV2Test(unittest.TestCase):
 
         self.directory = DIRECTORY_V2
 
-        from acme.client import ClientV2
         self.client = ClientV2(self.directory, self.net)
 
         self.new_reg = self.new_reg.update(terms_of_service_agreed=True)
@@ -383,6 +384,12 @@ class ClientV2Test(unittest.TestCase):
         self.assertEqual(
             datetime.datetime(2015, 3, 27, 0, 0, 10),
             self.client.retry_after(response=self.response, default=10))
+
+    def test_get_directory(self):
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        self.assertEqual(
+            DIRECTORY_V2.to_partial_json(),
+            ClientV2.get_directory('https://example.com/dir', self.net).to_partial_json())
 
 
 class MockJSONDeSerializable(VersionedLEACMEMixin, jose.JSONDeSerializable):
