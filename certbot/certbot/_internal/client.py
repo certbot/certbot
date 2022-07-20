@@ -251,9 +251,9 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
         newreg = messages.NewRegistration.from_data(
             email=config.email, external_account_binding=eab)
 
-        if tos_cb and "terms_of_service" in acme.directory.meta and \
-            acme.directory.meta.terms_of_service:
-            tos_cb(acme.directory.meta.terms_of_service)
+        tos = acme.directory.meta.terms_of_service
+        if tos_cb and tos:
+            tos_cb(tos)
             newreg = newreg.update(terms_of_service_agreed=True)
 
         return acme.new_account(newreg)

@@ -69,13 +69,13 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.register_unsafely_without_email = False
         self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
+        self.tos_cb = mock.MagicMock()
         with mock.patch("zope.component.provideUtility"):
             display_obj.set_display(MagicMock())
 
     def _call(self):
         from certbot._internal.client import register
-        tos_cb = mock.MagicMock()
-        return register(self.config, self.account_storage, tos_cb)
+        return register(self.config, self.account_storage, self.tos_cb)
 
     @staticmethod
     def _public_key_mock():
@@ -114,12 +114,26 @@ class RegisterTest(test_util.ConfigTestCase):
                 self._call()
                 self.assertIs(mock_prepare.called, True)
 
+    @mock.patch('certbot._internal.eff.prepare_subscription')
+    def test_empty_meta(self, unused_mock_prepare):
+        # Test that we can handle an ACME server which does not implement the 'meta'
+        # directory object (for terms-of-service handling).
+        with self._patched_acme_client() as mock_client:
+            from acme.messages import Directory
+            mock_client().directory = Directory.from_json({})
+
+            mock_client().external_account_required.side_effect = self._false_mock
+
+            self._call()
+            self.assertIs(self.tos_cb.called, False)
+
     @test_util.patch_display_util()
     def test_it(self, unused_mock_get_utility):
         with self._patched_acme_client() as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
                 self._call()
+            self.assertIs(self.tos_cb.called, True)
 
     @mock.patch("certbot._internal.client.display_ops.get_email")
     def test_email_retry(self, mock_get_email):
