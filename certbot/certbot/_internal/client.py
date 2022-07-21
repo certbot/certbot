@@ -247,16 +247,13 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
                    " Please use --eab-kid and --eab-hmac-key.")
             raise errors.Error(msg)
 
+    tos = acme.directory.meta.terms_of_service
+    if tos_cb and tos:
+        tos_cb(tos)
+
     try:
-        newreg = messages.NewRegistration.from_data(
-            email=config.email, external_account_binding=eab)
-
-        tos = acme.directory.meta.terms_of_service
-        if tos_cb and tos:
-            tos_cb(tos)
-            newreg = newreg.update(terms_of_service_agreed=True)
-
-        return acme.new_account(newreg)
+        return acme.new_account(messages.NewRegistration.from_data(
+                email=config.email, terms_of_service_agreed=True, external_account_binding=eab))
     except messages.Error as e:
         if e.code in ("invalidEmail", "invalidContact"):
             if config.noninteractive_mode:
