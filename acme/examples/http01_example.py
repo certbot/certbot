@@ -163,7 +163,7 @@ def example_http():
     # Register account and accept TOS
 
     net = client.ClientNetwork(acc_key, user_agent=USER_AGENT)
-    directory = messages.Directory.from_json(net.get(DIRECTORY_URL).json())
+    directory = client.ClientV2.get_directory(DIRECTORY_URL, net)
     client_acme = client.ClientV2(directory, net=net)
 
     # Terms of Service URL is in client_acme.directory.meta.terms_of_service
