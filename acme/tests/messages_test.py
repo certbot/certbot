@@ -287,7 +287,7 @@ class UpdateRegistrationTest(unittest.TestCase):
     def test_empty(self):
         from acme.messages import UpdateRegistration
         jstring = '{"resource": "reg"}'
-        self.assertEqual(jstring, UpdateRegistration().json_dumps())
+        self.assertEqual('{}', UpdateRegistration().json_dumps())
         self.assertEqual(
             UpdateRegistration(), UpdateRegistration.json_loads(jstring))
 
@@ -335,7 +335,7 @@ class ChallengeBodyTest(unittest.TestCase):
             error=error)
 
         self.jobj_to = {
-            'uri': 'http://challb',
+            'url': 'http://challb',
             'status': self.status,
             'type': 'dns',
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
@@ -382,20 +382,17 @@ class AuthorizationTest(unittest.TestCase):
                           chall=challenges.DNS(
                               token=b'DGyRejmCefe7v4NfDGDKfA')),
         )
-        combinations = ((0,), (1,))
 
         from acme.messages import Authorization
         from acme.messages import Identifier
         from acme.messages import IDENTIFIER_FQDN
         identifier = Identifier(typ=IDENTIFIER_FQDN, value='example.com')
         self.authz = Authorization(
-            identifier=identifier, combinations=combinations,
-            challenges=self.challbs)
+            identifier=identifier, challenges=self.challbs)
 
         self.jobj_from = {
             'identifier': identifier.to_json(),
             'challenges': [challb.to_json() for challb in self.challbs],
-            'combinations': combinations,
         }
 
     def test_from_json(self):
@@ -405,12 +402,6 @@ class AuthorizationTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.messages import Authorization
         hash(Authorization.from_json(self.jobj_from))
-
-    def test_resolved_combinations(self):
-        self.assertEqual(self.authz.resolved_combinations, (
-            (self.challbs[0],),
-            (self.challbs[1],),
-        ))
 
 
 class AuthorizationResourceTest(unittest.TestCase):
@@ -430,12 +421,15 @@ class CertificateRequestTest(unittest.TestCase):
     def setUp(self):
         from acme.messages import CertificateRequest
         self.req = CertificateRequest(csr=CSR)
+        # 'resource' gets stripped as a non-compliant field on serialization: restore it.
+        self.req_json = self.req.to_json()
+        self.req_json['resource'] = 'new-cert'
 
     def test_json_de_serializable(self):
         self.assertIsInstance(self.req, jose.JSONDeSerializable)
         from acme.messages import CertificateRequest
         self.assertEqual(
-            self.req, CertificateRequest.from_json(self.req.to_json()))
+            self.req, CertificateRequest.from_json(self.req_json))
 
 
 class CertificateResourceTest(unittest.TestCase):
@@ -460,10 +454,13 @@ class RevocationTest(unittest.TestCase):
     def setUp(self):
         from acme.messages import Revocation
         self.rev = Revocation(certificate=CERT)
+        # 'resource' gets stripped as a non-compliant field on serialization: restore it.
+        self.rev_json = self.rev.to_json()
+        self.rev_json['resource'] = 'revoke-cert'
 
     def test_from_json_hashable(self):
         from acme.messages import Revocation
-        hash(Revocation.from_json(self.rev.to_json()))
+        hash(Revocation.from_json(self.rev_json))
 
 
 class OrderResourceTest(unittest.TestCase):
@@ -502,7 +499,6 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
         from acme.messages import NewAuthorization
 
         new_order = NewAuthorization()
-        new_order.le_acme_version = 2
 
         jobj = new_order.json_dumps(indent=2).encode()
         # RFC8555 states that JWS bodies must not have a resource field.

@@ -507,7 +507,6 @@ class ChallengeBody(ResourceBody):
     # challenge object supports either one, but should be accessed through the
     # name "uri". In Client.answer_challenge, whichever one is set will be
     # used.
-    _uri: str = jose.field('uri', omitempty=True, default=None)
     _url: str = jose.field('url', omitempty=True, default=None)
     status: Status = jose.field('status', decoder=Status.from_json,
                         omitempty=True, default=STATUS_PENDING)
@@ -536,7 +535,7 @@ class ChallengeBody(ResourceBody):
     @property
     def uri(self) -> str:
         """The URL of this challenge."""
-        return self._url or self._uri
+        return self._url
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.chall, name)
@@ -545,10 +544,10 @@ class ChallengeBody(ResourceBody):
         # When iterating over fields, use the external name 'uri' instead of
         # the internal '_uri'.
         for name in super().__iter__():
-            yield name[1:] if name == '_uri' else name
+            yield 'uri' if name == '_url' else name
 
     def _internal_name(self, name: str) -> str:
-        return '_' + name if name == 'uri' else name
+        return '_url' if name == 'uri' else name
 
 
 class ChallengeResource(Resource):
@@ -572,15 +571,12 @@ class Authorization(ResourceBody):
 
     :ivar acme.messages.Identifier identifier:
     :ivar list challenges: `list` of `.ChallengeBody`
-    :ivar tuple combinations: Challenge combinations (`tuple` of `tuple`
-        of `int`, as opposed to `list` of `list` from the spec).
     :ivar acme.messages.Status status:
     :ivar datetime.datetime expires:
 
     """
     identifier: Identifier = jose.field('identifier', decoder=Identifier.from_json, omitempty=True)
     challenges: List[ChallengeBody] = jose.field('challenges', omitempty=True)
-    combinations: Tuple[Tuple[int, ...], ...] = jose.field('combinations', omitempty=True)
 
     status: Status = jose.field('status', omitempty=True, decoder=Status.from_json)
     # TODO: 'expires' is allowed for Authorization Resources in
@@ -595,12 +591,6 @@ class Authorization(ResourceBody):
     @challenges.decoder  # type: ignore
     def challenges(value: List[Dict[str, Any]]) -> Tuple[ChallengeBody, ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
-
-    @property
-    def resolved_combinations(self) -> Tuple[Tuple[ChallengeBody, ...], ...]:
-        """Combinations with challenges instead of indices."""
-        return tuple(tuple(self.challenges[idx] for idx in combo)
-                     for combo in self.combinations)  # pylint: disable=not-an-iterable
 
 
 @Directory.register

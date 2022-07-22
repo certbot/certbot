@@ -226,15 +226,10 @@ class AuthHandler:
             logger.info("Performing the following challenges:")
         for authzr in pending_authzrs:
             authzr_challenges = authzr.body.challenges
-            if self.acme.acme_version == 1:
-                combinations = authzr.body.combinations
-            else:
-                combinations = tuple((i,) for i in range(len(authzr_challenges)))
 
             path = gen_challenge_path(
                 authzr_challenges,
-                self._get_chall_pref(authzr.body.identifier.value),
-                combinations)
+                self._get_chall_pref(authzr.body.identifier.value))
 
             achalls.extend(self._challenge_factory(authzr, path))
 
@@ -387,11 +382,8 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
 
 
 def gen_challenge_path(challbs: List[messages.ChallengeBody],
-                       preferences: List[Type[challenges.Challenge]],
-                       combinations: Tuple[Tuple[int, ...], ...]) -> Tuple[int, ...]:
+                       preferences: List[Type[challenges.Challenge]]) -> Tuple[int, ...]:
     """Generate a plan to get authority over the identity.
-
-    .. todo:: This can be possibly be rewritten to use resolved_combinations.
 
     :param tuple challbs: A tuple of challenges
         (:class:`acme.messages.Challenge`) from
@@ -402,31 +394,12 @@ def gen_challenge_path(challbs: List[messages.ChallengeBody],
     :param list preferences: List of challenge preferences for domain
         (:class:`acme.challenges.Challenge` subclasses)
 
-    :param tuple combinations: A collection of sets of challenges from
-        :class:`acme.messages.Challenge`, each of which would
-        be sufficient to prove possession of the identifier.
-
     :returns: list of indices from ``challenges``.
     :rtype: list
 
     :raises certbot.errors.AuthorizationError: If a
         path cannot be created that satisfies the CA given the preferences and
         combinations.
-
-    """
-    if combinations:
-        return _find_smart_path(challbs, preferences, combinations)
-    return _find_dumb_path(challbs, preferences)
-
-
-def _find_smart_path(challbs: List[messages.ChallengeBody],
-                     preferences: List[Type[challenges.Challenge]],
-                     combinations: Tuple[Tuple[int, ...], ...]
-                     ) -> Tuple[int, ...]:
-    """Find challenge path with server hints.
-
-    Can be called if combinations is included. Function uses a simple
-    ranking system to choose the combo with the lowest cost.
 
     """
     chall_cost = {}
@@ -440,6 +413,8 @@ def _find_smart_path(challbs: List[messages.ChallengeBody],
     best_combo: Optional[Tuple[int, ...]] = None
     # Set above completing all of the available challenges
     best_combo_cost = max_cost
+
+    combinations = tuple((i,) for i in range(len(challbs)))
 
     combo_total = 0
     for combo in combinations:
@@ -457,28 +432,6 @@ def _find_smart_path(challbs: List[messages.ChallengeBody],
         raise _report_no_chall_path(challbs)
 
     return best_combo
-
-
-def _find_dumb_path(challbs: List[messages.ChallengeBody],
-                    preferences: List[Type[challenges.Challenge]]) -> Tuple[int, ...]:
-    """Find challenge path without server hints.
-
-    Should be called if the combinations hint is not included by the
-    server. This function either returns a path containing all
-    challenges provided by the CA or raises an exception.
-
-    """
-    path = []
-    for i, challb in enumerate(challbs):
-        # supported is set to True if the challenge type is supported
-        supported = next((True for pref_c in preferences
-                          if isinstance(challb.chall, pref_c)), False)
-        if supported:
-            path.append(i)
-        else:
-            raise _report_no_chall_path(challbs)
-
-    return tuple(path)
 
 
 def _report_no_chall_path(challbs: List[messages.ChallengeBody]) -> errors.AuthorizationError:

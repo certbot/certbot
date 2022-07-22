@@ -28,213 +28,13 @@ from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_NETWORK_TIMEOUT = 45
 
-DER_CONTENT_TYPE = 'application/pkix-cert'
 
-
-class ClientBase:
-    """ACME client base object.
-
-    :ivar messages.Directory directory:
-    :ivar .ClientNetwork net: Client network.
-    :ivar int acme_version: ACME protocol version. 1 or 2.
-    """
-    def __init__(self, directory: messages.Directory, net: 'ClientNetwork',
-                 acme_version: int) -> None:
-        """Initialize.
-
-        :param .messages.Directory directory: Directory Resource
-        :param .ClientNetwork net: Client network.
-        :param int acme_version: ACME protocol version. 1 or 2.
-        """
-        self.directory = directory
-        self.net = net
-        self.acme_version = acme_version
-
-    @classmethod
-    def _regr_from_response(cls, response: requests.Response, uri: Optional[str] = None,
-                            terms_of_service: Optional[str] = None
-                            ) -> messages.RegistrationResource:
-        if 'terms-of-service' in response.links:
-            terms_of_service = response.links['terms-of-service']['url']
-
-        return messages.RegistrationResource(
-            body=messages.Registration.from_json(response.json()),
-            uri=response.headers.get('Location', uri),
-            terms_of_service=terms_of_service)
-
-    def _send_recv_regr(self, regr: messages.RegistrationResource,
-                        body: messages.Registration) -> messages.RegistrationResource:
-        response = self._post(regr.uri, body)
-
-        # TODO: Boulder returns httplib.ACCEPTED
-        #assert response.status_code == httplib.OK
-
-        # TODO: Boulder does not set Location or Link on update
-        # (c.f. acme-spec #94)
-
-        return self._regr_from_response(
-            response, uri=regr.uri,
-            terms_of_service=regr.terms_of_service)
-
-    def _post(self, *args: Any, **kwargs: Any) -> requests.Response:
-        """Wrapper around self.net.post that adds the acme_version.
-
-        """
-        kwargs.setdefault('acme_version', self.acme_version)
-        if hasattr(self.directory, 'newNonce'):
-            kwargs.setdefault('new_nonce_url', getattr(self.directory, 'newNonce'))
-        return self.net.post(*args, **kwargs)
-
-    def update_registration(self, regr: messages.RegistrationResource,
-                            update: Optional[messages.Registration] = None
-                            ) -> messages.RegistrationResource:
-        """Update registration.
-
-        :param messages.RegistrationResource regr: Registration Resource.
-        :param messages.Registration update: Updated body of the
-            resource. If not provided, body will be taken from `regr`.
-
-        :returns: Updated Registration Resource.
-        :rtype: `.RegistrationResource`
-
-        """
-        update = regr.body if update is None else update
-        body = messages.UpdateRegistration(**dict(update))
-        updated_regr = self._send_recv_regr(regr, body=body)
-        self.net.account = updated_regr
-        return updated_regr
-
-    def deactivate_registration(self, regr: messages.RegistrationResource
-                                ) -> messages.RegistrationResource:
-        """Deactivate registration.
-
-        :param messages.RegistrationResource regr: The Registration Resource
-            to be deactivated.
-
-        :returns: The Registration resource that was deactivated.
-        :rtype: `.RegistrationResource`
-
-        """
-        return self.update_registration(regr, messages.Registration.from_json(
-            {"status": "deactivated", "contact": None}))
-
-    def deactivate_authorization(self,
-                                 authzr: messages.AuthorizationResource
-                                 ) -> messages.AuthorizationResource:
-        """Deactivate authorization.
-
-        :param messages.AuthorizationResource authzr: The Authorization resource
-            to be deactivated.
-
-        :returns: The Authorization resource that was deactivated.
-        :rtype: `.AuthorizationResource`
-
-        """
-        body = messages.UpdateAuthorization(status='deactivated')
-        response = self._post(authzr.uri, body)
-        return self._authzr_from_response(response,
-            authzr.body.identifier, authzr.uri)
-
-    def _authzr_from_response(self, response: requests.Response,
-                              identifier: Optional[messages.Identifier] = None,
-                              uri: Optional[str] = None) -> messages.AuthorizationResource:
-        authzr = messages.AuthorizationResource(
-            body=messages.Authorization.from_json(response.json()),
-            uri=response.headers.get('Location', uri))
-        if identifier is not None and authzr.body.identifier != identifier:  # pylint: disable=no-member
-            raise errors.UnexpectedUpdate(authzr)
-        return authzr
-
-    def answer_challenge(self, challb: messages.ChallengeBody,
-                         response: challenges.ChallengeResponse) -> messages.ChallengeResource:
-        """Answer challenge.
-
-        :param challb: Challenge Resource body.
-        :type challb: `.ChallengeBody`
-
-        :param response: Corresponding Challenge response
-        :type response: `.challenges.ChallengeResponse`
-
-        :returns: Challenge Resource with updated body.
-        :rtype: `.ChallengeResource`
-
-        :raises .UnexpectedUpdate:
-
-        """
-        resp = self._post(challb.uri, response)
-        try:
-            authzr_uri = resp.links['up']['url']
-        except KeyError:
-            raise errors.ClientError('"up" Link header missing')
-        challr = messages.ChallengeResource(
-            authzr_uri=authzr_uri,
-            body=messages.ChallengeBody.from_json(resp.json()))
-        # TODO: check that challr.uri == resp.headers['Location']?
-        if challr.uri != challb.uri:
-            raise errors.UnexpectedUpdate(challr.uri)
-        return challr
-
-    @classmethod
-    def retry_after(cls, response: requests.Response, default: int) -> datetime.datetime:
-        """Compute next `poll` time based on response ``Retry-After`` header.
-
-        Handles integers and various datestring formats per
-        https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
-
-        :param requests.Response response: Response from `poll`.
-        :param int default: Default value (in seconds), used when
-            ``Retry-After`` header is not present or invalid.
-
-        :returns: Time point when next `poll` should be performed.
-        :rtype: `datetime.datetime`
-
-        """
-        retry_after = response.headers.get('Retry-After', str(default))
-        try:
-            seconds = int(retry_after)
-        except ValueError:
-            # The RFC 2822 parser handles all of RFC 2616's cases in modern
-            # environments (primarily HTTP 1.1+ but also py27+)
-            when = parsedate_tz(retry_after)
-            if when is not None:
-                try:
-                    tz_secs = datetime.timedelta(when[-1] if when[-1] is not None else 0)
-                    return datetime.datetime(*when[:7]) - tz_secs
-                except (ValueError, OverflowError):
-                    pass
-            seconds = default
-
-        return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
-
-    def _revoke(self, cert: jose.ComparableX509, rsn: int, url: str) -> None:
-        """Revoke certificate.
-
-        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
-            `.ComparableX509`
-
-        :param int rsn: Reason code for certificate revocation.
-
-        :param str url: ACME URL to post to
-
-        :raises .ClientError: If revocation is unsuccessful.
-
-        """
-        response = self._post(url,
-                              messages.Revocation(
-                                certificate=cert,
-                                reason=rsn))
-        if response.status_code != http_client.OK:
-            raise errors.ClientError(
-                'Successful revocation must return HTTP OK status')
-
-
-class ClientV2(ClientBase):
+class ClientV2:
     """ACME client for a v2 API.
 
     :ivar messages.Directory directory:
@@ -247,7 +47,8 @@ class ClientV2(ClientBase):
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
         """
-        super().__init__(directory=directory, net=net, acme_version=2)
+        self.directory = directory
+        self.net = net
 
     def new_account(self, new_account: messages.NewRegistration) -> messages.RegistrationResource:
         """Register.
@@ -294,8 +95,13 @@ class ClientV2(ClientBase):
 
         """
         # https://github.com/certbot/certbot/issues/6155
-        new_regr = self._get_v2_account(regr)
-        return super().update_registration(new_regr, update)
+        regr = self._get_v2_account(regr)
+
+        update = regr.body if update is None else update
+        body = messages.UpdateRegistration(**dict(update))
+        updated_regr = self._send_recv_regr(regr, body=body)
+        self.net.account = updated_regr
+        return updated_regr
 
     def _get_v2_account(self, regr: messages.RegistrationResource, update_body: bool = False
                        ) -> messages.RegistrationResource:
@@ -497,6 +303,164 @@ class ClientV2(ClientBase):
         """
         return messages.Directory.from_json(net.get(url).json())
 
+    @classmethod
+    def _regr_from_response(cls, response: requests.Response, uri: Optional[str] = None,
+                            terms_of_service: Optional[str] = None
+                            ) -> messages.RegistrationResource:
+        if 'terms-of-service' in response.links:
+            terms_of_service = response.links['terms-of-service']['url']
+
+        return messages.RegistrationResource(
+            body=messages.Registration.from_json(response.json()),
+            uri=response.headers.get('Location', uri),
+            terms_of_service=terms_of_service)
+
+    def _send_recv_regr(self, regr: messages.RegistrationResource,
+                        body: messages.Registration) -> messages.RegistrationResource:
+        response = self._post(regr.uri, body)
+
+        # TODO: Boulder returns httplib.ACCEPTED
+        #assert response.status_code == httplib.OK
+
+        # TODO: Boulder does not set Location or Link on update
+        # (c.f. acme-spec #94)
+
+        return self._regr_from_response(
+            response, uri=regr.uri,
+            terms_of_service=regr.terms_of_service)
+
+    def _post(self, *args: Any, **kwargs: Any) -> requests.Response:
+        """Wrapper around self.net.post that adds the newNonce URL.
+
+        This is used to retry the request in case of a badNonce error.
+
+        """
+        kwargs.setdefault('new_nonce_url', getattr(self.directory, 'newNonce'))
+        return self.net.post(*args, **kwargs)
+
+    def deactivate_registration(self, regr: messages.RegistrationResource
+                                ) -> messages.RegistrationResource:
+        """Deactivate registration.
+
+        :param messages.RegistrationResource regr: The Registration Resource
+            to be deactivated.
+
+        :returns: The Registration resource that was deactivated.
+        :rtype: `.RegistrationResource`
+
+        """
+        return self.update_registration(regr, messages.Registration.from_json(
+            {"status": "deactivated", "contact": None}))
+
+    def deactivate_authorization(self,
+                                 authzr: messages.AuthorizationResource
+                                 ) -> messages.AuthorizationResource:
+        """Deactivate authorization.
+
+        :param messages.AuthorizationResource authzr: The Authorization resource
+            to be deactivated.
+
+        :returns: The Authorization resource that was deactivated.
+        :rtype: `.AuthorizationResource`
+
+        """
+        body = messages.UpdateAuthorization(status='deactivated')
+        response = self._post(authzr.uri, body)
+        return self._authzr_from_response(response,
+            authzr.body.identifier, authzr.uri)
+
+    def _authzr_from_response(self, response: requests.Response,
+                              identifier: Optional[messages.Identifier] = None,
+                              uri: Optional[str] = None) -> messages.AuthorizationResource:
+        authzr = messages.AuthorizationResource(
+            body=messages.Authorization.from_json(response.json()),
+            uri=response.headers.get('Location', uri))
+        if identifier is not None and authzr.body.identifier != identifier:  # pylint: disable=no-member
+            raise errors.UnexpectedUpdate(authzr)
+        return authzr
+
+    def answer_challenge(self, challb: messages.ChallengeBody,
+                         response: challenges.ChallengeResponse) -> messages.ChallengeResource:
+        """Answer challenge.
+
+        :param challb: Challenge Resource body.
+        :type challb: `.ChallengeBody`
+
+        :param response: Corresponding Challenge response
+        :type response: `.challenges.ChallengeResponse`
+
+        :returns: Challenge Resource with updated body.
+        :rtype: `.ChallengeResource`
+
+        :raises .UnexpectedUpdate:
+
+        """
+        resp = self._post(challb.uri, response)
+        try:
+            authzr_uri = resp.links['up']['url']
+        except KeyError:
+            raise errors.ClientError('"up" Link header missing')
+        challr = messages.ChallengeResource(
+            authzr_uri=authzr_uri,
+            body=messages.ChallengeBody.from_json(resp.json()))
+        # TODO: check that challr.uri == resp.headers['Location']?
+        if challr.uri != challb.uri:
+            raise errors.UnexpectedUpdate(challr.uri)
+        return challr
+
+    @classmethod
+    def retry_after(cls, response: requests.Response, default: int) -> datetime.datetime:
+        """Compute next `poll` time based on response ``Retry-After`` header.
+
+        Handles integers and various datestring formats per
+        https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
+
+        :param requests.Response response: Response from `poll`.
+        :param int default: Default value (in seconds), used when
+            ``Retry-After`` header is not present or invalid.
+
+        :returns: Time point when next `poll` should be performed.
+        :rtype: `datetime.datetime`
+
+        """
+        retry_after = response.headers.get('Retry-After', str(default))
+        try:
+            seconds = int(retry_after)
+        except ValueError:
+            # The RFC 2822 parser handles all of RFC 2616's cases in modern
+            # environments (primarily HTTP 1.1+ but also py27+)
+            when = parsedate_tz(retry_after)
+            if when is not None:
+                try:
+                    tz_secs = datetime.timedelta(when[-1] if when[-1] is not None else 0)
+                    return datetime.datetime(*when[:7]) - tz_secs
+                except (ValueError, OverflowError):
+                    pass
+            seconds = default
+
+        return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
+
+    def _revoke(self, cert: jose.ComparableX509, rsn: int, url: str) -> None:
+        """Revoke certificate.
+
+        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
+            `.ComparableX509`
+
+        :param int rsn: Reason code for certificate revocation.
+
+        :param str url: ACME URL to post to
+
+        :raises .ClientError: If revocation is unsuccessful.
+
+        """
+        response = self._post(url,
+                              messages.Revocation(
+                                certificate=cert,
+                                reason=rsn))
+        if response.status_code != http_client.OK:
+            raise errors.ClientError(
+                'Successful revocation must return HTTP OK status')
+
 
 class ClientNetwork:
     """Wrapper around requests that signs POSTs for authentication.
@@ -512,8 +476,8 @@ class ClientNetwork:
 
     :param josepy.JWK key: Account private key
     :param messages.RegistrationResource account: Account object. Required if you are
-            planning to use .post() with acme_version=2 for anything other than
-            creating a new account; may be set later after registering.
+            planning to use .post() for anything other than creating a new account;
+            may be set later after registering.
     :param josepy.JWASignature alg: Algorithm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
@@ -549,8 +513,7 @@ class ClientNetwork:
         except Exception:  # pylint: disable=broad-except
             pass
 
-    def _wrap_in_jws(self, obj: jose.JSONDeSerializable, nonce: str, url: str,
-                     acme_version: int) -> str:
+    def _wrap_in_jws(self, obj: jose.JSONDeSerializable, nonce: str, url: str) -> str:
         """Wrap `JSONDeSerializable` object in JWS.
 
         .. todo:: Implement ``acmePath``.
@@ -561,20 +524,17 @@ class ClientNetwork:
         :rtype: str
 
         """
-        if isinstance(obj, VersionedLEACMEMixin):
-            obj.le_acme_version = acme_version
         jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
         kwargs = {
             "alg": self.alg,
             "nonce": nonce,
+            "url": url
         }
-        if acme_version == 2:
-            kwargs["url"] = url
-            # newAccount and revokeCert work without the kid
-            # newAccount must not have kid
-            if self.account is not None:
-                kwargs["kid"] = self.account["uri"]
+        # newAccount and revokeCert work without the kid
+        # newAccount must not have kid
+        if self.account is not None:
+            kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
         return jws.JWS.sign(jobj, **cast(Mapping[str, Any], kwargs)).json_dumps(indent=2)
 
@@ -688,15 +648,11 @@ class ClientNetwork:
             host, path, _err_no, err_msg = m.groups()
             raise ValueError(f"Requesting {host}{path}:{err_msg}")
 
-        # If the Content-Type is DER or an Accept header was sent in the
-        # request, the response may not be UTF-8 encoded. In this case, we
-        # don't set response.encoding and log the base64 response instead of
-        # raw bytes to keep binary data out of the logs. This code can be
-        # simplified to only check for an Accept header in the request when
-        # ACMEv1 support is dropped.
+        # If an Accept header was sent in the request, the response may not be
+        # UTF-8 encoded. In this case, we don't set response.encoding and log
+        # the base64 response instead of raw bytes to keep binary data out of the logs.
         debug_content: Union[bytes, str]
-        if (response.headers.get("Content-Type") == DER_CONTENT_TYPE or
-                "Accept" in kwargs["headers"]):
+        if "Accept" in kwargs["headers"]:
             debug_content = base64.b64encode(response.content)
         else:
             # We set response.encoding so response.text knows the response is
@@ -767,10 +723,9 @@ class ClientNetwork:
             raise
 
     def _post_once(self, url: str, obj: jose.JSONDeSerializable,
-                   content_type: str = JOSE_CONTENT_TYPE, acme_version: int = 1,
-                   **kwargs: Any) -> requests.Response:
+                   content_type: str = JOSE_CONTENT_TYPE, **kwargs: Any) -> requests.Response:
         new_nonce_url = kwargs.pop('new_nonce_url', None)
-        data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url, acme_version)
+        data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
         response = self._check_response(response, content_type=content_type)

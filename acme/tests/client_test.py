@@ -16,7 +16,6 @@ from acme import errors
 from acme import jws as acme_jws
 from acme import messages
 from acme.client import ClientV2
-from acme.mixins import VersionedLEACMEMixin
 import messages_test
 import test_util
 
@@ -66,7 +65,7 @@ class ClientV2Test(unittest.TestCase):
         self.authz = messages.Authorization(
             identifier=messages.Identifier(
                 typ=messages.IDENTIFIER_FQDN, value='example.com'),
-            challenges=(challb,), combinations=None)
+            challenges=(challb,))
         self.authzr = messages.AuthorizationResource(
             body=self.authz, uri=authzr_uri)
 
@@ -271,9 +270,9 @@ class ClientV2Test(unittest.TestCase):
         deadline = datetime.datetime(9999, 9, 9)
         resp = self.client.finalize_order(self.orderr, deadline, fetch_alternative_chains=True)
         self.net.post.assert_any_call('https://example.com/acme/cert/1',
-                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+                                      mock.ANY, new_nonce_url=mock.ANY)
         self.net.post.assert_any_call('https://example.com/acme/cert/2',
-                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+                                      mock.ANY, new_nonce_url=mock.ANY)
         self.assertEqual(resp, updated_orderr)
 
         del self.response.headers['Link']
@@ -283,8 +282,7 @@ class ClientV2Test(unittest.TestCase):
     def test_revoke(self):
         self.client.revoke(messages_test.CERT, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory["revokeCert"], mock.ANY, acme_version=2,
-            new_nonce_url=DIRECTORY_V2['newNonce'])
+            self.directory["revokeCert"], mock.ANY, new_nonce_url=DIRECTORY_V2['newNonce'])
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
@@ -335,7 +333,7 @@ class ClientV2Test(unittest.TestCase):
             self.client.poll(self.authzr2)  # pylint: disable=protected-access
 
             self.client.net.post.assert_called_once_with(
-                self.authzr2.uri, None, acme_version=2,
+                self.authzr2.uri, None,
                 new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
             self.client.net.get.assert_not_called()
 
@@ -392,7 +390,7 @@ class ClientV2Test(unittest.TestCase):
             ClientV2.get_directory('https://example.com/dir', self.net).to_partial_json())
 
 
-class MockJSONDeSerializable(VersionedLEACMEMixin, jose.JSONDeSerializable):
+class MockJSONDeSerializable(jose.JSONDeSerializable):
     # pylint: disable=missing-docstring
     def __init__(self, value):
         self.value = value
@@ -427,8 +425,7 @@ class ClientNetworkTest(unittest.TestCase):
     def test_wrap_in_jws(self):
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url",
-            acme_version=1)
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
         jws = acme_jws.JWS.json_loads(jws_dump)
         self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
@@ -437,8 +434,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.net.account = {'uri': 'acct-uri'}
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url",
-            acme_version=2)
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
         jws = acme_jws.JWS.json_loads(jws_dump)
         self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
@@ -544,14 +540,13 @@ class ClientNetworkTest(unittest.TestCase):
         self.net.session = mock.MagicMock()
         self.net.session.request.return_value = mock.MagicMock(
             ok=True, status_code=http_client.OK,
-            headers={"Content-Type": "application/pkix-cert"},
             content=b"hi")
         # pylint: disable=protected-access
         self.net._send_request('HEAD', 'http://example.com/', 'foo',
-          timeout=mock.ANY, bar='baz')
+          timeout=mock.ANY, bar='baz', headers={'Accept': 'application/pkix-cert'})
         mock_logger.debug.assert_called_with(
             'Received response:\nHTTP %d\n%s\n\n%s', 200,
-            'Content-Type: application/pkix-cert', b'aGk=')
+            '', b'aGk=')
 
     def test_send_request_post(self):
         self.net.session = mock.MagicMock()
@@ -724,13 +719,13 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
             'uri', self.obj, content_type=self.content_type))
         self.assertTrue(self.response.checked)
         self.net._wrap_in_jws.assert_called_once_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri")
 
         self.available_nonces = []
         self.assertRaises(errors.MissingNonce, self.net.post,
                           'uri', self.obj, content_type=self.content_type)
         self.net._wrap_in_jws.assert_called_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri")
 
     def test_post_wrong_initial_nonce(self):  # HEAD
         self.available_nonces = [b'f', jose.b64encode(b'good')]
@@ -788,14 +783,13 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         check_response = mock.MagicMock()
         self.net._check_response = check_response
         self.assertRaises(errors.ClientError, self.net.post, 'uri',
-                          self.obj, content_type=self.content_type, acme_version=2,
+                          self.obj, content_type=self.content_type,
                           new_nonce_url='new_nonce_uri')
         self.assertEqual(check_response.call_count, 1)
 
     def test_new_nonce_uri_removed(self):
         self.content_type = None
-        self.net.post('uri', self.obj, content_type=None,
-            acme_version=2, new_nonce_url='new_nonce_uri')
+        self.net.post('uri', self.obj, content_type=None, new_nonce_url='new_nonce_uri')
 
 
 class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
