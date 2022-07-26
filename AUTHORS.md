@@ -215,6 +215,7 @@ Authors
 * [Pierre Jaury](https://github.com/kaiyou)
 * [Piotr Kasprzyk](https://github.com/kwadrat)
 * [Prayag Verma](https://github.com/pra85)
+* [Preston Locke](https://github.com/Preston12321)
 * [Rasesh Patel](https://github.com/raspat1)
 * [Reinaldo de Souza Jr](https://github.com/juniorz)
 * [Remi Rampin](https://github.com/remram44)
