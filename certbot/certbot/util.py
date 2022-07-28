@@ -17,7 +17,6 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
-from typing import TYPE_CHECKING
 from typing import Union
 import warnings
 
@@ -32,9 +31,6 @@ from certbot.compat import os
 _USE_DISTRO = sys.platform.startswith('linux')
 if _USE_DISTRO:
     import distro
-
-if TYPE_CHECKING:
-    import distutils.version
 
 logger = logging.getLogger(__name__)
 
