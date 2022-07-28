@@ -8,6 +8,7 @@ except ImportError: # pragma: no cover
     from unittest import mock # type: ignore
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
+import warnings
 
 from certbot.compat import os
 from certbot.plugins import dns_test_common
@@ -36,7 +37,9 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         self.config = mock.MagicMock(cloudxns_credentials=path,
                                      cloudxns_propagation_seconds=0)  # don't wait during tests
 
-        self.auth = Authenticator(self.config, "cloudxns")
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.auth = Authenticator(self.config, "cloudxns")
 
         self.mock_client = mock.MagicMock()
         # _get_cloudxns_client | pylint: disable=protected-access
