@@ -96,7 +96,7 @@ stages:
               # which was created by following the instructions at
               # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#sep-docreg.
               # The name given to this service account must match the value
-              # given to containerRegistry below.  The authentication used when
+              # given to containerRegistry below. The authentication used when
               # creating this service account was a personal access token
               # rather than a password to bypass 2FA. When Brad set this up,
               # Azure Pipelines failed to verify the credentials with an error
@@ -104,7 +104,7 @@ stages:
               # access token", but after saving them without verification, the
               # access token worked when the pipeline actually ran. "Grant
               # access to all pipelines" should also be checked on the service
-              # account.  The access token can be deleted on Docker Hub if
+              # account. The access token can be deleted on Docker Hub if
               # these credentials need to be revoked.
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
