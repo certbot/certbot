@@ -14,6 +14,7 @@ from typing import Type
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
+import warnings
 
 import josepy as jose
 
@@ -573,7 +574,7 @@ class Authorization(ResourceBody):
     :ivar acme.messages.Identifier identifier:
     :ivar list challenges: `list` of `.ChallengeBody`
     :ivar tuple combinations: Challenge combinations (`tuple` of `tuple`
-        of `int`, as opposed to `list` of `list` from the spec).
+        of `int`, as opposed to `list` of `list` from the spec). (deprecated since 1.30.0)
     :ivar acme.messages.Status status:
     :ivar datetime.datetime expires:
 
@@ -598,7 +599,11 @@ class Authorization(ResourceBody):
 
     @property
     def resolved_combinations(self) -> Tuple[Tuple[ChallengeBody, ...], ...]:
-        """Combinations with challenges instead of indices."""
+        """Combinations with challenges instead of indices.
+
+        .. deprecated: 1.30.0
+
+        """
         return tuple(tuple(self.challenges[idx] for idx in combo)
                      for combo in self.combinations)  # pylint: disable=not-an-iterable
 

@@ -1,6 +1,10 @@
 """Useful mixins for Challenge and Resource objects"""
 from typing import Any
 from typing import Dict
+import warnings
+
+warnings.warn(f'The module {__name__} is deprecated and will be removed in a future release',
+              DeprecationWarning)
 
 
 class VersionedLEACMEMixin:

@@ -51,6 +51,9 @@ DER_CONTENT_TYPE = 'application/pkix-cert'
 class ClientBase:
     """ACME client base object.
 
+    .. deprecated:: 1.30.0
+       Use `ClientV2` instead.
+
     :ivar messages.Directory directory:
     :ivar .ClientNetwork net: Client network.
     :ivar int acme_version: ACME protocol version. 1 or 2.
@@ -1303,7 +1306,7 @@ class _ClientDeprecationModule:
         self.__dict__['_module'] = module
 
     def __getattr__(self, attr: str) -> Any:
-        if attr in ('Client', 'BackwardsCompatibleClientV2'):
+        if attr in ('Client', 'ClientBase', 'BackwardsCompatibleClientV2'):
             warnings.warn('The {0} attribute in acme.client is deprecated '
                           'and will be removed soon.'.format(attr),
                           DeprecationWarning, stacklevel=2)

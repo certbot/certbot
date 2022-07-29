@@ -10,7 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* `acme.client.ClientBase`, `acme.messages.Authorization.resolved_combinations`
+  `acme.messages.Authorization.combinations` and `acme.mixins` are deprecated and
+  will be removed in a future release.
 
 ### Fixed
 
