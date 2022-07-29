@@ -46,10 +46,12 @@ class TLSServer(socketserver.TCPServer):
             method=self.method))
 
     def _cert_selection(self, connection: SSL.Connection
-                        ) -> Tuple[crypto.PKey, crypto.X509]:  # pragma: no cover
+                        ) -> Optional[Tuple[crypto.PKey, crypto.X509]]:  # pragma: no cover
         """Callback selecting certificate for connection."""
         server_name = connection.get_servername()
-        return self.certs.get(server_name, None)
+        if server_name:
+            return self.certs.get(server_name, None)
+        return None
 
     def server_bind(self) -> None:
         self._wrap_sock()
@@ -151,7 +153,7 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
 
     def __init__(self, server_address: Tuple[str, int],
                  certs: List[Tuple[crypto.PKey, crypto.X509]],
-                 challenge_certs: Mapping[str, Tuple[crypto.PKey, crypto.X509]],
+                 challenge_certs: Mapping[bytes, Tuple[crypto.PKey, crypto.X509]],
                  ipv6: bool = False) -> None:
         # We don't need to implement a request handler here because the work
         # (including logging) is being done by wrapped socket set up in the
@@ -161,7 +163,8 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
             ipv6=ipv6)
         self.challenge_certs = challenge_certs
 
-    def _cert_selection(self, connection: SSL.Connection) -> Tuple[crypto.PKey, crypto.X509]:
+    def _cert_selection(self, connection: SSL.Connection) -> Optional[Tuple[crypto.PKey,
+                                                                            crypto.X509]]:
         # TODO: We would like to serve challenge cert only if asked for it via
         # ALPN. To do this, we need to retrieve the list of protos from client
         # hello, but this is currently impossible with openssl [0], and ALPN
@@ -170,8 +173,10 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
         # handshake in alpn_selection() if ALPN protos are not what we expect.
         # [0] https://github.com/openssl/openssl/issues/4952
         server_name = connection.get_servername()
-        logger.debug("Serving challenge cert for server name %s", server_name)
-        return self.challenge_certs[server_name]
+        if server_name:
+            logger.debug("Serving challenge cert for server name %s", server_name)
+            return self.challenge_certs[server_name]
+        return None # pragma: no cover
 
     def _alpn_selection(self, _connection: SSL.Connection, alpn_protos: List[bytes]) -> bytes:
         """Callback to select alpn protocol."""
