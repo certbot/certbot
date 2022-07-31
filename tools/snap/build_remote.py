@@ -253,6 +253,12 @@ def main():
             process.join(args.timeout)
 
             if process.is_alive():
+                for target in targets:
+                    if target == 'certbot':
+                        workspace = CERTBOT_DIR
+                    else:
+                        workspace = join(CERTBOT_DIR, target)
+                    _dump_failed_build_logs(target, archs, status, workspace)
                 raise ValueError(f"Timeout out reached ({args.timeout} seconds) during the build!")
 
             build_success = True

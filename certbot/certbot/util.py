@@ -34,7 +34,7 @@ if _USE_DISTRO:
     import distro
 
 if TYPE_CHECKING:
-    import distutils.version
+    import distutils.version # pylint: disable=deprecated-module
 
 logger = logging.getLogger(__name__)
 
@@ -624,7 +624,7 @@ def get_strict_version(normalized: str) -> "distutils.version.StrictVersion":
                   "removed in a future release.", DeprecationWarning)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
-        import distutils.version
+        import distutils.version # pylint: disable=deprecated-module
         # strict version ending with "a" and a number designates a pre-release
         return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
 

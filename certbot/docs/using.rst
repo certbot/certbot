@@ -14,7 +14,7 @@ obtaining, renewing, or revoking certificates. The most important
 and commonly-used commands will be discussed throughout this
 document; an exhaustive list also appears near the end of the document.
 
-The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used a now-deprecated installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
+The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
 
 .. _plugins:
 
@@ -316,6 +316,7 @@ dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
 dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 dns-azure_         Y    N    DNS Authentication using Azure DNS
 dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
+dns-yandexcloud_   Y    N    DNS Authentication using Yandex Cloud DNS
 njalla_            Y    N    DNS Authentication for njalla
 DuckDNS_           Y    N    DNS Authentication for DuckDNS
 Porkbun_           Y    N    DNS Authentication for Porkbun
@@ -336,6 +337,7 @@ Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
 .. _dns-azure: https://github.com/binkhq/certbot-dns-azure
 .. _dns-godaddy: https://github.com/miigotu/certbot-dns-godaddy
+.. _dns-yandexcloud: https://github.com/PykupeJIbc/certbot-dns-yandexcloud
 .. _njalla: https://github.com/chaptergy/certbot-dns-njalla
 .. _DuckDNS: https://github.com/infinityofspace/certbot_dns_duckdns
 .. _Porkbun: https://github.com/infinityofspace/certbot_dns_porkbun
@@ -581,6 +583,11 @@ If you need to delete a certificate, use the ``delete`` subcommand.
 
 .. note:: Read this and the `Safely deleting certificates`_ sections carefully. This is an irreversible operation and must
           be done with care.
+
+Certbot does not automatically revoke a certificate before deleting it. If you're no longer using a certificate and don't
+plan to use it anywhere else, you may want to follow the instructions in `Revoking certificates`_ instead. Generally, there's
+no need to revoke a certificate if its private key has not been compromised, but you may still receive expiration emails
+from Let's Encrypt unless you revoke.
 
 .. note:: Do not manually delete certificate files from inside ``/etc/letsencrypt/``. Always use the ``delete`` subcommand.
 
@@ -1101,6 +1108,12 @@ different CA by providing ``--server`` on the command line or in a
 ACME directory. For example, if you would like to use Let's Encrypt's
 staging server, you would add ``--server
 https://acme-staging-v02.api.letsencrypt.org/directory`` to the command line.
+
+If Certbot does not trust the SSL certificate used by the ACME server, you
+can use the `REQUESTS_CA_BUNDLE
+<https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification>`_
+environment variable to override the root certificates trusted by Certbot. Certbot
+uses the ``requests`` library, which does not use the operating system trusted root store.
 
 If you use ``--server`` to specify an ACME CA that implements the standardized
 version of the spec, you may be able to obtain a certificate for a

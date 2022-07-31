@@ -11,6 +11,7 @@ from typing import Callable
 from typing import List
 from typing import Mapping
 from typing import Optional
+from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -39,7 +40,9 @@ class _DefaultCertSelection:
 
     def __call__(self, connection: SSL.Connection) -> Optional[Tuple[crypto.PKey, crypto.X509]]:
         server_name = connection.get_servername()
-        return self.certs.get(server_name, None)
+        if server_name:
+            return self.certs.get(server_name, None)
+        return None # pragma: no cover
 
 
 class SSLSocket:  # pylint: disable=too-few-public-methods
@@ -60,7 +63,8 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
                  method: int = _DEFAULT_SSL_METHOD,
                  alpn_selection: Optional[Callable[[SSL.Connection, List[bytes]], bytes]] = None,
                  cert_selection: Optional[Callable[[SSL.Connection],
-                                                   Tuple[crypto.PKey, crypto.X509]]] = None
+                                                   Optional[Tuple[crypto.PKey,
+                                                                  crypto.X509]]]] = None
                  ) -> None:
         self.sock = sock
         self.alpn_selection = alpn_selection
@@ -71,8 +75,8 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
             raise ValueError("Both cert_selection and certs specified.")
         actual_cert_selection: Union[_DefaultCertSelection,
                                      Optional[Callable[[SSL.Connection],
-                                                       Tuple[crypto.PKey,
-                                                             crypto.X509]]]] = cert_selection
+                                                       Optional[Tuple[crypto.PKey,
+                                                                crypto.X509]]]]] = cert_selection
         if actual_cert_selection is None:
             actual_cert_selection = _DefaultCertSelection(certs if certs else {})
         self.cert_selection = actual_cert_selection
@@ -157,7 +161,7 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
 
 def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # pylint: disable=too-many-arguments
               method: int = _DEFAULT_SSL_METHOD, source_address: Tuple[str, int] = ('', 0),
-              alpn_protocols: Optional[List[str]] = None) -> crypto.X509:
+              alpn_protocols: Optional[Sequence[bytes]] = None) -> crypto.X509:
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the
@@ -170,7 +174,7 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
         of source interface). See `socket.creation_connection` for more
         info. Available only in Python 2.7+.
     :param alpn_protocols: Protocols to request using ALPN.
-    :type alpn_protocols: `list` of `str`
+    :type alpn_protocols: `Sequence` of `bytes`
 
     :raises acme.errors.Error: In case of any problems.
 
@@ -207,7 +211,9 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
             client_ssl.shutdown()
         except SSL.Error as error:
             raise errors.Error(error)
-    return client_ssl.get_peer_certificate()
+    cert = client_ssl.get_peer_certificate()
+    assert cert # Appease mypy. We would have crashed out by now if there was no certificate.
+    return cert
 
 
 def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]]] = None,
@@ -258,7 +264,8 @@ def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]
             value=b"DER:30:03:02:01:05"))
     csr.add_extensions(extensions)
     csr.set_pubkey(private_key)
-    csr.set_version(2)
+    # RFC 2986 Section 4.1 only defines version 0
+    csr.set_version(0)
     csr.sign(private_key, 'sha256')
     return crypto.dump_certificate_request(
         crypto.FILETYPE_PEM, csr)
