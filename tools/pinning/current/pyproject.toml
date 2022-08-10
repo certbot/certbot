@@ -15,7 +15,6 @@ python = "^3.7"
 certbot-ci = {path = "../../../certbot-ci"}
 certbot-compatibility-test = {path = "../../../certbot-compatibility-test"}
 certbot-dns-cloudflare = {path = "../../../certbot-dns-cloudflare", extras = ["docs"]}
-certbot-dns-cloudxns = {path = "../../../certbot-dns-cloudxns", extras = ["docs"]}
 certbot-dns-digitalocean = {path = "../../../certbot-dns-digitalocean", extras = ["docs"]}
 certbot-dns-dnsimple = {path = "../../../certbot-dns-dnsimple", extras = ["docs"]}
 certbot-dns-dnsmadeeasy = {path = "../../../certbot-dns-dnsmadeeasy", extras = ["docs"]}

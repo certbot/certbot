@@ -31,7 +31,6 @@ PREFIX_FREE_DISTRIBUTIONS = [
     "certbot",
     "certbot-apache",
     "certbot-dns-cloudflare",
-    "certbot-dns-cloudxns",
     "certbot-dns-digitalocean",
     "certbot-dns-dnsimple",
     "certbot-dns-dnsmadeeasy",

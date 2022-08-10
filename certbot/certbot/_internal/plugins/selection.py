@@ -168,7 +168,7 @@ def choose_plugin(prepared: List[disco.PluginEntryPoint],
             return None
 
 
-noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-cloudxns",
+noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare",
                         "dns-digitalocean", "dns-dnsimple", "dns-dnsmadeeasy", "dns-gehirn",
                         "dns-google", "dns-linode", "dns-luadns", "dns-nsone", "dns-ovh",
                         "dns-rfc2136", "dns-route53", "dns-sakuracloud"]
@@ -316,8 +316,6 @@ def cli_plugin_requests(config: configuration.NamespaceConfig
         req_auth = set_configurator(req_auth, "manual")
     if config.dns_cloudflare:
         req_auth = set_configurator(req_auth, "dns-cloudflare")
-    if config.dns_cloudxns:
-        req_auth = set_configurator(req_auth, "dns-cloudxns")
     if config.dns_digitalocean:
         req_auth = set_configurator(req_auth, "dns-digitalocean")
     if config.dns_dnsimple:
