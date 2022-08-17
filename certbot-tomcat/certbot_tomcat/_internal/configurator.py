@@ -4,6 +4,7 @@ import logging
 import platform
 import subprocess
 import time
+import glob
 
 from acme import challenges
 from certbot import interfaces
@@ -213,7 +214,56 @@ class TomcatConfigurator(common.Installer):
         :raises .MisconfigurationError: when the config is not in a usable state
 
         """
+    def get_service_status(self,serviceName) :
+        """check service status
+        Currently accomodated for windows based service
+        Returns Status for service
+        """
+        status = ""
+        line = ["sc",'query', serviceName]
+        p = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,universal_newlines=True, env=None,shell = True)
+        out, err = p.communicate()      
+        if p.returncode == 0: 
+            status_line_data=out.split("\n")
+            for i in status_line_data:
+                if 'STATE' in i: 
+                    logger.debug(i) 
+                    status = i
+        else :
+            logger.debug("command returncode:"+str(p.returncode))
+        return status
 
+    def check_and_wait_service(self,serviceName, expectedstatus) :
+        """check and wait service status until it gets expectedstatus
+        or timeout with 50 seconds, whichever occurs first
+
+        Currently accomodated for windows based service
+        Returns Ststus for success scenario, else empty on timeout
+        """
+        validstatus = 0
+        status = ""
+        count = 25
+        while validstatus == 0 and count != 0:     
+            logger.debug("Checking tomcat service status..")  
+            time.sleep(2) 
+            count = count - 1                   
+            line = ["sc",'query', serviceName]
+            p = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,universal_newlines=True, env=None,shell = True)
+            out, err = p.communicate()      
+            if p.returncode == 0: 
+                status_line_data=out.split("\n")
+                for i in status_line_data:
+                    if 'STATE' in i: 
+                        logger.debug(i)          
+                    if expectedstatus in str(i):
+                            validstatus = 1
+                            status = expectedstatus
+            else :
+                logger.debug("command returncode:"+str(p.returncode))
+                break
+        return status
+
+    
     def restart(self):  # type: ignore
         """Restart or refresh the server content.
 
@@ -223,12 +273,18 @@ class TomcatConfigurator(common.Installer):
         print("*********** ReStart Initiated ********* ")
         try:
             if self.conf("service-name"):
-                logger.debug("Restarting tomcat as a service")
+                logger.debug("Restarting tomcat as a service..")
                 if platform.system() in ('Windows'):
-                    value = subprocess.call('''sc stop ''' + self.conf("service-name"), shell=True)
-                    time.sleep(10)
-                    value = subprocess.call('''sc start ''' + self.conf("service-name"), shell=True)
-
+                    service_name = self.conf("service-name")
+                    logger.debug("Service Name: "+service_name)
+                    logger.debug("Checking initial Service status ")
+                    status = self.get_service_status(service_name)
+                    if "RUNNING" in status:
+                        logger.debug("Stopping tomcat service ")
+                        value = subprocess.call('''sc stop ''' + service_name, shell=True)
+                    self.check_and_wait_service(service_name, "STOPPED")
+                    logger.debug("Starting tomcat service ")
+                    value = subprocess.call('''sc start ''' + service_name, shell=True)
                 else:
                     value = subprocess.call('''service ''' + self.conf("service-name")+''' stop ''', shell=True)
                     time.sleep(10)
@@ -240,12 +296,12 @@ class TomcatConfigurator(common.Installer):
                 logger.debug("Restarting tomcat as a process")
                 if platform.system() in ('Windows'):
                     value = subprocess.call(self.conf("ctl"), shell=True)
-                    time.sleep(5)
+                    time.sleep(10)
                     with open(os.devnull, 'w')  as FNULL:
                         value = subprocess.call(self.conf("ctl").replace("shutdown.bat", "startup.bat"),stdout=FNULL, stderr=FNULL, shell=True)
                 else:
                     value = subprocess.call(self.conf("ctl"), shell=True)
-                    time.sleep(5)
+                    time.sleep(10)
                     value = subprocess.call(self.conf("ctl").replace("shutdown.sh", "startup.sh"), shell=True)
         except (OSError, ValueError):
             raise errors.MisconfigurationError("Tomcat restart failed")

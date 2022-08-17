@@ -8,6 +8,7 @@ import logging
 import select
 import subprocess
 import sys
+import glob
 from typing import Optional
 from typing import Tuple
 
@@ -125,15 +126,35 @@ def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -
     :returns: `tuple` (`str` stderr, `str` stdout)
     """
     logger.info("Running %s command: %s", cmd_name, shell_cmd)
+    logger.info("POSIX_MODE: %s", str(POSIX_MODE) )
+    logger.info("env: %s", env)
+    currentpath = os.getcwd()
+    logger.info("current path: %s",currentpath)
 
     if POSIX_MODE:
         cmd = subprocess.Popen(shell_cmd, shell=True, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, universal_newlines=True,
                                env=env)
     else:
-        line = ['powershell.exe', '-Command', shell_cmd]
+        if shell_cmd.lower().endswith(('.cmd', '.bat', '.ps1', '.py')) and shell_cmd.__eq__(os.path.basename(shell_cmd))  :
+            valid_path="acmeclient\\Python\\"
+            searchPattern="/**/"+shell_cmd
+            file_paths = glob.glob(currentpath + searchPattern, recursive = True)
+            if file_paths:
+                logger.info("Got file list")
+                logger.info("File paths: %s", file_paths)
+                tempDist = [x for x in file_paths if x.endswith(valid_path+shell_cmd)]
+                if tempDist:    
+                    logger.info(tempDist)
+                    pathToProcess='"'+os.path.normpath(tempDist[0])+'"'
+                    logger.info(pathToProcess)
+                    shell_cmd=pathToProcess
+            else:
+                logger.info("file list is empty")
+
+        line = ["%SystemRoot%\system32\WindowsPowerShell\\v1.0\powershell.exe", '-Command', shell_cmd]
         cmd = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               universal_newlines=True, env=env)
+                               universal_newlines=True, env=env,shell = True)
 
     # universal_newlines causes Popen.communicate()
     # to return str objects instead of bytes in Python 3
