@@ -123,7 +123,7 @@ jobs:
     strategy:
       matrix:
         ${{ each snap in parameters.snaps }}
-          ${{ format('{0}-amd64', snap }}:
+          ${{ format('{0}-amd64:', snap }}
             SNAP_ARCH: amd64
           # Do not run the heavy non-amd64 builds for test branches
           ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
