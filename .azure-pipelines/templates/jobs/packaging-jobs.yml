@@ -154,8 +154,8 @@ jobs:
             mkdir -p ~/.local/share/snapcraft/provider/launchpad
             cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
             echo $(parameters.snaps)
-            python3 tools/snap/build_remote.py $(snapName) --archs ${SNAP_ARCH} --timeout $(snapBuildTimeout)
-          displayName: Build $(snapName)
+            python3 tools/snap/build_remote.py ${{ snapName }} --archs ${SNAP_ARCH} --timeout $(snapBuildTimeout)
+          displayName: Build ${{ snapName }}
       - script: |
           set -e
           mv *.snap $(Build.ArtifactStagingDirectory)
