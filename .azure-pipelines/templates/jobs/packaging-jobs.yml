@@ -118,7 +118,7 @@ jobs:
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
   - ${{ each snapName in parameters.snaps }}:
-    - job: snaps_build_${{ snapName }}
+    - job: snaps_build_${{ replace(snapName, '-', '_') }}
       pool:
         vmImage: ubuntu-18.04
       strategy:
