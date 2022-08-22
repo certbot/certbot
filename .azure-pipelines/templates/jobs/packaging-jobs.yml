@@ -115,18 +115,21 @@ jobs:
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
   - job: snaps_build
+    parameters:
+      snaps: ["certbot", "certbot-dns-cloudflare"]
     pool:
       vmImage: ubuntu-18.04
     strategy:
       matrix:
-        amd64:
-          SNAP_ARCH: amd64
-        # Do not run the heavy non-amd64 builds for test branches
-        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-          armhf:
-            SNAP_ARCH: armhf
-          arm64:
-            SNAP_ARCH: arm64
+        ${{ each snap in parameters.snaps }}
+          ${{ format('{0}-amd64', snap }}:
+            SNAP_ARCH: amd64
+          # Do not run the heavy non-amd64 builds for test branches
+          ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
+            ${{ format('{0}-armhf', snap }}:
+              SNAP_ARCH: armhf
+            ${{ format('{0}-arm64', snap }}:
+              SNAP_ARCH: arm64
     timeoutInMinutes: 0
     steps:
       - script: |
