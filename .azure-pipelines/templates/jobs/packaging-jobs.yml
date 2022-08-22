@@ -146,15 +146,16 @@ jobs:
         name: credentials
         inputs:
           secureFile: launchpad-credentials
-      - ${{ each snap in parameters.snaps }}:
+      - ${{ each snapName in parameters.snaps }}:
         - script: |
             set -e
             git config --global user.email "$(Build.RequestedForEmail)"
             git config --global user.name "$(Build.RequestedFor)"
             mkdir -p ~/.local/share/snapcraft/provider/launchpad
             cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
-            python3 tools/snap/build_remote.py $(snap) --archs ${SNAP_ARCH} --timeout $(snapBuildTimeout)
-          displayName: Build snaps
+            echo $(parameters.snaps)
+            python3 tools/snap/build_remote.py $(snapName) --archs ${SNAP_ARCH} --timeout $(snapBuildTimeout)
+          displayName: Build $(snapName)
       - script: |
           set -e
           mv *.snap $(Build.ArtifactStagingDirectory)
