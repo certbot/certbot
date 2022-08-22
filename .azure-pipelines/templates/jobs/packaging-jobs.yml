@@ -117,55 +117,54 @@ jobs:
           set PATH=%ProgramFiles%\Certbot\bin;%PATH%
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
-  - job: snaps_build
-    pool:
-      vmImage: ubuntu-18.04
-    strategy:
-      matrix:
-          amd64:
-            SNAP_ARCH: amd64
-          # Do not run the heavy non-amd64 builds for test branches
-          ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-            armhf:
-              SNAP_ARCH: armhf
-            arm64:
-              SNAP_ARCH: arm64
-    timeoutInMinutes: 0
-    steps:
-      - script: |
-          set -e
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends snapd
-          sudo snap install --classic snapcraft
-        displayName: Install dependencies
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: 3.8
-          addToPath: true
-      - task: DownloadSecureFile@1
-        name: credentials
-        inputs:
-          secureFile: launchpad-credentials
-      - ${{ each snapName in parameters.snaps }}:
+  - ${{ each snapName in parameters.snaps }}:
+    - job: snaps_build ${{ snapName }}
+      pool:
+        vmImage: ubuntu-18.04
+      strategy:
+        matrix:
+            amd64:
+              SNAP_ARCH: amd64
+            # Do not run the heavy non-amd64 builds for test branches
+            ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
+              armhf:
+                SNAP_ARCH: armhf
+              arm64:
+                SNAP_ARCH: arm64
+      timeoutInMinutes: 0
+      steps:
+        - script: |
+            set -e
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends snapd
+            sudo snap install --classic snapcraft
+          displayName: Install dependencies
+        - task: UsePythonVersion@0
+          inputs:
+            versionSpec: 3.8
+            addToPath: true
+        - task: DownloadSecureFile@1
+          name: credentials
+          inputs:
+            secureFile: launchpad-credentials
         - script: |
             set -e
             git config --global user.email "$(Build.RequestedForEmail)"
             git config --global user.name "$(Build.RequestedFor)"
             mkdir -p ~/.local/share/snapcraft/provider/launchpad
             cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
-            echo $(parameters.snaps)
             python3 tools/snap/build_remote.py ${{ snapName }} --archs ${SNAP_ARCH} --timeout $(snapBuildTimeout)
           displayName: Build ${{ snapName }}
-      - script: |
-          set -e
-          mv *.snap $(Build.ArtifactStagingDirectory)
-          mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
-        displayName: Prepare artifacts
-      - task: PublishPipelineArtifact@1
-        inputs:
-          path: $(Build.ArtifactStagingDirectory)
-          artifact: snaps_$(SNAP_ARCH)
-        displayName: Store snaps artifacts
+        - script: |
+            set -e
+            mv *.snap $(Build.ArtifactStagingDirectory)
+            mv certbot-dns-*/*.snap $(Build.ArtifactStagingDirectory)
+          displayName: Prepare artifacts
+        - task: PublishPipelineArtifact@1
+          inputs:
+            path: $(Build.ArtifactStagingDirectory)
+            artifact: snaps_$(SNAP_ARCH)
+          displayName: Store snaps artifacts
   - job: snap_run
     dependsOn: snaps_build
     pool:
