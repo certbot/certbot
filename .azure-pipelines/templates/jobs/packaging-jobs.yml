@@ -146,7 +146,7 @@ jobs:
         name: credentials
         inputs:
           secureFile: launchpad-credentials
-      - ${{ each snap parameters.snaps }}:
+      - ${{ each snap in parameters.snaps }}:
         - script: |
             set -e
             git config --global user.email "$(Build.RequestedForEmail)"
