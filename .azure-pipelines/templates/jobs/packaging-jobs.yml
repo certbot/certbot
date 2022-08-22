@@ -1,3 +1,6 @@
+parameters:
+  snaps: ["certbot", "certbot-dns-cloudflare"]
+
 jobs:
   - job: docker_build
     pool:
@@ -115,8 +118,6 @@ jobs:
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
   - job: snaps_build
-    parameters:
-      snaps: ["certbot", "certbot-dns-cloudflare"]
     pool:
       vmImage: ubuntu-18.04
     strategy:
