@@ -39,7 +39,9 @@ from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme.mixins import VersionedLEACMEMixin
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
 

@@ -14,6 +14,7 @@ from typing import Tuple
 from typing import Type
 from typing import TypeVar
 from typing import Union
+import warnings
 
 from cryptography.hazmat.primitives import hashes
 import josepy as jose
@@ -24,8 +25,11 @@ import requests
 from acme import crypto_util
 from acme import errors
 from acme import fields
-from acme.mixins import ResourceMixin
-from acme.mixins import TypeMixin
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from acme.mixins import ResourceMixin
+    from acme.mixins import TypeMixin
 
 logger = logging.getLogger(__name__)
 

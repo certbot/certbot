@@ -23,7 +23,9 @@ from acme import errors
 from acme import fields
 from acme import jws
 from acme import util
-from acme.mixins import ResourceMixin
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from acme.mixins import ResourceMixin
 
 if TYPE_CHECKING:
     from typing_extensions import Protocol  # pragma: no cover
@@ -581,7 +583,7 @@ class Authorization(ResourceBody):
     """
     identifier: Identifier = jose.field('identifier', decoder=Identifier.from_json, omitempty=True)
     challenges: List[ChallengeBody] = jose.field('challenges', omitempty=True)
-    combinations: Tuple[Tuple[int, ...], ...] = jose.field('combinations', omitempty=True)
+    _combinations: Tuple[Tuple[int, ...], ...] = jose.field('combinations', omitempty=True)
 
     status: Status = jose.field('status', omitempty=True, decoder=Status.from_json)
     # TODO: 'expires' is allowed for Authorization Resources in
@@ -591,11 +593,38 @@ class Authorization(ResourceBody):
     expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
     wildcard: bool = jose.field('wildcard', omitempty=True)
 
+    # combinations is temporarily renamed to _combinations during its deprecation
+    # period. See https://github.com/certbot/certbot/pull/9369#issuecomment-1199849262.
+    def __init__(self, **kwargs: Any) -> None:
+        if 'combinations' in kwargs:
+            kwargs['_combinations'] = kwargs.pop('combinations')
+        super().__init__(**kwargs)
+
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that challenge is redefined. Let's ignore the type check here.
     @challenges.decoder  # type: ignore
     def challenges(value: List[Dict[str, Any]]) -> Tuple[ChallengeBody, ...]:  # type: ignore[misc]  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
+
+    @property
+    def combinations(self) -> Tuple[Tuple[int, ...], ...]:
+        """Challenge combinations.
+        (`tuple` of `tuple` of `int`, as opposed to `list` of `list` from the spec).
+
+        .. deprecated: 1.30.0
+
+        """
+        warnings.warn(
+            "acme.messages.Authorization.combinations is deprecated and will be "
+            "removed in a future release.", DeprecationWarning)
+        return self._combinations
+
+    @combinations.setter
+    def combinations(self, combos: Tuple[Tuple[int, ...], ...]) -> None: # pragma: no cover
+        warnings.warn(
+            "acme.messages.Authorization.combinations is deprecated and will be "
+            "removed in a future release.", DeprecationWarning)
+        self._combinations = combos
 
     @property
     def resolved_combinations(self) -> Tuple[Tuple[ChallengeBody, ...], ...]:
@@ -604,6 +633,9 @@ class Authorization(ResourceBody):
         .. deprecated: 1.30.0
 
         """
+        warnings.warn(
+            "acme.messages.Authorization.resolved_combinations is deprecated and will be "
+            "removed in a future release.", DeprecationWarning)
         return tuple(tuple(self.challenges[idx] for idx in combo)
                      for combo in self.combinations)  # pylint: disable=not-an-iterable
 
