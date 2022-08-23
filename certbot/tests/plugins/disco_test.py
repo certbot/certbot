@@ -62,18 +62,6 @@ class PluginEntryPointTest(unittest.TestCase):
             self.assertEqual(
                 name, PluginEntryPoint.entry_point_to_plugin_name(entry_point))
 
-    def test_entry_point_to_plugin_name_prefixed(self):
-        names = {
-            self.ep1: "p1:ep1",
-            self.ep1prim: "p2:ep1",
-            self.ep2: "p2:ep2",
-            self.ep3: "p3:ep3",
-        }
-
-        for entry_point, name in names.items():
-            self.assertEqual(
-                name, f"{entry_point.dist.key}:{entry_point.name}")
-
     def test_description(self):
         self.assertIn("temporary webserver", self.plugin_ep.description)
 

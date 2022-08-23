@@ -219,13 +219,13 @@ class PluginsRegistry(Mapping):
             pkg_resources.iter_entry_points(
                 constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
         for entry_point in entry_points:
-            _ = cls._load_entry_point(entry_point, plugins)
+            cls._load_entry_point(entry_point, plugins)
 
         return cls(plugins)
 
     @classmethod
     def _load_entry_point(cls, entry_point: pkg_resources.EntryPoint,
-                          plugins: Dict[str, PluginEntryPoint]) -> PluginEntryPoint:
+                          plugins: Dict[str, PluginEntryPoint]) -> None:
         plugin_ep = PluginEntryPoint(entry_point)
         if plugin_ep.name in plugins:
             other_ep = plugins[plugin_ep.name]
@@ -238,8 +238,6 @@ class PluginsRegistry(Mapping):
         else:  # pragma: no cover
             logger.warning(
                 "%r does not inherit from Plugin, skipping", plugin_ep)
-
-        return plugin_ep
 
     def __getitem__(self, name: str) -> PluginEntryPoint:
         return self._plugins[name]
