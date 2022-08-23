@@ -32,7 +32,7 @@ import OpenSSL
 import requests
 from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
-from requests_toolbelt.adapters.source import SourceAddressAdapter
+from urllib3.poolmanager import PoolManager
 
 from acme import challenges
 from acme import crypto_util
@@ -1049,7 +1049,7 @@ class ClientNetwork:
         adapter = HTTPAdapter()
 
         if source_address is not None:
-            adapter = SourceAddressAdapter(source_address)
+            adapter = _SourceAddressAdapter(source_address)
 
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
@@ -1289,6 +1289,22 @@ class ClientNetwork:
         response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
         return response
+
+
+# This class is based upon SourceAddressAdapter in requests-toolbelt:
+# https://github.com/requests/toolbelt/blob/11122809e7dd08a529a982fd9121a87162da47eb/requests_toolbelt/adapters/source.py#L14-L67
+class _SourceAddressAdapter(HTTPAdapter):
+    def __init__(self, source_address: Union[str, Tuple[str, int]], **kwargs: Any):
+        if isinstance(source_address, str):
+            self.source_address = (source_address, 0)
+        else:
+            self.source_address = source_address
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, connections: int, maxsize: int, block: bool = False,
+                         **pool_kwargs: Any) -> None:
+        self.poolmanager = PoolManager(num_pools=connections, maxsize=maxsize, block=block,
+                                       source_address=self.source_address, **pool_kwargs)
 
 
 # This class takes a similar approach to the cryptography project to deprecate attributes

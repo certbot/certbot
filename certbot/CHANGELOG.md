@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* `acme` no longer depends on `requests-toolbelt`.
 
 ### Fixed
 

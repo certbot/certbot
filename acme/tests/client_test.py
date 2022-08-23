@@ -1347,6 +1347,12 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
         for adapter in net.session.adapters.values():
             self.assertIn(self.source_address, adapter.source_address)
 
+    def test_source_address_set_via_tuple(self):
+        from acme.client import ClientNetwork
+        net = ClientNetwork(key=None, alg=None, source_address=(self.source_address, 0))
+        for adapter in net.session.adapters.values():
+            self.assertIn(self.source_address, adapter.source_address)
+
     def test_behavior_assumption(self):
         """This is a test that guardrails the HTTPAdapter behavior so that if the default for
         a Session() changes, the assumptions here aren't violated silently."""
