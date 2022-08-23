@@ -2100,7 +2100,7 @@ class ApacheConfigurator(common.Configurator):
                         general_vh.filep, ssl_vhost.filep)
 
     def _set_https_redirection_rewrite_rule(self, vhost: obj.VirtualHost) -> None:
-        self.parser.add_dir(vhost.path, "RewriteRule", constants.REWRITE_HTTPS_ARGS_WITH_END)
+        self.parser.add_dir(vhost.path, "RewriteRule", constants.REWRITE_HTTPS_ARGS)
 
     def _verify_no_certbot_redirect(self, vhost: obj.VirtualHost) -> None:
         """Checks to see if a redirect was already installed by certbot.
@@ -2132,9 +2132,6 @@ class ApacheConfigurator(common.Configurator):
                 rewrite_args_dict[dir_path].append(match)
 
         if rewrite_args_dict:
-            redirect_args = [constants.REWRITE_HTTPS_ARGS,
-                             constants.REWRITE_HTTPS_ARGS_WITH_END]
-
             for dir_path, args_paths in rewrite_args_dict.items():
                 arg_vals = [self.parser.aug.get(x) for x in args_paths]
 
@@ -2146,7 +2143,7 @@ class ApacheConfigurator(common.Configurator):
                     raise errors.PluginEnhancementAlreadyPresent(
                         "Certbot has already enabled redirection")
 
-                if arg_vals in redirect_args:
+                if arg_vals == constants.REWRITE_HTTPS_ARGS:
                     raise errors.PluginEnhancementAlreadyPresent(
                         "Certbot has already enabled redirection")
 
@@ -2222,7 +2219,7 @@ class ApacheConfigurator(common.Configurator):
             f"ServerSignature Off\n"
             f"\n"
             f"RewriteEngine On\n"
-            f"RewriteRule {' '.join(constants.REWRITE_HTTPS_ARGS_WITH_END)}\n"
+            f"RewriteRule {' '.join(constants.REWRITE_HTTPS_ARGS)}\n"
             "\n"
             f"ErrorLog {self.options.logs_root}/redirect.error.log\n"
             f"LogLevel warn\n"

@@ -1115,7 +1115,7 @@ class MultipleVhostsTest(util.ApacheTest):
             args_paths = self.config.parser.find_dir(
                 "RewriteRule", None, http_vhost.path, False)
             arg_vals = [self.config.parser.aug.get(x) for x in args_paths]
-            self.assertEqual(arg_vals, constants.REWRITE_HTTPS_ARGS_WITH_END)
+            self.assertEqual(arg_vals, constants.REWRITE_HTTPS_ARGS)
 
 
     def test_redirect_with_conflict(self):
