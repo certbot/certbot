@@ -24,22 +24,6 @@ logger = logging.getLogger(__name__)
 class ApacheHttp01(common.ChallengePerformer):
     """Class that performs HTTP-01 challenges within the Apache configurator."""
 
-    CONFIG_TEMPLATE22_PRE = """\
-        RewriteEngine on
-        RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [L]
-
-    """
-    CONFIG_TEMPLATE22_POST = """\
-        <Directory {0}>
-            Order Allow,Deny
-            Allow from all
-        </Directory>
-        <Location /.well-known/acme-challenge>
-            Order Allow,Deny
-            Allow from all
-        </Location>
-    """
-
     CONFIG_TEMPLATE24_PRE = """\
         RewriteEngine on
         RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [END]
