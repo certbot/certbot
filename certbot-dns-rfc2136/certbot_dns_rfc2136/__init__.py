@@ -194,4 +194,21 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
      };
    };
 
+Kerberos (GSS-TSIG) usage
+'''''''''''''''''''''''''
+
+This plugin supports authenticating DNS updates using Kerberos (GSS-TSIG),
+which can be used with Active Directory DNS servers or with BIND 9.
+
+ - ``dns_rfc2136_algorithm`` must be set to ``GSS-TSIG``.
+
+ - ``dns_rfc2136_name`` changes its meaning; instead of a TSIG key name, it
+   must contain the FQDN of the DNS server (which will be translated into a
+   Kerberos principal).
+
+ - ``dns_rfc2136_secret`` must be set to ``None`` in order to use default
+   Kerberos credentials from the environment. Alternatively it may contain
+   parameters ``ccache=`` and/or ``client_keytab=`` to select a non-default
+   ticket cache or to automatically acquire tickets from a keytab file.
+
 """

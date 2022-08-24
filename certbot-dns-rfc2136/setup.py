@@ -11,6 +11,11 @@ install_requires = [
     'setuptools>=41.6.0',
 ]
 
+gss_tsig_extras = [
+    'dnspython>=2.3.0',
+    'gssapi>=1.6.0',
+]
+
 if not os.environ.get('SNAP_BUILD'):
     install_requires.extend([
         # We specify the minimum acme and certbot version as the current plugin
@@ -65,6 +70,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         'docs': docs_extras,
+        'gss-tsig': gss_tsig_extras,
     },
     entry_points={
         'certbot.plugins': [
