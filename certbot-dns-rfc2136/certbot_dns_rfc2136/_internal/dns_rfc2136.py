@@ -75,7 +75,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             {
                 'name': 'TSIG key name',
                 'secret': 'TSIG key secret',
-                'server': 'The target DNS server'
+                'server': 'IP address of the target DNS server'
             },
             self._validate_credentials
         )
