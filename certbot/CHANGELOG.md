@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* The `certbot-dns-cloudxns` plugin is now deprecated and will be removed in the
+  next major release of Certbot.
 
 ### Fixed
 

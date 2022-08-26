@@ -3,6 +3,7 @@ import logging
 from typing import Any
 from typing import Callable
 from typing import Optional
+import warnings
 
 from lexicon.providers import cloudxns
 from requests import HTTPError
@@ -27,6 +28,11 @@ class Authenticator(dns_common.DNSAuthenticator):
     ttl = 60
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        warnings.warn(
+            "The CloudXNS authenticator is deprecated and will be removed in the "
+            "next major release of Certbot. The CloudXNS DNS service is defunct and "
+            "we recommend removing the plugin."
+        )
         super().__init__(*args, **kwargs)
         self.credentials: Optional[CredentialsConfiguration] = None
 
