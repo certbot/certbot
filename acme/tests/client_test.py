@@ -8,6 +8,7 @@ import json
 import unittest
 from typing import Dict
 from unittest import mock
+import warnings
 
 import josepy as jose
 import OpenSSL
@@ -1343,7 +1344,8 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
 
     def test_source_address_set(self):
         from acme.client import ClientNetwork
-        net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
+        with warnings.catch_warnings():
+            net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
         for adapter in net.session.adapters.values():
             self.assertIn(self.source_address, adapter.source_address)
 
