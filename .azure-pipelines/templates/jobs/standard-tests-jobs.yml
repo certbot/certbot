@@ -5,11 +5,11 @@ jobs:
     strategy:
       matrix:
         macos-py37-cover:
-          IMAGE_NAME: macOS-10.15
+          IMAGE_NAME: macOS-12
           PYTHON_VERSION: 3.7
           TOXENV: py37-cover
         macos-py310-cover:
-          IMAGE_NAME: macOS-10.15
+          IMAGE_NAME: macOS-12
           PYTHON_VERSION: 3.10
           TOXENV: py310-cover
         windows-py37:
