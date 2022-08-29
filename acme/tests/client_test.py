@@ -1345,6 +1345,8 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
     def test_source_address_set(self):
         from acme.client import ClientNetwork
         with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.*source_address',
+                                    DeprecationWarning)
             net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
         for adapter in net.session.adapters.values():
             self.assertIn(self.source_address, adapter.source_address)

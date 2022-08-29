@@ -36,6 +36,8 @@ from requests.utils import parse_header_links
 # https://github.com/requests/toolbelt/issues/331 until we can remove this
 # dependency in Certbot 2.0.
 with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "'urllib3.contrib.pyopenssl",
+                            DeprecationWarning)
     from requests_toolbelt.adapters.source import SourceAddressAdapter
 
 from acme import challenges
