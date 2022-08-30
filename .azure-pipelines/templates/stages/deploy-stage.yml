@@ -35,7 +35,7 @@ stages:
       # more info.
       - job: publish_snap
         pool:
-          vmImage: ubuntu-18.04
+          vmImage: ubuntu-22.04
         variables:
           - group: certbot-common
         strategy:
@@ -71,7 +71,7 @@ stages:
             displayName: Publish to Snap store
       - job: publish_docker
         pool:
-          vmImage: ubuntu-18.04
+          vmImage: ubuntu-22.04
         strategy:
           matrix:
             amd64:

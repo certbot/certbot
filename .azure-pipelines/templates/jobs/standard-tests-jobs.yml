@@ -5,11 +5,11 @@ jobs:
     strategy:
       matrix:
         macos-py37-cover:
-          IMAGE_NAME: macOS-10.15
+          IMAGE_NAME: macOS-12
           PYTHON_VERSION: 3.7
           TOXENV: py37-cover
         macos-py310-cover:
-          IMAGE_NAME: macOS-10.15
+          IMAGE_NAME: macOS-12
           PYTHON_VERSION: 3.10
           TOXENV: py310-cover
         windows-py37:
@@ -25,42 +25,42 @@ jobs:
           PYTHON_VERSION: 3.9
           TOXENV: integration-certbot
         linux-oldest-tests-1:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.7
           TOXENV: '{acme,apache,apache-v2,certbot}-oldest'
         linux-oldest-tests-2:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.7
           TOXENV: '{dns,nginx}-oldest'
         linux-py37:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.7
           TOXENV: py37
         linux-py310-cover:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.10
           TOXENV: py310-cover
         linux-py310-lint:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.10
           TOXENV: lint-posix
         linux-py310-mypy:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.10
           TOXENV: mypy-posix
         linux-integration:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.8
           TOXENV: integration
           ACME_SERVER: pebble
         apache-compat:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           TOXENV: apache_compat
         apacheconftest:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           TOXENV: apacheconftest-with-pebble
         nginxroundtrip:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           TOXENV: nginxroundtrip
     pool:
       vmImage: $(IMAGE_NAME)
