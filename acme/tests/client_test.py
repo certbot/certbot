@@ -1343,7 +1343,10 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
 
     def test_source_address_set(self):
         from acme.client import ClientNetwork
-        net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
+        with mock.patch('warnings.warn') as mock_warn:
+            net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
+            mock_warn.assert_called_once()
+            self.assertIn('source_address', mock_warn.call_args[0][0])
         for adapter in net.session.adapters.values():
             self.assertIn(self.source_address, adapter.source_address)
 

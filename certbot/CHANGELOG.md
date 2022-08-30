@@ -12,6 +12,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * The `certbot-dns-cloudxns` plugin is now deprecated and will be removed in the
   next major release of Certbot.
+* The `source_address` argument for `acme.client.ClientNetwork` is deprecated
+  and support for it will be removed in the next major release.
 
 ### Fixed
 
