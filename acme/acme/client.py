@@ -32,7 +32,13 @@ import OpenSSL
 import requests
 from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
-from requests_toolbelt.adapters.source import SourceAddressAdapter
+# We're capturing the warnings described at
+# https://github.com/requests/toolbelt/issues/331 until we can remove this
+# dependency in Certbot 2.0.
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "'urllib3.contrib.pyopenssl",
+                            DeprecationWarning)
+    from requests_toolbelt.adapters.source import SourceAddressAdapter
 
 from acme import challenges
 from acme import crypto_util
@@ -1036,7 +1042,8 @@ class ClientNetwork:
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param float timeout: Timeout for requests.
-    :param source_address: Optional source address to bind to when making requests.
+    :param source_address: Optional source address to bind to when making
+        requests. (deprecated since 1.30.0)
     :type source_address: str or tuple(str, int)
     """
     def __init__(self, key: jose.JWK, account: Optional[messages.RegistrationResource] = None,
@@ -1054,6 +1061,8 @@ class ClientNetwork:
         adapter = HTTPAdapter()
 
         if source_address is not None:
+            warnings.warn("Support for source_address is deprecated and will be "
+                          "removed soon.", DeprecationWarning, stacklevel=2)
             adapter = SourceAddressAdapter(source_address)
 
         self.session.mount("http://", adapter)

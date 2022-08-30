@@ -1,4 +1,11 @@
 """
+.. danger::
+   The certbot-dns-cloudxns plugin is deprecated and will be removed in the next major
+   release of Certbot. The CloudXNS DNS service is defunct and we recommend uninstalling
+   the plugin.
+
+----------
+
 The `~certbot_dns_cloudxns.dns_cloudxns` plugin automates the process of
 completing a ``dns-01`` challenge (`~acme.challenges.DNS01`) by creating, and
 subsequently removing, TXT records using the CloudXNS API.
