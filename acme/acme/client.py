@@ -45,7 +45,9 @@ from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme.mixins import VersionedLEACMEMixin
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +58,9 @@ DER_CONTENT_TYPE = 'application/pkix-cert'
 
 class ClientBase:
     """ACME client base object.
+
+    .. deprecated:: 1.30.0
+       Use `ClientV2` instead.
 
     :ivar messages.Directory directory:
     :ivar .ClientNetwork net: Client network.
@@ -1312,7 +1317,7 @@ class _ClientDeprecationModule:
         self.__dict__['_module'] = module
 
     def __getattr__(self, attr: str) -> Any:
-        if attr in ('Client', 'BackwardsCompatibleClientV2'):
+        if attr in ('Client', 'ClientBase', 'BackwardsCompatibleClientV2'):
             warnings.warn('The {0} attribute in acme.client is deprecated '
                           'and will be removed soon.'.format(attr),
                           DeprecationWarning, stacklevel=2)
