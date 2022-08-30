@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* `acme.client.ClientBase`, `acme.messages.Authorization.resolved_combinations`
+* `acme.client.ClientBase`, `acme.messages.Authorization.resolved_combinations`,
   `acme.messages.Authorization.combinations` and `acme.mixins` are deprecated and
   will be removed in a future release.
 * The `certbot-dns-cloudxns` plugin is now deprecated and will be removed in the

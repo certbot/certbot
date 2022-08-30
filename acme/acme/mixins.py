@@ -4,7 +4,7 @@ from typing import Dict
 import warnings
 
 warnings.warn(f'The module {__name__} is deprecated and will be removed in a future release',
-              DeprecationWarning)
+              DeprecationWarning, stacklevel=2)
 
 
 class VersionedLEACMEMixin:
