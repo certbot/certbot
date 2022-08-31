@@ -134,8 +134,8 @@ class DirectoryTest(unittest.TestCase):
     def setUp(self):
         from acme.messages import Directory
         self.dir = Directory({
-            'new-reg': 'reg',
-            mock.MagicMock(resource_type='new-cert'): 'cert',
+            'newReg': 'reg',
+            'newCert': 'cert',
             'meta': Directory.Meta(
                 terms_of_service='https://example.com/acme/terms',
                 website='https://www.example.com/',
@@ -148,24 +148,21 @@ class DirectoryTest(unittest.TestCase):
         Directory({'foo': 'bar'})
 
     def test_getitem(self):
-        self.assertEqual('reg', self.dir['new-reg'])
-        from acme.messages import NewRegistration
-        self.assertEqual('reg', self.dir[NewRegistration])
-        self.assertEqual('reg', self.dir[NewRegistration()])
+        self.assertEqual('reg', self.dir['newReg'])
 
     def test_getitem_fails_with_key_error(self):
         self.assertRaises(KeyError, self.dir.__getitem__, 'foo')
 
     def test_getattr(self):
-        self.assertEqual('reg', self.dir.new_reg)
+        self.assertEqual('reg', self.dir.newReg)
 
     def test_getattr_fails_with_attribute_error(self):
         self.assertRaises(AttributeError, self.dir.__getattr__, 'foo')
 
     def test_to_json(self):
         self.assertEqual(self.dir.to_json(), {
-            'new-reg': 'reg',
-            'new-cert': 'cert',
+            'newReg': 'reg',
+            'newCert': 'cert',
             'meta': {
                 'terms-of-service': 'https://example.com/acme/terms',
                 'website': 'https://www.example.com/',

@@ -11,22 +11,16 @@ from typing import MutableMapping
 from typing import Optional
 from typing import Tuple
 from typing import Type
-from typing import TYPE_CHECKING
 from typing import TypeVar
-from typing import Union
 
 import josepy as jose
 
 from acme import challenges
 from acme import errors
 from acme import fields
-from acme import jws
 from acme import util
+from acme import jws
 
-if TYPE_CHECKING:
-    from typing_extensions import Protocol  # pragma: no cover
-else:
-    Protocol = object
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -222,20 +216,8 @@ STATUS_READY = Status('ready')
 STATUS_DEACTIVATED = Status('deactivated')
 
 
-class HasResourceType(Protocol):
-    """
-    Represents a class with a resource_type class parameter of type string.
-    """
-    resource_type: str = NotImplemented
-
-
-GenericHasResourceType = TypeVar("GenericHasResourceType", bound=HasResourceType)
-
-
 class Directory(jose.JSONDeSerializable):
     """Directory."""
-
-    _REGISTERED_TYPES: Dict[str, Type[HasResourceType]] = {}
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
@@ -263,41 +245,23 @@ class Directory(jose.JSONDeSerializable):
         def _internal_name(self, name: str) -> str:
             return '_' + name if name == 'terms_of_service' else name
 
-    @classmethod
-    def _canon_key(cls, key: Union[str, HasResourceType, Type[HasResourceType]]) -> str:
-        if isinstance(key, str):
-            return key
-        return key.resource_type
-
-    @classmethod
-    def register(cls,
-                 resource_body_cls: Type[GenericHasResourceType]) -> Type[GenericHasResourceType]:
-        """Register resource."""
-        resource_type = resource_body_cls.resource_type
-        assert resource_type not in cls._REGISTERED_TYPES
-        cls._REGISTERED_TYPES[resource_type] = resource_body_cls
-        return resource_body_cls
-
     def __init__(self, jobj: Mapping[str, Any]) -> None:
-        canon_jobj = util.map_keys(jobj, self._canon_key)
-        # TODO: check that everything is an absolute URL; acme-spec is
-        # not clear on that
-        self._jobj = canon_jobj
+        self._jobj = jobj
 
     def __getattr__(self, name: str) -> Any:
         try:
-            return self[name.replace('_', '-')]
+            return self[name]
         except KeyError as error:
             raise AttributeError(str(error))
 
-    def __getitem__(self, name: Union[str, HasResourceType, Type[HasResourceType]]) -> Any:
+    def __getitem__(self, name: str) -> Any:
         try:
-            return self._jobj[self._canon_key(name)]
+            return self._jobj[name]
         except KeyError:
-            raise KeyError('Directory field "' + self._canon_key(name) + '" not found')
+            raise KeyError(f'Directory field "{name}" not found')
 
     def to_partial_json(self) -> Dict[str, Any]:
-        return self._jobj
+        return util.map_keys(self._jobj, lambda k: k)
 
     @classmethod
     def from_json(cls, jobj: MutableMapping[str, Any]) -> 'Directory':
@@ -458,15 +422,12 @@ class Registration(ResourceBody):
         return self._filter_contact(self.email_prefix)
 
 
-@Directory.register
 class NewRegistration(Registration):
     """New registration."""
-    resource_type = 'new-reg'
 
 
 class UpdateRegistration(Registration):
     """Update registration."""
-    resource_type = 'reg'
 
 
 class RegistrationResource(ResourceWithURI):
@@ -590,15 +551,12 @@ class Authorization(ResourceBody):
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
 
-@Directory.register
 class NewAuthorization(Authorization):
     """New authorization."""
-    resource_type = 'new-authz'
 
 
 class UpdateAuthorization(Authorization):
     """Update authorization."""
-    resource_type = 'authz'
 
 
 class AuthorizationResource(ResourceWithURI):
@@ -612,7 +570,6 @@ class AuthorizationResource(ResourceWithURI):
     new_cert_uri: str = jose.field('new_cert_uri', omitempty=True)
 
 
-@Directory.register
 class CertificateRequest(jose.JSONObjectWithFields):
     """ACME new-cert request.
 
@@ -620,7 +577,6 @@ class CertificateRequest(jose.JSONObjectWithFields):
         `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
 
     """
-    resource_type = 'new-cert'
     csr: jose.ComparableX509 = jose.field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
 
 
@@ -637,7 +593,6 @@ class CertificateResource(ResourceWithURI):
     authzrs: Tuple[AuthorizationResource, ...] = jose.field('authzrs')
 
 
-@Directory.register
 class Revocation(jose.JSONObjectWithFields):
     """Revocation message.
 
@@ -645,7 +600,6 @@ class Revocation(jose.JSONObjectWithFields):
         `jose.ComparableX509`
 
     """
-    resource_type = 'revoke-cert'
     certificate: jose.ComparableX509 = jose.field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
     reason: int = jose.field('reason')
@@ -702,7 +656,5 @@ class OrderResource(ResourceWithURI):
                                                        omitempty=True)
 
 
-@Directory.register
 class NewOrder(Order):
     """New order."""
-    resource_type = 'new-order'
