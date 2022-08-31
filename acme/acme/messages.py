@@ -22,7 +22,6 @@ from acme import errors
 from acme import fields
 from acme import jws
 from acme import util
-from acme.mixins import ResourceMixin
 
 if TYPE_CHECKING:
     from typing_extensions import Protocol  # pragma: no cover
@@ -460,16 +459,14 @@ class Registration(ResourceBody):
 
 
 @Directory.register
-class NewRegistration(ResourceMixin, Registration):
+class NewRegistration(Registration):
     """New registration."""
     resource_type = 'new-reg'
-    resource: str = fields.resource(resource_type)
 
 
-class UpdateRegistration(ResourceMixin, Registration):
+class UpdateRegistration(Registration):
     """Update registration."""
     resource_type = 'reg'
-    resource: str = fields.resource(resource_type)
 
 
 class RegistrationResource(ResourceWithURI):
@@ -594,16 +591,14 @@ class Authorization(ResourceBody):
 
 
 @Directory.register
-class NewAuthorization(ResourceMixin, Authorization):
+class NewAuthorization(Authorization):
     """New authorization."""
     resource_type = 'new-authz'
-    resource: str = fields.resource(resource_type)
 
 
-class UpdateAuthorization(ResourceMixin, Authorization):
+class UpdateAuthorization(Authorization):
     """Update authorization."""
     resource_type = 'authz'
-    resource: str = fields.resource(resource_type)
 
 
 class AuthorizationResource(ResourceWithURI):
@@ -618,7 +613,7 @@ class AuthorizationResource(ResourceWithURI):
 
 
 @Directory.register
-class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
+class CertificateRequest(jose.JSONObjectWithFields):
     """ACME new-cert request.
 
     :ivar jose.ComparableX509 csr:
@@ -626,7 +621,6 @@ class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
 
     """
     resource_type = 'new-cert'
-    resource: str = fields.resource(resource_type)
     csr: jose.ComparableX509 = jose.field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
 
 
@@ -644,7 +638,7 @@ class CertificateResource(ResourceWithURI):
 
 
 @Directory.register
-class Revocation(ResourceMixin, jose.JSONObjectWithFields):
+class Revocation(jose.JSONObjectWithFields):
     """Revocation message.
 
     :ivar jose.ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
@@ -652,7 +646,6 @@ class Revocation(ResourceMixin, jose.JSONObjectWithFields):
 
     """
     resource_type = 'revoke-cert'
-    resource: str = fields.resource(resource_type)
     certificate: jose.ComparableX509 = jose.field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
     reason: int = jose.field('reason')

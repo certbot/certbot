@@ -23,8 +23,6 @@ import requests
 
 from acme import crypto_util
 from acme import errors
-from acme import fields
-from acme.mixins import ResourceMixin
 from acme.mixins import TypeMixin
 
 logger = logging.getLogger(__name__)
@@ -47,12 +45,10 @@ class Challenge(jose.TypedJSONObjectWithFields):
             return UnrecognizedChallenge.from_json(jobj)
 
 
-class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields):
+class ChallengeResponse(TypeMixin, jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
     TYPES: Dict[str, Type['ChallengeResponse']] = {}
-    resource_type = 'challenge'
-    resource: str = fields.resource(resource_type)
 
 
 class UnrecognizedChallenge(Challenge):

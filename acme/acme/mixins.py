@@ -3,22 +3,6 @@ from typing import Any
 from typing import Dict
 
 
-class ResourceMixin:
-    """
-    This mixin generates a RFC8555 compliant JWS payload
-    by removing the `resource` field if needed (eg. ACME v2 protocol).
-    """
-    def to_partial_json(self) -> Dict[str, Any]:
-        """See josepy.JSONDeserializable.to_partial_json()"""
-        return _safe_jobj_compliance(super(),
-                                     'to_partial_json', 'resource')
-
-    def fields_to_partial_json(self) -> Dict[str, Any]:
-        """See josepy.JSONObjectWithFields.fields_to_partial_json()"""
-        return _safe_jobj_compliance(super(),
-                                     'fields_to_partial_json', 'resource')
-
-
 class TypeMixin:
     """
     This mixin allows generation of a RFC8555 compliant JWS payload
