@@ -181,7 +181,9 @@ def _filter_names(names: Iterable[str],
     if override_question:
         question = override_question
     else:
-        question = "Which names would you like to activate HTTPS for?"
+        question = (
+            "Which names would you like to activate HTTPS for?\n"
+            "We recommend selecting either all domains, or all domains in a VirtualHost/server block.")
     code, names = display_util.checklist(
         question, tags=sorted_names, cli_flag="--domains", force_interactive=True)
     return code, [str(s) for s in names]
