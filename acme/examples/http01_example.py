@@ -215,8 +215,7 @@ def example_http():
     try:
         regr = client_acme.query_registration(regr)
     except errors.Error as err:
-        if err.typ == messages.OLD_ERROR_PREFIX + 'unauthorized' \
-                or err.typ == messages.ERROR_PREFIX + 'unauthorized':
+        if err.typ == messages.ERROR_PREFIX + 'unauthorized':
             # Status is deactivated.
             pass
         raise

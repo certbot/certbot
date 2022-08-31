@@ -22,7 +22,6 @@ from acme import util
 from acme import jws
 
 
-OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
 
 ERROR_CODES = {
@@ -60,15 +59,13 @@ ERROR_CODES = {
 
 ERROR_TYPE_DESCRIPTIONS = {**{
     ERROR_PREFIX + name: desc for name, desc in ERROR_CODES.items()
-}, **{  # add errors with old prefix, deprecate me
-    OLD_ERROR_PREFIX + name: desc for name, desc in ERROR_CODES.items()
 }}
 
 
 def is_acme_error(err: BaseException) -> bool:
     """Check if argument is an ACME error."""
     if isinstance(err, Error) and (err.typ is not None):
-        return (ERROR_PREFIX in err.typ) or (OLD_ERROR_PREFIX in err.typ)
+        return ERROR_PREFIX in err.typ
     return False
 
 
