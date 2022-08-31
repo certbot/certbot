@@ -134,6 +134,7 @@ def reconfigure(config: configuration.NamespaceConfig) -> None:
     # elements from within the renewal configuration file).
     # another delightful internal method call!
     try:
+        # pylint: disable=protected-access
         lineage = renewal._reconstitute(lineage_config, renewal_file)
     except Exception as e:  # pylint: disable=broad-except
         logger.error("Renewal configuration file %s (cert: %s) "
@@ -143,16 +144,18 @@ def reconfigure(config: configuration.NamespaceConfig) -> None:
         return
 
     if not lineage:
-        """TODO: print some error, how does this even happen idk"""
+        # TODO: print some error, how does this even happen idk
+        pass
     else:
         # installers are used in auth mode to determine domain names
-        # installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
+       # installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
         # le_client = _init_le_client(lineage_config, auth, installer)
         # just saving this in case we want it for dry run, agian, idk
 
         # actually we do want this bit, guess this method's going public lol
         renewal_params = lineage.configuration["renewalparams"]
         original_server = renewal_params.get("server", cli.flag_default("server"))
+        # pylint: disable=protected-access
         renewal._avoid_invalidating_lineage(lineage_config, lineage, original_server)
 
 
