@@ -2,7 +2,9 @@
 import datetime
 from collections.abc import Hashable
 import json
+from types import ModuleType
 from typing import Any
+from typing import cast
 from typing import Dict
 from typing import Iterator
 from typing import List
@@ -14,6 +16,7 @@ from typing import Type
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
+import sys
 import warnings
 
 import josepy as jose
@@ -763,3 +766,35 @@ class OrderResource(ResourceWithURI):
 class NewOrder(Order):
     """New order."""
     resource_type = 'new-order'
+
+
+# This class takes a similar approach to the cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
+class _MessagesDeprecationModule: # pragma: no cover
+    """
+    Internal class delegating to a module, and displaying warnings when
+    module attributes deprecated in acme.messages are accessed.
+    """
+    def __init__(self, module: ModuleType) -> None:
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr: str) -> None:
+        if attr == 'OLD_ERROR_PREFIX':
+            warnings.warn('{0} attribute in acme.messages module is deprecated '
+                          'and will be removed soon.'.format(attr),
+                          DeprecationWarning, stacklevel=2)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr: str, value: Any) -> None:
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr: str) -> None:
+        delattr(self._module, attr)
+
+    def __dir__(self) -> List[str]:
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about Zope interfaces deprecation and planned removal.
+sys.modules[__name__] = cast(ModuleType, _MessagesDeprecationModule(sys.modules[__name__]))
