@@ -27,11 +27,8 @@ from acme import fields
 from acme import jws
 from acme import util
 with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    warnings.filterwarnings("ignore", ".*acme.mixins", category=DeprecationWarning)
     from acme.mixins import ResourceMixin
-
-# Remove the following in Certbot 2.0:
-warnings.filterwarnings("ignore", "acme.fields.resource", DeprecationWarning)
 
 if TYPE_CHECKING:
     from typing_extensions import Protocol  # pragma: no cover
@@ -472,12 +469,6 @@ class Registration(ResourceBody):
         return self._filter_contact(self.email_prefix)
 
 
-class UpdateRegistration(ResourceMixin, Registration):
-    """Update registration."""
-    resource_type = 'reg'
-    resource: str = fields.resource(resource_type)
-
-
 class RegistrationResource(ResourceWithURI):
     """Registration Resource.
 
@@ -645,12 +636,6 @@ class Authorization(ResourceBody):
                         for combo in self.combinations)  # pylint: disable=not-an-iterable
 
 
-class UpdateAuthorization(ResourceMixin, Authorization):
-    """Update authorization."""
-    resource_type = 'authz'
-    resource: str = fields.resource(resource_type)
-
-
 class AuthorizationResource(ResourceWithURI):
     """Authorization Resource.
 
@@ -728,6 +713,7 @@ class OrderResource(ResourceWithURI):
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "acme.messages.Directory.register", DeprecationWarning)
+    warnings.filterwarnings("ignore", "acme.fields.resource", DeprecationWarning)
 
     @Directory.register
     class NewOrder(Order):
@@ -771,10 +757,22 @@ with warnings.catch_warnings():
         resource: str = fields.resource(resource_type)
 
 
+    class UpdateAuthorization(ResourceMixin, Authorization):
+        """Update authorization."""
+        resource_type = 'authz'
+        resource: str = fields.resource(resource_type)
+
+
     @Directory.register
     class NewRegistration(ResourceMixin, Registration):
         """New registration."""
         resource_type = 'new-reg'
+        resource: str = fields.resource(resource_type)
+
+
+    class UpdateRegistration(ResourceMixin, Registration):
+        """Update registration."""
+        resource_type = 'reg'
         resource: str = fields.resource(resource_type)
 
 

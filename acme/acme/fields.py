@@ -91,4 +91,6 @@ def resource(resource_type: str) -> Any:
     """
     warnings.warn('acme.fields.resource is deprecated and will be removed soon.',
                     DeprecationWarning, stacklevel=2)
-    return Resource(resource_type)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', '.*Resource', DeprecationWarning)
+        return Resource(resource_type)
