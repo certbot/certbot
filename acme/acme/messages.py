@@ -619,14 +619,14 @@ class Authorization(ResourceBody):
         """
         warnings.warn(
             "acme.messages.Authorization.combinations is deprecated and will be "
-            "removed in a future release.", DeprecationWarning)
+            "removed in a future release.", DeprecationWarning, stacklevel=2)
         return self._combinations
 
     @combinations.setter
     def combinations(self, combos: Tuple[Tuple[int, ...], ...]) -> None: # pragma: no cover
         warnings.warn(
             "acme.messages.Authorization.combinations is deprecated and will be "
-            "removed in a future release.", DeprecationWarning)
+            "removed in a future release.", DeprecationWarning, stacklevel=2)
         self._combinations = combos
 
     @property
@@ -638,9 +638,11 @@ class Authorization(ResourceBody):
         """
         warnings.warn(
             "acme.messages.Authorization.resolved_combinations is deprecated and will be "
-            "removed in a future release.", DeprecationWarning)
-        return tuple(tuple(self.challenges[idx] for idx in combo)
-                     for combo in self.combinations)  # pylint: disable=not-an-iterable
+            "removed in a future release.", DeprecationWarning, stacklevel=2)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.*combinations', DeprecationWarning)
+            return tuple(tuple(self.challenges[idx] for idx in combo)
+                        for combo in self.combinations)  # pylint: disable=not-an-iterable
 
 
 class UpdateAuthorization(ResourceMixin, Authorization):

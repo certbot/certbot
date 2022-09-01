@@ -2,6 +2,7 @@
 from typing import Dict
 import unittest
 from unittest import mock
+import warnings
 
 import josepy as jose
 
@@ -407,10 +408,12 @@ class AuthorizationTest(unittest.TestCase):
         hash(Authorization.from_json(self.jobj_from))
 
     def test_resolved_combinations(self):
-        self.assertEqual(self.authz.resolved_combinations, (
-            (self.challbs[0],),
-            (self.challbs[1],),
-        ))
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.*resolved_combinations', DeprecationWarning)
+            self.assertEqual(self.authz.resolved_combinations, (
+                (self.challbs[0],),
+                (self.challbs[1],),
+            ))
 
 
 class AuthorizationResourceTest(unittest.TestCase):

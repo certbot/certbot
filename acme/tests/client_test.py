@@ -3,11 +3,11 @@
 import copy
 import datetime
 import http.client as http_client
-import ipaddress
 import json
 import unittest
 from typing import Dict
 from unittest import mock
+import warnings
 
 import josepy as jose
 import OpenSSL
@@ -17,9 +17,17 @@ from acme import challenges
 from acme import errors
 from acme import jws as acme_jws
 from acme import messages
+from acme.client import ClientNetwork
+from acme.client import ClientV2
 from acme.mixins import VersionedLEACMEMixin
 import messages_test
 import test_util
+# Remove the following in Certbot 2.0:
+with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', '.* in acme.client', DeprecationWarning)
+    from acme.client import BackwardsCompatibleClientV2
+    from acme.client import Client
+
 
 CERT_DER = test_util.load_vector('cert.der')
 CERT_SAN_PEM = test_util.load_vector('cert-san.pem')
@@ -93,6 +101,10 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
 
     def setUp(self):
         super().setUp()
+
+        # For some reason, required to suppress warnings on mock.patch('acme.client.Client')
+        warnings.filterwarnings('ignore', '.* in acme.client', DeprecationWarning)
+
         # contains a loaded cert
         self.certr = messages.CertificateResource(
             body=messages_test.CERT)
@@ -116,13 +128,11 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
 
     def _init(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
-        from acme.client import BackwardsCompatibleClientV2
         return BackwardsCompatibleClientV2(net=self.net,
             key=KEY, server=uri)
 
     def test_init_downloads_directory(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
-        from acme.client import BackwardsCompatibleClientV2
         BackwardsCompatibleClientV2(net=self.net,
             key=KEY, server=uri)
         self.net.get.assert_called_once_with(uri)
@@ -336,13 +346,11 @@ class ClientTest(ClientTestBase):
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
 
-        from acme.client import Client
         self.client = Client(
             directory=self.directory, key=KEY, alg=jose.RS256, net=self.net)
 
     def test_init_downloads_directory(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
-        from acme.client import Client
         self.client = Client(
             directory=uri, key=KEY, alg=jose.RS256, net=self.net)
         self.net.get.assert_called_once_with(uri)
@@ -351,7 +359,6 @@ class ClientTest(ClientTestBase):
     def test_init_without_net(self, mock_net):
         mock_net.return_value = mock.sentinel.net
         alg = jose.RS256
-        from acme.client import Client
         self.client = Client(
             directory=self.directory, key=KEY, alg=alg)
         mock_net.called_once_with(KEY, alg=alg, verify_ssl=True)
@@ -723,7 +730,6 @@ class ClientV2Test(ClientTestBase):
 
         self.directory = DIRECTORY_V2
 
-        from acme.client import ClientV2
         self.client = ClientV2(self.directory, self.net)
 
         self.new_reg = self.new_reg.update(terms_of_service_agreed=True)
@@ -948,7 +954,6 @@ class ClientNetworkTest(unittest.TestCase):
         self.verify_ssl = mock.MagicMock()
         self.wrap_in_jws = mock.MagicMock(return_value=mock.sentinel.wrapped)
 
-        from acme.client import ClientNetwork
         self.net = ClientNetwork(
             key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl,
             user_agent='acme-python-test')
@@ -1179,7 +1184,6 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
 
     def setUp(self):
-        from acme.client import ClientNetwork
         self.net = ClientNetwork(key=None, alg=None)
 
         self.response = mock.MagicMock(ok=True, status_code=http_client.OK)
@@ -1342,7 +1346,6 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
         self.source_address = "8.8.8.8"
 
     def test_source_address_set(self):
-        from acme.client import ClientNetwork
         with mock.patch('warnings.warn') as mock_warn:
             net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
             mock_warn.assert_called_once()
@@ -1353,7 +1356,6 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
     def test_behavior_assumption(self):
         """This is a test that guardrails the HTTPAdapter behavior so that if the default for
         a Session() changes, the assumptions here aren't violated silently."""
-        from acme.client import ClientNetwork
         # Source address not specified, so the default adapter type should be bound -- this
         # test should fail if the default adapter type is changed by requests
         net = ClientNetwork(key=None, alg=None)
