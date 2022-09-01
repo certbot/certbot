@@ -1,8 +1,8 @@
 """ACME JSON fields."""
 import datetime
-from typing import Any
-
 import logging
+from typing import Any
+import warnings
 
 import josepy as jose
 import pyrfc3339
@@ -52,9 +52,15 @@ class RFC3339Field(jose.Field):
 
 
 class Resource(jose.Field):
-    """Resource MITM field."""
+    """Resource MITM field.
+
+    .. deprecated: 1.30.0
+
+    """
 
     def __init__(self, resource_type: str, *args: Any, **kwargs: Any) -> None:
+        warnings.warn('acme.fields.Resource is deprecated and will be removed soon.',
+                        DeprecationWarning, stacklevel=2)
         self.resource_type = resource_type
         kwargs['default'] = resource_type
         super().__init__('resource', *args, **kwargs)
@@ -78,5 +84,11 @@ def rfc3339(json_name: str, omitempty: bool = False) -> Any:
 
 
 def resource(resource_type: str) -> Any:
-    """Generates a type-friendly Resource field."""
+    """Generates a type-friendly Resource field.
+
+    .. deprecated: 1.30.0
+
+    """
+    warnings.warn('acme.fields.resource is deprecated and will be removed soon.',
+                    DeprecationWarning, stacklevel=2)
     return Resource(resource_type)

@@ -27,6 +27,9 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     from acme.mixins import ResourceMixin
 
+# Remove the following in Certbot 2.0:
+warnings.filterwarnings("ignore", "acme.fields.resource", DeprecationWarning)
+
 if TYPE_CHECKING:
     from typing_extensions import Protocol  # pragma: no cover
 else:

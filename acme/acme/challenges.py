@@ -31,6 +31,9 @@ with warnings.catch_warnings():
     from acme.mixins import ResourceMixin
     from acme.mixins import TypeMixin
 
+# Remove the following in Certbot 2.0:
+warnings.filterwarnings("ignore", "acme.fields.resource", DeprecationWarning)
+
 logger = logging.getLogger(__name__)
 
 GenericChallenge = TypeVar('GenericChallenge', bound='Challenge')
