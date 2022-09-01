@@ -16,6 +16,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * `acme.messages.OLD_ERROR_PREFIX` (`urn:acme:error:`) is deprecated and support for
   the old ACME error prefix in Certbot will be removed in the next major release of
   Certbot.
+* `acme.messages.Directory.register` is deprecated and will be removed in the next
+  major release of Certbot. Furthermore, `.Directory` will only support lookups
+  by the exact resource name string in the ACME directory  (e.g. `directory['newOrder']`).
 * The `certbot-dns-cloudxns` plugin is now deprecated and will be removed in the
   next major release of Certbot.
 * The `source_address` argument for `acme.client.ClientNetwork` is deprecated

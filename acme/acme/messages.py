@@ -283,6 +283,10 @@ class Directory(jose.JSONDeSerializable):
     def register(cls,
                  resource_body_cls: Type[GenericHasResourceType]) -> Type[GenericHasResourceType]:
         """Register resource."""
+        warnings.warn(
+            "acme.messages.Directory.register is deprecated and will be removed in the next "
+            "major release of Certbot", DeprecationWarning, stacklevel=2
+        )
         resource_type = resource_body_cls.resource_type
         assert resource_type not in cls._REGISTERED_TYPES
         cls._REGISTERED_TYPES[resource_type] = resource_body_cls
@@ -468,13 +472,6 @@ class Registration(ResourceBody):
         return self._filter_contact(self.email_prefix)
 
 
-@Directory.register
-class NewRegistration(ResourceMixin, Registration):
-    """New registration."""
-    resource_type = 'new-reg'
-    resource: str = fields.resource(resource_type)
-
-
 class UpdateRegistration(ResourceMixin, Registration):
     """Update registration."""
     resource_type = 'reg'
@@ -646,13 +643,6 @@ class Authorization(ResourceBody):
                      for combo in self.combinations)  # pylint: disable=not-an-iterable
 
 
-@Directory.register
-class NewAuthorization(ResourceMixin, Authorization):
-    """New authorization."""
-    resource_type = 'new-authz'
-    resource: str = fields.resource(resource_type)
-
-
 class UpdateAuthorization(ResourceMixin, Authorization):
     """Update authorization."""
     resource_type = 'authz'
@@ -670,19 +660,6 @@ class AuthorizationResource(ResourceWithURI):
     new_cert_uri: str = jose.field('new_cert_uri', omitempty=True)
 
 
-@Directory.register
-class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
-    """ACME new-cert request.
-
-    :ivar jose.ComparableX509 csr:
-        `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
-
-    """
-    resource_type = 'new-cert'
-    resource: str = fields.resource(resource_type)
-    csr: jose.ComparableX509 = jose.field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
-
-
 class CertificateResource(ResourceWithURI):
     """Certificate Resource.
 
@@ -694,21 +671,6 @@ class CertificateResource(ResourceWithURI):
     """
     cert_chain_uri: str = jose.field('cert_chain_uri')
     authzrs: Tuple[AuthorizationResource, ...] = jose.field('authzrs')
-
-
-@Directory.register
-class Revocation(ResourceMixin, jose.JSONObjectWithFields):
-    """Revocation message.
-
-    :ivar jose.ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
-        `jose.ComparableX509`
-
-    """
-    resource_type = 'revoke-cert'
-    resource: str = fields.resource(resource_type)
-    certificate: jose.ComparableX509 = jose.field(
-        'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
-    reason: int = jose.field('reason')
 
 
 class Order(ResourceBody):
@@ -762,10 +724,56 @@ class OrderResource(ResourceWithURI):
                                                        omitempty=True)
 
 
-@Directory.register
-class NewOrder(Order):
-    """New order."""
-    resource_type = 'new-order'
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "acme.messages.Directory.register", DeprecationWarning)
+
+    @Directory.register
+    class NewOrder(Order):
+        """New order."""
+        resource_type = 'new-order'
+
+
+    @Directory.register
+    class Revocation(ResourceMixin, jose.JSONObjectWithFields):
+        """Revocation message.
+
+        :ivar jose.ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
+            `jose.ComparableX509`
+
+        """
+        resource_type = 'revoke-cert'
+        resource: str = fields.resource(resource_type)
+        certificate: jose.ComparableX509 = jose.field(
+            'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
+        reason: int = jose.field('reason')
+
+
+    @Directory.register
+    class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
+        """ACME new-cert request.
+
+        :ivar jose.ComparableX509 csr:
+            `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
+
+        """
+        resource_type = 'new-cert'
+        resource: str = fields.resource(resource_type)
+        csr: jose.ComparableX509 = jose.field('csr', decoder=jose.decode_csr,
+                                                encoder=jose.encode_csr)
+
+
+    @Directory.register
+    class NewAuthorization(ResourceMixin, Authorization):
+        """New authorization."""
+        resource_type = 'new-authz'
+        resource: str = fields.resource(resource_type)
+
+
+    @Directory.register
+    class NewRegistration(ResourceMixin, Registration):
+        """New registration."""
+        resource_type = 'new-reg'
+        resource: str = fields.resource(resource_type)
 
 
 # This class takes a similar approach to the cryptography project to deprecate attributes
