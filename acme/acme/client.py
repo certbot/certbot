@@ -306,7 +306,7 @@ class Client(ClientBase):
 
         """
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
-        response = self._post(self.directory[new_reg], new_reg)
+        response = self._post(self.directory['new-reg'], new_reg)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 
@@ -612,7 +612,7 @@ class Client(ClientBase):
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        self._revoke(cert, rsn, self.directory[messages.Revocation])
+        self._revoke(cert, rsn, self.directory['revoke-cert'])
 
 
 class ClientV2(ClientBase):
