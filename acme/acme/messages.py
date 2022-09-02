@@ -18,8 +18,8 @@ import josepy as jose
 from acme import challenges
 from acme import errors
 from acme import fields
-from acme import util
 from acme import jws
+from acme import util
 
 
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
