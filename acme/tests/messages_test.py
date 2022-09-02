@@ -418,15 +418,12 @@ class CertificateRequestTest(unittest.TestCase):
     def setUp(self):
         from acme.messages import CertificateRequest
         self.req = CertificateRequest(csr=CSR)
-        # 'resource' gets stripped as a non-compliant field on serialization: restore it.
-        self.req_json = self.req.to_json()
-        self.req_json['resource'] = 'new-cert'
 
     def test_json_de_serializable(self):
         self.assertIsInstance(self.req, jose.JSONDeSerializable)
         from acme.messages import CertificateRequest
         self.assertEqual(
-            self.req, CertificateRequest.from_json(self.req_json))
+            self.req, CertificateRequest.from_json(self.req.to_json()))
 
 
 class CertificateResourceTest(unittest.TestCase):
@@ -451,13 +448,10 @@ class RevocationTest(unittest.TestCase):
     def setUp(self):
         from acme.messages import Revocation
         self.rev = Revocation(certificate=CERT)
-        # 'resource' gets stripped as a non-compliant field on serialization: restore it.
-        self.rev_json = self.rev.to_json()
-        self.rev_json['resource'] = 'revoke-cert'
 
     def test_from_json_hashable(self):
         from acme.messages import Revocation
-        hash(Revocation.from_json(self.rev_json))
+        hash(Revocation.from_json(self.rev.to_json()))
 
 
 class OrderResourceTest(unittest.TestCase):
