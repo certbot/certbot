@@ -151,8 +151,10 @@ class DirectoryTest(unittest.TestCase):
     def test_getitem(self):
         self.assertEqual('reg', self.dir['new-reg'])
         from acme.messages import NewRegistration
-        self.assertEqual('reg', self.dir[NewRegistration])
-        self.assertEqual('reg', self.dir[NewRegistration()])
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.* non-string keys', DeprecationWarning)
+            self.assertEqual('reg', self.dir[NewRegistration])
+            self.assertEqual('reg', self.dir[NewRegistration()])
 
     def test_getitem_fails_with_key_error(self):
         self.assertRaises(KeyError, self.dir.__getitem__, 'foo')

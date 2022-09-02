@@ -302,6 +302,12 @@ class Directory(jose.JSONDeSerializable):
             raise AttributeError(str(error))
 
     def __getitem__(self, name: Union[str, HasResourceType, Type[HasResourceType]]) -> Any:
+        if not isinstance(name, str):
+            warnings.warn(
+                "Looking up acme.messages.Directory resources by non-string keys is deprecated "
+                "and will be removed in the next major release of Certbot",
+                DeprecationWarning, stacklevel=2
+            )
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:

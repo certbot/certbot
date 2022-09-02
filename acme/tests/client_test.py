@@ -705,8 +705,10 @@ class ClientTest(ClientTestBase):
 
     def test_revoke(self):
         self.client.revoke(self.certr.body, self.rsn)
-        self.net.post.assert_called_once_with(
-            self.directory[messages.Revocation], mock.ANY, acme_version=1)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.* non-string keys', DeprecationWarning)
+            self.net.post.assert_called_once_with(
+                self.directory[messages.Revocation], mock.ANY, acme_version=1)
 
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
