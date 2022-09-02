@@ -164,7 +164,7 @@ class DirectoryTest(unittest.TestCase):
             'newReg': 'reg',
             'newCert': 'cert',
             'meta': {
-                'terms-of-service': 'https://example.com/acme/terms',
+                'termsOfService': 'https://example.com/acme/terms',
                 'website': 'https://www.example.com/',
                 'caaIdentities': ['example.com'],
             },

@@ -221,8 +221,7 @@ class Directory(jose.JSONDeSerializable):
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
-        _terms_of_service: str = jose.field('terms-of-service', omitempty=True)
-        _terms_of_service_v2: str = jose.field('termsOfService', omitempty=True)
+        _terms_of_service: str = jose.field('termsOfService', omitempty=True)
         website: str = jose.field('website', omitempty=True)
         caa_identities: List[str] = jose.field('caaIdentities', omitempty=True)
         external_account_required: bool = jose.field('externalAccountRequired', omitempty=True)
@@ -234,7 +233,7 @@ class Directory(jose.JSONDeSerializable):
         @property
         def terms_of_service(self) -> str:
             """URL for the CA TOS"""
-            return self._terms_of_service or self._terms_of_service_v2
+            return self._terms_of_service
 
         def __iter__(self) -> Iterator[str]:
             # When iterating over fields, use the external name 'terms_of_service' instead of
