@@ -95,7 +95,6 @@ class ClientTestBase(unittest.TestCase):
         # Reason code for revocation
         self.rsn = 1
 
-
 class BackwardsCompatibleClientV2Test(ClientTestBase):
     """Tests for  acme.client.BackwardsCompatibleClientV2."""
 
@@ -103,7 +102,9 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         super().setUp()
 
         # For some reason, required to suppress warnings on mock.patch('acme.client.Client')
-        warnings.filterwarnings('ignore', '.* in acme.client', DeprecationWarning)
+        self.warning_cap = warnings.catch_warnings()
+        self.warning_cap.__enter__()
+        warnings.filterwarnings('ignore', '.*acme.client', DeprecationWarning)
 
         # contains a loaded cert
         self.certr = messages.CertificateResource(
@@ -125,6 +126,10 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
 
         self.orderr = messages.OrderResource(
             csr_pem=CSR_SAN_PEM)
+
+    def tearDown(self) -> None:
+        self.warning_cap.__exit__()
+        return super().tearDown()
 
     def _init(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
