@@ -57,7 +57,7 @@ class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields
     TYPES: Dict[str, Type['ChallengeResponse']] = {}
     resource_type = 'challenge'
     with warnings.catch_warnings():
-        warnings.filterwarnings('ignore', '.*acme.fields.resource', DeprecationWarning)
+        warnings.filterwarnings('ignore', 'resource attribute in acme.fields', DeprecationWarning)
         resource: str = fields.resource(resource_type)
 
 

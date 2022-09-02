@@ -713,7 +713,7 @@ class OrderResource(ResourceWithURI):
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "acme.messages.Directory.register", DeprecationWarning)
-    warnings.filterwarnings("ignore", "acme.fields.resource", DeprecationWarning)
+    warnings.filterwarnings("ignore", "resource attribute in acme.fields", DeprecationWarning)
 
     @Directory.register
     class NewOrder(Order):
