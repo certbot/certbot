@@ -804,5 +804,5 @@ class _MessagesDeprecationModule: # pragma: no cover
         return ['_module'] + dir(self._module)
 
 
-# Patching ourselves to warn about Zope interfaces deprecation and planned removal.
+# Patching ourselves to warn about acme.messages.OLD_ERROR_PREFIX deprecation and planned removal.
 sys.modules[__name__] = cast(ModuleType, _MessagesDeprecationModule(sys.modules[__name__]))
