@@ -214,7 +214,10 @@ STATUS_DEACTIVATED = Status('deactivated')
 
 
 class Directory(jose.JSONDeSerializable):
-    """Directory."""
+    """Directory.
+
+    Directory resources must be accessed by the exact field name in RFC8555 (section 9.7.5).
+    """
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
