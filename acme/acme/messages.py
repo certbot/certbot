@@ -571,7 +571,7 @@ class AuthorizationResource(ResourceWithURI):
 
 
 class CertificateRequest(jose.JSONObjectWithFields):
-    """ACME new-cert request.
+    """ACME newOrder request.
 
     :ivar jose.ComparableX509 csr:
         `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
