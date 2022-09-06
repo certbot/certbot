@@ -15,5 +15,3 @@ variables:
 
 stages:
   - template: templates/stages/deploy-stage.yml
-    parameters:
-      snapReleaseChannel: candidate
