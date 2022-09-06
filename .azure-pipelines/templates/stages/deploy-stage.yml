@@ -1,7 +1,14 @@
+parameters:
+- name: snapReleaseChannel
+  type: string
+  default: edge
+
 stages:
   - stage: Deploy
     jobs:
       - template: ../jobs/snap-deploy-job.yml
+        parameters:
+          snapReleaseChannel: ${{ parameters.snapReleaseChannel }}
       - job: publish_docker
         pool:
           vmImage: ubuntu-22.04
