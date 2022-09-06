@@ -1,0 +1,18 @@
+# Pipeline for testing, building, and deploying Certbot 2.0 beta releases.
+trigger: none
+pr: none
+
+variables:
+  # We don't publish our Docker images in this pipeline, but when building them
+  # for testing, let's use the nightly tag.
+  dockerTag: nightly
+  snapBuildTimeout: 5400
+
+stages:
+  - template: templates/stages/test-and-package-stage.yml
+  - stage: DeploySnaps
+    jobs:
+      - template: templates/jobs/snap-deploy-job.yml
+        parameters:
+          snapReleaseChannel: beta
+  - template: templates/stages/notify-failure-stage.yml
