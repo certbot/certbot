@@ -1653,19 +1653,21 @@ def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
 
 
 def reconfigure(config: configuration.NamespaceConfig,
-          unused_plugins: plugins_disco.PluginsRegistry) -> None:
+          plugins: plugins_disco.PluginsRegistry) -> None:
     """Write me.
 
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
 
-    :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: plugins_disco.PluginsRegistry
+    :param plugins: List of plugins
+    :type plugins: plugins_disco.PluginsRegistry
 
     :returns: `None`
     :rtype: None
 
     """
+    # we need the side effect of correct filling out config for those who want it
+    _, _ = plug_sel.choose_configurator_plugins(config, plugins, "")
     cert_manager.reconfigure(config)
 
 
