@@ -1,7 +1,6 @@
 parameters:
 - name: snapReleaseChannel
   type: string
-  default: edge
   values:
   - edge
   - beta
