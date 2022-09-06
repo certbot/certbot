@@ -5,6 +5,7 @@ parameters:
   values:
   - edge
   - beta
+  - candidate
 
 stages:
   - stage: Deploy

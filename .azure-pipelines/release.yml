@@ -15,5 +15,5 @@ stages:
   - template: templates/stages/changelog-stage.yml
   - template: templates/stages/deploy-stage.yml
     parameters:
-      snapReleaseChannel: beta
+      snapReleaseChannel: candidate
   - template: templates/stages/notify-failure-stage.yml
