@@ -18,7 +18,7 @@ import zope.interface
 
 from acme.challenges import Challenge
 from acme.challenges import ChallengeResponse
-from acme.client import ClientBase
+from acme.client import ClientV2
 from certbot import configuration
 from certbot.achallenges import AnnotatedChallenge
 
@@ -53,7 +53,7 @@ class AccountStorage(metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    def save(self, account: 'Account', client: ClientBase) -> None:  # pragma: no cover
+    def save(self, account: 'Account', client: ClientV2) -> None:  # pragma: no cover
         """Save account.
 
         :raises .AccountStorageError: if account could not be saved

@@ -134,8 +134,8 @@ class DirectoryTest(unittest.TestCase):
     def setUp(self):
         from acme.messages import Directory
         self.dir = Directory({
-            'new-reg': 'reg',
-            mock.MagicMock(resource_type='new-cert'): 'cert',
+            'newReg': 'reg',
+            'newCert': 'cert',
             'meta': Directory.Meta(
                 terms_of_service='https://example.com/acme/terms',
                 website='https://www.example.com/',
@@ -148,26 +148,23 @@ class DirectoryTest(unittest.TestCase):
         Directory({'foo': 'bar'})
 
     def test_getitem(self):
-        self.assertEqual('reg', self.dir['new-reg'])
-        from acme.messages import NewRegistration
-        self.assertEqual('reg', self.dir[NewRegistration])
-        self.assertEqual('reg', self.dir[NewRegistration()])
+        self.assertEqual('reg', self.dir['newReg'])
 
     def test_getitem_fails_with_key_error(self):
         self.assertRaises(KeyError, self.dir.__getitem__, 'foo')
 
     def test_getattr(self):
-        self.assertEqual('reg', self.dir.new_reg)
+        self.assertEqual('reg', self.dir.newReg)
 
     def test_getattr_fails_with_attribute_error(self):
         self.assertRaises(AttributeError, self.dir.__getattr__, 'foo')
 
     def test_to_json(self):
         self.assertEqual(self.dir.to_json(), {
-            'new-reg': 'reg',
-            'new-cert': 'cert',
+            'newReg': 'reg',
+            'newCert': 'cert',
             'meta': {
-                'terms-of-service': 'https://example.com/acme/terms',
+                'termsOfService': 'https://example.com/acme/terms',
                 'website': 'https://www.example.com/',
                 'caaIdentities': ['example.com'],
             },
@@ -287,7 +284,7 @@ class UpdateRegistrationTest(unittest.TestCase):
     def test_empty(self):
         from acme.messages import UpdateRegistration
         jstring = '{"resource": "reg"}'
-        self.assertEqual(jstring, UpdateRegistration().json_dumps())
+        self.assertEqual('{}', UpdateRegistration().json_dumps())
         self.assertEqual(
             UpdateRegistration(), UpdateRegistration.json_loads(jstring))
 
@@ -335,7 +332,7 @@ class ChallengeBodyTest(unittest.TestCase):
             error=error)
 
         self.jobj_to = {
-            'uri': 'http://challb',
+            'url': 'http://challb',
             'status': self.status,
             'type': 'dns',
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
@@ -382,20 +379,17 @@ class AuthorizationTest(unittest.TestCase):
                           chall=challenges.DNS(
                               token=b'DGyRejmCefe7v4NfDGDKfA')),
         )
-        combinations = ((0,), (1,))
 
         from acme.messages import Authorization
         from acme.messages import Identifier
         from acme.messages import IDENTIFIER_FQDN
         identifier = Identifier(typ=IDENTIFIER_FQDN, value='example.com')
         self.authz = Authorization(
-            identifier=identifier, combinations=combinations,
-            challenges=self.challbs)
+            identifier=identifier, challenges=self.challbs)
 
         self.jobj_from = {
             'identifier': identifier.to_json(),
             'challenges': [challb.to_json() for challb in self.challbs],
-            'combinations': combinations,
         }
 
     def test_from_json(self):
@@ -405,12 +399,6 @@ class AuthorizationTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.messages import Authorization
         hash(Authorization.from_json(self.jobj_from))
-
-    def test_resolved_combinations(self):
-        self.assertEqual(self.authz.resolved_combinations, (
-            (self.challbs[0],),
-            (self.challbs[1],),
-        ))
 
 
 class AuthorizationResourceTest(unittest.TestCase):
@@ -502,7 +490,6 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
         from acme.messages import NewAuthorization
 
         new_order = NewAuthorization()
-        new_order.le_acme_version = 2
 
         jobj = new_order.json_dumps(indent=2).encode()
         # RFC8555 states that JWS bodies must not have a resource field.

@@ -163,7 +163,7 @@ def example_http():
     # Register account and accept TOS
 
     net = client.ClientNetwork(acc_key, user_agent=USER_AGENT)
-    directory = messages.Directory.from_json(net.get(DIRECTORY_URL).json())
+    directory = client.ClientV2.get_directory(DIRECTORY_URL, net)
     client_acme = client.ClientV2(directory, net=net)
 
     # Terms of Service URL is in client_acme.directory.meta.terms_of_service
@@ -215,8 +215,7 @@ def example_http():
     try:
         regr = client_acme.query_registration(regr)
     except errors.Error as err:
-        if err.typ == messages.OLD_ERROR_PREFIX + 'unauthorized' \
-                or err.typ == messages.ERROR_PREFIX + 'unauthorized':
+        if err.typ == messages.ERROR_PREFIX + 'unauthorized':
             # Status is deactivated.
             pass
         raise
