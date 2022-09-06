@@ -14,32 +14,5 @@ stages:
             arm64v8:
               DOCKER_ARCH: arm64v8
         steps:
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              artifact: docker_$(DOCKER_ARCH)
-              path: $(Build.SourcesDirectory)
-            displayName: Retrieve Docker images
-          - bash: set -e && docker load --input $(Build.SourcesDirectory)/images.tar
-            displayName: Load Docker images
-          - task: Docker@2
-            inputs:
-              command: login
-              # The credentials used here are for the shared certbotbot account
-              # on Docker Hub. The credentials are stored in a service account
-              # which was created by following the instructions at
-              # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#sep-docreg.
-              # The name given to this service account must match the value
-              # given to containerRegistry below. The authentication used when
-              # creating this service account was a personal access token
-              # rather than a password to bypass 2FA. When Brad set this up,
-              # Azure Pipelines failed to verify the credentials with an error
-              # like "access is forbidden with a JWT issued from a personal
-              # access token", but after saving them without verification, the
-              # access token worked when the pipeline actually ran. "Grant
-              # access to all pipelines" should also be checked on the service
-              # account. The access token can be deleted on Docker Hub if
-              # these credentials need to be revoked.
-              containerRegistry: docker-hub
-            displayName: Login to Docker Hub
-          - bash: set -e && tools/docker/deploy.sh $(dockerTag) $DOCKER_ARCH
-            displayName: Deploy the Docker images
+          - bash: echo hi
+            displayName: say hi

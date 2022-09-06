@@ -46,23 +46,5 @@ jobs:
     steps:
       - bash: |
           set -e
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends snapd
-          sudo snap install --classic snapcraft
-        displayName: Install dependencies
-      - task: DownloadPipelineArtifact@2
-        inputs:
-          artifact: snaps_$(SNAP_ARCH)
-          path: $(Build.SourcesDirectory)/snap
-        displayName: Retrieve Certbot snaps
-      - task: DownloadSecureFile@1
-        name: snapcraftCfg
-        inputs:
-          secureFile: snapcraft.cfg
-      - bash: |
-          set -e
-          export SNAPCRAFT_STORE_CREDENTIALS=$(cat $(snapcraftCfg.secureFilePath))
-          for SNAP_FILE in snap/*.snap; do
-            tools/retry.sh eval snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
-          done
-        displayName: Publish to Snap store
+          echo ${{ parameters.snapReleaseChannel }}
+        displayName: echo channel
