@@ -17,7 +17,6 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
-from typing import TYPE_CHECKING
 from typing import Union
 import warnings
 
@@ -32,9 +31,6 @@ from certbot.compat import os
 _USE_DISTRO = sys.platform.startswith('linux')
 if _USE_DISTRO:
     import distro
-
-if TYPE_CHECKING:
-    import distutils.version
 
 logger = logging.getLogger(__name__)
 
@@ -609,24 +605,6 @@ def is_wildcard_domain(domain: Union[str, bytes]) -> bool:
     if isinstance(domain, str):
         return domain.startswith("*.")
     return domain.startswith(b"*.")
-
-
-def get_strict_version(normalized: str) -> "distutils.version.StrictVersion":
-    """Converts a normalized version to a strict version.
-
-    :param str normalized: normalized version string
-
-    :returns: An equivalent strict version
-    :rtype: distutils.version.StrictVersion
-
-    """
-    warnings.warn("certbot.util.get_strict_version is deprecated and will be "
-                  "removed in a future release.", DeprecationWarning)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        import distutils.version
-        # strict version ending with "a" and a number designates a pre-release
-        return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
 
 
 def is_staging(srv: str) -> bool:

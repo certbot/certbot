@@ -592,19 +592,6 @@ class OsInfoTest(unittest.TestCase):
         self.assertEqual(cbutil.get_python_os_info(), ("testdist", "42"))
 
 
-class GetStrictVersionTest(unittest.TestCase):
-    """Test for certbot.util.get_strict_version."""
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.util import get_strict_version
-        return get_strict_version(*args, **kwargs)
-
-    def test_it(self):
-        with self.assertWarnsRegex(DeprecationWarning, "get_strict_version"):
-            self._call("1.2.3")
-
-
 class AtexitRegisterTest(unittest.TestCase):
     """Tests for certbot.util.atexit_register."""
     def setUp(self):
