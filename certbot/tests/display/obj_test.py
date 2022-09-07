@@ -275,7 +275,7 @@ class NoninteractiveDisplayTest(unittest.TestCase):
     """Test non-interactive display. These tests are pretty easy!"""
     def setUp(self):
         self.mock_stdout = mock.MagicMock()
-        self.displayer = display_util.NoninteractiveDisplay(self.mock_stdout)
+        self.displayer = display_obj.NoninteractiveDisplay(self.mock_stdout)
 
     @mock.patch("certbot._internal.display.obj.logger")
     def test_notification_no_pause(self, mock_logger):

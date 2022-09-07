@@ -33,7 +33,6 @@ from acme import messages
 from certbot import achallenges
 from certbot import errors as le_errors
 from certbot._internal.display import obj as display_obj
-from certbot.display import util as display_util
 from certbot.tests import acme_util
 
 DESCRIPTION = """
@@ -339,7 +338,7 @@ def setup_logging(args: argparse.Namespace) -> None:
 
 def setup_display() -> None:
     """"Prepares a display utility instance for the Certbot plugins """
-    displayer = display_util.NoninteractiveDisplay(sys.stdout)
+    displayer = display_obj.NoninteractiveDisplay(sys.stdout)
     display_obj.set_display(displayer)
 
 
