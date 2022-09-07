@@ -1,4 +1,4 @@
-# Pipeline for testing, building, and deploying Certbot 2.0 beta releases.
+# Pipeline for testing, building, and deploying Certbot 2.0 pre-releases.
 trigger: none
 pr: none
 
