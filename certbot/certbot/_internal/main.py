@@ -1666,21 +1666,36 @@ def reconfigure(config: configuration.NamespaceConfig,
     :rtype: None
 
     """
-    config.dry_run = True
 
-    # we need the side effect of correct filling out config for those who want it
-    # _, _ = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+    if config.domains:
+        raise errors.ConfigurationError("You have specified domains, but this function cannot "
+            "be used to modify the domains in a certificate. If you would like to do so, you "
+            "will need to renew the certificate instead of reconfiguring, which can be done "
+            "with the flag --force-renewal. Otherwise, remove the domains from the command "
+            "to continue reconfiguring. You can specify which certificate you want on the command "
+            "line with flag --cert-name instead.")
+        # TODO allow domains to be used to specify the certificate in addition to --cert-name,
+        # only erroring if they do not match the existing ones
+
+
+    # To make sure that the requested changes work, do a dry run. This will have the side effect
+    # of correctly setting all the needed fields in config, which can then be saved upon success.
+    config.dry_run = True
 
     installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     le_client = _init_le_client(config, auth, installer)
 
-    # renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
+    if not config.certname:
+        certname_question = "Which certificate would you like to reconfigure?"
+        config.certname = cert_manager.get_certnames(
+            config, "reconfigure", allow_multiple=False,
+            custom_prompt=certname_question)[0]
 
-    domains, certname = _find_domains_or_certname(config, installer)
-    should_get_cert, lineage = _find_cert(config, domains, certname)
+    certname = config.certname
+    lineage = cert_manager.lineage_for_certname(config, certname)
 
     # renews cert as dry run
-    lineage = _get_and_save_cert(le_client, config, domains, certname, lineage)
+    lineage = _get_and_save_cert(le_client, config, certname=certname, lineage=lineage)
 
     # if not renewed_lineage:
     #     raise errors.Error("An existing certificate for the given name could not be found.")
