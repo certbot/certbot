@@ -1666,9 +1666,27 @@ def reconfigure(config: configuration.NamespaceConfig,
     :rtype: None
 
     """
+    config.dry_run = True
+
     # we need the side effect of correct filling out config for those who want it
-    _, _ = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    cert_manager.reconfigure(config)
+    # _, _ = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+
+    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+    le_client = _init_le_client(config, auth, installer)
+
+    # renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
+
+    domains, certname = _find_domains_or_certname(config, installer)
+    should_get_cert, lineage = _find_cert(config, domains, certname)
+
+    # renews cert as dry run
+    lineage = _get_and_save_cert(le_client, config, domains, certname, lineage)
+
+    # if not renewed_lineage:
+    #     raise errors.Error("An existing certificate for the given name could not be found.")
+
+    lineage.save_new_config_values(config)
+    # cert_manager.reconfigure(config)
 
 
 @contextmanager
