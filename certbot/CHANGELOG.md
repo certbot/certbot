@@ -13,10 +13,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * A change to order finalization has been made to the `acme` module and Certbot:
   - An order's `certificate` field will only be processed if the order's `status` is `valid`.
   - An order's `error` field will only be processed if the order's `status` is `invalid`.
-* Removed deprecated functions `certbot.tests.util.patch_get_utility*`. Plugins should now
-  patch `certbot.display.util` themselves in their tests or use
-  `certbot.tests.util.patch_display_util` as a temporary workaround.
-* Removed deprecated function `certbot.util.get_strict_version`.
 
 ### Fixed
 
