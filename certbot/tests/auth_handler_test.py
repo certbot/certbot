@@ -70,8 +70,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_display = mock.Mock()
         self.mock_config = mock.Mock(debug_challenges=False)
-        with mock.patch("zope.component.provideUtility"):
-            display_obj.set_display(self.mock_display)
+        display_obj.set_display(self.mock_display)
 
         self.mock_auth = mock.MagicMock(name="Authenticator")
 

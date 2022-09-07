@@ -1055,9 +1055,7 @@ class MainTest(test_util.ConfigTestCase):
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
         self.assertEqual(filtered.init.call_count, 1)
-        filtered.verify.assert_called_once_with(ifaces)
-        verified = filtered.verify()
-        self.assertEqual(stdout.getvalue().strip(), str(verified))
+        self.assertEqual(stdout.getvalue().strip(), str(filtered))
 
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
@@ -1073,11 +1071,9 @@ class MainTest(test_util.ConfigTestCase):
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
         self.assertEqual(filtered.init.call_count, 1)
-        filtered.verify.assert_called_once_with(ifaces)
-        verified = filtered.verify()
-        verified.prepare.assert_called_once_with()
-        verified.available.assert_called_once_with()
-        available = verified.available()
+        filtered.prepare.assert_called_once_with()
+        filtered.available.assert_called_once_with()
+        available = filtered.available()
         self.assertEqual(stdout.getvalue().strip(), str(available))
 
     def test_certonly_abspath(self):

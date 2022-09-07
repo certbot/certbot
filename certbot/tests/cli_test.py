@@ -85,7 +85,7 @@ class ParseTest(unittest.TestCase):
 
     @staticmethod
     def parse(*args, **kwargs):
-        """Mocks zope.component.getUtility and calls _unmocked_parse."""
+        """Mocks certbot._internal.display.obj.get_display and calls _unmocked_parse."""
         with test_util.patch_display_util():
             return ParseTest._unmocked_parse(*args, **kwargs)
 

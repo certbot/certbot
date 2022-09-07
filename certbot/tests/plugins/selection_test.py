@@ -77,7 +77,7 @@ class PickPluginTest(unittest.TestCase):
         plugin_ep.init.return_value = "foo"
         plugin_ep.misconfigured = False
 
-        self.reg.visible().ifaces().verify().available.return_value = {
+        self.reg.visible().ifaces().available.return_value = {
             "bar": plugin_ep}
         self.assertEqual("foo", self._call())
 
@@ -86,14 +86,14 @@ class PickPluginTest(unittest.TestCase):
         plugin_ep.init.return_value = "foo"
         plugin_ep.misconfigured = True
 
-        self.reg.visible().ifaces().verify().available.return_value = {
+        self.reg.visible().ifaces().available.return_value = {
             "bar": plugin_ep}
         self.assertIsNone(self._call())
 
     def test_multiple(self):
         plugin_ep = mock.MagicMock()
         plugin_ep.init.return_value = "foo"
-        self.reg.visible().ifaces().verify().available.return_value = {
+        self.reg.visible().ifaces().available.return_value = {
             "bar": plugin_ep,
             "baz": plugin_ep,
         }
@@ -104,7 +104,7 @@ class PickPluginTest(unittest.TestCase):
             [plugin_ep, plugin_ep], self.question)
 
     def test_choose_plugin_none(self):
-        self.reg.visible().ifaces().verify().available.return_value = {
+        self.reg.visible().ifaces().available.return_value = {
             "bar": None,
             "baz": None,
         }

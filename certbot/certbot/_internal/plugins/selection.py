@@ -65,7 +65,6 @@ def get_unprepared_installer(config: configuration.NamespaceConfig,
         return None
     installers = plugins.filter(lambda p_ep: p_ep.check_name(req_inst))
     installers.init(config)
-    installers = installers.verify((interfaces.Installer,))
     if len(installers) > 1:
         raise errors.PluginSelectionError(
             "Found multiple installers with the name %s, Certbot is unable to "
@@ -116,9 +115,8 @@ def pick_plugin(config: configuration.NamespaceConfig, default: Optional[str],
         filtered = plugins.visible().ifaces(ifaces)
 
     filtered.init(config)
-    verified = filtered.verify(ifaces)
-    verified.prepare()
-    prepared = verified.available()
+    filtered.prepare()
+    prepared = filtered.available()
 
     if len(prepared) > 1:
         logger.debug("Multiple candidate plugins: %s", prepared)
