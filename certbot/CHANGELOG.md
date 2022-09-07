@@ -23,6 +23,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   next major release of Certbot.
 * The `source_address` argument for `acme.client.ClientNetwork` is deprecated
   and support for it will be removed in the next major release.
+* Add UI text suggesting users create certs for multiple domains, when possible
 
 ### Fixed
 
