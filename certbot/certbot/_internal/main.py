@@ -1667,7 +1667,7 @@ def reconfigure(config: configuration.NamespaceConfig,
 
     """
     # we need the side effect of correct filling out config for those who want it
-    _, _ = plug_sel.choose_configurator_plugins(config, plugins, "")
+    _, _ = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     cert_manager.reconfigure(config)
 
 
