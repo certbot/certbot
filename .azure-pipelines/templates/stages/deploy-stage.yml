@@ -1,4 +1,6 @@
 parameters:
+# We do not define acceptable values for this parameter here as it is passed
+# through to ../jobs/snap-deploy-job.yml which does its own sanity checking.
 - name: snapReleaseChannel
   type: string
   default: edge

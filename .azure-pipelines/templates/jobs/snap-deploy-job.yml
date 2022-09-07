@@ -1,3 +1,11 @@
+# As (somewhat) described at
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops#context,
+# each template only has access to the parameters passed into it. To help make
+# use of this design, we define snapReleaseChannel without a default value
+# which requires the user of this template to define it as described at
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/parameters-name?view=azure-pipelines#remarks.
+# This makes the user of this template be explicit while allowing them to
+# define their own parameters with defaults that make sense for that context.
 parameters:
 - name: snapReleaseChannel
   type: string
