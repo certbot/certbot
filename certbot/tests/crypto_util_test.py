@@ -67,23 +67,6 @@ class GenerateKeyTest(test_util.TempDirTestCase):
         self.assertRaises(ValueError, self._call, 431, self.workdir)
 
 
-class InitSaveKey(unittest.TestCase):
-    """Test for certbot.crypto_util.init_save_key."""
-    @mock.patch("certbot.crypto_util.generate_key")
-    @mock.patch("certbot.crypto_util.zope.component")
-    def test_it(self, mock_zope, mock_generate):
-        from certbot.crypto_util import init_save_key
-
-        mock_zope.getUtility.return_value = mock.MagicMock(strict_permissions=True)
-
-        with self.assertWarns(DeprecationWarning):
-            init_save_key(4096, "/some/path")
-
-        mock_generate.assert_called_with(4096, "/some/path", elliptic_curve="secp256r1",
-                                         key_type="rsa", keyname="key-certbot.pem",
-                                         strict_permissions=True)
-
-
 class GenerateCSRTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.generate_csr."""
     @mock.patch('acme.crypto_util.make_csr')
@@ -98,24 +81,6 @@ class GenerateCSRTest(test_util.TempDirTestCase):
 
         self.assertEqual(csr.data, b'csr_pem')
         self.assertIn('csr-certbot.pem', csr.file)
-
-
-class InitSaveCsr(unittest.TestCase):
-    """Tests for certbot.crypto_util.init_save_csr."""
-    @mock.patch("certbot.crypto_util.generate_csr")
-    @mock.patch("certbot.crypto_util.zope.component")
-    def test_it(self, mock_zope, mock_generate):
-        from certbot.crypto_util import init_save_csr
-
-        mock_zope.getUtility.return_value = mock.MagicMock(must_staple=True,
-                                                           strict_permissions=True)
-        key = certbot.util.Key(file=None, pem=None)
-
-        with self.assertWarns(DeprecationWarning):
-            init_save_csr(key, {"dummy"}, "/some/path")
-
-        mock_generate.assert_called_with(key, {"dummy"}, "/some/path",
-                                         must_staple=True, strict_permissions=True)
 
 
 class ValidCSRTest(unittest.TestCase):
