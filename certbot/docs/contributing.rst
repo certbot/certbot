@@ -500,6 +500,9 @@ Submitting a pull request
 
 Steps:
 
+0. We recommend you talk with us in a GitHub issue or :ref:`Mattermost <ask for
+   help>` before writing a pull request to ensure the changes you're making is
+   something we have the time and interest to review.
 1. Write your code! When doing this, you should add :ref:`mypy type annotations
    <type annotations>` for any functions you add or modify. You can check that
    you've done this correctly by running ``tox -e mypy`` on a machine that has

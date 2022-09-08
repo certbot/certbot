@@ -2,6 +2,7 @@
 from typing import Dict
 import unittest
 from unittest import mock
+import warnings
 
 import josepy as jose
 

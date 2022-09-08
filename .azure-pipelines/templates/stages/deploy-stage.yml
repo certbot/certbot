@@ -35,7 +35,7 @@ stages:
       # more info.
       - job: publish_snap
         pool:
-          vmImage: ubuntu-18.04
+          vmImage: ubuntu-22.04
         variables:
           - group: certbot-common
         strategy:
@@ -71,7 +71,7 @@ stages:
             displayName: Publish to Snap store
       - job: publish_docker
         pool:
-          vmImage: ubuntu-18.04
+          vmImage: ubuntu-22.04
         strategy:
           matrix:
             amd64:
@@ -96,11 +96,16 @@ stages:
               # which was created by following the instructions at
               # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#sep-docreg.
               # The name given to this service account must match the value
-              # given to containerRegistry below. "Grant access to all
-              # pipelines" should also be checked.  To revoke these
-              # credentials, we can change the password on the certbotbot
-              # Docker Hub account or remove the account from the
-              # Certbot organization on Docker Hub.
+              # given to containerRegistry below. The authentication used when
+              # creating this service account was a personal access token
+              # rather than a password to bypass 2FA. When Brad set this up,
+              # Azure Pipelines failed to verify the credentials with an error
+              # like "access is forbidden with a JWT issued from a personal
+              # access token", but after saving them without verification, the
+              # access token worked when the pipeline actually ran. "Grant
+              # access to all pipelines" should also be checked on the service
+              # account. The access token can be deleted on Docker Hub if
+              # these credentials need to be revoked.
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
           - bash: set -e && tools/docker/deploy.sh $(dockerTag) $DOCKER_ARCH
