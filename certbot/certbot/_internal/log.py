@@ -264,7 +264,7 @@ class TempHandler(logging.StreamHandler):
 
     """
     def __init__(self) -> None:
-        self._workdir = tempfile.mkdtemp(prefix="certbot_log")
+        self._workdir = tempfile.mkdtemp(prefix="certbot-log-")
         self.path = os.path.join(self._workdir, 'log')
         stream = util.safe_open(self.path, mode='w', chmod=0o600)
         super().__init__(stream)
