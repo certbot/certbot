@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* If Certbot exits before setting up its usual log files, the temporary directory created to save logging information will begin with the name `certbot-log-` rather than a generic name. This should not be considered a [stable aspect of Certbot](https://certbot.eff.org/docs/compatibility.html) and may change again in the future.
 
 ### Fixed
 
