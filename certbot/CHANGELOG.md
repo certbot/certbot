@@ -11,6 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * If Certbot exits before setting up its usual log files, the temporary directory created to save logging information will begin with the name `certbot-log-` rather than a generic name. This should not be considered a [stable aspect of Certbot](https://certbot.eff.org/docs/compatibility.html) and may change again in the future.
+* DNS RFC2136 module now uses the TSIG key to check for an authoritative SOA record. Helps the use of split-horizon and multiple views in BIND9 using the key in an ACL to determine which view to use.
 
 ### Fixed
 
