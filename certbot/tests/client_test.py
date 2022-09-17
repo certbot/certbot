@@ -24,7 +24,6 @@ except ImportError:  # pragma: no cover
 
 
 KEY = test_util.load_vector("rsa512_key.pem")
-NIST_P256_KEY = test_util.load_vector("nistp256_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
 
 # pylint: disable=line-too-long
@@ -252,7 +251,6 @@ class RegisterTest(test_util.ConfigTestCase):
 class ClientTestCommon(test_util.ConfigTestCase):
     """Common base class for certbot._internal.client.Client tests."""
 
-    backwards_compatible = True
     account_key = KEY
 
     def setUp(self):
@@ -264,10 +262,7 @@ class ClientTestCommon(test_util.ConfigTestCase):
 
         from certbot._internal.client import Client
         with mock.patch("certbot._internal.client.acme_client") as acme:
-            if self.backwards_compatible:
-                self.acme_client = acme.BackwardsCompatibleClientV2
-            else:
-                self.acme_client = acme.ClientV2
+            self.acme_client = acme.BackwardsCompatibleClientV2
             self.acme = self.acme_client.return_value = mock.MagicMock()
             self.client_network = acme.ClientNetwork
             self.client = Client(

@@ -59,28 +59,6 @@ class AccountTest(unittest.TestCase):
           "<Account(i_am_a_regr, 7adac10320f585ddf118429c0c4af2cd, Meta("))
 
 
-class AccountTestECKey(AccountTest):
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.KEY = cls.KEY = jose.JWKEC.load(test_util.load_vector("nistp256_key.pem"))
-
-    def test_ec_key_type(self):
-        self.assertEqual(self.acc.key.typ, "EC")
-
-    def test_id(self):
-        self.assertEqual(self.acc.id, "221ffdf7d2388ee3d93bfbd7be4f56bb")
-
-    def test_repr(self):
-        self.assertIs(repr(
-            self.acc
-        ).startswith("<Account(i_am_a_regr, 221ffdf7d2388ee3d93bfbd7be4f56bb, Meta("), True)
-
-    def test_slug(self):
-        # 221f
-        pass
-
-
 class MetaTest(unittest.TestCase):
     """Tests for certbot._internal.account.Meta."""
     def test_deserialize_partial(self):
@@ -153,7 +131,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
 
     def test_ec_key(self):
         from certbot._internal.account import Account
-        key = JWKEC.load(test_util.load_vector("ec_secp384r1_key.pem"))
+        key = JWKEC.load(test_util.load_vector("ec_secp256r1_key.pem"))
         self.acc = Account(
             regr=messages.RegistrationResource(
                 uri=None, body=messages.Registration(),
