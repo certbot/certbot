@@ -32,14 +32,22 @@ import OpenSSL
 import requests
 from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
-from requests_toolbelt.adapters.source import SourceAddressAdapter
+# We're capturing the warnings described at
+# https://github.com/requests/toolbelt/issues/331 until we can remove this
+# dependency in Certbot 2.0.
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "'urllib3.contrib.pyopenssl",
+                            DeprecationWarning)
+    from requests_toolbelt.adapters.source import SourceAddressAdapter
 
 from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme.mixins import VersionedLEACMEMixin
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +58,9 @@ DER_CONTENT_TYPE = 'application/pkix-cert'
 
 class ClientBase:
     """ACME client base object.
+
+    .. deprecated:: 1.30.0
+       Use `ClientV2` instead.
 
     :ivar messages.Directory directory:
     :ivar .ClientNetwork net: Client network.
@@ -295,7 +306,7 @@ class Client(ClientBase):
 
         """
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
-        response = self._post(self.directory[new_reg], new_reg)
+        response = self._post(self.directory['new-reg'], new_reg)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 
@@ -601,7 +612,7 @@ class Client(ClientBase):
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        self._revoke(cert, rsn, self.directory[messages.Revocation])
+        self._revoke(cert, rsn, self.directory['revoke-cert'])
 
 
 class ClientV2(ClientBase):
@@ -1031,7 +1042,8 @@ class ClientNetwork:
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param float timeout: Timeout for requests.
-    :param source_address: Optional source address to bind to when making requests.
+    :param source_address: Optional source address to bind to when making
+        requests. (deprecated since 1.30.0)
     :type source_address: str or tuple(str, int)
     """
     def __init__(self, key: jose.JWK, account: Optional[messages.RegistrationResource] = None,
@@ -1049,6 +1061,8 @@ class ClientNetwork:
         adapter = HTTPAdapter()
 
         if source_address is not None:
+            warnings.warn("Support for source_address is deprecated and will be "
+                          "removed soon.", DeprecationWarning, stacklevel=2)
             adapter = SourceAddressAdapter(source_address)
 
         self.session.mount("http://", adapter)
@@ -1303,7 +1317,7 @@ class _ClientDeprecationModule:
         self.__dict__['_module'] = module
 
     def __getattr__(self, attr: str) -> Any:
-        if attr in ('Client', 'BackwardsCompatibleClientV2'):
+        if attr in ('Client', 'ClientBase', 'BackwardsCompatibleClientV2'):
             warnings.warn('The {0} attribute in acme.client is deprecated '
                           'and will be removed soon.'.format(attr),
                           DeprecationWarning, stacklevel=2)

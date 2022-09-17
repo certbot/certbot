@@ -1,6 +1,7 @@
 """Tests for acme.fields."""
 import datetime
 import unittest
+import warnings
 
 import josepy as jose
 import pytz
@@ -58,8 +59,10 @@ class ResourceTest(unittest.TestCase):
     """Tests for acme.fields.Resource."""
 
     def setUp(self):
-        from acme.fields import Resource
-        self.field = Resource('x')
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.*Resource', DeprecationWarning)
+            from acme.fields import Resource
+            self.field = Resource('x')
 
     def test_decode_good(self):
         self.assertEqual('x', self.field.decode('x'))

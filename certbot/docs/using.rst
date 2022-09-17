@@ -317,6 +317,7 @@ dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
 dns-azure_         Y    N    DNS Authentication using Azure DNS
 dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
 dns-yandexcloud_   Y    N    DNS Authentication using Yandex Cloud DNS
+dns-bunny_         Y    N    DNS Authentication using BunnyDNS
 njalla_            Y    N    DNS Authentication for njalla
 DuckDNS_           Y    N    DNS Authentication for DuckDNS
 Porkbun_           Y    N    DNS Authentication for Porkbun
@@ -338,6 +339,7 @@ Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
 .. _dns-azure: https://github.com/binkhq/certbot-dns-azure
 .. _dns-godaddy: https://github.com/miigotu/certbot-dns-godaddy
 .. _dns-yandexcloud: https://github.com/PykupeJIbc/certbot-dns-yandexcloud
+.. _dns-bunny: https://github.com/mwt/certbot-dns-bunny
 .. _njalla: https://github.com/chaptergy/certbot-dns-njalla
 .. _DuckDNS: https://github.com/infinityofspace/certbot_dns_duckdns
 .. _Porkbun: https://github.com/infinityofspace/certbot_dns_porkbun

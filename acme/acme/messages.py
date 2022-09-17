@@ -2,7 +2,9 @@
 import datetime
 from collections.abc import Hashable
 import json
+from types import ModuleType
 from typing import Any
+from typing import cast
 from typing import Dict
 from typing import Iterator
 from typing import List
@@ -14,6 +16,8 @@ from typing import Type
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
+import sys
+import warnings
 
 import josepy as jose
 
@@ -22,7 +26,9 @@ from acme import errors
 from acme import fields
 from acme import jws
 from acme import util
-from acme.mixins import ResourceMixin
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", ".*acme.mixins", category=DeprecationWarning)
+    from acme.mixins import ResourceMixin
 
 if TYPE_CHECKING:
     from typing_extensions import Protocol  # pragma: no cover
@@ -274,6 +280,10 @@ class Directory(jose.JSONDeSerializable):
     def register(cls,
                  resource_body_cls: Type[GenericHasResourceType]) -> Type[GenericHasResourceType]:
         """Register resource."""
+        warnings.warn(
+            "acme.messages.Directory.register is deprecated and will be removed in the next "
+            "major release of Certbot", DeprecationWarning, stacklevel=2
+        )
         resource_type = resource_body_cls.resource_type
         assert resource_type not in cls._REGISTERED_TYPES
         cls._REGISTERED_TYPES[resource_type] = resource_body_cls
@@ -292,6 +302,12 @@ class Directory(jose.JSONDeSerializable):
             raise AttributeError(str(error))
 
     def __getitem__(self, name: Union[str, HasResourceType, Type[HasResourceType]]) -> Any:
+        if not isinstance(name, str):
+            warnings.warn(
+                "Looking up acme.messages.Directory resources by non-string keys is deprecated "
+                "and will be removed in the next major release of Certbot",
+                DeprecationWarning, stacklevel=2
+            )
         try:
             return self._jobj[self._canon_key(name)]
         except KeyError:
@@ -459,19 +475,6 @@ class Registration(ResourceBody):
         return self._filter_contact(self.email_prefix)
 
 
-@Directory.register
-class NewRegistration(ResourceMixin, Registration):
-    """New registration."""
-    resource_type = 'new-reg'
-    resource: str = fields.resource(resource_type)
-
-
-class UpdateRegistration(ResourceMixin, Registration):
-    """Update registration."""
-    resource_type = 'reg'
-    resource: str = fields.resource(resource_type)
-
-
 class RegistrationResource(ResourceWithURI):
     """Registration Resource.
 
@@ -573,14 +576,14 @@ class Authorization(ResourceBody):
     :ivar acme.messages.Identifier identifier:
     :ivar list challenges: `list` of `.ChallengeBody`
     :ivar tuple combinations: Challenge combinations (`tuple` of `tuple`
-        of `int`, as opposed to `list` of `list` from the spec).
+        of `int`, as opposed to `list` of `list` from the spec). (deprecated since 1.30.0)
     :ivar acme.messages.Status status:
     :ivar datetime.datetime expires:
 
     """
     identifier: Identifier = jose.field('identifier', decoder=Identifier.from_json, omitempty=True)
     challenges: List[ChallengeBody] = jose.field('challenges', omitempty=True)
-    combinations: Tuple[Tuple[int, ...], ...] = jose.field('combinations', omitempty=True)
+    _combinations: Tuple[Tuple[int, ...], ...] = jose.field('combinations', omitempty=True)
 
     status: Status = jose.field('status', omitempty=True, decoder=Status.from_json)
     # TODO: 'expires' is allowed for Authorization Resources in
@@ -590,6 +593,13 @@ class Authorization(ResourceBody):
     expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
     wildcard: bool = jose.field('wildcard', omitempty=True)
 
+    # combinations is temporarily renamed to _combinations during its deprecation
+    # period. See https://github.com/certbot/certbot/pull/9369#issuecomment-1199849262.
+    def __init__(self, **kwargs: Any) -> None:
+        if 'combinations' in kwargs:
+            kwargs['_combinations'] = kwargs.pop('combinations')
+        super().__init__(**kwargs)
+
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that challenge is redefined. Let's ignore the type check here.
     @challenges.decoder  # type: ignore
@@ -597,23 +607,39 @@ class Authorization(ResourceBody):
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
+    def combinations(self) -> Tuple[Tuple[int, ...], ...]:
+        """Challenge combinations.
+        (`tuple` of `tuple` of `int`, as opposed to `list` of `list` from the spec).
+
+        .. deprecated: 1.30.0
+
+        """
+        warnings.warn(
+            "acme.messages.Authorization.combinations is deprecated and will be "
+            "removed in a future release.", DeprecationWarning, stacklevel=2)
+        return self._combinations
+
+    @combinations.setter
+    def combinations(self, combos: Tuple[Tuple[int, ...], ...]) -> None: # pragma: no cover
+        warnings.warn(
+            "acme.messages.Authorization.combinations is deprecated and will be "
+            "removed in a future release.", DeprecationWarning, stacklevel=2)
+        self._combinations = combos
+
+    @property
     def resolved_combinations(self) -> Tuple[Tuple[ChallengeBody, ...], ...]:
-        """Combinations with challenges instead of indices."""
-        return tuple(tuple(self.challenges[idx] for idx in combo)
-                     for combo in self.combinations)  # pylint: disable=not-an-iterable
+        """Combinations with challenges instead of indices.
 
+        .. deprecated: 1.30.0
 
-@Directory.register
-class NewAuthorization(ResourceMixin, Authorization):
-    """New authorization."""
-    resource_type = 'new-authz'
-    resource: str = fields.resource(resource_type)
-
-
-class UpdateAuthorization(ResourceMixin, Authorization):
-    """Update authorization."""
-    resource_type = 'authz'
-    resource: str = fields.resource(resource_type)
+        """
+        warnings.warn(
+            "acme.messages.Authorization.resolved_combinations is deprecated and will be "
+            "removed in a future release.", DeprecationWarning, stacklevel=2)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.*combinations', DeprecationWarning)
+            return tuple(tuple(self.challenges[idx] for idx in combo)
+                        for combo in self.combinations)  # pylint: disable=not-an-iterable
 
 
 class AuthorizationResource(ResourceWithURI):
@@ -627,19 +653,6 @@ class AuthorizationResource(ResourceWithURI):
     new_cert_uri: str = jose.field('new_cert_uri', omitempty=True)
 
 
-@Directory.register
-class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
-    """ACME new-cert request.
-
-    :ivar jose.ComparableX509 csr:
-        `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
-
-    """
-    resource_type = 'new-cert'
-    resource: str = fields.resource(resource_type)
-    csr: jose.ComparableX509 = jose.field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
-
-
 class CertificateResource(ResourceWithURI):
     """Certificate Resource.
 
@@ -651,21 +664,6 @@ class CertificateResource(ResourceWithURI):
     """
     cert_chain_uri: str = jose.field('cert_chain_uri')
     authzrs: Tuple[AuthorizationResource, ...] = jose.field('authzrs')
-
-
-@Directory.register
-class Revocation(ResourceMixin, jose.JSONObjectWithFields):
-    """Revocation message.
-
-    :ivar jose.ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
-        `jose.ComparableX509`
-
-    """
-    resource_type = 'revoke-cert'
-    resource: str = fields.resource(resource_type)
-    certificate: jose.ComparableX509 = jose.field(
-        'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
-    reason: int = jose.field('reason')
 
 
 class Order(ResourceBody):
@@ -719,7 +717,98 @@ class OrderResource(ResourceWithURI):
                                                        omitempty=True)
 
 
-@Directory.register
-class NewOrder(Order):
-    """New order."""
-    resource_type = 'new-order'
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "acme.messages.Directory.register", DeprecationWarning)
+    warnings.filterwarnings("ignore", "resource attribute in acme.fields", DeprecationWarning)
+
+    @Directory.register
+    class NewOrder(Order):
+        """New order."""
+        resource_type = 'new-order'
+
+
+    @Directory.register
+    class Revocation(ResourceMixin, jose.JSONObjectWithFields):
+        """Revocation message.
+
+        :ivar jose.ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
+            `jose.ComparableX509`
+
+        """
+        resource_type = 'revoke-cert'
+        resource: str = fields.resource(resource_type)
+        certificate: jose.ComparableX509 = jose.field(
+            'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
+        reason: int = jose.field('reason')
+
+
+    @Directory.register
+    class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
+        """ACME new-cert request.
+
+        :ivar jose.ComparableX509 csr:
+            `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
+
+        """
+        resource_type = 'new-cert'
+        resource: str = fields.resource(resource_type)
+        csr: jose.ComparableX509 = jose.field('csr', decoder=jose.decode_csr,
+                                                encoder=jose.encode_csr)
+
+
+    @Directory.register
+    class NewAuthorization(ResourceMixin, Authorization):
+        """New authorization."""
+        resource_type = 'new-authz'
+        resource: str = fields.resource(resource_type)
+
+
+    class UpdateAuthorization(ResourceMixin, Authorization):
+        """Update authorization."""
+        resource_type = 'authz'
+        resource: str = fields.resource(resource_type)
+
+
+    @Directory.register
+    class NewRegistration(ResourceMixin, Registration):
+        """New registration."""
+        resource_type = 'new-reg'
+        resource: str = fields.resource(resource_type)
+
+
+    class UpdateRegistration(ResourceMixin, Registration):
+        """Update registration."""
+        resource_type = 'reg'
+        resource: str = fields.resource(resource_type)
+
+
+# This class takes a similar approach to the cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
+class _MessagesDeprecationModule: # pragma: no cover
+    """
+    Internal class delegating to a module, and displaying warnings when
+    module attributes deprecated in acme.messages are accessed.
+    """
+    def __init__(self, module: ModuleType) -> None:
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr: str) -> None:
+        if attr == 'OLD_ERROR_PREFIX':
+            warnings.warn('{0} attribute in acme.messages module is deprecated '
+                          'and will be removed soon.'.format(attr),
+                          DeprecationWarning, stacklevel=2)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr: str, value: Any) -> None:
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr: str) -> None:
+        delattr(self._module, attr)
+
+    def __dir__(self) -> List[str]:
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about acme.messages.OLD_ERROR_PREFIX deprecation and planned removal.
+sys.modules[__name__] = cast(ModuleType, _MessagesDeprecationModule(sys.modules[__name__]))

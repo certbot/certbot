@@ -2,6 +2,7 @@
 from typing import Dict
 import unittest
 from unittest import mock
+import warnings
 
 import josepy as jose
 
@@ -150,8 +151,10 @@ class DirectoryTest(unittest.TestCase):
     def test_getitem(self):
         self.assertEqual('reg', self.dir['new-reg'])
         from acme.messages import NewRegistration
-        self.assertEqual('reg', self.dir[NewRegistration])
-        self.assertEqual('reg', self.dir[NewRegistration()])
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.* non-string keys', DeprecationWarning)
+            self.assertEqual('reg', self.dir[NewRegistration])
+            self.assertEqual('reg', self.dir[NewRegistration()])
 
     def test_getitem_fails_with_key_error(self):
         self.assertRaises(KeyError, self.dir.__getitem__, 'foo')
@@ -407,10 +410,12 @@ class AuthorizationTest(unittest.TestCase):
         hash(Authorization.from_json(self.jobj_from))
 
     def test_resolved_combinations(self):
-        self.assertEqual(self.authz.resolved_combinations, (
-            (self.challbs[0],),
-            (self.challbs[1],),
-        ))
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.*resolved_combinations', DeprecationWarning)
+            self.assertEqual(self.authz.resolved_combinations, (
+                (self.challbs[0],),
+                (self.challbs[1],),
+            ))
 
 
 class AuthorizationResourceTest(unittest.TestCase):

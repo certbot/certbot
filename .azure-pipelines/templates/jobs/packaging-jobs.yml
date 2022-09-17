@@ -1,7 +1,7 @@
 jobs:
   - job: docker_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     strategy:
       matrix:
         amd64:
@@ -37,7 +37,7 @@ jobs:
   - job: docker_run
     dependsOn: docker_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     steps:
       - task: DownloadPipelineArtifact@2
         inputs:
@@ -116,7 +116,7 @@ jobs:
         displayName: Run certbot integration tests
   - job: snaps_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     strategy:
       matrix:
         amd64:
@@ -164,7 +164,7 @@ jobs:
   - job: snap_run
     dependsOn: snaps_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     steps:
       - task: UsePythonVersion@0
         inputs:
@@ -194,7 +194,7 @@ jobs:
   - job: snap_dns_run
     dependsOn: snaps_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     steps:
       - script: |
           set -e
