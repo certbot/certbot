@@ -26,6 +26,7 @@ from pyparsing import restOfLine
 from pyparsing import stringEnd
 from pyparsing import White
 from pyparsing import ZeroOrMore
+from certbot_nginx._internal.lua_parser import lua_script
 
 if TYPE_CHECKING:
     from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.7
@@ -49,11 +50,12 @@ class RawNginxParser:
     quoted = dquoted | squoted
     head_tokenchars = Regex(r"(\$\{)|[^{};\s'\"]") # if (last_space)
     tail_tokenchars = Regex(r"(\$\{)|[^{;\s]") # else
+    lua_regex = Regex(r"[^{;\s}]+_by_lua_[^{]+") # regex for lua token
     tokenchars = Combine(head_tokenchars + ZeroOrMore(tail_tokenchars))
     paren_quote_extend = Combine(quoted + Literal(')') + ZeroOrMore(tail_tokenchars))
     # note: ')' allows extension, but then we fall into else, not last_space.
 
-    token = paren_quote_extend | tokenchars | quoted
+    token = ~lua_regex & (paren_quote_extend | tokenchars | quoted)
 
     whitespace_token_group = space + token + ZeroOrMore(required_space + token) + space
     assignment = whitespace_token_group + semicolon
@@ -61,15 +63,16 @@ class RawNginxParser:
     comment = space + Literal('#') + restOfLine
 
     block = Forward()
+    lua_block = space + lua_regex + left_bracket + lua_script + right_bracket
 
     # order matters! see issue 518, and also http { # server { \n}
     contents = Group(comment) | Group(block) | Group(assignment)
-
     block_begin = Group(whitespace_token_group)
     block_innards = Group(ZeroOrMore(contents) + space).leaveWhitespace()
     block << block_begin + left_bracket + block_innards + right_bracket
 
     script = ZeroOrMore(contents) + space + stringEnd
+    script.ignore(lua_block)
     script.parseWithTabs().leaveWhitespace()
 
     def __init__(self, source: str) -> None:
