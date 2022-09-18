@@ -14,6 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+* Nginx: Added Support for \*_by_lua_\* blocks (Parser now ignores it)
 *
 
 More details about these changes can be found on our GitHub repo.
