@@ -55,7 +55,7 @@ class RawNginxParser:
     paren_quote_extend = Combine(quoted + Literal(')') + ZeroOrMore(tail_tokenchars))
     # note: ')' allows extension, but then we fall into else, not last_space.
 
-    token = ~lua_regex & (paren_quote_extend | tokenchars | quoted)
+    token = paren_quote_extend | tokenchars | quoted
 
     whitespace_token_group = space + token + ZeroOrMore(required_space + token) + space
     assignment = whitespace_token_group + semicolon
