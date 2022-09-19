@@ -5,6 +5,7 @@
 #
 # Copyright 2020, Paul McGuire
 #
+# Modified by Dmitrii Matveev, 2021
 
 """
 from https://www.lua.org/manual/5.1/manual.html#8
