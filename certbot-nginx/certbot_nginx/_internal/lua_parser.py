@@ -57,7 +57,6 @@ operator precedence:
      unary operators (not   #     -     ~)
      ^
 """
-import re
 import pyparsing as pp
 
 ppc = pp.pyparsing_common
@@ -128,7 +127,7 @@ stat = pp.Forward()
 laststat = pp.Group(RETURN + explist1) | BREAK
 
 #    block ::= {stat [';']} [laststat[';']]
-block = pp.Group(stat + OPT_SEMI)[1, ...] + pp.Optional(laststat + OPT_SEMI) | laststat + OPT_SEMI
+block = pp.OneOrMore(pp.Group(stat + OPT_SEMI)) + pp.Optional(laststat + OPT_SEMI) | laststat + OPT_SEMI
 
 #    field ::= '[' exp ']' '=' exp  |  Name '=' exp  |  exp
 field = pp.Group(
@@ -262,7 +261,7 @@ stat <<= pp.Group(
     | function_def
 )
 
-lua_script = stat[...]
+lua_script = pp.ZeroOrMore(stat)
 
 # ignore comments
 lua_script.ignore(lua_comment)
