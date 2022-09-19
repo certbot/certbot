@@ -73,7 +73,28 @@ keywords = {
     return break do end while if then elseif else for in function local repeat until nil false true and or not
     """.split()
 }
-vars().update(keywords)
+RETURN = pp.Keyword('return')
+BREAK = pp.Keyword('break')
+DO = pp.Keyword('do')
+END = pp.Keyword('end')
+WHILE = pp.Keyword('while')
+IF = pp.Keyword('if')
+LOCAL = pp.Keyword('local')
+THEN = pp.Keyword('then')
+ELSEIF = pp.Keyword('elseif')
+ELSE = pp.Keyword('else')
+FOR = pp.Keyword('for')
+IN = pp.Keyword('in')
+FUNCTION = pp.Keyword('function')
+REPEAT = pp.Keyword('repeat')
+UNTIL = pp.Keyword('until')
+NIL = pp.Keyword('nil')
+FALSE = pp.Keyword('false')
+TRUE = pp.Keyword('true')
+AND = pp.Keyword('and')
+OR = pp.Keyword('or')
+NOT = pp.Keyword('not')
+# vars().update(keywords)
 any_keyword = pp.MatchFirst(keywords.values()).setName("<keyword>")
 
 comment_intro = pp.Literal("--")
@@ -104,7 +125,7 @@ stat = pp.Forward()
 laststat = pp.Group(RETURN + explist1) | BREAK
 
 #    block ::= {stat [';']} [laststat[';']]
-block = pp.Group(stat + OPT_SEMI)[1, ...] + pp.Optional(laststat + OPT_SEMI)
+block = pp.Group(stat + OPT_SEMI)[1, ...] + pp.Optional(laststat + OPT_SEMI) | laststat + OPT_SEMI
 
 #    field ::= '[' exp ']' '=' exp  |  Name '=' exp  |  exp
 field = pp.Group(
@@ -121,7 +142,7 @@ field_list = pp.delimitedList(field, delim=fieldsep) + pp.Optional(fieldsep)
 tableconstructor = pp.Group(LBRACE + pp.Optional(field_list) + RBRACE)
 
 #    parlist1 ::= namelist [',' '...']  |  '...'
-parlist = namelist + pp.Optional(COMMA + ELLIPSIS) | ELLIPSIS
+parlist = namelist + pp.Optional(COMMA) + pp.Optional(ELLIPSIS) | ELLIPSIS
 
 #    funcname ::= Name {'.' Name} [':' Name]
 funcname = pp.Group(name + COLON + name) | name
@@ -241,8 +262,7 @@ stat <<= pp.Group(
 lua_script = stat[...]
 
 # ignore comments
-# lua_script.ignore(lua_comment)
-
+lua_script.ignore(lua_comment)
 # if __name__ == "__main__":
 
 #     sample = r"""
