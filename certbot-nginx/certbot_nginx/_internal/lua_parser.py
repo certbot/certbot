@@ -57,6 +57,7 @@ operator precedence:
      unary operators (not   #     -     ~)
      ^
 """
+import re
 import pyparsing as pp
 
 ppc = pp.pyparsing_common
@@ -94,12 +95,14 @@ TRUE = pp.Keyword('true')
 AND = pp.Keyword('and')
 OR = pp.Keyword('or')
 NOT = pp.Keyword('not')
+NL = pp.LineEnd().suppress()
 # vars().update(keywords)
 any_keyword = pp.MatchFirst(keywords.values()).setName("<keyword>")
 
 comment_intro = pp.Literal("--")
-short_comment = comment_intro + pp.restOfLine
-long_comment = comment_intro + LBRACK + ... + RBRACK
+long_comment_intro = pp.Regex(r"--\[\[")
+long_comment = pp.Regex(r"\s*--\[\[(?:[^\]]+|\s*--\[\[(?!/))]*--]]")
+short_comment = ~long_comment_intro + comment_intro + pp.restOfLine
 lua_comment = long_comment | short_comment
 
 # must use negative lookahead to ensure we don't parse a keyword as an identifier
