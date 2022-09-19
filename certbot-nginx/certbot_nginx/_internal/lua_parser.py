@@ -127,7 +127,8 @@ stat = pp.Forward()
 laststat = pp.Group(RETURN + explist1) | BREAK
 
 #    block ::= {stat [';']} [laststat[';']]
-block = pp.OneOrMore(pp.Group(stat + OPT_SEMI)) + pp.Optional(laststat + OPT_SEMI) | laststat + OPT_SEMI
+block = pp.OneOrMore(pp.Group(stat + OPT_SEMI)) + pp.Optional(laststat + OPT_SEMI) |\
+     laststat + OPT_SEMI
 
 #    field ::= '[' exp ']' '=' exp  |  Name '=' exp  |  exp
 field = pp.Group(
@@ -219,7 +220,7 @@ if_stat = (
     + exp
     + THEN
     + block
-    + pp.Group(ELSEIF + exp + THEN + block)[...]
+    + pp.ZeroOrMore(pp.Group(ELSEIF + exp + THEN + block))
     + pp.Optional(pp.Group(ELSE + block))
     + END
 )
