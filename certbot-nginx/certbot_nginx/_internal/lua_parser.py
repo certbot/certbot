@@ -153,7 +153,7 @@ funcname = pp.Group(name + COLON + name) | name
 
 #    function ::= function funcbody
 #    funcbody ::= '(' [parlist1] ')' block end
-funcbody = pp.Group(LPAR + parlist + RPAR) + block + END
+funcbody = pp.Group(LPAR + pp.Optional(parlist) + RPAR) + block + END
 function = FUNCTION + funcbody
 
 #    args ::=  '(' [explist1] ')'  |  tableconstructor  |  String
