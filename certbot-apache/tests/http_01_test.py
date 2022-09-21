@@ -2,7 +2,7 @@
 import unittest
 import errno
 from typing import List
-from unittest import mock # type: ignore
+from unittest import mock
 
 from acme import challenges
 from certbot import achallenges

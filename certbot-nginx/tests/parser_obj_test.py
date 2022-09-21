@@ -1,7 +1,7 @@
 """ Tests for functions and classes in parser_obj.py """
 
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 from certbot_nginx._internal.parser_obj import COMMENT_BLOCK
 from certbot_nginx._internal.parser_obj import parse_raw

@@ -1,7 +1,7 @@
 """Tests for certbot_dns_digitalocean._internal.dns_digitalocean."""
 
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 import digitalocean
 

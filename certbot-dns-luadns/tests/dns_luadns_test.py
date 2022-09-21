@@ -1,7 +1,7 @@
 """Tests for certbot_dns_luadns._internal.dns_luadns."""
 
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 from requests.exceptions import HTTPError
 

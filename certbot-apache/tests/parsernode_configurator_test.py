@@ -1,6 +1,6 @@
 """Tests for ApacheConfigurator for AugeasParserNode classes"""
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 import util
 

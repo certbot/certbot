@@ -1,6 +1,6 @@
 """Test certbot_apache._internal.display_ops."""
 import unittest
-from unittest import mock  # type: ignore
+from unittest import mock
 
 from certbot import errors
 from certbot.display import util as display_util

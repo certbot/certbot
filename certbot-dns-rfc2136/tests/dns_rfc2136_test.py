@@ -1,7 +1,7 @@
 """Tests for certbot_dns_rfc2136._internal.dns_rfc2136."""
 
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 import dns.flags
 import dns.rcode

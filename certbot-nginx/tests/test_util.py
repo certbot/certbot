@@ -4,7 +4,7 @@ import shutil
 import tempfile
 
 import josepy as jose
-from unittest import mock  # type: ignore
+from unittest import mock
 import pkg_resources
 
 from certbot import util

@@ -1,6 +1,6 @@
 """Test for certbot_apache._internal.entrypoint for override class resolution"""
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 from certbot_apache._internal import configurator
 from certbot_apache._internal import entrypoint

@@ -1,7 +1,7 @@
 """Tests for certbot_dns_route53._internal.dns_route53.Authenticator"""
 
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError

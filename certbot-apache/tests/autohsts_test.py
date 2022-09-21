@@ -2,7 +2,7 @@
 """Test for certbot_apache._internal.configurator AutoHSTS functionality"""
 import re
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 from certbot import errors
 from certbot_apache._internal import constants

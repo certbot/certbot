@@ -1,6 +1,6 @@
 """Tests for certbot.compat.misc"""
 import unittest
-from unittest import mock  # type: ignore
+from unittest import mock
 
 from certbot.compat import os
 

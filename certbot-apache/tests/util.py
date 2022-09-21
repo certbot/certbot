@@ -4,7 +4,7 @@ import unittest
 
 import augeas
 import josepy as jose
-from unittest import mock  # type: ignore
+from unittest import mock
 
 from certbot.compat import os
 from certbot.plugins import common

@@ -1,6 +1,6 @@
 """Test for certbot_nginx._internal.configurator."""
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 import OpenSSL
 

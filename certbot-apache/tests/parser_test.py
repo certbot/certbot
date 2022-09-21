@@ -1,7 +1,7 @@
 """Tests for certbot_apache._internal.parser."""
 import shutil
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 from certbot import errors
 from certbot.compat import os

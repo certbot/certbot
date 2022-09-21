@@ -1,7 +1,7 @@
 """Tests for certbot_dns_cloudflare._internal.dns_cloudflare."""
 
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 import CloudFlare
 

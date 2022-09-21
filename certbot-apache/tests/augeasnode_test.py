@@ -3,7 +3,7 @@ from typing import List
 
 import os
 import util
-from unittest import mock # type: ignore
+from unittest import mock
 
 from certbot import errors
 

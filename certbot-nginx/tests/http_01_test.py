@@ -1,6 +1,6 @@
 """Tests for certbot_nginx._internal.http_01"""
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 import josepy as jose
 

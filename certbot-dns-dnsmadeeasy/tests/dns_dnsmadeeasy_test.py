@@ -1,7 +1,7 @@
 """Tests for certbot_dns_dnsmadeeasy._internal.dns_dnsmadeeasy."""
 
 import unittest
-from unittest import mock # type: ignore
+from unittest import mock
 
 from requests.exceptions import HTTPError
 
