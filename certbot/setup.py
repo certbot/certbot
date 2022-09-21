@@ -90,7 +90,6 @@ test_extras = [
     'pytest-xdist',
     'setuptools',
     'tox',
-    'types-mock',
     'types-pyOpenSSL',
     'types-pyRFC3339',
     'types-pytz',
