@@ -54,18 +54,27 @@ cython = "*"
 # https://github.com/python-poetry/poetry/issues/1584. This version is required
 # here in addition to certbot/setup.py because otherwise the pre-release
 # version of poetry will not be installed.
-poetry = ">=1.2.0a1"
+#
+# Additionally, newer versions of poetry/poetry-core include package extras
+# (e.g. "docker[ssh]") in its `poetry export` output which is valid for
+# requirements files, but not constraints files. We are currently using that
+# output as constraints so let's also pin back poetry and poetry-core until we
+# have a better workaround.
+poetry = "1.2.0a2"
+poetry-core = "1.1.0a7"
 # setuptools-rust is a build dependency of cryptography, and since we don't have
 # a great way of pinning build dependencies, we simply list it here to ensure a
 # working version. Note: if build dependencies of setuptools-rust break at some
 # point, it's probably worth enumerating and pinning them (and recursing to
 # THEIR build dependencies) as well.
 setuptools-rust = "*"
-# A bad python_requires constraint in pylint 2.6.2 can sometimes crash poetry
-# before it has finished resolving. No newer releases have the same issue. Remove
-# this once we can upgrade to a release of Poetry containing this commit:
-# https://github.com/python-poetry/poetry-core/commit/4e1f2ab582d1fef0033c0d3f35a3f2f2365a4bc9
-pylint = ">2.6.2"
+# pylint often adds new checks that we need to conform our code to when
+# upgrading our dependencies. To help control when this needs to be done, we
+# pin pylint to a compatible version here.
+#
+# If this pinning is removed, we may still need to add a lower bound for the
+# pylint version. See https://github.com/certbot/certbot/pull/9229.
+pylint = "2.13.9"
 
 # Bug in poetry, where still installes yanked versions from pypi (source: https://github.com/python-poetry/poetry/issues/2453)
 # this version of cryptography introduced a security vulnrability.

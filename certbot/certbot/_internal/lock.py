@@ -194,7 +194,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     low level APIs, and Python does not do it. As of Python 3.7 and below, Python developers
     state that deleting a file opened by a process from another process is not possible with
     os.open and io.open.
-    Consequently, mscvrt.locking is sufficient to obtain an effective lock, and the race
+    Consequently, msvcrt.locking is sufficient to obtain an effective lock, and the race
     condition encountered on Linux is not possible on Windows, leading to a simpler workflow.
     """
     def acquire(self) -> None:
@@ -209,7 +209,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
             # This "type: ignore" is currently needed because msvcrt methods
             # are only defined on Windows. See
             # https://github.com/python/typeshed/blob/16ae4c61201cd8b96b8b22cdfb2ab9e89ba5bcf2/stdlib/msvcrt.pyi.
-            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)  # type: ignore
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)  # type: ignore # pylint: disable=used-before-assignment
         except (IOError, OSError) as err:
             if fd:
                 os.close(fd)
@@ -229,7 +229,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
             # This "type: ignore" is currently needed because msvcrt methods
             # are only defined on Windows. See
             # https://github.com/python/typeshed/blob/16ae4c61201cd8b96b8b22cdfb2ab9e89ba5bcf2/stdlib/msvcrt.pyi.
-            msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)  # type: ignore
+            msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)  # type: ignore # pylint: disable=used-before-assignment
             os.close(self._fd)
 
             try:

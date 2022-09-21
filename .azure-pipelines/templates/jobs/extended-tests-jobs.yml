@@ -2,7 +2,7 @@ jobs:
   - job: extended_test
     variables:
       - name: IMAGE_NAME
-        value: ubuntu-18.04
+        value: ubuntu-22.04
       - name: PYTHON_VERSION
         value: 3.10
       - group: certbot-common
@@ -45,13 +45,13 @@ jobs:
         nginx-compat:
           TOXENV: nginx_compat
         linux-integration-rfc2136:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.8
           TOXENV: integration-dns-rfc2136
         docker-dev:
           TOXENV: docker_dev
         le-modification:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           TOXENV: modification
         farmtest-apache2:
           PYTHON_VERSION: 3.8

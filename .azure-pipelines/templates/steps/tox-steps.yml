@@ -12,7 +12,7 @@ steps:
       set -e
       sudo apt-get update
       sudo apt-get install -y --no-install-recommends \
-        python-dev \
+        python3-dev \
         gcc \
         libaugeas0 \
         libssl-dev \
@@ -36,8 +36,8 @@ steps:
     # problems with its lack of real dependency resolution.
   - bash: |
       set -e
-      python tools/pipstrap.py
-      python tools/pip_install.py -I tox virtualenv
+      python3 tools/pipstrap.py
+      python3 tools/pip_install.py -I tox virtualenv
     displayName: Install runtime dependencies
   - task: DownloadSecureFile@1
     name: testFarmPem
@@ -49,7 +49,7 @@ steps:
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
       [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
       env
-      python -m tox
+      python3 -m tox
     env:
       AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
       AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)

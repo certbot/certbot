@@ -47,7 +47,7 @@ class AnnotatedChallenge(jose.ImmutableMap):
 
 class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
     """Client annotated `KeyAuthorizationChallenge` challenge."""
-    __slots__ = ('challb', 'domain', 'account_key')
+    __slots__ = ('challb', 'domain', 'account_key') # pylint: disable=redefined-slots-in-subclass
 
     def response_and_validation(self, *args: Any, **kwargs: Any) -> Any:
         """Generate response and validation."""
@@ -57,5 +57,5 @@ class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
 
 class DNS(AnnotatedChallenge):
     """Client annotated "dns" ACME challenge."""
-    __slots__ = ('challb', 'domain')
+    __slots__ = ('challb', 'domain') # pylint: disable=redefined-slots-in-subclass
     acme_type = challenges.DNS
