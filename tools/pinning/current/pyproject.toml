@@ -15,7 +15,6 @@ python = "^3.7"
 certbot-ci = {path = "../../../certbot-ci"}
 certbot-compatibility-test = {path = "../../../certbot-compatibility-test"}
 certbot-dns-cloudflare = {path = "../../../certbot-dns-cloudflare", extras = ["docs"]}
-certbot-dns-cloudxns = {path = "../../../certbot-dns-cloudxns", extras = ["docs"]}
 certbot-dns-digitalocean = {path = "../../../certbot-dns-digitalocean", extras = ["docs"]}
 certbot-dns-dnsimple = {path = "../../../certbot-dns-dnsimple", extras = ["docs"]}
 certbot-dns-dnsmadeeasy = {path = "../../../certbot-dns-dnsmadeeasy", extras = ["docs"]}
@@ -67,6 +66,11 @@ setuptools-rust = "*"
 # this once we can upgrade to a release of Poetry containing this commit:
 # https://github.com/python-poetry/poetry-core/commit/4e1f2ab582d1fef0033c0d3f35a3f2f2365a4bc9
 pylint = ">2.6.2"
+
+# Bug in poetry, where still installes yanked versions from pypi (source: https://github.com/python-poetry/poetry/issues/2453)
+# this version of cryptography introduced a security vulnrability.
+# Making sure that it would not get installed (Fixing https://github.com/certbot/certbot/issues/9336)
+cryptography = "!= 37.0.3"
 
 [tool.poetry.dev-dependencies]
 

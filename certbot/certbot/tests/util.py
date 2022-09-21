@@ -17,7 +17,6 @@ from typing import List
 from typing import Optional
 import unittest
 from unittest import mock
-import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -185,56 +184,18 @@ def make_lineage(config_dir: str, testfile: str, ec: bool = False) -> str:
     return conf_path
 
 
-def patch_get_utility(target: str = 'zope.component.getUtility') -> mock.MagicMock:
-    """Deprecated, patch certbot.display.util directly or use patch_display_util instead.
-
-    :param str target: path to patch
-
-    :returns: mock zope.component.getUtility
-    :rtype: mock.MagicMock
-
-    """
-    warnings.warn('Decorator certbot.tests.util.patch_get_utility is deprecated. You should now '
-                  'patch certbot.display.util yourself directly or use '
-                  'certbot.tests.util.patch_display_util as a temporary workaround.')
-    return cast(mock.MagicMock, mock.patch(target, new_callable=_create_display_util_mock))
-
-
-def patch_get_utility_with_stdout(target: str = 'zope.component.getUtility',
-                                  stdout: Optional[IO] = None) -> mock.MagicMock:
-    """Deprecated, patch certbot.display.util directly
-    or use patch_display_util_with_stdout instead.
-
-    :param str target: path to patch
-    :param object stdout: object to write standard output to; it is
-        expected to have a `write` method
-
-    :returns: mock zope.component.getUtility
-    :rtype: mock.MagicMock
-
-    """
-    warnings.warn('Decorator certbot.tests.util.patch_get_utility_with_stdout is deprecated. You '
-                  'should now patch certbot.display.util yourself directly or use '
-                  'use certbot.tests.util.patch_display_util_with_stdout as a temporary '
-                  'workaround.')
-    stdout = stdout if stdout else io.StringIO()
-    freezable_mock = _create_display_util_mock_with_stdout(stdout)
-    return cast(mock.MagicMock, mock.patch(target, new=freezable_mock))
-
-
 def patch_display_util() -> mock.MagicMock:
     """Patch certbot.display.util to use a special mock display utility.
 
     The mock display utility works like a regular mock object, except it also
     also asserts that methods are called with valid arguments.
 
-    The mock created by this patch mocks out Certbot internals so this can be
-    used like the old patch_get_utility function. That is, the mock object will
-    be called by the certbot.display.util functions and the mock returned by
-    that call will be used as the display utility. This was done to simplify
-    the transition from zope.component and mocking certbot.display.util
-    functions directly in test code should be preferred over using this
-    function in the future.
+    The mock created by this patch mocks out Certbot internals. That is, the
+    mock object will be called by the certbot.display.util functions and the
+    mock returned by that call will be used as the display utility. This was
+    done to simplify the transition from zope.component and mocking
+    certbot.display.util functions directly in test code should be preferred
+    over using this function in the future.
 
     See https://github.com/certbot/certbot/issues/8948
 
@@ -254,13 +215,12 @@ def patch_display_util_with_stdout(
     The mock display utility works like a regular mock object, except it also
     asserts that methods are called with valid arguments.
 
-    The mock created by this patch mocks out Certbot internals so this can be
-    used like the old patch_get_utility function. That is, the mock object will
-    be called by the certbot.display.util functions and the mock returned by
-    that call will be used as the display utility. This was done to simplify
-    the transition from zope.component and mocking certbot.display.util
-    functions directly in test code should be preferred over using this
-    function in the future.
+    The mock created by this patch mocks out Certbot internals. That is, the
+    mock object will be called by the certbot.display.util functions and the
+    mock returned by that call will be used as the display utility. This was
+    done to simplify the transition from zope.component and mocking
+    certbot.display.util functions directly in test code should be preferred
+    over using this function in the future.
 
     See https://github.com/certbot/certbot/issues/8948
 

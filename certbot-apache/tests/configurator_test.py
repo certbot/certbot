@@ -439,18 +439,6 @@ class MultipleVhostsTest(util.ApacheTest):
             "SSLCertificateChainFile", "two/cert_chain.pem",
             self.vh_truth[1].path))
 
-    def test_is_name_vhost(self):
-        addr = obj.Addr.fromstring("*:80")
-        self.assertIs(self.config.is_name_vhost(addr), True)
-        self.config.version = (2, 2)
-        self.assertIs(self.config.is_name_vhost(addr), False)
-
-    def test_add_name_vhost(self):
-        self.config.add_name_vhost(obj.Addr.fromstring("*:443"))
-        self.config.add_name_vhost(obj.Addr.fromstring("*:80"))
-        self.assertTrue(self.config.parser.find_dir("NameVirtualHost", "*:443", exclude=False))
-        self.assertTrue(self.config.parser.find_dir("NameVirtualHost", "*:80"))
-
     def test_add_listen_80(self):
         mock_find = mock.Mock()
         mock_add_dir = mock.Mock()
@@ -638,9 +626,6 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertIs(ssl_vhost.ssl, True)
         self.assertIs(ssl_vhost.enabled, False)
 
-        self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
-                         self.config.is_name_vhost(ssl_vhost))
-
         self.assertEqual(len(self.config.vhosts), 13)
 
     def test_clean_vhost_ssl(self):
@@ -716,21 +701,6 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_get_ssl_vhost_path(self):
         # pylint: disable=protected-access
         self.assertIs(self.config._get_ssl_vhost_path("example_path").endswith(".conf"), True)
-
-    def test_add_name_vhost_if_necessary(self):
-        # pylint: disable=protected-access
-        self.config.add_name_vhost = mock.Mock()
-        self.config.version = (2, 2)
-        self.config._add_name_vhost_if_necessary(self.vh_truth[0])
-        self.assertIs(self.config.add_name_vhost.called, True)
-
-        new_addrs = set()
-        for addr in self.vh_truth[0].addrs:
-            new_addrs.add(obj.Addr(("_default_", addr.get_port(),)))
-
-        self.vh_truth[0].addrs = new_addrs
-        self.config._add_name_vhost_if_necessary(self.vh_truth[0])
-        self.assertEqual(self.config.add_name_vhost.call_count, 2)
 
     @mock.patch("certbot_apache._internal.configurator.http_01.ApacheHttp01.perform")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
@@ -942,20 +912,6 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertEqual(len(stapling_cache_aug_path), 1)
 
-
-    @mock.patch("certbot.util.exe_exists")
-    def test_ocsp_unsupported_apache_version(self, mock_exe):
-        mock_exe.return_value = True
-        self.config.parser.update_runtime_variables = mock.Mock()
-        self.config.parser.modules["mod_ssl.c"] = None
-        self.config.parser.modules["socache_shmcb_module"] = None
-        self.config.get_version = mock.Mock(return_value=(2, 2, 0))
-        self.config.choose_vhost("certbot.demo")
-
-        self.assertRaises(errors.PluginError,
-                self.config.enhance, "certbot.demo", "staple-ocsp")
-
-
     def test_get_http_vhost_third_filter(self):
         ssl_vh = obj.VirtualHost(
             "fp", "ap", {obj.Addr(("*", "443"))},
@@ -1133,7 +1089,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.modules["rewrite_module"] = None
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True
-        self.config.get_version = mock.Mock(return_value=(2, 2, 0))
+        self.config.get_version = mock.Mock(return_value=(2, 4, 0))
 
         ssl_vhost = self.config.choose_vhost("certbot.demo")
 
@@ -1562,9 +1518,6 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertEqual(ssl_vhost.name, "banana.vomit.com")
         self.assertIs(ssl_vhost.ssl, True)
         self.assertIs(ssl_vhost.enabled, False)
-
-        self.assertEqual(self.config.is_name_vhost(self.vh_truth[1]),
-                         self.config.is_name_vhost(ssl_vhost))
 
         mock_path = "certbot_apache._internal.configurator.ApacheConfigurator._get_new_vh_path"
         with mock.patch(mock_path) as mock_getpath:

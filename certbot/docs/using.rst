@@ -14,7 +14,7 @@ obtaining, renewing, or revoking certificates. The most important
 and commonly-used commands will be discussed throughout this
 document; an exhaustive list also appears near the end of the document.
 
-The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used a now-deprecated installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
+The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
 
 .. _plugins:
 
@@ -206,7 +206,6 @@ use the DNS plugins on your system.
 Once installed, you can find documentation on how to use each plugin at:
 
 * `certbot-dns-cloudflare <https://certbot-dns-cloudflare.readthedocs.io>`_
-* `certbot-dns-cloudxns <https://certbot-dns-cloudxns.readthedocs.io>`_
 * `certbot-dns-digitalocean <https://certbot-dns-digitalocean.readthedocs.io>`_
 * `certbot-dns-dnsimple <https://certbot-dns-dnsimple.readthedocs.io>`_
 * `certbot-dns-dnsmadeeasy <https://certbot-dns-dnsmadeeasy.readthedocs.io>`_
@@ -1077,6 +1076,12 @@ different CA by providing ``--server`` on the command line or in a
 ACME directory. For example, if you would like to use Let's Encrypt's
 staging server, you would add ``--server
 https://acme-staging-v02.api.letsencrypt.org/directory`` to the command line.
+
+If Certbot does not trust the SSL certificate used by the ACME server, you
+can use the `REQUESTS_CA_BUNDLE
+<https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification>`_
+environment variable to override the root certificates trusted by Certbot. Certbot
+uses the ``requests`` library, which does not use the operating system trusted root store.
 
 If you use ``--server`` to specify an ACME CA that implements the standardized
 version of the spec, you may be able to obtain a certificate for a

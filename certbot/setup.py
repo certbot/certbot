@@ -60,14 +60,11 @@ install_requires = [
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
     f'setuptools>={min_setuptools_version}',
-    'zope.component',
-    'zope.interface',
 ]
 
 dev_extras = [
     'azure-devops',
     'ipdb',
-    'PyGithub',
     # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
     # https://github.com/python-poetry/poetry/issues/1584.
     'poetry>=1.2.0a1',

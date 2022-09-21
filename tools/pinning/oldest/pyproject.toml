@@ -18,7 +18,6 @@ python = "3.7"
 # on acme so certbot must be listed before acme.
 certbot-ci = {path = "../../../certbot-ci"}
 certbot-dns-cloudflare = {path = "../../../certbot-dns-cloudflare"}
-certbot-dns-cloudxns = {path = "../../../certbot-dns-cloudxns"}
 certbot-dns-digitalocean = {path = "../../../certbot-dns-digitalocean"}
 certbot-dns-dnsimple = {path = "../../../certbot-dns-dnsimple"}
 certbot-dns-dnsmadeeasy = {path = "../../../certbot-dns-dnsmadeeasy"}
@@ -80,11 +79,6 @@ requests = "2.20.0"
 setuptools = "41.6.0"
 six = "1.11.0"
 urllib3 = "1.24.2"
-# Package names containing "." need to be quoted.
-"zope.component" = "4.1.0"
-"zope.event" = "4.0.3"
-"zope.hookable" = "4.0.4"
-"zope.interface" = "4.0.5"
 
 # Build dependencies
 # Since there doesn't appear to

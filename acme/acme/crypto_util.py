@@ -258,7 +258,8 @@ def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]
             value=b"DER:30:03:02:01:05"))
     csr.add_extensions(extensions)
     csr.set_pubkey(private_key)
-    csr.set_version(2)
+    # RFC 2986 Section 4.1 only defines version 0
+    csr.set_version(0)
     csr.sign(private_key, 'sha256')
     return crypto.dump_certificate_request(
         crypto.FILETYPE_PEM, csr)

@@ -6,7 +6,6 @@ import unittest
 from unittest import mock
 
 import pkg_resources
-import zope.interface
 
 from certbot import errors
 from certbot import interfaces
@@ -125,29 +124,6 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertIs(self.plugin_ep.misconfigured, False)
         self.assertIs(self.plugin_ep.available, False)
 
-    def test_verify(self):
-        iface1 = mock.MagicMock(__name__="iface1")
-        iface2 = mock.MagicMock(__name__="iface2")
-        iface3 = mock.MagicMock(__name__="iface3")
-        # pylint: disable=protected-access
-        self.plugin_ep._initialized = plugin = mock.MagicMock()
-
-        exceptions = zope.interface.exceptions
-        with mock.patch("certbot._internal.plugins.disco._verify") as mock_verify:
-            mock_verify.exceptions = exceptions
-
-            def verify_object(obj, cls, iface):  # pylint: disable=missing-docstring
-                assert obj is plugin
-                assert iface is iface1 or iface is iface2 or iface is iface3
-                if iface is iface3:
-                    return False
-                return True
-            mock_verify.side_effect = verify_object
-            self.assertTrue(self.plugin_ep.verify((iface1,)))
-            self.assertTrue(self.plugin_ep.verify((iface1, iface2)))
-            self.assertFalse(self.plugin_ep.verify((iface3,)))
-            self.assertFalse(self.plugin_ep.verify((iface1, iface3)))
-
     def test_prepare(self):
         config = mock.MagicMock()
         self.plugin_ep.init(config=config)
@@ -259,14 +235,6 @@ class PluginsRegistryTest(unittest.TestCase):
         self.assertEqual(self.plugins, self.reg.ifaces()._plugins)
         self.plugin_ep.ifaces.return_value = False
         self.assertEqual({}, self.reg.ifaces()._plugins)
-
-    def test_verify(self):
-        self.plugin_ep.verify.return_value = True
-        # pylint: disable=protected-access
-        self.assertEqual(
-            self.plugins, self.reg.verify(mock.MagicMock())._plugins)
-        self.plugin_ep.verify.return_value = False
-        self.assertEqual({}, self.reg.verify(mock.MagicMock())._plugins)
 
     def test_prepare(self):
         self.plugin_ep.prepare.return_value = "baz"

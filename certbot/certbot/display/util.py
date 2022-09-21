@@ -9,26 +9,12 @@ should be used whenever:
 Other messages can use the `logging` module. See `log.py`.
 
 """
-import sys
-from types import ModuleType
-from typing import Any
-from typing import cast
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-import warnings
 
 from certbot._internal.display import obj
-# These specific imports from certbot._internal.display.obj and
-# certbot._internal.display.util are done to not break the public API of this
-# module.
-from certbot._internal.display.obj import FileDisplay  # pylint: disable=unused-import
-from certbot._internal.display.obj import NoninteractiveDisplay  # pylint: disable=unused-import
-from certbot._internal.display.obj import SIDE_FRAME  # pylint: disable=unused-import
-from certbot._internal.display.util import input_with_timeout  # pylint: disable=unused-import
-from certbot._internal.display.util import separate_list_input  # pylint: disable=unused-import
-from certbot._internal.display.util import summarize_domain_list  # pylint: disable=unused-import
 
 # These constants are defined this way to make them easier to document with
 # Sphinx and to not couple our public docstrings to our internal ones.
@@ -38,16 +24,7 @@ OK = obj.OK
 CANCEL = obj.CANCEL
 """Display exit code for a user canceling the display."""
 
-# These constants are unused and should be removed in a major release of
-# Certbot.
 WIDTH = 72
-
-HELP = "help"
-"""Display exit code when for when the user requests more help. (UNUSED)"""
-
-ESC = "esc"
-"""Display exit code when the user hits Escape (UNUSED)"""
-
 
 def notify(msg: str) -> None:
     """Display a basic status message.
@@ -204,36 +181,3 @@ def assert_valid_call(prompt: str, default: str, cli_flag: str, force_interactiv
         msg += ("\nYou can set an answer to "
                 "this prompt with the {0} flag".format(cli_flag))
     assert default is not None or force_interactive, msg
-
-
-# This class takes a similar approach to the cryptography project to deprecate attributes
-# in public modules. See the _ModuleWithDeprecation class here:
-# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
-class _DisplayUtilDeprecationModule:
-    """
-    Internal class delegating to a module, and displaying warnings when attributes
-    related to deprecated attributes in the certbot.display.util module.
-    """
-    def __init__(self, module: ModuleType) -> None:
-        self.__dict__['_module'] = module
-
-    def __getattr__(self, attr: str) -> Any:
-        if attr in ('FileDisplay', 'NoninteractiveDisplay', 'SIDE_FRAME', 'input_with_timeout',
-                    'separate_list_input', 'summarize_domain_list', 'WIDTH', 'HELP', 'ESC'):
-            warnings.warn('{0} attribute in certbot.display.util module is deprecated '
-                          'and will be removed soon.'.format(attr),
-                          DeprecationWarning, stacklevel=2)
-        return getattr(self._module, attr)
-
-    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
-        setattr(self._module, attr, value)
-
-    def __delattr__(self, attr: str) -> None:  # pragma: no cover
-        delattr(self._module, attr)
-
-    def __dir__(self) -> List[str]:  # pragma: no cover
-        return ['_module'] + dir(self._module)
-
-
-# Patching ourselves to warn about deprecation and planned removal of some elements in the module.
-sys.modules[__name__] = cast(ModuleType, _DisplayUtilDeprecationModule(sys.modules[__name__]))
