@@ -72,7 +72,20 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         super()._prepare_options()
         if not self.options.restart_cmd_alt:  # pragma: no cover
             raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
-        self.options.restart_cmd_alt[0] = self.options.ctl
+
+        # Make sure new versions (>=9) of RHEL and other derived distros (that
+        # track RHEL's versioning scheme) use the httpd executable
+        os_name, os_version = util.get_os_info()
+        rhel_derived = os_name not in [
+            "fedora",
+            "amazon", # Amazon has a yearly release version
+        ]
+        new = util.parse_loose_version(os_version) >= util.parse_loose_version('9')
+        if rhel_derived and new:
+            self.options.ctl = 'httpd'
+            self.options.version_cmd[0] = self.options.ctl
+        else:
+            self.options.restart_cmd_alt[0] = self.options.ctl
 
     def get_parser(self) -> "CentOSParser":
         """Initializes the ApacheParser"""
