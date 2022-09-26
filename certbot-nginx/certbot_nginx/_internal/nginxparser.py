@@ -25,8 +25,7 @@ from pyparsing import Regex
 from pyparsing import restOfLine
 from pyparsing import stringEnd
 from pyparsing import White
-from pyparsing import ZeroOrMore
-from certbot_nginx._internal.lua_parser import lua_script
+from pyparsing import ZeroOrMore, ParseException
 
 if TYPE_CHECKING:
     from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.7
@@ -63,7 +62,10 @@ class RawNginxParser:
     comment = space + Literal('#') + restOfLine
 
     block = Forward()
-    lua_block = space + lua_regex + left_bracket + lua_script + right_bracket
+    anything_block = Forward()
+    anything_content =  Regex(r"[^{}]+")
+    anything_block <<= left_bracket + ZeroOrMore(anything_content | anything_block) + right_bracket
+    lua_block = space + lua_regex + anything_block
 
     # order matters! see issue 518, and also http { # server { \n}
     contents = Group(comment) | Group(block) | Group(assignment)
@@ -80,7 +82,13 @@ class RawNginxParser:
 
     def parse(self) -> ParseResults:
         """Returns the parsed tree."""
-        return self.script.parseString(self.source)
+        try:
+            result =  self.script.parseString(self.source)
+            result.pprint()
+        except ParseException as pe:
+            print(pe.explain())
+            raise pe
+        return result
 
     def as_list(self) -> List[Any]:
         """Returns the parsed tree as a list."""
