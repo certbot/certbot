@@ -14,7 +14,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed an incompatibility in the certbot-dns-cloudflare plugin and the Cloudflare library
+  which was introduced in the Cloudflare library version 2.10.1. The library would raise
+  an error if a token was specified in the Certbot `--dns-cloudflare-credentials` file as
+  well as the `cloudflare.cfg` configuration file of the Cloudflare library.
 
 More details about these changes can be found on our GitHub repo.
 
