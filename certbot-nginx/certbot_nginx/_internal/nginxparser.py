@@ -25,7 +25,7 @@ from pyparsing import Regex
 from pyparsing import restOfLine
 from pyparsing import stringEnd
 from pyparsing import White
-from pyparsing import ZeroOrMore, ParseException
+from pyparsing import ZeroOrMore
 
 if TYPE_CHECKING:
     from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.7
