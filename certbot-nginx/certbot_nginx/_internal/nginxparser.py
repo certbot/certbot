@@ -82,13 +82,7 @@ class RawNginxParser:
 
     def parse(self) -> ParseResults:
         """Returns the parsed tree."""
-        try:
-            result =  self.script.parseString(self.source)
-            result.pprint()
-        except ParseException as pe:
-            print(pe.explain())
-            raise pe
-        return result
+        return self.script.parseString(self.source)
 
     def as_list(self) -> List[Any]:
         """Returns the parsed tree as a list."""
