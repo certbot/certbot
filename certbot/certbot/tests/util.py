@@ -153,7 +153,7 @@ def load_pyopenssl_private_key(*names: str) -> crypto.PKey:
     return crypto.load_privatekey(loader, load_vector(*names))
 
 
-def make_lineage(config_dir: str, testfile: str, ec: bool = False) -> str:
+def make_lineage(config_dir: str, testfile: str, ec: bool = True) -> str:
     """Creates a lineage defined by testfile.
 
     This creates the archive, live, and renewal directories if
