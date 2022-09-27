@@ -1209,6 +1209,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_lineage.has_pending_deployment.return_value = False
         mock_lineage.names.return_value = ['isnot.org']
         mock_lineage.private_key_type = 'RSA'
+        mock_lineage.rsa_key_size = 2048
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
