@@ -57,7 +57,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
     @mock.patch('certbot._internal.renewal._avoid_reuse_key_conflicts')
     def test_reuse_key_renewal_params(self, unused_mock_avoid_reuse_conflicts):
-        self.config.rsa_key_size = 'INVALID_VALUE'
+        self.config.elliptic_curve = 'INVALID_VALUE'
         self.config.reuse_key = True
         self.config.dry_run = True
         config = configuration.NamespaceConfig(self.config)
@@ -74,7 +74,7 @@ class RenewalTest(test_util.ConfigTestCase):
         with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
-        assert self.config.rsa_key_size == 2048
+        assert self.config.elliptic_curve == 'secp256r1'
 
     @mock.patch('certbot._internal.renewal._avoid_reuse_key_conflicts')
     def test_reuse_ec_key_renewal_params(self, unused_mock_avoid_reuse_conflicts):
@@ -153,7 +153,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         from certbot._internal import renewal
 
-        with self.assertRaisesRegex(errors.Error, "Unable to change the --rsa-key-type"):
+        with self.assertRaisesRegex(errors.Error, "Unable to change the --key-type"):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
         # ... unless --no-reuse-key is set

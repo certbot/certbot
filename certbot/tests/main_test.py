@@ -1208,8 +1208,9 @@ class MainTest(test_util.ConfigTestCase):
         mock_lineage.should_autorenew.return_value = due_for_renewal
         mock_lineage.has_pending_deployment.return_value = False
         mock_lineage.names.return_value = ['isnot.org']
-        mock_lineage.private_key_type = 'RSA'
-        mock_lineage.rsa_key_size = 2048
+        mock_lineage.private_key_type = 'ecdsa'
+        mock_lineage.elliptic_curve = 'secp256r1'
+        mock_lineage.reuse_key = reuse_key
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
@@ -1253,11 +1254,11 @@ class MainTest(test_util.ConfigTestCase):
                 if reuse_key and not new_key:
                     # The location of the previous live privkey.pem is passed
                     # to obtain_certificate
-                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'],
+                    mock_client.obtain_certificate.assert_called_once_with([mock.ANY],
                         os.path.normpath(os.path.join(
                             self.config.config_dir, "live/sample-renewal/privkey.pem")))
                 else:
-                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'], None)
+                    mock_client.obtain_certificate.assert_called_once_with([mock.ANY], None)
             else:
                 self.assertEqual(mock_client.obtain_certificate.call_count, 0)
         except:
