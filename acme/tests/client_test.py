@@ -791,32 +791,5 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.net.post('uri', self.obj, content_type=None, new_nonce_url='new_nonce_uri')
 
 
-class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
-    """Tests that if ClientNetwork has a source IP set manually, the underlying library has
-    used the provided source address."""
-
-    def setUp(self):
-        self.source_address = "8.8.8.8"
-
-    def test_source_address_set(self):
-        with mock.patch('warnings.warn') as mock_warn:
-            net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
-            mock_warn.assert_called_once()
-            self.assertIn('source_address', mock_warn.call_args[0][0])
-        for adapter in net.session.adapters.values():
-            self.assertIn(self.source_address, adapter.source_address)
-
-    def test_behavior_assumption(self):
-        """This is a test that guardrails the HTTPAdapter behavior so that if the default for
-        a Session() changes, the assumptions here aren't violated silently."""
-        # Source address not specified, so the default adapter type should be bound -- this
-        # test should fail if the default adapter type is changed by requests
-        net = ClientNetwork(key=None, alg=None)
-        session = requests.Session()
-        for scheme in session.adapters:
-            client_network_adapter = net.session.adapters.get(scheme)
-            default_adapter = session.adapters.get(scheme)
-            self.assertEqual(client_network_adapter.__class__, default_adapter.__class__)
-
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
