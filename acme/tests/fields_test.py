@@ -1,6 +1,7 @@
 """Tests for acme.fields."""
 import datetime
 import unittest
+import warnings
 
 import josepy as jose
 import pytz
@@ -52,20 +53,6 @@ class RFC3339FieldTest(unittest.TestCase):
         from acme.fields import RFC3339Field
         self.assertRaises(
             jose.DeserializationError, RFC3339Field.default_decoder, '')
-
-
-class ResourceTest(unittest.TestCase):
-    """Tests for acme.fields.Resource."""
-
-    def setUp(self):
-        from acme.fields import Resource
-        self.field = Resource('x')
-
-    def test_decode_good(self):
-        self.assertEqual('x', self.field.decode('x'))
-
-    def test_decode_wrong(self):
-        self.assertRaises(jose.DeserializationError, self.field.decode, 'y')
 
 
 if __name__ == '__main__':

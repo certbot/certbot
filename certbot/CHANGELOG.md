@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.30.0 - master
+## 1.31.0 - master
 
 ### Added
 
@@ -11,6 +11,35 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 *
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.30.0 - 2022-09-07
+
+### Added
+
+*
+
+### Changed
+
+* `acme.client.ClientBase`, `acme.messages.Authorization.resolved_combinations`,
+  `acme.messages.Authorization.combinations`, `acme.mixins`, `acme.fields.resource`,
+  and `acme.fields.Resource` are deprecated and will be removed in a future release.
+* `acme.messages.OLD_ERROR_PREFIX` (`urn:acme:error:`) is deprecated and support for
+  the old ACME error prefix in Certbot will be removed in the next major release of
+  Certbot.
+* `acme.messages.Directory.register` is deprecated and will be removed in the next
+  major release of Certbot. Furthermore, `.Directory` will only support lookups
+  by the exact resource name string in the ACME directory  (e.g. `directory['newOrder']`).
+* The `certbot-dns-cloudxns` plugin is now deprecated and will be removed in the
+  next major release of Certbot.
+* The `source_address` argument for `acme.client.ClientNetwork` is deprecated
+  and support for it will be removed in the next major release.
+* Add UI text suggesting users create certs for multiple domains, when possible
 
 ### Fixed
 

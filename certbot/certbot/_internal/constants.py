@@ -112,7 +112,6 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # noqa
     manual=False,
     webroot=False,
     dns_cloudflare=False,
-    dns_cloudxns=False,
     dns_digitalocean=False,
     dns_dnsimple=False,
     dns_dnsmadeeasy=False,

@@ -19,12 +19,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-import zope.component
 
 from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot._internal import cli
 from certbot._internal import client
@@ -326,12 +324,57 @@ def _avoid_invalidating_lineage(config: configuration.NamespaceConfig,
                     "unless you use the --break-my-certs flag!")
 
 
+def _avoid_reuse_key_conflicts(config: configuration.NamespaceConfig,
+                               lineage: storage.RenewableCert) -> None:
+    """Don't allow combining --reuse-key with any flags that would conflict
+    with key reuse (--key-type, --rsa-key-size, --elliptic-curve), unless
+    --new-key is also set.
+    """
+    # If --no-reuse-key is set, no conflict
+    if cli.set_by_cli("reuse_key") and not config.reuse_key:
+        return
+
+    # If reuse_key is not set on the lineage and --reuse-key is not
+    # set on the CLI, no conflict.
+    if not lineage.reuse_key and not config.reuse_key:
+        return
+
+    # If --new-key is set, no conflict
+    if config.new_key:
+        return
+
+    kt = config.key_type.lower()
+
+    # The remaining cases where conflicts are present:
+    # - --key-type is set on the CLI and doesn't match the stored private key
+    # - It's an RSA key and --rsa-key-size is set and doesn't match
+    # - It's an ECDSA key and --eliptic-curve is set and doesn't match
+    potential_conflicts = [
+        ("--key-type",
+         lambda: kt != lineage.private_key_type.lower()),
+        ("--rsa-key-type",
+         lambda: kt == "rsa" and config.rsa_key_size != lineage.rsa_key_size),
+        ("--elliptic-curve",
+         lambda: kt == "ecdsa" and lineage.elliptic_curve and \
+                 config.elliptic_curve.lower() != lineage.elliptic_curve.lower())
+    ]
+
+    for conflict in potential_conflicts:
+        if conflict[1]():
+            raise errors.Error(
+                f"Unable to change the {conflict[0]} of this certificate because --reuse-key "
+                "is set. To stop reusing the private key, specify --no-reuse-key. "
+                "To change the private key this one time and then reuse it in future, "
+                "add --new-key.")
+
+
 def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str]],
                le_client: client.Client, lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
     _avoid_invalidating_lineage(config, lineage, original_server)
+    _avoid_reuse_key_conflicts(config, lineage)
     if not domains:
         domains = lineage.names()
     # The private key is the existing lineage private key if reuse_key is set.
@@ -460,9 +503,6 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
             if not renewal_candidate:
                 parse_failures.append(renewal_file)
             else:
-                # This call is done only for retro-compatibility purposes.
-                # TODO: Remove this call once zope dependencies are removed from Certbot.
-                zope.component.provideUtility(lineage_config, interfaces.IConfig)
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()

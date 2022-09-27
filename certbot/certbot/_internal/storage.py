@@ -12,10 +12,12 @@ from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import configobj
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
 import pkg_resources
@@ -569,6 +571,12 @@ class RenewableCert(interfaces.RenewableCert):
             return util.is_staging(self.server)
         return False
 
+    @property
+    def reuse_key(self) -> bool:
+        """Returns whether this certificate is configured to reuse its private key"""
+        return "reuse_key" in self.configuration["renewalparams"] and \
+               self.configuration["renewalparams"].as_bool("reuse_key")
+
     def _check_symlinks(self) -> None:
         """Raises an exception if a symlink doesn't exist"""
         for kind in ALL_FOUR:
@@ -1115,22 +1123,47 @@ class RenewableCert(interfaces.RenewableCert):
             target, values)
         return cls(new_config.filename, cli_config)
 
-    @property
-    def private_key_type(self) -> str:
-        """
-        :returns: The type of algorithm for the private, RSA or ECDSA
-        :rtype: str
-        """
+    def _private_key(self) -> Union[RSAPrivateKey, EllipticCurvePrivateKey]:
         with open(self.configuration["privkey"], "rb") as priv_key_file:
             key = load_pem_private_key(
                 data=priv_key_file.read(),
                 password=None,
                 backend=default_backend()
             )
+            return key
+
+    @property
+    def private_key_type(self) -> str:
+        """
+        :returns: The type of algorithm for the private, RSA or ECDSA
+        :rtype: str
+        """
+        key = self._private_key()
         if isinstance(key, RSAPrivateKey):
             return "RSA"
-        else:
-            return "ECDSA"
+        return "ECDSA"
+
+    @property
+    def rsa_key_size(self) -> Optional[int]:
+        """
+        :returns: If the private key is an RSA key, its size.
+        :rtype: int
+        """
+        key = self._private_key()
+        if isinstance(key, RSAPrivateKey):
+            return key.key_size
+        return None
+
+    @property
+    def elliptic_curve(self) -> Optional[str]:
+        """
+        :returns: If the private key is an elliptic key, the name of its curve.
+        :rtype: str
+        """
+        key = self._private_key()
+        if isinstance(key, EllipticCurvePrivateKey):
+            return key.curve.name
+        return None
 
     def save_successor(self, prior_version: int, new_cert: bytes, new_privkey: bytes,
                        new_chain: bytes, cli_config: configuration.NamespaceConfig) -> int:

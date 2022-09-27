@@ -388,7 +388,7 @@ class RevokeTest(test_util.TempDirTestCase):
             mock.patch('certbot._internal.main._determine_account'),
             mock.patch('certbot._internal.main.display_ops.success_revocation')
         ]
-        self.mock_acme_client = patches[0].start().BackwardsCompatibleClientV2
+        self.mock_acme_client = patches[0].start().ClientV2
         patches[1].start()
         self.mock_determine_account = patches[2].start()
         self.mock_success_revoke = patches[3].start()
@@ -418,12 +418,19 @@ class RevokeTest(test_util.TempDirTestCase):
         from certbot._internal.main import revoke
         revoke(config, plugins)
 
+    def _mock_set_by_cli(self, mocked: mock.MagicMock, key: str, value: bool) -> None:
+        def set_by_cli(k: str) -> bool:
+            if key == k:
+                return value
+            return mock.DEFAULT
+        mocked.side_effect = set_by_cli
+
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.main.client.acme_client')
     def test_revoke_with_reason(self, mock_acme_client,
             mock_delete_if_appropriate):
         mock_delete_if_appropriate.return_value = False
-        mock_revoke = mock_acme_client.BackwardsCompatibleClientV2().revoke
+        mock_revoke = mock_acme_client.ClientV2().revoke
         expected = []
         for reason, code in constants.REVOCATION_REASONS.items():
             args = 'revoke --cert-path={0} --reason {1}'.format(self.tmp_cert_path, reason).split()
@@ -438,42 +445,56 @@ class RevokeTest(test_util.TempDirTestCase):
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    def test_revoke_by_certname(self, unused_mock_renewal_file_for_certname,
-                                mock_cert, mock_delete_if_appropriate):
+    @mock.patch('certbot._internal.client.acme_from_config_key')
+    @mock.patch('certbot._internal.cli.set_by_cli')
+    def test_revoke_by_certname(self, mock_set_by_cli, mock_acme_from_config,
+                                unused_mock_renewal_file_for_certname, mock_cert,
+                                mock_delete_if_appropriate):
+        self._mock_set_by_cli(mock_set_by_cli, "server", False)
+        mock_acme_from_config.return_value = self.mock_acme_client
         mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
                                                 server="https://acme.example")
         args = 'revoke --cert-name=example.com'.split()
         mock_delete_if_appropriate.return_value = False
         self._call(args)
-        self.mock_acme_client.assert_called_once_with(mock.ANY, mock.ANY, 'https://acme.example')
+        self.assertEqual(mock_acme_from_config.call_args_list[0][0][0].server,
+                         'https://acme.example')
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    def test_revoke_by_certname_and_server(self, unused_mock_renewal_file_for_certname,
-                                           mock_cert, mock_delete_if_appropriate):
+    @mock.patch('certbot._internal.client.acme_from_config_key')
+    @mock.patch('certbot._internal.cli.set_by_cli')
+    def test_revoke_by_certname_and_server(self, mock_set_by_cli, mock_acme_from_config,
+                                           unused_mock_renewal_file_for_certname, mock_cert,
+                                           mock_delete_if_appropriate):
         """Revoking with --server should use the server from the CLI"""
+        self._mock_set_by_cli(mock_set_by_cli, "server", True)
         mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
                                                 server="https://acme.example")
         args = 'revoke --cert-name=example.com --server https://other.example'.split()
         mock_delete_if_appropriate.return_value = False
         self._call(args)
-        self.mock_acme_client.assert_called_once_with(mock.ANY, mock.ANY, 'https://other.example')
+        self.assertEqual(mock_acme_from_config.call_args_list[0][0][0].server,
+                         'https://other.example')
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    def test_revoke_by_certname_empty_server(self, unused_mock_renewal_file_for_certname,
+    @mock.patch('certbot._internal.client.acme_from_config_key')
+    @mock.patch('certbot._internal.cli.set_by_cli')
+    def test_revoke_by_certname_empty_server(self, mock_set_by_cli, mock_acme_from_config,
+                                             unused_mock_renewal_file_for_certname,
                                              mock_cert, mock_delete_if_appropriate):
         """Revoking with --cert-name where the lineage server is empty shouldn't crash """
         mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path, server=None)
         args = 'revoke --cert-name=example.com'.split()
         mock_delete_if_appropriate.return_value = False
         self._call(args)
-        self.mock_acme_client.assert_called_once_with(
-            mock.ANY, mock.ANY, constants.CLI_DEFAULTS['server'])
+        self.assertEqual(mock_acme_from_config.call_args_list[0][0][0].server,
+                         constants.CLI_DEFAULTS['server'])
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
@@ -1034,9 +1055,7 @@ class MainTest(test_util.ConfigTestCase):
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
         self.assertEqual(filtered.init.call_count, 1)
-        filtered.verify.assert_called_once_with(ifaces)
-        verified = filtered.verify()
-        self.assertEqual(stdout.getvalue().strip(), str(verified))
+        self.assertEqual(stdout.getvalue().strip(), str(filtered))
 
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
@@ -1052,11 +1071,9 @@ class MainTest(test_util.ConfigTestCase):
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
         self.assertEqual(filtered.init.call_count, 1)
-        filtered.verify.assert_called_once_with(ifaces)
-        verified = filtered.verify()
-        verified.prepare.assert_called_once_with()
-        verified.available.assert_called_once_with()
-        available = verified.available()
+        filtered.prepare.assert_called_once_with()
+        filtered.available.assert_called_once_with()
+        available = filtered.available()
         self.assertEqual(stdout.getvalue().strip(), str(available))
 
     def test_certonly_abspath(self):
@@ -1192,6 +1209,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_lineage.has_pending_deployment.return_value = False
         mock_lineage.names.return_value = ['isnot.org']
         mock_lineage.private_key_type = 'RSA'
+        mock_lineage.rsa_key_size = 2048
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
@@ -1566,11 +1584,12 @@ class MainTest(test_util.ConfigTestCase):
         self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
                                  '--server', server, 'revoke'])
         with open(RSA2048_KEY_PATH, 'rb') as f:
-            mock_acme_client.BackwardsCompatibleClientV2.assert_called_once_with(
-                mock.ANY, jose.JWK.load(f.read()), server)
+            self.assertEqual(mock_acme_client.ClientV2.call_count, 1)
+            self.assertEqual(mock_acme_client.ClientNetwork.call_args[0][0],
+                             jose.JWK.load(f.read()))
         with open(SS_CERT_PATH, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
-            mock_revoke = mock_acme_client.BackwardsCompatibleClientV2().revoke
+            mock_revoke = mock_acme_client.ClientV2().revoke
             mock_revoke.assert_called_once_with(
                     jose.ComparableX509(cert),
                     mock.ANY)

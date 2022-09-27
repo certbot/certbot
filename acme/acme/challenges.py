@@ -23,9 +23,6 @@ import requests
 
 from acme import crypto_util
 from acme import errors
-from acme import fields
-from acme.mixins import ResourceMixin
-from acme.mixins import TypeMixin
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +44,17 @@ class Challenge(jose.TypedJSONObjectWithFields):
             return UnrecognizedChallenge.from_json(jobj)
 
 
-class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields):
+class ChallengeResponse(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
     TYPES: Dict[str, Type['ChallengeResponse']] = {}
-    resource_type = 'challenge'
-    resource: str = fields.resource(resource_type)
+
+    def to_partial_json(self) -> Dict[str, Any]:
+        # Removes the `type` field which is inserted by TypedJSONObjectWithFields.to_partial_json.
+        # This field breaks RFC8555 compliance.
+        jobj = super().to_partial_json()
+        jobj.pop(self.type_field_name, None)
+        return jobj
 
 
 class UnrecognizedChallenge(Challenge):
@@ -408,7 +410,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
     """
 
     ID_PE_ACME_IDENTIFIER_V1 = b"1.3.6.1.5.5.7.1.30.1"
-    ACME_TLS_1_PROTOCOL = "acme-tls/1"
+    ACME_TLS_1_PROTOCOL = b"acme-tls/1"
 
     @property
     def h(self) -> bytes:

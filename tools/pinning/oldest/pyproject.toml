@@ -18,7 +18,6 @@ python = "3.7"
 # on acme so certbot must be listed before acme.
 certbot-ci = {path = "../../../certbot-ci"}
 certbot-dns-cloudflare = {path = "../../../certbot-dns-cloudflare"}
-certbot-dns-cloudxns = {path = "../../../certbot-dns-cloudxns"}
 certbot-dns-digitalocean = {path = "../../../certbot-dns-digitalocean"}
 certbot-dns-dnsimple = {path = "../../../certbot-dns-dnsimple"}
 certbot-dns-dnsmadeeasy = {path = "../../../certbot-dns-dnsmadeeasy"}
@@ -80,11 +79,6 @@ requests = "2.20.0"
 setuptools = "41.6.0"
 six = "1.11.0"
 urllib3 = "1.24.2"
-# Package names containing "." need to be quoted.
-"zope.component" = "4.1.0"
-"zope.event" = "4.0.3"
-"zope.hookable" = "4.0.4"
-"zope.interface" = "4.0.5"
 
 # Build dependencies
 # Since there doesn't appear to
@@ -104,11 +98,13 @@ cython = "*"
 # wheel 0.34.0 is buggy).
 wheel = "<0.34.0"
 
-# A bad python_requires constraint in pylint 2.6.2 can sometimes crash poetry
-# before it has finished resolving. No newer releases have the same issue. Remove
-# this once we can upgrade to a release of Poetry containing this commit:
-# https://github.com/python-poetry/poetry-core/commit/4e1f2ab582d1fef0033c0d3f35a3f2f2365a4bc9
-pylint = ">2.6.2"
+# pylint often adds new checks that we need to conform our code to when
+# upgrading our dependencies. To help control when this needs to be done, we
+# pin pylint to a compatible version here.
+#
+# If this pinning is removed, we may still need to add a lower bound for the
+# pylint version. See https://github.com/certbot/certbot/pull/9229.
+pylint = "2.13.9"
 
 [tool.poetry.dev-dependencies]
 

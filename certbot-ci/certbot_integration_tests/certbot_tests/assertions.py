@@ -33,8 +33,8 @@ def assert_elliptic_key(key: str, curve: Type[EllipticCurve]) -> None:
 
     key = load_pem_private_key(data=privkey1, password=None, backend=default_backend())
 
-    assert isinstance(key, EllipticCurvePrivateKey)
-    assert isinstance(key.curve, curve)
+    assert isinstance(key, EllipticCurvePrivateKey), f"should be an EC key but was {type(key)}"
+    assert isinstance(key.curve, curve), f"should have curve {curve} but was {key.curve}"
 
 
 def assert_rsa_key(key: str, key_size: Optional[int] = None) -> None:
@@ -125,7 +125,7 @@ def assert_equals_world_read_permissions(file1: str, file2: str) -> None:
         mode_file1 = os.stat(file1).st_mode & 0o004
         mode_file2 = os.stat(file2).st_mode & 0o004
     else:
-        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID) # pylint: disable=used-before-assignment
 
         security1 = win32security.GetFileSecurity(file1, win32security.DACL_SECURITY_INFORMATION)
         dacl1 = security1.GetSecurityDescriptorDacl()
@@ -135,7 +135,7 @@ def assert_equals_world_read_permissions(file1: str, file2: str) -> None:
             'TrusteeType': win32security.TRUSTEE_IS_USER,
             'Identifier': everybody,
         })
-        mode_file1 = mode_file1 & ntsecuritycon.FILE_GENERIC_READ
+        mode_file1 = mode_file1 & ntsecuritycon.FILE_GENERIC_READ # pylint: disable=used-before-assignment
 
         security2 = win32security.GetFileSecurity(file2, win32security.DACL_SECURITY_INFORMATION)
         dacl2 = security2.GetSecurityDescriptorDacl()

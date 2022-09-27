@@ -507,6 +507,19 @@ def test_new_key(context: IntegrationTestsContext) -> None:
     assert_saved_lineage_option(context.config_dir, certname, 'reuse_key', 'True')
     assert_elliptic_key(privkey4_path, SECP256R1)
 
+    # certonly: it should not be possible to change a key parameter without --new-key
+    with pytest.raises(subprocess.CalledProcessError) as error:
+        context.certbot(['certonly', '-d', certname, '--reuse-key',
+                         '--elliptic-curve', 'secp384r1'])
+    assert 'Unable to change the --elliptic-curve' in error.value.stderr
+
+    # certonly: not specifying --key-type should keep the existing key type (non-interactively).
+    # TODO: when ECDSA is made default key type, the key types must be inverted
+    context.certbot(['certonly', '-d', certname, '--no-reuse-key'])
+    privkey5, privkey5_path = private_key(5)
+    assert_elliptic_key(privkey5_path, SECP256R1)
+    assert privkey4 != privkey5
+
 
 def test_incorrect_key_type(context: IntegrationTestsContext) -> None:
     with pytest.raises(subprocess.CalledProcessError):

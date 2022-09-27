@@ -133,18 +133,9 @@ class ACMEServer:
             acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL
             acme_xdist['challtestsrv_url'] = BOULDER_V2_CHALLTESTSRV_URL
 
-        acme_xdist['http_port'] = {
-            node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
-            zip(nodes, range(5200, 5200 + len(nodes)))
-        }
-        acme_xdist['https_port'] = {
-            node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
-            zip(nodes, range(5100, 5100 + len(nodes)))
-        }
-        acme_xdist['other_port'] = {
-            node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
-            zip(nodes, range(5300, 5300 + len(nodes)))
-        }
+        acme_xdist['http_port'] = dict(zip(nodes, range(5200, 5200 + len(nodes))))
+        acme_xdist['https_port'] = dict(zip(nodes, range(5100, 5100 + len(nodes))))
+        acme_xdist['other_port'] = dict(zip(nodes, range(5300, 5300 + len(nodes))))
 
         self.acme_xdist = acme_xdist
 

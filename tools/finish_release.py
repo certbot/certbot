@@ -4,7 +4,7 @@ Post-release script to publish artifacts created from Azure Pipelines.
 
 This currently includes:
 
-* Moving snaps from the beta channel to the stable channel
+* Moving snaps from the candidate channel to the stable channel
 * Publishing the Windows installer in a GitHub release
 
 Setup:
@@ -110,7 +110,7 @@ def assert_logged_into_snapcraft():
 
 
 def get_snap_revisions(snap, version):
-    """Finds the revisions for the snap and version in the beta channel.
+    """Finds the revisions for the snap and version in the candidate channel.
 
     If you call this function without being logged in with snapcraft, it
     will hang with no output.
@@ -130,20 +130,20 @@ def get_snap_revisions(snap, version):
     print('Getting revision numbers for', snap, version)
     cmd = ['snapcraft', 'status', snap]
     process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, universal_newlines=True)
-    pattern = f'^\s+beta\s+{version}\s+(\d+)\s*'
+    pattern = f'^\s+candidate\s+{version}\s+(\d+)\s*'
     revisions = re.findall(pattern, process.stdout, re.MULTILINE)
     assert len(revisions) == SNAP_ARCH_COUNT, f'Unexpected number of snaps found for {snap} {version} (expected {SNAP_ARCH_COUNT}, found {len(revisions)})'
     return revisions
 
 
 def promote_snaps(version):
-    """Promotes all Certbot snaps from the beta to stable channel.
+    """Promotes all Certbot snaps from the candidate to stable channel.
 
     If the snaps have already been released to the stable channel, this
     function will try to release them again which has no effect.
 
     :param str version: the version number that should be found in the
-        beta channel, e.g. 1.7.0
+        candidate channel, e.g. 1.7.0
 
     :raises SystemExit: if the command snapcraft is unavailable or it
         isn't logged into an account

@@ -17,8 +17,6 @@ from typing import Union
 
 import configobj
 import josepy as jose
-import zope.component
-import zope.interface
 
 from acme import client as acme_client
 from acme import errors as acme_errors
@@ -38,7 +36,6 @@ from certbot._internal import eff
 from certbot._internal import hooks
 from certbot._internal import log
 from certbot._internal import renewal
-from certbot._internal import reporter
 from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
@@ -1165,15 +1162,14 @@ def plugins_cmd(config: configuration.NamespaceConfig,
         return
 
     filtered.init(config)
-    verified = filtered.verify(ifaces)
-    logger.debug("Verified plugins: %r", verified)
+    logger.debug("Filtered plugins: %r", filtered)
 
     if not config.prepare:
-        notify(str(verified))
+        notify(str(filtered))
         return
 
-    verified.prepare()
-    available = verified.available()
+    filtered.prepare()
+    available = filtered.available()
     logger.debug("Prepared plugins: %s", available)
     notify(str(available))
 
@@ -1654,8 +1650,8 @@ def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
 
 @contextmanager
 def make_displayer(config: configuration.NamespaceConfig
-                   ) -> Generator[Union[display_util.NoninteractiveDisplay,
-                                        display_util.FileDisplay], None, None]:
+                   ) -> Generator[Union[display_obj.NoninteractiveDisplay,
+                                        display_obj.FileDisplay], None, None]:
     """Creates a display object appropriate to the flags in the supplied config.
 
     :param config: Configuration object
@@ -1663,18 +1659,18 @@ def make_displayer(config: configuration.NamespaceConfig
     :returns: Display object
 
     """
-    displayer: Union[None, display_util.NoninteractiveDisplay,
-                     display_util.FileDisplay] = None
+    displayer: Union[None, display_obj.NoninteractiveDisplay,
+                     display_obj.FileDisplay] = None
     devnull: Optional[IO] = None
 
     if config.quiet:
         config.noninteractive_mode = True
         devnull = open(os.devnull, "w")  # pylint: disable=consider-using-with
-        displayer = display_util.NoninteractiveDisplay(devnull)
+        displayer = display_obj.NoninteractiveDisplay(devnull)
     elif config.noninteractive_mode:
-        displayer = display_util.NoninteractiveDisplay(sys.stdout)
+        displayer = display_obj.NoninteractiveDisplay(sys.stdout)
     else:
-        displayer = display_util.FileDisplay(
+        displayer = display_obj.FileDisplay(
             sys.stdout, config.force_interactive)
 
     try:
@@ -1716,10 +1712,6 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
 
-    # This call is done only for retro-compatibility purposes.
-    # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(config, interfaces.IConfig)
-
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
     misc.raise_for_non_administrative_windows_rights()
@@ -1731,12 +1723,6 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
-
-    # These calls are done only for retro-compatibility purposes.
-    # TODO: Remove these calls once zope dependencies are removed from Certbot.
-    report = reporter.Reporter(config)
-    zope.component.provideUtility(report, interfaces.IReporter)
-    util.atexit_register(report.print_messages)
 
     with make_displayer(config) as displayer:
         display_obj.set_display(displayer)
