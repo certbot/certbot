@@ -352,7 +352,7 @@ def _avoid_reuse_key_conflicts(config: configuration.NamespaceConfig,
     potential_conflicts = [
         ("--key-type",
          lambda: kt != lineage.private_key_type.lower()),
-        ("--rsa-key-type",
+        ("--rsa-key-size",
          lambda: kt == "rsa" and config.rsa_key_size != lineage.rsa_key_size),
         ("--elliptic-curve",
          lambda: kt == "ecdsa" and lineage.elliptic_curve and \
