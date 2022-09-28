@@ -5,6 +5,7 @@ from typing import Dict
 from typing import Set
 from typing import Tuple
 import unittest
+from unittest import mock
 
 import josepy as jose
 import OpenSSL.crypto
@@ -15,11 +16,6 @@ from certbot import achallenges
 from certbot import errors
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 
 
 class ServerManagerTest(unittest.TestCase):

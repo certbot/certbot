@@ -2,7 +2,7 @@
 import sys
 from typing import List
 import unittest
-
+from unittest import mock
 
 from certbot import errors
 from certbot import interfaces
@@ -10,11 +10,6 @@ from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins.disco import PluginsRegistry
 from certbot.display import util as display_util
 from certbot.tests import util as test_util
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 
 
 class ConveniencePickPluginTest(unittest.TestCase):

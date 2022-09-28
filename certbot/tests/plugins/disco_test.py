@@ -3,6 +3,7 @@ import functools
 import string
 from typing import List
 import unittest
+from unittest import mock
 
 import pkg_resources
 
@@ -11,11 +12,6 @@ from certbot import interfaces
 from certbot._internal.plugins import null
 from certbot._internal.plugins import standalone
 from certbot._internal.plugins import webroot
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 
 
 EP_SA = pkg_resources.EntryPoint(

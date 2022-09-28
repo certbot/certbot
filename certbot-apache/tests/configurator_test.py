@@ -5,11 +5,7 @@ import shutil
 import socket
 import tempfile
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
+from unittest import mock
 
 from acme import challenges
 from certbot import achallenges
