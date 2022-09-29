@@ -217,7 +217,7 @@ class _RFC2136Client:
         # Turn off Recursion Desired bit in query
         request.flags ^= dns.flags.RD
         # Use our TSIG keyring
-        request.use_tsig(self.keyring, algorithm=self.algorithm)
+        request.use_tsig(self.keyring, algorithm=self.algorithm) # type: ignore[attr-defined]
 
         try:
             try:
