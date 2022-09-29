@@ -55,21 +55,7 @@ class PluginEntryPointTest(unittest.TestCase):
 
         for entry_point, name in names.items():
             self.assertEqual(
-                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=False))
-
-    def test_entry_point_to_plugin_name_prefixed(self):
-        from certbot._internal.plugins.disco import PluginEntryPoint
-
-        names = {
-            self.ep1: "p1:ep1",
-            self.ep1prim: "p2:ep1",
-            self.ep2: "p2:ep2",
-            self.ep3: "p3:ep3",
-        }
-
-        for entry_point, name in names.items():
-            self.assertEqual(
-                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=True))
+                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point))
 
     def test_description(self):
         self.assertIn("temporary webserver", self.plugin_ep.description)
@@ -204,8 +190,7 @@ class PluginsRegistryTest(unittest.TestCase):
         self.assertIs(plugins["wr"].entry_point, EP_WR)
         self.assertIs(plugins["ep1"].plugin_cls, null.Installer)
         self.assertIs(plugins["ep1"].entry_point, self.ep1)
-        self.assertIs(plugins["p1:ep1"].plugin_cls, null.Installer)
-        self.assertIs(plugins["p1:ep1"].entry_point, self.ep1)
+        self.assertNotIn("p1:ep1", plugins)
 
     def test_getitem(self):
         self.assertEqual(self.plugin_ep, self.reg["mock"])
