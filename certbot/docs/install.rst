@@ -6,14 +6,12 @@ Get Certbot
    :local:
 
 
-
 .. _system_requirements:
 
 System Requirements
-===================
-
-- Linux, macOS, *BSD and Windows
-- Root access on Linux/*BSD (recommended), Administrator access on Windows (required)
+-------------------
+- Linux, macOS, BSD and Windows
+- Recomennded root access on Linux/BSD/Required Administrator access on Windows
 - Port 80 Open
 
 .. Note:: Certbot is most useful when run with root privileges, because it is then able to automatically configure TLS/SSL for Apache and nginx. \
@@ -93,13 +91,25 @@ of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 .. _`install Docker`: https://docs.docker.com/engine/installation/
 .. _certbot.eff.org: https://certbot.eff.org/instructions
 
+
+.. _pip:
+
 Alternative 2: Pip
 ------------------
 
 Installing Certbot through pip is only supported on a best effort basis and
-when using a Python virtual environment. Instructions for installing Certbot through
+when using a virtual environment. Instructions for installing Certbot through
 pip can be found at https://certbot.eff.org/instructions by selecting your
 server software and then choosing "pip" in the "System" dropdown menu.
+
+
+.. _third-party:
+
+Alternative 3: Third Party Distributions
+----------------------------------------
+
+Third party distributions exist for other specific needs. They often are maintained
+by these parties outside of Certbot and tend to rapidly fall out of date on LTS-style distributions.
 
 .. _certbot-auto:
 
@@ -108,9 +118,11 @@ Certbot-Auto [Deprecated]
 .. toctree::
    :hidden:
 
-   uninstall
-
 We used to have a shell script named ``certbot-auto`` to help people install
 Certbot on UNIX operating systems, however, this script is no longer supported.
-If you want to uninstall ``certbot-auto``, you can follow our instructions
-:doc:`here <uninstall>`.
+
+Please remove ``certbot-auto``. To do so, you need to do three things:
+
+1. If you added a cron job or systemd timer to automatically run certbot-auto to renew your certificates, you should delete it. If you did this by following our instructions, you can delete the entry added to `/etc/crontab` by running a command like `sudo sed -i '/certbot-auto/d' /etc/crontab`.
+2. Delete the certbot-auto script. If you placed it in `/usr/local/bin`` like we recommended, you can delete it by running `sudo rm /usr/local/bin/certbot-auto`.
+3. Delete the Certbot installation created by certbot-auto by running `sudo rm -rf /opt/eff.org`.
