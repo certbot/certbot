@@ -461,7 +461,6 @@ class RenewableCertTests(BaseRenewableCertTest):
         ]:
             sometime = datetime.datetime.utcfromtimestamp(current_time)
             mock_datetime.datetime.utcnow.return_value = sometime
-            self.test_rc.configuration["deploy_before_expiry"] = interval
             self.test_rc.configuration["renew_before_expiry"] = interval
             self.assertEqual(self.test_rc.should_autorenew(), result)
 

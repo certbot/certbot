@@ -2,6 +2,7 @@
 from typing import Dict
 import unittest
 from unittest import mock
+import warnings
 
 import josepy as jose
 
@@ -17,7 +18,7 @@ class ErrorTest(unittest.TestCase):
     """Tests for acme.messages.Error."""
 
     def setUp(self):
-        from acme.messages import Error, ERROR_PREFIX
+        from acme.messages import Error, ERROR_PREFIX, Identifier, IDENTIFIER_FQDN
         self.error = Error.with_code('malformed', detail='foo', title='title')
         self.jobj = {
             'detail': 'foo',
@@ -25,6 +26,9 @@ class ErrorTest(unittest.TestCase):
             'type': ERROR_PREFIX + 'malformed',
         }
         self.error_custom = Error(typ='custom', detail='bar')
+        self.identifier = Identifier(typ=IDENTIFIER_FQDN, value='example.com')
+        self.subproblem = Error.with_code('caa', detail='bar', title='title', identifier=self.identifier)
+        self.error_with_subproblems = Error.with_code('malformed', detail='foo', title='title', subproblems=[self.subproblem])
         self.empty_error = Error()
 
     def test_default_typ(self):
@@ -38,6 +42,14 @@ class ErrorTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.messages import Error
         hash(Error.from_json(self.error.to_json()))
+
+    def test_from_json_with_subproblems(self):
+        from acme.messages import Error
+
+        parsed_error = Error.from_json(self.error_with_subproblems.to_json())
+
+        self.assertEqual(1, len(parsed_error.subproblems))
+        self.assertEqual(self.subproblem, parsed_error.subproblems[0])
 
     def test_description(self):
         self.assertEqual('The request message was malformed', self.error.description)
@@ -73,7 +85,11 @@ class ErrorTest(unittest.TestCase):
             str(self.error),
             u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}"
             .format(self.error))
-
+        self.assertEqual(
+            str(self.error_with_subproblems),
+            (u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}\n"+
+            u"Problem for {1.identifier.value}: {1.typ} :: {1.description} :: {1.detail} :: {1.title}").format(
+        self.error_with_subproblems, self.subproblem))
 
 class ConstantTest(unittest.TestCase):
     """Tests for acme.messages._Constant."""
@@ -135,8 +151,10 @@ class DirectoryTest(unittest.TestCase):
     def test_getitem(self):
         self.assertEqual('reg', self.dir['new-reg'])
         from acme.messages import NewRegistration
-        self.assertEqual('reg', self.dir[NewRegistration])
-        self.assertEqual('reg', self.dir[NewRegistration()])
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.* non-string keys', DeprecationWarning)
+            self.assertEqual('reg', self.dir[NewRegistration])
+            self.assertEqual('reg', self.dir[NewRegistration()])
 
     def test_getitem_fails_with_key_error(self):
         self.assertRaises(KeyError, self.dir.__getitem__, 'foo')
@@ -392,10 +410,12 @@ class AuthorizationTest(unittest.TestCase):
         hash(Authorization.from_json(self.jobj_from))
 
     def test_resolved_combinations(self):
-        self.assertEqual(self.authz.resolved_combinations, (
-            (self.challbs[0],),
-            (self.challbs[1],),
-        ))
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', '.*resolved_combinations', DeprecationWarning)
+            self.assertEqual(self.authz.resolved_combinations, (
+                (self.challbs[0],),
+                (self.challbs[1],),
+            ))
 
 
 class AuthorizationResourceTest(unittest.TestCase):

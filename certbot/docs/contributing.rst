@@ -75,7 +75,7 @@ latter by running:
 
    source venv/bin/activate
 
-After running this command, ``certbot`` and development tools like ``ipdb``,
+After running this command, ``certbot`` and development tools like ``ipdb3``,
 ``ipython``, ``pytest``, and ``tox`` are available in the shell where you ran
 the command. These tools are installed in the virtual environment and are kept
 separate from your global Python installation. This works by setting
@@ -313,7 +313,7 @@ configuration checkpoints and rollback.
 Writing your own plugin
 -----------------------
 
-.. note:: The Certbot team is not currently accepting any new DNS plugins
+.. note:: The Certbot team is not currently accepting any new plugins
     because we want to rethink our approach to the challenge and resolve some
     issues like `#6464 <https://github.com/certbot/certbot/issues/6464>`_,
     `#6503 <https://github.com/certbot/certbot/issues/6503>`_, and `#6504
@@ -500,6 +500,9 @@ Submitting a pull request
 
 Steps:
 
+0. We recommend you talk with us in a GitHub issue or :ref:`Mattermost <ask for
+   help>` before writing a pull request to ensure the changes you're making is
+   something we have the time and interest to review.
 1. Write your code! When doing this, you should add :ref:`mypy type annotations
    <type annotations>` for any functions you add or modify. You can check that
    you've done this correctly by running ``tox -e mypy`` on a machine that has

@@ -32,6 +32,8 @@ ALL_SSL_OPTIONS_HASHES: List[str] = [
     '5cc003edd93fb9cd03d40c7686495f8f058f485f75b5e764b789245a386e6daf',
     '007cd497a56a3bb8b6a2c1aeb4997789e7e38992f74e44cc5d13a625a738ac73',
     '34783b9e2210f5c4a23bced2dfd7ec289834716673354ed7c7abf69fe30192a3',
+    '61466bc2f98a623c02be8a5ee916ead1655b0ce883bdc936692076ea499ff5ce',
+    '3fd812e3e87fe5c645d3682a511b2a06c8286f19594f28e280f17cd6af1301b5',
 ]
 """SHA256 hashes of the contents of previous versions of all versions of MOD_SSL_CONF_SRC"""
 

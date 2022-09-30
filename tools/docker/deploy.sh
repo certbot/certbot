@@ -46,19 +46,19 @@ ParseRequestedArch "${2}"
 TagAndPushForAllRequestedArch() {
     DOCKER_REPO="${DOCKER_HUB_ORG}/${1}"
     for TARGET_ARCH in "${ALL_REQUESTED_ARCH[@]}"; do
-        docker push "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}"
+        docker --debug push "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}"
 
         if [[ "${TAG_BASE}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             docker tag "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" "${DOCKER_REPO}:${TARGET_ARCH}-latest"
-            docker push "${DOCKER_REPO}:${TARGET_ARCH}-latest"
+            docker --debug push "${DOCKER_REPO}:${TARGET_ARCH}-latest"
             if [ "${TARGET_ARCH}" == "${DEFAULT_ARCH}" ]; then
                 docker tag "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" "${DOCKER_REPO}:latest"
-                docker push "${DOCKER_REPO}:latest"
+                docker --debug push "${DOCKER_REPO}:latest"
             fi
         fi
         if [ "${TARGET_ARCH}" == "${DEFAULT_ARCH}" ]; then
             docker tag "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" "${DOCKER_REPO}:${TAG_BASE}"
-            docker push "${DOCKER_REPO}:${TAG_BASE}"
+            docker --debug push "${DOCKER_REPO}:${TAG_BASE}"
         fi
     done
 }

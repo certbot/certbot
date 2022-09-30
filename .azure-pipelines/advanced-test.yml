@@ -9,6 +9,7 @@ variables:
   # We don't publish our Docker images in this pipeline, but when building them
   # for testing, let's use the nightly tag.
   dockerTag: nightly
+  snapBuildTimeout: 5400
 
 stages:
   - template: templates/stages/test-and-package-stage.yml

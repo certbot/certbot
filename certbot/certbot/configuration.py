@@ -170,7 +170,11 @@ class NamespaceConfig:
 
     @property
     def no_verify_ssl(self) -> bool:
-        """Disable verification of the ACME server's certificate."""
+        """Disable verification of the ACME server's certificate.
+
+        The root certificates trusted by Certbot can be overriden by setting the
+        REQUESTS_CA_BUNDLE environment variable.
+        """
         return self.namespace.no_verify_ssl
 
     @property
@@ -299,6 +303,13 @@ class NamespaceConfig:
         for the server to issue a certificate.
         """
         return self.namespace.issuance_timeout
+
+    @property
+    def new_key(self) -> bool:
+        """This option specifies whether Certbot should generate a new private
+        key when replacing a certificate, even if reuse_key is set.
+        """
+        return self.namespace.new_key
 
     # Magic methods
 

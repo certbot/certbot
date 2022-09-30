@@ -99,6 +99,32 @@ class RenewalTest(test_util.ConfigTestCase):
 
         assert self.config.elliptic_curve == 'secp256r1'
 
+    def test_new_key(self):
+        # When renewing with both reuse_key and new_key, the key should be regenerated,
+        # the key type, key parameters and reuse_key should be kept.
+        self.config.reuse_key = True
+        self.config.new_key = True
+        self.config.dry_run = True
+        config = configuration.NamespaceConfig(self.config)
+
+        rc_path = test_util.make_lineage(
+            self.config.config_dir, 'sample-renewal.conf')
+        lineage = storage.RenewableCert(rc_path, config)
+
+        le_client = mock.MagicMock()
+        le_client.obtain_certificate.return_value = (None, None, None, None)
+
+        from certbot._internal import renewal
+
+        with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
+            renewal.renew_cert(self.config, None, le_client, lineage)
+
+        self.assertEqual(self.config.rsa_key_size, 2048)
+        self.assertEqual(self.config.key_type, 'rsa')
+        self.assertTrue(self.config.reuse_key)
+        # None is passed as the existing key, i.e. the key is not actually being reused.
+        le_client.obtain_certificate.assert_called_with(mock.ANY, None)
+
     @test_util.patch_display_util()
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_remove_deprecated_config_elements(self, mock_set_by_cli, unused_mock_get_utility):

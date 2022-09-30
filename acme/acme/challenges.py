@@ -14,6 +14,7 @@ from typing import Tuple
 from typing import Type
 from typing import TypeVar
 from typing import Union
+import warnings
 
 from cryptography.hazmat.primitives import hashes
 import josepy as jose
@@ -24,8 +25,11 @@ import requests
 from acme import crypto_util
 from acme import errors
 from acme import fields
-from acme.mixins import ResourceMixin
-from acme.mixins import TypeMixin
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from acme.mixins import ResourceMixin
+    from acme.mixins import TypeMixin
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +56,9 @@ class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields
     """ACME challenge response."""
     TYPES: Dict[str, Type['ChallengeResponse']] = {}
     resource_type = 'challenge'
-    resource: str = fields.resource(resource_type)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', 'resource attribute in acme.fields', DeprecationWarning)
+        resource: str = fields.resource(resource_type)
 
 
 class UnrecognizedChallenge(Challenge):
@@ -408,7 +414,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
     """
 
     ID_PE_ACME_IDENTIFIER_V1 = b"1.3.6.1.5.5.7.1.30.1"
-    ACME_TLS_1_PROTOCOL = "acme-tls/1"
+    ACME_TLS_1_PROTOCOL = b"acme-tls/1"
 
     @property
     def h(self) -> bytes:

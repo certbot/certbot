@@ -32,14 +32,22 @@ import OpenSSL
 import requests
 from requests.adapters import HTTPAdapter
 from requests.utils import parse_header_links
-from requests_toolbelt.adapters.source import SourceAddressAdapter
+# We're capturing the warnings described at
+# https://github.com/requests/toolbelt/issues/331 until we can remove this
+# dependency in Certbot 2.0.
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "'urllib3.contrib.pyopenssl",
+                            DeprecationWarning)
+    from requests_toolbelt.adapters.source import SourceAddressAdapter
 
 from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
-from acme.mixins import VersionedLEACMEMixin
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from acme.mixins import VersionedLEACMEMixin
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +58,9 @@ DER_CONTENT_TYPE = 'application/pkix-cert'
 
 class ClientBase:
     """ACME client base object.
+
+    .. deprecated:: 1.30.0
+       Use `ClientV2` instead.
 
     :ivar messages.Directory directory:
     :ivar .ClientNetwork net: Client network.
@@ -295,7 +306,7 @@ class Client(ClientBase):
 
         """
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
-        response = self._post(self.directory[new_reg], new_reg)
+        response = self._post(self.directory['new-reg'], new_reg)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 
@@ -601,7 +612,7 @@ class Client(ClientBase):
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        self._revoke(cert, rsn, self.directory[messages.Revocation])
+        self._revoke(cert, rsn, self.directory['revoke-cert'])
 
 
 class ClientV2(ClientBase):
@@ -646,12 +657,8 @@ class ClientV2(ClientBase):
             Resource.
 
         """
-        self.net.account = regr  # See certbot/certbot#6258
-        # ACME v2 requires to use a POST-as-GET request (POST an empty JWS) here.
-        # This is done by passing None instead of an empty UpdateRegistration to _post().
-        response = self._post(regr.uri, None)
-        self.net.account = self._regr_from_response(response, uri=regr.uri,
-                                                    terms_of_service=regr.terms_of_service)
+        self.net.account = self._get_v2_account(regr, True)
+
         return self.net.account
 
     def update_registration(self, regr: messages.RegistrationResource,
@@ -671,12 +678,15 @@ class ClientV2(ClientBase):
         new_regr = self._get_v2_account(regr)
         return super().update_registration(new_regr, update)
 
-    def _get_v2_account(self, regr: messages.RegistrationResource) -> messages.RegistrationResource:
+    def _get_v2_account(self, regr: messages.RegistrationResource, update_body: bool = False
+                       ) -> messages.RegistrationResource:
         self.net.account = None
         only_existing_reg = regr.body.update(only_return_existing=True)
         response = self._post(self.directory['newAccount'], only_existing_reg)
         updated_uri = response.headers['Location']
-        new_regr = regr.update(uri=updated_uri)
+        new_regr = regr.update(body=messages.Registration.from_json(response.json())
+                               if update_body else regr.body,
+                               uri=updated_uri)
         self.net.account = new_regr
         return new_regr
 
@@ -797,9 +807,13 @@ class ClientV2(ClientBase):
             time.sleep(1)
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
-            if body.error is not None:
-                raise errors.IssuanceError(body.error)
-            if body.certificate is not None:
+            if body.status == messages.STATUS_INVALID:
+                if body.error is not None:
+                    raise errors.IssuanceError(body.error)
+                raise errors.Error(
+                    "The certificate order failed. No further information was provided "
+                    "by the server.")
+            elif body.status == messages.STATUS_VALID and body.certificate is not None:
                 certificate_response = self._post_as_get(body.certificate)
                 orderr = orderr.update(body=body, fullchain_pem=certificate_response.text)
                 if fetch_alternative_chains:
@@ -906,7 +920,8 @@ class BackwardsCompatibleClientV2:
             return regr_res
         else:
             client_v2 = cast(ClientV2, self.client)
-            if "terms_of_service" in client_v2.directory.meta:
+            if ("terms_of_service" in client_v2.directory.meta and
+                client_v2.directory.meta.terms_of_service is not None):
                 _assess_tos(client_v2.directory.meta.terms_of_service)
                 regr = regr.update(terms_of_service_agreed=True)
             return client_v2.new_account(regr)
@@ -1027,7 +1042,8 @@ class ClientNetwork:
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param float timeout: Timeout for requests.
-    :param source_address: Optional source address to bind to when making requests.
+    :param source_address: Optional source address to bind to when making
+        requests. (deprecated since 1.30.0)
     :type source_address: str or tuple(str, int)
     """
     def __init__(self, key: jose.JWK, account: Optional[messages.RegistrationResource] = None,
@@ -1045,6 +1061,8 @@ class ClientNetwork:
         adapter = HTTPAdapter()
 
         if source_address is not None:
+            warnings.warn("Support for source_address is deprecated and will be "
+                          "removed soon.", DeprecationWarning, stacklevel=2)
             adapter = SourceAddressAdapter(source_address)
 
         self.session.mount("http://", adapter)
@@ -1103,7 +1121,7 @@ class ClientNetwork:
             is ignored, but logged.
 
         :raises .messages.Error: If server response body
-            carries HTTP Problem (draft-ietf-appsawg-http-problem-00).
+            carries HTTP Problem (https://datatracker.ietf.org/doc/html/rfc7807).
         :raises .ClientError: In case of other networking errors.
 
         """
@@ -1299,7 +1317,7 @@ class _ClientDeprecationModule:
         self.__dict__['_module'] = module
 
     def __getattr__(self, attr: str) -> Any:
-        if attr in ('Client', 'BackwardsCompatibleClientV2'):
+        if attr in ('Client', 'ClientBase', 'BackwardsCompatibleClientV2'):
             warnings.warn('The {0} attribute in acme.client is deprecated '
                           'and will be removed soon.'.format(attr),
                           DeprecationWarning, stacklevel=2)

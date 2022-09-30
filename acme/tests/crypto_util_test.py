@@ -314,6 +314,14 @@ class MakeCSRTest(unittest.TestCase):
     def test_make_csr_without_hostname(self):
         self.assertRaises(ValueError, self._call_with_key)
 
+    def test_make_csr_correct_version(self):
+        csr_pem = self._call_with_key(["a.example"])
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+
+        self.assertEqual(csr.get_version(), 0,
+            "Expected CSR version to be v1 (encoded as 0), per RFC 2986, section 4")
+
 
 class DumpPyopensslChainTest(unittest.TestCase):
     """Test for dump_pyopenssl_chain."""
