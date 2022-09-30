@@ -57,13 +57,10 @@ class TestHandleCerts(unittest.TestCase):
         self.assertEqual(ret, ("reinstall", mock_lineage))
         self.assertTrue(mock_handle_migration.called)
 
-    @mock.patch("certbot._internal.renewal.should_renew")
     @mock.patch("certbot.display.util.menu")
     @mock.patch("certbot._internal.main._handle_unexpected_key_type_migration")
-    def test_handle_identical_cert_key_type_change(self, mock_handle_migration,
-        mock_menu, mock_should_renew):
+    def test_handle_identical_cert_key_type_change(self, mock_handle_migration, mock_menu):
         mock_handle_migration.return_value = True
-        mock_should_renew.return_value = False
         mock_lineage = mock.MagicMock()
         mock_lineage.ensure_deployed.return_value = True
         ret = main._handle_identical_cert_request(mock.MagicMock(verb="run", reinstall=False),
