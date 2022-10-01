@@ -11,7 +11,7 @@ Get Certbot
 System Requirements
 -------------------
 - Linux, macOS, BSD and Windows
-- Recomennded root access on Linux/BSD/Required Administrator access on Windows
+- Recommended root access on Linux/BSD/Required Administrator access on Windows
 - Port 80 Open
 
 .. Note:: Certbot is most useful when run with root privileges, because it is then able to automatically configure TLS/SSL for Apache and nginx. \
