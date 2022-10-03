@@ -41,4 +41,4 @@ poetry lock >&2
 trap 'rm poetry.lock' EXIT
 
 # We need to remove local packages from the output.
-poetry export --without-hashes | sed '/^acme @/d; /certbot/d;'
+poetry export --format constraints.txt --without-hashes | sed '/^acme @/d; /certbot/d;'
