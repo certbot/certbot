@@ -51,6 +51,13 @@ awscli = ">=1.22.76"
 # as a dependency here to ensure a version of cython is pinned for extra
 # stability.
 cython = "*"
+# We install mock in our "external-mock" tox environment to test that we didn't
+# break Certbot's test API which used to always use mock objects from the 3rd
+# party mock library. We list the mock dependency here so that is pinned, but
+# we don't depend on it in Certbot to avoid installing mock when it's not
+# needed. This dependency can be removed here once Certbot's support for the
+# 3rd party mock library has been dropped.
+mock = "*"
 # setuptools-rust is a build dependency of cryptography, and since we don't have
 # a great way of pinning build dependencies, we simply list it here to ensure a
 # working version. Note: if build dependencies of setuptools-rust break at some
