@@ -147,19 +147,21 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
 
 
 def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
-                                          cert: storage.RenewableCert) -> None:
+                                          cert: storage.RenewableCert) -> bool:
     """
     This function ensures that the user will not implicitly migrate an existing key
     from one type to another in the situation where a certificate for that lineage
     already exist and they have not provided explicitly --key-type and --cert-name.
     :param config: Current configuration provided by the client
     :param cert: Matching certificate that could be renewed
+    :returns: Whether a key type migration is going ahead.
+    :rtype: `bool`
     """
     new_key_type = config.key_type.upper()
     cur_key_type = cert.private_key_type.upper()
 
     if new_key_type == cur_key_type:
-        return
+        return False
 
     # If both --key-type and --cert-name are provided, we consider the user's intent to
     # be unambiguous: to change the key type of this lineage.
@@ -172,7 +174,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
         yes_label='Update key type', no_label='Keep existing key type',
         default=False, force_interactive=False,
     ):
-        return
+        return True
 
     # If --key-type was set on the CLI but the user did not confirm the key type change using
     # one of the two above methods, their intent is ambiguous. Error out.
@@ -188,6 +190,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
     # default value. The user is not asking for a key change: keep the key type of the existing
     # lineage.
     config.key_type = cur_key_type.lower()
+    return False
 
 
 def _handle_subset_cert_request(config: configuration.NamespaceConfig,
@@ -254,11 +257,11 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     :rtype: `tuple` of `str`
 
     """
-    _handle_unexpected_key_type_migration(config, lineage)
+    is_key_type_changing = _handle_unexpected_key_type_migration(config, lineage)
 
     if not lineage.ensure_deployed():
         return "reinstall", lineage
-    if renewal.should_renew(config, lineage):
+    if is_key_type_changing or renewal.should_renew(config, lineage):
         return "renew", lineage
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
