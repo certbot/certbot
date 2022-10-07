@@ -21,9 +21,7 @@ class EntryPointTest(unittest.TestCase):
         with mock.patch("certbot.util.get_os_info") as mock_info:
             for distro in entrypoint.OVERRIDE_CLASSES:
                 return_value = (distro, "whatever")
-                if distro == 'fedora_old':
-                    return_value = ('fedora', '28')
-                elif distro == 'fedora':
+                if distro == 'fedora':
                     return_value = ('fedora', '29')
                 mock_info.return_value = return_value
                 self.assertEqual(entrypoint.get_configurator(),

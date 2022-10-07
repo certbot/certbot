@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseCentOSConfigurator(configurator.ApacheConfigurator):
-    """CentOS specific ApacheConfigurator override class"""
+    """Base class for CentOS specific ApacheConfigurator override class"""
 
     def config_test(self) -> None:
         """
@@ -134,7 +134,7 @@ class BaseCentOSConfigurator(configurator.ApacheConfigurator):
 
 
 class CentOSConfigurator(BaseCentOSConfigurator):
-
+    """CentOS/RHEL-like overrides for CentOS version 9 and above"""
     OS_DEFAULTS = OsOptions(
         server_root="/etc/httpd",
         vhost_root="/etc/httpd/conf.d",
@@ -161,7 +161,7 @@ class CentOSConfigurator(BaseCentOSConfigurator):
 
 
 class OldCentOSConfigurator(BaseCentOSConfigurator):
-
+    """CentOS/RHEL-like overrides for CentOS version 8 and below"""
     OS_DEFAULTS = OsOptions(
         server_root="/etc/httpd",
         vhost_root="/etc/httpd/conf.d",

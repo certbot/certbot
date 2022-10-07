@@ -31,14 +31,14 @@ OVERRIDE_CLASSES: Dict[str, Type[configurator.ApacheConfigurator]] = {
 }
 
 
-def rhel_derived_os(os_name) -> bool:
+def rhel_derived_os(os_name: str) -> bool:
     """
     Returns whether the given OS is RHEL derived, i.e. tracks RHEL's versioning
     scheme, and thus should use our CentOS configurator
     """
     return os_name in [
-        "cloudlinux",
         "centos", "centos linux",
+        "cloudlinux",
         "ol", "oracle",
         "rhel", "redhatenterpriseserver", "red hat enterprise linux server",
         "scientific", "scientific linux",
@@ -56,6 +56,9 @@ def get_configurator() -> Type[configurator.ApacheConfigurator]:
     if os_name == 'fedora' and util.parse_loose_version(os_version) < min_version:
         return override_centos.OldCentOSConfigurator
 
+    # For CentOS and other RHEL-like distros (that use RHEL's versioning
+    # scheme), Apache's behavior changed in RHEL v9 (see issue #9386). Determine
+    # whether we're using the newer or older overrides class based on the version
     if rhel_derived_os(os_name):
         old = util.parse_loose_version(os_version) < util.parse_loose_version('9')
         if old:
