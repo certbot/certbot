@@ -166,7 +166,7 @@ class ApacheConfigurator(common.Configurator):
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 
-    def _prepare_options(self) -> None:
+    def _set_options(self) -> None:
         """
         Set the values possibly changed by command line parameters to
         OS_DEFAULTS constant dictionary
@@ -181,10 +181,18 @@ class ApacheConfigurator(common.Configurator):
             else:
                 setattr(self.options, o, getattr(self.OS_DEFAULTS, o))
 
-        # Special cases
+    def _override_cmds(self) -> None:
+        """
+        Override the various command binaries w/ whatever we have set for
+        options.ctl
+        """
         self.options.version_cmd[0] = self.options.ctl
         self.options.restart_cmd[0] = self.options.ctl
         self.options.conftest_cmd[0] = self.options.ctl
+
+    def _prepare_options(self) -> None:
+        self._set_options()
+        self._override_cmds()
 
     @classmethod
     def add_parser_arguments(cls, add: Callable[..., None]) -> None:

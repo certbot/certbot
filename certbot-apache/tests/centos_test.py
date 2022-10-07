@@ -47,12 +47,13 @@ class FedoraRestartTest(util.ApacheTest):
                       vhost_root=vhost_root)
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-            os_info="fedora_old")
+            os_info="fedora_old",
+            config_class=override_centos.OldCentOSConfigurator)
         self.vh_truth = get_vh_truth(
             self.temp_dir, "centos7_apache/apache")
 
     def _run_fedora_test(self):
-        self.assertIsInstance(self.config, override_centos.CentOSConfigurator)
+        self.assertIsInstance(self.config, override_centos.OldCentOSConfigurator)
         with mock.patch("certbot.util.get_os_info") as mock_info:
             mock_info.return_value = ["fedora", "28"]
             self.config.config_test()
@@ -99,27 +100,21 @@ class UseCorrectApacheExecutableTest(util.ApacheTest):
                       config_root=config_root,
                       vhost_root=vhost_root)
 
-    @mock.patch("certbot.util.get_os_info")
-    def test_old_centos_rhel_and_fedora(self, mock_get_os_info):
-        for os_info in [("centos", "7"), ("rhel", "7"), ("fedora", "28"), ("scientific", "6")]:
-            mock_get_os_info.return_value = os_info
-            config = util.get_apache_configurator(
-                self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-                os_info="centos")
-            self.assertEqual(config.options.ctl, "apachectl")
-            self.assertEqual(config.options.version_cmd, ["apachectl", "-v"])
-            self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
+    def test_old_centos(self):
+        config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir,
+            config_class=override_centos.OldCentOSConfigurator)
+        self.assertEqual(config.options.ctl, "apachectl")
+        self.assertEqual(config.options.version_cmd, ["apachectl", "-v"])
+        self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
 
-    @mock.patch("certbot.util.get_os_info")
-    def test_new_rhel_derived(self, mock_get_os_info):
-        for os_info in [("centos", "9"), ("rhel", "9"), ("oracle", "9")]:
-            mock_get_os_info.return_value = os_info
-            config = util.get_apache_configurator(
-                self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-                os_info="centos")
-            self.assertEqual(config.options.ctl, "httpd")
-            self.assertEqual(config.options.version_cmd, ["httpd", "-v"])
-            self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
+    def test_new_rhel_derived(self):
+        config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir,
+            config_class=override_centos.CentOSConfigurator)
+        self.assertEqual(config.options.ctl, "httpd")
+        self.assertEqual(config.options.version_cmd, ["httpd", "-v"])
+        self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
 
 
 class MultipleVhostsTestCentOS(util.ApacheTest):
@@ -138,7 +133,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         mock_get_os_info.return_value = ("centos", "9")
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-            os_info="centos")
+            config_class=override_centos.CentOSConfigurator)
         self.vh_truth = get_vh_truth(
             self.temp_dir, "centos7_apache/apache")
 

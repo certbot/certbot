@@ -16,21 +16,8 @@ from certbot.errors import MisconfigurationError
 logger = logging.getLogger(__name__)
 
 
-class CentOSConfigurator(configurator.ApacheConfigurator):
+class BaseCentOSConfigurator(configurator.ApacheConfigurator):
     """CentOS specific ApacheConfigurator override class"""
-
-    OS_DEFAULTS = OsOptions(
-        server_root="/etc/httpd",
-        vhost_root="/etc/httpd/conf.d",
-        vhost_files="*.conf",
-        logs_root="/var/log/httpd",
-        ctl="apachectl",
-        version_cmd=['apachectl', '-v'],
-        restart_cmd=['apachectl', 'graceful'],
-        restart_cmd_alt=['apachectl', 'restart'],
-        conftest_cmd=['apachectl', 'configtest'],
-        challenge_location="/etc/httpd/conf.d",
-    )
 
     def config_test(self) -> None:
         """
@@ -63,29 +50,6 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
         # Finish with actual config check to see if systemctl restart helped
         super().config_test()
-
-    def _prepare_options(self) -> None:
-        """
-        Override the options dictionary initialization in order to support
-        alternative restart cmd used in CentOS.
-        """
-        super()._prepare_options()
-        if not self.options.restart_cmd_alt:  # pragma: no cover
-            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
-
-        # Make sure new versions (>=9) of RHEL and other derived distros (that
-        # track RHEL's versioning scheme) use the httpd executable
-        os_name, os_version = util.get_os_info()
-        rhel_derived = os_name not in [
-            "fedora",
-            "amazon", # Amazon has a yearly release version
-        ]
-        new = util.parse_loose_version(os_version) >= util.parse_loose_version('9')
-        if rhel_derived and new:
-            self.options.ctl = 'httpd'
-            self.options.version_cmd[0] = self.options.ctl
-        else:
-            self.options.restart_cmd_alt[0] = self.options.ctl
 
     def get_parser(self) -> "CentOSParser":
         """Initializes the ApacheParser"""
@@ -167,6 +131,59 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
                 correct_ifmods.append(ssl_ifmod)
                 self.save_notes += ("Wrapped pre-existing LoadModule ssl_module "
                                     "inside of <IfModule !mod_ssl> block.\n")
+
+
+class CentOSConfigurator(BaseCentOSConfigurator):
+
+    OS_DEFAULTS = OsOptions(
+        server_root="/etc/httpd",
+        vhost_root="/etc/httpd/conf.d",
+        vhost_files="*.conf",
+        logs_root="/var/log/httpd",
+        ctl="httpd",
+        version_cmd=['httpd', '-v'],
+        restart_cmd=['apachectl', 'graceful'],
+        restart_cmd_alt=['apachectl', 'restart'],
+        conftest_cmd=['apachectl', 'configtest'],
+        challenge_location="/etc/httpd/conf.d",
+    )
+
+    def _prepare_options(self) -> None:
+        """
+        By only calling self._set_options() and not the parent class'
+        _prepare_options() method, we ensure that httpd is used for version_cmd
+        but not restart_cmd, unless the user has specifically overwritten those
+        in their config
+        """
+        self._set_options()
+        if not self.options.restart_cmd_alt:  # pragma: no cover
+            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
+
+
+class OldCentOSConfigurator(BaseCentOSConfigurator):
+
+    OS_DEFAULTS = OsOptions(
+        server_root="/etc/httpd",
+        vhost_root="/etc/httpd/conf.d",
+        vhost_files="*.conf",
+        logs_root="/var/log/httpd",
+        ctl="apachectl",
+        version_cmd=['apachectl', '-v'],
+        restart_cmd=['apachectl', 'graceful'],
+        restart_cmd_alt=['apachectl', 'restart'],
+        conftest_cmd=['apachectl', 'configtest'],
+        challenge_location="/etc/httpd/conf.d",
+    )
+
+    def _prepare_options(self) -> None:
+        """
+        Override the options dictionary initialization in order to support
+        alternative restart cmd used in CentOS.
+        """
+        super()._prepare_options()
+        if not self.options.restart_cmd_alt:  # pragma: no cover
+            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
+        self.options.restart_cmd_alt[0] = self.options.ctl
 
 
 class CentOSParser(parser.ApacheParser):

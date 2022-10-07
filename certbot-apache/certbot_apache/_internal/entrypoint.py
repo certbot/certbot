@@ -16,30 +16,33 @@ from certbot import util
 
 OVERRIDE_CLASSES: Dict[str, Type[configurator.ApacheConfigurator]] = {
     "arch": override_arch.ArchConfigurator,
-    "cloudlinux": override_centos.CentOSConfigurator,
     "darwin": override_darwin.DarwinConfigurator,
     "debian": override_debian.DebianConfigurator,
     "ubuntu": override_debian.DebianConfigurator,
-    "centos": override_centos.CentOSConfigurator,
-    "centos linux": override_centos.CentOSConfigurator,
-    "fedora_old": override_centos.CentOSConfigurator,
     "fedora": override_fedora.FedoraConfigurator,
     "linuxmint": override_debian.DebianConfigurator,
-    "ol": override_centos.CentOSConfigurator,
-    "oracle": override_centos.CentOSConfigurator,
-    "redhatenterpriseserver": override_centos.CentOSConfigurator,
-    "red hat enterprise linux server": override_centos.CentOSConfigurator,
-    "rhel": override_centos.CentOSConfigurator,
     "amazon": override_centos.CentOSConfigurator,
     "gentoo": override_gentoo.GentooConfigurator,
     "gentoo base system": override_gentoo.GentooConfigurator,
     "opensuse": override_suse.OpenSUSEConfigurator,
     "suse": override_suse.OpenSUSEConfigurator,
     "sles": override_suse.OpenSUSEConfigurator,
-    "scientific": override_centos.CentOSConfigurator,
-    "scientific linux": override_centos.CentOSConfigurator,
     "void": override_void.VoidConfigurator,
 }
+
+
+def rhel_derived_os(os_name) -> bool:
+    """
+    Returns whether the given OS is RHEL derived, i.e. tracks RHEL's versioning
+    scheme, and thus should use our CentOS configurator
+    """
+    return os_name in [
+        "cloudlinux",
+        "centos", "centos linux",
+        "ol", "oracle",
+        "rhel", "redhatenterpriseserver", "red hat enterprise linux server",
+        "scientific", "scientific linux",
+    ]
 
 
 def get_configurator() -> Type[configurator.ApacheConfigurator]:
@@ -51,7 +54,14 @@ def get_configurator() -> Type[configurator.ApacheConfigurator]:
     # Special case for older Fedora versions
     min_version = util.parse_loose_version('29')
     if os_name == 'fedora' and util.parse_loose_version(os_version) < min_version:
-        os_name = 'fedora_old'
+        return override_centos.OldCentOSConfigurator
+
+    if rhel_derived_os(os_name):
+        old = util.parse_loose_version(os_version) < util.parse_loose_version('9')
+        if old:
+            return override_centos.OldCentOSConfigurator
+        else:
+            return override_centos.CentOSConfigurator
 
     try:
         override_class = OVERRIDE_CLASSES[os_name]
