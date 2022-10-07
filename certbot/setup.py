@@ -89,6 +89,7 @@ test_extras = [
     'pylint',
     'pytest',
     'pytest-cov',
+    'pytest-timeout',
     'pytest-xdist',
     'setuptools',
     'tox',

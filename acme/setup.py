@@ -23,6 +23,7 @@ docs_extras = [
 
 test_extras = [
     'pytest',
+    'pytest-timeout',
     'pytest-xdist',
     'typing-extensions',
 ]
