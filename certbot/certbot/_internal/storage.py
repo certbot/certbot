@@ -1213,7 +1213,7 @@ class RenewableCert(interfaces.RenewableCert):
 
 
     def save_new_config_values(self, cli_config: configuration.NamespaceConfig) -> None:
-        """Save new cert and chain as a successor of a prior version.
+        """Save only the config information without writing the new cert.
 
         :param .NamespaceConfig cli_config: parsed command line
             arguments

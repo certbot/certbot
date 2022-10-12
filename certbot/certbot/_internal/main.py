@@ -1654,7 +1654,9 @@ def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
 
 def reconfigure(config: configuration.NamespaceConfig,
           plugins: plugins_disco.PluginsRegistry) -> None:
-    """Write me.
+    """Allow the user to set new configuration options for an existing certificate without
+       forcing renewal. This can be used for things like authenticator, installer, and hooks,
+       but not for the domains on the cert, since those are only saved in the cert.
 
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
@@ -1674,8 +1676,8 @@ def reconfigure(config: configuration.NamespaceConfig,
             "with the flag --force-renewal. Otherwise, remove the domains from the command "
             "to continue reconfiguring. You can specify which certificate you want on the command "
             "line with flag --cert-name instead.")
-        # TODO allow domains to be used to specify the certificate in addition to --cert-name,
-        # only erroring if they do not match the existing ones
+        # Potential TODO: allow domains to be used to specify the certificate in addition to
+        # --cert-name, only erroring if they do not match the existing ones
 
 
     # To make sure that the requested changes work, do a dry run. This will have the side effect
@@ -1694,14 +1696,14 @@ def reconfigure(config: configuration.NamespaceConfig,
     certname = config.certname
     lineage = cert_manager.lineage_for_certname(config, certname)
 
+    if not lineage:
+        raise errors.ConfigurationError("An existing certificate for the given name could not "
+            "be found. Run `certbot certificates` to list available certificates.")
+
     # renews cert as dry run
     lineage = _get_and_save_cert(le_client, config, certname=certname, lineage=lineage)
 
-    # if not renewed_lineage:
-    #     raise errors.Error("An existing certificate for the given name could not be found.")
-
     lineage.save_new_config_values(config)
-    # cert_manager.reconfigure(config)
 
 
 @contextmanager
