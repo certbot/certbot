@@ -83,7 +83,7 @@ class ACMEServer:
 
     def stop(self) -> None:
         """Stop the test stack, and clean its resources"""
-        print('=> Tear down the test infrastructure...')
+        print('=> Tear down the test infrastructure...', flush=True)
         try:
             for process in self._processes:
                 try:
