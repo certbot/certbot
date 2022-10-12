@@ -1,17 +1,15 @@
 jobs:
   - job: docker_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     strategy:
       matrix:
         amd64:
           DOCKER_ARCH: amd64
-        # Do not run the heavy non-amd64 builds for test branches
-        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-          arm32v6:
-            DOCKER_ARCH: arm32v6
-          arm64v8:
-            DOCKER_ARCH: arm64v8
+        arm32v6:
+          DOCKER_ARCH: arm32v6
+        arm64v8:
+          DOCKER_ARCH: arm64v8
     # The default timeout of 60 minutes is a little low for compiling
     # cryptography on ARM architectures.
     timeoutInMinutes: 180
@@ -37,7 +35,7 @@ jobs:
   - job: docker_run
     dependsOn: docker_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     steps:
       - task: DownloadPipelineArtifact@2
         inputs:
@@ -116,17 +114,15 @@ jobs:
         displayName: Run certbot integration tests
   - job: snaps_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     strategy:
       matrix:
         amd64:
           SNAP_ARCH: amd64
-        # Do not run the heavy non-amd64 builds for test branches
-        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-          armhf:
-            SNAP_ARCH: armhf
-          arm64:
-            SNAP_ARCH: arm64
+        armhf:
+          SNAP_ARCH: armhf
+        arm64:
+          SNAP_ARCH: arm64
     timeoutInMinutes: 0
     steps:
       - script: |
@@ -164,7 +160,7 @@ jobs:
   - job: snap_run
     dependsOn: snaps_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     steps:
       - task: UsePythonVersion@0
         inputs:
@@ -194,7 +190,7 @@ jobs:
   - job: snap_dns_run
     dependsOn: snaps_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     steps:
       - script: |
           set -e

@@ -57,7 +57,6 @@ class _LexiconAwareTestCase(Protocol):
         See
         https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertRaises
         """
-        ...
 
 
 # These classes are intended to be subclassed/mixed in, so not all members are defined.

@@ -39,7 +39,7 @@ The Token needed by Certbot requires ``Zone:DNS:Edit`` permissions for only the
 zones you need certificates for.
 
 Using Cloudflare Tokens also requires at least version 2.3.1 of the ``cloudflare``
-python module. If the version that automatically installed with this plugin is
+Python module. If the version that automatically installed with this plugin is
 older than that, and you can't upgrade it on your system, you'll have to stick to
 the Global key.
 
@@ -76,6 +76,18 @@ on credentials configuration file", followed by the path to the credentials
 file. This warning will be emitted each time Certbot uses the credentials file,
 including for renewal, and cannot be silenced except by addressing the issue
 (e.g., by using a command like ``chmod 600`` to restrict access to the file).
+
+.. note::
+    Please note that the ``cloudflare`` Python module used by the plugin has
+    additional methods of providing credentials to the module, e.g. environment
+    variables or the ``cloudflare.cfg`` configuration file. These methods are not
+    supported by Certbot. If any of those additional methods of providing
+    credentials is being used, they must provide the same credentials (i.e.,
+    email and API key *or* an API token) as the credentials file provided to
+    Certbot. If there is a discrepancy, the ``cloudflare`` Python module will
+    raise an error. Also note that the credentials provided to Certbot will take
+    precedence over any other method of providing credentials to the ``cloudflare``
+    Python module.
 
 
 Examples

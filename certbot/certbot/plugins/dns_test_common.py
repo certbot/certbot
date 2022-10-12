@@ -38,14 +38,12 @@ class _AuthenticatorCallableTestCase(Protocol):
         See
         https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertTrue
         """
-        ...
 
     def assertEqual(self, *unused_args: Any) -> None:
         """
         See
         https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertEqual
         """
-        ...
 
 
 class BaseAuthenticatorTest:

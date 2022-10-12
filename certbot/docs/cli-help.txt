@@ -35,7 +35,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -126,7 +126,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.29.0 (certbot;
+                        "". (default: CertbotACMEClient/1.31.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -236,7 +236,9 @@ testing:
                         (default: False)
   --debug               Show tracebacks in case of errors (default: False)
   --no-verify-ssl       Disable verification of the ACME server's certificate.
-                        (default: False)
+                        The root certificates trusted by Certbot can be
+                        overriden by setting the REQUESTS_CA_BUNDLE
+                        environment variable. (default: False)
   --http-01-port HTTP01_PORT
                         Port used in the http-01 challenge. This only affects
                         the port Certbot listens on. A conforming ACME server

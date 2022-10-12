@@ -7,7 +7,7 @@ set -e
 
 PLUGIN_PATH=$1
 PLUGIN=$(basename "${PLUGIN_PATH}")
-DESCRIPTION=$(grep description "${PLUGIN_PATH}/setup.py" | sed -E 's|\s+description="(.*)",|\1|g')
+DESCRIPTION=$(sed -E -n "/[[:space:]]+description=/ s/[[:space:]]+description=['\"](.*)['\"],/\1/ p" "${PLUGIN_PATH}/setup.py")
 mkdir -p "${PLUGIN_PATH}/snap"
 cat <<EOF > "${PLUGIN_PATH}/snap/snapcraft.yaml"
 # This file is generated automatically and should not be edited manually.

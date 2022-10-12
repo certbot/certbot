@@ -2,9 +2,9 @@
 # that script.
 apacheconfig==0.3.2
 asn1crypto==0.24.0
-astroid==2.11.6; python_version >= "3.7"
-atomicwrites==1.4.0; sys_platform == "win32" and python_version >= "3.7"
-attrs==21.4.0; python_version >= "3.7"
+astroid==2.11.7; python_version >= "3.7"
+atomicwrites==1.4.1; sys_platform == "win32" and python_version >= "3.7"
+attrs==22.1.0; python_version >= "3.7"
 bcrypt==3.2.2; python_version >= "3.7"
 boto3==1.15.15
 botocore==1.18.15
@@ -16,11 +16,11 @@ cloudflare==1.5.1
 colorama==0.4.5; sys_platform == "win32" and python_version >= "3.7"
 configargparse==0.10.0
 configobj==5.0.6
-coverage==6.4.1; python_version >= "3.7"
+coverage==6.4.2; python_version >= "3.7"
 cryptography==3.2.1
-cython==0.29.30
+cython==0.29.31
 dill==0.3.5.1; python_version >= "3.7"
-distlib==0.3.4; python_version >= "3.7"
+distlib==0.3.5; python_version >= "3.7"
 distro==1.0.1
 dns-lexicon==3.2.1
 dnspython==1.15.0
@@ -35,7 +35,7 @@ future==0.18.2; python_version >= "3.7"
 google-api-python-client==1.5.5
 httplib2==0.9.2
 idna==2.6
-importlib-metadata==4.11.4; python_version < "3.8" and python_version >= "3.7"
+importlib-metadata==4.12.0; python_version < "3.8" and python_version >= "3.7"
 iniconfig==1.1.1; python_version >= "3.7"
 ipaddress==1.0.16
 isort==5.10.1; python_version >= "3.7" and python_version < "4.0"
@@ -47,14 +47,14 @@ logger==1.4; python_version >= "3.7"
 mccabe==0.7.0; python_version >= "3.7"
 mock==1.0.1
 mypy-extensions==0.4.3; python_version >= "3.7"
-mypy==0.961; python_version >= "3.7"
+mypy==0.971; python_version >= "3.7"
 ndg-httpsclient==0.3.2
 oauth2client==4.0.0
 packaging==21.3; python_version >= "3.7"
 paramiko==2.11.0; python_version >= "3.7"
 parsedatetime==2.4
 pbr==1.8.0
-pip==22.1.2; python_version >= "3.7"
+pip==22.2.1; python_version >= "3.7"
 platformdirs==2.5.2; python_version >= "3.7"
 pluggy==1.0.0; python_version >= "3.7"
 ply==3.4
@@ -63,7 +63,6 @@ pyasn1-modules==0.0.10; python_version >= "3.7"
 pyasn1==0.1.9
 pycparser==2.14
 pylint==2.13.9
-pylint==2.13.9; python_version >= "3.7"
 pynacl==1.5.0; python_version >= "3.7"
 pyopenssl==17.5.0
 pyparsing==2.2.1
@@ -83,34 +82,34 @@ pyyaml==5.4.1; python_version >= "3.7"
 requests-file==1.5.1; python_version >= "3.7"
 requests-toolbelt==0.9.1; python_version >= "3.7"
 requests==2.20.0
-rsa==4.8; python_version >= "3.7" and python_version < "4"
+rsa==4.9; python_version >= "3.7" and python_version < "4"
 s3transfer==0.3.7; python_version >= "3.7"
 setuptools==41.6.0
 six==1.11.0
 texttable==1.6.4; python_version >= "3.7"
-tldextract==3.3.0; python_version >= "3.7"
+tldextract==3.3.1; python_version >= "3.7"
 tomli==2.0.1; python_version < "3.11" and python_version >= "3.7" or python_full_version <= "3.11.0a6" and python_version >= "3.7" or python_version >= "3.7"
 tox==1.9.2; python_version >= "3.7"
 typed-ast==1.5.4; python_version >= "3.7" and python_version < "3.8" or implementation_name == "cpython" and python_version < "3.8" and python_version >= "3.7"
 types-cryptography==3.3.21; python_version >= "3.7"
 types-mock==4.0.15; python_version >= "3.7"
-types-pyopenssl==22.0.3; python_version >= "3.7"
+types-pyopenssl==22.0.9; python_version >= "3.7"
 types-pyrfc3339==1.1.1; python_version >= "3.7"
-types-python-dateutil==2.8.17; python_version >= "3.7"
-types-pytz==2022.1.0; python_version >= "3.7"
-types-requests==2.27.31; python_version >= "3.7"
-types-setuptools==57.4.17; python_version >= "3.7"
-types-six==1.16.16; python_version >= "3.7"
-types-urllib3==1.26.15; python_version >= "3.7"
-typing-extensions==4.2.0; python_version >= "3.7" or python_version < "3.10" and python_version >= "3.7" or python_version < "3.8" and python_version >= "3.7"
+types-python-dateutil==2.8.19; python_version >= "3.7"
+types-pytz==2022.1.2; python_version >= "3.7"
+types-requests==2.28.5; python_version >= "3.7"
+types-setuptools==63.2.2; python_version >= "3.7"
+types-six==1.16.18; python_version >= "3.7"
+types-urllib3==1.26.17; python_version >= "3.7"
+typing-extensions==4.3.0; python_version >= "3.7" or python_version < "3.10" and python_version >= "3.7" or python_version < "3.8" and python_version >= "3.7"
 uritemplate==3.0.1; python_version >= "3.7"
 urllib3==1.24.2
-virtualenv==20.14.1; python_version >= "3.7"
+virtualenv==20.16.2; python_version >= "3.7"
 websocket-client==0.59.0; python_version >= "3.7"
 wheel==0.33.6
 wheel==0.33.6; python_version >= "3.7"
 wrapt==1.14.1; python_version >= "3.7"
-zipp==3.8.0; python_version < "3.8" and python_version >= "3.7"
+zipp==3.8.1; python_version < "3.8" and python_version >= "3.7"
 zope.component==4.1.0
 zope.event==4.0.3
 zope.hookable==4.0.4

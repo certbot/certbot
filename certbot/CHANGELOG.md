@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.30.0 - master
+## 1.32.0 - master
 
 ### Added
 
@@ -11,6 +11,54 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 *
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.31.0 - 2022-10-04
+
+### Added
+
+*
+
+### Changed
+
+* If Certbot exits before setting up its usual log files, the temporary directory created to save logging information will begin with the name `certbot-log-` rather than a generic name. This should not be considered a [stable aspect of Certbot](https://certbot.eff.org/docs/compatibility.html) and may change again in the future.
+
+### Fixed
+
+* Fixed an incompatibility in the certbot-dns-cloudflare plugin and the Cloudflare library
+  which was introduced in the Cloudflare library version 2.10.1. The library would raise
+  an error if a token was specified in the Certbot `--dns-cloudflare-credentials` file as
+  well as the `cloudflare.cfg` configuration file of the Cloudflare library.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.30.0 - 2022-09-07
+
+### Added
+
+*
+
+### Changed
+
+* `acme.client.ClientBase`, `acme.messages.Authorization.resolved_combinations`,
+  `acme.messages.Authorization.combinations`, `acme.mixins`, `acme.fields.resource`,
+  and `acme.fields.Resource` are deprecated and will be removed in a future release.
+* `acme.messages.OLD_ERROR_PREFIX` (`urn:acme:error:`) is deprecated and support for
+  the old ACME error prefix in Certbot will be removed in the next major release of
+  Certbot.
+* `acme.messages.Directory.register` is deprecated and will be removed in the next
+  major release of Certbot. Furthermore, `.Directory` will only support lookups
+  by the exact resource name string in the ACME directory  (e.g. `directory['newOrder']`).
+* The `certbot-dns-cloudxns` plugin is now deprecated and will be removed in the
+  next major release of Certbot.
+* The `source_address` argument for `acme.client.ClientNetwork` is deprecated
+  and support for it will be removed in the next major release.
+* Add UI text suggesting users create certs for multiple domains, when possible
 
 ### Fixed
 
