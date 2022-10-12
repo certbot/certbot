@@ -379,7 +379,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         default=flag_default("issuance_timeout"),
         help=config_help("issuance_timeout"))
     helpful.add(
-        "renew", "--pre-hook",
+        ["renew", "reconfigure"], "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
         " Intended primarily for renewal, where it can be used to temporarily"
         " shut down a webserver that might conflict with the standalone"
@@ -387,21 +387,21 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         " obtained/renewed. When renewing several certificates that have"
         " identical pre-hooks, only the first will be executed.")
     helpful.add(
-        "renew", "--post-hook",
+        ["renew", "reconfigure"], "--post-hook",
         help="Command to be run in a shell after attempting to obtain/renew"
         " certificates. Can be used to deploy renewed certificates, or to"
         " restart any servers that were stopped by --pre-hook. This is only"
         " run if an attempt was made to obtain/renew a certificate. If"
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
-    helpful.add("renew", "--renew-hook",
+    helpful.add(["renew", "reconfigure"], "--renew-hook",
                 action=_RenewHookAction, help=argparse.SUPPRESS)
     helpful.add(
         "renew", "--no-random-sleep-on-renew", action="store_false",
         default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
         help=argparse.SUPPRESS)
     helpful.add(
-        "renew", "--deploy-hook", action=_DeployHookAction,
+        ["renew", "reconfigure"], "--deploy-hook", action=_DeployHookAction,
         help='Command to be run in a shell once for each successfully'
         ' issued certificate. For this command, the shell variable'
         ' $RENEWED_LINEAGE will point to the config live subdirectory'
