@@ -1,5 +1,4 @@
 """Tools for managing certificates."""
-import copy
 import datetime
 import logging
 import re
@@ -20,8 +19,6 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import ocsp
 from certbot import util
-from certbot._internal import cli
-from certbot._internal import renewal
 from certbot._internal import storage
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -118,7 +115,6 @@ def delete(config: configuration.NamespaceConfig) -> None:
         storage.delete_files(config, certname)
         display_util.notify("Deleted all files relating to certificate {0}."
                             .format(certname))
-
 
 ###################
 # Public Helpers
