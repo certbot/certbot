@@ -1,6 +1,7 @@
 """Certbot main entry point."""
 # pylint: disable=too-many-lines
 
+import copy
 from contextlib import contextmanager
 import functools
 import logging.handlers
