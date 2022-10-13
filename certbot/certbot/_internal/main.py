@@ -1701,7 +1701,6 @@ def reconfigure(config: configuration.NamespaceConfig,
             "be found. Run `certbot certificates` to list available certificates.")
 
     # renews cert as dry run
-    import ipdb; ipdb.set_trace()
     lineage = _get_and_save_cert(le_client, config, certname=certname, lineage=lineage)
 
     lineage.save_new_config_values(config)

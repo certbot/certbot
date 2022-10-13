@@ -528,6 +528,16 @@ class ReconfigureTest(test_util.ConfigTestCase):
     def test_no_changes(self):
         self._call('reconfigure --cert-name cert1')
 
+    def test_update_auth(self):
+        pass
+        self._call()
+
+    def test_update_hook(self):
+        pass
+
+    def test_no_domains(self):
+        pass
+
 
 
 class DeleteIfAppropriateTest(test_util.ConfigTestCase):
