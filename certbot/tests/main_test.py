@@ -498,6 +498,38 @@ class RevokeTest(test_util.TempDirTestCase):
         self._call()
         self.assertIs(mock_delete.called, False)
 
+
+# class CertonlyTest(unittest.TestCase):
+#     """Tests for certbot._internal.main.certonly."""
+
+#     def setUp(self):
+#         self.get_utility_patch = test_util.patch_display_util()
+#         self.mock_get_utility = self.get_utility_patch.start()
+
+#     def tearDown(self):
+#         self.get_utility_patch.stop()
+
+
+
+class ReconfigureTest(test_util.ConfigTestCase):
+    """Tests for certbot._internal.main.reconfigure"""
+
+    def _call(self, args):
+        plugins = disco.PluginsRegistry.find_all()
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
+
+        from certbot._internal.main import reconfigure
+        with mock.patch('certbot._internal.main._init_le_client') as mock_init:
+            reconfigure(config, plugins)
+
+        return mock_init() # returns the client for some reason
+
+    def test_no_changes(self):
+        self._call('reconfigure --cert-name cert1')
+
+
+
 class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.main._delete_if_appropriate """
 
