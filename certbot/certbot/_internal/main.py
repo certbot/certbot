@@ -1703,9 +1703,10 @@ def reconfigure(config: configuration.NamespaceConfig,
     try:
         renewal_candidate = renewal._reconstitute(lineage_config, renewal_file)
     except Exception as e:  # pylint: disable=broad-except
-        pass
+        raise errors.ConfigurationError(f"Renewal configuration file {renewal_file} "
+            f"(cert: {lineagename}) produced an unexpected error: {e}.")
     if not renewal_candidate:
-        raise errors.ConfigurationError("asfdads")
+        raise errors.ConfigurationError("Could not load certificate. See logs for errors.")
     installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
 
     le_client = _init_le_client(lineage_config, auth, installer)
