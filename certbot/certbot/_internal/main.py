@@ -1681,8 +1681,8 @@ def reconfigure(config: configuration.NamespaceConfig,
         # --cert-name, only erroring if they do not match the existing ones
 
 
-    # To make sure that the requested changes work, do a dry run. This will have the side effect
-    # of correctly setting all the needed fields in config, which can then be saved upon success.
+    # To make sure that the requested changes work, do a dry run. While setting up the dry run,
+    # we will set all the needed fields in config, which can then be saved upon success.
     config.dry_run = True
 
     if not config.certname:
