@@ -1690,15 +1690,33 @@ def reconfigure(config: configuration.NamespaceConfig,
             config, "reconfigure", allow_multiple=False,
             custom_prompt=certname_question)[0]
 
-    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    le_client = _init_le_client(config, auth, installer)
-
     certname = config.certname
     lineage = cert_manager.lineage_for_certname(config, certname)
 
     if not lineage:
         raise errors.ConfigurationError("An existing certificate for the given name could not "
             "be found. Run `certbot certificates` to list available certificates.")
+
+    # If auth plugin wasn't set in config, get it from the existing lineage
+    req_auth, _ = plug_sel.cli_plugin_requests(config)
+    installer = auth = None
+
+    if not req_auth:
+        renewal_file = storage.renewal_file_for_certname(config, certname)
+        lineage_config = copy.deepcopy(config)
+        try:
+            renewal_candidate = renewal._reconstitute(lineage_config, renewal_file)
+        except Exception as e:  # pylint: disable=broad-except
+            pass
+        if not renewal_candidate:
+            raise errors.ConfigurationError("asfdads")
+        installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
+    else:
+        # if it was set, get it from the cli config
+        installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+
+
+    le_client = _init_le_client(config, auth, installer)
 
     # renews cert as dry run
     lineage = _get_and_save_cert(le_client, config, certname=certname, lineage=lineage)
