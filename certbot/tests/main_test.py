@@ -13,6 +13,7 @@ import traceback
 from typing import List
 import unittest
 
+import configobj
 import josepy as jose
 import pytz
 
@@ -517,17 +518,55 @@ class ReconfigureTest(unittest.TestCase):
     def setUp(self):
         self.get_utility_patch = test_util.patch_display_util()
         self.mock_get_utility = self.get_utility_patch.start()
+        self.patchers = {
+            'renewal_file': mock.patch('certbot._internal.storage.renewal_file_for_certname'),
+            'configobj': mock.patch('configobj.ConfigObj'),
+            'check_symlinks': mock.patch('certbot._internal.storage.RenewableCert._check_symlinks'),
+            'cert_names': mock.patch('certbot._internal.storage.RenewableCert.names'),
+            'choose_plugins': mock.patch(
+                'certbot._internal.plugins.selection.choose_configurator_plugins'),
+            'write_config': mock.patch('certbot._internal.storage.write_renewal_config'),
+            'filesystem_replace': mock.patch('certbot.compat.filesystem.replace'),
+        }
+        original_config_file = io.StringIO("""
+            version = 1.32.0
+            archive_dir = /etc/letsencrypt/archive/example.com
+            cert = /etc/letsencrypt/live/example.com/cert.pem
+            privkey = /etc/letsencrypt/live/example.com/privkey.pem
+            chain = /etc/letsencrypt/live/example.com/chain.pem
+            fullchain = /etc/letsencrypt/live/example.com/fullchain.pem
+
+            # Options used in the renewal process
+            [renewalparams]
+            account = ee43634db0aa4e6804f152be39990e6a
+            server = https://acme-staging-v02.api.letsencrypt.org/directory
+            authenticator = nginx
+            installer = nginx
+            key_type = rsa
+        """)
+        original_config = configobj.ConfigObj(original_config_file)
+        self.mocks = {k: v.start() for k, v in self.patchers.items()}
+        self.mocks['renewal_file'].return_value = 'path/to/config.conf'
+        self.mocks['configobj'].return_value = original_config
+        self.mocks['cert_names'].return_value = ['example.com']
+        self.mocks['choose_plugins'].return_value = mock.Mock(), mock.Mock()
 
     def tearDown(self):
         self.get_utility_patch.stop()
+        for patch in self.patchers.values():
+            patch.stop()
 
-    def _call(self, args):
+    def _call(self, arg_string):
+        args = arg_string.split()
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
 
         from certbot._internal.main import reconfigure
         with mock.patch('certbot._internal.main._init_le_client') as mock_init:
+            mock_client = mock.Mock()
+            mock_client.obtain_certificate.return_value = ('cert', 'chain', 'key', 'csr')
+            mock_init.return_value = mock_client
             reconfigure(config, plugins)
 
         return mock_init() # returns the client for some reason
@@ -536,10 +575,12 @@ class ReconfigureTest(unittest.TestCase):
         self.assertRaises(errors.ConfigurationError,
             self._call, '--cert-name cert1 -d one.cert.com')
 
-    def test_asks_for_certname(self):
+    @mock.patch('certbot._internal.cert_manager.get_certnames')
+    def test_asks_for_certname(self, mock_cert_manager):
+        import ipdb; ipdb.set_trace()
+        mock_cert_manager.return_value = ['example.com']
         self._call('--nginx')
-        pass
-        # self._call('reconfigure --cert-name cert1')
+        self.assertEqual(mock_cert_manager.call_count, 1)
 
     def test_update_auth(self):
         pass
