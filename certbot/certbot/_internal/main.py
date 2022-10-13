@@ -1684,14 +1684,14 @@ def reconfigure(config: configuration.NamespaceConfig,
     # of correctly setting all the needed fields in config, which can then be saved upon success.
     config.dry_run = True
 
-    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    le_client = _init_le_client(config, auth, installer)
-
     if not config.certname:
         certname_question = "Which certificate would you like to reconfigure?"
         config.certname = cert_manager.get_certnames(
             config, "reconfigure", allow_multiple=False,
             custom_prompt=certname_question)[0]
+
+    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+    le_client = _init_le_client(config, auth, installer)
 
     certname = config.certname
     lineage = cert_manager.lineage_for_certname(config, certname)

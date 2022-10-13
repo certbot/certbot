@@ -511,8 +511,15 @@ class RevokeTest(test_util.TempDirTestCase):
 
 
 
-class ReconfigureTest(test_util.ConfigTestCase):
+class ReconfigureTest(unittest.TestCase):
     """Tests for certbot._internal.main.reconfigure"""
+
+    def setUp(self):
+        self.get_utility_patch = test_util.patch_display_util()
+        self.mock_get_utility = self.get_utility_patch.start()
+
+    def tearDown(self):
+        self.get_utility_patch.stop()
 
     def _call(self, args):
         plugins = disco.PluginsRegistry.find_all()
@@ -525,12 +532,18 @@ class ReconfigureTest(test_util.ConfigTestCase):
 
         return mock_init() # returns the client for some reason
 
-    def test_no_changes(self):
-        self._call('reconfigure --cert-name cert1')
+    def test_domains_set(self):
+        self.assertRaises(errors.ConfigurationError,
+            self._call, '--cert-name cert1 -d one.cert.com')
+
+    def test_asks_for_certname(self):
+        self._call('--nginx')
+        pass
+        # self._call('reconfigure --cert-name cert1')
 
     def test_update_auth(self):
         pass
-        self._call()
+        # self._call()
 
     def test_update_hook(self):
         pass
