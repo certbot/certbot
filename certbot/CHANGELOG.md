@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* DNS RFC2136 module now uses the TSIG key to check for an authoritative SOA record. Helps the use of split-horizon and multiple views in BIND9 using the key in an ACL to determine which view to use.
 
 ### Fixed
 
