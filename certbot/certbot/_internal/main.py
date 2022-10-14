@@ -1654,7 +1654,7 @@ def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
 
 
 def reconfigure(config: configuration.NamespaceConfig,
-          plugins: plugins_disco.PluginsRegistry) -> storage.RenewableCert:
+          plugins: plugins_disco.PluginsRegistry) -> None:
     """Allow the user to set new configuration options for an existing certificate without
        forcing renewal. This can be used for things like authenticator, installer, and hooks,
        but not for the domains on the cert, since those are only saved in the cert.
@@ -1664,9 +1664,6 @@ def reconfigure(config: configuration.NamespaceConfig,
 
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
-
-    :returns: Updated lineage object
-    :rtype: storage.RenewableCert
 
     :raises errors.Error: if the dry run fails
     :raises errors.ConfigurationError: if certificate could not be loaded
@@ -1705,10 +1702,10 @@ def reconfigure(config: configuration.NamespaceConfig,
 
     lineage_config = copy.deepcopy(config)
     try:
-        renewal_candidate = renewal._reconstitute(lineage_config, renewal_file)
+        renewal_candidate = renewal.reconstitute(lineage_config, renewal_file)
     except Exception as e:  # pylint: disable=broad-except
         raise errors.ConfigurationError(f"Renewal configuration file {renewal_file} "
-            f"(cert: {lineagename}) produced an unexpected error: {e}.")
+            f"(cert: {certname}) produced an unexpected error: {e}.")
     if not renewal_candidate:
         raise errors.ConfigurationError("Could not load certificate. See logs for errors.")
 

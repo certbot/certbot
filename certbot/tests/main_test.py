@@ -1582,7 +1582,7 @@ class MainTest(test_util.ConfigTestCase):
 
     def test_renew_reconstitute_error(self):
         # pylint: disable=protected-access
-        with mock.patch('certbot._internal.main.renewal._reconstitute') as mock_reconstitute:
+        with mock.patch('certbot._internal.main.renewal.reconstitute') as mock_reconstitute:
             mock_reconstitute.side_effect = Exception
             self._test_renew_common(assert_oc_called=False, error_expected=True)
 

@@ -55,7 +55,7 @@ CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
 
 
-def _reconstitute(config: configuration.NamespaceConfig,
+def reconstitute(config: configuration.NamespaceConfig,
                   full_path: str) -> Optional[storage.RenewableCert]:
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
@@ -447,7 +447,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
-            renewal_candidate = _reconstitute(lineage_config, renewal_file)
+            renewal_candidate = reconstitute(lineage_config, renewal_file)
         except Exception as e:  # pylint: disable=broad-except
             logger.error("Renewal configuration file %s (cert: %s) "
                            "produced an unexpected error: %s. Skipping.",

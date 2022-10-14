@@ -22,8 +22,8 @@ def _plugins_parsing(helpful: "helpful.HelpfulArgumentParser",
                 help="Name of the plugin that is both an authenticator and an installer."
                 " Should not be used together with --authenticator or --installer. "
                 "(default: Ask)")
-    helpful.add(["plugins", "reconfigure"], "-a", "--authenticator", default=flag_default("authenticator"),
-                help="Authenticator plugin name.")
+    helpful.add(["plugins", "reconfigure"], "-a", "--authenticator",
+                default=flag_default("authenticator"), help="Authenticator plugin name.")
     helpful.add(["plugins", "reconfigure"], "-i", "--installer", default=flag_default("installer"),
                 help="Installer plugin name (also used to find domains).")
     helpful.add(["plugins", "certonly", "run", "install"],
