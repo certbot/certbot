@@ -1668,6 +1668,9 @@ def reconfigure(config: configuration.NamespaceConfig,
     :returns: Updated lineage object
     :rtype: storage.RenewableCert
 
+    :raises errors.Error: if the dry run fails
+    :raises errors.ConfigurationError: if certificate could not be loaded
+
     """
 
     if config.domains:
@@ -1677,8 +1680,9 @@ def reconfigure(config: configuration.NamespaceConfig,
             "with the flag --force-renewal. Otherwise, remove the domains from the command "
             "to continue reconfiguring. You can specify which certificate you want on the command "
             "line with flag --cert-name instead.")
-        # Potential TODO: allow domains to be used to specify the certificate in addition to
-        # --cert-name, only erroring if they do not match the existing ones
+    # While we could technically allow domains to be used to specify the certificate in addition to
+    # --cert-name, there's enough complexity with matching certs to domains that it's not worth it,
+    # to say nothing of the difficulty in explaining what exactly this subcommand can modify
 
 
     # To make sure that the requested changes work, do a dry run. While setting up the dry run,
