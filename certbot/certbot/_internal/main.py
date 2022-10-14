@@ -1654,7 +1654,7 @@ def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
 
 
 def reconfigure(config: configuration.NamespaceConfig,
-          plugins: plugins_disco.PluginsRegistry) -> None:
+          plugins: plugins_disco.PluginsRegistry) -> storage.RenewableCert:
     """Allow the user to set new configuration options for an existing certificate without
        forcing renewal. This can be used for things like authenticator, installer, and hooks,
        but not for the domains on the cert, since those are only saved in the cert.
@@ -1665,8 +1665,8 @@ def reconfigure(config: configuration.NamespaceConfig,
     :param plugins: List of plugins
     :type plugins: plugins_disco.PluginsRegistry
 
-    :returns: `None`
-    :rtype: None
+    :returns: Updated lineage object
+    :rtype: storage.RenewableCert
 
     """
 
@@ -1707,15 +1707,19 @@ def reconfigure(config: configuration.NamespaceConfig,
             f"(cert: {lineagename}) produced an unexpected error: {e}.")
     if not renewal_candidate:
         raise errors.ConfigurationError("Could not load certificate. See logs for errors.")
-    installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
 
+    # this is where lineage_config gets fully filled out (e.g. --apache will set auth and installer)
+    installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
     le_client = _init_le_client(lineage_config, auth, installer)
 
-    # renews cert as dry run
-    lineage = _get_and_save_cert(le_client, lineage_config, certname=certname,
+    # renews cert as dry run to test that the new values are ok
+    # at this point, renewal_candidate.configuration has the old values, but will use
+    # the values from lineage_config when doing the dry run
+    _get_and_save_cert(le_client, lineage_config, certname=certname,
         lineage=renewal_candidate)
 
-    lineage.save_new_config_values(lineage_config)
+    # this function will update lineage.configuration with the new values, and save it to disk
+    renewal_candidate.save_new_config_values(lineage_config)
 
 
 @contextmanager

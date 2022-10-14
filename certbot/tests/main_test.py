@@ -500,35 +500,31 @@ class RevokeTest(test_util.TempDirTestCase):
         self.assertIs(mock_delete.called, False)
 
 
-# class CertonlyTest(unittest.TestCase):
-#     """Tests for certbot._internal.main.certonly."""
-
-#     def setUp(self):
-#         self.get_utility_patch = test_util.patch_display_util()
-#         self.mock_get_utility = self.get_utility_patch.start()
-
-#     def tearDown(self):
-#         self.get_utility_patch.stop()
-
-
-
-class ReconfigureTest(unittest.TestCase):
+class ReconfigureTest(test_util.TempDirTestCase):
     """Tests for certbot._internal.main.reconfigure"""
 
     def setUp(self):
+        super().setUp()
         self.get_utility_patch = test_util.patch_display_util()
         self.mock_get_utility = self.get_utility_patch.start()
         self.patchers = {
-            'renewal_file': mock.patch('certbot._internal.storage.renewal_file_for_certname'),
-            'configobj': mock.patch('configobj.ConfigObj'),
             'check_symlinks': mock.patch('certbot._internal.storage.RenewableCert._check_symlinks'),
             'cert_names': mock.patch('certbot._internal.storage.RenewableCert.names'),
-            'choose_plugins': mock.patch(
-                'certbot._internal.plugins.selection.choose_configurator_plugins'),
-            'write_config': mock.patch('certbot._internal.storage.write_renewal_config'),
-            'filesystem_replace': mock.patch('certbot.compat.filesystem.replace'),
+            'pick_installer': mock.patch('certbot._internal.plugins.selection.pick_installer'),
+            'pick_auth': mock.patch('certbot._internal.plugins.selection.pick_authenticator'),
+            'find_init': mock.patch('certbot._internal.plugins.disco.PluginsRegistry.find_init'),
+             '_get_and_save_cert': mock.patch('certbot._internal.main._get_and_save_cert'),
+            '_init_le_client': mock.patch('certbot._internal.main._init_le_client'),
         }
-        original_config_file = io.StringIO("""
+        self.mocks = {k: v.start() for k, v in self.patchers.items()}
+        self.mocks['cert_names'].return_value = ['example.com']
+
+        self.config_dir = os.path.join(self.tempdir, 'config')
+        renewal_configs_dir = os.path.join(self.config_dir, 'renewal')
+        if not os.path.exists(renewal_configs_dir):
+            filesystem.makedirs(renewal_configs_dir)
+        self.renewal_file = os.path.join(renewal_configs_dir, 'example.com.conf')
+        original_config = """
             version = 1.32.0
             archive_dir = /etc/letsencrypt/archive/example.com
             cert = /etc/letsencrypt/live/example.com/cert.pem
@@ -543,33 +539,30 @@ class ReconfigureTest(unittest.TestCase):
             authenticator = nginx
             installer = nginx
             key_type = rsa
-        """)
-        original_config = configobj.ConfigObj(original_config_file)
-        self.mocks = {k: v.start() for k, v in self.patchers.items()}
-        self.mocks['renewal_file'].return_value = 'path/to/config.conf'
-        self.mocks['configobj'].return_value = original_config
-        self.mocks['cert_names'].return_value = ['example.com']
-        self.mocks['choose_plugins'].return_value = mock.Mock(), mock.Mock()
+        """
+        with open(self.renewal_file, 'w') as f:
+            f.write(original_config)
 
     def tearDown(self):
+        super().tearDown()
         self.get_utility_patch.stop()
         for patch in self.patchers.values():
             patch.stop()
 
     def _call(self, arg_string):
-        args = arg_string.split()
+        passed_args = arg_string.split()
+        full_args = passed_args + ['--config-dir', self.config_dir]
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
-            cli.prepare_and_parse_args(plugins, args))
+            cli.prepare_and_parse_args(plugins, full_args))
 
         from certbot._internal.main import reconfigure
-        with mock.patch('certbot._internal.main._init_le_client') as mock_init:
-            mock_client = mock.Mock()
-            mock_client.obtain_certificate.return_value = ('cert', 'chain', 'key', 'csr')
-            mock_init.return_value = mock_client
-            reconfigure(config, plugins)
+        reconfigure(config, plugins)
 
-        return mock_init() # returns the client for some reason
+        with open(self.renewal_file, 'r') as f:
+            updated_conf = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
+
+        return updated_conf
 
     def test_domains_set(self):
         self.assertRaises(errors.ConfigurationError,
@@ -577,14 +570,20 @@ class ReconfigureTest(unittest.TestCase):
 
     @mock.patch('certbot._internal.cert_manager.get_certnames')
     def test_asks_for_certname(self, mock_cert_manager):
-        import ipdb; ipdb.set_trace()
         mock_cert_manager.return_value = ['example.com']
         self._call('--nginx')
         self.assertEqual(mock_cert_manager.call_count, 1)
 
-    def test_update_auth(self):
-        pass
-        # self._call()
+    def test_update_configurator(self):
+        named_mock = mock.Mock()
+        named_mock.name = 'apache'
+
+        self.mocks['pick_installer'].return_value = named_mock
+        self.mocks['pick_auth'].return_value = named_mock
+        self.mocks['find_init'].return_value = named_mock
+
+        new_config = self._call('--cert-name example.com --apache')
+        self.assertEqual(new_config['renewalparams']['authenticator'], 'apache')
 
     def test_update_hook(self):
         pass
