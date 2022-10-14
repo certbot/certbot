@@ -1682,7 +1682,7 @@ def reconfigure(config: configuration.NamespaceConfig,
 
 
     # To make sure that the requested changes work, do a dry run. While setting up the dry run,
-    # we will set all the needed fields in config, which can then be saved upon success.
+    # we will set all the needed fields in config, which will then be saved upon success.
     config.dry_run = True
 
     if not config.certname:

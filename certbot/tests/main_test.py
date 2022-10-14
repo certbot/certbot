@@ -542,6 +542,10 @@ class ReconfigureTest(test_util.TempDirTestCase):
         """
         with open(self.renewal_file, 'w') as f:
             f.write(original_config)
+        with open(self.renewal_file, 'r') as f:
+            self.original_config = configobj.ConfigObj(f,
+                encoding='utf-8', default_encoding='utf-8')
+
 
     def tearDown(self):
         super().tearDown()
@@ -549,9 +553,9 @@ class ReconfigureTest(test_util.TempDirTestCase):
         for patch in self.patchers.values():
             patch.stop()
 
-    def _call(self, arg_string):
-        passed_args = arg_string.split()
+    def _call(self, passed_args):
         full_args = passed_args + ['--config-dir', self.config_dir]
+        cli.set_by_cli.detector = None # required to reset set_by_cli state
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, full_args))
@@ -566,12 +570,12 @@ class ReconfigureTest(test_util.TempDirTestCase):
 
     def test_domains_set(self):
         self.assertRaises(errors.ConfigurationError,
-            self._call, '--cert-name cert1 -d one.cert.com')
+            self._call, '--cert-name cert1 -d one.cert.com'.split())
 
     @mock.patch('certbot._internal.cert_manager.get_certnames')
     def test_asks_for_certname(self, mock_cert_manager):
         mock_cert_manager.return_value = ['example.com']
-        self._call('--nginx')
+        self._call('--nginx'.split())
         self.assertEqual(mock_cert_manager.call_count, 1)
 
     def test_update_configurator(self):
@@ -582,11 +586,22 @@ class ReconfigureTest(test_util.TempDirTestCase):
         self.mocks['pick_auth'].return_value = named_mock
         self.mocks['find_init'].return_value = named_mock
 
-        new_config = self._call('--cert-name example.com --apache')
+        new_config = self._call('--cert-name example.com --apache'.split())
         self.assertEqual(new_config['renewalparams']['authenticator'], 'apache')
 
-    def test_update_hook(self):
-        pass
+    def test_update_hooks(self):
+        self.assertNotIn('pre_hook', self.original_config)
+        # test set
+        new_config = self._call('--cert-name example.com --pre-hook'.split() + ['echo pre'])
+        self.assertEqual(new_config['renewalparams']['pre_hook'], 'echo pre')
+        # test update
+        new_config = self._call('--cert-name example.com --pre-hook'.split() + ['echo pre2'])
+        self.assertEqual(new_config['renewalparams']['pre_hook'], 'echo pre2')
+
+        # test deploy hook is set even though we did a dry run
+        self.assertNotIn('renew_hook', self.original_config)
+        new_config = self._call('--cert-name example.com --deploy-hook'.split() + ['echo deploy'])
+        self.assertEqual(new_config['renewalparams']['renew_hook'], 'echo deploy')
 
     def test_no_domains(self):
         pass
