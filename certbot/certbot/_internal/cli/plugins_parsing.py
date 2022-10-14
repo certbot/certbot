@@ -38,7 +38,7 @@ def _plugins_parsing(helpful: "helpful.HelpfulArgumentParser",
     helpful.add(["plugins", "certonly"], "--manual", action="store_true",
                 default=flag_default("manual"),
                 help="Provide laborious manual instructions for obtaining a certificate")
-    helpful.add(["plugins", "certonly"], "--webroot", action="store_true",
+    helpful.add(["plugins", "certonly", "reconfigure"], "--webroot", action="store_true",
                 default=flag_default("webroot"),
                 help="Obtain certificates by placing files in a webroot directory.")
     helpful.add(["plugins", "certonly"], "--dns-cloudflare", action="store_true",
