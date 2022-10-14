@@ -60,7 +60,7 @@ class ACMEServer:
         self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
         self._processes: List[subprocess.Popen] = []
-        self._stdout = sys.stdout if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
+        self._stdout = sys.stdout
         self._dns_server = dns_server
         self._http_01_port = http_01_port
         if http_01_port != DEFAULT_HTTP_01_PORT:
