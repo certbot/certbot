@@ -603,9 +603,19 @@ class ReconfigureTest(test_util.TempDirTestCase):
         new_config = self._call('--cert-name example.com --deploy-hook'.split() + ['echo deploy'])
         self.assertEqual(new_config['renewalparams']['renew_hook'], 'echo deploy')
 
-    def test_no_domains(self):
-        pass
+    def test_dry_run_fails(self):
+        # set side effect of raising error
+        self.mocks['_get_and_save_cert'].side_effect = errors.Error
 
+        try:
+            self._call('--cert-name example.com --apache'.split())
+        except errors.Error:
+            pass
+
+        # check that config isn't modified
+        with open(self.renewal_file, 'r') as f:
+            new_config = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
+        self.assertEqual(new_config['renewalparams']['authenticator'], 'nginx')
 
 
 class DeleteIfAppropriateTest(test_util.ConfigTestCase):
