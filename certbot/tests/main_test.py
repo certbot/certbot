@@ -589,7 +589,8 @@ class ReconfigureTest(test_util.TempDirTestCase):
         new_config = self._call('--cert-name example.com --apache'.split())
         self.assertEqual(new_config['renewalparams']['authenticator'], 'apache')
 
-    def test_update_hooks(self):
+    @mock.patch('certbot._internal.hooks.validate_hooks')
+    def test_update_hooks(self, unused_validate_hooks):
         self.assertNotIn('pre_hook', self.original_config)
         # test set
         new_config = self._call('--cert-name example.com --pre-hook'.split() + ['echo pre'])
