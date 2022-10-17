@@ -89,7 +89,7 @@ def _setup_primary_node(config):
                              'boulder, but is not installed or not available for current user.')
 
         try:
-            subprocess.check_output(['docker-compose', '-v'], stderr=subprocess.STDOUT)
+            subprocess.run(['docker-compose', '-v'])
         except (subprocess.CalledProcessError, OSError):
             raise ValueError(
                 'Error: docker-compose is required in PATH to launch the integration tests, '
