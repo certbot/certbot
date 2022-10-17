@@ -69,11 +69,7 @@ dev_extras = [
     'ipdb',
     # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
     # https://github.com/python-poetry/poetry/issues/1584.
-    'poetry>=1.2.0',
-    # poetry-plugin-export>=1.1.0 is required to use the constraints.txt export
-    # format. See
-    # https://github.com/python-poetry/poetry-plugin-export/blob/efcfd34859e72f6a79a80398f197ce6eb2bbd7cd/CHANGELOG.md#added.
-    'poetry-plugin-export>=1.1.0',
+    'poetry>=1.2.0a1',
     'twine',
 ]
 
