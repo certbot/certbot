@@ -83,7 +83,7 @@ def _setup_primary_node(config):
     # Check for runtime compatibility: some tools are required to be available in PATH
     if 'boulder' in config.option.acme_server:
         try:
-            subprocess.check_output(['docker', '-v'], stderr=subprocess.STDOUT)
+            subprocess.run(['docker', '-v'])
         except (subprocess.CalledProcessError, OSError):
             raise ValueError('Error: docker is required in PATH to launch the integration tests on'
                              'boulder, but is not installed or not available for current user.')
