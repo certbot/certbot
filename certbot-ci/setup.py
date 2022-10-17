@@ -15,10 +15,10 @@ if parse_version(setuptools_version) < parse_version(min_setuptools_version):
 install_requires = [
     'coverage',
     'cryptography',
-    'docker-compose',
     'pyopenssl',
     'pytest',
     'pytest-cov',
+    'pytest-timeout',
     # This version is needed for "worker" attributes we currently use like
     # "workerinput".  See https://github.com/pytest-dev/pytest-xdist/pull/268.
     'pytest-xdist>=1.22.1',
