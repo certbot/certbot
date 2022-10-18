@@ -60,7 +60,8 @@ class ACMEServer:
         self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
         self._processes: List[subprocess.Popen] = []
-        self._stdout = sys.stdout if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
+        # Always use sys.stdout for now for debugging purposes
+        self._stdout = sys.stdout #  if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
         self._dns_server = dns_server
         self._http_01_port = http_01_port
         if http_01_port != DEFAULT_HTTP_01_PORT:
@@ -94,7 +95,7 @@ class ACMEServer:
                     if e.errno != errno.ESRCH:
                         raise
             for process in self._processes:
-                process.wait()
+                process.wait(300)
 
             if os.path.exists(os.path.join(self._workspace, 'boulder')):
                 # Boulder docker generates build artifacts owned by root with 0o744 permissions.
@@ -104,7 +105,7 @@ class ACMEServer:
                 process = self._launch_process(['docker', 'run', '--rm', '-v',
                                                 '{0}:/workspace'.format(self._workspace),
                                                 'alpine', 'rm', '-rf', '/workspace/boulder'])
-                process.wait()
+                process.wait(300)
         finally:
             if os.path.exists(self._workspace):
                 shutil.rmtree(self._workspace)
