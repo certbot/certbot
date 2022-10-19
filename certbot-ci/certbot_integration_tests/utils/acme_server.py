@@ -205,7 +205,8 @@ class ACMEServer:
 
         try:
             # Launch the Boulder server
-            self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
+            self._launch_process(
+                [self._find_docker_compose(), 'up', '--force-recreate'], cwd=instance_path)
 
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
@@ -223,7 +224,7 @@ class ACMEServer:
             # If we failed to set up boulder, print its logs.
             print('=> Boulder setup failed. Boulder logs are:')
             process = self._launch_process([
-                'docker-compose', 'logs'], cwd=instance_path, force_stderr=True
+                self._find_docker_compose(), 'logs'], cwd=instance_path, force_stderr=True
             )
             process.wait()
             raise
@@ -253,6 +254,9 @@ class ACMEServer:
         )
         self._processes.append(process)
         return process
+
+    def _find_docker_compose(self) -> str:
+        return "/usr/libexec/docker/cli-plugins/docker-compose"
 
 
 def main() -> None:
