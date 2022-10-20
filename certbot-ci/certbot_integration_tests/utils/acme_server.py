@@ -18,6 +18,7 @@ from typing import Dict
 from typing import List
 from typing import Mapping
 from typing import Optional
+from typing import Tuple
 from typing import Type
 
 import requests
@@ -63,7 +64,7 @@ class ACMEServer:
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
         self._dns_server = dns_server
         self._http_01_port = http_01_port
-        self._cleanup_cmds_args = []
+        self._cleanup_cmds_args: List[Tuple[Tuple[Any, ...], Dict[str, Any]]] = []
         if http_01_port != DEFAULT_HTTP_01_PORT:
             if self._acme_type != 'pebble' or self._proxy:
                 raise ValueError('setting http_01_port is not currently supported '
@@ -260,7 +261,7 @@ class ACMEServer:
     def _register_cleanup_cmd(self, *args: Any, **kwargs: Any) -> None:
         self._cleanup_cmds_args.append((args, kwargs))
 
-    def _run_cleanup_cmds(self):
+    def _run_cleanup_cmds(self) -> None:
         for args, kwargs in self._cleanup_cmds_args:
             process = self._launch_process(*args, **kwargs)
             process.wait(MAX_SUBPROCESS_WAIT)
