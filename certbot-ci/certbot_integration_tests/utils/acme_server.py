@@ -63,7 +63,7 @@ class ACMEServer:
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
         self._dns_server = dns_server
         self._http_01_port = http_01_port
-        self._cleanup_cmd_args = []
+        self._cleanup_cmds_args = []
         if http_01_port != DEFAULT_HTTP_01_PORT:
             if self._acme_type != 'pebble' or self._proxy:
                 raise ValueError('setting http_01_port is not currently supported '
@@ -258,15 +258,15 @@ class ACMEServer:
         return process
 
     def _register_cleanup_cmd(self, *args: Any, **kwargs: Any) -> None:
-        self._cleanup_cmd_args.append((args, kwargs))
+        self._cleanup_cmds_args.append((args, kwargs))
 
     def _run_cleanup_cmds(self):
-        for args, kwargs in self._cleanup_cmd_args:
+        for args, kwargs in self._cleanup_cmds_args:
             process = self._launch_process(*args, **kwargs)
             process.wait(MAX_SUBPROCESS_WAIT)
         # It's unlikely to matter, but let's clear the list of cleanup commands
         # once they've been run.
-        self._cleanup_cmd_args.clear()
+        self._cleanup_cmds_args.clear()
 
 
 def main() -> None:
