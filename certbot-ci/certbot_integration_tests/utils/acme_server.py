@@ -210,6 +210,8 @@ class ACMEServer:
                                             '--force-recreate'], cwd=instance_path)
             process.wait(MAX_SUBPROCESS_WAIT)
 
+            if self._stdout == sys.stdout:
+                self._launch_process(['docker-compose', 'logs', '-f'], cwd=instance_path)
 
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
