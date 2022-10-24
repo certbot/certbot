@@ -749,7 +749,7 @@ Reference:
 .. _certbot_renew:
 
 ``certbot renew``
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 This command attempts to renew any previously-obtained certificates that expire in less than 30 days. 
 The same plugin and options that were used at the time the certificate was originally issued will be used for the renewal attempt, unless you specify other plugins or options. 
 Unlike certonly, renew acts on multiple certificates and always takes into account whether each one is near expiry. 
