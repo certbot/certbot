@@ -140,7 +140,8 @@ class CentOSConfigurator(BaseCentOSConfigurator):
         vhost_root="/etc/httpd/conf.d",
         vhost_files="*.conf",
         logs_root="/var/log/httpd",
-        ctl="httpd",
+        ctl="apachectl",
+        apache_bin="httpd",
         version_cmd=['httpd', '-v'],
         restart_cmd=['apachectl', 'graceful'],
         restart_cmd_alt=['apachectl', 'restart'],
@@ -148,16 +149,14 @@ class CentOSConfigurator(BaseCentOSConfigurator):
         challenge_location="/etc/httpd/conf.d",
     )
 
-    def _prepare_options(self) -> None:
+    def _override_cmds(self) -> None:
         """
-        By only calling self._set_options() and not the parent class'
-        _prepare_options() method, we ensure that httpd is used for version_cmd
-        but not restart_cmd, unless the user has specifically overwritten those
-        in their config
+        As of RHEL 9, apachectl can't be passed flags like "-t -D", so instead
+        use options.bin (which is "httpd")
         """
-        self._set_options()
-        if not self.options.restart_cmd_alt:  # pragma: no cover
-            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
+        self.options.get_modules_cmd[0] = self.options.bin
+        self.options.get_includes_cmd[0] = self.options.bin
+        self.options.get_defines_cmd[0] = self.options.bin
 
 
 class OldCentOSConfigurator(BaseCentOSConfigurator):

@@ -125,6 +125,7 @@ def get_apache_configurator(
                         # Custom virtualhost path was requested
                         config.config.apache_vhost_root = conf_vhost_path
                     config.config.apache_ctl = config_class.OS_DEFAULTS.ctl
+                    config.config.apache_bin = config_class.OS_DEFAULTS.bin
                     config.prepare()
     return config
 

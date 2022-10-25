@@ -85,6 +85,10 @@ class OsOptions:
         self.restart_cmd = ['apache2ctl', 'graceful'] if not restart_cmd else restart_cmd
         self.restart_cmd_alt = restart_cmd_alt
         self.conftest_cmd = ['apache2ctl', 'configtest'] if not conftest_cmd else conftest_cmd
+        syntax_tests_cmd_base = [ctl, '-t', '-D']
+        self.get_defines_cmd = syntax_tests_cmd_base + ['DUMP_RUN_CFG']
+        self.get_includes_cmd = syntax_tests_cmd_base + ['DUMP_INCLUDES']
+        self.get_modules_cmd = syntax_tests_cmd_base + ['DUMP_MODULES']
         self.enmod = enmod
         self.dismod = dismod
         self.le_vhost_ext = le_vhost_ext
@@ -189,6 +193,9 @@ class ApacheConfigurator(common.Configurator):
         self.options.version_cmd[0] = self.options.ctl
         self.options.restart_cmd[0] = self.options.ctl
         self.options.conftest_cmd[0] = self.options.ctl
+        self.options.get_modules_cmd[0] = self.options.ctl
+        self.options.get_includes_cmd[0] = self.options.ctl
+        self.options.get_defines_cmd[0] = self.options.ctl
 
     def _prepare_options(self) -> None:
         self._set_options()
@@ -487,9 +494,9 @@ class ApacheConfigurator(common.Configurator):
 
         if HAS_APACHECONFIG:
             apache_vars = {
-                "defines": apache_util.parse_defines(self.options.ctl),
-                "includes": apache_util.parse_includes(self.options.ctl),
-                "modules": apache_util.parse_modules(self.options.ctl),
+                "defines": apache_util.parse_defines(self.options.get_defines_cmd),
+                "includes": apache_util.parse_includes(self.options.get_includes_cmd),
+                "modules": apache_util.parse_modules(self.options.get_modules_cmd),
             }
             metadata["apache_vars"] = apache_vars
 

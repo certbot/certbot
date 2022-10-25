@@ -112,9 +112,11 @@ class UseCorrectApacheExecutableTest(util.ApacheTest):
         config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
             config_class=override_centos.CentOSConfigurator)
-        self.assertEqual(config.options.ctl, "httpd")
+        self.assertEqual(config.options.ctl, "apachectl")
+        self.assertEqual(config.options.bin, "httpd")
         self.assertEqual(config.options.version_cmd, ["httpd", "-v"])
         self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
+        self.assertEqual(config.options.conftest_cmd, ["apachectl", "configtest"])
 
 
 class MultipleVhostsTestCentOS(util.ApacheTest):
