@@ -750,39 +750,47 @@ Reference:
 
 ``certbot renew``
 ~~~~~~~~~~~~~~~~~
-This command attempts to renew any previously-obtained certificates that expire in less than 30 days. 
-The same plugin and options that were used at the time the certificate was originally issued will be used for the renewal attempt, unless you specify other plugins or options. 
-Unlike certonly, renew acts on multiple certificates and always takes into account whether each one is near expiry. 
-Because of this, renew is suitable (and designed) for automated use, to allow your system to automatically renew each certificate when appropriate. 
-Since renew only renews certificates that are near expiry it can be run as frequently as you want - since it will usually take no action.
 
-Certbot Renew and Hooks
-~~~~~~~~~~~~~~~~~~~~~~~
+   This command attempts to renew any previously-obtained certificates that expire in less than 30 days. 
+   The same plugin and options that were used at the time the certificate was originally issued will be used for the renewal attempt, unless you specify other plugins or options. 
+   Unlike certonly, renew acts on multiple certificates and always takes into account whether each one is near expiry. 
+   Because of this, renew is suitable (and designed) for automated use, to allow your system to automatically renew each certificate when appropriate. 
+   Since renew only renews certificates that are near expiry it can be run as frequently as you want - since it will usually take no action.
+
+   .. note:: Options provided to ``certbot renew`` will apply to
+      *every* certificate for which renewal is attempted; for example,
+      ``certbot renew --rsa-key-size 4096`` would try to replace every
+      near-expiry certificate with an equivalent certificate using a 4096-bit
+      RSA public key. If a certificate is successfully renewed using
+      specified options, those options will be saved and used for future
+      renewals of that certificate.
+
+``-q``, ``--quiet``
+^^^^^^^^^^^^^^^^^^^
+   Silence all output except errors.
+
+``--force-renewal``
+^^^^^^^^^^^^^^^^^^^
+   For manually renewing all of your certificates
+
+   Causes the expiration time of the certificate(s) to be ignored when considering renewal, and attempts to
+   renew each and every installed certificate regardless of its age. (This form is not appropriate to run daily because each certificate will be
+   renewed every day, which will quickly run into the certificate authority rate limit.)
+
+Certbot Renew: Hooks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The ``renew`` command includes hooks for running commands or scripts before or after a certificate is
-renewed. For example, if you have a single certificate obtained using
-the standalone_ plugin, you might need to stop the webserver
-before renewing so standalone can bind to the necessary ports, and
-then restart it after the plugin is finished. Example::
+renewed.
 
-  certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
+.. note:: ``certbot renew`` exit status will only be 1 if a renewal attempt failed. This means ``certbot renew`` exit status will be 0 if no certificate needs to be updated. 
+  If you write a custom script and expect to run a command only after a certificate was actually renewed
+  you will need to use the deploy_hook_ since the exit status will be 0 both on successful renewal
+  and when renewal is not necessary.
 
-If a hook exits with a non-zero exit code, the error will be printed
-to ``stderr`` but renewal will be attempted anyway. A failing hook
-doesn't directly cause Certbot to exit with a non-zero exit code, but
-since Certbot exits with a non-zero exit code when renewals fail, a
-failed hook causing renewal failures will indirectly result in a
-non-zero exit code. Hooks will only be run if a certificate is due for
-renewal, so you can run the above command frequently without
-unnecessarily stopping your webserver.
+Specifying Hooks
+^^^^^^^^^^^^^^^^
 
-When Certbot detects that a certificate is due for renewal, ``--pre-hook``
-and ``--post-hook`` hooks run before and after each attempt to renew it.
-If you want your hook to run only after a successful renewal, use
-``--deploy-hook`` in a command like this.
-
-``certbot renew --deploy-hook /path/to/deploy-hook-script``
-
-You can also specify hooks by placing files in subdirectories of Certbot's
+You can specify hooks by placing files in subdirectories of Certbot's
 configuration directory. Assuming your configuration directory is
 ``/etc/letsencrypt``, any executable files found in
 ``/etc/letsencrypt/renewal-hooks/pre``,
@@ -793,53 +801,52 @@ subcommand. These hooks are run in alphabetical order and are not run for other
 subcommands. (The order the hooks are run is determined by the byte value of
 the characters in their filenames and is not dependent on your locale.)
 
-Hooks specified in the command line, :ref:`configuration file
-<config-file>`, or :ref:`renewal configuration files <renewal-config-file>` are
-run as usual after running all hooks in these directories. One minor exception
-to this is if a hook specified elsewhere is simply the path to an executable
-file in the hook directory of the same type (e.g. your pre-hook is the path to
-an executable in ``/etc/letsencrypt/renewal-hooks/pre``), the file is not run a
-second time. You can stop Certbot from automatically running executables found
-in these directories by including ``--no-directory-hooks`` on the command line.
+``--pre-hook`` & ``--post-hook``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   Run before and after each attempt to renew it.
+
+   For example, if you have a single certificate obtained using
+   the standalone_ plugin, you might need to stop the webserver
+   before renewing so standalone can bind to the necessary ports, and
+   then restart it after the plugin is finished. Example::
+
+     certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
+
+If a hook exits with a non-zero exit code, the error will be printed
+to ``stderr`` but renewal will be attempted anyway.
+
+.. _deploy_hook:
+``--deploy-hook`` 
+^^^^^^^^^^^^^^^^^
+   Run only after a successful renewal.
+
+   Example:
+   ``certbot renew --deploy-hook /path/to/deploy-hook-script``
+
+   Hooks specified in the command line, :ref:`configuration file
+   <config-file>`, or :ref:`renewal configuration files <renewal-config-file>` are
+   run as usual after running all hooks in these directories. One minor exception
+   to this is if a hook specified elsewhere is simply the path to an executable
+   file in the hook directory of the same type (e.g. your pre-hook is the path to
+   an executable in ``/etc/letsencrypt/renewal-hooks/pre``), the file is not run a
+   second time. You can stop Certbot from automatically running executables found
+   in these directories by including ``--no-directory-hooks`` on the command line.
+
+Failing Hooks
+^^^^^^^^^^^^^
+Doesn't directly cause Certbot to exit with a non-zero exit code, but
+since Certbot exits with a non-zero exit code when renewals fail, a
+failed hook causing renewal failures will indirectly result in a
+non-zero exit code. Hooks will only be run if a certificate is due for
+renewal, so you can run the above command frequently without
+unnecessarily stopping your webserver.
 
 More information about hooks can be found by running
 ``certbot --help renew``.
 
-If you're sure that this command executes successfully without human
-intervention, you can add the command to ``crontab`` (since certificates
-are only renewed when they're determined to be near expiry, the command
-can run on a regular basis, like every week or every day). In that case,
-you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
-silence all output except errors.
-
-If you are manually renewing all of your certificates, the
-``--force-renewal`` flag may be helpful; it causes the expiration time of
-the certificate(s) to be ignored when considering renewal, and attempts to
-renew each and every installed certificate regardless of its age. (This
-form is not appropriate to run daily because each certificate will be
-renewed every day, which will quickly run into the certificate authority
-rate limit.)
-
-Note that options provided to ``certbot renew`` will apply to
-*every* certificate for which renewal is attempted; for example,
-``certbot renew --rsa-key-size 4096`` would try to replace every
-near-expiry certificate with an equivalent certificate using a 4096-bit
-RSA public key. If a certificate is successfully renewed using
-specified options, those options will be saved and used for future
-renewals of that certificate.
 
 Please note that the CA will send notification emails to the address
 you provide if you do not renew certificates that are about to expire.
-
-Certbot is working hard to improve the renewal process, and we
-apologize for any inconvenience you encounter in integrating these
-commands into your individual environment.
-
-.. note:: ``certbot renew`` exit status will only be 1 if a renewal attempt failed.
-  This means ``certbot renew`` exit status will be 0 if no certificate needs to be updated.
-  If you write a custom script and expect to run a command only after a certificate was actually renewed
-  you will need to use the ``--deploy-hook`` since the exit status will be 0 both on successful renewal
-  and when renewal is not necessary.
 
 
 .. _where-certs:
