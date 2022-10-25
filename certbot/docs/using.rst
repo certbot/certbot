@@ -802,7 +802,8 @@ subcommands. (The order the hooks are run is determined by the byte value of
 the characters in their filenames and is not dependent on your locale.)
 
 ``--pre-hook`` & ``--post-hook``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
    Run before and after each attempt to renew it.
 
    For example, if you have a single certificate obtained using
@@ -812,12 +813,14 @@ the characters in their filenames and is not dependent on your locale.)
 
      certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
 
-If a hook exits with a non-zero exit code, the error will be printed
-to ``stderr`` but renewal will be attempted anyway.
+   If a hook exits with a non-zero exit code, the error will be printed
+   to ``stderr`` but renewal will be attempted anyway.
 
 .. _deploy_hook:
-``--deploy-hook`` 
+
+``--deploy-hook``
 ^^^^^^^^^^^^^^^^^
+
    Run only after a successful renewal.
 
    Example:
