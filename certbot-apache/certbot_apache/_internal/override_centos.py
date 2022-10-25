@@ -152,8 +152,10 @@ class CentOSConfigurator(BaseCentOSConfigurator):
     def _override_cmds(self) -> None:
         """
         As of RHEL 9, apachectl can't be passed flags like "-t -D", so instead
-        use options.bin (which is "httpd")
+        use options.bin (i.e. httpd)
         """
+        if not self.options.bin:
+            raise ValueError("OS option apache_bin must be set for CentOS")
         self.options.get_modules_cmd[0] = self.options.bin
         self.options.get_includes_cmd[0] = self.options.bin
         self.options.get_defines_cmd[0] = self.options.bin
