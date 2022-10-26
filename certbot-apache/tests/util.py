@@ -82,8 +82,7 @@ def get_apache_configurator(
         os_info="generic",
         conf_vhost_path=None,
         use_parsernode=False,
-        openssl_version="1.1.1a",
-        config_class=None):
+        openssl_version="1.1.1a"):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -111,11 +110,10 @@ def get_apache_configurator(
                             "update_runtime_variables"):
                 with mock.patch("certbot_apache._internal.apache_util.parse_from_subprocess") as mock_sp:
                     mock_sp.return_value = []
-                    if config_class is None:
-                        try:
-                            config_class = entrypoint.OVERRIDE_CLASSES[os_info]
-                        except KeyError:
-                            config_class = configurator.ApacheConfigurator
+                    try:
+                        config_class = entrypoint.OVERRIDE_CLASSES[os_info]
+                    except KeyError:
+                        config_class = configurator.ApacheConfigurator
                     config = config_class(config=mock_le_config, name="apache",
                                           version=version, use_parsernode=use_parsernode,
                                           openssl_version=openssl_version)

@@ -16,8 +16,22 @@ from certbot.errors import MisconfigurationError
 logger = logging.getLogger(__name__)
 
 
-class BaseCentOSConfigurator(configurator.ApacheConfigurator):
-    """Base class for CentOS specific ApacheConfigurator override class"""
+class CentOSConfigurator(configurator.ApacheConfigurator):
+    """CentOS specific ApacheConfigurator override class"""
+
+    OS_DEFAULTS = OsOptions(
+        server_root="/etc/httpd",
+        vhost_root="/etc/httpd/conf.d",
+        vhost_files="*.conf",
+        logs_root="/var/log/httpd",
+        ctl="apachectl",
+        bin="httpd",
+        version_cmd=['apachectl', '-v'],
+        restart_cmd=['apachectl', 'graceful'],
+        restart_cmd_alt=['apachectl', 'restart'],
+        conftest_cmd=['apachectl', 'configtest'],
+        challenge_location="/etc/httpd/conf.d",
+    )
 
     def config_test(self) -> None:
         """
@@ -37,6 +51,44 @@ class BaseCentOSConfigurator(configurator.ApacheConfigurator):
                 self._try_restart_fedora()
             else:
                 raise
+
+    def _rhel9_or_newer(self) -> bool:
+        os_name, os_version = util.get_os_info()
+        rhel_derived = os_name in [
+            "centos", "centos linux",
+            "cloudlinux",
+            "ol", "oracle",
+            "rhel", "redhatenterpriseserver", "red hat enterprise linux server",
+            "scientific", "scientific linux",
+        ]
+        at_least_v9 = util.parse_loose_version(os_version) >= util.parse_loose_version('9')
+        return rhel_derived and at_least_v9
+
+    def _override_cmds(self) -> None:
+        if self._rhel9_or_newer():
+            """
+            As of RHEL 9, apachectl can't be passed flags like "-t -D", so instead
+            use options.bin (i.e. httpd)
+            """
+            if not self.options.bin:
+                raise ValueError("OS option apache_bin must be set for CentOS") # pragma: no cover
+
+            self.options.get_modules_cmd[0] = self.options.bin
+            self.options.get_includes_cmd[0] = self.options.bin
+            self.options.get_defines_cmd[0] = self.options.bin
+        else:
+            super()._override_cmds()
+
+    def _prepare_options(self) -> None:
+        """
+        Override the options dictionary initialization in order to support
+        alternative restart cmd used in CentOS.
+        """
+        super()._prepare_options()
+
+        if not self.options.restart_cmd_alt:  # pragma: no cover
+            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
+        self.options.restart_cmd_alt[0] = self.options.ctl
 
     def _try_restart_fedora(self) -> None:
         """
@@ -131,61 +183,6 @@ class BaseCentOSConfigurator(configurator.ApacheConfigurator):
                 correct_ifmods.append(ssl_ifmod)
                 self.save_notes += ("Wrapped pre-existing LoadModule ssl_module "
                                     "inside of <IfModule !mod_ssl> block.\n")
-
-
-class CentOSConfigurator(BaseCentOSConfigurator):
-    """CentOS/RHEL-like overrides for CentOS version 9 and above"""
-    OS_DEFAULTS = OsOptions(
-        server_root="/etc/httpd",
-        vhost_root="/etc/httpd/conf.d",
-        vhost_files="*.conf",
-        logs_root="/var/log/httpd",
-        ctl="apachectl",
-        apache_bin="httpd",
-        version_cmd=['httpd', '-v'],
-        restart_cmd=['apachectl', 'graceful'],
-        restart_cmd_alt=['apachectl', 'restart'],
-        conftest_cmd=['apachectl', 'configtest'],
-        challenge_location="/etc/httpd/conf.d",
-    )
-
-    def _override_cmds(self) -> None:
-        """
-        As of RHEL 9, apachectl can't be passed flags like "-t -D", so instead
-        use options.bin (i.e. httpd)
-        """
-        if not self.options.bin:
-            raise ValueError("OS option apache_bin must be set for CentOS") # pragma: no cover
-
-        self.options.get_modules_cmd[0] = self.options.bin
-        self.options.get_includes_cmd[0] = self.options.bin
-        self.options.get_defines_cmd[0] = self.options.bin
-
-
-class OldCentOSConfigurator(BaseCentOSConfigurator):
-    """CentOS/RHEL-like overrides for CentOS version 8 and below"""
-    OS_DEFAULTS = OsOptions(
-        server_root="/etc/httpd",
-        vhost_root="/etc/httpd/conf.d",
-        vhost_files="*.conf",
-        logs_root="/var/log/httpd",
-        ctl="apachectl",
-        version_cmd=['apachectl', '-v'],
-        restart_cmd=['apachectl', 'graceful'],
-        restart_cmd_alt=['apachectl', 'restart'],
-        conftest_cmd=['apachectl', 'configtest'],
-        challenge_location="/etc/httpd/conf.d",
-    )
-
-    def _prepare_options(self) -> None:
-        """
-        Override the options dictionary initialization in order to support
-        alternative restart cmd used in CentOS.
-        """
-        super()._prepare_options()
-        if not self.options.restart_cmd_alt:  # pragma: no cover
-            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
-        self.options.restart_cmd_alt[0] = self.options.ctl
 
 
 class CentOSParser(parser.ApacheParser):

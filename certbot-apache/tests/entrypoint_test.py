@@ -8,7 +8,6 @@ except ImportError: # pragma: no cover
 
 from certbot_apache._internal import configurator
 from certbot_apache._internal import entrypoint
-from certbot_apache._internal import override_centos
 
 
 class EntryPointTest(unittest.TestCase):
@@ -26,20 +25,6 @@ class EntryPointTest(unittest.TestCase):
                 mock_info.return_value = return_value
                 self.assertEqual(entrypoint.get_configurator(),
                                  entrypoint.OVERRIDE_CLASSES[distro])
-
-    @mock.patch("certbot.util.get_os_info")
-    def test_old_centos_rhel_and_fedora(self, mock_get_os_info):
-        for os_info in [("centos", "7"), ("rhel", "7"), ("fedora", "28"), ("scientific", "6")]:
-            mock_get_os_info.return_value = os_info
-            self.assertEqual(entrypoint.get_configurator(),
-                            override_centos.OldCentOSConfigurator)
-
-    @mock.patch("certbot.util.get_os_info")
-    def test_new_rhel_derived(self, mock_get_os_info):
-        for os_info in [("centos", "9"), ("rhel", "9"), ("oracle", "9")]:
-            mock_get_os_info.return_value = os_info
-            self.assertEqual(entrypoint.get_configurator(),
-                            override_centos.CentOSConfigurator)
 
     def test_nonexistent_like(self):
         with mock.patch("certbot.util.get_os_info") as mock_info:

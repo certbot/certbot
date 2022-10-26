@@ -43,7 +43,7 @@ class CentOS6Tests(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-            version=(2, 2, 15), config_class=override_centos.OldCentOSConfigurator)
+            version=(2, 2, 15), os_info="centos")
         self.vh_truth = get_vh_truth(
             self.temp_dir, "centos6_apache/apache")
 
