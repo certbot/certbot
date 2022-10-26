@@ -25,6 +25,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         vhost_files="*.conf",
         logs_root="/var/log/httpd",
         ctl="apachectl",
+        apache_bin="httpd",
         version_cmd=['apachectl', '-v'],
         restart_cmd=['apachectl', 'graceful'],
         restart_cmd_alt=['apachectl', 'restart'],
@@ -51,6 +52,37 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             else:
                 raise
 
+    def _rhel9_or_newer(self) -> bool:
+        os_name, os_version = util.get_os_info()
+        rhel_derived = os_name in [
+            "centos", "centos linux",
+            "cloudlinux",
+            "ol", "oracle",
+            "rhel", "redhatenterpriseserver", "red hat enterprise linux server",
+            "scientific", "scientific linux",
+        ]
+        at_least_v9 = util.parse_loose_version(os_version) >= util.parse_loose_version('9')
+        return rhel_derived and at_least_v9
+
+    def _override_cmds(self) -> None:
+        super()._override_cmds()
+
+        # As of RHEL 9, apachectl can't be passed flags like "-v" or "-t -D", so
+        # instead use options.bin (i.e. httpd) for version_cmd and the various
+        # get_X commands
+        if self._rhel9_or_newer():
+            if not self.options.bin:
+                raise ValueError("OS option apache_bin must be set for CentOS") # pragma: no cover
+
+            self.options.version_cmd[0] = self.options.bin
+            self.options.get_modules_cmd[0] = self.options.bin
+            self.options.get_includes_cmd[0] = self.options.bin
+            self.options.get_defines_cmd[0] = self.options.bin
+
+        if not self.options.restart_cmd_alt:  # pragma: no cover
+            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
+        self.options.restart_cmd_alt[0] = self.options.ctl
+
     def _try_restart_fedora(self) -> None:
         """
         Tries to restart httpd using systemctl to generate the self signed key pair.
@@ -63,16 +95,6 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
         # Finish with actual config check to see if systemctl restart helped
         super().config_test()
-
-    def _prepare_options(self) -> None:
-        """
-        Override the options dictionary initialization in order to support
-        alternative restart cmd used in CentOS.
-        """
-        super()._prepare_options()
-        if not self.options.restart_cmd_alt:  # pragma: no cover
-            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
-        self.options.restart_cmd_alt[0] = self.options.ctl
 
     def get_parser(self) -> "CentOSParser":
         """Initializes the ApacheParser"""

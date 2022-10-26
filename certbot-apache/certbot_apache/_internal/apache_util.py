@@ -136,20 +136,18 @@ def included_in_paths(filepath: str, paths: Iterable[str]) -> bool:
     return any(fnmatch.fnmatch(filepath, path) for path in paths)
 
 
-def parse_defines(apachectl: str) -> Dict[str, str]:
+def parse_defines(define_cmd: List[str]) -> Dict[str, str]:
     """
     Gets Defines from httpd process and returns a dictionary of
     the defined variables.
 
-    :param str apachectl: Path to apachectl executable
+    :param list define_cmd: httpd command to dump defines
 
     :returns: dictionary of defined variables
     :rtype: dict
     """
 
     variables: Dict[str, str] = {}
-    define_cmd = [apachectl, "-t", "-D",
-                  "DUMP_RUN_CFG"]
     matches = parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
     try:
         matches.remove("DUMP_RUN_CFG")
@@ -165,33 +163,31 @@ def parse_defines(apachectl: str) -> Dict[str, str]:
     return variables
 
 
-def parse_includes(apachectl: str) -> List[str]:
+def parse_includes(inc_cmd: List[str]) -> List[str]:
     """
     Gets Include directives from httpd process and returns a list of
     their values.
 
-    :param str apachectl: Path to apachectl executable
+    :param list inc_cmd: httpd command to dump includes
 
     :returns: list of found Include directive values
     :rtype: list of str
     """
 
-    inc_cmd: List[str] = [apachectl, "-t", "-D", "DUMP_INCLUDES"]
     return parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
 
 
-def parse_modules(apachectl: str) -> List[str]:
+def parse_modules(mod_cmd: List[str]) -> List[str]:
     """
     Get loaded modules from httpd process, and return the list
     of loaded module names.
 
-    :param str apachectl: Path to apachectl executable
+    :param list mod_cmd: httpd command to dump loaded modules
 
     :returns: list of found LoadModule module names
     :rtype: list of str
     """
 
-    mod_cmd = [apachectl, "-t", "-D", "DUMP_MODULES"]
     return parse_from_subprocess(mod_cmd, r"(.*)_module")
 
 

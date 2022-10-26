@@ -176,6 +176,8 @@ More details about these changes can be found on our GitHub repo.
 
 * Updated dependencies to use new version of cryptography that uses OpenSSL 1.1.1n, in
   response to https://www.openssl.org/news/secadv/20220315.txt.
+* CentOS 9 and other RHEL-derived OSes now correctly use httpd instead of apachectl for
+  various Apache-related commands
 
 More details about these changes can be found on our GitHub repo.
 
