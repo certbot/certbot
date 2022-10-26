@@ -65,11 +65,11 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         return rhel_derived and at_least_v9
 
     def _override_cmds(self) -> None:
+        """
+        As of RHEL 9, apachectl can't be passed flags like "-v" or "-t -D", so instead
+        use options.bin (i.e. httpd) for version_cmd and the various get_X commands
+        """
         if self._rhel9_or_newer():
-            """
-            As of RHEL 9, apachectl can't be passed flags like "-v" or "-t -D", so instead
-            use options.bin (i.e. httpd) for version_cmd and the various get_X commands
-            """
             if not self.options.bin:
                 raise ValueError("OS option apache_bin must be set for CentOS") # pragma: no cover
 
