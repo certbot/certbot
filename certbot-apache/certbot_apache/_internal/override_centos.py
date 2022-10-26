@@ -25,7 +25,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         vhost_files="*.conf",
         logs_root="/var/log/httpd",
         ctl="apachectl",
-        bin="httpd",
+        apache_bin="httpd",
         version_cmd=['apachectl', '-v'],
         restart_cmd=['apachectl', 'graceful'],
         restart_cmd_alt=['apachectl', 'restart'],
@@ -67,24 +67,18 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
     def _override_cmds(self) -> None:
         if self._rhel9_or_newer():
             """
-            As of RHEL 9, apachectl can't be passed flags like "-t -D", so instead
-            use options.bin (i.e. httpd)
+            As of RHEL 9, apachectl can't be passed flags like "-v" or "-t -D", so instead
+            use options.bin (i.e. httpd) for version_cmd and the various get_X commands
             """
             if not self.options.bin:
                 raise ValueError("OS option apache_bin must be set for CentOS") # pragma: no cover
 
+            self.options.version_cmd[0] = self.options.bin
             self.options.get_modules_cmd[0] = self.options.bin
             self.options.get_includes_cmd[0] = self.options.bin
             self.options.get_defines_cmd[0] = self.options.bin
         else:
             super()._override_cmds()
-
-    def _prepare_options(self) -> None:
-        """
-        Override the options dictionary initialization in order to support
-        alternative restart cmd used in CentOS.
-        """
-        super()._prepare_options()
 
         if not self.options.restart_cmd_alt:  # pragma: no cover
             raise ValueError("OS option restart_cmd_alt must be set for CentOS.")

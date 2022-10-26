@@ -107,8 +107,14 @@ class UseCorrectApacheExecutableTest(util.ApacheTest):
                 self.config_path, self.vhost_path, self.config_dir, self.work_dir,
                 os_info="centos")
             self.assertEqual(config.options.ctl, "apachectl")
+            self.assertEqual(config.options.bin, "httpd")
             self.assertEqual(config.options.version_cmd, ["apachectl", "-v"])
             self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
+            self.assertEqual(config.options.restart_cmd_alt, ["apachectl", "restart"])
+            self.assertEqual(config.options.conftest_cmd, ["apachectl", "configtest"])
+            self.assertEqual(config.options.get_defines_cmd, ["apachectl", "-t", "-D", "DUMP_RUN_CFG"])
+            self.assertEqual(config.options.get_includes_cmd, ["apachectl", "-t", "-D", "DUMP_INCLUDES"])
+            self.assertEqual(config.options.get_modules_cmd, ["apachectl", "-t", "-D", "DUMP_MODULES"])
 
     @mock.patch("certbot.util.get_os_info")
     def test_new_rhel_derived(self, mock_get_os_info):
@@ -116,12 +122,16 @@ class UseCorrectApacheExecutableTest(util.ApacheTest):
             mock_get_os_info.return_value = os_info
             config = util.get_apache_configurator(
                 self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-                os_info="centos")
+                os_info=os_info[0])
             self.assertEqual(config.options.ctl, "apachectl")
             self.assertEqual(config.options.bin, "httpd")
             self.assertEqual(config.options.version_cmd, ["httpd", "-v"])
             self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
+            self.assertEqual(config.options.restart_cmd_alt, ["apachectl", "restart"])
             self.assertEqual(config.options.conftest_cmd, ["apachectl", "configtest"])
+            self.assertEqual(config.options.get_defines_cmd, ["httpd", "-t", "-D", "DUMP_RUN_CFG"])
+            self.assertEqual(config.options.get_includes_cmd, ["httpd", "-t", "-D", "DUMP_INCLUDES"])
+            self.assertEqual(config.options.get_modules_cmd, ["httpd", "-t", "-D", "DUMP_MODULES"])
 
 
 class MultipleVhostsTestCentOS(util.ApacheTest):

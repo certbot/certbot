@@ -170,6 +170,17 @@ class ApacheConfigurator(common.Configurator):
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 
+    def _override_cmds(self) -> None:
+        """
+        Set our various command binaries to whatever the user has overridden for apachectl
+        """
+        self.options.version_cmd[0] = self.options.ctl
+        self.options.restart_cmd[0] = self.options.ctl
+        self.options.conftest_cmd[0] = self.options.ctl
+        self.options.get_modules_cmd[0] = self.options.ctl
+        self.options.get_includes_cmd[0] = self.options.ctl
+        self.options.get_defines_cmd[0] = self.options.ctl
+
     def _prepare_options(self) -> None:
         """
         Set the values possibly changed by command line parameters to
@@ -185,13 +196,7 @@ class ApacheConfigurator(common.Configurator):
             else:
                 setattr(self.options, o, getattr(self.OS_DEFAULTS, o))
 
-        # Special cases
-        self.options.version_cmd[0] = self.options.ctl
-        self.options.restart_cmd[0] = self.options.ctl
-        self.options.conftest_cmd[0] = self.options.ctl
-        self.options.get_modules_cmd[0] = self.options.ctl
-        self.options.get_includes_cmd[0] = self.options.ctl
-        self.options.get_defines_cmd[0] = self.options.ctl
+        self._override_cmds()
 
     @classmethod
     def add_parser_arguments(cls, add: Callable[..., None]) -> None:
