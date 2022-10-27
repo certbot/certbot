@@ -633,8 +633,8 @@ Renewing certificates
 Most Certbot installations come with automatic renewals preconfigured. This is done by means of a scheduled task which runs `certbot renew`_ periodically.
 
 .. note:: Let's Encrypt CA issues short-lived certificates (90
-   days). Make sure you renew the certificates at least once in 3
-   months.
+   days). By default, Certbot will try to renew certificates 30
+   days before they expire.
 
 .. seealso:: Users of the `Manual`_ plugin should note that ``--manual`` certificates
    will not renew automatically, unless combined with authentication hook scripts.
