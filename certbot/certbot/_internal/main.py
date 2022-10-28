@@ -1757,7 +1757,7 @@ def reconfigure(config: configuration.NamespaceConfig,
         results[x] += 1
 
 
-    added_removed = [x for x in results if results[x] == 1]
+    added_removed = [x for x, y in results.items() if y == 1]
     if len(added_removed) > 0:
         added = {}
         removed = {}
@@ -1769,24 +1769,24 @@ def reconfigure(config: configuration.NamespaceConfig,
 
         if len(added) > 0:
             success_message += '\nThe following options were added:'
-            for name in added:
-                success_message += f'\n    {name}: {added[name]}'
+            for name, value in added.items():
+                success_message += f'\n    {name}: {value}'
 
         # I cannot think of how someone could possibly remove an option given current
         # functionality, but kind of want to leave this anyway for completeness.
         if len(removed) > 0:
             success_message += '\nThe following options were removed:'
-            for name in removed:
-                success_message += f'\n    {name}: {removed[name]}'
+            for name, value in removed.items():
+                success_message += f'\n    {name}: {value}'
 
-    changed = [x for x in results if results[x] > 1]
+    changed = [x for x, y in results.items() if y > 1]
     if len(changed) > 0:
         success_message += '\nThe following options were changed:'
         for name in changed:
             success_message += f'\n    {name}: {orig_renewal_params[name]} ' +\
                 f'--> {final_renewal_params[name]}'
 
-    success_message += '\nChanges will apply at the next renewal.'
+    success_message += '\nChanges will apply when the certificate renews.'
 
     display_util.notify(success_message)
 
