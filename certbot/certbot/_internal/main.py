@@ -1727,9 +1727,13 @@ def reconfigure(config: configuration.NamespaceConfig,
     _get_and_save_cert(le_client, lineage_config, certname=certname,
         lineage=renewal_candidate)
 
+    domains = renewal_candidate.names()
+    hooks.renew_hook(lineage_config, domains, renewal_candidate.live_dir)
+
     # this function will update lineage.configuration with the new values, and save it to disk
     renewal_candidate.save_new_config_values(lineage_config)
 
+    # Display results
     try:
         final_renewal_conf = configobj.ConfigObj(
             renewal_file, encoding='utf-8', default_encoding='utf-8')
