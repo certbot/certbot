@@ -1737,20 +1737,23 @@ def reconfigure(config: configuration.NamespaceConfig,
         raise errors.CertStorageError(
             f'error parsing {renewal_file}')
 
-    orig_renewal_params = orig_renewal_conf['renewalparams'].items()
-    orig_renewal_params_set = set(orig_renewal_params)
-    final_renewal_params = final_renewal_conf['renewalparams'].items()
-    final_renewal_params_set = set(final_renewal_params)
+    orig_renewal_params = orig_renewal_conf['renewalparams']
+    orig_renewal_params_set = set(orig_renewal_params.items())
+    final_renewal_params = final_renewal_conf['renewalparams']
+    final_renewal_params_set = set(final_renewal_params.items())
     changes = orig_renewal_params_set ^ final_renewal_params_set
-    results = {}
 
+    if len(changes) == 0:
+        success_message = '\n No changes were made to the renewal configuration.'
+    else:
+        success_message = '\n Successfully updated configuration.'
+
+    results = {}
     for x, y in changes:
         if x not in results:
             results[x] = 0
         results[x] += 1
 
-
-    success_message = '\n Successfully updated configuration.'
 
     added_removed = [x for x in results if results[x] == 1]
     if len(added_removed) > 0:
