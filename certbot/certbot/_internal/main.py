@@ -1751,7 +1751,7 @@ def reconfigure(config: configuration.NamespaceConfig,
         success_message = '\nSuccessfully updated configuration.'
 
     results = {}
-    for x, y in changes:
+    for x, _ in changes:
         if x not in results:
             results[x] = 0
         results[x] += 1
@@ -1768,20 +1768,20 @@ def reconfigure(config: configuration.NamespaceConfig,
                 added[name] = final_renewal_params[name]
 
         if len(added) > 0:
-            success_message += f'\nThe following options were added:'
+            success_message += '\nThe following options were added:'
             for name in added:
                 success_message += f'\n    {name}: {added[name]}'
 
         # I cannot think of how someone could possibly remove an option given current
         # functionality, but kind of want to leave this anyway for completeness.
         if len(removed) > 0:
-            success_message += f'\nThe following options were removed:'
+            success_message += '\nThe following options were removed:'
             for name in removed:
                 success_message += f'\n    {name}: {removed[name]}'
 
     changed = [x for x in results if results[x] > 1]
     if len(changed) > 0:
-        success_message += f'\nThe following options were changed:'
+        success_message += '\nThe following options were changed:'
         for name in changed:
             success_message += f'\n    {name}: {orig_renewal_params[name]} ' +\
                 f'--> {final_renewal_params[name]}'
