@@ -1735,11 +1735,13 @@ def reconfigure(config: configuration.NamespaceConfig,
             renewal_file, encoding='utf-8', default_encoding='utf-8')
     except configobj.ConfigObjError:
         raise errors.CertStorageError(
-            f"error parsing {renewal_file}")
+            f'error parsing {renewal_file}')
 
-    orig_renewal_params = set(orig_renewal_conf["renewalparams"].items())
-    final_renewal_params = set(final_renewal_conf["renewalparams"].items())
-    changes = orig_renewal_params ^ final_renewal_params
+    orig_renewal_params = orig_renewal_conf['renewalparams'].items()
+    orig_renewal_params_set = set(orig_renewal_params)
+    final_renewal_params = final_renewal_conf['renewalparams'].items()
+    final_renewal_params_set = set(final_renewal_params)
+    changes = orig_renewal_params_set ^ final_renewal_params_set
     results = {}
 
     for x, y in changes:
@@ -1747,17 +1749,34 @@ def reconfigure(config: configuration.NamespaceConfig,
             results[x] = 0
         results[x] += 1
 
+
+    success_message = '\n Successfully updated configuration.'
+
     added_removed = [x for x in results if results[x] == 1]
-    changed = [x for x in results if results[x] > 1]
-
-    success_message = "\n Successfully updated configuration."
-
     if len(added_removed) > 0:
-        add_remove_names = (', ').join(added_removed)
-        success_message += f"\n The following options were added or removed: {add_remove_names}"
+        added = {}
+        removed = {}
+        for name in added_removed:
+            if name in orig_renewal_params:
+                removed[name] = orig_renewal_params[name]
+            if name in final_renewal_params:
+                added[name] = final_renewal_params[name]
+
+        if len(added) > 0:
+            success_message += f'\n The following options were added:'
+            for name in added:
+                success_message += f'\n    {name}: {added[name]}'
+
+        if len(removed) > 0:
+            success_message += f'\n The following options were removed:'
+            for name in removed:
+                success_message += f'\n    {name}: {removed[name]}'
+
+    changed = [x for x in results if results[x] > 1]
     if len(changed) > 0:
-        changed_names = (', ').join(changed)
-        success_message += f"\n The following options were changed: {changed_names}"
+        success_message += f'\n The following options were changed:'
+        for name in changed:
+            success_message += f'\n    {name}: {final_renewal_params[name]}'
 
     display_util.notify(success_message)
 
