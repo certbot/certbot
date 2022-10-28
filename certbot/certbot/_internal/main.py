@@ -1700,6 +1700,14 @@ def reconfigure(config: configuration.NamespaceConfig,
         raise errors.ConfigurationError(f"An existing certificate with name {certname} could not "
             "be found. Run `certbot certificates` to list available certificates.")
 
+    # cache previous version for later comparison
+    try:
+        orig_renewal_conf = configobj.ConfigObj(
+            renewal_file, encoding='utf-8', default_encoding='utf-8')
+    except configobj.ConfigObjError:
+        raise errors.CertStorageError(
+            f"error parsing {renewal_file}")
+
     lineage_config = copy.deepcopy(config)
     try:
         renewal_candidate = renewal.reconstitute(lineage_config, renewal_file)
@@ -1721,6 +1729,37 @@ def reconfigure(config: configuration.NamespaceConfig,
 
     # this function will update lineage.configuration with the new values, and save it to disk
     renewal_candidate.save_new_config_values(lineage_config)
+
+    try:
+        final_renewal_conf = configobj.ConfigObj(
+            renewal_file, encoding='utf-8', default_encoding='utf-8')
+    except configobj.ConfigObjError:
+        raise errors.CertStorageError(
+            f"error parsing {renewal_file}")
+
+    orig_renewal_params = set(orig_renewal_conf["renewalparams"].items())
+    final_renewal_params = set(final_renewal_conf["renewalparams"].items())
+    changes = orig_renewal_params ^ final_renewal_params
+    results = {}
+
+    for x, y in changes:
+        if x not in results:
+            results[x] = 0
+        results[x] += 1
+
+    added_removed = [x for x in results if results[x] == 1]
+    changed = [x for x in results if results[x] > 1]
+
+    success_message = "\n Successfully updated configuration."
+
+    if len(added_removed) > 0:
+        add_remove_names = (', ').join(added_removed)
+        success_message += f"\n The following options were added or removed: {add_remove_names}"
+    if len(changed) > 0:
+        changed_names = (', ').join(changed)
+        success_message += f"\n The following options were changed: {changed_names}"
+
+    display_util.notify(success_message)
 
 
 @contextmanager
