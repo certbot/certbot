@@ -1770,6 +1770,8 @@ def reconfigure(config: configuration.NamespaceConfig,
             for name in added:
                 success_message += f'\n    {name}: {added[name]}'
 
+        # I cannot think of how someone could possibly remove an option given current
+        # functionality, but kind of want to leave this anyway for completeness.
         if len(removed) > 0:
             success_message += f'\n The following options were removed:'
             for name in removed:
@@ -1779,7 +1781,8 @@ def reconfigure(config: configuration.NamespaceConfig,
     if len(changed) > 0:
         success_message += f'\n The following options were changed:'
         for name in changed:
-            success_message += f'\n    {name}: {final_renewal_params[name]}'
+            success_message += f'\n    {name}: {orig_renewal_params[name]} '
+                + f'--> {final_renewal_params[name]}'
 
     display_util.notify(success_message)
 
