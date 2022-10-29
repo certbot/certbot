@@ -47,8 +47,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             'credentials',
             'Linode credentials INI file',
             {
-                'key': 'API key for Linode account, obtained from {0} or {1}'
-                        .format(API_KEY_URL, API_KEY_URL_V4)
+                'key': f'API key for Linode account, obtained from {API_KEY_URL} '
+                       f'or {API_KEY_URL_V4}'
             }
         )
 
@@ -103,8 +103,9 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
 
             self.provider = linode4.Provider(config)
         else:
-            raise errors.PluginError('Invalid api version specified: {0}. (Supported: 3, 4)'
-                                     .format(api_version))
+            raise errors.PluginError(
+                f'Invalid api version specified: {api_version}. (Supported: 3, 4)'
+            )
 
     def _handle_general_error(self, e: Exception, domain_name: str) -> Optional[errors.PluginError]:
         if not str(e).startswith('Domain not found'):

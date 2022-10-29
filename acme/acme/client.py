@@ -1234,8 +1234,7 @@ class ClientNetwork:
             debug_content = response.text
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
-                     "\n".join("{0}: {1}".format(k, v)
-                                for k, v in response.headers.items()),
+                     "\n".join(f"{k}: {v}" for k, v in response.headers.items()),
                      debug_content)
         return response
 

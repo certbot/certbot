@@ -47,10 +47,14 @@ class Authenticator(dns_common.DNSAuthenticator):
             'credentials',
             'Gehirn Infrastructure Service credentials file',
             {
-                'api-token': 'API token for Gehirn Infrastructure Service ' + \
-                             'API obtained from {0}'.format(DASHBOARD_URL),
-                'api-secret': 'API secret for Gehirn Infrastructure Service ' + \
-                              'API obtained from {0}'.format(DASHBOARD_URL),
+                'api-token': (
+                    'API token for Gehirn Infrastructure Service ' +
+                    f'API obtained from {DASHBOARD_URL}'
+                ),
+                'api-secret': (
+                    'API secret for Gehirn Infrastructure Service '
+                    f'API obtained from {DASHBOARD_URL}'
+                ),
             }
         )
 
