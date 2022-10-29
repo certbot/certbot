@@ -515,6 +515,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
             'find_init': mock.patch('certbot._internal.plugins.disco.PluginsRegistry.find_init'),
              '_get_and_save_cert': mock.patch('certbot._internal.main._get_and_save_cert'),
             '_init_le_client': mock.patch('certbot._internal.main._init_le_client'),
+            'list_hooks': mock.patch('certbot._internal.hooks.list_hooks'),
         }
         self.mocks = {k: v.start() for k, v in self.patchers.items()}
         self.mocks['cert_names'].return_value = ['example.com']
