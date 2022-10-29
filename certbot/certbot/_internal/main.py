@@ -1728,6 +1728,7 @@ def reconfigure(config: configuration.NamespaceConfig,
         lineage=renewal_candidate)
 
     domains = renewal_candidate.names()
+    lineage_config.dry_run = False
     hooks.renew_hook(lineage_config, domains, renewal_candidate.live_dir)
 
     # this function will update lineage.configuration with the new values, and save it to disk
