@@ -62,7 +62,7 @@ class PreArgParseSetupTest(unittest.TestCase):
         mock_register.assert_called_once_with(logging.shutdown)
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(
-            memory_handler, 1, 2, 3, debug=True, quiet=False, log_path=mock.ANY)
+            memory_handler, 1, 2, 3, debug=True, quiet=False, using_LE=True, log_path=mock.ANY)
 
 
 class PostArgParseSetupTest(test_util.ConfigTestCase):
@@ -116,7 +116,8 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(
             1, 2, 3, debug=self.config.debug,
-            quiet=self.config.quiet, log_path=log_path)
+            quiet=self.config.quiet, using_LE=self.config.using_LE_server(),
+            log_path=log_path)
 
         level = self.stream_handler.level
         if self.config.quiet:
@@ -362,7 +363,15 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         mock_logger, output = self._test_common(exc_type, debug=False)
         mock_logger.error.assert_called_once_with('Exiting due to user request.')
 
-    def _test_common(self, error_type, debug, quiet=False):
+    def test_using_LE_passed_through(self):
+        exc_type = KeyboardInterrupt
+        for value in (True, False):
+            with mock.patch('certbot._internal.log.exit_with_advice') as mock_exit:
+                mock_exit.side_effect = lambda: sys.exit(1)
+                self._test_common(exc_type, debug=False, using_LE=value)
+                mock_exit.called_once_with(mock.ANY, value)
+
+    def _test_common(self, error_type, debug, quiet=False, using_LE=True):
         """Returns the mocked logger and stderr output."""
         mock_err = io.StringIO()
 
@@ -379,7 +388,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
                 with mock.patch('certbot._internal.log.sys.stderr', mock_err):
                     try:
                         self._call(
-                            *exc_info, debug=debug, quiet=quiet, log_path=self.log_path)
+                            *exc_info, debug=debug, quiet=quiet, using_LE=using_LE, log_path=self.log_path)
                     except SystemExit as exit_err:
                         mock_err.write(str(exit_err))
                     else:  # pragma: no cover
@@ -418,14 +427,22 @@ class ExitWithAdviceTest(test_util.TempDirTestCase):
         log_file = os.path.join(self.tempdir, 'test.log')
         open(log_file, 'w').close()
 
-        err_str = self._test_common(log_file)
+        err_str = self._test_common(log_file, True)
         self.assertNotIn('logfiles', err_str)
         self.assertIn(log_file, err_str)
 
     def test_log_dir(self):
-        err_str = self._test_common(self.tempdir)
+        err_str = self._test_common(self.tempdir, True)
         self.assertIn('logfiles', err_str)
         self.assertIn(self.tempdir, err_str)
+
+    def test_using_LE(self):
+        err_str = self._test_common(self.tempdir, True)
+        self.assertIn('community.letsencrypt.org', err_str)
+
+    def test_not_using_LE(self):
+        err_str = self._test_common(self.tempdir, False)
+        self.assertNotIn('community.letsencrypt.org', err_str)
 
     # pylint: disable=inconsistent-return-statements
     def _test_common(self, *args, **kwargs):

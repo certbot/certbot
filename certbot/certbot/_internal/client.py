@@ -757,12 +757,13 @@ class Client:
                 self.installer.rollback_checkpoints()
                 self.installer.restart()
             except:
-                logger.error(
-                    "An error occurred and we failed to restore your config and "
-                    "restart your server. Please post to "
-                    "https://community.letsencrypt.org/c/help "
-                    "with details about your configuration and this error you received."
-                )
+                msg = ("An error occurred and we failed to restore your config and "
+                       "restart your server.")
+                if self.config.using_LE_server():
+                    msg += (" Please post to https://community.letsencrypt.org/c/help "
+                            "with details about your configuration and this "
+                            "error you received.")
+                logger.error(msg)
                 raise
             display_util.notify(success_msg)
 

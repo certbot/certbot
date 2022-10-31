@@ -14,6 +14,7 @@ from certbot import util
 from certbot._internal.display import obj as display_obj
 from certbot._internal import account
 from certbot._internal import constants
+from certbot._internal.cli import cli_utils
 from certbot.compat import os
 import certbot.tests.util as test_util
 
@@ -800,9 +801,20 @@ class ClientTest(ClientTestCommon):
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 2)
 
+    def test_deploy_certificate_restart_and_rollback_failure_with_LE(self):
+        self.config.server = cli_utils.flag_default('server')
+        error_msg = self._test_deploy_certificate_restart_and_rollback_failure_common()
+        self.assertIn('community.letsencrypt.org', error_msg)
+
+    def test_deploy_certificate_restart_and_rollback_failure_without_LE(self):
+        error_msg = self._test_deploy_certificate_restart_and_rollback_failure_common()
+        self.assertNotIn('community.letsencrypt.org', error_msg)
+
     @mock.patch('certbot._internal.client.logger')
     @test_util.patch_display_util()
-    def test_deploy_certificate_restart_failure2(self, mock_get_utility, mock_logger):
+    def _test_deploy_certificate_restart_and_rollback_failure_common(self,
+                                                                     mock_get_utility,
+                                                                     mock_logger):
         installer = mock.MagicMock()
         installer.restart.side_effect = errors.PluginError
         installer.rollback_checkpoints.side_effect = errors.ReverterError
@@ -811,11 +823,13 @@ class ClientTest(ClientTestCommon):
         self.assertRaises(errors.PluginError, self.client.deploy_certificate,
                           ["foo.bar"], "key", "cert", "chain", "fullchain")
         self.assertEqual(mock_logger.error.call_count, 1)
+        error_msg = mock_logger.error.call_args[0][0]
         self.assertIn(
             'An error occurred and we failed to restore your config',
-            mock_logger.error.call_args[0][0])
+            error_msg)
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 1)
+        return error_msg
 
 
 class EnhanceConfigTest(ClientTestCommon):

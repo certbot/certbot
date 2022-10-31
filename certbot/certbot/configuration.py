@@ -311,6 +311,11 @@ class NamespaceConfig:
         """
         return self.namespace.new_key
 
+    def using_LE_server(self) -> bool:
+        """Are we using Let's Encrypt as our ACME server?"""
+        hostname = parse.urlparse(self.namespace.server).hostname
+        return hostname is not None and hostname.endswith('letsencrypt.org')
+
     # Magic methods
 
     def __deepcopy__(self, _memo: Any) -> 'NamespaceConfig':

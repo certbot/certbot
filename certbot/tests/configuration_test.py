@@ -8,6 +8,7 @@ except ImportError: # pragma: no cover
 
 from certbot import errors
 from certbot._internal import constants
+from certbot._internal.cli import cli_utils
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.tests import util as test_util
@@ -159,6 +160,11 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         self.assertEqual(self.config.renewal_post_hooks_dir,
                          os.path.join(self.config.renewal_hooks_dir,
                                       constants.RENEWAL_POST_HOOKS_DIR))
+
+    def test_using_LE_server(self):
+        self.assertFalse(self.config.using_LE_server())
+        self.config.server = cli_utils.flag_default('server')
+        self.assertTrue(self.config.using_LE_server())
 
 
 if __name__ == '__main__':

@@ -89,6 +89,10 @@ def pre_arg_parse_setup() -> None:
         pre_arg_parse_except_hook, memory_handler,
         debug='--debug' in sys.argv,
         quiet='--quiet' in sys.argv or '-q' in sys.argv,
+        # Since we haven't parsed CLI arguments yet, we cannot (easily) tell
+        # whether or not we're using Let's Encrypt as our ACME server. Let's
+        # assume we are since it's the more common case.
+        using_LE=True,
         log_path=temp_handler.path)
 
 
@@ -141,7 +145,8 @@ def post_arg_parse_setup(config: configuration.NamespaceConfig) -> None:
 
     sys.excepthook = functools.partial(
         post_arg_parse_except_hook,
-        debug=config.debug, quiet=config.quiet, log_path=file_path)
+        debug=config.debug, quiet=config.quiet,
+        using_LE=config.using_LE_server(), log_path=file_path)
 
 
 def setup_log_file_handler(config: configuration.NamespaceConfig, logfile: str,
@@ -331,7 +336,7 @@ def pre_arg_parse_except_hook(memory_handler: MemoryHandler,
 
 def post_arg_parse_except_hook(exc_type: Type[BaseException], exc_value: BaseException,
                                trace: TracebackType, debug: bool, quiet: bool,
-                               log_path: str) -> None:
+                               using_LE: bool, log_path: str) -> None:
     """Logs fatal exceptions and reports them to the user.
 
     If debug is True, the full exception and traceback is shown to the
@@ -343,12 +348,13 @@ def post_arg_parse_except_hook(exc_type: Type[BaseException], exc_value: BaseExc
     :param traceback trace: traceback of where the exception was raised
     :param bool debug: True if the traceback should be shown to the user
     :param bool quiet: True if Certbot is running in quiet mode
+    :param bool using_LE: True if using Let's Encrypt's ACME server
     :param str log_path: path to file or directory containing the log
 
     """
     exc_info = (exc_type, exc_value, trace)
     # Only print human advice if not running under --quiet
-    exit_func = lambda: sys.exit(1) if quiet else exit_with_advice(log_path)
+    exit_func = lambda: sys.exit(1) if quiet else exit_with_advice(log_path, using_LE)
     # constants.QUIET_LOGGING_LEVEL or higher should be used to
     # display message the user, otherwise, a lower level like
     # logger.DEBUG should be used
@@ -378,17 +384,21 @@ def post_arg_parse_except_hook(exc_type: Type[BaseException], exc_value: BaseExc
     exit_func()
 
 
-def exit_with_advice(log_path: str) -> None:
+def exit_with_advice(log_path: str, using_LE: bool) -> None:
     """Print a link to the community forums, the debug log path, and exit
 
     The message is printed to stderr and the program will exit with a
     nonzero status.
 
     :param str log_path: path to file or directory containing the log
+    :param bool using_LE: True if using Let's Encrypt's ACME server
 
     """
-    msg = ("Ask for help or search for solutions at https://community.letsencrypt.org. "
-           "See the ")
+    if using_LE:
+        msg = "Ask for help or search for solutions at https://community.letsencrypt.org. "
+    else:
+        msg = ""
+    msg += "See the "
     if os.path.isdir(log_path):
         msg += f'logfiles in {log_path} '
     else:
