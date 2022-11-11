@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.32.0 - master
+## 1.33.0 - master
 
 ### Added
 
@@ -15,6 +15,23 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.32.0 - 2022-11-08
+
+### Added
+
+*
+
+### Changed
+
+* DNS RFC2136 module now uses the TSIG key to check for an authoritative SOA record. Helps the use of split-horizon and multiple views in BIND9 using the key in an ACL to determine which view to use.
+
+### Fixed
+
+* CentOS 9 and other RHEL-derived OSes now correctly use httpd instead of apachectl for
+  various Apache-related commands
 
 More details about these changes can be found on our GitHub repo.
 

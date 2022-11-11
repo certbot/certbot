@@ -321,6 +321,7 @@ njalla_            Y    N    DNS Authentication for njalla
 DuckDNS_           Y    N    DNS Authentication for DuckDNS
 Porkbun_           Y    N    DNS Authentication for Porkbun
 Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
+dns-multi_         Y    N    DNS authentication of 100+ providers using go-acme/lego
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -343,6 +344,7 @@ Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
 .. _DuckDNS: https://github.com/infinityofspace/certbot_dns_duckdns
 .. _Porkbun: https://github.com/infinityofspace/certbot_dns_porkbun
 .. _Infomaniak: https://github.com/Infomaniak/certbot-dns-infomaniak
+.. _dns-multi: https://github.com/alexzorin/certbot-dns-multi
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 

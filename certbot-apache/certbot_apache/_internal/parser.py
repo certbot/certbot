@@ -297,7 +297,7 @@ class ApacheParser:
 
     def update_defines(self) -> None:
         """Updates the dictionary of known variables in the configuration"""
-        self.variables = apache_util.parse_defines(self.configurator.options.ctl)
+        self.variables = apache_util.parse_defines(self.configurator.options.get_defines_cmd)
 
     def update_includes(self) -> None:
         """Get includes from httpd process, and add them to DOM if needed"""
@@ -307,7 +307,7 @@ class ApacheParser:
         # configuration files
         _ = self.find_dir("Include")
 
-        matches = apache_util.parse_includes(self.configurator.options.ctl)
+        matches = apache_util.parse_includes(self.configurator.options.get_includes_cmd)
         if matches:
             for i in matches:
                 if not self.parsed_in_current(i):
@@ -316,7 +316,7 @@ class ApacheParser:
     def update_modules(self) -> None:
         """Get loaded modules from httpd process, and add them to DOM"""
 
-        matches = apache_util.parse_modules(self.configurator.options.ctl)
+        matches = apache_util.parse_modules(self.configurator.options.get_modules_cmd)
         for mod in matches:
             self.add_mod(mod.strip())
 
