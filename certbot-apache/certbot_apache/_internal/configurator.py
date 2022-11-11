@@ -812,7 +812,7 @@ class ApacheConfigurator(common.Configurator):
         return self._find_best_vhost(target, filtered_vhosts, filter_defaults)
 
     def _find_best_vhost(
-        self, target_name: str, vhosts: List[obj.VirtualHost] = None,
+        self, target_name: str, vhosts: Optional[List[obj.VirtualHost]] = None,
         filter_defaults: bool = True
     ) -> Optional[obj.VirtualHost]:
         """Finds the best vhost for a target_name.
