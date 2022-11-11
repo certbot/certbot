@@ -210,6 +210,7 @@ Authors
 * [Peter Conrad](https://github.com/pconrad-fb)
 * [Peter Eckersley](https://github.com/pde)
 * [Peter Mosmans](https://github.com/PeterMosmans)
+* [Phil Martin](https://github.com/frillip)
 * [Philippe Langlois](https://github.com/langloisjp)
 * [Philipp Spitzer](https://github.com/spitza)
 * [Piero Steinger](https://github.com/Jadaw1n)

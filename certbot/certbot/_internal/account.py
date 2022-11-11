@@ -108,7 +108,7 @@ class Account:
 class AccountMemoryStorage(interfaces.AccountStorage):
     """In-memory account storage."""
 
-    def __init__(self, initial_accounts: Dict[str, Account] = None) -> None:
+    def __init__(self, initial_accounts: Optional[Dict[str, Account]] = None) -> None:
         self.accounts = initial_accounts if initial_accounts is not None else {}
 
     def find_all(self) -> List[Account]:

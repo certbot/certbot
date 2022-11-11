@@ -21,7 +21,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self.request = request
 
         if hasattr(request.config, 'workerinput'):  # Worker node
-            self._dns_xdist = request.config.workerinput['dns_xdist']  # type: ignore[attr-defined]
+            self._dns_xdist = request.config.workerinput['dns_xdist']
         else:  # Primary node
             self._dns_xdist = request.config.dns_xdist  # type: ignore[attr-defined]
 

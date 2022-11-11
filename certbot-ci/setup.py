@@ -15,7 +15,6 @@ if parse_version(setuptools_version) < parse_version(min_setuptools_version):
 install_requires = [
     'coverage',
     'cryptography',
-    'docker-compose',
     'pyopenssl',
     'pytest',
     'pytest-cov',

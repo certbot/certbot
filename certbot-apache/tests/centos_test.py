@@ -5,8 +5,8 @@ from unittest import mock
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
-from certbot_apache._internal import obj
 from certbot_apache._internal import override_centos
+from certbot_apache._internal import obj
 import util
 
 
@@ -84,10 +84,8 @@ class FedoraRestartTest(util.ApacheTest):
                                 ['systemctl', 'restart', 'httpd'])
 
 
-class MultipleVhostsTestCentOS(util.ApacheTest):
-    """Multiple vhost tests for CentOS / RHEL family of distros"""
-
-    _multiprocess_can_split_ = True
+class UseCorrectApacheExecutableTest(util.ApacheTest):
+    """Make sure the various CentOS/RHEL versions use the right httpd executable"""
 
     def setUp(self):  # pylint: disable=arguments-differ
         test_dir = "centos7_apache/apache"
@@ -97,6 +95,55 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
                       config_root=config_root,
                       vhost_root=vhost_root)
 
+    @mock.patch("certbot.util.get_os_info")
+    def test_old_centos_rhel_and_fedora(self, mock_get_os_info):
+        for os_info in [("centos", "7"), ("rhel", "7"), ("fedora", "28"), ("scientific", "6")]:
+            mock_get_os_info.return_value = os_info
+            config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir, self.work_dir,
+                os_info="centos")
+            self.assertEqual(config.options.ctl, "apachectl")
+            self.assertEqual(config.options.bin, "httpd")
+            self.assertEqual(config.options.version_cmd, ["apachectl", "-v"])
+            self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
+            self.assertEqual(config.options.restart_cmd_alt, ["apachectl", "restart"])
+            self.assertEqual(config.options.conftest_cmd, ["apachectl", "configtest"])
+            self.assertEqual(config.options.get_defines_cmd, ["apachectl", "-t", "-D", "DUMP_RUN_CFG"])
+            self.assertEqual(config.options.get_includes_cmd, ["apachectl", "-t", "-D", "DUMP_INCLUDES"])
+            self.assertEqual(config.options.get_modules_cmd, ["apachectl", "-t", "-D", "DUMP_MODULES"])
+
+    @mock.patch("certbot.util.get_os_info")
+    def test_new_rhel_derived(self, mock_get_os_info):
+        for os_info in [("centos", "9"), ("rhel", "9"), ("oracle", "9")]:
+            mock_get_os_info.return_value = os_info
+            config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir, self.work_dir,
+                os_info=os_info[0])
+            self.assertEqual(config.options.ctl, "apachectl")
+            self.assertEqual(config.options.bin, "httpd")
+            self.assertEqual(config.options.version_cmd, ["httpd", "-v"])
+            self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
+            self.assertEqual(config.options.restart_cmd_alt, ["apachectl", "restart"])
+            self.assertEqual(config.options.conftest_cmd, ["apachectl", "configtest"])
+            self.assertEqual(config.options.get_defines_cmd, ["httpd", "-t", "-D", "DUMP_RUN_CFG"])
+            self.assertEqual(config.options.get_includes_cmd, ["httpd", "-t", "-D", "DUMP_INCLUDES"])
+            self.assertEqual(config.options.get_modules_cmd, ["httpd", "-t", "-D", "DUMP_MODULES"])
+
+
+class MultipleVhostsTestCentOS(util.ApacheTest):
+    """Multiple vhost tests for CentOS / RHEL family of distros"""
+
+    _multiprocess_can_split_ = True
+
+    @mock.patch("certbot.util.get_os_info")
+    def setUp(self, mock_get_os_info):  # pylint: disable=arguments-differ
+        test_dir = "centos7_apache/apache"
+        config_root = "centos7_apache/apache/httpd"
+        vhost_root = "centos7_apache/apache/httpd/conf.d"
+        super().setUp(test_dir=test_dir,
+                      config_root=config_root,
+                      vhost_root=vhost_root)
+        mock_get_os_info.return_value = ("centos", "9")
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
             os_info="centos")
@@ -120,9 +167,9 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         )
         def mock_get_cfg(command):
             """Mock httpd process stdout"""
-            if command == ['apachectl', '-t', '-D', 'DUMP_RUN_CFG']:
+            if command == ['httpd', '-t', '-D', 'DUMP_RUN_CFG']:
                 return define_val
-            elif command == ['apachectl', '-t', '-D', 'DUMP_MODULES']:
+            elif command == ['httpd', '-t', '-D', 'DUMP_MODULES']:
                 return mod_val
             return ""
         mock_get.side_effect = mock_get_cfg
@@ -131,7 +178,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
 
         with mock.patch("certbot.util.get_os_info") as mock_osi:
             # Make sure we have the have the CentOS httpd constants
-            mock_osi.return_value = ("centos", "7")
+            mock_osi.return_value = ("centos", "9")
             self.config.parser.update_runtime_variables()
 
         self.assertEqual(mock_get.call_count, 3)
@@ -166,7 +213,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
 
         with mock.patch("certbot.util.get_os_info") as mock_osi:
             # Make sure we have the have the CentOS httpd constants
-            mock_osi.return_value = ("centos", "7")
+            mock_osi.return_value = ("centos", "9")
             self.config.parser.update_runtime_variables()
 
         self.assertIn("mock_define", self.config.parser.variables)

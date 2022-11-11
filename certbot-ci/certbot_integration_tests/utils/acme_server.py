@@ -18,6 +18,7 @@ from typing import Dict
 from typing import List
 from typing import Mapping
 from typing import Optional
+from typing import Tuple
 from typing import Type
 
 import requests
@@ -63,6 +64,7 @@ class ACMEServer:
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
         self._dns_server = dns_server
         self._http_01_port = http_01_port
+        self._preterminate_cmds_args: List[Tuple[Tuple[Any, ...], Dict[str, Any]]] = []
         if http_01_port != DEFAULT_HTTP_01_PORT:
             if self._acme_type != 'pebble' or self._proxy:
                 raise ValueError('setting http_01_port is not currently supported '
@@ -85,6 +87,7 @@ class ACMEServer:
         """Stop the test stack, and clean its resources"""
         print('=> Tear down the test infrastructure...')
         try:
+            self._run_preterminate_cmds()
             for process in self._processes:
                 try:
                     process.terminate()
@@ -94,17 +97,7 @@ class ACMEServer:
                     if e.errno != errno.ESRCH:
                         raise
             for process in self._processes:
-                process.wait()
-
-            if os.path.exists(os.path.join(self._workspace, 'boulder')):
-                # Boulder docker generates build artifacts owned by root with 0o744 permissions.
-                # If we started the acme server from a normal user that has access to the Docker
-                # daemon, this user will not be able to delete these artifacts from the host.
-                # We need to do it through a docker.
-                process = self._launch_process(['docker', 'run', '--rm', '-v',
-                                                '{0}:/workspace'.format(self._workspace),
-                                                'alpine', 'rm', '-rf', '/workspace/boulder'])
-                process.wait()
+                process.wait(MAX_SUBPROCESS_WAIT)
         finally:
             if os.path.exists(self._workspace):
                 shutil.rmtree(self._workspace)
@@ -187,7 +180,7 @@ class ACMEServer:
         # Load Boulder from git, that includes a docker-compose.yml ready for production.
         process = self._launch_process(['git', 'clone', 'https://github.com/letsencrypt/boulder',
                                         '--single-branch', '--depth=1', instance_path])
-        process.wait()
+        process.wait(MAX_SUBPROCESS_WAIT)
 
         # Allow Boulder to ignore usual limit rate policies, useful for tests.
         os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
@@ -202,6 +195,17 @@ class ACMEServer:
                 with open(join(instance_path, 'test/config/va{}.json'.format(suffix)), 'w') as f:
                     f.write(json.dumps(config, indent=2, separators=(',', ': ')))
 
+        # This command needs to be run before we try and terminate running processes because
+        # docker-compose up doesn't always respond to SIGTERM. See
+        # https://github.com/certbot/certbot/pull/9435.
+        self._register_preterminate_cmd(['docker-compose', 'down'], cwd=instance_path)
+        # Boulder docker generates build artifacts owned by root with 0o744 permissions.
+        # If we started the acme server from a normal user that has access to the Docker
+        # daemon, this user will not be able to delete these artifacts from the host.
+        # We need to do it through a docker.
+        self._register_preterminate_cmd(['docker', 'run', '--rm', '-v',
+                                         '{0}:/workspace'.format(self._workspace), 'alpine', 'rm',
+                                         '-rf', '/workspace/boulder'])
         try:
             # Launch the Boulder server
             self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
@@ -224,7 +228,7 @@ class ACMEServer:
             process = self._launch_process([
                 'docker-compose', 'logs'], cwd=instance_path, force_stderr=True
             )
-            process.wait()
+            process.wait(MAX_SUBPROCESS_WAIT)
             raise
 
         print('=> Finished boulder instance deployment.')
@@ -252,6 +256,17 @@ class ACMEServer:
         )
         self._processes.append(process)
         return process
+
+    def _register_preterminate_cmd(self, *args: Any, **kwargs: Any) -> None:
+        self._preterminate_cmds_args.append((args, kwargs))
+
+    def _run_preterminate_cmds(self) -> None:
+        for args, kwargs in self._preterminate_cmds_args:
+            process = self._launch_process(*args, **kwargs)
+            process.wait(MAX_SUBPROCESS_WAIT)
+        # It's unlikely to matter, but let's clear the list of cleanup commands
+        # once they've been run.
+        self._preterminate_cmds_args.clear()
 
 
 def main() -> None:

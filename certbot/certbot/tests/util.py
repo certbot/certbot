@@ -39,7 +39,7 @@ from certbot.plugins import common
 class DummyInstaller(common.Installer):
     """Dummy installer plugin for test purpose."""
     def get_all_names(self) -> Iterable[str]:
-        pass
+        return []
 
     def deploy_cert(self, domain: str, cert_path: str, key_path: str, chain_path: str,
                     fullchain_path: str) -> None:
@@ -50,7 +50,7 @@ class DummyInstaller(common.Installer):
         pass
 
     def supported_enhancements(self) -> List[str]:
-        pass
+        return []
 
     def save(self, title: Optional[str] = None, temporary: bool = False) -> None:
         pass
@@ -69,7 +69,7 @@ class DummyInstaller(common.Installer):
         pass
 
     def more_info(self) -> str:
-        pass
+        return ""
 
 
 def vector_path(*names: str) -> str:
@@ -253,7 +253,7 @@ class FreezableMock:
     value of func is ignored.
 
     """
-    def __init__(self, frozen: bool = False, func: Callable[..., Any] = None,
+    def __init__(self, frozen: bool = False, func: Optional[Callable[..., Any]] = None,
                  return_value: Any = mock.sentinel.DEFAULT) -> None:
         self._frozen_set = set() if frozen else {'freeze', }
         self._func = func
