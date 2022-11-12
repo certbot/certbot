@@ -72,6 +72,7 @@ Authors
 * [David cz](https://github.com/dave-cz)
 * [David Dworken](https://github.com/ddworken)
 * [David Kreitschmann](https://kreitschmann.de)
+* [David Stein](https://github.com/davidbstein)
 * [David Xia](https://github.com/davidxia)
 * [Devin Howard](https://github.com/devvmh)
 * [dokazaki](https://github.com/dokazaki)
