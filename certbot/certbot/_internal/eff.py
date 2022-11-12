@@ -89,6 +89,9 @@ def _get_subscription_email() -> str:
 
     :raises errors.Error: if the user cancels
     """
+    reuse_email_msg = "would you like to re-use your email address (" + config.email + ") for the EFF newsletter?"
+    if display_util.yesno(reuse_email_msg, default=False):
+        return config.email
     msg = "Enter email address you'd like to share with the EFF\n"
     try:
         code, email = display_util.input_text(msg, force_interactive=True)
