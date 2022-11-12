@@ -32,7 +32,7 @@ class SubscriptionTest(test_util.ConfigTestCase):
                 creation_host='test.certbot.org',
                 creation_dt=datetime.datetime(
                     2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC)))
-        self.config.email = 'certbot@example.org'
+        self.config.eff_email_address = 'certbot@example.org'
         self.config.eff_email = None
 
 
@@ -45,7 +45,7 @@ class PrepareSubscriptionTest(SubscriptionTest):
     @test_util.patch_display_util()
     @mock.patch("certbot._internal.eff.display_util.notify")
     def test_failure(self, mock_notify, mock_get_utility):
-        self.config.email = None
+        self.config.eff_email_address = None
         self.config.eff_email = True
         self._call()
         actual = mock_notify.call_args[0][0]
@@ -65,7 +65,7 @@ class PrepareSubscriptionTest(SubscriptionTest):
         self.config.eff_email = True
         self._call()
         self._assert_no_get_utility_calls(mock_get_utility)
-        self.assertEqual(self.account.meta.register_to_eff, self.config.email)
+        self.assertEqual(self.account.meta.register_to_eff, self.config.eff_email_address)
 
     @test_util.patch_display_util()
     def test_will_not_subscribe_with_prompt(self, mock_get_utility):
@@ -81,7 +81,7 @@ class PrepareSubscriptionTest(SubscriptionTest):
         self._call()
         self.assertFalse(mock_get_utility().add_message.called)
         self._assert_correct_yesno_call(mock_get_utility)
-        self.assertEqual(self.account.meta.register_to_eff, self.config.email)
+        self.assertEqual(self.account.meta.register_to_eff, self.config.eff_email_address)
 
     def _assert_no_get_utility_calls(self, mock_get_utility):
         self.assertFalse(mock_get_utility().yesno.called)
@@ -109,10 +109,10 @@ class HandleSubscriptionTest(SubscriptionTest):
 
     @mock.patch('certbot._internal.eff.subscribe')
     def test_subscribe(self, mock_subscribe):
-        self.account.meta = self.account.meta.update(register_to_eff=self.config.email)
+        self.account.meta = self.account.meta.update(register_to_eff=self.config.eff_email_address)
         self._call()
         self.assertTrue(mock_subscribe.called)
-        self.assertEqual(mock_subscribe.call_args[0][0], self.config.email)
+        self.assertEqual(mock_subscribe.call_args[0][0], self.config.eff_email_address)
 
 
 class SubscribeTest(unittest.TestCase):

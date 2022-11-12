@@ -37,6 +37,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # noqa
     register_unsafely_without_email=False,
     email=None,
     eff_email=None,
+    eff_email_address=None,
     reinstall=False,
     expand=False,
     renew_by_default=False,

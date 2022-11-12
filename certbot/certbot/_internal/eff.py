@@ -4,6 +4,7 @@ from typing import Optional
 
 import requests
 
+from certbot import util
 from certbot import configuration
 from certbot._internal import constants
 from certbot._internal.account import Account
@@ -28,14 +29,14 @@ def prepare_subscription(config: configuration.NamespaceConfig, acc: Account) ->
     """
     if config.eff_email is False:
         return
-    if config.eff_email is True:
-        if config.email is None:
-            _report_failure("you didn't provide an e-mail address")
-        else:
-            acc.meta = acc.meta.update(register_to_eff=config.email)
-    elif config.email and _want_subscription():
-        acc.meta = acc.meta.update(register_to_eff=config.email)
-
+    if config.eff_email is True or _want_subscription():
+        if not config.eff_email_addresss:
+            config.eff_email_address = _get_subscription_email()
+        while not config.eff_email_addresss or not util.safe_email(config.eff_email_address):
+            if not _want_subscription(True):
+                return
+            config.eff_email_address = _get_subscription_email(True)
+        acc.meta = acc.meta.update(register_to_eff=config.eff_email_address)
     if acc.meta.register_to_eff:
         storage = AccountFileStorage(config)
         storage.update_meta(acc)
@@ -54,26 +55,53 @@ def handle_subscription(config: configuration.NamespaceConfig, acc: Optional[Acc
         return
     if acc.meta.register_to_eff:
         subscribe(acc.meta.register_to_eff)
-
         acc.meta = acc.meta.update(register_to_eff=None)
         storage = AccountFileStorage(config)
         storage.update_meta(acc)
 
 
-def _want_subscription() -> bool:
+def _want_subscription(invalid_email: bool) -> bool:
     """Does the user want to be subscribed to the EFF newsletter?
+
+    :param bool invalid_email: the email provided for an EFF subscription is invalid
 
     :returns: True if we should subscribe the user, otherwise, False
     :rtype: bool
 
     """
+    invalid_prefix = "There seem to be problems with the contact email address provided."
     prompt = (
-        'Would you be willing, once your first certificate is successfully issued, '
-        'to share your email address with the Electronic Frontier Foundation, a '
+        "Would you be willing, once your first certificate is successfully issued, "
+        "to share your email address with the Electronic Frontier Foundation, a "
         "founding partner of the Let's Encrypt project and the non-profit organization "
         "that develops Certbot? We'd like to send you email about our work encrypting "
-        "the web, EFF news, campaigns, and ways to support digital freedom. ")
-    return display_util.yesno(prompt, default=False)
+        "the web, EFF news, campaigns, and ways to support digital freedom. "
+        "\n\n If you don't want to see this prompt in the future, you can run the "
+        "client with the --no-eff-mail flag set")
+    return display_util.yesno(invalid_prefix + prompt if invalid else msg, default=False)
+
+
+def _get_subscription_email() -> str:
+    """Prompt for valid email address.
+
+    :returns: e-mail address
+    :rtype: str
+
+    :raises errors.Error: if the user cancels
+    """
+    msg = "Enter email address you'd like to share with the EFF\n"
+    try:
+        code, email = display_util.input_text(msg, force_interactive=True)
+    except errors.MissingCommandlineFlag:
+        msg = (
+            "EFF mailing list registration must be run non-interactively unless both"
+            "the --eff-mail and --eff-email-addess flags are set"
+        )
+        raise errors.MissingCommandlineFlag(msg)
+    if code != display_util.OK:
+        raise errors.Error("An e-mail address must be provided.")
+    if util.safe_email(email):
+        return email
 
 
 def subscribe(email: str) -> None:
