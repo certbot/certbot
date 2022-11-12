@@ -30,9 +30,9 @@ def prepare_subscription(config: configuration.NamespaceConfig, acc: Account) ->
     if config.eff_email is False:
         return
     if config.eff_email is True or _want_subscription():
-        if not config.eff_email_addresss:
+        if not config.eff_email_address:
             config.eff_email_address = _get_subscription_email()
-        while not config.eff_email_addresss or not util.safe_email(config.eff_email_address):
+        while not config.eff_email_address or not util.safe_email(config.eff_email_address):
             if not _want_subscription(True):
                 return
             config.eff_email_address = _get_subscription_email(True)
