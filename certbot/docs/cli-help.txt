@@ -393,6 +393,7 @@ register:
                         comma to register multiple emails, ex:
                         u1@example.com,u2@example.com. (default: Ask).
   --eff-email           Share your e-mail address with EFF (default: None)
+  --eff-email-address   Set the email address to be shared with the EFF.
   --no-eff-email        Don't share your e-mail address with EFF (default:
                         None)
 
