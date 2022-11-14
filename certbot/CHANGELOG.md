@@ -31,10 +31,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `certbot.tests.util.patch_display_util` as a temporary workaround.
 * Certbot's test API under `certbot.tests` now uses `unittest.mock` instead of the 3rd party `mock` library.
 
-
 ### Fixed
 
-*
+* Fixes a bug where the certbot working directory has unusably restrictive permissions on systems with stricter default umasks.
 
 More details about these changes can be found on our GitHub repo.
 

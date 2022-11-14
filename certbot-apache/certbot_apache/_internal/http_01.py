@@ -157,15 +157,13 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def _set_up_challenges(self) -> List[KeyAuthorizationChallengeResponse]:
         if not os.path.isdir(self.challenge_dir):
-            old_umask = filesystem.umask(0o022)
-            try:
-                filesystem.makedirs(self.challenge_dir, 0o755)
-            except OSError as exception:
-                if exception.errno not in (errno.EEXIST, errno.EISDIR):
-                    raise errors.PluginError(
-                        "Couldn't create root for http-01 challenge")
-            finally:
-                filesystem.umask(old_umask)
+            with filesystem.temp_umask(0o022):
+                try:
+                    filesystem.makedirs(self.challenge_dir, 0o755)
+                except OSError as exception:
+                    if exception.errno not in (errno.EEXIST, errno.EISDIR):
+                        raise errors.PluginError(
+                            "Couldn't create root for http-01 challenge")
 
         responses = []
         for achall in self.achalls:
