@@ -455,47 +455,49 @@ replace that set entirely::
 
   certbot certonly --cert-name example.com -d example.org,www.example.org
 
+.. _using-ecdsa-keys:
 
-Using ECDSA keys
-----------------
+RSA and ECDSA keys
+------------------------
 
-As of version 1.10, Certbot supports two types of private key algorithms:
-``rsa`` and ``ecdsa``. The type of key used by Certbot can be controlled
-through the ``--key-type`` option. You can also use the ``--elliptic-curve``
-option to control the curve used in ECDSA certificates.
+Certbot supports two certificate private key algorithms: ``rsa`` and ``ecdsa``.
+
+As of version 2.0.0, Certbot defaults to ECDSA ``secp256r1`` (P-256) certificate private keys
+for all new certificates. Existing certificates will continue to renew using their existing key
+type, unless a key type change is requested.
+
+The type of key used by Certbot can be controlled through the ``--key-type`` option.
+You can use the ``--elliptic-curve`` option to control the curve used in ECDSA
+certificates and the ``--rsa-key-size`` option to control the size of RSA keys.
 
 .. warning:: If you obtain certificates using ECDSA keys, you should be careful
-   not to downgrade your Certbot installation since ECDSA keys are not
-   supported by older versions of Certbot. Downgrades like this are possible if
-   you switch from something like the snaps or pip to packages
-   provided by your operating system which often lag behind.
+   not to downgrade to a Certbot version earlier than 1.10.0 where ECDSA keys were
+   not supported. Downgrades like this are possible if you switch from something like
+   the snaps or pip to packages provided by your operating system which often lag behind.
 
-Changing existing certificates from RSA to ECDSA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Changing a certificate's key type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Unless you are aware that you need to support very old HTTPS clients that are
-not supported by most sites, you can safely just transition your site to use
-ECDSA keys instead of RSA keys. To accomplish this if you have existing
-certificates managed by Certbot, you may freely change the certificate to a new
-private key.
+not supported by most sites, you can safely transition your site to use
+ECDSA keys instead of RSA keys.
 
-If you want to use ECDSA keys for all certificates in the future, you can
-simply add the following line to Certbot's :ref:`configuration file <config-file>`
+If you want to change a single certificate to use ECDSA keys, you'll need to
+create or renew a certificate while setting ``--key-type ecdsa`` on the command line:
+
+.. code-block:: shell
+
+  certbot renew --key-type ecdsa --cert-name example.com --force-renewal
+
+If you want to use ECDSA keys for all certificates in the future (including renewals
+of existing certificates), you can add the following line to Certbot's
+:ref:`configuration file <config-file>`:
 
 .. code-block:: ini
 
   key-type = ecdsa
 
-After this option is set, newly obtained certificates will use ECDSA keys. This
-includes certificates managed by Certbot that previously used RSA keys.
-
-If you want to change a single certificate to use ECDSA keys, you'll need to
-issue a new Certbot command setting ``--key-type ecdsa`` on the command line
-like
-
-.. code-block:: shell
-
-  certbot renew --key-type ecdsa --cert-name example.com --force-renewal
+which will take effect upon the next renewal of each certificate.
 
 Obtaining ECDSA certificates in addition to RSA certificates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
