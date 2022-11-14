@@ -1,15 +1,15 @@
 """Compat module to handle files security on Windows and Linux"""
 from __future__ import absolute_import
 
+from contextlib import contextmanager
 import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 import sys
-from types import TracebackType
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Type
+from typing import Generator
 from typing import Optional
 
 try:
@@ -78,33 +78,21 @@ def umask(mask: int) -> int:
     return previous_umask
 
 
-class TempUmask(object):
-    """Context Manager type for handling temporary umask assignments"""
-    def __init__(self, target_umask: int) -> None:
-        self.target_umask = target_umask
-        self.old_umask: Optional[int] = None
-
-    def __enter__(self) -> None:
-        self.old_umask = umask(self.target_umask)
-
-    def __exit__(self, exec_type: Optional[Type[BaseException]],
-                 exec_value: Optional[BaseException],
-                 trace: Optional[TracebackType]) -> None:
-        if self.old_umask is None: # pragma: no cover
-            raise ValueError("Unable to reset umask: previous umask was never set")
-
-        umask(self.old_umask)
-        # We return None here to make sure any raised exception isn't suppressed
-
-
-def temp_umask(mask: int) -> TempUmask:
+@contextmanager
+def temp_umask(mask: int) -> Generator[None, None, None]:
     """
     Apply a umask temporarily, meant to be used in a `with` block. Uses the Certbot
     implementation of umask.
 
     :param int mask: The user file-creation mode mask to apply temporarily
     """
-    return TempUmask(mask)
+    old_umask: Optional[int] = None
+    try:
+        old_umask = umask(mask)
+        yield None
+    finally:
+        if old_umask is not None:
+            umask(old_umask)
 
 
 # One could ask why there is no copy_ownership() function, or even a reimplementation
