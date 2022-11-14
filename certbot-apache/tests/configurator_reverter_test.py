@@ -1,11 +1,7 @@
 """Test for certbot_apache._internal.configurator implementations of reverter"""
 import shutil
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
+from unittest import mock
 
 from certbot import errors
 import util

@@ -14,7 +14,6 @@ from typing import Tuple
 from typing import Type
 from typing import TypeVar
 from typing import Union
-import warnings
 
 from cryptography.hazmat.primitives import hashes
 import josepy as jose
@@ -24,12 +23,6 @@ import requests
 
 from acme import crypto_util
 from acme import errors
-from acme import fields
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from acme.mixins import ResourceMixin
-    from acme.mixins import TypeMixin
 
 logger = logging.getLogger(__name__)
 
@@ -51,14 +44,17 @@ class Challenge(jose.TypedJSONObjectWithFields):
             return UnrecognizedChallenge.from_json(jobj)
 
 
-class ChallengeResponse(ResourceMixin, TypeMixin, jose.TypedJSONObjectWithFields):
+class ChallengeResponse(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
     TYPES: Dict[str, Type['ChallengeResponse']] = {}
-    resource_type = 'challenge'
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore', 'resource attribute in acme.fields', DeprecationWarning)
-        resource: str = fields.resource(resource_type)
+
+    def to_partial_json(self) -> Dict[str, Any]:
+        # Removes the `type` field which is inserted by TypedJSONObjectWithFields.to_partial_json.
+        # This field breaks RFC8555 compliance.
+        jobj = super().to_partial_json()
+        jobj.pop(self.type_field_name, None)
+        return jobj
 
 
 class UnrecognizedChallenge(Challenge):

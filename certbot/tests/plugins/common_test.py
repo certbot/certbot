@@ -2,12 +2,9 @@
 import functools
 import shutil
 import unittest
+from unittest import mock
 
 import josepy as jose
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 
 from acme import challenges
 from certbot import achallenges

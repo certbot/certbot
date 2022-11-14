@@ -10,11 +10,7 @@ from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
-import zope.component
-import zope.interface
-
 from certbot import errors
-from certbot import interfaces
 from certbot._internal import constants
 from certbot._internal.display import completer
 from certbot._internal.display import util
@@ -34,6 +30,7 @@ SIDE_FRAME = ("- " * 39) + "-"
 """Display boundary (alternates spaces, so when copy-pasted, markdown doesn't interpret
 it as a heading)"""
 
+
 # This class holds the global state of the display service. Using this class
 # eliminates potential gotchas that exist if self.display was just a global
 # variable. In particular, in functions `_DISPLAY = <value>` would create a
@@ -50,9 +47,6 @@ _SERVICE = _DisplayService()
 T = TypeVar("T")
 
 
-# This use of IDisplay can be removed when this class is no longer accessible
-# through the public API in certbot.display.util.
-@zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay:
     """File-based display."""
     # see https://github.com/certbot/certbot/issues/3915
@@ -410,9 +404,6 @@ class FileDisplay:
         return OK, selection
 
 
-# This use of IDisplay can be removed when this class is no longer accessible
-# through the public API in certbot.display.util.
-@zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay:
     """A display utility implementation that never asks for interactive user input"""
 
@@ -573,8 +564,4 @@ def set_display(display: Union[FileDisplay, NoninteractiveDisplay]) -> None:
     :param Union[FileDisplay, NoninteractiveDisplay] display: the display service
 
     """
-    # This call is done only for retro-compatibility purposes.
-    # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(display, interfaces.IDisplay)
-
     _SERVICE.display = display

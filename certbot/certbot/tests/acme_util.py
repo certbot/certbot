@@ -3,7 +3,6 @@ import datetime
 from typing import Any
 from typing import Dict
 from typing import Iterable
-from typing import Tuple
 
 import josepy as jose
 
@@ -22,12 +21,6 @@ DNS01 = challenges.DNS01(token=b"17817c66b60ce2e4012dfad92657527a")
 DNS01_2 = challenges.DNS01(token=b"cafecafecafecafecafecafe0feedbac")
 
 CHALLENGES = [HTTP01, DNS01]
-
-
-def gen_combos(challbs: Iterable[messages.ChallengeBody]) -> Tuple[Tuple[int], ...]:
-    """Generate natural combinations for challbs."""
-    # completing a single DV challenge satisfies the CA
-    return tuple((i,) for i, _ in enumerate(challbs))
 
 
 def chall_to_challb(chall: challenges.Challenge, status: messages.Status) -> messages.ChallengeBody:
@@ -61,15 +54,13 @@ ACHALLENGES = [HTTP01_A, DNS01_A]
 
 
 def gen_authzr(authz_status: messages.Status, domain: str, challs: Iterable[challenges.Challenge],
-               statuses: Iterable[messages.Status],
-               combos: bool = True) -> messages.AuthorizationResource:
+               statuses: Iterable[messages.Status]) -> messages.AuthorizationResource:
     """Generate an authorization resource.
 
     :param authz_status: Status object
     :type authz_status: :class:`acme.messages.Status`
     :param list challs: Challenge objects
     :param list statuses: status of each challenge object
-    :param bool combos: Whether or not to add combinations
 
     """
     challbs = tuple(
@@ -81,8 +72,6 @@ def gen_authzr(authz_status: messages.Status, domain: str, challs: Iterable[chal
             typ=messages.IDENTIFIER_FQDN, value=domain),
         "challenges": challbs,
     }
-    if combos:
-        authz_kwargs.update({"combinations": gen_combos(challbs)})
     if authz_status == messages.STATUS_VALID:
         authz_kwargs.update({
             "status": authz_status,

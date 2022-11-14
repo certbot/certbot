@@ -1,13 +1,10 @@
 """Tests for certbot_dns_route53._internal.dns_route53.Authenticator"""
 
 import unittest
+from unittest import mock
 
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 
 from certbot import errors
 from certbot.compat import os

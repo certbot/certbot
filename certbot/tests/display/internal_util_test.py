@@ -3,14 +3,10 @@ import io
 import socket
 import tempfile
 import unittest
+from unittest import mock
 
 from acme import messages as acme_messages
 from certbot import errors
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 
 
 class WrapLinesTest(unittest.TestCase):

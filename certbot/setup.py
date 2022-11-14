@@ -60,8 +60,6 @@ install_requires = [
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
     f'setuptools>={min_setuptools_version}',
-    'zope.component',
-    'zope.interface',
 ]
 
 dev_extras = [
@@ -96,7 +94,6 @@ test_extras = [
     'pytest-xdist',
     'setuptools',
     'tox',
-    'types-mock',
     'types-pyOpenSSL',
     'types-pyRFC3339',
     'types-pytz',
