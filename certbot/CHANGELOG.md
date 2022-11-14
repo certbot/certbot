@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixes a bug where the certbot working directory has unusably restrictive permissions on systems with stricter default umasks.
 
 More details about these changes can be found on our GitHub repo.
 
