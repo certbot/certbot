@@ -17,8 +17,6 @@ from typing import Union
 
 import configobj
 import josepy as jose
-import zope.component
-import zope.interface
 
 from acme import client as acme_client
 from acme import errors as acme_errors
@@ -38,7 +36,6 @@ from certbot._internal import eff
 from certbot._internal import hooks
 from certbot._internal import log
 from certbot._internal import renewal
-from certbot._internal import reporter
 from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
@@ -150,19 +147,21 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
 
 
 def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
-                                          cert: storage.RenewableCert) -> None:
+                                          cert: storage.RenewableCert) -> bool:
     """
     This function ensures that the user will not implicitly migrate an existing key
     from one type to another in the situation where a certificate for that lineage
     already exist and they have not provided explicitly --key-type and --cert-name.
     :param config: Current configuration provided by the client
     :param cert: Matching certificate that could be renewed
+    :returns: Whether a key type migration is going ahead.
+    :rtype: `bool`
     """
     new_key_type = config.key_type.upper()
     cur_key_type = cert.private_key_type.upper()
 
     if new_key_type == cur_key_type:
-        return
+        return False
 
     # If both --key-type and --cert-name are provided, we consider the user's intent to
     # be unambiguous: to change the key type of this lineage.
@@ -175,7 +174,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
         yes_label='Update key type', no_label='Keep existing key type',
         default=False, force_interactive=False,
     ):
-        return
+        return True
 
     # If --key-type was set on the CLI but the user did not confirm the key type change using
     # one of the two above methods, their intent is ambiguous. Error out.
@@ -191,6 +190,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
     # default value. The user is not asking for a key change: keep the key type of the existing
     # lineage.
     config.key_type = cur_key_type.lower()
+    return False
 
 
 def _handle_subset_cert_request(config: configuration.NamespaceConfig,
@@ -257,11 +257,11 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     :rtype: `tuple` of `str`
 
     """
-    _handle_unexpected_key_type_migration(config, lineage)
+    is_key_type_changing = _handle_unexpected_key_type_migration(config, lineage)
 
     if not lineage.ensure_deployed():
         return "reinstall", lineage
-    if renewal.should_renew(config, lineage):
+    if is_key_type_changing or renewal.should_renew(config, lineage):
         return "renew", lineage
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
@@ -1165,15 +1165,14 @@ def plugins_cmd(config: configuration.NamespaceConfig,
         return
 
     filtered.init(config)
-    verified = filtered.verify(ifaces)
-    logger.debug("Verified plugins: %r", verified)
+    logger.debug("Filtered plugins: %r", filtered)
 
     if not config.prepare:
-        notify(str(verified))
+        notify(str(filtered))
         return
 
-    verified.prepare()
-    available = verified.available()
+    filtered.prepare()
+    available = filtered.available()
     logger.debug("Prepared plugins: %s", available)
     notify(str(available))
 
@@ -1657,8 +1656,8 @@ def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
 
 @contextmanager
 def make_displayer(config: configuration.NamespaceConfig
-                   ) -> Generator[Union[display_util.NoninteractiveDisplay,
-                                        display_util.FileDisplay], None, None]:
+                   ) -> Generator[Union[display_obj.NoninteractiveDisplay,
+                                        display_obj.FileDisplay], None, None]:
     """Creates a display object appropriate to the flags in the supplied config.
 
     :param config: Configuration object
@@ -1666,18 +1665,18 @@ def make_displayer(config: configuration.NamespaceConfig
     :returns: Display object
 
     """
-    displayer: Union[None, display_util.NoninteractiveDisplay,
-                     display_util.FileDisplay] = None
+    displayer: Union[None, display_obj.NoninteractiveDisplay,
+                     display_obj.FileDisplay] = None
     devnull: Optional[IO] = None
 
     if config.quiet:
         config.noninteractive_mode = True
         devnull = open(os.devnull, "w")  # pylint: disable=consider-using-with
-        displayer = display_util.NoninteractiveDisplay(devnull)
+        displayer = display_obj.NoninteractiveDisplay(devnull)
     elif config.noninteractive_mode:
-        displayer = display_util.NoninteractiveDisplay(sys.stdout)
+        displayer = display_obj.NoninteractiveDisplay(sys.stdout)
     else:
-        displayer = display_util.FileDisplay(
+        displayer = display_obj.FileDisplay(
             sys.stdout, config.force_interactive)
 
     try:
@@ -1687,7 +1686,7 @@ def make_displayer(config: configuration.NamespaceConfig
             devnull.close()
 
 
-def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
+def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
     """Run Certbot.
 
     :param cli_args: command line to Certbot, defaults to ``sys.argv[1:]``
@@ -1719,10 +1718,6 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
 
-    # This call is done only for retro-compatibility purposes.
-    # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(config, interfaces.IConfig)
-
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
     misc.raise_for_non_administrative_windows_rights()
@@ -1734,12 +1729,6 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
-
-    # These calls are done only for retro-compatibility purposes.
-    # TODO: Remove these calls once zope dependencies are removed from Certbot.
-    report = reporter.Reporter(config)
-    zope.component.provideUtility(report, interfaces.IReporter)
-    util.atexit_register(report.print_messages)
 
     with make_displayer(config) as displayer:
         display_obj.set_display(displayer)

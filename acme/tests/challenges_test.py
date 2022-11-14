@@ -92,8 +92,7 @@ class DNS01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
-                         self.msg.to_partial_json())
+        self.assertEqual({}, self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import DNS01Response
@@ -163,8 +162,7 @@ class HTTP01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
-                         self.msg.to_partial_json())
+        self.assertEqual({}, self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import HTTP01Response
@@ -274,8 +272,7 @@ class TLSALPN01ResponseTest(unittest.TestCase):
         }
 
     def test_to_partial_json(self):
-        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
-                         self.response.to_partial_json())
+        self.assertEqual({}, self.response.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import TLSALPN01Response
@@ -461,8 +458,6 @@ class DNSResponseTest(unittest.TestCase):
         from acme.challenges import DNSResponse
         self.msg = DNSResponse(validation=self.validation)
         self.jmsg_to = {
-            'resource': 'challenge',
-            'type': 'dns',
             'validation': self.validation,
         }
         self.jmsg_from = {
@@ -492,7 +487,6 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
         from acme.challenges import HTTP01Response
 
         challenge_body = HTTP01Response()
-        challenge_body.le_acme_version = 2
 
         jobj = challenge_body.json_dumps(indent=2).encode()
         # RFC8555 states that challenge responses must have an empty payload.

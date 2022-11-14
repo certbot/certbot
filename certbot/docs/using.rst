@@ -206,7 +206,6 @@ use the DNS plugins on your system.
 Once installed, you can find documentation on how to use each plugin at:
 
 * `certbot-dns-cloudflare <https://certbot-dns-cloudflare.readthedocs.io>`_
-* `certbot-dns-cloudxns <https://certbot-dns-cloudxns.readthedocs.io>`_
 * `certbot-dns-digitalocean <https://certbot-dns-digitalocean.readthedocs.io>`_
 * `certbot-dns-dnsimple <https://certbot-dns-dnsimple.readthedocs.io>`_
 * `certbot-dns-dnsmadeeasy <https://certbot-dns-dnsmadeeasy.readthedocs.io>`_

@@ -2,6 +2,7 @@
 """Test certbot.display.ops."""
 import sys
 import unittest
+from unittest import mock
 
 import josepy as jose
 
@@ -14,11 +15,6 @@ from certbot.compat import os
 from certbot.display import ops
 from certbot.display import util as display_util
 import certbot.tests.util as test_util
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))

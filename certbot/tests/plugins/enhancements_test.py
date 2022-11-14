@@ -1,10 +1,6 @@
 """Tests for new style enhancements"""
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+from unittest import mock
 
 from certbot._internal.plugins import null
 from certbot.plugins import enhancements

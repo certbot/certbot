@@ -55,21 +55,5 @@ class RFC3339FieldTest(unittest.TestCase):
             jose.DeserializationError, RFC3339Field.default_decoder, '')
 
 
-class ResourceTest(unittest.TestCase):
-    """Tests for acme.fields.Resource."""
-
-    def setUp(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', '.*Resource', DeprecationWarning)
-            from acme.fields import Resource
-            self.field = Resource('x')
-
-    def test_decode_good(self):
-        self.assertEqual('x', self.field.decode('x'))
-
-    def test_decode_wrong(self):
-        self.assertRaises(jose.DeserializationError, self.field.decode, 'y')
-
-
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
