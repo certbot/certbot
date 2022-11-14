@@ -17,8 +17,8 @@ class IntegrationTestsContext:
         self.request = request
 
         if hasattr(request.config, 'workerinput'):  # Worker node
-            self.worker_id = request.config.workerinput['workerid']  # type: ignore[attr-defined]
-            acme_xdist = request.config.workerinput['acme_xdist']  # type: ignore[attr-defined]
+            self.worker_id = request.config.workerinput['workerid']
+            acme_xdist = request.config.workerinput['acme_xdist']
         else:  # Primary node
             self.worker_id = 'primary'
             acme_xdist = request.config.acme_xdist  # type: ignore[attr-defined]

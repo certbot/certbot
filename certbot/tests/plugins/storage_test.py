@@ -4,16 +4,12 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 import unittest
+from unittest import mock
 
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 
 
 

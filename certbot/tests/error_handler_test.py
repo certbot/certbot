@@ -6,14 +6,9 @@ from typing import Callable
 from typing import Dict
 from typing import Union
 import unittest
+from unittest import mock
 
 from certbot.compat import os
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
-
 
 
 def get_signals(signums):

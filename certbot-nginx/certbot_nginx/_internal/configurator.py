@@ -1112,7 +1112,7 @@ class NginxConfigurator(common.Configurator):
     ###################################################
     # Wrapper functions for Reverter class (Installer)
     ###################################################
-    def save(self, title: str = None, temporary: bool = False) -> None:
+    def save(self, title: Optional[str] = None, temporary: bool = False) -> None:
         """Saves all changes to the configuration files.
 
         :param str title: The title of the save. If a title is given, the

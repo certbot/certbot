@@ -11,6 +11,7 @@ def get_completer() -> Optional[Callable[[], str]]:
 
 def get_completer_delims() -> List[str]:
     """An empty implementation of readline.get_completer_delims."""
+    return []
 
 
 def parse_and_bind(unused_command: str) -> None:
