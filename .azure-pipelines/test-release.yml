@@ -1,0 +1,22 @@
+# Release pipeline to run our full test suite, build artifacts, and deploy them
+# for GitHub release tags.
+trigger: none
+pr: none
+
+variables:
+  dockerTag: "v3"
+  snapBuildTimeout: 5400
+
+stages:
+  - template: templates/stages/test-and-package-stage.yml
+  - template: templates/stages/changelog-stage.yml
+  - template: templates/stages/deploy-stage.yml
+    parameters:
+      ${{ if startsWith(variables['dockerTag'], 'v2') }}:
+        snapReleaseChannel: beta
+      ${{ elseif startsWith(variables['dockerTag'], 'v1') }}:
+        snapReleaseChannel: candidate
+      ${{ else }}:
+        # This should never happen
+        snapReleaseChannel: somethingInvalid
+  - template: templates/stages/notify-failure-stage.yml
