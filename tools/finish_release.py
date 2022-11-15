@@ -186,7 +186,7 @@ def main(args):
     # again fails. Publishing the snaps can be done multiple times though
     # so we do that first to make it easier to run the script again later
     # if something goes wrong.        
-    if version.startswith('1.')
+    if version.startswith('1.'):
         promote_snaps(version)
     else:
         publish_windows(css)
