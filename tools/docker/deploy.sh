@@ -50,20 +50,20 @@ TagAndPushForAllRequestedArch() {
         # timeouts, so we added these "--debug" flags to learn more. Since we
         # added them, we haven't had another timeout, so until we experience
         # another timeout & can get the deubg logs, we're leaving them in.
-        docker --debug push "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}"
+        echo Would have pushed "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}"
 
         # If TAG_BASE is a valid tag for version 2.0.0 or greater
         if [[ "${TAG_BASE}" =~ ^v([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
             docker tag "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" "${DOCKER_REPO}:${TARGET_ARCH}-latest"
-            docker --debug push "${DOCKER_REPO}:${TARGET_ARCH}-latest"
+            echo Would have pushed "${DOCKER_REPO}:${TARGET_ARCH}-latest"
             if [ "${TARGET_ARCH}" == "${DEFAULT_ARCH}" ]; then
                 docker tag "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" "${DOCKER_REPO}:latest"
-                docker --debug push "${DOCKER_REPO}:latest"
+                echo Would have pushed "${DOCKER_REPO}:latest"
             fi
         fi
         if [ "${TARGET_ARCH}" == "${DEFAULT_ARCH}" ]; then
             docker tag "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" "${DOCKER_REPO}:${TAG_BASE}"
-            docker --debug push "${DOCKER_REPO}:${TAG_BASE}"
+            echo Would have pushed "${DOCKER_REPO}:${TAG_BASE}"
         fi
     done
 }
