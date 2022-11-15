@@ -4,12 +4,11 @@ trigger: none
 pr: none
 
 variables:
-  dockerTag: "v2.0.0"
+  dockerTag: "v1.32.1"
   snapBuildTimeout: 5400
 
 stages:
   - template: templates/stages/test-and-package-stage.yml
-  - template: templates/stages/changelog-stage.yml
   - template: templates/stages/deploy-stage.yml
     parameters:
       ${{ if startsWith(variables['dockerTag'], 'v2') }}:
@@ -19,4 +18,3 @@ stages:
       ${{ else }}:
         # This should never happen
         snapReleaseChannel: somethingInvalid
-  - template: templates/stages/notify-failure-stage.yml
