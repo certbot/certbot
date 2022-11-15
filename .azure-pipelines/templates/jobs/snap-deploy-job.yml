@@ -68,8 +68,5 @@ jobs:
           secureFile: snapcraft.cfg
       - bash: |
           set -e
-          export SNAPCRAFT_STORE_CREDENTIALS=$(cat "$(snapcraftCfg.secureFilePath)")
-          for SNAP_FILE in snap/*.snap; do
-            tools/retry.sh eval snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
-          done
+          echo "Would have pushed to ${{ parameters.snapReleaseChannel }}"
         displayName: Publish to Snap store

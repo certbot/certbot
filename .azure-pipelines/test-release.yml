@@ -4,7 +4,7 @@ trigger: none
 pr: none
 
 variables:
-  dockerTag: "v3"
+  dockerTag: "v2.0.0"
   snapBuildTimeout: 5400
 
 stages:
