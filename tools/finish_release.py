@@ -65,15 +65,6 @@ def parse_args(args):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--css', type=str, required=True, help='hostname of code signing server')
-    group = parser.add_mutually_exclusive_group()
-    # We use 'store_false' and a destination related to the other type of
-    # artifact to cause the flag being set to disable publishing of the other
-    # artifact. This makes using the parsed arguments later on a little simpler
-    # and cleaner.
-    group.add_argument('--snaps-only', action='store_false', dest='publish_windows',
-                        help='Skip publishing other artifacts and only publish the snaps')
-    group.add_argument('--windows-only', action='store_false', dest='publish_snaps',
-                        help='Skip publishing other artifacts and only publish the Windows installer')
     return parser.parse_args(args)
 
     
@@ -195,9 +186,9 @@ def main(args):
     # again fails. Publishing the snaps can be done multiple times though
     # so we do that first to make it easier to run the script again later
     # if something goes wrong.        
-    if parsed_args.publish_snaps:
+    if version.startswith('1.')
         promote_snaps(version)
-    if parsed_args.publish_windows:
+    else:
         publish_windows(css)
 
 if __name__ == "__main__":
