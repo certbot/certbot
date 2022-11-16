@@ -88,7 +88,8 @@ test_extras = [
     'coverage',
     'mypy',
     'pip',
-    'pylint',
+    # Our pinned version of pylint requires Python >= 3.7.2.
+    'pylint ; python_full_version >= "3.7.2"',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
