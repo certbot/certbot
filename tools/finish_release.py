@@ -186,6 +186,12 @@ def main(args):
     # again fails. Publishing the snaps can be done multiple times though
     # so we do that first to make it easier to run the script again later
     # if something goes wrong.        
+    #
+    # For now though, we're only going to publish snaps to the stable channel
+    # for 1.x.y releases and only going to update our Windows installer for
+    # 2.x.y releases. Once we feel confident enough about Certbot 2.0, we
+    # should stop doing 1.x.y releases and unconditionally publish both snaps
+    # and the Windows installer.
     if version.startswith('1.'):
         promote_snaps(version)
     else:
