@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* `acme.challenges.HTTP01Response.simple_verify` now accepts a timeout argument which defaults to 30 that causes the verification request to timeout after that many seconds.
 
 ### Changed
 
@@ -34,6 +34,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Fixes a bug where the certbot working directory has unusably restrictive permissions on systems with stricter default umasks.
+* Requests to subscribe to the EFF mailing list now time out after 60 seconds.
 
 We plan to slowly roll out Certbot 2.0 to all of our snap users in the coming months. If you want to use the Certbot 2.0 snap now, please follow the instructions at https://community.letsencrypt.org/t/certbot-2-0-beta-call-for-testing/185945.
 

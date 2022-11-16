@@ -65,7 +65,7 @@ def check_until_timeout(url: str, attempts: int = 30) -> None:
     for _ in range(attempts):
         time.sleep(1)
         try:
-            if requests.get(url, verify=False).status_code == 200:
+            if requests.get(url, verify=False, timeout=10).status_code == 200:
                 return
         except requests.exceptions.ConnectionError:
             pass
@@ -331,7 +331,9 @@ def get_acme_issuers(context: IntegrationTestsContext) -> List[Certificate]:
 
     issuers = []
     for i in range(PEBBLE_ALTERNATE_ROOTS + 1):
-        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/{}'.format(i), verify=False)
+        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/{}'.format(i),
+                               verify=False,
+                               timeout=10)
         issuers.append(load_pem_x509_certificate(request.content, default_backend()))
 
     return issuers

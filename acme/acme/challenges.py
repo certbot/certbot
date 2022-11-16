@@ -301,7 +301,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
     """Whitespace characters which should be ignored at the end of the body."""
 
     def simple_verify(self, chall: 'HTTP01', domain: str, account_public_key: jose.JWK,
-                      port: Optional[int] = None) -> bool:
+                      port: Optional[int] = None, timeout: int = 30) -> bool:
         """Simple verify.
 
         :param challenges.SimpleHTTP chall: Corresponding challenge.
@@ -309,6 +309,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         :param JWK account_public_key: Public key for the key pair
             being authorized.
         :param int port: Port used in the validation.
+        :param int timeout: Timeout in seconds.
 
         :returns: ``True`` iff validation with the files currently served by the
             HTTP server is successful.
@@ -330,7 +331,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         uri = chall.uri(domain)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
-            http_response = requests.get(uri, verify=False)
+            http_response = requests.get(uri, verify=False, timeout=timeout)
         except requests.exceptions.RequestException as error:
             logger.error("Unable to reach %s: %s", uri, error)
             return False
