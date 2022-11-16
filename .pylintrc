@@ -27,7 +27,7 @@ extension-pkg-allow-list=
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code. (This is an alternative name to extension-pkg-allow-list
 # for backward compatibility.)
-extension-pkg-whitelist=
+extension-pkg-whitelist=pywintypes,win32api,win32file,win32security
 
 # Return non-zero exit code if any of these messages/categories are detected,
 # even if score is above --fail-under value. Syntax same as enable. Messages
@@ -63,12 +63,15 @@ ignored-modules=
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
-#init-hook=
+# CERTBOT COMMENT
+# This is needed for pylint to import linter_plugin.py since
+# https://github.com/PyCQA/pylint/pull/3396.
+init-hook="import pylint.config, os, sys; sys.path.append(os.path.dirname(pylint.config.PYLINTRC))"
 
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use, and will cap the count on Windows to
 # avoid hangs.
-jobs=1
+jobs=0
 
 # Control the amount of potential inferred values when inferring a single
 # object. This can help the performance when dealing with large functions or
@@ -77,7 +80,7 @@ limit-inference-results=100
 
 # List of plugins (as comma separated values of python module names) to load,
 # usually to register additional checkers.
-load-plugins=
+load-plugins=linter_plugin
 
 # Pickle collected data for later comparisons.
 persistent=yes
@@ -172,7 +175,7 @@ function-naming-style=snake_case
 # Regular expression matching correct function names. Overrides function-
 # naming-style. If left empty, function names will be checked with the set
 # naming style.
-#function-rgx=
+function-rgx=[a-z_][a-z0-9_]{2,40}$
 
 # Good variable names which should always be accepted, separated by a comma.
 good-names=i,
@@ -180,7 +183,9 @@ good-names=i,
            k,
            ex,
            Run,
-           _
+           _,
+           fd,
+           logger
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
@@ -202,7 +207,7 @@ method-naming-style=snake_case
 
 # Regular expression matching correct method names. Overrides method-naming-
 # style. If left empty, method names will be checked with the set naming style.
-#method-rgx=
+method-rgx=[a-z_][a-z0-9_]{2,50}$
 
 # Naming style matching correct module names.
 module-naming-style=snake_case
@@ -217,7 +222,7 @@ name-group=
 
 # Regular expression which should only match function or class names that do
 # not require a docstring.
-no-docstring-rgx=^_
+no-docstring-rgx=(__.*__)|(test_[A-Za-z0-9_]*)|(_.*)|(.*Test$)
 
 # List of decorators that produce properties, such as abc.abstractproperty. Add
 # to this list to register other decorators that produce valid properties.
@@ -234,7 +239,7 @@ variable-naming-style=snake_case
 # Regular expression matching correct variable names. Overrides variable-
 # naming-style. If left empty, variable names will be checked with the set
 # naming style.
-#variable-rgx=
+variable-rgx=[a-z_][a-z0-9_]{1,30}$
 
 
 [CLASSES]
@@ -248,60 +253,11 @@ defining-attr-methods=__init__,
                       setUp,
                       __post_init__
 
-# List of member names, which should be excluded from the protected access
-# warning.
-exclude-protected=_asdict,
-                  _fields,
-                  _replace,
-                  _source,
-                  _make
-
 # List of valid names for the first argument in a class method.
 valid-classmethod-first-arg=cls
 
 # List of valid names for the first argument in a metaclass class method.
 valid-metaclass-classmethod-first-arg=cls
-
-
-[DESIGN]
-
-# List of regular expressions of class ancestor names to ignore when counting
-# public methods (see R0903)
-exclude-too-few-public-methods=
-
-# List of qualified class names to ignore when counting class parents (see
-# R0901)
-ignored-parents=
-
-# Maximum number of arguments for function / method.
-max-args=5
-
-# Maximum number of attributes for a class (see R0902).
-max-attributes=7
-
-# Maximum number of boolean expressions in an if statement (see R0916).
-max-bool-expr=5
-
-# Maximum number of branch for function / method body.
-max-branches=12
-
-# Maximum number of locals for function / method body.
-max-locals=15
-
-# Maximum number of parents for a class (see R0901).
-max-parents=7
-
-# Maximum number of public methods for a class (see R0904).
-max-public-methods=20
-
-# Maximum number of return / yield for function / method body.
-max-returns=6
-
-# Maximum number of statements in function / method body.
-max-statements=50
-
-# Minimum number of public methods for a class (see R0903).
-min-public-methods=2
 
 
 [EXCEPTIONS]
@@ -320,7 +276,8 @@ expected-line-ending-format=
 ignore-long-lines=^\s*(# )?<?https?://\S+>?$
 
 # Number of spaces of indent required inside a hanging or continued line.
-indent-after-paren=4
+# git history told me that "This does something silly/broken..."
+#indent-after-paren=4
 
 # String used as indentation unit. This is usually "    " (4 spaces) or "\t" (1
 # tab).
@@ -330,7 +287,7 @@ indent-string='    '
 max-line-length=100
 
 # Maximum number of lines in a module.
-max-module-lines=1000
+max-module-lines=1250
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -385,7 +342,7 @@ logging-format-style=old
 
 # Logging modules to check that the string format arguments are in logging
 # function parameter format.
-logging-modules=logging
+logging-modules=logging,logger
 
 
 [MESSAGES CONTROL]
@@ -408,14 +365,32 @@ confidence=HIGH,
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=raw-checker-failed,
-        bad-inline-option,
-        locally-disabled,
-        file-ignored,
-        suppressed-message,
-        useless-suppression,
-        deprecated-pragma,
-        use-symbolic-message-instead
+# CERTBOT COMMENT
+# 1) Once certbot codebase is claimed to be compatible exclusively with Python 3,
+#    the useless-object-inheritance check can be enabled again, and code fixed accordingly.
+# 2) Check unsubscriptable-object tends to create a lot of false positives. Let's disable it.
+#    See https://github.com/PyCQA/pylint/issues/1498.
+# 3) Same as point 2 for no-value-for-parameter.
+#    See https://github.com/PyCQA/pylint/issues/2820.
+# 4) raise-missing-from makes it an error to raise an exception from except
+#    block without using explicit exception chaining. While explicit exception
+#    chaining results in a slightly more informative traceback, I don't think
+#    it's beneficial enough for us to change all of our current instances and
+#    give Certbot developers errors about this when they're working on new code
+#    in the future. You can read more about exception chaining and this pylint
+#    check at
+#    https://blog.ram.rachum.com/post/621791438475296768/improving-python-exception-chaining-with.
+# 5) wrong-import-order generates false positives and a pylint developer
+#    suggests that people using isort should disable this check at
+#    https://github.com/PyCQA/pylint/issues/3817#issuecomment-687892090.
+# 6) unspecified-encoding generates errors when encoding is not specified in
+#    in a call to the built-in open function. This relates more to a design decision
+#    (unspecified encoding makes the open function use the default encoding of the system)
+#    than a clear flaw on which a check should be enforced. Anyway the project does
+#    not need to enforce encoding on files so we disable this check.
+# 7) consider-using-f-string is "suggesting" to move to f-string when possible with an error. This
+#    clearly relates to code design and not to potential defects in the code, let's just ignore that.
+disable=fixme,locally-disabled,invalid-name,cyclic-import,duplicate-code,design,import-outside-toplevel,useless-object-inheritance,unsubscriptable-object,no-value-for-parameter,no-else-return,no-else-raise,no-else-break,no-else-continue,raise-missing-from,wrong-import-order,unspecified-encoding,consider-using-f-string,raw-checker-failed,bad-inline-option,file-ignored,suppressed-message,useless-suppression,deprecated-pragma,use-symbolic-message-instead
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -494,31 +469,7 @@ ignore-imports=yes
 ignore-signatures=yes
 
 # Minimum lines number of a similarity.
-min-similarity-lines=4
-
-
-[SPELLING]
-
-# Limits count of emitted suggestions for spelling mistakes.
-max-spelling-suggestions=4
-
-# Spelling dictionary name. Available dictionaries: none. To make it work,
-# install the 'python-enchant' package.
-spelling-dict=
-
-# List of comma separated words that should be considered directives if they
-# appear at the beginning of a comment and should not be checked.
-spelling-ignore-comment-directives=fmt: on,fmt: off,noqa:,noqa,nosec,isort:skip,mypy:
-
-# List of comma separated words that should not be checked.
-spelling-ignore-words=
-
-# A path to a file that contains the private dictionary; one word per line.
-spelling-private-dict-file=
-
-# Tells whether to store unknown words to the private dictionary (see the
-# --spelling-private-dict-file option) instead of raising a message.
-spelling-store-unknown-words=no
+min-similarity-lines=6
 
 
 [STRING]
@@ -565,7 +516,12 @@ ignored-checks-for-mixins=no-member,
 # List of class names for which member attributes should not be checked (useful
 # for classes with dynamically set attributes). This supports the use of
 # qualified names.
-ignored-classes=optparse.Values,thread._local,_thread._local,argparse.Namespace
+ignored-classes=optparse.Values,thread._local,_thread._local,argparse.Namespace,Field,Header,JWS,closing
+
+# List of module names for which member attributes should not be checked
+# (useful for modules/projects where namespaces are manipulated during runtime
+# and thus existing member attributes cannot be deduced by static analysis
+ignored-modules=pkg_resources,confargparse,argparse
 
 # Show a hint with possible names when a member name was not found. The aspect
 # of finding the hint is based on edit distance.
