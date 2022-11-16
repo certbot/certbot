@@ -24,7 +24,7 @@ Before running the tests, you'll need to set up credentials by following the
 instructions at
 https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html#configuration.
 You will also want to create a `~/.aws/config` file setting the region for your
-profile to `us-east-1`.
+profile to `us-east-1`, following the instructions in the boto3 quickstart guide above.
 
 Lastly, you will want to create a file on your system containing a trusted SSH key
 by following the instructions at
