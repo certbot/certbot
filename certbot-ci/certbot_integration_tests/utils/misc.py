@@ -67,7 +67,7 @@ def check_until_timeout(url: str, attempts: int = 30) -> None:
         try:
             if requests.get(url, verify=False, timeout=10).status_code == 200:
                 return
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.RequestException:
             pass
 
     raise ValueError('Error, url did not respond after {0} attempts: {1}'.format(attempts, url))
