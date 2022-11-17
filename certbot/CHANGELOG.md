@@ -35,6 +35,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Fixes a bug where the certbot working directory has unusably restrictive permissions on systems with stricter default umasks.
 
+We plan to slowly roll out Certbot 2.0 to all of our snap users in the coming months. If you want to use the Certbot 2.0 snap now, please follow the instructions at https://community.letsencrypt.org/t/certbot-2-0-beta-call-for-testing/185945.
+
 More details about these changes can be found on our GitHub repo.
 
 ## 1.32.0 - 2022-11-08
