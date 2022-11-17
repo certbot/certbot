@@ -35,14 +35,6 @@ letstest = {path = "../../../letstest"}
 windows-installer = {path = "../../../windows-installer"}
 
 # Extra dependencies
-# awscli is just listed here as a performance optimization. As of writing this,
-# there are some conflicts in shared dependencies between it and other packages
-# we depend on. To try and resolve them, poetry searches through older versions
-# of awscli to see if that resolves the conflict, but there are over 1000
-# versions of awscli on PyPI so this process takes too long. Providing a high
-# minimum version here prevents poetry from searching this path and it fairly
-# quickly resolves the dependency conflict in another way.
-awscli = ">=1.22.76"
 # As of writing this, cython is a build dependency of pyyaml. Since there
 # doesn't appear to be a good way to automatically track down and pin build
 # dependencies in Python (see
