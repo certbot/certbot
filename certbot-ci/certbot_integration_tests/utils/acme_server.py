@@ -219,7 +219,8 @@ class ACMEServer:
                 # Configure challtestsrv to answer any A record request with ip of the docker host.
                 response = requests.post(
                     f'{BOULDER_V2_CHALLTESTSRV_URL}/set-default-ipv4',
-                    json={'ip': '10.77.77.1'}
+                    json={'ip': '10.77.77.1'},
+                    timeout=10
                 )
                 response.raise_for_status()
         except BaseException:

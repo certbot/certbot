@@ -480,7 +480,7 @@ class ClientNetwork:
     :param josepy.JWASignature alg: Algorithm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
-    :param float timeout: Timeout for requests.
+    :param int timeout: Timeout for requests.
     """
     def __init__(self, key: jose.JWK, account: Optional[messages.RegistrationResource] = None,
                  alg: jose.JWASignature = jose.RS256, verify_ssl: bool = True,

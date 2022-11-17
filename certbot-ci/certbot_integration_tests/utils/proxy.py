@@ -21,7 +21,7 @@ def _create_proxy(mapping: Mapping[str, str]) -> Type[BaseHTTPServer.BaseHTTPReq
             headers = {key.lower(): value for key, value in self.headers.items()}
             backend = [backend for pattern, backend in mapping.items()
                        if re.match(pattern, headers['host'])][0]
-            response = requests.get(backend + self.path, headers=headers)
+            response = requests.get(backend + self.path, headers=headers, timeout=10)
 
             self.send_response(response.status_code)
             for key, value in response.headers.items():

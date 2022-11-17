@@ -15,6 +15,9 @@ from acme import errors as acme_errors
 logger = logging.getLogger(__name__)
 
 
+_VALIDATION_TIMEOUT = 10
+
+
 class Validator:
     """Collection of functions to test a live webserver's configuration"""
 
@@ -43,9 +46,12 @@ class Validator:
         """Test whether webserver redirects to secure connection."""
         url = "http://{0}:{1}".format(name, port)
         if headers:
-            response = requests.get(url, headers=headers, allow_redirects=False)
+            response = requests.get(url, headers=headers,
+                                    allow_redirects=False,
+                                    timeout=_VALIDATION_TIMEOUT)
         else:
-            response = requests.get(url, allow_redirects=False)
+            response = requests.get(url, allow_redirects=False,
+                                    timeout=_VALIDATION_TIMEOUT)
 
         redirect_location = response.headers.get("location", "")
         # We're checking that the redirect we added behaves correctly.
@@ -65,15 +71,19 @@ class Validator:
         """Test whether webserver redirects."""
         url = "http://{0}:{1}".format(name, port)
         if headers:
-            response = requests.get(url, headers=headers, allow_redirects=False)
+            response = requests.get(url, headers=headers,
+                                    allow_redirects=False,
+                                    timeout=_VALIDATION_TIMEOUT)
         else:
-            response = requests.get(url, allow_redirects=False)
+            response = requests.get(url, allow_redirects=False,
+                                    timeout=_VALIDATION_TIMEOUT)
 
         return response.status_code in range(300, 309)
 
     def hsts(self, name: str) -> bool:
         """Test for HTTP Strict Transport Security header"""
-        headers = requests.get("https://" + name).headers
+        headers = requests.get("https://" + name,
+                               timeout=_VALIDATION_TIMEOUT).headers
         hsts_header = headers.get("strict-transport-security")
 
         if not hsts_header:
