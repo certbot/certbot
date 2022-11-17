@@ -97,14 +97,6 @@ cython = "*"
 # wheel 0.34.0 is buggy).
 wheel = "<0.34.0"
 
-# pylint often adds new checks that we need to conform our code to when
-# upgrading our dependencies. To help control when this needs to be done, we
-# pin pylint to a compatible version here.
-#
-# If this pinning is removed, we may still need to add a lower bound for the
-# pylint version. See https://github.com/certbot/certbot/pull/9229.
-pylint = "2.13.9"
-
 [tool.poetry.dev-dependencies]
 
 [build-system]
