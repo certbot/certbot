@@ -2,7 +2,7 @@ name: Close Stale Issues
 on:
   schedule:
     # Run at midnight every night
-    - cron: '0 0 * * *'
+    - cron: '1 24 * * *'
 permissions:
   contents: write # only for delete-branch option
   issues: write
