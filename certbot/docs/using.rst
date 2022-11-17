@@ -499,27 +499,6 @@ of existing certificates), you can add the following line to Certbot's
 
 which will take effect upon the next renewal of each certificate.
 
-Obtaining ECDSA certificates in addition to RSA certificates
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When Certbot configures the certificates it obtains with Apache or Nginx, all
-HTTPS clients that we try to support can use certificates with ECDSA keys. If,
-however, you are aware of having a specific need to support very old TLS
-clients, you may want to obtain both ECDSA and RSA certificates for the same
-domains. Certbot can only configure Apache or Nginx to use a single
-certificate, however, you could manually configure your software to use the
-different certificates depending on your needs.
-
-When obtaining both ECDSA and RSA certificates for the same domains with
-Certbot, we recommend using the ``--cert-name`` option to give your
-certificates names so that you can easily identify them. For instance, you may
-want to append "ecdsa" to the name of your ECDSA certificate by using a command
-like
-
-.. code-block:: shell
-
-  certbot certonly --key-type ecdsa --cert-name example.com-ecdsa
-
 Revoking certificates
 ---------------------
 
