@@ -1,8 +1,6 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
 import logging
 from typing import Any
-from typing import cast
-from typing import List
 
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
@@ -11,7 +9,6 @@ from certbot_apache._internal.configurator import OsOptions
 
 from certbot import errors
 from certbot import util
-from certbot.errors import MisconfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +22,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         vhost_files="*.conf",
         logs_root="/var/log/httpd",
         ctl="apachectl",
+        apache_bin="httpd",
         version_cmd=['apachectl', '-v'],
         restart_cmd=['apachectl', 'graceful'],
         restart_cmd_alt=['apachectl', 'restart'],
@@ -51,6 +49,37 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             else:
                 raise
 
+    def _rhel9_or_newer(self) -> bool:
+        os_name, os_version = util.get_os_info()
+        rhel_derived = os_name in [
+            "centos", "centos linux",
+            "cloudlinux",
+            "ol", "oracle",
+            "rhel", "redhatenterpriseserver", "red hat enterprise linux server",
+            "scientific", "scientific linux",
+        ]
+        at_least_v9 = util.parse_loose_version(os_version) >= util.parse_loose_version('9')
+        return rhel_derived and at_least_v9
+
+    def _override_cmds(self) -> None:
+        super()._override_cmds()
+
+        # As of RHEL 9, apachectl can't be passed flags like "-v" or "-t -D", so
+        # instead use options.bin (i.e. httpd) for version_cmd and the various
+        # get_X commands
+        if self._rhel9_or_newer():
+            if not self.options.bin:
+                raise ValueError("OS option apache_bin must be set for CentOS") # pragma: no cover
+
+            self.options.version_cmd[0] = self.options.bin
+            self.options.get_modules_cmd[0] = self.options.bin
+            self.options.get_includes_cmd[0] = self.options.bin
+            self.options.get_defines_cmd[0] = self.options.bin
+
+        if not self.options.restart_cmd_alt:  # pragma: no cover
+            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
+        self.options.restart_cmd_alt[0] = self.options.ctl
+
     def _try_restart_fedora(self) -> None:
         """
         Tries to restart httpd using systemctl to generate the self signed key pair.
@@ -64,96 +93,10 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         # Finish with actual config check to see if systemctl restart helped
         super().config_test()
 
-    def _prepare_options(self) -> None:
-        """
-        Override the options dictionary initialization in order to support
-        alternative restart cmd used in CentOS.
-        """
-        super()._prepare_options()
-        if not self.options.restart_cmd_alt:  # pragma: no cover
-            raise ValueError("OS option restart_cmd_alt must be set for CentOS.")
-        self.options.restart_cmd_alt[0] = self.options.ctl
-
     def get_parser(self) -> "CentOSParser":
         """Initializes the ApacheParser"""
         return CentOSParser(
             self.options.server_root, self, self.options.vhost_root, self.version)
-
-    def _deploy_cert(self, *args: Any, **kwargs: Any) -> None:  # pylint: disable=arguments-differ
-        """
-        Override _deploy_cert in order to ensure that the Apache configuration
-        has "LoadModule ssl_module..." before parsing the VirtualHost configuration
-        that was created by Certbot
-        """
-        super()._deploy_cert(*args, **kwargs)
-        if self.version < (2, 4, 0):
-            self._deploy_loadmodule_ssl_if_needed()
-
-    def _deploy_loadmodule_ssl_if_needed(self) -> None:
-        """
-        Add "LoadModule ssl_module <pre-existing path>" to main httpd.conf if
-        it doesn't exist there already.
-        """
-
-        loadmods = self.parser.find_dir("LoadModule", "ssl_module", exclude=False)
-
-        correct_ifmods: List[str] = []
-        loadmod_args: List[str] = []
-        loadmod_paths: List[str] = []
-        for m in loadmods:
-            noarg_path = m.rpartition("/")[0]
-            path_args = self.parser.get_all_args(noarg_path)
-            if loadmod_args:
-                if loadmod_args != path_args:
-                    msg = ("Certbot encountered multiple LoadModule directives "
-                           "for LoadModule ssl_module with differing library paths. "
-                           "Please remove or comment out the one(s) that are not in "
-                           "use, and run Certbot again.")
-                    raise MisconfigurationError(msg)
-            else:
-                loadmod_args = [arg for arg in path_args if arg]
-
-            centos_parser: CentOSParser = cast(CentOSParser, self.parser)
-            if centos_parser.not_modssl_ifmodule(noarg_path):
-                if centos_parser.loc["default"] in noarg_path:
-                    # LoadModule already in the main configuration file
-                    if "ifmodule/" in noarg_path.lower() or "ifmodule[1]" in noarg_path.lower():
-                        # It's the first or only IfModule in the file
-                        return
-                # Populate the list of known !mod_ssl.c IfModules
-                nodir_path = noarg_path.rpartition("/directive")[0]
-                correct_ifmods.append(nodir_path)
-            else:
-                loadmod_paths.append(noarg_path)
-
-        if not loadmod_args:
-            # Do not try to enable mod_ssl
-            return
-
-        # Force creation as the directive wasn't found from the beginning of
-        # httpd.conf
-        rootconf_ifmod = self.parser.create_ifmod(
-            parser.get_aug_path(self.parser.loc["default"]),
-            "!mod_ssl.c", beginning=True)
-        # parser.get_ifmod returns a path postfixed with "/", remove that
-        self.parser.add_dir(rootconf_ifmod[:-1], "LoadModule", loadmod_args)
-        correct_ifmods.append(rootconf_ifmod[:-1])
-        self.save_notes += "Added LoadModule ssl_module to main configuration.\n"
-
-        # Wrap LoadModule mod_ssl inside of <IfModule !mod_ssl.c> if it's not
-        # configured like this already.
-        for loadmod_path in loadmod_paths:
-            nodir_path = loadmod_path.split("/directive")[0]
-            # Remove the old LoadModule directive
-            self.parser.aug.remove(loadmod_path)
-
-            # Create a new IfModule !mod_ssl.c if not already found on path
-            ssl_ifmod = self.parser.get_ifmod(nodir_path, "!mod_ssl.c", beginning=True)[:-1]
-            if ssl_ifmod not in correct_ifmods:
-                self.parser.add_dir(ssl_ifmod, "LoadModule", loadmod_args)
-                correct_ifmods.append(ssl_ifmod)
-                self.save_notes += ("Wrapped pre-existing LoadModule ssl_module "
-                                    "inside of <IfModule !mod_ssl> block.\n")
 
 
 class CentOSParser(parser.ApacheParser):
@@ -174,33 +117,3 @@ class CentOSParser(parser.ApacheParser):
         defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
         for k, v in defines.items():
             self.variables[k] = v
-
-    def not_modssl_ifmodule(self, path: str) -> bool:
-        """Checks if the provided Augeas path has argument !mod_ssl"""
-
-        if "ifmodule" not in path.lower():
-            return False
-
-        # Trim the path to the last ifmodule
-        workpath = path.lower()
-        while workpath:
-            # Get path to the last IfModule (ignore the tail)
-            parts = workpath.rpartition("ifmodule")
-
-            if not parts[0]:
-                # IfModule not found
-                break
-            ifmod_path = parts[0] + parts[1]
-            # Check if ifmodule had an index
-            if parts[2].startswith("["):
-                # Append the index from tail
-                ifmod_path += parts[2].partition("/")[0]
-            # Get the original path trimmed to correct length
-            # This is required to preserve cases
-            ifmod_real_path = path[0:len(ifmod_path)]
-            if "!mod_ssl.c" in self.get_all_args(ifmod_real_path):
-                return True
-            # Set the workpath to the heading part
-            workpath = parts[0]
-
-        return False

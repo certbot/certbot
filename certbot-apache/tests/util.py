@@ -4,11 +4,7 @@ import unittest
 
 import augeas
 import josepy as jose
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock  # type: ignore
+from unittest import mock
 
 from certbot.compat import os
 from certbot.plugins import common
@@ -123,6 +119,7 @@ def get_apache_configurator(
                         # Custom virtualhost path was requested
                         config.config.apache_vhost_root = conf_vhost_path
                     config.config.apache_ctl = config_class.OS_DEFAULTS.ctl
+                    config.config.apache_bin = config_class.OS_DEFAULTS.bin
                     config.prepare()
     return config
 

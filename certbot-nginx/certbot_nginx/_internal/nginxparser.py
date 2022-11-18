@@ -119,7 +119,9 @@ class RawNginxDumper:
         return ''.join(self)
 
 
-spacey = lambda x: (isinstance(x, str) and x.isspace()) or x == ''
+def spacey(x: Any) -> bool:
+    """Is x an empty string or whitespace?"""
+    return (isinstance(x, str) and x.isspace()) or x == ''
 
 
 class UnspacedList(List[Any]):

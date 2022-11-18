@@ -60,8 +60,6 @@ install_requires = [
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
     f'setuptools>={min_setuptools_version}',
-    'zope.component',
-    'zope.interface',
 ]
 
 dev_extras = [
@@ -69,7 +67,11 @@ dev_extras = [
     'ipdb',
     # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
     # https://github.com/python-poetry/poetry/issues/1584.
-    'poetry>=1.2.0a1',
+    'poetry>=1.2.0',
+    # poetry-plugin-export>=1.1.0 is required to use the constraints.txt export
+    # format. See
+    # https://github.com/python-poetry/poetry-plugin-export/blob/efcfd34859e72f6a79a80398f197ce6eb2bbd7cd/CHANGELOG.md#added.
+    'poetry-plugin-export>=1.1.0',
     'twine',
 ]
 
@@ -86,13 +88,13 @@ test_extras = [
     'coverage',
     'mypy',
     'pip',
-    'pylint',
+    # Our pinned version of pylint requires Python >= 3.7.2.
+    'pylint ; python_full_version >= "3.7.2"',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
     'setuptools',
     'tox',
-    'types-mock',
     'types-pyOpenSSL',
     'types-pyRFC3339',
     'types-pytz',
@@ -131,6 +133,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',

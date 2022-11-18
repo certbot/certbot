@@ -1,17 +1,12 @@
 """Tests for certbot._internal.renewal"""
 import copy
 import unittest
+from unittest import mock
 
 from acme import challenges
 from certbot import errors, configuration
 from certbot._internal import storage
 import certbot.tests.util as test_util
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
-
 
 
 class RenewalTest(test_util.ConfigTestCase):
@@ -55,8 +50,9 @@ class RenewalTest(test_util.ConfigTestCase):
         self.assertEqual(self.config.webroot_map, {})
         self.assertEqual(self.config.webroot_path, ['/var/www/test'])
 
-    def test_reuse_key_renewal_params(self):
-        self.config.rsa_key_size = 'INVALID_VALUE'
+    @mock.patch('certbot._internal.renewal._avoid_reuse_key_conflicts')
+    def test_reuse_key_renewal_params(self, unused_mock_avoid_reuse_conflicts):
+        self.config.elliptic_curve = 'INVALID_VALUE'
         self.config.reuse_key = True
         self.config.dry_run = True
         config = configuration.NamespaceConfig(self.config)
@@ -73,9 +69,10 @@ class RenewalTest(test_util.ConfigTestCase):
         with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
-        assert self.config.rsa_key_size == 2048
+        assert self.config.elliptic_curve == 'secp256r1'
 
-    def test_reuse_ec_key_renewal_params(self):
+    @mock.patch('certbot._internal.renewal._avoid_reuse_key_conflicts')
+    def test_reuse_ec_key_renewal_params(self, unused_mock_avoid_reuse_conflicts):
         self.config.elliptic_curve = 'INVALID_CURVE'
         self.config.reuse_key = True
         self.config.dry_run = True
@@ -99,7 +96,9 @@ class RenewalTest(test_util.ConfigTestCase):
 
         assert self.config.elliptic_curve == 'secp256r1'
 
-    def test_new_key(self):
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_new_key(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
         # When renewing with both reuse_key and new_key, the key should be regenerated,
         # the key type, key parameters and reuse_key should be kept.
         self.config.reuse_key = True
@@ -119,11 +118,43 @@ class RenewalTest(test_util.ConfigTestCase):
         with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
-        self.assertEqual(self.config.rsa_key_size, 2048)
-        self.assertEqual(self.config.key_type, 'rsa')
+        self.assertEqual(self.config.elliptic_curve, 'secp256r1')
+        self.assertEqual(self.config.key_type, 'ecdsa')
         self.assertTrue(self.config.reuse_key)
         # None is passed as the existing key, i.e. the key is not actually being reused.
         le_client.obtain_certificate.assert_called_with(mock.ANY, None)
+
+    @mock.patch('certbot._internal.renewal.hooks.renew_hook')
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_reuse_key_conflicts(self, mock_set_by_cli, unused_mock_renew_hook):
+        mock_set_by_cli.return_value = False
+
+        # When renewing with reuse_key and a conflicting key parameter (size, curve)
+        # an error should be raised ...
+        self.config.reuse_key = True
+        self.config.key_type = "rsa"
+        self.config.rsa_key_size = 4096
+        self.config.dry_run = True
+
+        config = configuration.NamespaceConfig(self.config)
+
+        rc_path = test_util.make_lineage(
+            self.config.config_dir, 'sample-renewal.conf')
+        lineage = storage.RenewableCert(rc_path, config)
+        lineage.configuration["renewalparams"]["reuse_key"] = True
+
+        le_client = mock.MagicMock()
+        le_client.obtain_certificate.return_value = (None, None, None, None)
+
+        from certbot._internal import renewal
+
+        with self.assertRaisesRegex(errors.Error, "Unable to change the --key-type"):
+            renewal.renew_cert(self.config, None, le_client, lineage)
+
+        # ... unless --no-reuse-key is set
+        mock_set_by_cli.side_effect = lambda var: var == "reuse_key"
+        self.config.reuse_key = False
+        renewal.renew_cert(self.config, None, le_client, lineage)
 
     @test_util.patch_display_util()
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')

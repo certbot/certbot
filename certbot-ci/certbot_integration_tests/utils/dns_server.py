@@ -17,6 +17,8 @@ from typing import Type
 
 from pkg_resources import resource_filename
 
+from certbot_integration_tests.utils import constants
+
 BIND_DOCKER_IMAGE = "internetsystemsconsortium/bind9:9.16"
 BIND_BIND_ADDRESS = ("127.0.0.1", 45953)
 
@@ -67,8 +69,8 @@ class DNSServer:
         if self.process:
             try:
                 self.process.terminate()
-                self.process.wait()
-            except BaseException as e:
+                self.process.wait(constants.MAX_SUBPROCESS_WAIT)
+            except BaseException as e:  # pylint: disable=broad-except
                 print("BIND9 did not stop cleanly: {}".format(e), file=sys.stderr)
 
         shutil.rmtree(self.bind_root, ignore_errors=True)

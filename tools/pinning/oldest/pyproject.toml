@@ -10,7 +10,7 @@ license = "Apache License 2.0"
 [tool.poetry.dependencies]
 # The Python version here should be kept in sync with the one used in our
 # oldest tests in tox.ini.
-python = "3.7"
+python = "3.7.*"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -18,7 +18,6 @@ python = "3.7"
 # on acme so certbot must be listed before acme.
 certbot-ci = {path = "../../../certbot-ci"}
 certbot-dns-cloudflare = {path = "../../../certbot-dns-cloudflare"}
-certbot-dns-cloudxns = {path = "../../../certbot-dns-cloudxns"}
 certbot-dns-digitalocean = {path = "../../../certbot-dns-digitalocean"}
 certbot-dns-dnsimple = {path = "../../../certbot-dns-dnsimple"}
 certbot-dns-dnsmadeeasy = {path = "../../../certbot-dns-dnsmadeeasy"}
@@ -62,7 +61,6 @@ google-api-python-client = "1.5.5"
 httplib2 = "0.9.2"
 idna = "2.6"
 ipaddress = "1.0.16"
-mock = "1.0.1"
 ndg-httpsclient = "0.3.2"
 oauth2client = "4.0.0"
 parsedatetime = "2.4"
@@ -80,11 +78,6 @@ requests = "2.20.0"
 setuptools = "41.6.0"
 six = "1.11.0"
 urllib3 = "1.24.2"
-# Package names containing "." need to be quoted.
-"zope.component" = "4.1.0"
-"zope.event" = "4.0.3"
-"zope.hookable" = "4.0.4"
-"zope.interface" = "4.0.5"
 
 # Build dependencies
 # Since there doesn't appear to
@@ -103,14 +96,6 @@ cython = "*"
 # wheel 0.34.1+ does not support the version of setuptools pinned above (and
 # wheel 0.34.0 is buggy).
 wheel = "<0.34.0"
-
-# pylint often adds new checks that we need to conform our code to when
-# upgrading our dependencies. To help control when this needs to be done, we
-# pin pylint to a compatible version here.
-#
-# If this pinning is removed, we may still need to add a lower bound for the
-# pylint version. See https://github.com/certbot/certbot/pull/9229.
-pylint = "2.13.9"
 
 [tool.poetry.dev-dependencies]
 

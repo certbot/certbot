@@ -2,11 +2,7 @@
 import functools
 import multiprocessing
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+from unittest import mock
 
 from certbot import errors
 from certbot.compat import os

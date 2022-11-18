@@ -1,11 +1,7 @@
 """Tests for certbot_apache._internal.parser."""
 import shutil
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
+from unittest import mock
 
 from certbot import errors
 from certbot.compat import os
@@ -369,15 +365,6 @@ class ParserInitTest(util.ApacheTest):
                 errors.NotSupportedError,
                 ApacheParser, os.path.relpath(self.config_path), self.config,
                 "/dummy/vhostpath", version=(2, 4, 22))
-
-    @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
-    def test_unparseable(self, mock_cfg):
-        from certbot_apache._internal.parser import ApacheParser
-        mock_cfg.return_value = ('Define: TEST')
-        self.assertRaises(
-            errors.PluginError,
-            ApacheParser, os.path.relpath(self.config_path), self.config,
-            "/dummy/vhostpath", version=(2, 2, 22))
 
     def test_root_normalized(self):
         from certbot_apache._internal.parser import ApacheParser
