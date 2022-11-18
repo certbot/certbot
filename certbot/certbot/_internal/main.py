@@ -1683,48 +1683,9 @@ def _report_reconfigure_results(renewal_file: str, orig_renewal_conf: configobj.
 
     if len(changes) == 0:
         success_message = '\nNo changes were made to the renewal configuration.'
-        display_util.notify(success_message)
-        return
     else:
-        success_message = '\nSuccessfully updated configuration.'
-
-    results = {}
-    for x, _ in changes:
-        if x not in results:
-            results[x] = 0
-        results[x] += 1
-
-
-    added_removed = [x for x, y in results.items() if y == 1]
-    if len(added_removed) > 0:
-        added = {}
-        removed = {}
-        for name in added_removed:
-            if name in orig_renewal_params:
-                removed[name] = orig_renewal_params[name]
-            if name in final_renewal_params:
-                added[name] = final_renewal_params[name]
-
-        if len(added) > 0:
-            success_message += '\nThe following options were added:'
-            for name, value in added.items():
-                success_message += f'\n    {name}: {value}'
-
-        # I cannot think of how someone could possibly remove an option given current
-        # functionality, but kind of want to leave this anyway for completeness.
-        if len(removed) > 0:
-            success_message += '\nThe following options were removed:'
-            for name, value in removed.items():
-                success_message += f'\n    {name}: {value}'
-
-    changed = [x for x, y in results.items() if y > 1]
-    if len(changed) > 0:
-        success_message += '\nThe following options were changed:'
-        for name in changed:
-            success_message += f'\n    {name}: {orig_renewal_params[name]} ' +\
-                f'--> {final_renewal_params[name]}'
-
-    success_message += '\nChanges will apply when the certificate renews.'
+        success_message = '\nSuccessfully updated configuration.' + \
+                          '\nChanges will apply when the certificate renews.'
 
     display_util.notify(success_message)
 
