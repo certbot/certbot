@@ -223,6 +223,12 @@ class NginxParser:
                                "supported.", item)
             except pyparsing.ParseException as err:
                 logger.warning("Could not parse file: %s due to %s", item, err)
+            except nginxparser.UnsupportedDirectiveException as e:
+                logger.warning(
+                    "%s:%d contained the '%s' directive, which is  not supported by Certbot. The "
+                    "file has been ignored, which may prevent Certbot from functioning properly. "
+                    "Consider using the --webroot plugin and manually installing the certificate.",
+                    item, e.line_no, e.directive_name)
         return trees
 
     def _find_config_root(self) -> str:
