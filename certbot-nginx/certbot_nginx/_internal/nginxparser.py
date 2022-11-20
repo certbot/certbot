@@ -68,7 +68,6 @@ class RawNginxParser:
     token = paren_quote_extend | tokenchars | quoted
 
     whitespace_token_group = space + token + ZeroOrMore(required_space + token) + space
-
     assignment = whitespace_token_group + semicolon
 
     comment = space + Literal('#') + restOfLine
