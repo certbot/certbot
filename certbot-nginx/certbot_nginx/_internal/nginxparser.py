@@ -86,7 +86,7 @@ class RawNginxParser:
 
     def __init__(self, source: str) -> None:
         self.source = source
-        self.whitespace_token_group.add_parse_action(self._check_disallowed_directive)
+        self.whitespace_token_group.addParseAction(self._check_disallowed_directive)
 
     def parse(self) -> ParseResults:
         """Returns the parsed tree."""
