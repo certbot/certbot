@@ -166,7 +166,7 @@ def deploy_hook(config: configuration.NamespaceConfig, domains: List[str],
     """
     if config.deploy_hook:
         _run_deploy_hook(config.deploy_hook, domains,
-                         lineage_path, config.dry_run)
+                         lineage_path, config.dry_run, config.run_deploy_hook)
 
 
 def renew_hook(config: configuration.NamespaceConfig, domains: List[str],
@@ -190,7 +190,7 @@ def renew_hook(config: configuration.NamespaceConfig, domains: List[str],
     executed_dir_hooks = set()
     if config.directory_hooks:
         for hook in list_hooks(config.renewal_deploy_hooks_dir):
-            _run_deploy_hook(hook, domains, lineage_path, config.dry_run)
+            _run_deploy_hook(hook, domains, lineage_path, config.dry_run, config.run_deploy_hook)
             executed_dir_hooks.add(hook)
 
     if config.renew_hook:
@@ -199,10 +199,11 @@ def renew_hook(config: configuration.NamespaceConfig, domains: List[str],
                         config.renew_hook)
         else:
             _run_deploy_hook(config.renew_hook, domains,
-                             lineage_path, config.dry_run)
+                             lineage_path, config.dry_run, config.run_deploy_hook)
 
 
-def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_run: bool) -> None:
+def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_run: bool,
+                     run_deploy_hook: bool) -> None:
     """Run the specified deploy-hook (if not doing a dry run).
 
     If dry_run is True, command is not run and a message is logged
@@ -214,9 +215,10 @@ def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_ru
     :type domains: `list` of `str`
     :param str lineage_path: live directory path for the new cert
     :param bool dry_run: True iff Certbot is doing a dry run
+    :param bool run_deploy_hook: True if deploy hook should run despite Certbot doing a dry run
 
     """
-    if dry_run:
+    if dry_run and not run_deploy_hook:
         logger.info("Dry run: skipping deploy hook command: %s",
                        command)
         return

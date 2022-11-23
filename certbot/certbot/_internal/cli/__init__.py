@@ -163,6 +163,16 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
              " if they are defined because they may be necessary to accurately simulate"
              " renewal. --deploy-hook commands are not called.")
     helpful.add(
+        ["testing", "renew", "certonly", "reconfigure"],
+        "--run-deploy-hook", action="store_true", dest="run_deploy_hook",
+        default=flag_default("run_deploy_hook"),
+        help="When performing a test run using `--dry-run` or `reconfigure`, run any applicable"
+             " deploy hooks. This includes hooks set on the command line, saved in the"
+             " certificate's renewal configuration file, or present in the renewal-hooks directory."
+             " To exclude direcory hooks, use --no-directory-hooks. The hook(s) will only"
+             " be run if the dry run succeeds. This flag is recommended when modifying the deploy"
+             " hook using `reconfigure`.")
+    helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         default=flag_default("register_unsafely_without_email"),
         help="Specifying this flag enables registering an account with no "

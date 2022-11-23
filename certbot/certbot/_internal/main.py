@@ -1737,6 +1737,14 @@ def reconfigure(config: configuration.NamespaceConfig,
         raise errors.ConfigurationError(f"An existing certificate with name {certname} could not "
             "be found. Run `certbot certificates` to list available certificates.")
 
+    # figure this out before we modify config
+    if config.deploy_hook and not config.run_deploy_hook:
+        msg = "You are attempting to set a new deploy hook. Would you like Certbot to run the new "
+              "hook when it performs a dry run with the new settings? This will run all relevant "
+              "deploy hooks, including directory hooks, unless --no-directory-hooks is set."
+        config.run_deploy_hook = display_util.yesno(msg,"Run deploy hook",
+            "Do not run deploy hook", default=False)
+
     # cache previous version for later comparison
     try:
         orig_renewal_conf = configobj.ConfigObj(
@@ -1763,10 +1771,6 @@ def reconfigure(config: configuration.NamespaceConfig,
     # the values from lineage_config when doing the dry run
     _get_and_save_cert(le_client, lineage_config, certname=certname,
         lineage=renewal_candidate)
-
-    domains = renewal_candidate.names()
-    lineage_config.dry_run = False
-    hooks.renew_hook(lineage_config, domains, renewal_candidate.live_dir)
 
     # this function will update lineage.configuration with the new values, and save it to disk
     renewal_candidate.save_new_config_values(lineage_config)
