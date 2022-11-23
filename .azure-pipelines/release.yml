@@ -8,7 +8,7 @@ pr: none
 
 variables:
   dockerTag: ${{variables['Build.SourceBranchName']}}
-  snapBuildTimeout: 5400
+  snapBuildTimeout: 19800
 
 stages:
   - template: templates/stages/test-and-package-stage.yml
