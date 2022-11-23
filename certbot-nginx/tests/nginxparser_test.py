@@ -392,6 +392,32 @@ class TestRawNginxParser(unittest.TestCase):
                 ]]
             ])
 
+        # *_by_lua should parse successfully.
+        parsed = loads("""
+            location / {
+                set $a 32;
+                set $b 56;
+                set_by_lua $sum
+                    'return tonumber(ngx.arg[1]) + tonumber(ngx.arg[2])'
+                    $a $b;
+                content_by_lua '
+                    ngx.say("foo");
+                ';
+            }
+        """)
+        self.assertEqual(
+            parsed,
+            [
+                [['location', '/'],
+                 [['set', '$a', '32'],
+                  ['set', '$b', '56'],
+                  ['set_by_lua', '$sum',
+                   "'return tonumber(ngx.arg[1]) + tonumber(ngx.arg[2])'", '$a', '$b'
+                  ],
+                  ['content_by_lua', '\'\n                    ngx.say("foo");\n                \'']
+                 ]]
+            ]
+        )
 
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""
