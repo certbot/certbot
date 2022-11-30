@@ -170,8 +170,9 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
              " deploy hooks. This includes hooks set on the command line, saved in the"
              " certificate's renewal configuration file, or present in the renewal-hooks directory."
              " To exclude direcory hooks, use --no-directory-hooks. The hook(s) will only"
-             " be run if the dry run succeeds. This flag is recommended when modifying the deploy"
-             " hook using `reconfigure`.")
+             " be run if the dry run succeeds, and will use the current active certificate, not"
+             " the temporary test certificate acquired during the dry run. This flag is recommended"
+             " when modifying the deploy hook using `reconfigure`.")
     helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         default=flag_default("register_unsafely_without_email"),
