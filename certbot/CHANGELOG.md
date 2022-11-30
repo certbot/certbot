@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Interfaces which plugins register themselves as implementing without inheriting from them now show up in `certbot plugins` output.
 
 More details about these changes can be found on our GitHub repo.
 

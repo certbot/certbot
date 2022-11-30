@@ -24,25 +24,9 @@ from certbot.errors import Error
 
 logger = logging.getLogger(__name__)
 
-PREFIX_FREE_DISTRIBUTIONS = [
-    "certbot",
-    "certbot-apache",
-    "certbot-dns-cloudflare",
-    "certbot-dns-digitalocean",
-    "certbot-dns-dnsimple",
-    "certbot-dns-dnsmadeeasy",
-    "certbot-dns-gehirn",
-    "certbot-dns-google",
-    "certbot-dns-linode",
-    "certbot-dns-luadns",
-    "certbot-dns-nsone",
-    "certbot-dns-ovh",
-    "certbot-dns-rfc2136",
-    "certbot-dns-route53",
-    "certbot-dns-sakuracloud",
-    "certbot-nginx",
-]
-"""Distributions for which prefix will be omitted."""
+
+PLUGIN_INTERFACES = [interfaces.Authenticator, interfaces.Installer, interfaces.Plugin]
+"""Interfaces that should be listed in `certbot plugins` output"""
 
 
 class PluginEntryPoint:
@@ -165,8 +149,8 @@ class PluginEntryPoint:
             "* {0}".format(self.name),
             "Description: {0}".format(self.plugin_cls.description),
             "Interfaces: {0}".format(", ".join(
-                cls.__name__ for cls in self.plugin_cls.mro()
-                if cls.__module__ == 'certbot.interfaces'
+                iface.__name__ for iface in PLUGIN_INTERFACES
+                if issubclass(self.plugin_cls, iface)
             )),
             "Entry point: {0}".format(self.entry_point),
         ]
