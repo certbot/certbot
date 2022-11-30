@@ -19,7 +19,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
     - This is to fix compatibility with a number of third-party DNS plugins which may
       have started erroring with `AttributeError` in Certbot v2.0.0.
     - Plugin authors can find more information about Certbot 2.x compatibility
-      [here]().
+      [here](https://github.com/certbot/certbot/wiki/Certbot-v2.x-Plugin-Compatibility).
 
 More details about these changes can be found on our GitHub repo.
 
