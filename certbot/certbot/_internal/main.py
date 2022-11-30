@@ -1676,12 +1676,9 @@ def _report_reconfigure_results(renewal_file: str, orig_renewal_conf: configobj.
             f'error parsing {renewal_file}')
 
     orig_renewal_params = orig_renewal_conf['renewalparams']
-    orig_renewal_params_set = set(orig_renewal_params.items())
     final_renewal_params = final_renewal_conf['renewalparams']
-    final_renewal_params_set = set(final_renewal_params.items())
-    changes = orig_renewal_params_set ^ final_renewal_params_set
 
-    if len(changes) == 0:
+    if final_renewal_params == orig_renewal_params:
         success_message = '\nNo changes were made to the renewal configuration.'
     else:
         success_message = '\nSuccessfully updated configuration.' + \
