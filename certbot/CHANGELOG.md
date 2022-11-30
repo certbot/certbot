@@ -15,6 +15,12 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Interfaces which plugins register themselves as implementing without inheriting from them now show up in `certbot plugins` output.
+* `IPluginFactory`, `IPlugin`, `IAuthenticator` and `IInstaller` have been re-added to
+  `certbot.interfaces`.
+    - This is to fix compatibility with a number of third-party DNS plugins which may
+      have started erroring with `AttributeError` in Certbot v2.0.0.
+    - Plugin authors can find more information about Certbot 2.x compatibility
+      [here](https://github.com/certbot/certbot/wiki/Certbot-v2.x-Plugin-Compatibility).
 
 More details about these changes can be found on our GitHub repo.
 
