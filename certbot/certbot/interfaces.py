@@ -16,6 +16,11 @@ from acme.client import ClientV2
 from certbot import configuration
 from certbot.achallenges import AnnotatedChallenge
 
+try:
+    from zope.interface import Interface as ZopeInterface
+except ImportError:
+    ZopeInterface = object
+
 if TYPE_CHECKING:
     from certbot._internal.account import Account
 
@@ -465,3 +470,16 @@ class RenewDeployer(metaclass=ABCMeta):
         :type lineage: RenewableCert
 
         """
+
+
+class IPluginFactory(ZopeInterface):
+    """Compatibility shim for plugins that still use Certbot's old zope.interface classes."""
+
+class IPlugin(ZopeInterface):
+    """Compatibility shim for plugins that still use Certbot's old zope.interface classes."""
+
+class IAuthenticator(IPlugin):
+    """Compatibility shim for plugins that still use Certbot's old zope.interface classes."""
+
+class IInstaller(IPlugin):
+    """Compatibility shim for plugins that still use Certbot's old zope.interface classes."""
