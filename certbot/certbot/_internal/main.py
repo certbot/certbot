@@ -1735,14 +1735,14 @@ def reconfigure(config: configuration.NamespaceConfig,
             "be found. Run `certbot certificates` to list available certificates.")
 
     # figure this out before we modify config
-    if config.deploy_hook and not config.run_deploy_hook:
-        msg = ("You are attempting to set a --deploy-hook. Would you like Certbot to run the "
-               "hook when it performs a dry run with the new settings? This will run all "
+    if config.deploy_hook and not config.run_deploy_hooks:
+        msg = ("You are attempting to set a --deploy-hook. Would you like Certbot to run deploy "
+               "hooks when it performs a dry run with the new settings? This will run all "
                "relevant deploy hooks, including directory hooks, unless --no-directory-hooks "
                "is set. This will use the current active certificate, and not the temporary test "
                "certificate acquired during the dry run.")
-        config.run_deploy_hook = display_util.yesno(msg,"Run deploy hook",
-            "Do not run deploy hook", default=False)
+        config.run_deploy_hooks = display_util.yesno(msg,"Run deploy hooks",
+            "Do not run deploy hooks", default=False)
 
     # cache previous version for later comparison
     try:

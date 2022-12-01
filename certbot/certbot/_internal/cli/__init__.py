@@ -164,8 +164,8 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
              " renewal. --deploy-hook commands are not called.")
     helpful.add(
         ["testing", "renew", "certonly", "reconfigure"],
-        "--run-deploy-hook", action="store_true", dest="run_deploy_hook",
-        default=flag_default("run_deploy_hook"),
+        "--run-deploy-hooks", action="store_true", dest="run_deploy_hooks",
+        default=flag_default("run_deploy_hooks"),
         help="When performing a test run using `--dry-run` or `reconfigure`, run any applicable"
              " deploy hooks. This includes hooks set on the command line, saved in the"
              " certificate's renewal configuration file, or present in the renewal-hooks directory."
