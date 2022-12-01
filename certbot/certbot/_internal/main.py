@@ -1736,8 +1736,8 @@ def reconfigure(config: configuration.NamespaceConfig,
 
     # figure this out before we modify config
     if config.deploy_hook and not config.run_deploy_hook:
-        msg = ("You are attempting to set a new --deploy-hook. Would you like Certbot to run the "
-               "new hook when it performs a dry run with the new settings? This will run all "
+        msg = ("You are attempting to set a --deploy-hook. Would you like Certbot to run the "
+               "hook when it performs a dry run with the new settings? This will run all "
                "relevant deploy hooks, including directory hooks, unless --no-directory-hooks "
                "is set. This will use the current active certificate, and not the temporary test "
                "certificate acquired during the dry run.")

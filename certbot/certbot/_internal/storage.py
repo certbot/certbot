@@ -45,6 +45,8 @@ README = "README"
 CURRENT_VERSION = pkg_resources.parse_version(certbot.__version__)
 BASE_PRIVKEY_MODE = 0o600
 
+# pylint: disable=too-many-lines
+
 
 def renewal_conf_files(config: configuration.NamespaceConfig) -> List[str]:
     """Build a list of all renewal configuration files.

@@ -651,6 +651,9 @@ class ReconfigureTest(test_util.TempDirTestCase):
             new_config = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
         self.assertEqual(new_config['renewalparams']['authenticator'], 'nginx')
 
+    def test_report_results(self):
+        pass
+
 
 class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.main._delete_if_appropriate """
