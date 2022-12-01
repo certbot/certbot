@@ -21,6 +21,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
       have started erroring with `AttributeError` in Certbot v2.0.0.
     - Plugin authors can find more information about Certbot 2.x compatibility
       [here](https://github.com/certbot/certbot/wiki/Certbot-v2.x-Plugin-Compatibility).
+* A bug causing our certbot-apache tests to crash on some systems has been resolved.
 
 More details about these changes can be found on our GitHub repo.
 
