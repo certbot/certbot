@@ -545,7 +545,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
             'pick_installer': mock.patch('certbot._internal.plugins.selection.pick_installer'),
             'pick_auth': mock.patch('certbot._internal.plugins.selection.pick_authenticator'),
             'find_init': mock.patch('certbot._internal.plugins.disco.PluginsRegistry.find_init'),
-             '_get_and_save_cert': mock.patch('certbot._internal.main._get_and_save_cert'),
+            '_get_and_save_cert': mock.patch('certbot._internal.main._get_and_save_cert'),
             '_init_le_client': mock.patch('certbot._internal.main._init_le_client'),
             'list_hooks': mock.patch('certbot._internal.hooks.list_hooks'),
         }
@@ -651,8 +651,45 @@ class ReconfigureTest(test_util.TempDirTestCase):
             new_config = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
         self.assertEqual(new_config['renewalparams']['authenticator'], 'nginx')
 
-    def test_report_results(self):
-        pass
+    @mock.patch('certbot._internal.main.display_util.notify')
+    def test_report_results(self, mock_notify):
+        # make sure report results works when config has a webroot map
+        original_config = """
+            version = 2.0.0
+            archive_dir = /etc/letsencrypt/archive/example.com
+            cert = /etc/letsencrypt/live/example.com/cert.pem
+            privkey = /etc/letsencrypt/live/example.com/privkey.pem
+            chain = /etc/letsencrypt/live/example.com/chain.pem
+            fullchain = /etc/letsencrypt/live/example.com/fullchain.pem
+
+            # Options used in the renewal process
+            [renewalparams]
+            account = ee43634db0aa4e6804f152be39990e6a
+            server = https://acme-staging-v02.api.letsencrypt.org/directory
+            authenticator = webroot
+            installer = nginx
+            key_type = ecdsa
+            webroot_path = /var/www/html,
+            [[webroot_map]]
+            example.com = /var/www/html
+        """
+        with open(self.renewal_file, 'w') as f:
+            f.write(original_config)
+        with open(self.renewal_file, 'r') as f:
+            self.original_config = configobj.ConfigObj(f,
+                encoding='utf-8', default_encoding='utf-8')
+
+        named_mock = mock.Mock()
+        named_mock.name = 'nginx'
+
+        self.mocks['pick_auth'].return_value = named_mock
+        self.mocks['find_init'].return_value = named_mock
+
+        new_config = self._call('--cert-name example.com --nginx'.split())
+        self.assertEqual(new_config['renewalparams']['authenticator'], 'nginx')
+        mock_notify.assert_called_with(
+            '\nSuccessfully updated configuration.'+
+            '\nChanges will apply when the certificate renews.')
 
 
 class DeleteIfAppropriateTest(test_util.ConfigTestCase):
