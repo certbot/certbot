@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Allow a user to modify the configuration of a certificate without renewing it using the new `reconfigure` subcommand. See `certbot help reconfigure` for details.
 
 ### Changed
 
@@ -133,7 +133,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* Updated Windows installer to be signed and trusted in Windows 
+* Updated Windows installer to be signed and trusted in Windows
 
 ### Changed
 
