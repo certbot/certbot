@@ -4,6 +4,7 @@ import re
 import shutil
 import unittest
 from typing import List
+from unittest import mock
 
 from certbot import errors
 from certbot.compat import os
@@ -531,6 +532,14 @@ class NginxParserTest(util.NginxTest):
             ('invalid character' in output) and ('UTF-8' in output)
             for output in log.output
         ))
+
+    @mock.patch('certbot_nginx._internal.parser.logger.warning')
+    def test_load_unsupported_directive_logged(self, mock_warn):
+        nparser = parser.NginxParser(self.config_path)
+        nparser.config_root = nparser.abs_path('unsupported_directives.conf')
+        nparser.load()
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertIn("which is not supported by Certbot", mock_warn.call_args[0][0])
 
 
 if __name__ == "__main__":

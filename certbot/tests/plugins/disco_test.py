@@ -152,6 +152,12 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertIs(self.plugin_ep.misconfigured, False)
         self.assertIs(self.plugin_ep.available, False)
 
+    def test_str(self):
+        output = str(self.plugin_ep)
+        self.assertIn("Authenticator", output)
+        self.assertNotIn("Installer", output)
+        self.assertIn("Plugin", output)
+
     def test_repr(self):
         self.assertEqual("PluginEntryPoint#sa", repr(self.plugin_ep))
 

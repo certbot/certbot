@@ -58,8 +58,13 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             "rhel", "redhatenterpriseserver", "red hat enterprise linux server",
             "scientific", "scientific linux",
         ]
+        # It is important that the loose version comparison below is not made
+        # if the OS is not RHEL derived. See
+        # https://github.com/certbot/certbot/issues/9481.
+        if not rhel_derived:
+            return False
         at_least_v9 = util.parse_loose_version(os_version) >= util.parse_loose_version('9')
-        return rhel_derived and at_least_v9
+        return at_least_v9
 
     def _override_cmds(self) -> None:
         super()._override_cmds()
