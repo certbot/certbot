@@ -2,25 +2,24 @@
 from abc import ABCMeta
 from abc import abstractmethod
 from argparse import ArgumentParser
-import sys
-from types import ModuleType
 from typing import Any
-from typing import Union
-from typing import cast
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Type
 from typing import TYPE_CHECKING
-import warnings
-
-import zope.interface
+from typing import Union
 
 from acme.challenges import Challenge
 from acme.challenges import ChallengeResponse
-from acme.client import ClientBase
+from acme.client import ClientV2
 from certbot import configuration
 from certbot.achallenges import AnnotatedChallenge
+
+try:
+    from zope.interface import Interface as ZopeInterface
+except ImportError:
+    ZopeInterface = object
 
 if TYPE_CHECKING:
     from certbot._internal.account import Account
@@ -53,25 +52,13 @@ class AccountStorage(metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    def save(self, account: 'Account', client: ClientBase) -> None:  # pragma: no cover
+    def save(self, account: 'Account', client: ClientV2) -> None:  # pragma: no cover
         """Save account.
 
         :raises .AccountStorageError: if account could not be saved
 
         """
         raise NotImplementedError()
-
-
-class IConfig(zope.interface.Interface):  # pylint: disable=inherit-non-class
-    """Deprecated, use certbot.configuration.NamespaceConfig instead."""
-
-
-class IPluginFactory(zope.interface.Interface):  # pylint: disable=inherit-non-class
-    """Deprecated, use certbot.interfaces.Plugin as ABC instead."""
-
-
-class IPlugin(zope.interface.Interface):  # pylint: disable=inherit-non-class
-    """Deprecated, use certbot.interfaces.Plugin as ABC instead."""
 
 
 class Plugin(metaclass=ABCMeta):
@@ -168,10 +155,6 @@ class Plugin(metaclass=ABCMeta):
         """
 
 
-class IAuthenticator(IPlugin):  # pylint: disable=inherit-non-class
-    """Deprecated, use certbot.interfaces.Authenticator as ABC instead."""
-
-
 class Authenticator(Plugin):
     """Generic Certbot Authenticator.
 
@@ -229,10 +212,6 @@ class Authenticator(Plugin):
         :raises PluginError: if original configuration cannot be restored
 
         """
-
-
-class IInstaller(IPlugin):  # pylint: disable=inherit-non-class
-    """Deprecated, use certbot.interfaces.Installer as ABC instead."""
 
 
 class Installer(Plugin):
@@ -360,14 +339,6 @@ class Installer(Plugin):
         :raises .PluginError: when server cannot be restarted
 
         """
-
-
-class IDisplay(zope.interface.Interface):  # pylint: disable=inherit-non-class
-    """Deprecated, use your own Display implementation instead."""
-
-
-class IReporter(zope.interface.Interface):  # pylint: disable=inherit-non-class
-    """Deprecated, use your own Reporter implementation instead."""
 
 
 class RenewableCert(metaclass=ABCMeta):
@@ -501,34 +472,14 @@ class RenewDeployer(metaclass=ABCMeta):
         """
 
 
-# This class takes a similar approach to the cryptography project to deprecate attributes
-# in public modules. See the _ModuleWithDeprecation class here:
-# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
-class _ZopeInterfacesDeprecationModule:
-    """
-    Internal class delegating to a module, and displaying warnings when
-    attributes related to Zope interfaces are accessed.
-    """
-    def __init__(self, module: ModuleType) -> None:
-        self.__dict__['_module'] = module
+class IPluginFactory(ZopeInterface):
+    """Compatibility shim for plugins that still use Certbot's old zope.interface classes."""
 
-    def __getattr__(self, attr: str) -> None:
-        if attr in ('IConfig', 'IPlugin', 'IPluginFactory', 'IAuthenticator',
-                    'IInstaller', 'IDisplay', 'IReporter'):
-            warnings.warn('{0} attribute in certbot.interfaces module is deprecated '
-                          'and will be removed soon.'.format(attr),
-                          DeprecationWarning, stacklevel=2)
-        return getattr(self._module, attr)
+class IPlugin(ZopeInterface):
+    """Compatibility shim for plugins that still use Certbot's old zope.interface classes."""
 
-    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
-        setattr(self._module, attr, value)
+class IAuthenticator(IPlugin):
+    """Compatibility shim for plugins that still use Certbot's old zope.interface classes."""
 
-    def __delattr__(self, attr: str) -> None:  # pragma: no cover
-        delattr(self._module, attr)
-
-    def __dir__(self) -> List[str]:  # pragma: no cover
-        return ['_module'] + dir(self._module)
-
-
-# Patching ourselves to warn about Zope interfaces deprecation and planned removal.
-sys.modules[__name__] = cast(ModuleType, _ZopeInterfacesDeprecationModule(sys.modules[__name__]))
+class IInstaller(IPlugin):
+    """Compatibility shim for plugins that still use Certbot's old zope.interface classes."""

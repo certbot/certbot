@@ -35,7 +35,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -531,17 +531,6 @@ dns-cloudflare:
                         record. (default: 10)
   --dns-cloudflare-credentials DNS_CLOUDFLARE_CREDENTIALS
                         Cloudflare credentials INI file. (default: None)
-
-dns-cloudxns:
-  Obtain certificates using a DNS TXT record (if you are using CloudXNS for
-  DNS).
-
-  --dns-cloudxns-propagation-seconds DNS_CLOUDXNS_PROPAGATION_SECONDS
-                        The number of seconds to wait for DNS to propagate
-                        before asking the ACME server to verify the DNS
-                        record. (default: 30)
-  --dns-cloudxns-credentials DNS_CLOUDXNS_CREDENTIALS
-                        CloudXNS credentials INI file. (default: None)
 
 dns-digitalocean:
   Obtain certificates using a DNS TXT record (if you are using DigitalOcean

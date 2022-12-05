@@ -31,7 +31,7 @@ def _fetch_asset(asset: str, suffix: str) -> str:
     if not os.path.exists(asset_path):
         asset_url = ('https://github.com/letsencrypt/pebble/releases/download/{0}/{1}_{2}'
                      .format(PEBBLE_VERSION, asset, suffix))
-        response = requests.get(asset_url)
+        response = requests.get(asset_url, timeout=30)
         response.raise_for_status()
         with open(asset_path, 'wb') as file_h:
             file_h.write(response.content)

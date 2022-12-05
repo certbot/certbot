@@ -20,7 +20,7 @@ import pytz
 
 from acme import fields as acme_fields
 from acme import messages
-from acme.client import ClientBase
+from acme.client import ClientV2
 from certbot import configuration
 from certbot import errors
 from certbot import interfaces
@@ -108,13 +108,13 @@ class Account:
 class AccountMemoryStorage(interfaces.AccountStorage):
     """In-memory account storage."""
 
-    def __init__(self, initial_accounts: Dict[str, Account] = None) -> None:
+    def __init__(self, initial_accounts: Optional[Dict[str, Account]] = None) -> None:
         self.accounts = initial_accounts if initial_accounts is not None else {}
 
     def find_all(self) -> List[Account]:
         return list(self.accounts.values())
 
-    def save(self, account: Account, client: ClientBase) -> None:
+    def save(self, account: Account, client: ClientV2) -> None:
         if account.id in self.accounts:
             logger.debug("Overwriting account: %s", account.id)
         self.accounts[account.id] = account
@@ -243,11 +243,11 @@ class AccountFileStorage(interfaces.AccountStorage):
     def load(self, account_id: str) -> Account:
         return self._load_for_server_path(account_id, self.config.server_path)
 
-    def save(self, account: Account, client: ClientBase) -> None:
+    def save(self, account: Account, client: ClientV2) -> None:
         """Create a new account.
 
         :param Account account: account to create
-        :param ClientBase client: ACME client associated to the account
+        :param ClientV2 client: ACME client associated to the account
 
         """
         try:
@@ -258,11 +258,11 @@ class AccountFileStorage(interfaces.AccountStorage):
         except IOError as error:
             raise errors.AccountStorageError(error)
 
-    def update_regr(self, account: Account, client: ClientBase) -> None:
+    def update_regr(self, account: Account, client: ClientV2) -> None:
         """Update the registration resource.
 
         :param Account account: account to update
-        :param ClientBase client: ACME client associated to the account
+        :param ClientV2 client: ACME client associated to the account
 
         """
         try:
@@ -358,7 +358,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         with util.safe_open(self._key_path(dir_path), "w", chmod=0o400) as key_file:
             key_file.write(account.key.json_dumps())
 
-    def _update_regr(self, account: Account, acme: ClientBase, dir_path: str) -> None:
+    def _update_regr(self, account: Account, acme: ClientV2, dir_path: str) -> None:
         with open(self._regr_path(dir_path), "w") as regr_file:
             regr = account.regr
             # If we have a value for new-authz, save it for forwards

@@ -45,10 +45,6 @@ def _plugins_parsing(helpful: "helpful.HelpfulArgumentParser",
                 default=flag_default("dns_cloudflare"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using Cloudflare for DNS)."))
-    helpful.add(["plugins", "certonly"], "--dns-cloudxns", action="store_true",
-                default=flag_default("dns_cloudxns"),
-                help=("Obtain certificates using a DNS TXT record (if you are "
-                     "using CloudXNS for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-digitalocean", action="store_true",
                 default=flag_default("dns_digitalocean"),
                 help=("Obtain certificates using a DNS TXT record (if you are "

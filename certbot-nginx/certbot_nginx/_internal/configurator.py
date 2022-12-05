@@ -268,10 +268,12 @@ class NginxConfigurator(common.Configurator):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
         if prefer_ssl:
             vhosts_cache = self._wildcard_vhosts
-            preference_test = lambda x: x.ssl
+            def preference_test(x: obj.VirtualHost) -> bool:
+                return x.ssl
         else:
             vhosts_cache = self._wildcard_redirect_vhosts
-            preference_test = lambda x: not x.ssl
+            def preference_test(x: obj.VirtualHost) -> bool:
+                return not x.ssl
 
         # Caching!
         if domain in vhosts_cache:
@@ -609,8 +611,9 @@ class NginxConfigurator(common.Configurator):
 
         # if we want ssl vhosts: either 'ssl on' or 'addr.ssl' should be enabled
         # if we want plaintext vhosts: neither 'ssl on' nor 'addr.ssl' should be enabled
-        _ssl_matches = lambda addr: addr.ssl or all_addrs_are_ssl if ssl else \
-                                    not addr.ssl and not all_addrs_are_ssl
+        def _ssl_matches(addr: obj.Addr) -> bool:
+            return addr.ssl or all_addrs_are_ssl if ssl else \
+                   not addr.ssl and not all_addrs_are_ssl
 
         # if there are no listen directives at all, Nginx defaults to
         # listening on port 80.
@@ -1057,8 +1060,8 @@ class NginxConfigurator(common.Configurator):
 
         product_name, product_version = version_matches[0]
         if product_name != 'nginx':
-            logger.warning("NGINX derivative %s is not officially supported by"
-                           " certbot", product_name)
+            logger.warning("nginx derivative %s is not officially supported by "
+                           "Certbot.", product_name)
 
         nginx_version = tuple(int(i) for i in product_version.split("."))
 
@@ -1112,7 +1115,7 @@ class NginxConfigurator(common.Configurator):
     ###################################################
     # Wrapper functions for Reverter class (Installer)
     ###################################################
-    def save(self, title: str = None, temporary: bool = False) -> None:
+    def save(self, title: Optional[str] = None, temporary: bool = False) -> None:
         """Saves all changes to the configuration files.
 
         :param str title: The title of the save. If a title is given, the
