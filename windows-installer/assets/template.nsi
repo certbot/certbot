@@ -3,6 +3,11 @@
 ; If pynsist is upgraded, this template must be updated if necessary using the new built-in one.
 ; Original file can be found here: https://github.com/takluyver/pynsist/blob/2.7/nsist/pyapp.nsi
 
+; Require the installer do be installed with admin privileges
+RequestExecutionLevel admin
+; Set default installation path (overridable with /D= flag)
+InstallDir "$PROGRAMFILES\Certbot"
+
 !define PRODUCT_NAME "[[ib.appname]]"
 !define PRODUCT_VERSION "[[ib.version]]"
 !define PY_VERSION "[[ib.py_version]]"
@@ -11,35 +16,20 @@
 !define ARCH_TAG "[[arch_tag]]"
 !define INSTALLER_NAME "[[ib.installer_name]]"
 !define PRODUCT_ICON "[[icon]]"
-
-; Marker file to tell the uninstaller that it's a user installation
-!define USER_INSTALL_MARKER _user_install_marker
-
+ 
 SetCompressor lzma
 
-!if "${NSIS_PACKEDVERSION}" >= 0x03000000
-  Unicode true
-  ManifestDPIAware true
-!endif
+Function .onInit
+  ; Check that Powershell is at least 5.0.
+  nsExec::ExecToStack `powershell -ExecutionPolicy RemoteSigned -Command "Write-Host -NoNewline $$PSVersionTable.PSVersion.Major.CompareTo(5)"`
+  Pop $0
+  Pop $1
+  StrCmp $1 "-1" 0 powershellok
+    MessageBox MB_OK|MB_ICONSTOP "Certbot requires Powershell 5.0+ to work.$\r$\nPlease check the following link to learn how to upgrade your system:$\r$\nhttps://docs.microsoft.com/powershell/scripting/install/installing-powershell"
+    Abort
+  powershellok:
+FunctionEnd
 
-; CERTBOT CUSTOM BEGIN
-; Administrator privileges are required to insert a new task in Windows Scheduler.
-; Also comment out some options to disable ability to choose AllUsers/CurrentUser install mode.
-; As a result, installer run always with admin privileges (because of MULTIUSER_EXECUTIONLEVEL),
-; using the AllUsers installation mode by default (because of MULTIUSER_INSTALLMODE_DEFAULT_CURRENTUSER
-; not set), and this default behavior cannot be overridden (because of MULTIUSER_MUI not set).
-; See https://nsis.sourceforge.io/Docs/MultiUser/Readme.html
-!define MULTIUSER_EXECUTIONLEVEL Admin
-;!define MULTIUSER_EXECUTIONLEVEL Highest
-;!define MULTIUSER_INSTALLMODE_DEFAULT_CURRENTUSER
-;!define MULTIUSER_MUI
-;!define MULTIUSER_INSTALLMODE_COMMANDLINE
-; CERTBOT CUSTOM END
-!define MULTIUSER_INSTALLMODE_INSTDIR "[[ib.appname]]"
-[% if ib.py_bitness == 64 %]
-!define MULTIUSER_INSTALLMODE_FUNCTION correct_prog_files
-[% endif %]
-!include MultiUser.nsh
 !include FileFunc.nsh
 
 [% block modernui %]
@@ -55,10 +45,6 @@ SetCompressor lzma
 [% if license_file %]
 !insertmacro MUI_PAGE_LICENSE [[license_file]]
 [% endif %]
-; CERTBOT CUSTOM BEGIN
-; Disable the installation mode page (AllUsers/CurrentUser)
-;!insertmacro MULTIUSER_PAGE_INSTALLMODE
-; CERTBOT CUSTOM END
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -66,10 +52,7 @@ SetCompressor lzma
 !insertmacro MUI_LANGUAGE "English"
 [% endblock modernui %]
 
-; CERTBOT CUSTOM BEGIN
 Name "${PRODUCT_NAME} (beta) ${PRODUCT_VERSION}"
-;Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-; CERTBOT CUSTOM END
 OutFile "${INSTALLER_NAME}"
 ShowInstDetails show
 
@@ -89,17 +72,12 @@ Section "!${PRODUCT_NAME}" sec_app
   ; CERTBOT CUSTOM END
 
   SetRegView [[ib.py_bitness]]
+  SetShellVarContext all
   SectionIn RO
   File ${PRODUCT_ICON}
   SetOutPath "$INSTDIR\pkgs"
   File /r "pkgs\*.*"
   SetOutPath "$INSTDIR"
-
-  ; Marker file for per-user install
-  StrCmp $MultiUser.InstallMode CurrentUser 0 +3
-    FileOpen $0 "$INSTDIR\${USER_INSTALL_MARKER}" w
-    FileClose $0
-    SetFileAttributes "$INSTDIR\${USER_INSTALL_MARKER}" HIDDEN
 
   [% block install_files %]
   ; Install files
@@ -141,14 +119,8 @@ Section "!${PRODUCT_NAME}" sec_app
   [% if has_commands %]
     DetailPrint "Setting up command-line launchers..."
 
-    StrCmp $MultiUser.InstallMode CurrentUser 0 AddSysPathSystem
-      ; Add to PATH for current user
-      nsExec::ExecToLog '[[ python ]] -Es "$INSTDIR\_system_path.py" add_user "$INSTDIR\bin"'
-      GoTo AddedSysPath
-    AddSysPathSystem:
-      ; Add to PATH for all users
-      nsExec::ExecToLog '[[ python ]] -Es "$INSTDIR\_system_path.py" add "$INSTDIR\bin"'
-    AddedSysPath:
+    ; Add to PATH for all users
+    nsExec::ExecToLog '[[ python ]] -Es "$INSTDIR\_system_path.py" add "$INSTDIR\bin"'
   [% endif %]
   [% endblock install_commands %]
 
@@ -176,11 +148,9 @@ Section "!${PRODUCT_NAME}" sec_app
   WriteRegDWORD SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" \
                    "NoRepair" 1
 
-  ; CERTBOT CUSTOM BEGIN
-  ; Execute ps script to create the certbot renew task
-  DetailPrint "Setting up certbot renew scheduled task"
-  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\renew-up.ps1"'
-  ; CERTBOT CUSTOM END
+  ; Execute ps script to create the certbot renew & auto-update task
+  DetailPrint "Setting up certbot renew & auto-update scheduled task"
+  nsExec::ExecToLog 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\tasks-up.ps1" -InstallDir "$INSTDIR"'
 
   ; Check if we need to reboot
   IfRebootFlag 0 noreboot
@@ -191,18 +161,16 @@ Section "!${PRODUCT_NAME}" sec_app
 SectionEnd
 
 Section "Uninstall"
-  ; CERTBOT CUSTOM BEGIN
-  ; Execute ps script to remove the certbot renew task
-  nsExec::ExecToStack 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\renew-down.ps1"'
-  ; CERTBOT CUSTOM END
-
   SetRegView [[ib.py_bitness]]
   SetShellVarContext all
-  IfFileExists "$INSTDIR\${USER_INSTALL_MARKER}" 0 +3
-    SetShellVarContext current
-    Delete "$INSTDIR\${USER_INSTALL_MARKER}"
 
-  Delete $INSTDIR\uninstall.exe
+  ; Execute ps script to remove the certbot renew & auto-update task, then delete scripts
+  nsExec::ExecToLog 'powershell -inputformat none -ExecutionPolicy RemoteSigned -File "$INSTDIR\tasks-down.ps1"'
+  Delete "$INSTDIR\tasks-down.ps1"
+  Delete "$INSTDIR\tasks-up.ps1"
+  Delete "$INSTDIR\auto-update.ps1"
+
+  Delete "$INSTDIR\uninstall.exe"
   Delete "$INSTDIR\${PRODUCT_ICON}"
   RMDir /r "$INSTDIR\pkgs"
 
@@ -253,33 +221,3 @@ Function .onMouseOverSection
 
     [% endblock mouseover_messages %]
 FunctionEnd
-
-Function .onInit
-  ; Multiuser.nsh breaks /D command line parameter. Parse /INSTDIR instead.
-  ; Cribbing from https://nsis-dev.github.io/NSIS-Forums/html/t-299280.html
-  ${GetParameters} $0
-  ClearErrors
-  ${GetOptions} '$0' "/INSTDIR=" $1
-  IfErrors +2  ; Error means flag not found
-    StrCpy $cmdLineInstallDir $1
-  ClearErrors
-
-  !insertmacro MULTIUSER_INIT
-
-  ; If cmd line included /INSTDIR, override the install dir set by MultiUser
-  StrCmp $cmdLineInstallDir "" +2
-    StrCpy $INSTDIR $cmdLineInstallDir
-FunctionEnd
-
-Function un.onInit
-  !insertmacro MULTIUSER_UNINIT
-FunctionEnd
-
-[% if ib.py_bitness == 64 %]
-Function correct_prog_files
-  ; The multiuser machinery doesn't know about the different Program files
-  ; folder for 64-bit applications. Override the install dir it set.
-  StrCmp $MultiUser.InstallMode AllUsers 0 +2
-    StrCpy $INSTDIR "$PROGRAMFILES64\${MULTIUSER_INSTALLMODE_INSTDIR}"
-FunctionEnd
-[% endif %]

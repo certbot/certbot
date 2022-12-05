@@ -11,6 +11,12 @@ PYTHON_VERSION = (3, 9, 11)
 PYTHON_BITNESS = 64
 NSIS_VERSION = '3.06.1'
 
+# Certbot's auto-upgrade feature and integration tests rely on the installer name format.
+# If you need to change it, you must ensure that it will not break anything, in particular
+# the auto-upgrade feature.
+INSTALLER_NAME = 'certbot-beta-installer-{installer_suffix}.exe'.format(
+    installer_suffix='win_amd64' if PYTHON_BITNESS == 64 else 'win32')
+
 
 def main():
     if os.name != 'nt':
@@ -80,8 +86,9 @@ def _copy_assets(build_path, repo_path):
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'certbot.ico'), build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'run.bat'), build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'template.nsi'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'renew-up.ps1'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'renew-down.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'tasks-up.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'tasks-down.ps1'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'auto-update.ps1'), build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'assets', 'preamble.py'), build_path)
 
 
@@ -108,7 +115,7 @@ target=$INSTDIR\\run.bat
 [Build]
 directory=nsis
 nsi_template=template.nsi
-installer_name=certbot-beta-installer-{installer_suffix}.exe
+installer_name={installer_name}
 
 [Python]
 version={python_version}
@@ -117,14 +124,15 @@ bitness={python_bitness}
 [Include]
 local_wheels=wheels\\*.whl
 files=run.bat
-      renew-up.ps1
-      renew-down.ps1
+      tasks-up.ps1
+      tasks-down.ps1
+      auto-update.ps1
 
 [Command certbot]
 entry_point=certbot.main:main
 extra_preamble=preamble.py
 '''.format(certbot_version=certbot_version,
-           installer_suffix='win_amd64' if PYTHON_BITNESS == 64 else 'win32',
+           installer_name=INSTALLER_NAME,
            python_bitness=PYTHON_BITNESS,
            python_version='.'.join(str(item) for item in PYTHON_VERSION)))
 
