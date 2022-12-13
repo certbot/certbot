@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* `acme[docs]` and `certbot[docs]` now depend on `sphinxcontrib.programoutput` so CLI help output can be built for the docs dynamically.
 
 ### Fixed
 
