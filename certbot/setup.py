@@ -80,6 +80,7 @@ docs_extras = [
     # https://github.com/sphinx-doc/sphinx/issues/3212
     'Sphinx>=1.2',  # Annotation support
     'sphinx_rtd_theme',
+    'sphinxcontrib.programoutput',
 ]
 
 # Tools like pip, wheel, and tox are listed here to ensure they are properly

@@ -161,33 +161,6 @@ do
   mv $pkg_dir/dist/* "dist.$version"
 done
 
-echo "Testing packages"
-cd "dist.$version"
-# cd .. is NOT done on purpose: we make sure that all subpackages are
-# installed from local archives rather than current directory (repo root)
-VIRTUALENV_NO_DOWNLOAD=1 virtualenv ../venv
-. ../venv/bin/activate
-pip install -U setuptools
-pip install -U pip
-# Now, use our local archives. Disable cache so we get the correct packages even if
-# we (or our dependencies) have conditional dependencies implemented with if
-# statements in setup.py and we have cached wheels lying around that would cause
-# those ifs to not be evaluated.
-python ../tools/pip_install.py \
-  --no-cache-dir \
-  --find-links . \
-  $SUBPKGS
-cd ~-
-
-# get a snapshot of the CLI help for the docs
-# We set CERTBOT_DOCS to use dummy values in example user-agent string.
-CERTBOT_DOCS=1 certbot --help all > certbot/docs/cli-help.txt
-jws --help > acme/docs/jws-help.txt
-
-deactivate
-
-
-git add certbot/docs/cli-help.txt
 while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     echo "Unable to sign the release commit using git."
     echo "You may have to configure git to use gpg2 by running:"

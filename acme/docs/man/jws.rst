@@ -1,3 +1,3 @@
 :orphan:
 
-.. literalinclude:: ../jws-help.txt
+.. program-output:: jws --help
