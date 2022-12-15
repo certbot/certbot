@@ -89,6 +89,10 @@ poetry = "<1.3.0"
 # downgrading setuptools is found.
 setuptools = ">=62.3.0"
 
+# Rather than spending time fixing mypy problems on a point release branch,
+# let's pin it to the last version we successfully used it.
+mypy = "0.982"
+
 [tool.poetry.dev-dependencies]
 
 [build-system]
