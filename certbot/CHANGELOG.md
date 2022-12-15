@@ -2,6 +2,16 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.1.1 - master
+
+### Fixed
+
+* Our snaps, Docker images, and Windows installer were rebuilt to include updated versions of our dependencies.
+
+This release was not pushed to PyPI since those packages were unaffected.
+
+More details about these changes can be found on our GitHub repo.
+
 ## 2.1.0 - 2022-12-07
 
 ### Added
