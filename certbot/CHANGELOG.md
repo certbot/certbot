@@ -28,6 +28,39 @@ This release was not pushed to PyPI since those packages were unaffected.
 
 More details about these changes can be found on our GitHub repo.
 
+## 2.1.1 - 2022-12-15
+
+### Fixed
+
+* Our snaps, Docker images, and Windows installer were rebuilt to include updated versions of our dependencies.
+
+This release was not pushed to PyPI since those packages were unaffected.
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.1.0 - 2022-12-07
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+* Interfaces which plugins register themselves as implementing without inheriting from them now show up in `certbot plugins` output.
+* `IPluginFactory`, `IPlugin`, `IAuthenticator` and `IInstaller` have been re-added to
+  `certbot.interfaces`.
+    - This is to fix compatibility with a number of third-party DNS plugins which may
+      have started erroring with `AttributeError` in Certbot v2.0.0.
+    - Plugin authors can find more information about Certbot 2.x compatibility
+      [here](https://github.com/certbot/certbot/wiki/Certbot-v2.x-Plugin-Compatibility).
+* A bug causing our certbot-apache tests to crash on some systems has been resolved.
+
+More details about these changes can be found on our GitHub repo.
+
 ## 1.32.1 - 2022-12-05
 
 ### Fixed
@@ -35,6 +68,45 @@ More details about these changes can be found on our GitHub repo.
 * Our snaps and docker images were rebuilt to include updated versions of our dependencies.
 
 This release was not pushed to PyPI since those packages were unaffected.
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.0.0 - 2022-11-21
+
+### Added
+
+* Support for Python 3.11 was added to Certbot and all of its components.
+* `acme.challenges.HTTP01Response.simple_verify` now accepts a timeout argument which defaults to 30 that causes the verification request to timeout after that many seconds.
+
+### Changed
+
+* The default key type for new certificates is now ECDSA `secp256r1` (P-256). It was previously RSA 2048-bit. Existing certificates are not affected.
+* The Apache plugin no longer supports Apache 2.2.
+* `acme` and Certbot no longer support versions of ACME from before the RFC 8555 standard.
+* `acme` and Certbot no longer support the old `urn:acme:error:` ACME error prefix.
+* Removed the deprecated `certbot-dns-cloudxns` plugin.
+* Certbot will now error if a certificate has `--reuse-key` set and a conflicting `--key-type`, `--key-size` or `--elliptic-curve` is requested on the CLI. Use `--new-key` to change the key while preserving `--reuse-key`.
+* 3rd party plugins no longer support the `dist_name:plugin_name` format on the CLI and in configuration files. Use the shorter `plugin_name` format.
+* `acme.client.Client`, `acme.client.ClientBase`, `acme.client.BackwardsCompatibleClientV2`, `acme.mixins`, `acme.client.DER_CONTENT_TYPE`, `acme.fields.Resource`, `acme.fields.resource`, `acme.magic_typing`, `acme.messages.OLD_ERROR_PREFIX`, `acme.messages.Directory.register`, `acme.messages.Authorization.resolved_combinations`, `acme.messages.Authorization.combinations` have been removed.
+* `acme.messages.Directory` now only supports lookups by the exact resource name string in the ACME directory (e.g. `directory['newOrder']`).
+* Removed the deprecated `source_address` argument for `acme.client.ClientNetwork`.
+* The `zope` based interfaces in `certbot.interfaces` have been removed in favor of the `abc` based interfaces found in the same module.
+* Certbot no longer depends on `zope`.
+* Removed deprecated function `certbot.util.get_strict_version`.
+* Removed deprecated functions `certbot.crypto_util.init_save_csr`, `certbot.crypto_util.init_save_key`,
+  and `certbot.compat.misc.execute_command`
+* The attributes `FileDisplay`, `NoninteractiveDisplay`, `SIDE_FRAME`, `input_with_timeout`, `separate_list_input`, `summarize_domain_list`, `HELP`, and `ESC` from `certbot.display.util` have been removed.
+* Removed deprecated functions `certbot.tests.util.patch_get_utility*`. Plugins should now
+  patch `certbot.display.util` themselves in their tests or use
+  `certbot.tests.util.patch_display_util` as a temporary workaround.
+* Certbot's test API under `certbot.tests` now uses `unittest.mock` instead of the 3rd party `mock` library.
+
+### Fixed
+
+* Fixes a bug where the certbot working directory has unusably restrictive permissions on systems with stricter default umasks.
+* Requests to subscribe to the EFF mailing list now time out after 60 seconds.
+
+We plan to slowly roll out Certbot 2.0 to all of our snap users in the coming months. If you want to use the Certbot 2.0 snap now, please follow the instructions at https://community.letsencrypt.org/t/certbot-2-0-beta-call-for-testing/185945.
 
 More details about these changes can be found on our GitHub repo.
 

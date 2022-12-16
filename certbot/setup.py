@@ -60,8 +60,6 @@ install_requires = [
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
     f'setuptools>={min_setuptools_version}',
-    'zope.component',
-    'zope.interface',
 ]
 
 dev_extras = [
@@ -90,13 +88,13 @@ test_extras = [
     'coverage',
     'mypy',
     'pip',
-    'pylint',
+    # Our pinned version of pylint requires Python >= 3.7.2.
+    'pylint ; python_full_version >= "3.7.2"',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
     'setuptools',
     'tox',
-    'types-mock',
     'types-pyOpenSSL',
     'types-pyRFC3339',
     'types-pytz',
@@ -135,6 +133,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',

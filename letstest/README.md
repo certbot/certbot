@@ -19,34 +19,22 @@ This package is installed in the Certbot development environment that is
 created by following the instructions at
 https://certbot.eff.org/docs/contributing.html#running-a-local-copy-of-the-client.
 
-After activating that virtual environment, you can then configure AWS
-credentials and create a key by running:
-```
->aws configure --profile <profile name>
-[interactive: enter secrets for IAM role]
->aws ec2 create-key-pair --profile <profile name> --key-name <key name> --query 'KeyMaterial' --output text > whatever/path/you/want.pem
-```
-Note: whatever you pick for `<key name>` will be shown to other users with AWS access.
+These tests use the AWS SDK for Python (boto3) to manipulate EC2 instances.
+Before running the tests, you'll need to set up credentials by following the
+instructions at
+https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html#configuration.
+You will also want to create a `~/.aws/config` file setting the region for your
+profile to `us-east-1`, following the instructions in the boto3 quickstart guide above.
 
-When prompted for a default region name, enter: `us-east-1`.
+Lastly, you will want to create a file on your system containing a trusted SSH key
+by following the instructions at
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-key-pairs.html.
 
 ## Usage
 To run tests, activate the virtual environment you created above and from this directory run:
 ```
 >letstest targets/targets.yaml /path/to/your/key.pem <profile name> scripts/<test to run>
 ```
-
-You can only run up to two tests at once. The following error is often indicative of there being too many AWS instances running on our account:
-```
-NameError: name 'instances' is not defined
-```
-
-If you see this, you can run the following command to shut down all running instances:
-```
-aws ec2 terminate-instances --profile <profile name> --instance-ids $(aws ec2 describe-instances --profile <profile name> | grep <key name> | cut -f8)
-```
-
-It will take a minute for these instances to shut down and become available again. Running this will invalidate any in progress tests.
 
 A temporary directory whose name is output by the tests is also created with a log file from each instance of the test and a file named "results" containing the output above.
 The tests take quite a while to run.

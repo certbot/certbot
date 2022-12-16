@@ -133,7 +133,8 @@ permitted by DNS standards.)
             'the user or by performing the setup manually.')
 
     def auth_hint(self, failed_achalls: Iterable[achallenges.AnnotatedChallenge]) -> str:
-        has_chall = lambda cls: any(isinstance(achall.chall, cls) for achall in failed_achalls)
+        def has_chall(cls: Type[challenges.Challenge]) -> bool:
+            return any(isinstance(achall.chall, cls) for achall in failed_achalls)
 
         has_dns = has_chall(challenges.DNS01)
         resource_names = {

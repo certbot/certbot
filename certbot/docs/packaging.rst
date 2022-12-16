@@ -12,7 +12,6 @@ We release packages and upload them to PyPI (wheels and source tarballs).
 - https://pypi.python.org/pypi/certbot-apache
 - https://pypi.python.org/pypi/certbot-nginx
 - https://pypi.python.org/pypi/certbot-dns-cloudflare
-- https://pypi.python.org/pypi/certbot-dns-cloudxns
 - https://pypi.python.org/pypi/certbot-dns-digitalocean
 - https://pypi.python.org/pypi/certbot-dns-dnsimple
 - https://pypi.python.org/pypi/certbot-dns-dnsmadeeasy
