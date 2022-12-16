@@ -22,3 +22,6 @@ cat << EOF > "$REQUIREMENTS_FILE"
 # for more info.
 EOF
 echo "${PINNINGS}" >> "${REQUIREMENTS_FILE}"
+echo "You should copy the changes made to tools/requirements.txt to"
+echo "tools/1.32.x/requirements.txt on the master branch. See"
+echo "https://github.com/certbot/certbot/pull/9506 for more info."

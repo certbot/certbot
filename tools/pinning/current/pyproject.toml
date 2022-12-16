@@ -77,6 +77,22 @@ pylint = "2.13.9"
 # Making sure that it would not get installed (Fixing https://github.com/certbot/certbot/issues/9336)
 cryptography = "!= 37.0.3"
 
+# If poetry>=1.3.0 is selected, multiple versions of virtualenv are selected
+# causing problems when exporting dependencies so let's pin poetry back until
+# https://github.com/python-poetry/poetry-plugin-export/issues/168 is resolved.
+poetry = "<1.3.0"
+
+# jsonpickle is currently pinning back setuptools which can cause some problems
+# in newer versions of Python. Until
+# https://github.com/jsonpickle/jsonpickle/issues/424 is resolved, let's
+# require a newer version of setuptools ourselves so a solution other than
+# downgrading setuptools is found.
+setuptools = ">=62.3.0"
+
+# Rather than spending time fixing mypy problems on a point release branch,
+# let's pin it to the last version we successfully used it.
+mypy = "0.982"
+
 [tool.poetry.dev-dependencies]
 
 [build-system]
