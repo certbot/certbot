@@ -108,7 +108,7 @@ def delete(config: configuration.NamespaceConfig) -> None:
         "See https://certbot.org/deleting-certs for information on deleting certificates safely."
     )
     msg.append("\nAre you sure you want to delete the above certificate(s)?")
-    if not display_util.yesno("\n".join(msg), default=True):
+    if not display_util.yesno("\n".join(msg), default=False):
         logger.info("Deletion of certificate(s) canceled.")
         return
     for certname in certnames:
