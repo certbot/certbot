@@ -64,7 +64,7 @@ class AuthHandler:
         :param certbot.configuration.NamespaceConfig config: current Certbot configuration
         :param bool best_effort: if True, not all authorizations need to be validated (eg. renew)
         :param int max_retries: maximum number of retries to poll authorizations
-        :param float max_time_secs: maximum time (in minutes) to poll authorizations
+        :param float max_time_mins: maximum time (in minutes) to poll authorizations
         :returns: list of all validated authorizations
         :rtype: List
 
