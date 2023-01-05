@@ -55,7 +55,8 @@ class AuthHandler:
 
     def handle_authorizations(self, orderr: messages.OrderResource,
                               config: configuration.NamespaceConfig, best_effort: bool = False,
-                              max_retries: int = 30) -> List[messages.AuthorizationResource]:
+                              max_retries: int = 30,
+                              max_time_mins: float = 30) -> List[messages.AuthorizationResource]:
         """
         Retrieve all authorizations, perform all challenges required to validate
         these authorizations, then poll and wait for the authorization to be checked.
@@ -63,6 +64,7 @@ class AuthHandler:
         :param certbot.configuration.NamespaceConfig config: current Certbot configuration
         :param bool best_effort: if True, not all authorizations need to be validated (eg. renew)
         :param int max_retries: maximum number of retries to poll authorizations
+        :param float max_time_mins: maximum time (in minutes) to poll authorizations
         :returns: list of all validated authorizations
         :rtype: List
 
@@ -103,7 +105,7 @@ class AuthHandler:
 
             # Wait for authorizations to be checked.
             logger.info('Waiting for verification...')
-            self._poll_authorizations(authzrs, max_retries, best_effort)
+            self._poll_authorizations(authzrs, max_retries, max_time_mins, best_effort)
 
             # Keep validated authorizations only. If there is none, no certificate can be issued.
             authzrs_validated = [authzr for authzr in authzrs
@@ -143,11 +145,11 @@ class AuthHandler:
         return (deactivated, failed)
 
     def _poll_authorizations(self, authzrs: List[messages.AuthorizationResource], max_retries: int,
-                             best_effort: bool) -> None:
+                             deadline_minutes: float, best_effort: bool) -> None:
         """
         Poll the ACME CA server, to wait for confirmation that authorizations have their challenges
         all verified. The poll may occur several times, until all authorizations are checked
-        (valid or invalid), or after a maximum of retries.
+        (valid or invalid), or a maximum of retries, or the polling deadline is reached.
         """
         if not self.acme:
             raise errors.Error("No ACME client defined, cannot poll authorizations.")
@@ -156,6 +158,7 @@ class AuthHandler:
                                           Optional[Response]]] = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
         authzrs_failed_to_report = []
+        deadline = datetime.datetime.now() + datetime.timedelta(minutes=deadline_minutes)
         # Give an initial second to the ACME CA server to check the authorizations
         sleep_seconds: float = 1
         for _ in range(max_retries):
@@ -184,7 +187,7 @@ class AuthHandler:
             authzrs_to_check = {index: (authzr, resp) for index, (authzr, resp)
                                 in authzrs_to_check.items()
                                 if authzr.body.status == messages.STATUS_PENDING}
-            if not authzrs_to_check:
+            if not authzrs_to_check or datetime.datetime.now() > deadline:
                 # Polling process is finished, we can leave the loop
                 break
 
@@ -196,6 +199,9 @@ class AuthHandler:
             retry_after = max(self.acme.retry_after(resp, 3)
                               for _, resp in authzrs_to_check.values()
                               if resp is not None)
+            # Whatever Retry-After the ACME server requests, the polling must not take
+            # longer than the overall deadline (https://github.com/certbot/certbot/issues/9526).
+            retry_after = min(retry_after, deadline)
             sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
 
         # In case of failed authzrs, create a report to the user.

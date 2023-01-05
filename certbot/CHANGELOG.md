@@ -10,7 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Certbot will no longer respect very long challenge polling intervals, which may be suggested
+  by some ACME servers. Certbot will continue to wait up to 90 seconds by default, or up to a
+  total of 30 minutes if requested by the server via `Retry-After`.
 
 ### Fixed
 

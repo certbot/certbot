@@ -1,5 +1,5 @@
 """Tests for certbot._internal.auth_handler."""
-import functools
+import datetime
 import logging
 import unittest
 
@@ -12,7 +12,6 @@ from acme import errors as acme_errors
 from acme import messages
 from certbot import achallenges
 from certbot import errors
-from certbot import util
 from certbot._internal.display import obj as display_obj
 from certbot.plugins import common as plugin_common
 from certbot.tests import acme_util
@@ -226,6 +225,39 @@ class HandleAuthorizationsTest(unittest.TestCase):
             # We retry only once, so retries will be exhausted before STATUS_VALID is returned.
             self.handler.handle_authorizations(mock_order, self.mock_config, False, 1)
         self.assertIn('All authorizations were not finalized by the CA.', str(error.exception))
+
+    @mock.patch('certbot._internal.auth_handler.time.sleep')
+    def test_deadline_exceeded(self, mock_sleep):
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+
+        orig_now = datetime.datetime.now
+        state = {'time_slept': 0}
+
+        def mock_sleep_effect(secs):
+            state['time_slept'] += secs
+        mock_sleep.side_effect = mock_sleep_effect
+
+        def mock_now_effect():
+            return orig_now() + datetime.timedelta(seconds=state["time_slept"])
+
+        # We will return STATUS_PENDING and ask Certbot to sleep for 20 minutes at a time.
+        interval = datetime.timedelta(minutes=20).seconds
+        self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_PENDING,
+                                                           wait_value=interval)
+
+        with self.assertRaises(errors.AuthorizationError) as error, \
+             mock.patch('certbot._internal.auth_handler.datetime.datetime') as mock_dt:
+            mock_dt.now.side_effect = mock_now_effect
+            # Polling will only proceed for 30 minutes at most, so the second 20 minute sleep
+            # should be truncated and the polling should be aborted.
+            self.handler.handle_authorizations(mock_order, self.mock_config, False)
+        self.assertIn('All authorizations were not finalized by the CA.', str(error.exception))
+
+        self.assertEqual(mock_sleep.call_count, 3) # 1s, 20m and 10m sleep
+        self.assertEqual(mock_sleep.call_args_list[0][0][0], 1)
+        self.assertAlmostEqual(mock_sleep.call_args_list[1][0][0], interval - 1, delta=1)
+        self.assertAlmostEqual(mock_sleep.call_args_list[2][0][0], interval/2 - 1, delta=1)
 
     def test_no_domains(self):
         mock_order = mock.MagicMock(authorizations=[])
