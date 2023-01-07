@@ -57,7 +57,7 @@ export GPG_TTY=$(tty)
 PORT=${PORT:-1234}
 
 # subpackages to be released (the way the script thinks about them)
-SUBPKGS_NO_CERTBOT="acme certbot-apache certbot-nginx certbot-dns-cloudflare certbot-dns-cloudxns \
+SUBPKGS_NO_CERTBOT="acme certbot-apache certbot-nginx certbot-dns-cloudflare \
                     certbot-dns-digitalocean certbot-dns-dnsimple certbot-dns-dnsmadeeasy \
                     certbot-dns-gehirn certbot-dns-google certbot-dns-linode certbot-dns-luadns \
                     certbot-dns-nsone certbot-dns-ovh certbot-dns-rfc2136 certbot-dns-route53 \
@@ -169,6 +169,14 @@ VIRTUALENV_NO_DOWNLOAD=1 virtualenv ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
+
+# This creates a string like "acme==a.b.c certbot==a.b.c ..." which can be used
+# with pip to ensure the correct versions of our packages installed.
+subpkgs_with_version=""
+for pkg in $SUBPKGS; do
+    subpkgs_with_version="$subpkgs_with_version $pkg==$version"
+done
+
 # Now, use our local archives. Disable cache so we get the correct packages even if
 # we (or our dependencies) have conditional dependencies implemented with if
 # statements in setup.py and we have cached wheels lying around that would cause
@@ -176,7 +184,7 @@ pip install -U pip
 python ../tools/pip_install.py \
   --no-cache-dir \
   --find-links . \
-  $SUBPKGS
+  $subpkgs_with_version
 cd ~-
 
 # get a snapshot of the CLI help for the docs

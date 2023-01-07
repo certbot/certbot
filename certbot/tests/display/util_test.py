@@ -3,14 +3,10 @@ import io
 import socket
 import tempfile
 import unittest
+from unittest import mock
 
 from certbot import errors
 import certbot.tests.util as test_util
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 
 
 class NotifyTest(unittest.TestCase):

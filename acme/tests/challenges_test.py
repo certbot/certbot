@@ -92,8 +92,7 @@ class DNS01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
-                         self.msg.to_partial_json())
+        self.assertEqual({}, self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import DNS01Response
@@ -163,8 +162,7 @@ class HTTP01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
-                         self.msg.to_partial_json())
+        self.assertEqual({}, self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import HTTP01Response
@@ -185,7 +183,8 @@ class HTTP01ResponseTest(unittest.TestCase):
         mock_get.return_value = mock.MagicMock(text=validation)
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
-        mock_get.assert_called_once_with(self.chall.uri("local"), verify=False)
+        mock_get.assert_called_once_with(self.chall.uri("local"), verify=False,
+                                         timeout=mock.ANY)
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_bad_validation(self, mock_get):
@@ -201,7 +200,8 @@ class HTTP01ResponseTest(unittest.TestCase):
                   HTTP01Response.WHITESPACE_CUTSET))
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
-        mock_get.assert_called_once_with(self.chall.uri("local"), verify=False)
+        mock_get.assert_called_once_with(self.chall.uri("local"), verify=False,
+                                         timeout=mock.ANY)
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_connection_error(self, mock_get):
@@ -216,6 +216,16 @@ class HTTP01ResponseTest(unittest.TestCase):
             account_public_key=KEY.public_key(), port=8080)
         self.assertEqual("local:8080", urllib_parse.urlparse(
             mock_get.mock_calls[0][1][0]).netloc)
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_timeout(self, mock_get):
+        self.response.simple_verify(self.chall, "local", KEY.public_key())
+        mock_get.assert_called_once_with(self.chall.uri("local"), verify=False,
+                                         timeout=30)
+        mock_get.reset_mock()
+        self.response.simple_verify(self.chall, "local", KEY.public_key(), timeout=1234)
+        mock_get.assert_called_once_with(self.chall.uri("local"), verify=False,
+                                         timeout=1234)
 
 
 class HTTP01Test(unittest.TestCase):
@@ -274,8 +284,7 @@ class TLSALPN01ResponseTest(unittest.TestCase):
         }
 
     def test_to_partial_json(self):
-        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
-                         self.response.to_partial_json())
+        self.assertEqual({}, self.response.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import TLSALPN01Response
@@ -461,8 +470,6 @@ class DNSResponseTest(unittest.TestCase):
         from acme.challenges import DNSResponse
         self.msg = DNSResponse(validation=self.validation)
         self.jmsg_to = {
-            'resource': 'challenge',
-            'type': 'dns',
             'validation': self.validation,
         }
         self.jmsg_from = {
@@ -492,7 +499,6 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
         from acme.challenges import HTTP01Response
 
         challenge_body = HTTP01Response()
-        challenge_body.le_acme_version = 2
 
         jobj = challenge_body.json_dumps(indent=2).encode()
         # RFC8555 states that challenge responses must have an empty payload.

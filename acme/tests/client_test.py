@@ -5,12 +5,10 @@ import datetime
 import http.client as http_client
 import json
 import unittest
-from typing import Any, Dict
+from typing import Dict
 from unittest import mock
-import warnings
 
 import josepy as jose
-import OpenSSL
 import requests
 from josepy.jwk import JWKEC
 
@@ -20,46 +18,26 @@ from acme import jws as acme_jws
 from acme import messages
 from acme.client import ClientNetwork
 from acme.client import ClientV2
-from acme.mixins import VersionedLEACMEMixin
 import messages_test
 import test_util
-# Remove the following in Certbot 2.0:
-with warnings.catch_warnings():
-    warnings.filterwarnings('ignore', '.* in acme.client', DeprecationWarning)
-    from acme.client import BackwardsCompatibleClientV2
-    from acme.client import Client
 
-
-CERT_DER = test_util.load_vector('cert.der')
 CERT_SAN_PEM = test_util.load_vector('cert-san.pem')
-CSR_SAN_PEM = test_util.load_vector('csr-san.pem')
 CSR_MIXED_PEM = test_util.load_vector('csr-mixed.pem')
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 KEY2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
 SECP256R1_KEY = JWKEC.load(test_util.load_vector('ec_secp256r1.pem'))
-
-
-DIRECTORY_V1 = messages.Directory({
-    messages.NewRegistration:
-        'https://www.letsencrypt-demo.org/acme/new-reg',
-    messages.Revocation:
-        'https://www.letsencrypt-demo.org/acme/revoke-cert',
-    messages.NewAuthorization:
-        'https://www.letsencrypt-demo.org/acme/new-authz',
-    messages.CertificateRequest:
-        'https://www.letsencrypt-demo.org/acme/new-cert',
-})
 
 DIRECTORY_V2 = messages.Directory({
     'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
     'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce',
     'newOrder': 'https://www.letsencrypt-demo.org/acme/new-order',
     'revokeCert': 'https://www.letsencrypt-demo.org/acme/revoke-cert',
+    'meta': messages.Directory.Meta(),
 })
 
 
-class ClientTestBase(unittest.TestCase):
-    """Base for tests in acme.client."""
+class ClientV2Test(unittest.TestCase):
+    """Tests for acme.client.ClientV2."""
 
     def setUp(self):
         self.response = mock.MagicMock(
@@ -91,650 +69,12 @@ class ClientTestBase(unittest.TestCase):
         self.authz = messages.Authorization(
             identifier=messages.Identifier(
                 typ=messages.IDENTIFIER_FQDN, value='example.com'),
-            challenges=(challb,), combinations=None)
+            challenges=(challb,))
         self.authzr = messages.AuthorizationResource(
             body=self.authz, uri=authzr_uri)
 
         # Reason code for revocation
         self.rsn = 1
-
-class BackwardsCompatibleClientV2Test(ClientTestBase):
-    """Tests for  acme.client.BackwardsCompatibleClientV2."""
-
-    def setUp(self):
-        super().setUp()
-
-        # For some reason, required to suppress warnings on mock.patch('acme.client.Client')
-        self.warning_cap = warnings.catch_warnings()
-        self.warning_cap.__enter__()
-        warnings.filterwarnings('ignore', '.*acme.client', DeprecationWarning)
-
-        # contains a loaded cert
-        self.certr = messages.CertificateResource(
-            body=messages_test.CERT)
-
-        loaded = OpenSSL.crypto.load_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, CERT_SAN_PEM)
-        wrapped = jose.ComparableX509(loaded)
-        self.chain = [wrapped, wrapped]
-
-        self.cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped).decode()
-
-        single_chain = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, loaded).decode()
-        self.chain_pem = single_chain + single_chain
-
-        self.fullchain_pem = self.cert_pem + self.chain_pem
-
-        self.orderr = messages.OrderResource(
-            csr_pem=CSR_SAN_PEM)
-
-    def tearDown(self) -> None:
-        self.warning_cap.__exit__()
-        return super().tearDown()
-
-    def _init(self):
-        uri = 'http://www.letsencrypt-demo.org/directory'
-        return BackwardsCompatibleClientV2(net=self.net,
-            key=KEY, server=uri)
-
-    def test_init_downloads_directory(self):
-        uri = 'http://www.letsencrypt-demo.org/directory'
-        BackwardsCompatibleClientV2(net=self.net,
-            key=KEY, server=uri)
-        self.net.get.assert_called_once_with(uri)
-
-    def test_init_acme_version(self):
-        self.response.json.return_value = DIRECTORY_V1.to_json()
-        client = self._init()
-        self.assertEqual(client.acme_version, 1)
-
-        self.response.json.return_value = DIRECTORY_V2.to_json()
-        client = self._init()
-        self.assertEqual(client.acme_version, 2)
-
-    def test_query_registration_client_v2(self):
-        self.response.json.return_value = DIRECTORY_V2.to_json()
-        client = self._init()
-        self.response.json.return_value = self.regr.body.to_json()
-        self.response.headers = {'Location': 'https://www.letsencrypt-demo.org/acme/reg/1'}
-        self.assertEqual(self.regr, client.query_registration(self.regr))
-
-    def test_forwarding(self):
-        self.response.json.return_value = DIRECTORY_V1.to_json()
-        client = self._init()
-        self.assertEqual(client.directory, client.client.directory)
-        self.assertEqual(client.key, KEY)
-        self.assertEqual(client.deactivate_registration, client.client.deactivate_registration)
-        self.assertRaises(AttributeError, client.__getattr__, 'nonexistent')
-        self.assertRaises(AttributeError, client.__getattr__, 'new_account_and_tos')
-        self.assertRaises(AttributeError, client.__getattr__, 'new_account')
-
-    def test_new_account_and_tos(self):
-        # v2 no tos
-        self.response.json.return_value = DIRECTORY_V2.to_json()
-        with mock.patch('acme.client.ClientV2') as mock_client:
-            client = self._init()
-            client.new_account_and_tos(self.new_reg)
-            mock_client().new_account.assert_called_with(self.new_reg)
-
-        # v2 tos good
-        with mock.patch('acme.client.ClientV2') as mock_client:
-            mock_client().directory.meta.__contains__.return_value = True
-            client = self._init()
-            client.new_account_and_tos(self.new_reg, lambda x: True)
-            mock_client().new_account.assert_called_with(
-                self.new_reg.update(terms_of_service_agreed=True))
-
-        # v2 tos bad
-        with mock.patch('acme.client.ClientV2') as mock_client:
-            mock_client().directory.meta.__contains__.return_value = True
-            client = self._init()
-            def _tos_cb(tos):
-                raise errors.Error
-            self.assertRaises(errors.Error, client.new_account_and_tos,
-                self.new_reg, _tos_cb)
-            mock_client().new_account.assert_not_called()
-
-        # v1 yes tos
-        self.response.json.return_value = DIRECTORY_V1.to_json()
-        with mock.patch('acme.client.Client') as mock_client:
-            regr = mock.MagicMock(terms_of_service="TOS")
-            mock_client().register.return_value = regr
-            client = self._init()
-            client.new_account_and_tos(self.new_reg)
-            mock_client().register.assert_called_once_with(self.new_reg)
-            mock_client().agree_to_tos.assert_called_once_with(regr)
-
-        # v1 no tos
-        with mock.patch('acme.client.Client') as mock_client:
-            regr = mock.MagicMock(terms_of_service=None)
-            mock_client().register.return_value = regr
-            client = self._init()
-            client.new_account_and_tos(self.new_reg)
-            mock_client().register.assert_called_once_with(self.new_reg)
-            mock_client().agree_to_tos.assert_not_called()
-
-    @mock.patch('OpenSSL.crypto.load_certificate_request')
-    @mock.patch('acme.crypto_util._pyopenssl_cert_or_req_all_names')
-    def test_new_order_v1(self, mock__pyopenssl_cert_or_req_all_names,
-        unused_mock_load_certificate_request):
-        self.response.json.return_value = DIRECTORY_V1.to_json()
-        mock__pyopenssl_cert_or_req_all_names.return_value = ['example.com', 'www.example.com']
-        mock_csr_pem = mock.MagicMock()
-        with mock.patch('acme.client.Client') as mock_client:
-            mock_client().request_domain_challenges.return_value = mock.sentinel.auth
-            client = self._init()
-            orderr = client.new_order(mock_csr_pem)
-            self.assertEqual(orderr.authorizations, [mock.sentinel.auth, mock.sentinel.auth])
-
-    def test_new_order_v2(self):
-        self.response.json.return_value = DIRECTORY_V2.to_json()
-        mock_csr_pem = mock.MagicMock()
-        with mock.patch('acme.client.ClientV2') as mock_client:
-            client = self._init()
-            client.new_order(mock_csr_pem)
-            mock_client().new_order.assert_called_once_with(mock_csr_pem)
-
-    @mock.patch('acme.client.Client')
-    def test_finalize_order_v1_success(self, mock_client):
-        self.response.json.return_value = DIRECTORY_V1.to_json()
-
-        mock_client().request_issuance.return_value = self.certr
-        mock_client().fetch_chain.return_value = self.chain
-
-        deadline = datetime.datetime(9999, 9, 9)
-        client = self._init()
-        result = client.finalize_order(self.orderr, deadline)
-        self.assertEqual(result.fullchain_pem, self.fullchain_pem)
-        mock_client().fetch_chain.assert_called_once_with(self.certr)
-
-    @mock.patch('acme.client.Client')
-    def test_finalize_order_v1_fetch_chain_error(self, mock_client):
-        self.response.json.return_value = DIRECTORY_V1.to_json()
-
-        mock_client().request_issuance.return_value = self.certr
-        mock_client().fetch_chain.return_value = self.chain
-        mock_client().fetch_chain.side_effect = [errors.Error, self.chain]
-
-        deadline = datetime.datetime(9999, 9, 9)
-        client = self._init()
-        result = client.finalize_order(self.orderr, deadline)
-        self.assertEqual(result.fullchain_pem, self.fullchain_pem)
-        self.assertEqual(mock_client().fetch_chain.call_count, 2)
-
-    @mock.patch('acme.client.Client')
-    def test_finalize_order_v1_timeout(self, mock_client):
-        self.response.json.return_value = DIRECTORY_V1.to_json()
-
-        mock_client().request_issuance.return_value = self.certr
-
-        deadline = deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
-        client = self._init()
-        self.assertRaises(errors.TimeoutError, client.finalize_order,
-            self.orderr, deadline)
-
-    def test_finalize_order_v2(self):
-        self.response.json.return_value = DIRECTORY_V2.to_json()
-        mock_orderr = mock.MagicMock()
-        mock_deadline = mock.MagicMock()
-        with mock.patch('acme.client.ClientV2') as mock_client:
-            client = self._init()
-            client.finalize_order(mock_orderr, mock_deadline)
-            mock_client().finalize_order.assert_called_once_with(mock_orderr, mock_deadline, False)
-
-    def test_revoke(self):
-        self.response.json.return_value = DIRECTORY_V1.to_json()
-        with mock.patch('acme.client.Client') as mock_client:
-            client = self._init()
-            client.revoke(messages_test.CERT, self.rsn)
-        mock_client().revoke.assert_called_once_with(messages_test.CERT, self.rsn)
-
-        self.response.json.return_value = DIRECTORY_V2.to_json()
-        with mock.patch('acme.client.ClientV2') as mock_client:
-            client = self._init()
-            client.revoke(messages_test.CERT, self.rsn)
-        mock_client().revoke.assert_called_once_with(messages_test.CERT, self.rsn)
-
-    def test_update_registration(self):
-        self.response.json.return_value = DIRECTORY_V1.to_json()
-        with mock.patch('acme.client.Client') as mock_client:
-            client = self._init()
-            client.update_registration(mock.sentinel.regr, None)
-        mock_client().update_registration.assert_called_once_with(mock.sentinel.regr, None)
-
-    # newNonce present means it will pick acme_version 2
-    def test_external_account_required_true(self):
-        self.response.json.return_value = messages.Directory({
-            'newNonce': 'http://letsencrypt-test.com/acme/new-nonce',
-            'meta': messages.Directory.Meta(external_account_required=True),
-        }).to_json()
-
-        client = self._init()
-
-        self.assertTrue(client.external_account_required())
-
-    # newNonce present means it will pick acme_version 2
-    def test_external_account_required_false(self):
-        self.response.json.return_value = messages.Directory({
-            'newNonce': 'http://letsencrypt-test.com/acme/new-nonce',
-            'meta': messages.Directory.Meta(external_account_required=False),
-        }).to_json()
-
-        client = self._init()
-
-        self.assertFalse(client.external_account_required())
-
-    def test_external_account_required_false_v1(self):
-        self.response.json.return_value = messages.Directory({
-            'meta': messages.Directory.Meta(external_account_required=False),
-        }).to_json()
-
-        client = self._init()
-
-        self.assertFalse(client.external_account_required())
-
-
-class ClientTest(ClientTestBase):
-    """Tests for acme.client.Client."""
-
-    def setUp(self):
-        super().setUp()
-
-        self.directory = DIRECTORY_V1
-
-        # Registration
-        self.regr = self.regr.update(
-            terms_of_service='https://www.letsencrypt-demo.org/tos')
-
-        # Request issuance
-        self.certr = messages.CertificateResource(
-            body=messages_test.CERT, authzrs=(self.authzr,),
-            uri='https://www.letsencrypt-demo.org/acme/cert/1',
-            cert_chain_uri='https://www.letsencrypt-demo.org/ca')
-
-        self.client = Client(
-            directory=self.directory, key=KEY, alg=jose.RS256, net=self.net)
-
-    def test_init_downloads_directory(self):
-        uri = 'http://www.letsencrypt-demo.org/directory'
-        self.client = Client(
-            directory=uri, key=KEY, alg=jose.RS256, net=self.net)
-        self.net.get.assert_called_once_with(uri)
-
-    @mock.patch('acme.client.ClientNetwork')
-    def test_init_without_net(self, mock_net):
-        mock_net.return_value = mock.sentinel.net
-        alg = jose.RS256
-        self.client = Client(
-            directory=self.directory, key=KEY, alg=alg)
-        mock_net.called_once_with(KEY, alg=alg, verify_ssl=True)
-        self.assertEqual(self.client.net, mock.sentinel.net)
-
-    def test_register(self):
-        # "Instance of 'Field' has no to_json/update member" bug:
-        self.response.status_code = http_client.CREATED
-        self.response.json.return_value = self.regr.body.to_json()
-        self.response.headers['Location'] = self.regr.uri
-        self.response.links.update({
-            'terms-of-service': {'url': self.regr.terms_of_service},
-        })
-
-        self.assertEqual(self.regr, self.client.register(self.new_reg))
-        # TODO: test POST call arguments
-
-    def test_update_registration(self):
-        # "Instance of 'Field' has no to_json/update member" bug:
-        self.response.headers['Location'] = self.regr.uri
-        self.response.json.return_value = self.regr.body.to_json()
-        self.assertEqual(self.regr, self.client.update_registration(self.regr))
-        # TODO: test POST call arguments
-
-        # TODO: split here and separate test
-        self.response.json.return_value = self.regr.body.update(
-            contact=()).to_json()
-
-    def test_deactivate_account(self):
-        self.response.headers['Location'] = self.regr.uri
-        self.response.json.return_value = self.regr.body.to_json()
-        self.assertEqual(self.regr,
-                         self.client.deactivate_registration(self.regr))
-
-    def test_query_registration(self):
-        self.response.json.return_value = self.regr.body.to_json()
-        self.assertEqual(self.regr, self.client.query_registration(self.regr))
-
-    def test_agree_to_tos(self):
-        self.client.update_registration = mock.Mock()
-        self.client.agree_to_tos(self.regr)
-        regr = self.client.update_registration.call_args[0][0]
-        self.assertEqual(self.regr.terms_of_service, regr.body.agreement)
-
-    def _prepare_response_for_request_challenges(self):
-        self.response.status_code = http_client.CREATED
-        self.response.headers['Location'] = self.authzr.uri
-        self.response.json.return_value = self.authz.to_json()
-
-    def test_request_challenges(self):
-        self._prepare_response_for_request_challenges()
-        self.client.request_challenges(self.identifier)
-        self.net.post.assert_called_once_with(
-            self.directory.new_authz,
-            messages.NewAuthorization(identifier=self.identifier),
-            acme_version=1)
-
-    def test_request_challenges_deprecated_arg(self):
-        self._prepare_response_for_request_challenges()
-        self.client.request_challenges(self.identifier, new_authzr_uri="hi")
-        self.net.post.assert_called_once_with(
-            self.directory.new_authz,
-            messages.NewAuthorization(identifier=self.identifier),
-            acme_version=1)
-
-    def test_request_challenges_custom_uri(self):
-        self._prepare_response_for_request_challenges()
-        self.client.request_challenges(self.identifier)
-        self.net.post.assert_called_once_with(
-            'https://www.letsencrypt-demo.org/acme/new-authz', mock.ANY,
-            acme_version=1)
-
-    def test_request_challenges_unexpected_update(self):
-        self._prepare_response_for_request_challenges()
-        self.response.json.return_value = self.authz.update(
-            identifier=self.identifier.update(value='foo')).to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.request_challenges,
-            self.identifier)
-
-    def test_request_challenges_wildcard(self):
-        wildcard_identifier = messages.Identifier(
-            typ=messages.IDENTIFIER_FQDN, value='*.example.org')
-        self.assertRaises(
-            errors.WildcardUnsupportedError, self.client.request_challenges,
-            wildcard_identifier)
-
-    def test_request_domain_challenges(self):
-        self.client.request_challenges = mock.MagicMock()
-        self.assertEqual(
-            self.client.request_challenges(self.identifier),
-            self.client.request_domain_challenges('example.com'))
-
-    def test_answer_challenge(self):
-        self.response.links['up'] = {'url': self.challr.authzr_uri}
-        self.response.json.return_value = self.challr.body.to_json()
-
-        chall_response = challenges.DNSResponse(validation=None)
-
-        self.client.answer_challenge(self.challr.body, chall_response)
-
-        # TODO: split here and separate test
-        self.assertRaises(errors.UnexpectedUpdate, self.client.answer_challenge,
-                          self.challr.body.update(uri='foo'), chall_response)
-
-    def test_answer_challenge_missing_next(self):
-        self.assertRaises(
-            errors.ClientError, self.client.answer_challenge,
-            self.challr.body, challenges.DNSResponse(validation=None))
-
-    def test_retry_after_date(self):
-        self.response.headers['Retry-After'] = 'Fri, 31 Dec 1999 23:59:59 GMT'
-        self.assertEqual(
-            datetime.datetime(1999, 12, 31, 23, 59, 59),
-            self.client.retry_after(response=self.response, default=10))
-
-    @mock.patch('acme.client.datetime')
-    def test_retry_after_invalid(self, dt_mock):
-        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
-        dt_mock.timedelta = datetime.timedelta
-
-        self.response.headers['Retry-After'] = 'foooo'
-        self.assertEqual(
-            datetime.datetime(2015, 3, 27, 0, 0, 10),
-            self.client.retry_after(response=self.response, default=10))
-
-    @mock.patch('acme.client.datetime')
-    def test_retry_after_overflow(self, dt_mock):
-        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
-        dt_mock.timedelta = datetime.timedelta
-        dt_mock.datetime.side_effect = datetime.datetime
-
-        self.response.headers['Retry-After'] = "Tue, 116 Feb 2016 11:50:00 MST"
-        self.assertEqual(
-            datetime.datetime(2015, 3, 27, 0, 0, 10),
-            self.client.retry_after(response=self.response, default=10))
-
-    @mock.patch('acme.client.datetime')
-    def test_retry_after_seconds(self, dt_mock):
-        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
-        dt_mock.timedelta = datetime.timedelta
-
-        self.response.headers['Retry-After'] = '50'
-        self.assertEqual(
-            datetime.datetime(2015, 3, 27, 0, 0, 50),
-            self.client.retry_after(response=self.response, default=10))
-
-    @mock.patch('acme.client.datetime')
-    def test_retry_after_missing(self, dt_mock):
-        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
-        dt_mock.timedelta = datetime.timedelta
-
-        self.assertEqual(
-            datetime.datetime(2015, 3, 27, 0, 0, 10),
-            self.client.retry_after(response=self.response, default=10))
-
-    def test_poll(self):
-        self.response.json.return_value = self.authzr.body.to_json()
-        self.assertEqual((self.authzr, self.response),
-                         self.client.poll(self.authzr))
-
-        # TODO: split here and separate test
-        self.response.json.return_value = self.authz.update(
-            identifier=self.identifier.update(value='foo')).to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.poll, self.authzr)
-
-    def test_request_issuance(self):
-        self.response.content = CERT_DER
-        self.response.headers['Location'] = self.certr.uri
-        self.response.links['up'] = {'url': self.certr.cert_chain_uri}
-        self.assertEqual(self.certr, self.client.request_issuance(
-            messages_test.CSR, (self.authzr,)))
-        # TODO: check POST args
-
-    def test_request_issuance_missing_up(self):
-        self.response.content = CERT_DER
-        self.response.headers['Location'] = self.certr.uri
-        self.assertEqual(
-            self.certr.update(cert_chain_uri=None),
-            self.client.request_issuance(messages_test.CSR, (self.authzr,)))
-
-    def test_request_issuance_missing_location(self):
-        self.assertRaises(
-            errors.ClientError, self.client.request_issuance,
-            messages_test.CSR, (self.authzr,))
-
-    @mock.patch('acme.client.datetime')
-    @mock.patch('acme.client.time')
-    def test_poll_and_request_issuance(self, time_mock, dt_mock):
-        # clock.dt | pylint: disable=no-member
-        clock = mock.MagicMock(dt=datetime.datetime(2015, 3, 27))
-
-        def sleep(seconds):
-            """increment clock"""
-            clock.dt += datetime.timedelta(seconds=seconds)
-        time_mock.sleep.side_effect = sleep
-
-        def now():
-            """return current clock value"""
-            return clock.dt
-        dt_mock.datetime.now.side_effect = now
-        dt_mock.timedelta = datetime.timedelta
-
-        def poll(authzr):  # pylint: disable=missing-docstring
-            # record poll start time based on the current clock value
-            authzr.times.append(clock.dt)
-
-            # suppose it takes 2 seconds for server to produce the
-            # result, increment clock
-            clock.dt += datetime.timedelta(seconds=2)
-
-            if len(authzr.retries) == 1:  # no more retries
-                done = mock.MagicMock(uri=authzr.uri, times=authzr.times)
-                done.body.status = authzr.retries[0]
-                return done, []
-
-            # response (2nd result tuple element) is reduced to only
-            # Retry-After header contents represented as integer
-            # seconds; authzr.retries is a list of Retry-After
-            # headers, head(retries) is peeled of as a current
-            # Retry-After header, and tail(retries) is persisted for
-            # later poll() calls
-            return (mock.MagicMock(retries=authzr.retries[1:],
-                                   uri=authzr.uri + '.', times=authzr.times),
-                    authzr.retries[0])
-        self.client.poll = mock.MagicMock(side_effect=poll)
-
-        mintime = 7
-
-        def retry_after(response, default):
-            # pylint: disable=missing-docstring
-            # check that poll_and_request_issuance correctly passes mintime
-            self.assertEqual(default, mintime)
-            return clock.dt + datetime.timedelta(seconds=response)
-        self.client.retry_after = mock.MagicMock(side_effect=retry_after)
-
-        def request_issuance(csr, authzrs):  # pylint: disable=missing-docstring
-            return csr, authzrs
-        self.client.request_issuance = mock.MagicMock(
-            side_effect=request_issuance)
-
-        csr = mock.MagicMock()
-        authzrs = (
-            mock.MagicMock(uri='a', times=[], retries=(
-                8, 20, 30, messages.STATUS_VALID)),
-            mock.MagicMock(uri='b', times=[], retries=(
-                5, messages.STATUS_VALID)),
-        )
-
-        cert, updated_authzrs = self.client.poll_and_request_issuance(
-            csr, authzrs, mintime=mintime,
-            # make sure that max_attempts is per-authorization, rather
-            # than global
-            max_attempts=max(len(authzrs[0].retries), len(authzrs[1].retries)))
-        self.assertIs(cert[0], csr)
-        self.assertIs(cert[1], updated_authzrs)
-        self.assertEqual(updated_authzrs[0].uri, 'a...')
-        self.assertEqual(updated_authzrs[1].uri, 'b.')
-        self.assertEqual(updated_authzrs[0].times, [
-            datetime.datetime(2015, 3, 27),
-            # a is scheduled for 10, but b is polling [9..11), so it
-            # will be picked up as soon as b is finished, without
-            # additional sleeping
-            datetime.datetime(2015, 3, 27, 0, 0, 11),
-            datetime.datetime(2015, 3, 27, 0, 0, 33),
-            datetime.datetime(2015, 3, 27, 0, 1, 5),
-        ])
-        self.assertEqual(updated_authzrs[1].times, [
-            datetime.datetime(2015, 3, 27, 0, 0, 2),
-            datetime.datetime(2015, 3, 27, 0, 0, 9),
-        ])
-        self.assertEqual(clock.dt, datetime.datetime(2015, 3, 27, 0, 1, 7))
-
-        # CA sets invalid | TODO: move to a separate test
-        invalid_authzr = mock.MagicMock(
-            times=[], retries=[messages.STATUS_INVALID])
-        self.assertRaises(
-            errors.PollError, self.client.poll_and_request_issuance,
-            csr, authzrs=(invalid_authzr,), mintime=mintime)
-
-        # exceeded max_attempts | TODO: move to a separate test
-        self.assertRaises(
-            errors.PollError, self.client.poll_and_request_issuance,
-            csr, authzrs, mintime=mintime, max_attempts=2)
-
-    def test_deactivate_authorization(self):
-        authzb = self.authzr.body.update(status=messages.STATUS_DEACTIVATED)
-        self.response.json.return_value = authzb.to_json()
-        authzr = self.client.deactivate_authorization(self.authzr)
-        self.assertEqual(authzb, authzr.body)
-        self.assertEqual(self.client.net.post.call_count, 1)
-        self.assertIn(self.authzr.uri, self.net.post.call_args_list[0][0])
-
-    def test_check_cert(self):
-        self.response.headers['Location'] = self.certr.uri
-        self.response.content = CERT_DER
-        self.assertEqual(self.certr.update(body=messages_test.CERT),
-                         self.client.check_cert(self.certr))
-
-        # TODO: split here and separate test
-        self.response.headers['Location'] = 'foo'
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.check_cert, self.certr)
-
-    def test_check_cert_missing_location(self):
-        self.response.content = CERT_DER
-        self.assertRaises(
-            errors.ClientError, self.client.check_cert, self.certr)
-
-    def test_refresh(self):
-        self.client.check_cert = mock.MagicMock()
-        self.assertEqual(
-            self.client.check_cert(self.certr), self.client.refresh(self.certr))
-
-    def test_fetch_chain_no_up_link(self):
-        self.assertEqual([], self.client.fetch_chain(self.certr.update(
-            cert_chain_uri=None)))
-
-    def test_fetch_chain_single(self):
-        # pylint: disable=protected-access
-        self.client._get_cert = mock.MagicMock()
-        self.client._get_cert.return_value = (
-            mock.MagicMock(links={}), "certificate")
-        self.assertEqual([self.client._get_cert(self.certr.cert_chain_uri)[1]],
-                         self.client.fetch_chain(self.certr))
-
-    def test_fetch_chain_max(self):
-        # pylint: disable=protected-access
-        up_response = mock.MagicMock(links={'up': {'url': 'http://cert'}})
-        noup_response = mock.MagicMock(links={})
-        self.client._get_cert = mock.MagicMock()
-        self.client._get_cert.side_effect = [
-            (up_response, "cert")] * 9 + [(noup_response, "last_cert")]
-        chain = self.client.fetch_chain(self.certr, max_length=10)
-        self.assertEqual(chain, ["cert"] * 9 + ["last_cert"])
-
-    def test_fetch_chain_too_many(self):  # recursive
-        # pylint: disable=protected-access
-        response = mock.MagicMock(links={'up': {'url': 'http://cert'}})
-        self.client._get_cert = mock.MagicMock()
-        self.client._get_cert.return_value = (response, "certificate")
-        self.assertRaises(errors.Error, self.client.fetch_chain, self.certr)
-
-    def test_revoke(self):
-        self.client.revoke(self.certr.body, self.rsn)
-        self.net.post.assert_called_once_with(
-            self.directory[messages.Revocation], mock.ANY, acme_version=1)
-
-    def test_revocation_payload(self):
-        obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
-        self.assertIn('reason', obj.to_partial_json().keys())
-        self.assertEqual(self.rsn, obj.to_partial_json()['reason'])
-
-    def test_revoke_bad_status_raises_error(self):
-        self.response.status_code = http_client.METHOD_NOT_ALLOWED
-        self.assertRaises(
-            errors.ClientError,
-            self.client.revoke,
-            self.certr,
-            self.rsn)
-
-
-class ClientV2Test(ClientTestBase):
-    """Tests for acme.client.ClientV2."""
-
-    def setUp(self):
-        super().setUp()
 
         self.directory = DIRECTORY_V2
 
@@ -766,10 +106,39 @@ class ClientV2Test(ClientTestBase):
 
         self.assertEqual(self.regr, self.client.new_account(self.new_reg))
 
+    def test_new_account_tos_link(self):
+        self.response.status_code = http_client.CREATED
+        self.response.json.return_value = self.regr.body.to_json()
+        self.response.headers['Location'] = self.regr.uri
+        self.response.links.update({
+            'terms-of-service': {'url': 'https://www.letsencrypt-demo.org/tos'},
+        })
+
+        self.assertEqual(self.client.new_account(self.new_reg).terms_of_service,
+                         'https://www.letsencrypt-demo.org/tos')
+
+
     def test_new_account_conflict(self):
         self.response.status_code = http_client.OK
         self.response.headers['Location'] = self.regr.uri
         self.assertRaises(errors.ConflictError, self.client.new_account, self.new_reg)
+
+    def test_deactivate_account(self):
+        deactivated_regr = self.regr.update(
+            body=self.regr.body.update(status='deactivated'))
+        self.response.json.return_value = deactivated_regr.body.to_json()
+        self.response.status_code = http_client.OK
+        self.response.headers['Location'] = self.regr.uri
+        self.assertEqual(self.client.deactivate_registration(self.regr), deactivated_regr)
+
+    def test_deactivate_authorization(self):
+        deactivated_authz = self.authzr.update(
+            body=self.authzr.body.update(status=messages.STATUS_DEACTIVATED))
+        self.response.json.return_value = deactivated_authz.body.to_json()
+        authzr = self.client.deactivate_authorization(self.authzr)
+        self.assertEqual(deactivated_authz.body, authzr.body)
+        self.assertEqual(self.client.net.post.call_count, 1)
+        self.assertIn(self.authzr.uri, self.net.post.call_args_list[0][0])
 
     def test_new_order(self):
         order_response = copy.deepcopy(self.response)
@@ -788,6 +157,20 @@ class ClientV2Test(ClientTestBase):
         with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
             mock_post_as_get.side_effect = (authz_response, authz_response2)
             self.assertEqual(self.client.new_order(CSR_MIXED_PEM), self.orderr)
+
+    def test_answer_challege(self):
+        self.response.links['up'] = {'url': self.challr.authzr_uri}
+        self.response.json.return_value = self.challr.body.to_json()
+        chall_response = challenges.DNSResponse(validation=None)
+        self.client.answer_challenge(self.challr.body, chall_response)
+
+        self.assertRaises(errors.UnexpectedUpdate, self.client.answer_challenge,
+                          self.challr.body.update(uri='foo'), chall_response)
+
+    def test_answer_challenge_missing_next(self):
+        self.assertRaises(
+            errors.ClientError, self.client.answer_challenge,
+            self.challr.body, challenges.DNSResponse(validation=None))
 
     @mock.patch('acme.client.datetime')
     def test_poll_and_finalize(self, mock_datetime):
@@ -859,6 +242,11 @@ class ClientV2Test(ClientTestBase):
         self.client = ClientV2(directory=self.directory, net=self.net)
         mock_net.called_once_with(SECP256R1_KEY.public_key(), alg=jose.ES256, verify_ssl=True)
 
+    def test_poll_unexpected_update(self):
+        updated_authz = self.authz.update(identifier=self.identifier.update(value='foo'))
+        self.response.json.return_value = updated_authz.to_json()
+        self.assertRaises(errors.UnexpectedUpdate, self.client.poll, self.authzr)
+
     def test_finalize_order_success(self):
         updated_order = self.order.update(
             certificate='https://www.letsencrypt-demo.org/acme/cert/',
@@ -910,9 +298,9 @@ class ClientV2Test(ClientTestBase):
         deadline = datetime.datetime(9999, 9, 9)
         resp = self.client.finalize_order(self.orderr, deadline, fetch_alternative_chains=True)
         self.net.post.assert_any_call('https://example.com/acme/cert/1',
-                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+                                      mock.ANY, new_nonce_url=mock.ANY)
         self.net.post.assert_any_call('https://example.com/acme/cert/2',
-                                      mock.ANY, acme_version=2, new_nonce_url=mock.ANY)
+                                      mock.ANY, new_nonce_url=mock.ANY)
         self.assertEqual(resp, updated_orderr)
 
         del self.response.headers['Link']
@@ -922,8 +310,15 @@ class ClientV2Test(ClientTestBase):
     def test_revoke(self):
         self.client.revoke(messages_test.CERT, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory["revokeCert"], mock.ANY, acme_version=2,
-            new_nonce_url=DIRECTORY_V2['newNonce'])
+            self.directory["revokeCert"], mock.ANY, new_nonce_url=DIRECTORY_V2['newNonce'])
+
+    def test_revoke_bad_status_raises_error(self):
+        self.response.status_code = http_client.METHOD_NOT_ALLOWED
+        self.assertRaises(
+            errors.ClientError,
+            self.client.revoke,
+            messages_test.CERT,
+            self.rsn)
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -954,6 +349,11 @@ class ClientV2Test(ClientTestBase):
     def test_external_account_required_default(self):
         self.assertFalse(self.client.external_account_required())
 
+    def test_query_registration_client(self):
+        self.response.json.return_value = self.regr.body.to_json()
+        self.response.headers['Location'] = 'https://www.letsencrypt-demo.org/acme/reg/1'
+        self.assertEqual(self.regr, self.client.query_registration(self.regr))
+
     def test_post_as_get(self):
         with mock.patch('acme.client.ClientV2._authzr_from_response') as mock_client:
             mock_client.return_value = self.authzr2
@@ -961,12 +361,64 @@ class ClientV2Test(ClientTestBase):
             self.client.poll(self.authzr2)  # pylint: disable=protected-access
 
             self.client.net.post.assert_called_once_with(
-                self.authzr2.uri, None, acme_version=2,
+                self.authzr2.uri, None,
                 new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
             self.client.net.get.assert_not_called()
 
+    def test_retry_after_date(self):
+        self.response.headers['Retry-After'] = 'Fri, 31 Dec 1999 23:59:59 GMT'
+        self.assertEqual(
+            datetime.datetime(1999, 12, 31, 23, 59, 59),
+            self.client.retry_after(response=self.response, default=10))
 
-class MockJSONDeSerializable(VersionedLEACMEMixin, jose.JSONDeSerializable):
+    @mock.patch('acme.client.datetime')
+    def test_retry_after_invalid(self, dt_mock):
+        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
+        dt_mock.timedelta = datetime.timedelta
+
+        self.response.headers['Retry-After'] = 'foooo'
+        self.assertEqual(
+            datetime.datetime(2015, 3, 27, 0, 0, 10),
+            self.client.retry_after(response=self.response, default=10))
+
+    @mock.patch('acme.client.datetime')
+    def test_retry_after_overflow(self, dt_mock):
+        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
+        dt_mock.timedelta = datetime.timedelta
+        dt_mock.datetime.side_effect = datetime.datetime
+
+        self.response.headers['Retry-After'] = "Tue, 116 Feb 2016 11:50:00 MST"
+        self.assertEqual(
+            datetime.datetime(2015, 3, 27, 0, 0, 10),
+            self.client.retry_after(response=self.response, default=10))
+
+    @mock.patch('acme.client.datetime')
+    def test_retry_after_seconds(self, dt_mock):
+        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
+        dt_mock.timedelta = datetime.timedelta
+
+        self.response.headers['Retry-After'] = '50'
+        self.assertEqual(
+            datetime.datetime(2015, 3, 27, 0, 0, 50),
+            self.client.retry_after(response=self.response, default=10))
+
+    @mock.patch('acme.client.datetime')
+    def test_retry_after_missing(self, dt_mock):
+        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
+        dt_mock.timedelta = datetime.timedelta
+
+        self.assertEqual(
+            datetime.datetime(2015, 3, 27, 0, 0, 10),
+            self.client.retry_after(response=self.response, default=10))
+
+    def test_get_directory(self):
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        self.assertEqual(
+            DIRECTORY_V2.to_partial_json(),
+            ClientV2.get_directory('https://example.com/dir', self.net).to_partial_json())
+
+
+class MockJSONDeSerializable(jose.JSONDeSerializable):
     # pylint: disable=missing-docstring
     def __init__(self, value):
         self.value = value
@@ -1000,8 +452,7 @@ class ClientNetworkTest(unittest.TestCase):
     def test_wrap_in_jws(self):
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url",
-            acme_version=1)
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
         jws = acme_jws.JWS.json_loads(jws_dump)
         self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
@@ -1010,8 +461,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.net.account = {'uri': 'acct-uri'}
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url",
-            acme_version=2)
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
         jws = acme_jws.JWS.json_loads(jws_dump)
         self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
@@ -1117,14 +567,13 @@ class ClientNetworkTest(unittest.TestCase):
         self.net.session = mock.MagicMock()
         self.net.session.request.return_value = mock.MagicMock(
             ok=True, status_code=http_client.OK,
-            headers={"Content-Type": "application/pkix-cert"},
             content=b"hi")
         # pylint: disable=protected-access
         self.net._send_request('HEAD', 'http://example.com/', 'foo',
-          timeout=mock.ANY, bar='baz')
+          timeout=mock.ANY, bar='baz', headers={'Accept': 'application/pkix-cert'})
         mock_logger.debug.assert_called_with(
             'Received response:\nHTTP %d\n%s\n\n%s', 200,
-            'Content-Type: application/pkix-cert', b'aGk=')
+            '', b'aGk=')
 
     def test_send_request_post(self):
         self.net.session = mock.MagicMock()
@@ -1296,13 +745,13 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
             'uri', self.obj, content_type=self.content_type))
         self.assertTrue(self.response.checked)
         self.net._wrap_in_jws.assert_called_once_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri")
 
         self.available_nonces = []
         self.assertRaises(errors.MissingNonce, self.net.post,
                           'uri', self.obj, content_type=self.content_type)
         self.net._wrap_in_jws.assert_called_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri")
 
     def test_post_wrong_initial_nonce(self):  # HEAD
         self.available_nonces = [b'f', jose.b64encode(b'good')]
@@ -1360,42 +809,14 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         check_response = mock.MagicMock()
         self.net._check_response = check_response
         self.assertRaises(errors.ClientError, self.net.post, 'uri',
-                          self.obj, content_type=self.content_type, acme_version=2,
+                          self.obj, content_type=self.content_type,
                           new_nonce_url='new_nonce_uri')
         self.assertEqual(check_response.call_count, 1)
 
     def test_new_nonce_uri_removed(self):
         self.content_type = None
-        self.net.post('uri', self.obj, content_type=None,
-            acme_version=2, new_nonce_url='new_nonce_uri')
+        self.net.post('uri', self.obj, content_type=None, new_nonce_url='new_nonce_uri')
 
-
-class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
-    """Tests that if ClientNetwork has a source IP set manually, the underlying library has
-    used the provided source address."""
-
-    def setUp(self):
-        self.source_address = "8.8.8.8"
-
-    def test_source_address_set(self):
-        with mock.patch('warnings.warn') as mock_warn:
-            net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
-            mock_warn.assert_called_once()
-            self.assertIn('source_address', mock_warn.call_args[0][0])
-        for adapter in net.session.adapters.values():
-            self.assertIn(self.source_address, adapter.source_address)
-
-    def test_behavior_assumption(self):
-        """This is a test that guardrails the HTTPAdapter behavior so that if the default for
-        a Session() changes, the assumptions here aren't violated silently."""
-        # Source address not specified, so the default adapter type should be bound -- this
-        # test should fail if the default adapter type is changed by requests
-        net = ClientNetwork(key=None, alg=None)
-        session = requests.Session()
-        for scheme in session.adapters:
-            client_network_adapter = net.session.adapters.get(scheme)
-            default_adapter = session.adapters.get(scheme)
-            self.assertEqual(client_network_adapter.__class__, default_adapter.__class__)
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

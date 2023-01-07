@@ -12,11 +12,8 @@ from typing import Mapping
 from typing import Optional
 from typing import Type
 from typing import Union
-import warnings
 
 import pkg_resources
-import zope.interface
-import zope.interface.verify
 
 from certbot import configuration
 from certbot import errors
@@ -27,26 +24,9 @@ from certbot.errors import Error
 
 logger = logging.getLogger(__name__)
 
-PREFIX_FREE_DISTRIBUTIONS = [
-    "certbot",
-    "certbot-apache",
-    "certbot-dns-cloudflare",
-    "certbot-dns-cloudxns",
-    "certbot-dns-digitalocean",
-    "certbot-dns-dnsimple",
-    "certbot-dns-dnsmadeeasy",
-    "certbot-dns-gehirn",
-    "certbot-dns-google",
-    "certbot-dns-linode",
-    "certbot-dns-luadns",
-    "certbot-dns-nsone",
-    "certbot-dns-ovh",
-    "certbot-dns-rfc2136",
-    "certbot-dns-route53",
-    "certbot-dns-sakuracloud",
-    "certbot-nginx",
-]
-"""Distributions for which prefix will be omitted."""
+
+PLUGIN_INTERFACES = [interfaces.Authenticator, interfaces.Installer, interfaces.Plugin]
+"""Interfaces that should be listed in `certbot plugins` output"""
 
 
 class PluginEntryPoint:
@@ -55,32 +35,23 @@ class PluginEntryPoint:
     # this object is mutable, don't allow it to be hashed!
     __hash__ = None  # type: ignore
 
-    def __init__(self, entry_point: pkg_resources.EntryPoint, with_prefix: bool = False) -> None:
-        self.name = self.entry_point_to_plugin_name(entry_point, with_prefix)
+    def __init__(self, entry_point: pkg_resources.EntryPoint) -> None:
+        self.name = self.entry_point_to_plugin_name(entry_point)
         self.plugin_cls: Type[interfaces.Plugin] = entry_point.load()
         self.entry_point = entry_point
         self.warning_message: Optional[str] = None
         self._initialized: Optional[interfaces.Plugin] = None
         self._prepared: Optional[Union[bool, Error]] = None
-        self._hidden = False
-        self._long_description: Optional[str] = None
 
     def check_name(self, name: Optional[str]) -> bool:
         """Check if the name refers to this plugin."""
         if name == self.name:
-            if self.warning_message:
-                logger.warning(self.warning_message)
             return True
         return False
 
     @classmethod
-    def entry_point_to_plugin_name(cls, entry_point: pkg_resources.EntryPoint,
-                                   with_prefix: bool) -> str:
+    def entry_point_to_plugin_name(cls, entry_point: pkg_resources.EntryPoint) -> str:
         """Unique plugin name for an ``entry_point``"""
-        if with_prefix:
-            if not entry_point.dist:
-                raise errors.Error(f"Entrypoint {entry_point.name} has no distribution!")
-            return entry_point.dist.key + ":" + entry_point.name
         return entry_point.name
 
     @property
@@ -96,27 +67,17 @@ class PluginEntryPoint:
     @property
     def long_description(self) -> str:
         """Long description of the plugin."""
-        if self._long_description:
-            return self._long_description
         return getattr(self.plugin_cls, "long_description", self.description)
-
-    @long_description.setter
-    def long_description(self, description: str) -> None:
-        self._long_description = description
 
     @property
     def hidden(self) -> bool:
         """Should this plugin be hidden from UI?"""
-        return self._hidden or getattr(self.plugin_cls, "hidden", False)
-
-    @hidden.setter
-    def hidden(self, hide: bool) -> None:
-        self._hidden = hide
+        return getattr(self.plugin_cls, "hidden", False)
 
     def ifaces(self, *ifaces_groups: Iterable[Type]) -> bool:
         """Does plugin implements specified interface groups?"""
         return not ifaces_groups or any(
-            all(_implements(self.plugin_cls, iface)
+            all(issubclass(self.plugin_cls, iface)
                 for iface in ifaces)
             for ifaces in ifaces_groups)
 
@@ -133,16 +94,6 @@ class PluginEntryPoint:
             # line will raise an exception if some implementations of abstract methods are missing.
             self._initialized = self.plugin_cls(config, self.name)
         return self._initialized
-
-    def verify(self, ifaces: Iterable[Type]) -> bool:
-        """Verify that the plugin conforms to the specified interfaces."""
-        if not self.initialized:
-            raise ValueError("Plugin is not initialized.")
-        for iface in ifaces:  # zope.interface.providedBy(plugin)
-            if not _verify(self.init(), self.plugin_cls, iface):
-                return False
-
-        return True
 
     @property
     def prepared(self) -> bool:
@@ -198,8 +149,8 @@ class PluginEntryPoint:
             "* {0}".format(self.name),
             "Description: {0}".format(self.plugin_cls.description),
             "Interfaces: {0}".format(", ".join(
-                cls.__name__ for cls in self.plugin_cls.mro()
-                if cls.__module__ == 'certbot.interfaces'
+                iface.__name__ for iface in PLUGIN_INTERFACES
+                if issubclass(self.plugin_cls, iface)
             )),
             "Entry point: {0}".format(self.entry_point),
         ]
@@ -238,40 +189,25 @@ class PluginsRegistry(Mapping):
             pkg_resources.iter_entry_points(
                 constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
         for entry_point in entry_points:
-            plugin_ep = cls._load_entry_point(entry_point, plugins, with_prefix=False)
-            # entry_point.dist cannot be None here, we would have blown up
-            # earlier, however, this assertion is needed for mypy.
-            assert entry_point.dist is not None
-            if entry_point.dist.key not in PREFIX_FREE_DISTRIBUTIONS:
-                prefixed_plugin_ep = cls._load_entry_point(entry_point, plugins, with_prefix=True)
-                prefixed_plugin_ep.hidden = True
-                message = (
-                    "Plugin legacy name {0} may be removed in a future version. "
-                    "Please use {1} instead.").format(prefixed_plugin_ep.name, plugin_ep.name)
-                prefixed_plugin_ep.warning_message = message
-                prefixed_plugin_ep.long_description = "(WARNING: {0}) {1}".format(
-                    message, prefixed_plugin_ep.long_description)
+            cls._load_entry_point(entry_point, plugins)
 
         return cls(plugins)
 
     @classmethod
     def _load_entry_point(cls, entry_point: pkg_resources.EntryPoint,
-                          plugins: Dict[str, PluginEntryPoint],
-                          with_prefix: bool) -> PluginEntryPoint:
-        plugin_ep = PluginEntryPoint(entry_point, with_prefix)
+                          plugins: Dict[str, PluginEntryPoint]) -> None:
+        plugin_ep = PluginEntryPoint(entry_point)
         if plugin_ep.name in plugins:
             other_ep = plugins[plugin_ep.name]
             plugin1 = plugin_ep.entry_point.dist.key if plugin_ep.entry_point.dist else "unknown"
             plugin2 = other_ep.entry_point.dist.key if other_ep.entry_point.dist else "unknown"
             raise Exception("Duplicate plugin name {0} from {1} and {2}.".format(
                 plugin_ep.name, plugin1, plugin2))
-        if _provides(plugin_ep.plugin_cls, interfaces.Plugin):
+        if issubclass(plugin_ep.plugin_cls, interfaces.Plugin):
             plugins[plugin_ep.name] = plugin_ep
         else:  # pragma: no cover
             logger.warning(
                 "%r does not inherit from Plugin, skipping", plugin_ep)
-
-        return plugin_ep
 
     def __getitem__(self, name: str) -> PluginEntryPoint:
         return self._plugins[name]
@@ -299,10 +235,6 @@ class PluginsRegistry(Mapping):
     def ifaces(self, *ifaces_groups: Iterable[Type]) -> "PluginsRegistry":
         """Filter plugins based on interfaces."""
         return self.filter(lambda p_ep: p_ep.ifaces(*ifaces_groups))
-
-    def verify(self, ifaces: Iterable[Type]) -> "PluginsRegistry":
-        """Filter plugins based on verification."""
-        return self.filter(lambda p_ep: p_ep.verify(ifaces))
 
     def prepare(self) -> List[Union[bool, Error]]:
         """Prepare all plugins in the registry."""
@@ -342,88 +274,3 @@ class PluginsRegistry(Mapping):
         if not self._plugins:
             return "No plugins"
         return "\n\n".join(str(p_ep) for p_ep in self._plugins.values())
-
-
-_DEPRECATION_PLUGIN = ("Zope interface certbot.interfaces.IPlugin is deprecated, "
-                       "use ABC certbot.interface.Plugin instead.")
-
-_DEPRECATION_AUTHENTICATOR = ("Zope interface certbot.interfaces.IAuthenticator is deprecated, "
-                              "use ABC certbot.interface.Authenticator instead.")
-
-_DEPRECATION_INSTALLER = ("Zope interface certbot.interfaces.IInstaller is deprecated, "
-                          "use ABC certbot.interface.Installer instead.")
-
-_DEPRECATION_FACTORY = ("Zope interface certbot.interfaces.IPluginFactory is deprecated, "
-                        "use ABC certbot.interface.Plugin instead.")
-
-
-def _provides(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
-    if issubclass(target_class, iface):
-        return True
-
-    if iface == interfaces.Plugin and interfaces.IPluginFactory.providedBy(target_class):
-        logging.warning(_DEPRECATION_FACTORY)
-        warnings.warn(_DEPRECATION_FACTORY, DeprecationWarning)
-        return True
-
-    return False
-
-
-def _implements(target_class: Type[interfaces.Plugin], iface: Type) -> bool:
-    if issubclass(target_class, iface):
-        return True
-
-    if iface == interfaces.Plugin and interfaces.IPlugin.implementedBy(target_class):
-        logging.warning(_DEPRECATION_PLUGIN)
-        warnings.warn(_DEPRECATION_PLUGIN, DeprecationWarning)
-        return True
-
-    if iface == interfaces.Authenticator and interfaces.IAuthenticator.implementedBy(target_class):
-        logging.warning(_DEPRECATION_AUTHENTICATOR)
-        warnings.warn(_DEPRECATION_AUTHENTICATOR, DeprecationWarning)
-        return True
-
-    if iface == interfaces.Installer and interfaces.IInstaller.implementedBy(target_class):
-        logging.warning(_DEPRECATION_INSTALLER)
-        warnings.warn(_DEPRECATION_INSTALLER, DeprecationWarning)
-        return True
-
-    return False
-
-
-def _verify(target_instance: interfaces.Plugin, target_class: Type[interfaces.Plugin],
-            iface: Type) -> bool:
-    if issubclass(target_class, iface):
-        # No need to trigger some verify logic for ABCs: when the object is instantiated,
-        # an error would be raised if implementation is not done properly.
-        # So the checks have been done effectively when the plugin has been initialized.
-        return True
-
-    zope_iface: Optional[Type[zope.interface.Interface]] = None
-    message = ""
-
-    if iface == interfaces.Plugin:
-        zope_iface = interfaces.IPlugin
-        message = _DEPRECATION_PLUGIN
-    if iface == interfaces.Authenticator:
-        zope_iface = interfaces.IAuthenticator
-        message = _DEPRECATION_AUTHENTICATOR
-    if iface == interfaces.Installer:
-        zope_iface = interfaces.IInstaller
-        message = _DEPRECATION_INSTALLER
-
-    if not zope_iface:
-        raise ValueError(f"Unexpected type: {iface.__name__}")
-
-    try:
-        zope.interface.verify.verifyObject(zope_iface, target_instance)
-        logging.warning(message)
-        warnings.warn(message, DeprecationWarning)
-        return True
-    except zope.interface.exceptions.BrokenImplementation as error:
-        if zope_iface.implementedBy(target_class):
-            logger.debug(
-                "%s implements %s but object does not verify: %s",
-                target_class, zope_iface.__name__, error, exc_info=True)
-
-    return False

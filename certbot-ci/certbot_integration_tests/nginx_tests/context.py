@@ -9,6 +9,7 @@ import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.nginx_tests import nginx_config as config
 from certbot_integration_tests.utils import certbot_call
+from certbot_integration_tests.utils import constants
 from certbot_integration_tests.utils import misc
 
 
@@ -28,7 +29,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self.nginx_config_path = os.path.join(self.nginx_root, 'nginx.conf')
         self.nginx_config: str
 
-        default_server = request.param['default_server']  # type: ignore[attr-defined]
+        default_server = request.param['default_server']
         self.process = self._start_nginx(default_server)
 
     def cleanup(self) -> None:
@@ -65,4 +66,4 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
     def _stop_nginx(self) -> None:
         assert self.process.poll() is None
         self.process.terminate()
-        self.process.wait()
+        self.process.wait(constants.MAX_SUBPROCESS_WAIT)

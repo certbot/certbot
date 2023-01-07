@@ -33,6 +33,18 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class UnsupportedDirectiveException(RuntimeError):
+    """Exception when encountering an nginx directive which is not supported
+    by this parser."""
+
+    directive_name: str
+    line_no: int
+
+    def __init__(self, directive_name: str, line_no: int) -> None:
+        self.directive_name = directive_name
+        self.line_no = line_no
+
+
 class RawNginxParser:
     # pylint: disable=pointless-statement
     """A class that parses nginx configuration with pyparsing."""
@@ -74,6 +86,7 @@ class RawNginxParser:
 
     def __init__(self, source: str) -> None:
         self.source = source
+        self.whitespace_token_group.addParseAction(self._check_disallowed_directive)
 
     def parse(self) -> ParseResults:
         """Returns the parsed tree."""
@@ -82,6 +95,12 @@ class RawNginxParser:
     def as_list(self) -> List[Any]:
         """Returns the parsed tree as a list."""
         return self.parse().asList()
+
+    def _check_disallowed_directive(self, _source: str, line: int, results: ParseResults) -> None:
+        # *_by_lua_block might be first or second result, due to optional leading whitespace
+        toks = [t for t in results[0:2] if isinstance(t, str) and t.endswith("_by_lua_block")]
+        if toks:
+            raise UnsupportedDirectiveException(toks[0], line)
 
 
 class RawNginxDumper:
@@ -119,7 +138,9 @@ class RawNginxDumper:
         return ''.join(self)
 
 
-spacey = lambda x: (isinstance(x, str) and x.isspace()) or x == ''
+def spacey(x: Any) -> bool:
+    """Is x an empty string or whitespace?"""
+    return (isinstance(x, str) and x.isspace()) or x == ''
 
 
 class UnspacedList(List[Any]):

@@ -35,8 +35,8 @@ def assert_elliptic_key(key: str, curve: Type[EllipticCurve]) -> None:
 
     key = load_pem_private_key(data=privkey1, password=None, backend=default_backend())
 
-    assert isinstance(key, EllipticCurvePrivateKey)
-    assert isinstance(key.curve, curve)
+    assert isinstance(key, EllipticCurvePrivateKey), f"should be an EC key but was {type(key)}"
+    assert isinstance(key.curve, curve), f"should have curve {curve} but was {key.curve}"
 
 
 def assert_rsa_key(key: str, key_size: Optional[int] = None) -> None:

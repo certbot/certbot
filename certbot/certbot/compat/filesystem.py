@@ -1,6 +1,7 @@
 """Compat module to handle files security on Windows and Linux"""
 from __future__ import absolute_import
 
+from contextlib import contextmanager
 import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
@@ -8,6 +9,7 @@ import sys
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Generator
 from typing import Optional
 
 try:
@@ -74,6 +76,23 @@ def umask(mask: int) -> int:
     previous_umask = _WINDOWS_UMASK.mask
     _WINDOWS_UMASK.mask = mask
     return previous_umask
+
+
+@contextmanager
+def temp_umask(mask: int) -> Generator[None, None, None]:
+    """
+    Apply a umask temporarily, meant to be used in a `with` block. Uses the Certbot
+    implementation of umask.
+
+    :param int mask: The user file-creation mode mask to apply temporarily
+    """
+    old_umask: Optional[int] = None
+    try:
+        old_umask = umask(mask)
+        yield None
+    finally:
+        if old_umask is not None:
+            umask(old_umask)
 
 
 # One could ask why there is no copy_ownership() function, or even a reimplementation

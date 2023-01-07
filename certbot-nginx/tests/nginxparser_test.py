@@ -12,6 +12,7 @@ from certbot_nginx._internal.nginxparser import load
 from certbot_nginx._internal.nginxparser import loads
 from certbot_nginx._internal.nginxparser import RawNginxParser
 from certbot_nginx._internal.nginxparser import UnspacedList
+from certbot_nginx._internal.nginxparser import UnsupportedDirectiveException
 import test_util as util
 
 FIRST = operator.itemgetter(0)
@@ -354,6 +355,69 @@ class TestRawNginxParser(unittest.TestCase):
         parsed = loads("")
         self.assertEqual(parsed, [])
 
+    def test_lua(self):
+        # https://github.com/certbot/certbot/issues/9066
+        self.assertRaises(UnsupportedDirectiveException, loads, """
+        location /foo {
+            content_by_lua_block {
+                ngx.say('Hello World')
+            }
+        }
+        """)
+
+        # Without leading whitespace
+        self.assertRaises(UnsupportedDirectiveException, loads, """
+        location /foo {content_by_lua_block {
+                ngx.say('Hello World')
+            }
+        }
+        """)
+
+        # Doesn't trigger if it's commented or not in the right position.
+        parsed = loads("""
+        location /foo {server_name content_by_lua_block;
+            #content_by_lua_block {
+            # ngx.say('Hello World')
+            # }
+        }
+        """)
+        self.assertEqual(
+            parsed,
+            [
+                [['location', '/foo'],
+                [['server_name', 'content_by_lua_block'],
+                 ['#', 'content_by_lua_block {'],
+                 ['#', " ngx.say('Hello World')"],
+                 ['#', ' }']
+                ]]
+            ])
+
+        # *_by_lua should parse successfully.
+        parsed = loads("""
+            location / {
+                set $a 32;
+                set $b 56;
+                set_by_lua $sum
+                    'return tonumber(ngx.arg[1]) + tonumber(ngx.arg[2])'
+                    $a $b;
+                content_by_lua '
+                    ngx.say("foo");
+                ';
+            }
+        """)
+        self.assertEqual(
+            parsed,
+            [
+                [['location', '/'],
+                 [['set', '$a', '32'],
+                  ['set', '$b', '56'],
+                  ['set_by_lua', '$sum',
+                   "'return tonumber(ngx.arg[1]) + tonumber(ngx.arg[2])'", '$a', '$b'
+                  ],
+                  ['content_by_lua', '\'\n                    ngx.say("foo");\n                \'']
+                 ]]
+            ]
+        )
 
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""

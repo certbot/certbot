@@ -1,17 +1,16 @@
 jobs:
   - job: test
     variables:
-      PYTHON_VERSION: 3.10
+      PYTHON_VERSION: 3.11
     strategy:
       matrix:
         macos-py37-cover:
           IMAGE_NAME: macOS-12
           PYTHON_VERSION: 3.7
           TOXENV: py37-cover
-        macos-py310-cover:
+        macos-cover:
           IMAGE_NAME: macOS-12
-          PYTHON_VERSION: 3.10
-          TOXENV: py310-cover
+          TOXENV: py3-cover
         windows-py37:
           IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.7
@@ -36,17 +35,14 @@ jobs:
           IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.7
           TOXENV: py37
-        linux-py310-cover:
+        linux-cover:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.10
-          TOXENV: py310-cover
-        linux-py310-lint:
+          TOXENV: py3-cover
+        linux-lint:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.10
           TOXENV: lint-posix
-        linux-py310-mypy:
+        linux-mypy:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.10
           TOXENV: mypy-posix
         linux-integration:
           IMAGE_NAME: ubuntu-22.04

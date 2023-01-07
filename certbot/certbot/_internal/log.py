@@ -348,7 +348,11 @@ def post_arg_parse_except_hook(exc_type: Type[BaseException], exc_value: BaseExc
     """
     exc_info = (exc_type, exc_value, trace)
     # Only print human advice if not running under --quiet
-    exit_func = lambda: sys.exit(1) if quiet else exit_with_advice(log_path)
+    def exit_func() -> None:
+        if quiet:
+            sys.exit(1)
+        else:
+            exit_with_advice(log_path)
     # constants.QUIET_LOGGING_LEVEL or higher should be used to
     # display message the user, otherwise, a lower level like
     # logger.DEBUG should be used

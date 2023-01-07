@@ -4,6 +4,7 @@ import contextlib
 from datetime import datetime
 from datetime import timedelta
 import unittest
+from unittest import mock
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -15,11 +16,6 @@ import pytz
 
 from certbot import errors
 from certbot.tests import util as test_util
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
 
 
 out = """Missing = in header key=value

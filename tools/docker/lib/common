@@ -20,7 +20,6 @@ export CERTBOT_PLUGINS=(
     "dns-dnsimple"
     "dns-ovh"
     "dns-cloudflare"
-    "dns-cloudxns"
     "dns-digitalocean"
     "dns-google"
     "dns-luadns"

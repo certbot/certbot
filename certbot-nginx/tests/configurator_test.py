@@ -1,10 +1,7 @@
 """Test for certbot_nginx._internal.configurator."""
 import unittest
+from unittest import mock
 
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock # type: ignore
 import OpenSSL
 
 from acme import challenges

@@ -24,22 +24,6 @@ logger = logging.getLogger(__name__)
 class ApacheHttp01(common.ChallengePerformer):
     """Class that performs HTTP-01 challenges within the Apache configurator."""
 
-    CONFIG_TEMPLATE22_PRE = """\
-        RewriteEngine on
-        RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [L]
-
-    """
-    CONFIG_TEMPLATE22_POST = """\
-        <Directory {0}>
-            Order Allow,Deny
-            Allow from all
-        </Directory>
-        <Location /.well-known/acme-challenge>
-            Order Allow,Deny
-            Allow from all
-        </Location>
-    """
-
     CONFIG_TEMPLATE24_PRE = """\
         RewriteEngine on
         RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [END]
@@ -90,11 +74,7 @@ class ApacheHttp01(common.ChallengePerformer):
         """Make sure that we have the needed modules available for http01"""
 
         if self.configurator.conf("handle-modules"):
-            needed_modules = ["rewrite"]
-            if self.configurator.version < (2, 4):
-                needed_modules.append("authz_host")
-            else:
-                needed_modules.append("authz_core")
+            needed_modules = ["rewrite", "authz_core"]
             for mod in needed_modules:
                 if mod + "_module" not in self.configurator.parser.modules:
                     self.configurator.enable_mod(mod, temp=True)
@@ -131,15 +111,8 @@ class ApacheHttp01(common.ChallengePerformer):
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf_post)
 
-        if self.configurator.version < (2, 4):
-            config_template_pre = self.CONFIG_TEMPLATE22_PRE
-            config_template_post = self.CONFIG_TEMPLATE22_POST
-        else:
-            config_template_pre = self.CONFIG_TEMPLATE24_PRE
-            config_template_post = self.CONFIG_TEMPLATE24_POST
-
-        config_text_pre = config_template_pre.format(self.challenge_dir)
-        config_text_post = config_template_post.format(self.challenge_dir)
+        config_text_pre = self.CONFIG_TEMPLATE24_PRE.format(self.challenge_dir)
+        config_text_post = self.CONFIG_TEMPLATE24_POST.format(self.challenge_dir)
 
         logger.debug("writing a pre config file with text:\n %s", config_text_pre)
         with open(self.challenge_conf_pre, "w") as new_conf:
@@ -184,15 +157,13 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def _set_up_challenges(self) -> List[KeyAuthorizationChallengeResponse]:
         if not os.path.isdir(self.challenge_dir):
-            old_umask = filesystem.umask(0o022)
-            try:
-                filesystem.makedirs(self.challenge_dir, 0o755)
-            except OSError as exception:
-                if exception.errno not in (errno.EEXIST, errno.EISDIR):
-                    raise errors.PluginError(
-                        "Couldn't create root for http-01 challenge")
-            finally:
-                filesystem.umask(old_umask)
+            with filesystem.temp_umask(0o022):
+                try:
+                    filesystem.makedirs(self.challenge_dir, 0o755)
+                except OSError as exception:
+                    if exception.errno not in (errno.EEXIST, errno.EISDIR):
+                        raise errors.PluginError(
+                            "Couldn't create root for http-01 challenge")
 
         responses = []
         for achall in self.achalls:

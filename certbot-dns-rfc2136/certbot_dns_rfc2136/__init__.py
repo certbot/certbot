@@ -107,12 +107,11 @@ permission to issue updates on the target DNS zone.
 .. code-block:: bash
    :caption: Generate a new SHA512 TSIG key
 
-   dnssec-keygen -a HMAC-SHA512 -b 512 -n HOST keyname.
+   tsig-keygen -a HMAC-SHA512 keyname.
 
 .. note::
-   There are a few tools shipped with BIND that can all generate TSIG keys;
-   ``dnssec-keygen``, ``rndc-confgen``, and ``ddns-confgen``. Try and use the
-   most secure algorithm supported by your DNS server.
+   Prior to BIND version 9.10.0, you will need to use ``dnssec-keygen`` to generate
+   TSIG keys. Try and use the most secure algorithm supported by your DNS server.
 
 .. code-block:: none
    :caption: Sample BIND configuration
