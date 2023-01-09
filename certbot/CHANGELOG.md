@@ -2,7 +2,45 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 2.1.0 - master
+## 2.2.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* Certbot will no longer respect very long challenge polling intervals, which may be suggested
+  by some ACME servers. Certbot will continue to wait up to 90 seconds by default, or up to a
+  total of 30 minutes if requested by the server via `Retry-After`.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.32.2 - 2022-12-16
+
+### Fixed
+
+* Our snaps and Docker images were rebuilt to include updated versions of our dependencies.
+
+This release was not pushed to PyPI since those packages were unaffected.
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.1.1 - 2022-12-15
+
+### Fixed
+
+* Our snaps, Docker images, and Windows installer were rebuilt to include updated versions of our dependencies.
+
+This release was not pushed to PyPI since those packages were unaffected.
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.1.0 - 2022-12-07
 
 ### Added
 
@@ -22,6 +60,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
     - Plugin authors can find more information about Certbot 2.x compatibility
       [here](https://github.com/certbot/certbot/wiki/Certbot-v2.x-Plugin-Compatibility).
 * A bug causing our certbot-apache tests to crash on some systems has been resolved.
+
+More details about these changes can be found on our GitHub repo.
+
+## 1.32.1 - 2022-12-05
+
+### Fixed
+
+* Our snaps and docker images were rebuilt to include updated versions of our dependencies.
+
+This release was not pushed to PyPI since those packages were unaffected.
 
 More details about these changes can be found on our GitHub repo.
 

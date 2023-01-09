@@ -272,8 +272,18 @@ class CredentialsConfiguration:
         try:
             self.confobj = configobj.ConfigObj(filename)
         except configobj.ConfigObjError as e:
-            logger.debug("Error parsing credentials configuration: %s", e, exc_info=True)
-            raise errors.PluginError("Error parsing credentials configuration: {0}".format(e))
+            logger.debug(
+                "Error parsing credentials configuration '%s': %s",
+                filename,
+                e,
+                exc_info=True
+            )
+            raise errors.PluginError(
+                "Error parsing credentials configuration '{}': {}".format(
+                    filename,
+                    e
+                )
+            )
 
         self.mapper = mapper
 
