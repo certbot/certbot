@@ -819,17 +819,16 @@ def test_reconfigure(context: IntegrationTestsContext) -> None:
     context.certbot(['-d', certname])
     conf_path = join(context.config_dir, 'renewal', '{}.conf'.format(certname))
 
-    # Test changing configurator
-    context.certbot(['reconfigure', '--cert-name', certname, '-a', 'nginx'])
-    with open(conf_path, 'r') as f:
-        assert 'authenticator = nginx' in f.read(), \
-               'Expected authenticator to be changed to nginx in renewal config'
-
-    # Test adding new hook
-    context.certbot(['reconfigure', '--cert-name', certname, '--pre-hook', '"echo new pre hook"'])
-    with open(conf_path, 'r') as f:
-        assert 'pre_hook = echo new pre hook' in f.read(), \
-               'Expected new pre hook to added in renewal config'
+    with misc.create_http_server(context.http_01_port) as webroot:
+        context.certbot(['reconfigure', '--cert-name', certname,
+                         '-a', 'webroot', '--webroot-path', webroot])
+        with open(conf_path, 'r') as f:
+            # Check changed value
+            assert 'authenticator = webroot' in f.read(), \
+                   'Expected authenticator to be changed to webroot in renewal config'
+            # Check added value
+            assert f'webroot_path = {webroot}' in f.read(), \
+                   'Expected new webroot path to be added to renewal config'
 
 
 def test_wildcard_certificates(context: IntegrationTestsContext) -> None:
