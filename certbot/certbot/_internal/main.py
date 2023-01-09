@@ -1706,11 +1706,10 @@ def reconfigure(config: configuration.NamespaceConfig,
 
     if config.domains:
         raise errors.ConfigurationError("You have specified domains, but this function cannot "
-            "be used to modify the domains in a certificate. If you would like to do so, you "
-            "will need to renew the certificate instead of reconfiguring, which can be done "
-            "with the flag --force-renewal. Otherwise, remove the domains from the command "
-            "to continue reconfiguring. You can specify which certificate you want on the command "
-            "line with flag --cert-name instead.")
+            "be used to modify the domains in a certificate. If you would like to do so, follow "
+            "the instructions at https://certbot.org/change-cert-domain. Otherwise, remove the "
+            "domains from the command to continue reconfiguring. You can specify which certificate "
+            "you want on the command line with flag --cert-name instead.")
     # While we could technically allow domains to be used to specify the certificate in addition to
     # --cert-name, there's enough complexity with matching certs to domains that it's not worth it,
     # to say nothing of the difficulty in explaining what exactly this subcommand can modify
