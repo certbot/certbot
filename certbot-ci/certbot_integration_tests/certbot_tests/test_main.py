@@ -813,6 +813,27 @@ def test_revoke_multiple_lineages(context: IntegrationTestsContext) -> None:
         assert 'Not deleting revoked certificates due to overlapping archive dirs' in f.read()
 
 
+def test_reconfigure(context: IntegrationTestsContext) -> None:
+    """Test the reconfigure verb"""
+    certname = context.get_domain()
+    context.certbot(['-d', certname])
+    conf_path = join(context.config_dir, 'renewal', '{}.conf'.format(certname))
+
+    # Test changing configurator
+    context.certbot(['reconfigure', '--cert-name', certname, '--nginx'])
+    with open(conf_path, 'r') as f:
+        assert 'authenticator = nginx' in f.read(), \
+               'Expected authenticator to be changed to nginx in renewal config'
+        assert 'installer = nginx' in f.read(), \
+               'Expected installer to be changed to nginx in renewal config'
+
+    # Test adding new hook
+    context.certbot(['reconfigure', '--cert-name', certname, '--pre-hook', '"echo new pre hook"'])
+    with open(conf_path, 'r') as f:
+        assert 'pre_hook = echo new pre hook' in f.read(), \
+               'Expected new pre hook to added in renewal config'
+
+
 def test_wildcard_certificates(context: IntegrationTestsContext) -> None:
     """Test wildcard certificate issuance."""
     certname = context.get_domain('wild')
