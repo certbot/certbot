@@ -820,12 +820,10 @@ def test_reconfigure(context: IntegrationTestsContext) -> None:
     conf_path = join(context.config_dir, 'renewal', '{}.conf'.format(certname))
 
     # Test changing configurator
-    context.certbot(['reconfigure', '--cert-name', certname, '--nginx'])
+    context.certbot(['reconfigure', '--cert-name', certname, '-a', 'nginx'])
     with open(conf_path, 'r') as f:
         assert 'authenticator = nginx' in f.read(), \
                'Expected authenticator to be changed to nginx in renewal config'
-        assert 'installer = nginx' in f.read(), \
-               'Expected installer to be changed to nginx in renewal config'
 
     # Test adding new hook
     context.certbot(['reconfigure', '--cert-name', certname, '--pre-hook', '"echo new pre hook"'])
