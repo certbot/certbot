@@ -823,11 +823,12 @@ def test_reconfigure(context: IntegrationTestsContext) -> None:
         context.certbot(['reconfigure', '--cert-name', certname,
                          '-a', 'webroot', '--webroot-path', webroot])
         with open(conf_path, 'r') as f:
+            file_contents = f.read()
             # Check changed value
-            assert 'authenticator = webroot' in f.read(), \
+            assert 'authenticator = webroot' in file_contents, \
                    'Expected authenticator to be changed to webroot in renewal config'
             # Check added value
-            assert f'webroot_path = {webroot}' in f.read(), \
+            assert f'webroot_path = {webroot}' in file_contents, \
                    'Expected new webroot path to be added to renewal config'
 
 
