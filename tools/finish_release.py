@@ -67,7 +67,7 @@ def parse_args(args):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--css', type=str, help='hostname of code signing server')
-    parser.add_argument('--progressive', action='store_true', help='only do a Certbot 2.0 progressive snap release')
+    parser.add_argument('--progressive-only', action='store_true', help='only do a Certbot 2.0 progressive snap release')
     return parser.parse_args(args)
 
     
@@ -198,7 +198,7 @@ def main(args):
     parsed_args = parse_args(args)
 
     css = parsed_args.css
-    version = fetch_version_number('2' if parsed_args.progressive else None)
+    version = fetch_version_number('2' if parsed_args.progressive_only else None)
 
     # Once the GitHub release has been published, trying to publish it
     # again fails. Publishing the snaps can be done multiple times though
@@ -212,14 +212,14 @@ def main(args):
     # and the Windows installer.
     if version.startswith('1.'):
         promote_snaps(ALL_SNAPS, 'candidate', version)
-    elif not parsed_args.progressive and parsed_args.css is None:
+    elif not parsed_args.progressive_only and parsed_args.css is None:
         # Fail fast if we weren't given a --css argument because we're going to
         # need it later.
         raise ValueError('Please provide the --css command line argument')
     else:
         promote_snaps(['certbot'], 'beta', version,
                       progressive_percentage=PROGRESSIVE_RELEASE_PERCENTAGE)
-        if not parsed_args.progressive:
+        if not parsed_args.progressive_only:
             publish_windows(css)
 
 if __name__ == "__main__":
