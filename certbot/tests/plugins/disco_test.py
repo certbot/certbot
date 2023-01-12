@@ -3,20 +3,15 @@ import functools
 import string
 from typing import List
 import unittest
+from unittest import mock
 
 import pkg_resources
-import zope.interface
 
 from certbot import errors
 from certbot import interfaces
 from certbot._internal.plugins import null
 from certbot._internal.plugins import standalone
 from certbot._internal.plugins import webroot
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 
 
 EP_SA = pkg_resources.EntryPoint(
@@ -60,24 +55,10 @@ class PluginEntryPointTest(unittest.TestCase):
 
         for entry_point, name in names.items():
             self.assertEqual(
-                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=False))
-
-    def test_entry_point_to_plugin_name_prefixed(self):
-        from certbot._internal.plugins.disco import PluginEntryPoint
-
-        names = {
-            self.ep1: "p1:ep1",
-            self.ep1prim: "p2:ep1",
-            self.ep2: "p2:ep2",
-            self.ep3: "p3:ep3",
-        }
-
-        for entry_point, name in names.items():
-            self.assertEqual(
-                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point, with_prefix=True))
+                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point))
 
     def test_description(self):
-        self.assertIn("temporary webserver", self.plugin_ep.description)
+        self.assertIn("server locally", self.plugin_ep.description)
 
     def test_description_with_name(self):
         self.plugin_ep.plugin_cls = mock.MagicMock(description="Desc")
@@ -129,29 +110,6 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertIs(self.plugin_ep.misconfigured, False)
         self.assertIs(self.plugin_ep.available, False)
 
-    def test_verify(self):
-        iface1 = mock.MagicMock(__name__="iface1")
-        iface2 = mock.MagicMock(__name__="iface2")
-        iface3 = mock.MagicMock(__name__="iface3")
-        # pylint: disable=protected-access
-        self.plugin_ep._initialized = plugin = mock.MagicMock()
-
-        exceptions = zope.interface.exceptions
-        with mock.patch("certbot._internal.plugins.disco._verify") as mock_verify:
-            mock_verify.exceptions = exceptions
-
-            def verify_object(obj, cls, iface):  # pylint: disable=missing-docstring
-                assert obj is plugin
-                assert iface is iface1 or iface is iface2 or iface is iface3
-                if iface is iface3:
-                    return False
-                return True
-            mock_verify.side_effect = verify_object
-            self.assertTrue(self.plugin_ep.verify((iface1,)))
-            self.assertTrue(self.plugin_ep.verify((iface1, iface2)))
-            self.assertFalse(self.plugin_ep.verify((iface3,)))
-            self.assertFalse(self.plugin_ep.verify((iface1, iface3)))
-
     def test_prepare(self):
         config = mock.MagicMock()
         self.plugin_ep.init(config=config)
@@ -194,6 +152,12 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertIs(self.plugin_ep.misconfigured, False)
         self.assertIs(self.plugin_ep.available, False)
 
+    def test_str(self):
+        output = str(self.plugin_ep)
+        self.assertIn("Authenticator", output)
+        self.assertNotIn("Installer", output)
+        self.assertIn("Plugin", output)
+
     def test_repr(self):
         self.assertEqual("PluginEntryPoint#sa", repr(self.plugin_ep))
 
@@ -232,8 +196,7 @@ class PluginsRegistryTest(unittest.TestCase):
         self.assertIs(plugins["wr"].entry_point, EP_WR)
         self.assertIs(plugins["ep1"].plugin_cls, null.Installer)
         self.assertIs(plugins["ep1"].entry_point, self.ep1)
-        self.assertIs(plugins["p1:ep1"].plugin_cls, null.Installer)
-        self.assertIs(plugins["p1:ep1"].entry_point, self.ep1)
+        self.assertNotIn("p1:ep1", plugins)
 
     def test_getitem(self):
         self.assertEqual(self.plugin_ep, self.reg["mock"])
@@ -263,14 +226,6 @@ class PluginsRegistryTest(unittest.TestCase):
         self.assertEqual(self.plugins, self.reg.ifaces()._plugins)
         self.plugin_ep.ifaces.return_value = False
         self.assertEqual({}, self.reg.ifaces()._plugins)
-
-    def test_verify(self):
-        self.plugin_ep.verify.return_value = True
-        # pylint: disable=protected-access
-        self.assertEqual(
-            self.plugins, self.reg.verify(mock.MagicMock())._plugins)
-        self.plugin_ep.verify.return_value = False
-        self.assertEqual({}, self.reg.verify(mock.MagicMock())._plugins)
 
     def test_prepare(self):
         self.plugin_ep.prepare.return_value = "baz"

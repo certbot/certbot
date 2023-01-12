@@ -23,9 +23,9 @@ ParseRequestedArch "${2}"
 
 # Creates and pushes all Docker images aliases for the requested architectures
 # set in the environment variable ALL_REQUESTED_ARCH.  If the value of the
-# global variable TAG_BASE is a version tag such as v0.35.0, the "latest" tag
-# is also updated. Tags without the architecture part are also created for the
-# default architecture.
+# global variable TAG_BASE is a 2.0.0 or greater version tag such as v2.1.0,
+# the "latest" tag is also updated. Tags without the architecture part are also
+# created for the default architecture.
 # As an example, for amd64 (the default architecture) and the tag v0.35.0, the
 # following tags would be created:
 #  - certbot/certbot:v0.35.0
@@ -46,9 +46,14 @@ ParseRequestedArch "${2}"
 TagAndPushForAllRequestedArch() {
     DOCKER_REPO="${DOCKER_HUB_ORG}/${1}"
     for TARGET_ARCH in "${ALL_REQUESTED_ARCH[@]}"; do
+        # NOTE: In early 2022, we were experiencing regular "docker push"
+        # timeouts, so we added these "--debug" flags to learn more. Since we
+        # added them, we haven't had another timeout, so until we experience
+        # another timeout & can get the deubg logs, we're leaving them in.
         docker --debug push "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}"
 
-        if [[ "${TAG_BASE}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        # If TAG_BASE is a valid tag for version 2.0.0 or greater
+        if [[ "${TAG_BASE}" =~ ^v([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
             docker tag "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" "${DOCKER_REPO}:${TARGET_ARCH}-latest"
             docker --debug push "${DOCKER_REPO}:${TARGET_ARCH}-latest"
             if [ "${TARGET_ARCH}" == "${DEFAULT_ARCH}" ]; then

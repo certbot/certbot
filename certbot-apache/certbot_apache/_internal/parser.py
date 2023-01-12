@@ -47,6 +47,7 @@ class ApacheParser:
     arg_var_interpreter: Pattern = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars: Set[str] = {"*", "?", "\\", "[", "]"}
 
+    # pylint: disable=unused-argument
     def __init__(self, root: str, configurator: "ApacheConfigurator",
                  vhostroot: str, version: Tuple[int, ...] = (2, 4)) -> None:
         # Note: Order is important here.
@@ -74,9 +75,8 @@ class ApacheParser:
         self.loc: Dict[str, str] = {"root": self._find_config_root()}
         self.parse_file(self.loc["root"])
 
-        if version >= (2, 4):
-            # Look up variables from httpd and add to DOM if not already parsed
-            self.update_runtime_variables()
+        # Look up variables from httpd and add to DOM if not already parsed
+        self.update_runtime_variables()
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
@@ -94,11 +94,6 @@ class ApacheParser:
         if vhostroot:
             self.parse_file(os.path.abspath(vhostroot) + "/" +
                             self.configurator.options.vhost_files)
-
-        # check to see if there were unparsed define statements
-        if version < (2, 4):
-            if self.find_dir("Define", exclude=False):
-                raise errors.PluginError("Error parsing runtime variables")
 
     def check_parsing_errors(self, lens: str) -> None:
         """Verify Augeas can parse all of the lens files.
@@ -302,7 +297,7 @@ class ApacheParser:
 
     def update_defines(self) -> None:
         """Updates the dictionary of known variables in the configuration"""
-        self.variables = apache_util.parse_defines(self.configurator.options.ctl)
+        self.variables = apache_util.parse_defines(self.configurator.options.get_defines_cmd)
 
     def update_includes(self) -> None:
         """Get includes from httpd process, and add them to DOM if needed"""
@@ -312,7 +307,7 @@ class ApacheParser:
         # configuration files
         _ = self.find_dir("Include")
 
-        matches = apache_util.parse_includes(self.configurator.options.ctl)
+        matches = apache_util.parse_includes(self.configurator.options.get_includes_cmd)
         if matches:
             for i in matches:
                 if not self.parsed_in_current(i):
@@ -321,7 +316,7 @@ class ApacheParser:
     def update_modules(self) -> None:
         """Get loaded modules from httpd process, and add them to DOM"""
 
-        matches = apache_util.parse_modules(self.configurator.options.ctl)
+        matches = apache_util.parse_modules(self.configurator.options.get_modules_cmd)
         for mod in matches:
             self.add_mod(mod.strip())
 
@@ -382,7 +377,7 @@ class ApacheParser:
             for i, arg in enumerate(args):
                 self.aug.set("%s/arg[%d]" % (nvh_path, i + 1), arg)
 
-    def get_ifmod(self, aug_conf_path: str, mod: str, beginning: bool = False) -> str:
+    def get_ifmod(self, aug_conf_path: str, mod: str) -> str:
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
 
         :param str aug_conf_path: Augeas configuration path
@@ -399,35 +394,26 @@ class ApacheParser:
         if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                   (aug_conf_path, mod)))
         if not if_mods:
-            return self.create_ifmod(aug_conf_path, mod, beginning)
+            return self.create_ifmod(aug_conf_path, mod)
 
         # Strip off "arg" at end of first ifmod path
         return if_mods[0].rpartition("arg")[0]
 
-    def create_ifmod(self, aug_conf_path: str, mod: str, beginning: bool = False) -> str:
+    def create_ifmod(self, aug_conf_path: str, mod: str) -> str:
         """Creates a new <IfMod mod> and returns its path.
 
         :param str aug_conf_path: Augeas configuration path
         :param str mod: module ie. mod_ssl.c
-        :param bool beginning: If the IfModule should be created to the beginning
-            of augeas path DOM tree.
 
         :returns: Augeas path of the newly created IfModule directive.
             The path may be dynamic, i.e. .../IfModule[last()]
         :rtype: str
 
         """
-        if beginning:
-            c_path_arg = "{}/IfModule[1]/arg".format(aug_conf_path)
-            # Insert IfModule before the first directive
-            self.aug.insert("{}/directive[1]".format(aug_conf_path),
-                            "IfModule", True)
-            retpath = "{}/IfModule[1]/".format(aug_conf_path)
-        else:
-            c_path = "{}/IfModule[last() + 1]".format(aug_conf_path)
-            c_path_arg = "{}/IfModule[last()]/arg".format(aug_conf_path)
-            self.aug.set(c_path, "")
-            retpath = "{}/IfModule[last()]/".format(aug_conf_path)
+        c_path = "{}/IfModule[last() + 1]".format(aug_conf_path)
+        c_path_arg = "{}/IfModule[last()]/arg".format(aug_conf_path)
+        self.aug.set(c_path, "")
+        retpath = "{}/IfModule[last()]/".format(aug_conf_path)
         self.aug.set(c_path_arg, mod)
         return retpath
 
@@ -586,20 +572,6 @@ class ApacheParser:
                 ordered_matches.extend(self.aug.match(match + arg_suffix))
 
         return ordered_matches
-
-    def get_all_args(self, match: str) -> List[Optional[str]]:
-        """
-        Tries to fetch all arguments for a directive. See get_arg.
-
-        Note that if match is an ancestor node, it returns all names of
-        child directives as well as the list of arguments.
-
-        """
-
-        if match[-1] != "/":
-            match = match + "/"
-        allargs = self.aug.match(match + '*')
-        return [self.get_arg(arg) for arg in allargs]
 
     def get_arg(self, match: str) -> Optional[str]:
         """Uses augeas.get to get argument value and interprets result.

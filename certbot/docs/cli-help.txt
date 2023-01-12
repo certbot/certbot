@@ -35,7 +35,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -126,7 +126,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.31.0 (certbot;
+                        "". (default: CertbotACMEClient/2.2.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -196,7 +196,7 @@ security:
   --key-type {rsa,ecdsa}
                         Type of generated private key. Only *ONE* per
                         invocation can be provided at this time. (default:
-                        rsa)
+                        ecdsa)
   --elliptic-curve N    The SECG elliptic curve name to use. Please see RFC
                         8446 for supported values. (default: secp256r1)
   --must-staple         Adds the OCSP Must-Staple extension to the
@@ -460,8 +460,6 @@ plugins:
                         directory. (default: False)
   --dns-cloudflare      Obtain certificates using a DNS TXT record (if you are
                         using Cloudflare for DNS). (default: False)
-  --dns-cloudxns        Obtain certificates using a DNS TXT record (if you are
-                        using CloudXNS for DNS). (default: False)
   --dns-digitalocean    Obtain certificates using a DNS TXT record (if you are
                         using DigitalOcean for DNS). (default: False)
   --dns-dnsimple        Obtain certificates using a DNS TXT record (if you are
@@ -533,17 +531,6 @@ dns-cloudflare:
                         record. (default: 10)
   --dns-cloudflare-credentials DNS_CLOUDFLARE_CREDENTIALS
                         Cloudflare credentials INI file. (default: None)
-
-dns-cloudxns:
-  Obtain certificates using a DNS TXT record (if you are using CloudXNS for
-  DNS).
-
-  --dns-cloudxns-propagation-seconds DNS_CLOUDXNS_PROPAGATION_SECONDS
-                        The number of seconds to wait for DNS to propagate
-                        before asking the ACME server to verify the DNS
-                        record. (default: 30)
-  --dns-cloudxns-credentials DNS_CLOUDXNS_CREDENTIALS
-                        CloudXNS credentials INI file. (default: None)
 
 dns-digitalocean:
   Obtain certificates using a DNS TXT record (if you are using DigitalOcean

@@ -37,7 +37,10 @@ if [ -f poetry.lock ]; then
     rm poetry.lock
 fi
 
-poetry lock >&2
+# If you're running this with different Python versions (say to update both our
+# "current" and "oldest" pinnings), poetry's cache can become corrupted causing
+# poetry to hang indefinitely. --no-cache avoids this.
+poetry lock --no-cache >&2
 trap 'rm poetry.lock' EXIT
 
 # We need to remove local packages from the output.

@@ -124,7 +124,9 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
     rely on any existing server program.
     """
 
-    description = "Spin up a temporary webserver"
+    description = """Runs an HTTP server locally which serves the necessary validation files \
+under the /.well-known/acme-challenge/ request path. Suitable if there is no HTTP server already \
+running. HTTP challenge only (wildcards not supported)."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

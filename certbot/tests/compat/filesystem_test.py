@@ -2,11 +2,7 @@
 import contextlib
 import errno
 import unittest
-
-try:
-    import mock
-except ImportError: # pragma: no cover
-    from unittest import mock
+from unittest import mock
 
 from certbot import util
 from certbot._internal import lock
@@ -288,6 +284,31 @@ class WindowsOpenTest(TempDirTestCase):
         finally:
             if handler:
                 os.close(handler)
+
+
+class TempUmaskTests(test_util.TempDirTestCase):
+    """Tests for using the TempUmask class in `with` statements"""
+    def _check_umask(self):
+        old_umask = filesystem.umask(0)
+        filesystem.umask(old_umask)
+        return old_umask
+
+    def test_works_normally(self):
+        filesystem.umask(0o0022)
+        self.assertEqual(self._check_umask(), 0o0022)
+        with filesystem.temp_umask(0o0077):
+            self.assertEqual(self._check_umask(), 0o0077)
+        self.assertEqual(self._check_umask(), 0o0022)
+
+    def test_resets_umask_after_exception(self):
+        filesystem.umask(0o0022)
+        self.assertEqual(self._check_umask(), 0o0022)
+        try:
+            with filesystem.temp_umask(0o0077):
+                self.assertEqual(self._check_umask(), 0o0077)
+                raise Exception()
+        except:
+            self.assertEqual(self._check_umask(), 0o0022)
 
 
 @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')

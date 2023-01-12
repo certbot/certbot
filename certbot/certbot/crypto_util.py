@@ -15,7 +15,6 @@ from typing import Set
 from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
-import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -35,7 +34,6 @@ import josepy
 from OpenSSL import crypto
 from OpenSSL import SSL
 import pyrfc3339
-import zope.component
 
 from acme import crypto_util as acme_crypto_util
 from certbot import errors
@@ -100,41 +98,6 @@ def generate_key(key_size: int, key_dir: str, key_type: str = "rsa",
     return util.Key(key_path, key_pem)
 
 
-# TODO: Remove this call once zope dependencies are removed from Certbot.
-def init_save_key(key_size: int, key_dir: str, key_type: str = "rsa",
-                  elliptic_curve: str = "secp256r1",
-                  keyname: str = "key-certbot.pem") -> util.Key:
-    """Initializes and saves a privkey.
-
-    Inits key and saves it in PEM format on the filesystem.
-
-    .. note:: keyname is the attempted filename, it may be different if a file
-        already exists at the path.
-
-    .. deprecated:: 1.16.0
-       Use :func:`generate_key` instead.
-
-    :param int key_size: key size in bits if key size is rsa.
-    :param str key_dir: Key save directory.
-    :param str key_type: Key Type [rsa, ecdsa]
-    :param str elliptic_curve: Name of the elliptic curve if key type is ecdsa.
-    :param str keyname: Filename of key
-
-    :returns: Key
-    :rtype: :class:`certbot.util.Key`
-
-    :raises ValueError: If unable to generate the key given key_size.
-
-    """
-    warnings.warn("certbot.crypto_util.init_save_key is deprecated, please use "
-                  "certbot.crypto_util.generate_key instead.", DeprecationWarning)
-
-    config = zope.component.getUtility(interfaces.IConfig)
-
-    return generate_key(key_size, key_dir, key_type=key_type, elliptic_curve=elliptic_curve,
-                        keyname=keyname, strict_permissions=config.strict_permissions)
-
-
 def generate_csr(privkey: util.Key, names: Union[List[str], Set[str]], path: str,
                  must_staple: bool = False, strict_permissions: bool = True) -> util.CSR:
     """Initialize a CSR with the given private key.
@@ -163,33 +126,6 @@ def generate_csr(privkey: util.Key, names: Union[List[str], Set[str]], path: str
     logger.debug("Creating CSR: %s", csr_filename)
 
     return util.CSR(csr_filename, csr_pem, "pem")
-
-
-# TODO: Remove this call once zope dependencies are removed from Certbot.
-def init_save_csr(privkey: util.Key, names: Set[str], path: str) -> util.CSR:
-    """Initialize a CSR with the given private key.
-
-    .. deprecated:: 1.16.0
-       Use :func:`generate_csr` instead.
-
-    :param privkey: Key to include in the CSR
-    :type privkey: :class:`certbot.util.Key`
-
-    :param set names: `str` names to include in the CSR
-
-    :param str path: Certificate save directory.
-
-    :returns: CSR
-    :rtype: :class:`certbot.util.CSR`
-
-    """
-    warnings.warn("certbot.crypto_util.init_save_csr is deprecated, please use "
-                  "certbot.crypto_util.generate_csr instead.", DeprecationWarning)
-
-    config = zope.component.getUtility(interfaces.IConfig)
-
-    return generate_csr(privkey, names, path, must_staple=config.must_staple,
-                        strict_permissions=config.strict_permissions)
 
 
 # WARNING: the csr and private key file are possible attack vectors for TOCTOU

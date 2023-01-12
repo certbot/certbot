@@ -70,7 +70,7 @@ class DNSServer:
             try:
                 self.process.terminate()
                 self.process.wait(constants.MAX_SUBPROCESS_WAIT)
-            except BaseException as e:
+            except BaseException as e:  # pylint: disable=broad-except
                 print("BIND9 did not stop cleanly: {}".format(e), file=sys.stderr)
 
         shutil.rmtree(self.bind_root, ignore_errors=True)

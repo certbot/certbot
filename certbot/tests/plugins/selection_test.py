@@ -2,7 +2,7 @@
 import sys
 from typing import List
 import unittest
-
+from unittest import mock
 
 from certbot import errors
 from certbot import interfaces
@@ -10,11 +10,6 @@ from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins.disco import PluginsRegistry
 from certbot.display import util as display_util
 from certbot.tests import util as test_util
-
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
 
 
 class ConveniencePickPluginTest(unittest.TestCase):
@@ -77,7 +72,7 @@ class PickPluginTest(unittest.TestCase):
         plugin_ep.init.return_value = "foo"
         plugin_ep.misconfigured = False
 
-        self.reg.visible().ifaces().verify().available.return_value = {
+        self.reg.visible().ifaces().available.return_value = {
             "bar": plugin_ep}
         self.assertEqual("foo", self._call())
 
@@ -86,14 +81,14 @@ class PickPluginTest(unittest.TestCase):
         plugin_ep.init.return_value = "foo"
         plugin_ep.misconfigured = True
 
-        self.reg.visible().ifaces().verify().available.return_value = {
+        self.reg.visible().ifaces().available.return_value = {
             "bar": plugin_ep}
         self.assertIsNone(self._call())
 
     def test_multiple(self):
         plugin_ep = mock.MagicMock()
         plugin_ep.init.return_value = "foo"
-        self.reg.visible().ifaces().verify().available.return_value = {
+        self.reg.visible().ifaces().available.return_value = {
             "bar": plugin_ep,
             "baz": plugin_ep,
         }
@@ -104,7 +99,7 @@ class PickPluginTest(unittest.TestCase):
             [plugin_ep, plugin_ep], self.question)
 
     def test_choose_plugin_none(self):
-        self.reg.visible().ifaces().verify().available.return_value = {
+        self.reg.visible().ifaces().available.return_value = {
             "bar": None,
             "baz": None,
         }

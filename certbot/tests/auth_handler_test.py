@@ -1,13 +1,10 @@
 """Tests for certbot._internal.auth_handler."""
-import functools
+import datetime
 import logging
 import unittest
 
 from josepy import b64encode
-try:
-    import mock
-except ImportError:  # pragma: no cover
-    from unittest import mock
+from unittest import mock
 
 from acme import challenges
 from acme import client as acme_client
@@ -15,7 +12,6 @@ from acme import errors as acme_errors
 from acme import messages
 from certbot import achallenges
 from certbot import errors
-from certbot import util
 from certbot._internal.display import obj as display_obj
 from certbot.plugins import common as plugin_common
 from certbot.tests import acme_util
@@ -33,7 +29,7 @@ class ChallengeFactoryTest(unittest.TestCase):
 
         self.authzr = acme_util.gen_authzr(
             messages.STATUS_PENDING, "test", acme_util.CHALLENGES,
-            [messages.STATUS_PENDING] * 6, False)
+            [messages.STATUS_PENDING] * 6)
 
     def test_all(self):
         achalls = self.handler._challenge_factory(
@@ -70,8 +66,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_display = mock.Mock()
         self.mock_config = mock.Mock(debug_challenges=False)
-        with mock.patch("zope.component.provideUtility"):
-            display_obj.set_display(self.mock_display)
+        display_obj.set_display(self.mock_display)
 
         self.mock_auth = mock.MagicMock(name="Authenticator")
 
@@ -81,7 +76,6 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_account = mock.MagicMock()
         self.mock_net = mock.MagicMock(spec=acme_client.ClientV2)
-        self.mock_net.acme_version = 1
         self.mock_net.retry_after.side_effect = acme_client.ClientV2.retry_after
 
         self.handler = AuthHandler(
@@ -92,8 +86,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
     def tearDown(self):
         logging.disable(logging.NOTSET)
 
-    def _test_name1_http_01_1_common(self, combos):
-        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=combos)
+    def _test_name1_http_01_1_common(self):
+        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)
         mock_order = mock.MagicMock(authorizations=[authzr])
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll(retry=1, wait_value=30)
@@ -117,39 +111,14 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
             self.assertEqual(len(authzr), 1)
 
-    def test_name1_http_01_1_acme_1(self):
-        self._test_name1_http_01_1_common(combos=True)
-
     def test_name1_http_01_1_acme_2(self):
-        self.mock_net.acme_version = 2
-        self._test_name1_http_01_1_common(combos=False)
-
-    def test_name1_http_01_1_dns_1_acme_1(self):
-        self.mock_net.poll.side_effect = _gen_mock_on_poll()
-        self.mock_auth.get_chall_pref.return_value.append(challenges.DNS01)
-
-        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=False)
-        mock_order = mock.MagicMock(authorizations=[authzr])
-        authzr = self.handler.handle_authorizations(mock_order, self.mock_config)
-
-        self.assertEqual(self.mock_net.answer_challenge.call_count, 2)
-
-        self.assertEqual(self.mock_net.poll.call_count, 1)
-
-        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
-        # Test if list first element is http-01, use typ because it is an achall
-        for achall in self.mock_auth.cleanup.call_args[0][0]:
-            self.assertIn(achall.typ, ["http-01", "dns-01"])
-
-        # Length of authorizations list
-        self.assertEqual(len(authzr), 1)
+        self._test_name1_http_01_1_common()
 
     def test_name1_http_01_1_dns_1_acme_2(self):
-        self.mock_net.acme_version = 2
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
         self.mock_auth.get_chall_pref.return_value.append(challenges.DNS01)
 
-        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=False)
+        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)
         mock_order = mock.MagicMock(authorizations=[authzr])
         authzr = self.handler.handle_authorizations(mock_order, self.mock_config)
 
@@ -165,7 +134,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         # Length of authorizations list
         self.assertEqual(len(authzr), 1)
 
-    def _test_name3_http_01_3_common(self, combos):
+    def test_name3_http_01_3_common_acme_2(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES),
                    gen_dom_authzr(domain="1", challs=acme_util.CHALLENGES),
                    gen_dom_authzr(domain="2", challs=acme_util.CHALLENGES)]
@@ -182,13 +151,6 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
 
         self.assertEqual(len(authzr), 3)
-
-    def test_name3_http_01_3_common_acme_1(self):
-        self._test_name3_http_01_3_common(combos=True)
-
-    def test_name3_http_01_3_common_acme_2(self):
-        self.mock_net.acme_version = 2
-        self._test_name3_http_01_3_common(combos=False)
 
     def test_debug_challenges(self):
         config = mock.Mock(debug_challenges=True, verbose_count=0)
@@ -264,13 +226,46 @@ class HandleAuthorizationsTest(unittest.TestCase):
             self.handler.handle_authorizations(mock_order, self.mock_config, False, 1)
         self.assertIn('All authorizations were not finalized by the CA.', str(error.exception))
 
+    @mock.patch('certbot._internal.auth_handler.time.sleep')
+    def test_deadline_exceeded(self, mock_sleep):
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+
+        orig_now = datetime.datetime.now
+        state = {'time_slept': 0}
+
+        def mock_sleep_effect(secs):
+            state['time_slept'] += secs
+        mock_sleep.side_effect = mock_sleep_effect
+
+        def mock_now_effect():
+            return orig_now() + datetime.timedelta(seconds=state["time_slept"])
+
+        # We will return STATUS_PENDING and ask Certbot to sleep for 20 minutes at a time.
+        interval = datetime.timedelta(minutes=20).seconds
+        self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_PENDING,
+                                                           wait_value=interval)
+
+        with self.assertRaises(errors.AuthorizationError) as error, \
+             mock.patch('certbot._internal.auth_handler.datetime.datetime') as mock_dt:
+            mock_dt.now.side_effect = mock_now_effect
+            # Polling will only proceed for 30 minutes at most, so the second 20 minute sleep
+            # should be truncated and the polling should be aborted.
+            self.handler.handle_authorizations(mock_order, self.mock_config, False)
+        self.assertIn('All authorizations were not finalized by the CA.', str(error.exception))
+
+        self.assertEqual(mock_sleep.call_count, 3) # 1s, 20m and 10m sleep
+        self.assertEqual(mock_sleep.call_args_list[0][0][0], 1)
+        self.assertAlmostEqual(mock_sleep.call_args_list[1][0][0], interval - 1, delta=1)
+        self.assertAlmostEqual(mock_sleep.call_args_list[2][0][0], interval/2 - 1, delta=1)
+
     def test_no_domains(self):
         mock_order = mock.MagicMock(authorizations=[])
         self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations,
                           mock_order, self.mock_config)
 
-    def _test_preferred_challenge_choice_common(self, combos):
-        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=combos)]
+    def test_preferred_challenge_choice_common_acme_2(self):
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
@@ -285,27 +280,13 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
 
-    def test_preferred_challenge_choice_common_acme_1(self):
-        self._test_preferred_challenge_choice_common(combos=True)
-
-    def test_preferred_challenge_choice_common_acme_2(self):
-        self.mock_net.acme_version = 2
-        self._test_preferred_challenge_choice_common(combos=False)
-
-    def _test_preferred_challenges_not_supported_common(self, combos):
-        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=combos)]
+    def test_preferred_challenges_not_supported_acme_2(self):
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
         self.handler.pref_challs.append(challenges.DNS01.typ)
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations,
             mock_order, self.mock_config)
-
-    def test_preferred_challenges_not_supported_acme_1(self):
-        self._test_preferred_challenges_not_supported_common(combos=True)
-
-    def test_preferred_challenges_not_supported_acme_2(self):
-        self.mock_net.acme_version = 2
-        self._test_preferred_challenges_not_supported_common(combos=False)
 
     def test_dns_only_challenge_not_supported(self):
         authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.DNS01])]
@@ -317,7 +298,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
     def test_perform_error(self):
         self.mock_auth.perform.side_effect = errors.AuthorizationError
 
-        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=True)
+        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)
         mock_order = mock.MagicMock(authorizations=[authzr])
         self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations,
                           mock_order, self.mock_config)
@@ -392,7 +373,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         authzr = acme_util.gen_authzr(
                 messages.STATUS_PENDING, "0",
                 [acme_util.DNS01],
-                [messages.STATUS_PENDING], False)
+                [messages.STATUS_PENDING])
         mock_order = mock.MagicMock(authorizations=[authzr])
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations,
@@ -404,7 +385,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         authzr = acme_util.gen_authzr(
                 messages.STATUS_VALID, "0",
                 [acme_util.DNS01],
-                [messages.STATUS_VALID], False)
+                [messages.STATUS_VALID])
         mock_order = mock.MagicMock(authorizations=[authzr])
         self.handler.handle_authorizations(mock_order, self.mock_config)
 
@@ -426,7 +407,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
                          ("is_valid_but_will_fail", messages.STATUS_VALID)]
 
         to_deactivate = [acme_util.gen_authzr(a[1], a[0], [acme_util.HTTP01],
-                         [a[1], False]) for a in to_deactivate]
+                         [a[1]]) for a in to_deactivate]
         orderr = mock.MagicMock(authorizations=to_deactivate)
 
         self.mock_net.deactivate_authorization.side_effect = _mock_deactivate
@@ -452,8 +433,7 @@ def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0, wait_value=1):
             effective_status,
             authzr.body.identifier.value,
             [challb.chall for challb in authzr.body.challenges],
-            [effective_status] * len(authzr.body.challenges),
-            authzr.body.combinations)
+            [effective_status] * len(authzr.body.challenges))
         return updated_azr, mock.MagicMock(headers={'Retry-After': str(wait_value)})
     return _mock
 
@@ -477,8 +457,6 @@ class ChallbToAchallTest(unittest.TestCase):
 class GenChallengePathTest(unittest.TestCase):
     """Tests for certbot._internal.auth_handler.gen_challenge_path.
 
-    .. todo:: Add more tests for dumb_path... depending on what we want to do.
-
     """
     def setUp(self):
         logging.disable(logging.FATAL)
@@ -487,34 +465,25 @@ class GenChallengePathTest(unittest.TestCase):
         logging.disable(logging.NOTSET)
 
     @classmethod
-    def _call(cls, challbs, preferences, combinations):
+    def _call(cls, challbs, preferences):
         from certbot._internal.auth_handler import gen_challenge_path
-        return gen_challenge_path(challbs, preferences, combinations)
+        return gen_challenge_path(challbs, preferences)
 
     def test_common_case(self):
         """Given DNS01 and HTTP01 with appropriate combos."""
         challbs = (acme_util.DNS01_P, acme_util.HTTP01_P)
         prefs = [challenges.DNS01, challenges.HTTP01]
-        combos = ((0,), (1,))
 
-        # Smart then trivial dumb path test
-        self.assertEqual(self._call(challbs, prefs, combos), (0,))
-        self.assertTrue(self._call(challbs, prefs, None))
-        # Rearrange order...
-        self.assertEqual(self._call(challbs[::-1], prefs, combos), (1,))
-        self.assertTrue(self._call(challbs[::-1], prefs, None))
+        self.assertEqual(self._call(challbs, prefs), (0,))
+        self.assertEqual(self._call(challbs[::-1], prefs), (1,))
 
     def test_not_supported(self):
-        challbs = (acme_util.DNS01_P, acme_util.HTTP01_P)
+        challbs = (acme_util.DNS01_P,)
         prefs = [challenges.HTTP01]
-        combos = ((0, 1),)
 
-        # smart path fails because no challs in perfs satisfies combos
+        # smart path fails because no challs in prefs satisfies combos
         self.assertRaises(
-            errors.AuthorizationError, self._call, challbs, prefs, combos)
-        # dumb path fails because all challbs are not supported
-        self.assertRaises(
-            errors.AuthorizationError, self._call, challbs, prefs, None)
+            errors.AuthorizationError, self._call, challbs, prefs)
 
 
 class ReportFailedAuthzrsTest(unittest.TestCase):
@@ -615,11 +584,11 @@ def gen_auth_resp(chall_list):
             for chall in chall_list]
 
 
-def gen_dom_authzr(domain, challs, combos=True):
+def gen_dom_authzr(domain, challs):
     """Generates new authzr for domains."""
     return acme_util.gen_authzr(
         messages.STATUS_PENDING, domain, challs,
-        [messages.STATUS_PENDING] * len(challs), combos)
+        [messages.STATUS_PENDING] * len(challs))
 
 
 if __name__ == "__main__":
