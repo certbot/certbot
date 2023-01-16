@@ -373,13 +373,13 @@ class ClientTest(ClientTestCommon):
 
         mock_crypto_util.generate_key.assert_called_once_with(
             key_size=self.config.rsa_key_size,
-            key_dir=self.config.key_dir,
+            key_dir=None,
             key_type=self.config.key_type,
             elliptic_curve="secp256r1",
             strict_permissions=True,
         )
         mock_crypto_util.generate_csr.assert_called_once_with(
-            mock.sentinel.key, self.eg_domains, self.config.csr_dir, False, True)
+            mock.sentinel.key, self.eg_domains, None, False, True)
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
             self.eg_order.fullchain_pem)
 
@@ -435,8 +435,8 @@ class ClientTest(ClientTestCommon):
         successful_domains = [d for d in self.eg_domains if d != 'example.com']
         self.assertEqual(mock_crypto_util.generate_key.call_count, 2)
         mock_crypto_util.generate_csr.assert_has_calls([
-            mock.call(key, self.eg_domains, self.config.csr_dir, self.config.must_staple, self.config.strict_permissions),
-            mock.call(key, successful_domains, self.config.csr_dir, self.config.must_staple, self.config.strict_permissions)])
+            mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions),
+            mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions)])
         self.assertEqual(mock_remove.call_count, 2)
         self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
 
@@ -529,8 +529,8 @@ class ClientTest(ClientTestCommon):
         successful_domains = [d for d in self.eg_domains if d != 'example.com']
         self.assertEqual(mock_crypto_util.generate_key.call_count, 2)
         mock_crypto_util.generate_csr.assert_has_calls([
-            mock.call(key, self.eg_domains, self.config.csr_dir, self.config.must_staple, self.config.strict_permissions),
-            mock.call(key, successful_domains, self.config.csr_dir, self.config.must_staple, self.config.strict_permissions)])
+            mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions),
+            mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions)])
         self.assertEqual(mock_remove.call_count, 2)
         self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
 

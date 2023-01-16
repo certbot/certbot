@@ -416,13 +416,13 @@ class Client:
         else:
             key = key or crypto_util.generate_key(
                 key_size=key_size,
-                key_dir=self.config.key_dir,
+                key_dir=None,
                 key_type=self.config.key_type,
                 elliptic_curve=elliptic_curve,
                 strict_permissions=self.config.strict_permissions,
             )
-            csr = crypto_util.generate_csr(key, domains, self.config.csr_dir,
-                                           self.config.must_staple, self.config.strict_permissions)
+            csr = crypto_util.generate_csr(
+                key, domains, None, self.config.must_staple, self.config.strict_permissions)
 
         try:
             orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
@@ -548,8 +548,10 @@ class Client:
         display_util.notify("Unable to obtain a certificate with every requested "
             f"domain. Retrying without: {domains_list}")
         if not self.config.dry_run:
-            os.remove(key.file)
-            os.remove(csr.file)
+            if key.file:
+                os.remove(key.file)
+            if csr.file:
+                os.remove(csr.file)
         return self.obtain_certificate(successful_domains)
 
     def _choose_lineagename(self, domains: List[str], certname: Optional[str]) -> str:

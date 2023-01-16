@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 # High level functions
 
-def generate_key(key_size: int, key_dir: str, key_type: str = "rsa",
+def generate_key(key_size: int, key_dir: Optional[str], key_type: str = "rsa",
                  elliptic_curve: str = "secp256r1", keyname: str = "key-certbot.pem",
                  strict_permissions: bool = True) -> util.Key:
     """Initializes and saves a privkey.
@@ -62,7 +62,7 @@ def generate_key(key_size: int, key_dir: str, key_type: str = "rsa",
         already exists at the path.
 
     :param int key_size: key size in bits if key size is rsa.
-    :param str key_dir: Key save directory.
+    :param str key_dir: Optional key save directory.
     :param str key_type: Key Type [rsa, ecdsa]
     :param str elliptic_curve: Name of the elliptic curve if key type is ecdsa.
     :param str keyname: Filename of key
@@ -85,27 +85,29 @@ def generate_key(key_size: int, key_dir: str, key_type: str = "rsa",
         raise err
 
     # Save file
-    util.make_or_verify_dir(key_dir, 0o700, strict_permissions)
-    key_f, key_path = util.unique_file(
-        os.path.join(key_dir, keyname), 0o600, "wb")
-    with key_f:
-        key_f.write(key_pem)
-    if key_type == 'rsa':
-        logger.debug("Generating RSA key (%d bits): %s", key_size, key_path)
-    else:
-        logger.debug("Generating ECDSA key (%d bits): %s", key_size, key_path)
+    key_path = None
+    if key_dir:
+        util.make_or_verify_dir(key_dir, 0o700, strict_permissions)
+        key_f, key_path = util.unique_file(
+            os.path.join(key_dir, keyname), 0o600, "wb")
+        with key_f:
+            key_f.write(key_pem)
+        if key_type == 'rsa':
+            logger.debug("Generating RSA key (%d bits): %s", key_size, key_path)
+        else:
+            logger.debug("Generating ECDSA key (%d bits): %s", key_size, key_path)
 
     return util.Key(key_path, key_pem)
 
 
-def generate_csr(privkey: util.Key, names: Union[List[str], Set[str]], path: str,
+def generate_csr(privkey: util.Key, names: Union[List[str], Set[str]], path: Optional[str],
                  must_staple: bool = False, strict_permissions: bool = True) -> util.CSR:
     """Initialize a CSR with the given private key.
 
     :param privkey: Key to include in the CSR
     :type privkey: :class:`certbot.util.Key`
     :param set names: `str` names to include in the CSR
-    :param str path: Certificate save directory.
+    :param str path: Optional certificate save directory.
     :param bool must_staple: If true, include the TLS Feature extension "OCSP Must-Staple"
     :param bool strict_permissions: If true and path exists, an exception is raised if
         the directory doesn't have 0755 permissions or isn't owned by the current user.
@@ -117,13 +119,15 @@ def generate_csr(privkey: util.Key, names: Union[List[str], Set[str]], path: str
     csr_pem = acme_crypto_util.make_csr(
         privkey.pem, names, must_staple=must_staple)
 
-    # Save CSR
-    util.make_or_verify_dir(path, 0o755, strict_permissions)
-    csr_f, csr_filename = util.unique_file(
-        os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
-    with csr_f:
-        csr_f.write(csr_pem)
-    logger.debug("Creating CSR: %s", csr_filename)
+    # Save CSR, if requested
+    csr_filename = None
+    if path:
+        util.make_or_verify_dir(path, 0o755, strict_permissions)
+        csr_f, csr_filename = util.unique_file(
+            os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
+        with csr_f:
+            csr_f.write(csr_pem)
+        logger.debug("Creating CSR: %s", csr_filename)
 
     return util.CSR(csr_filename, csr_pem, "pem")
 
@@ -254,10 +258,10 @@ def make_key(bits: int = 1024, key_type: str = "rsa",
     return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 
 
-def valid_privkey(privkey: str) -> bool:
+def valid_privkey(privkey: Union[str, bytes]) -> bool:
     """Is valid RSA private key?
 
-    :param str privkey: Private key file contents in PEM
+    :param privkey: Private key file contents in PEM
 
     :returns: Validity of private key.
     :rtype: bool
