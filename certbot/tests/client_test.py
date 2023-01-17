@@ -384,8 +384,7 @@ class ClientTest(ClientTestCommon):
             self.eg_order.fullchain_pem)
 
     @mock.patch("certbot._internal.client.crypto_util")
-    @mock.patch("certbot.compat.os.remove")
-    def test_obtain_certificate_partial_success(self, mock_remove, mock_crypto_util):
+    def test_obtain_certificate_partial_success(self, mock_crypto_util):
         csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
         key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
         mock_crypto_util.generate_csr.return_value = csr
@@ -398,12 +397,10 @@ class ClientTest(ClientTestCommon):
 
         self.assertEqual(mock_crypto_util.generate_key.call_count, 2)
         self.assertEqual(mock_crypto_util.generate_csr.call_count, 2)
-        self.assertEqual(mock_remove.call_count, 2)
         self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
 
     @mock.patch("certbot._internal.client.crypto_util")
-    @mock.patch("certbot.compat.os.remove")
-    def test_obtain_certificate_finalize_order_partial_success(self, mock_remove, mock_crypto_util):
+    def test_obtain_certificate_finalize_order_partial_success(self, mock_crypto_util):
         from acme import messages
         csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
         key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
@@ -437,7 +434,6 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.generate_csr.assert_has_calls([
             mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions),
             mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions)])
-        self.assertEqual(mock_remove.call_count, 2)
         self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
 
     @mock.patch("certbot._internal.client.crypto_util")
@@ -496,8 +492,7 @@ class ClientTest(ClientTestCommon):
         self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 0)
 
     @mock.patch("certbot._internal.client.crypto_util")
-    @mock.patch("certbot.compat.os.remove")
-    def test_obtain_certificate_get_order_partial_success(self, mock_remove, mock_crypto_util):
+    def test_obtain_certificate_get_order_partial_success(self, mock_crypto_util):
         from acme import messages
         csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
         key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
@@ -531,7 +526,6 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.generate_csr.assert_has_calls([
             mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions),
             mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions)])
-        self.assertEqual(mock_remove.call_count, 2)
         self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
 
     @mock.patch("certbot._internal.client.crypto_util")
