@@ -1,4 +1,5 @@
 """Renewable certificates storage."""
+# pylint: disable=too-many-lines
 import datetime
 import glob
 import logging
@@ -1243,3 +1244,42 @@ class RenewableCert(interfaces.RenewableCert):
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version
+
+    def truncate(self, current_version: int, previous_version: int,
+                 expiry_cutoff: Optional[datetime.datetime] = None) -> None:
+        """Delete unused historical certificate, chain and key items from the lineage.
+
+        A certificate version will be deleted if it is:
+          1. not the current target, and
+          2. not the previous version (current minus 1), and
+          3. expired (if expiry_cutoff is specified, otherwise all other certs are culled).
+
+        :param expiry_cutoff: The notAfter date after which a certificate is considered expired.
+
+        """
+        # Do not want to delete the current or current-1th target.
+        versions_to_delete = self.available_versions("cert")
+        try:
+            versions_to_delete.remove(current_version)
+            versions_to_delete.remove(previous_version)
+        except ValueError:
+            pass
+        archive = self.archive_dir
+
+        # Optionally, only delete certificates which are already expired.
+        if expiry_cutoff:
+            first_expired_version = next((v for v in versions_to_delete if
+                crypto_util.notAfter(os.path.join(archive, f"cert{v}.pem")) <= expiry_cutoff),
+                None
+            )
+            if first_expired_version:
+                versions_to_delete = [v for v in versions_to_delete if v <= first_expired_version]
+
+        # Delete the remaining lineage items kinds for those certificate versions.
+        for ver in versions_to_delete:
+            logger.debug("Deleting %s/cert%d.pem and related items during clean up",
+                         archive, ver)
+            for kind in ALL_FOUR:
+                item_path = os.path.join(archive, f"{kind}{ver}.pem")
+                if os.path.exists(item_path):
+                    os.unlink(item_path)
