@@ -1255,7 +1255,7 @@ class RenewableCert(interfaces.RenewableCert):
         :param num_prior_certs_to_keep: How many prior certificate versions to keep.
 
         """
-        # Do not want to delete the current or current-1th target.
+        # Do not want to delete the current target or current-Nth certificate.
         current_version = self.latest_common_version()
         versions_to_delete = set(self.available_versions("cert"))
         versions_to_delete -= set(range(current_version,
