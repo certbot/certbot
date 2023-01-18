@@ -390,9 +390,9 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str
     else:
         prior_version = lineage.latest_common_version()
         # TODO: Check return value of save_successor
-        version = lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, config)
+        lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, config)
         lineage.update_all_links_to(lineage.latest_common_version())
-        lineage.truncate(version, prior_version)
+        lineage.truncate()
 
     hooks.renew_hook(config, domains, lineage.live_dir)
 

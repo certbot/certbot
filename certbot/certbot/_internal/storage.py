@@ -1245,35 +1245,22 @@ class RenewableCert(interfaces.RenewableCert):
 
         return target_version
 
-    def truncate(self, current_version: int, previous_version: int,
-                 expiry_cutoff: Optional[datetime.datetime] = None) -> None:
+    def truncate(self, num_prior_certs_to_keep: int = 5) -> None:
         """Delete unused historical certificate, chain and key items from the lineage.
 
         A certificate version will be deleted if it is:
           1. not the current target, and
-          2. not the previous version (current minus 1), and
-          3. expired (if expiry_cutoff is specified, otherwise all other certs are culled).
+          2. not a previous version within num_prior_certs_to_keep.
 
-        :param expiry_cutoff: The notAfter date after which a certificate is considered expired.
+        :param num_prior_certs_to_keep: How many prior certificate versions to keep.
 
         """
         # Do not want to delete the current or current-1th target.
-        versions_to_delete = self.available_versions("cert")
-        try:
-            versions_to_delete.remove(current_version)
-            versions_to_delete.remove(previous_version)
-        except ValueError:
-            pass
+        current_version = self.latest_common_version()
+        versions_to_delete = set(self.available_versions("cert"))
+        versions_to_delete -= set(range(current_version,
+                                        current_version - 1 - num_prior_certs_to_keep, -1))
         archive = self.archive_dir
-
-        # Optionally, only delete certificates which are already expired.
-        if expiry_cutoff:
-            first_expired_version = next((v for v in versions_to_delete if
-                crypto_util.notAfter(os.path.join(archive, f"cert{v}.pem")) <= expiry_cutoff),
-                None
-            )
-            if first_expired_version:
-                versions_to_delete = [v for v in versions_to_delete if v <= first_expired_version]
 
         # Delete the remaining lineage items kinds for those certificate versions.
         for ver in versions_to_delete:
@@ -1281,5 +1268,8 @@ class RenewableCert(interfaces.RenewableCert):
                          archive, ver)
             for kind in ALL_FOUR:
                 item_path = os.path.join(archive, f"{kind}{ver}.pem")
-                if os.path.exists(item_path):
-                    os.unlink(item_path)
+                try:
+                    if os.path.exists(item_path):
+                        os.unlink(item_path)
+                except OSError:
+                    logger.debug("Failed to clean up %s", item_path, exc_info=True)
