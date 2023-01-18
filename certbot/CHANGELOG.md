@@ -10,7 +10,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Certbot will no longer save previous CSRs and certificate private keys to `/etc/letsencrypt/csr` and `/etc/letsencrypt/keys`, respectively. These directories may be safely deleted.
+* Certbot will now only keep the current and 1 previous certificate in the `/etc/letsencrypt/archive` directory for each certificate. Any prior certificates will be automatically deleted upon renewal.
+  * As always, users should only reference the certificate files within `/etc/letsencrypt/live` and never use `/etc/letsencrypt/archive` directly. See [Where are my certificates?](https://eff-certbot.readthedocs.io/en/stable/using.html#where-are-my-certificates) in the Certbot User Guide.
+* `certbot.configuration.NamespaceConfig.key_dir` and `.csr_dir` are now deprecated.
 
 ### Fixed
 
