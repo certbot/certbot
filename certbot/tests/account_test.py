@@ -131,7 +131,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
 
     def test_ec_key(self):
         from certbot._internal.account import Account
-        key = JWKEC.load(test_util.load_vector("ec_secp256r1_key.pem"))
+        key = JWKEC.load(test_util.load_vector("nistp256_key.pem"))
         self.acc = Account(
             regr=messages.RegistrationResource(
                 uri=None, body=messages.Registration(),

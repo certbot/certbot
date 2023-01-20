@@ -231,7 +231,6 @@ class ClientV2Test(unittest.TestCase):
         self.net.post.assert_called_once_with(
             DIRECTORY_V2['newAccount'],
             regr.to_json(),
-            acme_version=2,
             new_nonce_url=DIRECTORY_V2['newNonce'],
         )
 

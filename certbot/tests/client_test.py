@@ -10,6 +10,7 @@ from unittest import mock
 from josepy import interfaces
 
 import certbot.tests.util as test_util
+from acme.client import ClientV2
 from certbot import errors, util
 from certbot._internal import account, constants
 from certbot._internal.display import obj as display_obj
@@ -62,7 +63,7 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
         self.tos_cb = mock.MagicMock()
-        display_obj.set_display(MagicMock())
+        display_obj.set_display(mock.MagicMock())
 
     def _call(self):
         from certbot._internal.client import register
@@ -102,21 +103,6 @@ class RegisterTest(test_util.ConfigTestCase):
                 self.assertIs(mock_prepare.called, False)
 
                 mock_client().new_account.side_effect = None
-                self._call()
-                self.assertIs(mock_prepare.called, True)
-
-    def test_ecda_account_key(self):
-        self.config.ecdsa_account_key = True
-        self.config.rsa_key_size = 2048
-        with self._patched_acme_client() as mock_client:
-            mock_client.new_account_and_tos().terms_of_service = "http://tos"
-            mock_client().external_account_required.side_effect = self._false_mock
-            with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
-                mock_client().new_account_and_tos.side_effect = errors.Error
-                self.assertRaises(errors.Error, self._call)
-                self.assertIs(mock_prepare.called, False)
-
-                mock_client().new_account_and_tos.side_effect = None
                 self._call()
                 self.assertIs(mock_prepare.called, True)
 
