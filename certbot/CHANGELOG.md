@@ -10,6 +10,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* A flag has been introduced to create an ECDSA ([EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography))
+  account key for `certonly`, `register`. Existing accounts will not be affected.
+  Reason for this is bandwidth usage on ACME servers, as well as increased security.
+  Only new accounts can be registered like this.
 *
 
 ### Fixed
@@ -179,7 +183,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* Updated Windows installer to be signed and trusted in Windows 
+* Updated Windows installer to be signed and trusted in Windows
 
 ### Changed
 
@@ -237,10 +241,6 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* A flag has been introduced to create an ECDSA ([EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography))
-  account key for `certonly`, `register`. Existing accounts will not be affected.
-  Reason for this is bandwidth usage on ACME servers, as well as increased security.
-  Only new accounts can be registered like this.
 * Added `--new-key`. When renewing or replacing a certificate that has `--reuse-key`
   set, it will force a new private key to be generated, one time.
 
