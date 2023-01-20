@@ -839,6 +839,23 @@ class RenewableCertTests(BaseRenewableCertTest):
         storage.RenewableCert(self.config_file.filename, self.config,
             update_symlinks=True)
 
+    def test_truncate(self):
+        # It should not do anything when there's less than 5 cert history
+        for kind in ALL_FOUR:
+            self._write_out_kind(kind, 1)
+        with mock.patch('certbot.compat.os.unlink') as mock_unlink:
+            self.test_rc.truncate()
+            mock_unlink.assert_not_called()
+
+        # It should truncate the excess when there's more than 5 cert history
+        for kind in ALL_FOUR:
+            for i in range(2, 8):
+                self._write_out_kind(kind, i)
+        with mock.patch('certbot.compat.os.unlink') as mock_unlink:
+            self.test_rc.truncate()
+            self.assertEqual(mock_unlink.call_count, 1 * len(ALL_FOUR))
+            self.assertIn("1.pem", mock_unlink.call_args_list[0][0][0])
+
 class DeleteFilesTest(BaseRenewableCertTest):
     """Tests for certbot._internal.storage.delete_files"""
     def setUp(self):

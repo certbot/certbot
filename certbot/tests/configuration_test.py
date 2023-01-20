@@ -1,6 +1,7 @@
 """Tests for certbot.configuration."""
 import unittest
 from unittest import mock
+import warnings
 
 from certbot import errors
 from certbot._internal import constants
@@ -55,15 +56,17 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         self.assertEqual(
             os.path.normpath(self.config.backup_dir),
             os.path.normpath(os.path.join(self.config.work_dir, 'backups')))
-        self.assertEqual(
-            os.path.normpath(self.config.csr_dir),
-            os.path.normpath(os.path.join(self.config.config_dir, 'csr')))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            self.assertEqual(
+                os.path.normpath(self.config.csr_dir),
+                os.path.normpath(os.path.join(self.config.config_dir, 'csr')))
+            self.assertEqual(
+                os.path.normpath(self.config.key_dir),
+                os.path.normpath(os.path.join(self.config.config_dir, 'keys')))
         self.assertEqual(
             os.path.normpath(self.config.in_progress_dir),
             os.path.normpath(os.path.join(self.config.work_dir, '../p')))
-        self.assertEqual(
-            os.path.normpath(self.config.key_dir),
-            os.path.normpath(os.path.join(self.config.config_dir, 'keys')))
         self.assertEqual(
             os.path.normpath(self.config.temp_checkpoint_dir),
             os.path.normpath(os.path.join(self.config.work_dir, 't')))
@@ -97,9 +100,11 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
                          os.path.join(os.getcwd(), logs_base))
         self.assertTrue(os.path.isabs(config.accounts_dir))
         self.assertTrue(os.path.isabs(config.backup_dir))
-        self.assertTrue(os.path.isabs(config.csr_dir))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            self.assertTrue(os.path.isabs(config.csr_dir))
+            self.assertTrue(os.path.isabs(config.key_dir))
         self.assertTrue(os.path.isabs(config.in_progress_dir))
-        self.assertTrue(os.path.isabs(config.key_dir))
         self.assertTrue(os.path.isabs(config.temp_checkpoint_dir))
 
     @mock.patch('certbot.configuration.constants')
