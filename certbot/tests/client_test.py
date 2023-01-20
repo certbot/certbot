@@ -106,6 +106,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 self._call()
                 self.assertIs(mock_prepare.called, True)
 
+
     @mock.patch('certbot._internal.eff.prepare_subscription')
     def test_empty_meta(self, unused_mock_prepare):
         # Test that we can handle an ACME server which does not implement the 'meta'
