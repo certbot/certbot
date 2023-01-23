@@ -116,8 +116,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
                 2021, 1, 5, 14, 4, 10, tzinfo=pytz.UTC))
         self.acc = Account(
             regr=messages.RegistrationResource(
-                uri=None, body=messages.Registration(),
-                new_authzr_uri=new_authzr_uri),
+                uri=None, body=messages.Registration()),
             key=KEY,
             meta=meta)
         self.mock_client = mock.MagicMock()
@@ -140,14 +139,6 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         # restore
         loaded = self.storage.load(self.acc.id)
         self.assertEqual(self.acc, loaded)
-
-    def test_save_and_restore_old_version(self):
-        """Saved regr should include a new_authzr_uri for older Certbots"""
-        self.storage.save(self.acc, self.mock_client)
-        path = os.path.join(self.config.accounts_dir, self.acc.id, "regr.json")
-        with open(path, "r") as f:
-            regr = json.load(f)
-        self.assertIn("new_authzr_uri", regr)
 
     def test_update_regr(self):
         self.storage.update_regr(self.acc, self.mock_client)
