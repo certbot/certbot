@@ -141,7 +141,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self.assertEqual(self.acc, loaded)
 
     def test_update_regr(self):
-        self.storage.update_regr(self.acc, self.mock_client)
+        self.storage.update_regr(self.acc)
         account_path = os.path.join(self.config.accounts_dir, self.acc.id)
         self.assertTrue(os.path.exists(account_path))
         self.assertTrue(os.path.exists(os.path.join(account_path, "regr.json")))

@@ -17,7 +17,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed a crash when registering an account with BuyPass' ACME server.
 
 More details about these changes can be found on our GitHub repo.
 

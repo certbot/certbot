@@ -242,11 +242,11 @@ class AccountFileStorage(interfaces.AccountStorage):
             dir_path = self._prepare(account)
             self._create(account, dir_path)
             self._update_meta(account, dir_path)
-            self._update_regr(account, client, dir_path)
+            self._update_regr(account, dir_path)
         except IOError as error:
             raise errors.AccountStorageError(error)
 
-    def update_regr(self, account: Account, client: ClientV2) -> None:
+    def update_regr(self, account: Account) -> None:
         """Update the registration resource.
 
         :param Account account: account to update
@@ -255,7 +255,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         """
         try:
             dir_path = self._prepare(account)
-            self._update_regr(account, client, dir_path)
+            self._update_regr(account, dir_path)
         except IOError as error:
             raise errors.AccountStorageError(error)
 
@@ -346,7 +346,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         with util.safe_open(self._key_path(dir_path), "w", chmod=0o400) as key_file:
             key_file.write(account.key.json_dumps())
 
-    def _update_regr(self, account: Account, acme: ClientV2, dir_path: str) -> None:
+    def _update_regr(self, account: Account, dir_path: str) -> None:
         with open(self._regr_path(dir_path), "w") as regr_file:
             regr = messages.RegistrationResource(
                 body={},
