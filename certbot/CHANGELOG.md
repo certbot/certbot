@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* `certbot show_account` now displays the [ACME Account Thumbprint](https://datatracker.ietf.org/doc/html/rfc8555#section-8.1).
 
 ### Changed
 
