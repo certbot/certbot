@@ -993,7 +993,7 @@ def show_account(config: configuration.NamespaceConfig,
     output = [f"Account details for server {config.server}:",
               f"  Account URL: {regr.uri}"]
 
-    thumbprint = b64.b64encode(regr.body.key.thumbprint()).decode(errors='replace')
+    thumbprint = b64.b64encode(acc.key.thumbprint()).decode()
     output.append(f"  Account Thumbprint: {thumbprint}")
 
     emails = []

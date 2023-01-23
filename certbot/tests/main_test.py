@@ -2238,6 +2238,7 @@ class ShowAccountTest(test_util.ConfigTestCase):
         mock_storage.find_all.return_value = [mock_account]
         self.mocks['account'].AccountFileStorage.return_value = mock_storage
         mock_account.regr.body = mock_regr.body
+        mock_account.key.thumbprint.return_value = b'foobarbaz'
         self.mocks['determine_account'].return_value = (mock_account, mock.MagicMock())
 
     def _test_show_account(self, contact):
@@ -2246,7 +2247,6 @@ class ShowAccountTest(test_util.ConfigTestCase):
         mock_regr = mock.MagicMock()
         mock_regr.body.contact = contact
         mock_regr.uri = 'https://www.letsencrypt-demo.org/acme/reg/1'
-        mock_regr.body.key.thumbprint.return_value = b'foobarbaz'
         mock_client.acme.query_registration.return_value = mock_regr
         self.mocks['client'].Client.return_value = mock_client
 
