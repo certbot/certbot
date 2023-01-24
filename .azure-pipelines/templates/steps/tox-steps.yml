@@ -55,3 +55,26 @@ steps:
       AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
       AWS_EC2_PEM_FILE: $(testFarmPem.secureFilePath)
     displayName: Run tox
+    # For now, let's omit `set -e` and avoid the script exiting with a nonzero
+    # status code to prevent problems here from causing build failures.  If
+    # this turns out to work well, we can change this.
+  - bash: |
+      case "$AGENT_OS" in
+        Darwin)
+          CODECOV_URL="https://uploader.codecov.io/latest/macos/codecov"
+          ;;
+        Linux)
+          CODECOV_URL="https://uploader.codecov.io/latest/linux/codecov"
+          ;;
+        Windows_NT)
+          CODECOV_URL="https://uploader.codecov.io/latest/windows/codecov.exe"
+          ;;
+        *)
+          echo "Unexpected OS"
+          exit 0
+      esac
+      curl --retry 3 -o codecov "$CODECOV_URL"
+      chmod +x codecov
+      ./codecov || echo "Uploading coverage data failed"
+    condition: ne(variables['UPLOAD_COVERAGE'], '')
+    displayName: Upload coverage data
