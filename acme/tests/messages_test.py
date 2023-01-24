@@ -1,6 +1,7 @@
 """Tests for acme.messages."""
 from typing import Dict
 import unittest
+import contextlib
 from unittest import mock
 import warnings
 
@@ -90,6 +91,22 @@ class ErrorTest(unittest.TestCase):
             (u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}\n"+
             u"Problem for {1.identifier.value}: {1.typ} :: {1.description} :: {1.detail} :: {1.title}").format(
         self.error_with_subproblems, self.subproblem))
+
+    # this test is based on a minimal reproduction of a contextmanager/immutable
+    # exception related error: https://github.com/python/cpython/issues/99856
+    def test_with_context_manager(self):
+        from acme.messages import Error
+
+        @contextlib.contextmanager
+        def context():
+            yield
+
+        try:
+            with context():
+                raise self.error_custom
+        except Error as e:
+            self.assertIsNotNone(self.error_custom.__traceback__)
+
 
 class ConstantTest(unittest.TestCase):
     """Tests for acme.messages._Constant."""
