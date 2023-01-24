@@ -123,6 +123,9 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 
     https://datatracker.ietf.org/doc/html/rfc7807
 
+    Note: Although Error inherits from JSONObjectWithFields, which is immutable,
+    we add mutability for Error to comply with the Python exception API.
+
     :ivar str typ:
     :ivar str title:
     :ivar str detail:
@@ -184,6 +187,10 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         if code in ERROR_CODES:
             return code
         return None
+
+    # Hack to allow mutability on Errors (see GH #9539)
+    def __setattr__(self, name: str, value: Any) -> None:
+        return object.__setattr__(self, name, value)
 
     def __str__(self) -> str:
         result = b' :: '.join(
