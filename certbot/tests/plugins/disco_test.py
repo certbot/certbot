@@ -58,7 +58,7 @@ class PluginEntryPointTest(unittest.TestCase):
                 name, PluginEntryPoint.entry_point_to_plugin_name(entry_point))
 
     def test_description(self):
-        self.assertIn("temporary webserver", self.plugin_ep.description)
+        self.assertIn("server locally", self.plugin_ep.description)
 
     def test_description_with_name(self):
         self.plugin_ep.plugin_cls = mock.MagicMock(description="Desc")

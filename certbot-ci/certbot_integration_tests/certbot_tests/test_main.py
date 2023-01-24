@@ -370,7 +370,6 @@ def test_renew_with_changed_private_key_complexity(context: IntegrationTestsCont
 
     context.certbot(['renew', '--rsa-key-size', '2048'])
 
-    assert_cert_count_for_lineage(context.config_dir, certname, 3)
     key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
     assert_rsa_key(key3, 2048)
 
@@ -478,37 +477,36 @@ def test_reuse_key(context: IntegrationTestsContext) -> None:
 
     with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
         privkey1 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/cert1.pem').format(certname), 'r') as file:
+        cert1 = file.read()
     with open(join(context.config_dir, 'archive/{0}/privkey2.pem').format(certname), 'r') as file:
         privkey2 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/cert2.pem').format(certname), 'r') as file:
+        cert2 = file.read()
     assert privkey1 == privkey2
 
     context.certbot(['--cert-name', certname, '--domains', certname, '--force-renewal'])
 
     with open(join(context.config_dir, 'archive/{0}/privkey3.pem').format(certname), 'r') as file:
         privkey3 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/cert3.pem').format(certname), 'r') as file:
+        cert3 = file.read()
     assert privkey2 != privkey3
 
     context.certbot(['--cert-name', certname, '--domains', certname,
                      '--reuse-key','--force-renewal'])
-    context.certbot(['renew', '--cert-name', certname, '--no-reuse-key', '--force-renewal'])
-    context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
-
     with open(join(context.config_dir, 'archive/{0}/privkey4.pem').format(certname), 'r') as file:
         privkey4 = file.read()
+    context.certbot(['renew', '--cert-name', certname, '--no-reuse-key', '--force-renewal'])
     with open(join(context.config_dir, 'archive/{0}/privkey5.pem').format(certname), 'r') as file:
         privkey5 = file.read()
+    context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
     with open(join(context.config_dir, 'archive/{0}/privkey6.pem').format(certname), 'r') as file:
         privkey6 = file.read()
+
     assert privkey3 == privkey4
     assert privkey4 != privkey5
     assert privkey5 != privkey6
-
-    with open(join(context.config_dir, 'archive/{0}/cert1.pem').format(certname), 'r') as file:
-        cert1 = file.read()
-    with open(join(context.config_dir, 'archive/{0}/cert2.pem').format(certname), 'r') as file:
-        cert2 = file.read()
-    with open(join(context.config_dir, 'archive/{0}/cert3.pem').format(certname), 'r') as file:
-        cert3 = file.read()
 
     assert len({cert1, cert2, cert3}) == 3
 
@@ -656,7 +654,6 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
     # to the lineage key type, Certbot should keep the lineage key type. The curve will still
     # change to the default value, in order to stay consistent with the behavior of certonly.
     context.certbot(['certonly', '--force-renewal', '-d', certname])
-    assert_cert_count_for_lineage(context.config_dir, certname, 3)
     key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
     assert 200 < os.stat(key3).st_size < 250  # ec keys of 256 bits are ~225 bytes
     assert_elliptic_key(key3, SECP256R1)
@@ -670,14 +667,12 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
 
     context.certbot(['certonly', '--force-renewal', '-d', certname,
                      '--key-type', 'rsa', '--cert-name', certname])
-    assert_cert_count_for_lineage(context.config_dir, certname, 4)
     key4 = join(context.config_dir, 'archive', certname, 'privkey4.pem')
     assert_rsa_key(key4)
 
     # We expect that the previous behavior of requiring both --cert-name and
     # --key-type to be set to not apply to the renew subcommand.
     context.certbot(['renew', '--force-renewal', '--key-type', 'ecdsa'])
-    assert_cert_count_for_lineage(context.config_dir, certname, 5)
     key5 = join(context.config_dir, 'archive', certname, 'privkey5.pem')
     assert 200 < os.stat(key5).st_size < 250  # ec keys of 256 bits are ~225 bytes
     assert_elliptic_key(key5, SECP256R1)

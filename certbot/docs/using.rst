@@ -903,10 +903,6 @@ private key file, you will also need to use ``chgrp`` and ``chmod
 0640`` to allow the server to read
 ``/etc/letsencrypt/live/$domain/privkey.pem``.
 
-.. note:: ``/etc/letsencrypt/archive`` and ``/etc/letsencrypt/keys``
-   contain all previous keys and certificates, while
-   ``/etc/letsencrypt/live`` symlinks to the latest versions.
-
 The following files are available:
 
 ``privkey.pem``

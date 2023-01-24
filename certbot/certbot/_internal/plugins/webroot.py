@@ -56,7 +56,10 @@ _WEB_CONFIG_SHA256SUMS = [
 class Authenticator(common.Plugin, interfaces.Authenticator):
     """Webroot Authenticator."""
 
-    description = "Place files in webroot directory"
+    description = """\
+Saves the necessary validation files to a .well-known/acme-challenge/ directory within the \
+nominated webroot path. A seperate HTTP server must be running and serving files from the \
+webroot path. HTTP challenge only (wildcards not supported)."""
 
     MORE_INFO = """\
 Authenticator plugin that performs http-01 challenge by saving

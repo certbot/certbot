@@ -134,7 +134,7 @@ def set_up_command(config_dir: str, logs_dir: str, work_dir: str, nginx_dir: str
     return (
         'certbot --cert-path {0} --key-path {1} --config-dir {2} '
         '--logs-dir {3} --work-dir {4} --nginx-server-root {5} --debug '
-        '--force-renewal --nginx -vv '.format(
+        '--force-renewal --nginx -vv --no-random-sleep-on-renew '.format(
             test_util.vector_path('cert.pem'),
             test_util.vector_path('rsa512_key.pem'),
             config_dir, logs_dir, work_dir, nginx_dir).split())

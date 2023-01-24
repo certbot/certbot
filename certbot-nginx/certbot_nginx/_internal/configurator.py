@@ -693,6 +693,7 @@ class NginxConfigurator(common.Configurator):
         le_key = crypto_util.generate_key(
             key_size=1024, key_dir=tmp_dir, keyname="key.pem",
             strict_permissions=self.config.strict_permissions)
+        assert le_key.file is not None
         key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
         cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
