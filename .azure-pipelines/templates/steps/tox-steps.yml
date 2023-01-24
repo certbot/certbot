@@ -59,6 +59,7 @@ steps:
     # status code to prevent problems here from causing build failures.  If
     # this turns out to work well, we can change this.
   - bash: |
+      python3 tools/pip_install.py -I coverage
       case "$AGENT_OS" in
         Darwin)
           CODECOV_URL="https://uploader.codecov.io/latest/macos/codecov"
@@ -75,6 +76,7 @@ steps:
       esac
       curl --retry 3 -o codecov "$CODECOV_URL"
       chmod +x codecov
+      coverage xml
       ./codecov || echo "Uploading coverage data failed"
     condition: ne(variables['UPLOAD_COVERAGE'], '')
     displayName: Upload coverage data
