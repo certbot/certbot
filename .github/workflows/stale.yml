@@ -4,9 +4,7 @@ on:
     # Run at midnight every night
     - cron: '24 1 * * *'
 permissions:
-  contents: write # only for delete-branch option
   issues: write
-  pull-requests: write
 jobs:
   stale:
     runs-on: ubuntu-latest
