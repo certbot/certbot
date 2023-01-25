@@ -130,7 +130,7 @@ For debugging, we recommend putting
 
 Once you are done with your code changes, and the tests in ``foo_test.py``
 pass, run all of the unit tests for Certbot and check for coverage with ``tox
--e py3-cover``. You should then check for code style with ``tox -e lint`` (all
+-e cover``. You should then check for code style with ``tox -e lint`` (all
 files) or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a
 time).
 
