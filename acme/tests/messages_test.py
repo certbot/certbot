@@ -95,8 +95,6 @@ class ErrorTest(unittest.TestCase):
     # this test is based on a minimal reproduction of a contextmanager/immutable
     # exception related error: https://github.com/python/cpython/issues/99856
     def test_setting_traceback(self):
-        from acme.messages import Error
-
         self.assertIsNone(self.error_custom.__traceback__)
 
         try:
