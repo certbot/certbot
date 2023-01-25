@@ -1,4 +1,4 @@
-name: Close Stale Issues
+name: Update Stale Issues
 on:
   schedule:
     # Run at midnight every night
