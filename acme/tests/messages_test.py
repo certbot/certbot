@@ -94,18 +94,17 @@ class ErrorTest(unittest.TestCase):
 
     # this test is based on a minimal reproduction of a contextmanager/immutable
     # exception related error: https://github.com/python/cpython/issues/99856
-    def test_with_context_manager(self):
+    def test_setting_traceback(self):
         from acme.messages import Error
 
-        @contextlib.contextmanager
-        def context():
-            yield
+        self.assertIsNone(self.error_custom.__traceback__)
 
         try:
-            with context():
-                raise self.error_custom
-        except Error as e:
-            self.assertIsNotNone(self.error_custom.__traceback__)
+            1/0
+        except ZeroDivisionError as e:
+            self.error_custom.__traceback__ = e.__traceback__
+
+        self.assertIsNotNone(self.error_custom.__traceback__)
 
 
 class ConstantTest(unittest.TestCase):
