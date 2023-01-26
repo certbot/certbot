@@ -21,6 +21,7 @@ steps:
         nginx-light \
         openssl
       sudo systemctl stop nginx
+      sudo sysctl net.ipv4.ip_unprivileged_port_start=0
     condition: startswith(variables['IMAGE_NAME'], 'ubuntu')
     displayName: Install Linux dependencies
   - task: UsePythonVersion@0
