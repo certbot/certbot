@@ -6,5 +6,8 @@ pr:
   - master
   - '*.x'
 
+variables:
+  uploadCoverage: true
+
 jobs:
   - template: templates/jobs/standard-tests-jobs.yml
