@@ -70,6 +70,7 @@ class ACMEServer:
             if (self._acme_type == 'pebble' and self._proxy) or self._acme_type == 'boulder':
                 raise ValueError('Setting http_01_port is not currently supported when '
                                  'using Boulder or the HTTP proxy')
+            self._http_01_port = http_01_port
 
     def start(self) -> None:
         """Start the test stack"""
