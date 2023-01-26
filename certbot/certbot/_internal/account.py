@@ -250,7 +250,6 @@ class AccountFileStorage(interfaces.AccountStorage):
         """Update the registration resource.
 
         :param Account account: account to update
-        :param ClientV2 client: ACME client associated to the account
 
         """
         try:
