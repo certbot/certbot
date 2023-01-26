@@ -1,8 +1,10 @@
-trigger: none
+# We run the test suite on commits to master so codecov gets coverage data
+# about the master branch and can use it to track coverage changes.
+trigger:
+  - master
 pr:
   - master
   - '*.x'
 
 jobs:
   - template: templates/jobs/standard-tests-jobs.yml
-

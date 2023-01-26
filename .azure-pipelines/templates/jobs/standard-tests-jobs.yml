@@ -7,10 +7,11 @@ jobs:
         macos-py37-cover:
           IMAGE_NAME: macOS-12
           PYTHON_VERSION: 3.7
-          TOXENV: py37-cover
+          TOXENV: cover
         macos-cover:
           IMAGE_NAME: macOS-12
-          TOXENV: py3-cover
+          TOXENV: cover
+          UPLOAD_COVERAGE: 1
         windows-py37:
           IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.7
@@ -18,11 +19,13 @@ jobs:
         windows-py39-cover:
           IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.9
-          TOXENV: py39-cover-win
+          TOXENV: cover-win
+          UPLOAD_COVERAGE: 1
         windows-integration-certbot:
           IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.9
           TOXENV: integration-certbot
+          UPLOAD_COVERAGE: 1
         linux-oldest-tests-1:
           IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.7
@@ -37,7 +40,8 @@ jobs:
           TOXENV: py37
         linux-cover:
           IMAGE_NAME: ubuntu-22.04
-          TOXENV: py3-cover
+          TOXENV: cover
+          UPLOAD_COVERAGE: 1
         linux-lint:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: lint-posix
@@ -49,6 +53,7 @@ jobs:
           PYTHON_VERSION: 3.8
           TOXENV: integration
           ACME_SERVER: pebble
+          UPLOAD_COVERAGE: 1
         apache-compat:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: apache_compat
