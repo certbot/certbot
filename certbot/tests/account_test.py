@@ -109,7 +109,6 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self.storage = AccountFileStorage(self.config)
 
         from certbot._internal.account import Account
-        new_authzr_uri = "hi"
         meta = Account.Meta(
             creation_host="test.example.org",
             creation_dt=datetime.datetime(
@@ -120,7 +119,6 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
             key=KEY,
             meta=meta)
         self.mock_client = mock.MagicMock()
-        self.mock_client.directory.new_authz = new_authzr_uri
 
     def test_init_creates_dir(self):
         self.assertTrue(os.path.isdir(
