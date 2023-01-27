@@ -17,6 +17,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+* Fixed a crash when registering an account with BuyPass' ACME server.
 * Fixed a bug where Certbot would crash with `AttributeError: can't set attribute` on ACME server errors in Python 3.11. See [GH #9539](https://github.com/certbot/certbot/issues/9539).
 
 More details about these changes can be found on our GitHub repo.
