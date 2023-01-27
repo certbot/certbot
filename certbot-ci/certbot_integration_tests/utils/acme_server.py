@@ -44,7 +44,7 @@ class ACMEServer:
     """
     def __init__(self, acme_server: str, nodes: List[str], http_proxy: bool = True,
                  stdout: bool = False, dns_server: Optional[str] = None,
-                 http_01_port: int = DEFAULT_HTTP_01_PORT) -> None:
+                 http_01_port: Optional[int] = None) -> None:
         """
         Create an ACMEServer instance.
         :param str acme_server: the type of acme server used (boulder-v2 or pebble)
@@ -63,12 +63,14 @@ class ACMEServer:
         self._processes: List[subprocess.Popen] = []
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
         self._dns_server = dns_server
-        self._http_01_port = http_01_port
         self._preterminate_cmds_args: List[Tuple[Tuple[Any, ...], Dict[str, Any]]] = []
-        if http_01_port != DEFAULT_HTTP_01_PORT:
-            if self._acme_type != 'pebble' or self._proxy:
-                raise ValueError('setting http_01_port is not currently supported '
-                                  'with boulder or the HTTP proxy')
+        self._http_01_port = BOULDER_HTTP_01_PORT if self._acme_type == 'boulder' \
+                             else DEFAULT_HTTP_01_PORT
+        if http_01_port:
+            if (self._acme_type == 'pebble' and self._proxy) or self._acme_type == 'boulder':
+                raise ValueError('Setting http_01_port is not currently supported when '
+                                 'using Boulder or the HTTP proxy')
+            self._http_01_port = http_01_port
 
     def start(self) -> None:
         """Start the test stack"""
@@ -236,11 +238,11 @@ class ACMEServer:
 
     def _prepare_http_proxy(self) -> None:
         """Configure and launch an HTTP proxy"""
-        print('=> Configuring the HTTP proxy...')
+        print(f'=> Configuring the HTTP proxy on port {self._http_01_port}...')
         http_port_map = cast(Dict[str, int], self.acme_xdist['http_port'])
         mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
                    for node, port in http_port_map.items()}
-        command = [sys.executable, proxy.__file__, str(DEFAULT_HTTP_01_PORT), json.dumps(mapping)]
+        command = [sys.executable, proxy.__file__, str(self._http_01_port), json.dumps(mapping)]
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')
 
