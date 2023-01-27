@@ -39,4 +39,4 @@ jobs:
             take a look.
 
           # Limit the number of actions per hour, from 1-30. Default is 30
-          operations-per-run: 1
+          operations-per-run: 30
