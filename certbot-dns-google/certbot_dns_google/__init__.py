@@ -38,6 +38,19 @@ for an account with the following permissions:
 * ``dns.resourceRecordSets.list``
 * ``dns.resourceRecordSets.update``
 
+(The closest role is 'dns.admin <https://cloud.google.com/dns/docs/
+access-control#dns.admin)>')
+
+If the above permissions are assigned at the 'resource level <https://cloud
+.google.com/dns/docs/zones/iam-per-resource-zones>', the same user must
+have, at the PROJECT level, the following permissions:
+
+* ``dns.managedZones.get``
+* ``dns.managedZones.list``
+
+(The closest role is 'dns.reader <https://cloud.google.com/dns/docs/
+access-control#dns.reader)>')
+
 Google provides instructions for `creating a service account <https://developers
 .google.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount>`_ and
 `information about the required permissions <https://cloud.google.com/dns/access
