@@ -49,7 +49,7 @@ ALL_SNAPS = ['certbot'] + PLUGIN_SNAPS
 # for sanity checking.
 SNAP_ARCH_COUNT = 3
 # The percentage of users the 2.0 Certbot snap should be deployed to.
-PROGRESSIVE_RELEASE_PERCENTAGE = 5
+PROGRESSIVE_RELEASE_PERCENTAGE = 10
 
 
 def parse_args(args):
