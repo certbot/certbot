@@ -41,8 +41,8 @@ for an account with the following permissions:
 (The closest role is 'dns.admin <https://cloud.google.com/dns/docs/
 access-control#dns.admin)>')
 
-If the above permissions are assigned at the 'resource level <https://cloud
-.google.com/dns/docs/zones/iam-per-resource-zones>', the same user must
+If the above permissions are assigned at the `resource level <https://cloud
+.google.com/dns/docs/zones/iam-per-resource-zones>`_, the same user must
 have, at the PROJECT level, the following permissions:
 
 * ``dns.managedZones.get``
