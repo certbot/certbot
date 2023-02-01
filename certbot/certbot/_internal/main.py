@@ -17,6 +17,7 @@ from typing import Union
 
 import configobj
 import josepy as jose
+from josepy import b64
 
 from acme import client as acme_client
 from acme import errors as acme_errors
@@ -991,6 +992,9 @@ def show_account(config: configuration.NamespaceConfig,
     regr = cb_client.acme.query_registration(acc.regr)
     output = [f"Account details for server {config.server}:",
               f"  Account URL: {regr.uri}"]
+
+    thumbprint = b64.b64encode(acc.key.thumbprint()).decode()
+    output.append(f"  Account Thumbprint: {thumbprint}")
 
     emails = []
 

@@ -2238,6 +2238,7 @@ class ShowAccountTest(test_util.ConfigTestCase):
         mock_storage.find_all.return_value = [mock_account]
         self.mocks['account'].AccountFileStorage.return_value = mock_storage
         mock_account.regr.body = mock_regr.body
+        mock_account.key.thumbprint.return_value = b'foobarbaz'
         self.mocks['determine_account'].return_value = (mock_account, mock.MagicMock())
 
     def _test_show_account(self, contact):
@@ -2246,7 +2247,6 @@ class ShowAccountTest(test_util.ConfigTestCase):
         mock_regr = mock.MagicMock()
         mock_regr.body.contact = contact
         mock_regr.uri = 'https://www.letsencrypt-demo.org/acme/reg/1'
-        mock_regr.body.key.thumbprint.return_value = b'foobarbaz'
         mock_client.acme.query_registration.return_value = mock_regr
         self.mocks['client'].Client.return_value = mock_client
 
@@ -2283,7 +2283,8 @@ class ShowAccountTest(test_util.ConfigTestCase):
         self.mocks['notify'].assert_has_calls([
             mock.call('Account details for server https://acme-v02.api.letsencr'
                       'ypt.org/directory:\n  Account URL: https://www.letsencry'
-                      'pt-demo.org/acme/reg/1\n  Email contact: none')])
+                      'pt-demo.org/acme/reg/1\n  Account Thumbprint: Zm9vYmFyYmF6\n'
+                      '  Email contact: none')])
 
     def test_single_email(self):
         contact = ('mailto:foo@example.com',)
@@ -2293,7 +2294,8 @@ class ShowAccountTest(test_util.ConfigTestCase):
         self.mocks['notify'].assert_has_calls([
             mock.call('Account details for server https://acme-v02.api.letsencr'
                       'ypt.org/directory:\n  Account URL: https://www.letsencry'
-                      'pt-demo.org/acme/reg/1\n  Email contact: foo@example.com')])
+                      'pt-demo.org/acme/reg/1\n  Account Thumbprint: Zm9vYmFyYmF6'
+                      '\n  Email contact: foo@example.com')])
 
     def test_double_email(self):
         contact = ('mailto:foo@example.com', 'mailto:bar@example.com')
@@ -2303,7 +2305,8 @@ class ShowAccountTest(test_util.ConfigTestCase):
         self.mocks['notify'].assert_has_calls([
             mock.call('Account details for server https://acme-v02.api.letsencr'
                       'ypt.org/directory:\n  Account URL: https://www.letsencry'
-                      'pt-demo.org/acme/reg/1\n  Email contacts: foo@example.com, bar@example.com')])
+                      'pt-demo.org/acme/reg/1\n  Account Thumbprint: Zm9vYmFyYmF6\n'
+                      '  Email contacts: foo@example.com, bar@example.com')])
 
 
 if __name__ == '__main__':
