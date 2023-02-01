@@ -38,8 +38,8 @@ for an account with the following permissions:
 * ``dns.resourceRecordSets.list``
 * ``dns.resourceRecordSets.update``
 
-(The closest role is 'dns.admin <https://cloud.google.com/dns/docs/
-access-control#dns.admin)>')
+(The closest role is `dns.admin <https://cloud.google.com/dns/docs/
+access-control#dns.admin>`_).
 
 If the above permissions are assigned at the `resource level <https://cloud
 .google.com/dns/docs/zones/iam-per-resource-zones>`_, the same user must
