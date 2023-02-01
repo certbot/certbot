@@ -78,5 +78,5 @@ steps:
       chmod +x codecov
       coverage xml
       ./codecov || echo "Uploading coverage data failed"
-    condition: and(eq(variables['uploadCoverage'], true), variables['TOXENV'], in(convertToJson(split(variables['TOXENV'], '-')), 'cover', 'integration'))
+    condition: and(eq(variables['uploadCoverage'], true), variables['TOXENV'], in(split(variables['TOXENV'], '-').0, 'cover', 'integration'))
     displayName: Upload coverage data
