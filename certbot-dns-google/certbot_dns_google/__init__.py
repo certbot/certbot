@@ -48,8 +48,8 @@ have, at the PROJECT level, the following permissions:
 * ``dns.managedZones.get``
 * ``dns.managedZones.list``
 
-(The closest role is 'dns.reader <https://cloud.google.com/dns/docs/
-access-control#dns.reader)>')
+(The closest role is `dns.reader <https://cloud.google.com/dns/docs/
+access-control#dns.reader>`_).
 
 Google provides instructions for `creating a service account <https://developers
 .google.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount>`_ and
