@@ -1,7 +1,0 @@
-# This disables all reporting from codecov. Let's just set it up to collect
-# data for now and then we can play with the settings here.
-comment: false
-coverage:
-  status:
-    project: off
-    patch: off
