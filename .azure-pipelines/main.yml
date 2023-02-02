@@ -4,6 +4,7 @@ trigger:
   - master
 pr:
   - master
+  - fake-master
   - '*.x'
 
 variables:
