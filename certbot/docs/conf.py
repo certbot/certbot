@@ -286,7 +286,7 @@ latex_documents = [
 man_pages = [
     ('index', 'certbot', u'Certbot Documentation',
      [project], 7),
-    ('man/certbot', 'certbot', u'certbot script documentation',
+    ('man/certbot', 'certbot', u"Automatically configure HTTPS using Let's Encrypt",
      [project], 1),
 ]
 
