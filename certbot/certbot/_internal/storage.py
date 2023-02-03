@@ -1,4 +1,5 @@
 """Renewable certificates storage."""
+# pylint: disable=too-many-lines
 import datetime
 import glob
 import logging
@@ -1246,7 +1247,6 @@ class RenewableCert(interfaces.RenewableCert):
 
         return target_version
 
-
     def save_new_config_values(self, cli_config: configuration.NamespaceConfig) -> None:
         """Save only the config information without writing the new cert.
 
@@ -1259,3 +1259,32 @@ class RenewableCert(interfaces.RenewableCert):
         self.configfile = update_configuration(
             self.lineagename, self.archive_dir, symlinks, cli_config)
         self.configuration = config_with_defaults(self.configfile)
+
+    def truncate(self, num_prior_certs_to_keep: int = 5) -> None:
+        """Delete unused historical certificate, chain and key items from the lineage.
+
+        A certificate version will be deleted if it is:
+          1. not the current target, and
+          2. not a previous version within num_prior_certs_to_keep.
+
+        :param num_prior_certs_to_keep: How many prior certificate versions to keep.
+
+        """
+        # Do not want to delete the current or the previous num_prior_certs_to_keep certs
+        current_version = self.latest_common_version()
+        versions_to_delete = set(self.available_versions("cert"))
+        versions_to_delete -= set(range(current_version,
+                                        current_version - 1 - num_prior_certs_to_keep, -1))
+        archive = self.archive_dir
+
+        # Delete the remaining lineage items kinds for those certificate versions.
+        for ver in versions_to_delete:
+            logger.debug("Deleting %s/cert%d.pem and related items during clean up",
+                         archive, ver)
+            for kind in ALL_FOUR:
+                item_path = os.path.join(archive, f"{kind}{ver}.pem")
+                try:
+                    if os.path.exists(item_path):
+                        os.unlink(item_path)
+                except OSError:
+                    logger.debug("Failed to clean up %s", item_path, exc_info=True)

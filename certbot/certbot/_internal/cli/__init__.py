@@ -115,17 +115,12 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction,
         default=flag_default("domains"),
-        help="Domain names to apply. For multiple domains you can use "
-             "multiple -d flags or enter a comma separated list of domains "
-             "as a parameter. The first domain provided will be the "
-             "subject CN of the certificate, and all domains will be "
-             "Subject Alternative Names on the certificate. "
-             "The first domain will also be used in "
-             "some software user interfaces and as the file paths for the "
-             "certificate and related material unless otherwise "
-             "specified or you already have a certificate with the same "
-             "name. In the case of a name collision it will append a number "
-             "like 0001 to the file path name. (default: Ask)")
+        help="Domain names to include. For multiple domains you can use multiple -d flags "
+             "or enter a comma separated list of domains as a parameter. All domains will "
+             "be included as Subject Alternative Names on the certificate. The first domain "
+             "will be used as the certificate name, unless otherwise specified or if you "
+             "already have a certificate with the same name. In the case of a name conflict, "
+             "a number like -0001 will be appended to the certificate name. (default: Ask)")
     helpful.add(
         [None, "run", "certonly", "register"],
         "--eab-kid", dest="eab_kid",

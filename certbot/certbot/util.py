@@ -1,7 +1,6 @@
 """Utilities for all Certbot."""
 import argparse
 import atexit
-import collections
 import errno
 import logging
 import platform
@@ -14,6 +13,7 @@ from typing import Callable
 from typing import Dict
 from typing import IO
 from typing import List
+from typing import NamedTuple
 from typing import Optional
 from typing import Set
 from typing import Tuple
@@ -35,9 +35,18 @@ if _USE_DISTRO:
 logger = logging.getLogger(__name__)
 
 
-Key = collections.namedtuple("Key", "file pem")
-# Note: form is the type of data, "pem" or "der"
-CSR = collections.namedtuple("CSR", "file data form")
+class Key(NamedTuple):
+    """Container for an optional file path and contents for a PEM-formated private key."""
+    file: Optional[str]
+    pem: bytes
+
+
+class CSR(NamedTuple):
+    """Container for an optional file path and contents for a PEM or DER-formatted CSR."""
+    file: Optional[str]
+    data: bytes
+    # Note: form is the type of data, "pem" or "der"
+    form: str
 
 
 # ANSI SGR escape codes

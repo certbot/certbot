@@ -18,6 +18,7 @@ from typing import Union
 
 import configobj
 import josepy as jose
+from josepy import b64
 
 from acme import client as acme_client
 from acme import errors as acme_errors
@@ -949,7 +950,7 @@ def update_account(config: configuration.NamespaceConfig,
     # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
     # so that we can also continue to use the account object with acmev1.
     acc.regr = acc.regr.update(uri=prev_regr_uri)
-    account_storage.update_regr(acc, cb_client.acme)
+    account_storage.update_regr(acc)
 
     if not config.email:
         display_util.notify("Any contact information associated "
@@ -992,6 +993,9 @@ def show_account(config: configuration.NamespaceConfig,
     regr = cb_client.acme.query_registration(acc.regr)
     output = [f"Account details for server {config.server}:",
               f"  Account URL: {regr.uri}"]
+
+    thumbprint = b64.b64encode(acc.key.thumbprint()).decode()
+    output.append(f"  Account Thumbprint: {thumbprint}")
 
     emails = []
 
