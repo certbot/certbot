@@ -14,6 +14,7 @@ from typing import List
 import unittest
 from unittest import mock
 
+import configobj
 import josepy as jose
 import pytz
 
@@ -529,6 +530,167 @@ class RevokeTest(test_util.TempDirTestCase):
         mock_delete_if_appropriate.return_value = False
         self._call()
         self.assertIs(mock_delete.called, False)
+
+
+class ReconfigureTest(test_util.TempDirTestCase):
+    """Tests for certbot._internal.main.reconfigure"""
+
+    def setUp(self):
+        super().setUp()
+        self.get_utility_patch = test_util.patch_display_util()
+        self.mock_get_utility = self.get_utility_patch.start()
+        self.patchers = {
+            'check_symlinks': mock.patch('certbot._internal.storage.RenewableCert._check_symlinks'),
+            'cert_names': mock.patch('certbot._internal.storage.RenewableCert.names'),
+            'pick_installer': mock.patch('certbot._internal.plugins.selection.pick_installer'),
+            'pick_auth': mock.patch('certbot._internal.plugins.selection.pick_authenticator'),
+            'find_init': mock.patch('certbot._internal.plugins.disco.PluginsRegistry.find_init'),
+            '_get_and_save_cert': mock.patch('certbot._internal.main._get_and_save_cert'),
+            '_init_le_client': mock.patch('certbot._internal.main._init_le_client'),
+            'list_hooks': mock.patch('certbot._internal.hooks.list_hooks'),
+        }
+        self.mocks = {k: v.start() for k, v in self.patchers.items()}
+        self.mocks['cert_names'].return_value = ['example.com']
+
+        self.config_dir = os.path.join(self.tempdir, 'config')
+        renewal_configs_dir = os.path.join(self.config_dir, 'renewal')
+        if not os.path.exists(renewal_configs_dir):
+            filesystem.makedirs(renewal_configs_dir)
+        self.renewal_file = os.path.join(renewal_configs_dir, 'example.com.conf')
+        original_config = """
+            version = 1.32.0
+            archive_dir = /etc/letsencrypt/archive/example.com
+            cert = /etc/letsencrypt/live/example.com/cert.pem
+            privkey = /etc/letsencrypt/live/example.com/privkey.pem
+            chain = /etc/letsencrypt/live/example.com/chain.pem
+            fullchain = /etc/letsencrypt/live/example.com/fullchain.pem
+
+            # Options used in the renewal process
+            [renewalparams]
+            account = ee43634db0aa4e6804f152be39990e6a
+            server = https://acme-staging-v02.api.letsencrypt.org/directory
+            authenticator = nginx
+            installer = nginx
+            key_type = rsa
+        """
+        with open(self.renewal_file, 'w') as f:
+            f.write(original_config)
+        with open(self.renewal_file, 'r') as f:
+            self.original_config = configobj.ConfigObj(f,
+                encoding='utf-8', default_encoding='utf-8')
+
+
+    def tearDown(self):
+        super().tearDown()
+        self.get_utility_patch.stop()
+        for patch in self.patchers.values():
+            patch.stop()
+
+    def _call(self, passed_args):
+        full_args = passed_args + ['--config-dir', self.config_dir]
+        cli.set_by_cli.detector = None # required to reset set_by_cli state
+        plugins = disco.PluginsRegistry.find_all()
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, full_args))
+
+        from certbot._internal.main import reconfigure
+        reconfigure(config, plugins)
+
+        with open(self.renewal_file, 'r') as f:
+            updated_conf = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
+
+        return updated_conf
+
+    def test_domains_set(self):
+        self.assertRaises(errors.ConfigurationError,
+            self._call, '--cert-name cert1 -d one.cert.com'.split())
+
+    @mock.patch('certbot._internal.cert_manager.get_certnames')
+    def test_asks_for_certname(self, mock_cert_manager):
+        mock_cert_manager.return_value = ['example.com']
+        self._call('--nginx'.split())
+        self.assertEqual(mock_cert_manager.call_count, 1)
+
+    def test_update_configurator(self):
+        named_mock = mock.Mock()
+        named_mock.name = 'apache'
+
+        self.mocks['pick_installer'].return_value = named_mock
+        self.mocks['pick_auth'].return_value = named_mock
+        self.mocks['find_init'].return_value = named_mock
+
+        new_config = self._call('--cert-name example.com --apache'.split())
+        self.assertEqual(new_config['renewalparams']['authenticator'], 'apache')
+
+    @mock.patch('certbot._internal.hooks.validate_hooks')
+    def test_update_hooks(self, unused_validate_hooks):
+        self.assertNotIn('pre_hook', self.original_config)
+        # test set
+        new_config = self._call('--cert-name example.com --pre-hook'.split() + ['echo pre'])
+        self.assertEqual(new_config['renewalparams']['pre_hook'], 'echo pre')
+        # test update
+        new_config = self._call('--cert-name example.com --pre-hook'.split() + ['echo pre2'])
+        self.assertEqual(new_config['renewalparams']['pre_hook'], 'echo pre2')
+
+        # test deploy hook is set even though we did a dry run
+        self.assertNotIn('renew_hook', self.original_config)
+        new_config = self._call('--cert-name example.com --deploy-hook'.split() + ['echo deploy'])
+        self.assertEqual(new_config['renewalparams']['renew_hook'], 'echo deploy')
+
+    def test_dry_run_fails(self):
+        # set side effect of raising error
+        self.mocks['_get_and_save_cert'].side_effect = errors.Error
+
+        try:
+            self._call('--cert-name example.com --apache'.split())
+        except errors.Error:
+            pass
+
+        # check that config isn't modified
+        with open(self.renewal_file, 'r') as f:
+            new_config = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
+        self.assertEqual(new_config['renewalparams']['authenticator'], 'nginx')
+
+    @mock.patch('certbot._internal.main.display_util.notify')
+    def test_report_results(self, mock_notify):
+        # make sure report results works when config has a webroot map
+        original_config = """
+            version = 2.0.0
+            archive_dir = /etc/letsencrypt/archive/example.com
+            cert = /etc/letsencrypt/live/example.com/cert.pem
+            privkey = /etc/letsencrypt/live/example.com/privkey.pem
+            chain = /etc/letsencrypt/live/example.com/chain.pem
+            fullchain = /etc/letsencrypt/live/example.com/fullchain.pem
+
+            # Options used in the renewal process
+            [renewalparams]
+            account = ee43634db0aa4e6804f152be39990e6a
+            server = https://acme-staging-v02.api.letsencrypt.org/directory
+            authenticator = webroot
+            installer = nginx
+            key_type = ecdsa
+            webroot_path = /var/www/html,
+            [[webroot_map]]
+            example.com = /var/www/html
+        """
+        with open(self.renewal_file, 'w') as f:
+            f.write(original_config)
+        with open(self.renewal_file, 'r') as f:
+            self.original_config = configobj.ConfigObj(f,
+                encoding='utf-8', default_encoding='utf-8')
+
+        named_mock = mock.Mock()
+        named_mock.name = 'nginx'
+
+        self.mocks['pick_auth'].return_value = named_mock
+        self.mocks['find_init'].return_value = named_mock
+
+        new_config = self._call('--cert-name example.com --nginx'.split())
+        self.assertEqual(new_config['renewalparams']['authenticator'], 'nginx')
+        mock_notify.assert_called_with(
+            '\nSuccessfully updated configuration.'+
+            '\nChanges will apply when the certificate renews.')
+
 
 class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.main._delete_if_appropriate """
@@ -1492,7 +1654,7 @@ class MainTest(test_util.ConfigTestCase):
 
     def test_renew_reconstitute_error(self):
         # pylint: disable=protected-access
-        with mock.patch('certbot._internal.main.renewal._reconstitute') as mock_reconstitute:
+        with mock.patch('certbot._internal.main.renewal.reconstitute') as mock_reconstitute:
             mock_reconstitute.side_effect = Exception
             self._test_renew_common(assert_oc_called=False, error_expected=True)
 

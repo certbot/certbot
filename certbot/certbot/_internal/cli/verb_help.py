@@ -102,6 +102,11 @@ VERB_HELP = [
         "opts": 'Options useful for the "show_account" subcommand:',
         "usage": "\n\n  certbot show_account [options]\n\n"
     }),
+    ("reconfigure", {
+        "short": "Update renewal configuration for a certificate specified by --cert-name",
+        "opts": 'Common options that may be updated with the "reconfigure" subcommand:',
+        "usage": "\n\n  certbot reconfigure --cert-name CERTNAME [options]\n\n"
+    }),
 ]
 
 

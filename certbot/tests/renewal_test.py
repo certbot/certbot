@@ -168,7 +168,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         from certbot._internal import renewal
         lineage_config = copy.deepcopy(self.config)
-        renewal_candidate = renewal._reconstitute(lineage_config, rc_path)
+        renewal_candidate = renewal.reconstitute(lineage_config, rc_path)
         # This means that manual_public_ip_logging_ok was not modified in the config based on its
         # value in the renewal conf file
         self.assertIsInstance(lineage_config.manual_public_ip_logging_ok, mock.MagicMock)
