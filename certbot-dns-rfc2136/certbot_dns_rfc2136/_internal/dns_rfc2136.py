@@ -1,8 +1,13 @@
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
 import logging
+import time
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import Optional
+from typing import Tuple
+from typing import Union
+import uuid
 
 import dns.flags
 import dns.message
@@ -10,6 +15,7 @@ import dns.name
 import dns.query
 import dns.rdataclass
 import dns.rdatatype
+import dns.rdtypes.ANY.TKEY
 import dns.tsig
 import dns.tsigkeyring
 import dns.update
@@ -23,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_NETWORK_TIMEOUT = 45
 
+KeyringType = Union[Dict[dns.name.Name, bytes], dns.tsig.GSSTSigAdapter]
+
 
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator using RFC 2136 Dynamic Updates
@@ -31,6 +39,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     """
 
     ALGORITHMS = {
+      'GSS-TSIG': dns.tsig.GSS_TSIG,
       'HMAC-MD5': dns.tsig.HMAC_MD5,
       'HMAC-SHA1': dns.tsig.HMAC_SHA1,
       'HMAC-SHA224': dns.tsig.HMAC_SHA224,
@@ -73,9 +82,9 @@ class Authenticator(dns_common.DNSAuthenticator):
             'credentials',
             'RFC 2136 credentials INI file',
             {
-                'name': 'TSIG key name',
-                'secret': 'TSIG key secret',
-                'server': 'The target DNS server'
+                'name': 'TSIG key name (for HMAC) or server name (for GSS-TSIG)',
+                'secret': 'TSIG key secret (for HMAC) or credential parameters (for GSS_TSIG)',
+                'server': 'IP address of the target DNS server'
             },
             self._validate_credentials
         )
@@ -101,15 +110,91 @@ class _RFC2136Client:
     """
     Encapsulates all communication with the target DNS server.
     """
+
+    keyring: KeyringType
+    keyname: dns.name.Name
+
     def __init__(self, server: str, port: int, key_name: str, key_secret: str,
                  key_algorithm: dns.name.Name, timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
         self.server = server
         self.port = port
-        self.keyring = dns.tsigkeyring.from_text({
-            key_name: key_secret
-        })
         self.algorithm = key_algorithm
         self._default_timeout = timeout
+        if self.algorithm == dns.tsig.GSS_TSIG:
+            # For GSS-TSIG we expect 'key_name' to contain the server's FQDN, which is mandatory to
+            # obtain Kerberos tickets for that server (somewhat similar to validating TLS hostname).
+            self.keyring, self.keyname = self._negotiate_gss_keyring(key_name, key_secret)
+        else:
+            self.keyring = dns.tsigkeyring.from_text({key_name: key_secret})
+            self.keyname = dns.name.from_text(key_name)
+
+    def _build_tkey_query(self, token, key_ring: dns.tsig.GSSTSigAdapter,
+                          key_name: dns.name.Name) -> dns.message.QueryMessage:
+        inception_time = int(time.time())
+        tkey = dns.rdtypes.ANY.TKEY.TKEY(dns.rdataclass.ANY,
+                                         dns.rdatatype.TKEY,
+                                         dns.tsig.GSS_TSIG,
+                                         inception_time,
+                                         inception_time,
+                                         3,
+                                         dns.rcode.NOERROR,
+                                         token,
+                                         b'')
+        query = dns.message.make_query(key_name,
+                                       dns.rdatatype.TKEY,
+                                       dns.rdataclass.ANY)
+        query.keyring = key_ring
+        query.find_rrset(dns.message.ADDITIONAL,
+                         key_name,
+                         dns.rdataclass.ANY,
+                         dns.rdatatype.TKEY,
+                         create=True).add(tkey)
+        return query
+
+    def _negotiate_gss_keyring(self, server_name: str,
+                               key_secret: str) -> Tuple[dns.tsig.GSSTSigAdapter, dns.name.Name]:
+        import gssapi
+
+        # By default GSSAPI will take credentials from environment (KRB5CCNAME for the ticket cache
+        # and optionally KRB5_CLIENT_KTNAME for a keytab to automatically acquire tickets with),
+        # but recent MIT Krb5 allows specifying this per-context using "credential store extensions"
+        # which we use if "ccache=" and/or "client_keytab=" parameters are specified, e.g.
+        #
+        # dns_rfc2136_secret = ccache=FILE:/tmp/krb5cc_certbot client_keytab=FILE:/etc/krb5.keytab
+        if key_secret and key_secret != 'None':
+            cred_params = {}
+            for kvp in key_secret.split():
+                k, v = kvp.split('=', 1)
+                cred_params[k] = v
+            gss_cred = gssapi.Credentials(usage='initiate', store=cred_params)
+        else:
+            gss_cred = None
+
+        # Initialize GSSAPI context
+        gss_name = gssapi.Name('DNS@{0}'.format(server_name), gssapi.NameType.hostbased_service)
+        #gss_ctx = gssapi.SecurityContext(name=gss_name, usage='initiate')
+        gss_ctx = gssapi.SecurityContext(name=gss_name, creds=gss_cred, usage='initiate')
+
+        # Name generation tips: https://tools.ietf.org/html/rfc2930#section-2.1
+        key_name = dns.name.from_text('{0}.{1}'.format(uuid.uuid4(), server_name))
+        tsig_key = dns.tsig.Key(key_name, gss_ctx, dns.tsig.GSS_TSIG)
+        key_ring = dns.tsig.GSSTSigAdapter({key_name: tsig_key})
+
+        # Perform GSSAPI negotiation via TKEY
+        in_token = None
+        while not gss_ctx.complete:
+            out_token = gss_ctx.step(in_token)
+            if not out_token:
+                break
+            request = self._build_tkey_query(out_token, key_ring, key_name)
+            try:
+                response = dns.query.tcp(request, self.server, self._default_timeout, self.port)
+            except (OSError, dns.exception.Timeout) as e:
+                logger.debug('TCP query failed, fallback to UDP: %s', e)
+                response = dns.query.udp(request, self.server, self._default_timeout, self.port)
+            in_token = response.answer[0][0].key
+
+        return key_ring, key_name
 
     def add_txt_record(self, record_name: str, record_content: str, record_ttl: int) -> None:
         """
@@ -130,6 +215,7 @@ class _RFC2136Client:
         update = dns.update.Update(
             domain,
             keyring=self.keyring,
+            keyname=self.keyname,
             keyalgorithm=self.algorithm)
         update.add(rel, record_ttl, dns.rdatatype.TXT, record_content)
 
@@ -165,6 +251,7 @@ class _RFC2136Client:
         update = dns.update.Update(
             domain,
             keyring=self.keyring,
+            keyname=self.keyname,
             keyalgorithm=self.algorithm)
         update.delete(rel, dns.rdatatype.TXT, record_content)
 
@@ -217,7 +304,8 @@ class _RFC2136Client:
         # Turn off Recursion Desired bit in query
         request.flags ^= dns.flags.RD
         # Use our TSIG keyring
-        request.use_tsig(self.keyring, algorithm=self.algorithm) # type: ignore[attr-defined]
+        request.use_tsig(self.keyring, self.keyname,
+                         algorithm=self.algorithm) # type: ignore[attr-defined]
 
         try:
             try:
