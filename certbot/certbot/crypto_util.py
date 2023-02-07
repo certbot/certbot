@@ -245,10 +245,6 @@ def make_key(bits: int = 1024, key_type: str = "rsa",
             raise errors.Error("Unsupported elliptic curve: {}".format(elliptic_curve))
         except UnsupportedAlgorithm as e:
             raise e from errors.Error(str(e))
-        # This type ignore directive is required due to an outdated version of types-cryptography.
-        # It can be removed once package types-pyOpenSSL depends on cryptography instead of
-        # types-cryptography and so types-cryptography is not installed anymore.
-        # See https://github.com/python/typeshed/issues/5618
         _key_pem = _key.private_bytes(
             encoding=Encoding.PEM,
             format=PrivateFormat.TraditionalOpenSSL,

@@ -230,10 +230,6 @@ def generate_csr(domains: Iterable[str], key_path: str, csr_path: str,
             # Ignore a warning on some old versions of cryptography
             warnings.simplefilter('ignore', category=PendingDeprecationWarning)
             _key = ec.generate_private_key(ec.SECP384R1(), default_backend())
-        # This type ignore directive is required due to an outdated version of types-cryptography.
-        # It can be removed once package types-pyOpenSSL depends on cryptography instead of
-        # types-cryptography and so types-cryptography is not installed anymore.
-        # See https://github.com/python/typeshed/issues/5618
         _bytes = _key.private_bytes(encoding=Encoding.PEM,
                                     format=PrivateFormat.TraditionalOpenSSL,
                                     encryption_algorithm=NoEncryption())
