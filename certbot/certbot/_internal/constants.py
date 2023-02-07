@@ -80,7 +80,6 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # noqa
     eab_hmac_key=None,
     eab_kid=None,
     issuance_timeout=90,
-    run_deploy_hooks=False,
 
     # Subparsers
     num=None,

@@ -1,7 +1,6 @@
 """Certbot main entry point."""
 # pylint: disable=too-many-lines
 
-import copy
 from contextlib import contextmanager
 import functools
 import logging.handlers
@@ -1657,127 +1656,6 @@ def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
                  config.renewal_post_hooks_dir,)
     for hook_dir in hook_dirs:
         util.make_or_verify_dir(hook_dir, strict=config.strict_permissions)
-
-
-def _report_reconfigure_results(renewal_file: str, orig_renewal_conf: configobj.ConfigObj) -> None:
-    """Reports the outcome of certificate renewal reconfiguration to the user.
-
-    :param renewal_file: Path to the cert's renewal file
-    :type renewal_file: str
-
-    :param orig_renewal_conf: Loaded original renewal configuration
-    :type orig_renewal_conf: configobj.ConfigObj
-
-    :returns: `None`
-    :rtype: None
-
-    """
-    try:
-        final_renewal_conf = configobj.ConfigObj(
-            renewal_file, encoding='utf-8', default_encoding='utf-8')
-    except configobj.ConfigObjError:
-        raise errors.CertStorageError(
-            f'error parsing {renewal_file}')
-
-    orig_renewal_params = orig_renewal_conf['renewalparams']
-    final_renewal_params = final_renewal_conf['renewalparams']
-
-    if final_renewal_params == orig_renewal_params:
-        success_message = '\nNo changes were made to the renewal configuration.'
-    else:
-        success_message = '\nSuccessfully updated configuration.' + \
-                          '\nChanges will apply when the certificate renews.'
-
-    display_util.notify(success_message)
-
-
-def reconfigure(config: configuration.NamespaceConfig,
-          plugins: plugins_disco.PluginsRegistry) -> None:
-    """Allow the user to set new configuration options for an existing certificate without
-       forcing renewal. This can be used for things like authenticator, installer, and hooks,
-       but not for the domains on the cert, since those are only saved in the cert.
-
-    :param config: Configuration object
-    :type config: configuration.NamespaceConfig
-
-    :param plugins: List of plugins
-    :type plugins: plugins_disco.PluginsRegistry
-
-    :raises errors.Error: if the dry run fails
-    :raises errors.ConfigurationError: if certificate could not be loaded
-
-    """
-
-    if config.domains:
-        raise errors.ConfigurationError("You have specified domains, but this function cannot "
-            "be used to modify the domains in a certificate. If you would like to do so, follow "
-            "the instructions at https://certbot.org/change-cert-domain. Otherwise, remove the "
-            "domains from the command to continue reconfiguring. You can specify which certificate "
-            "you want on the command line with flag --cert-name instead.")
-    # While we could technically allow domains to be used to specify the certificate in addition to
-    # --cert-name, there's enough complexity with matching certs to domains that it's not worth it,
-    # to say nothing of the difficulty in explaining what exactly this subcommand can modify
-
-
-    # To make sure that the requested changes work, do a dry run. While setting up the dry run,
-    # we will set all the needed fields in config, which will then be saved upon success.
-    config.dry_run = True
-
-    if not config.certname:
-        certname_question = "Which certificate would you like to reconfigure?"
-        config.certname = cert_manager.get_certnames(
-            config, "reconfigure", allow_multiple=False,
-            custom_prompt=certname_question)[0]
-
-    certname = config.certname
-
-    try:
-        renewal_file = storage.renewal_file_for_certname(config, certname)
-    except errors.CertStorageError:
-        raise errors.ConfigurationError(f"An existing certificate with name {certname} could not "
-            "be found. Run `certbot certificates` to list available certificates.")
-
-    # figure this out before we modify config
-    if config.deploy_hook and not config.run_deploy_hooks:
-        msg = ("You are attempting to set a --deploy-hook. Would you like Certbot to run deploy "
-               "hooks when it performs a dry run with the new settings? This will run all "
-               "relevant deploy hooks, including directory hooks, unless --no-directory-hooks "
-               "is set. This will use the current active certificate, and not the temporary test "
-               "certificate acquired during the dry run.")
-        config.run_deploy_hooks = display_util.yesno(msg,"Run deploy hooks",
-            "Do not run deploy hooks", default=False)
-
-    # cache previous version for later comparison
-    try:
-        orig_renewal_conf = configobj.ConfigObj(
-            renewal_file, encoding='utf-8', default_encoding='utf-8')
-    except configobj.ConfigObjError:
-        raise errors.CertStorageError(
-            f"error parsing {renewal_file}")
-
-    lineage_config = copy.deepcopy(config)
-    try:
-        renewal_candidate = renewal.reconstitute(lineage_config, renewal_file)
-    except Exception as e:  # pylint: disable=broad-except
-        raise errors.ConfigurationError(f"Renewal configuration file {renewal_file} "
-            f"(cert: {certname}) produced an unexpected error: {e}.")
-    if not renewal_candidate:
-        raise errors.ConfigurationError("Could not load certificate. See logs for errors.")
-
-    # this is where lineage_config gets fully filled out (e.g. --apache will set auth and installer)
-    installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
-    le_client = _init_le_client(lineage_config, auth, installer)
-
-    # renews cert as dry run to test that the new values are ok
-    # at this point, renewal_candidate.configuration has the old values, but will use
-    # the values from lineage_config when doing the dry run
-    _get_and_save_cert(le_client, lineage_config, certname=certname,
-        lineage=renewal_candidate)
-
-    # this function will update lineage.configuration with the new values, and save it to disk
-    renewal_candidate.save_new_config_values(lineage_config)
-
-    _report_reconfigure_results(renewal_file, orig_renewal_conf)
 
 
 @contextmanager

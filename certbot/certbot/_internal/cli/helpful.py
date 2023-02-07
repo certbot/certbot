@@ -66,7 +66,6 @@ class HelpfulArgumentParser:
             "certificates": main.certificates,
             "delete": main.delete,
             "enhance": main.enhance,
-            "reconfigure": main.reconfigure,
         }
 
         # Get notification function for printing

@@ -808,25 +808,6 @@ def test_revoke_multiple_lineages(context: IntegrationTestsContext) -> None:
         assert 'Not deleting revoked certificates due to overlapping archive dirs' in f.read()
 
 
-def test_reconfigure(context: IntegrationTestsContext) -> None:
-    """Test the reconfigure verb"""
-    certname = context.get_domain()
-    context.certbot(['-d', certname])
-    conf_path = join(context.config_dir, 'renewal', '{}.conf'.format(certname))
-
-    with misc.create_http_server(context.http_01_port) as webroot:
-        context.certbot(['reconfigure', '--cert-name', certname,
-                         '-a', 'webroot', '--webroot-path', webroot])
-        with open(conf_path, 'r') as f:
-            file_contents = f.read()
-            # Check changed value
-            assert 'authenticator = webroot' in file_contents, \
-                   'Expected authenticator to be changed to webroot in renewal config'
-            # Check added value
-            assert f'webroot_path = {webroot}' in file_contents, \
-                   'Expected new webroot path to be added to renewal config'
-
-
 def test_wildcard_certificates(context: IntegrationTestsContext) -> None:
     """Test wildcard certificate issuance."""
     certname = context.get_domain('wild')

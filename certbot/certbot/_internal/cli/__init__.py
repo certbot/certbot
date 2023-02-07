@@ -135,7 +135,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     )
     helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates",
-         "renew", "enhance", "reconfigure"], "--cert-name", dest="certname",
+         "renew", "enhance"], "--cert-name", dest="certname",
         metavar="CERTNAME", default=flag_default("certname"),
         help="Certificate name to apply. This name is used by Certbot for housekeeping "
              "and in file paths; it doesn't affect the content of the certificate itself. "
@@ -157,17 +157,6 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
              " roll back those changes.  It also calls --pre-hook and --post-hook commands"
              " if they are defined because they may be necessary to accurately simulate"
              " renewal. --deploy-hook commands are not called.")
-    helpful.add(
-        ["testing", "renew", "certonly", "reconfigure"],
-        "--run-deploy-hooks", action="store_true", dest="run_deploy_hooks",
-        default=flag_default("run_deploy_hooks"),
-        help="When performing a test run using `--dry-run` or `reconfigure`, run any applicable"
-             " deploy hooks. This includes hooks set on the command line, saved in the"
-             " certificate's renewal configuration file, or present in the renewal-hooks directory."
-             " To exclude direcory hooks, use --no-directory-hooks. The hook(s) will only"
-             " be run if the dry run succeeds, and will use the current active certificate, not"
-             " the temporary test certificate acquired during the dry run. This flag is recommended"
-             " when modifying the deploy hook using `reconfigure`.")
     helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         default=flag_default("register_unsafely_without_email"),
@@ -385,7 +374,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         default=flag_default("issuance_timeout"),
         help=config_help("issuance_timeout"))
     helpful.add(
-        ["renew", "reconfigure"], "--pre-hook",
+        "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
         " Intended primarily for renewal, where it can be used to temporarily"
         " shut down a webserver that might conflict with the standalone"
@@ -393,21 +382,21 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         " obtained/renewed. When renewing several certificates that have"
         " identical pre-hooks, only the first will be executed.")
     helpful.add(
-        ["renew", "reconfigure"], "--post-hook",
+        "renew", "--post-hook",
         help="Command to be run in a shell after attempting to obtain/renew"
         " certificates. Can be used to deploy renewed certificates, or to"
         " restart any servers that were stopped by --pre-hook. This is only"
         " run if an attempt was made to obtain/renew a certificate. If"
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
-    helpful.add(["renew", "reconfigure"], "--renew-hook",
+    helpful.add("renew", "--renew-hook",
                 action=_RenewHookAction, help=argparse.SUPPRESS)
     helpful.add(
         "renew", "--no-random-sleep-on-renew", action="store_false",
         default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
         help=argparse.SUPPRESS)
     helpful.add(
-        ["renew", "reconfigure"], "--deploy-hook", action=_DeployHookAction,
+        "renew", "--deploy-hook", action=_DeployHookAction,
         help='Command to be run in a shell once for each successfully'
         ' issued certificate. For this command, the shell variable'
         ' $RENEWED_LINEAGE will point to the config live subdirectory'

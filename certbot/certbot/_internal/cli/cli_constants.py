@@ -38,7 +38,6 @@ manage certificates:
     certificates    Display information about certificates you have from Certbot
     revoke          Revoke a certificate (supply --cert-name or --cert-path)
     delete          Delete a certificate (supply --cert-name)
-    reconfigure     Update a certificate's configuration (supply --cert-name)
 
 manage your account:
     register        Create an ACME account
