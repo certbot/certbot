@@ -581,10 +581,10 @@ class ReconfigureTest(test_util.TempDirTestCase):
 
 
     def tearDown(self):
-        super().tearDown()
         self.get_utility_patch.stop()
         for patch in self.patchers.values():
             patch.stop()
+        super().tearDown()
 
     def _call(self, passed_args):
         full_args = passed_args + ['--config-dir', self.config_dir]
