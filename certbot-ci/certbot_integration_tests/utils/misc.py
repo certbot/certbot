@@ -234,7 +234,7 @@ def generate_csr(domains: Iterable[str], key_path: str, csr_path: str,
         # It can be removed once package types-pyOpenSSL depends on cryptography instead of
         # types-cryptography and so types-cryptography is not installed anymore.
         # See https://github.com/python/typeshed/issues/5618
-        _bytes = _key.private_bytes(encoding=Encoding.PEM,  # type: ignore
+        _bytes = _key.private_bytes(encoding=Encoding.PEM,
                                     format=PrivateFormat.TraditionalOpenSSL,
                                     encryption_algorithm=NoEncryption())
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, _bytes)

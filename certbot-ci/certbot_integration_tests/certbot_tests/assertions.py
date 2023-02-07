@@ -22,13 +22,13 @@ SYSTEM_SID = 'S-1-5-18'
 ADMINS_SID = 'S-1-5-32-544'
 
 
-def assert_elliptic_key(key: str, curve: Type[EllipticCurve]) -> None:
+def assert_elliptic_key(key_path: str, curve: Type[EllipticCurve]) -> None:
     """
     Asserts that the key at the given path is an EC key using the given curve.
-    :param key: path to key
+    :param key_path: path to key
     :param EllipticCurve curve: name of the expected elliptic curve
     """
-    with open(key, 'rb') as file:
+    with open(key_path, 'rb') as file:
         privkey1 = file.read()
 
     key = load_pem_private_key(data=privkey1, password=None, backend=default_backend())
@@ -37,13 +37,13 @@ def assert_elliptic_key(key: str, curve: Type[EllipticCurve]) -> None:
     assert isinstance(key.curve, curve), f"should have curve {curve} but was {key.curve}"
 
 
-def assert_rsa_key(key: str, key_size: Optional[int] = None) -> None:
+def assert_rsa_key(key_path: str, key_size: Optional[int] = None) -> None:
     """
     Asserts that the key at the given path is an RSA key.
-    :param str key: path to key
+    :param str key_path: path to key
     :param int key_size: if provided, assert that the RSA key is of this size
     """
-    with open(key, 'rb') as file:
+    with open(key_path, 'rb') as file:
         privkey1 = file.read()
 
     key = load_pem_private_key(data=privkey1, password=None, backend=default_backend())

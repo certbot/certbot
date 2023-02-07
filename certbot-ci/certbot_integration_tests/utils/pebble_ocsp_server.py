@@ -11,9 +11,13 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.x509 import ocsp
 from dateutil import parser
 import requests
+from typing import cast
+from typing import Union
 
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
@@ -25,7 +29,9 @@ class _ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediate-keys/0',
                                verify=False, timeout=10)
-        issuer_key = serialization.load_pem_private_key(request.content, None, default_backend())
+        issuer_key = cast(
+            Union[RSAPrivateKey, EllipticCurvePrivateKey],
+            serialization.load_pem_private_key(request.content, None, default_backend()))
 
         request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/0',
                                verify=False, timeout=10)
