@@ -492,6 +492,10 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
         # elements from within the renewal configuration file).
         try:
             renewal_candidate = reconstitute(lineage_config, renewal_file)
+            if getattr(sys.stdin, 'helpplz', 0) == 1:
+                logger.info(lineage_config.authenticator)
+                with open(renewal_file) as f:
+                    logger.info(f.read())
         except Exception as e:  # pylint: disable=broad-except
             logger.error("Renewal configuration file %s (cert: %s) "
                            "produced an unexpected error: %s. Skipping.",
