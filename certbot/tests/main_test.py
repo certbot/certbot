@@ -1517,7 +1517,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('sys.stdin')
     def test_interactive_no_renewal_delay(self, stdin):
         stdin.isatty.return_value = True
-        sys.stdin.blowup = 1
+        sys.stdin.helpplz = 1
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)

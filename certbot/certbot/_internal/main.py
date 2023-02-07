@@ -1539,7 +1539,7 @@ def renew_cert(config: configuration.NamespaceConfig, plugins: plugins_disco.Plu
 
     """
     # installers are used in auth mode to determine domain names
-    if hasattr(sys.stdin, 'blowup') and sys.stdin.blowup == 1:
+    if getattr(sys.stdin, 'helpplz', 0) == 1:
         logger.info(config.namespace)
         if filesystem.POSIX_MODE:
             raise ValueError
