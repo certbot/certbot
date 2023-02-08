@@ -757,14 +757,17 @@ The ``certbot reconfigure`` command can be used to change a certificate's renewa
 This command will use the new renewal options to perform a test renewal against the Let's Encrypt staging server.
 If this is successful, the new renewal options will be saved and will apply to future renewals.
 
+You will need to specify the ``--cert-name``, which can be found by running ``certbot certificates``.
+
+A list of common options that may be updated with the ``reconfigure`` command can be found by running
+``certbot help reconfigure``.
+
 As a practical example, if you were using the ``webroot`` authenticator and had relocated your website to another directory,
 you would need to change the ``--webroot-path`` to the new directory:
 
 .. code-block:: shell
 
   certbot reconfigure --cert-name example.com --webroot-path /path/to/new/location
-
-If this command succeeds, you are done!
 
 Certbot v2.2.0 and older
 ~~~~~~~~~~~~~~~~~~~~~~~~
