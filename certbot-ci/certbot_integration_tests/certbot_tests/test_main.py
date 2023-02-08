@@ -916,7 +916,7 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
     except NotImplementedError:
         pytest.skip('This ACME server does not support alternative issuers.')
 
-    names = [i.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value \
+    names = [str(i.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value) \
              for i in issuers]
 
     domain = context.get_domain('preferred-chain')
@@ -929,9 +929,9 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
         context.certbot(args)
 
         dumped = misc.read_certificate(cert_path)
-        assert 'Issuer: CN={}'.format(expected) in dumped, \
-               'Expected chain issuer to be {} when preferring {}'.format(expected, requested)
+        assert f'Issuer: CN={expected}'in dumped, \
+               f'Expected chain issuer to be {expected} when preferring {requested}'
 
         with open(conf_path, 'r') as f:
-            assert 'preferred_chain = {}'.format(requested) in f.read(), \
+            assert f'preferred_chain = {requested}' in f.read(), \
                    'Expected preferred_chain to be set in renewal config'
