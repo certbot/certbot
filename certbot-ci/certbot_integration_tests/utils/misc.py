@@ -175,23 +175,11 @@ def manual_http_hooks(http_server_root: str,
             file_h.write('''\
 #!/usr/bin/env python
 import os
-import requests
-import time
-import sys
 challenge_dir = os.path.join('{0}', '.well-known', 'acme-challenge')
 os.makedirs(challenge_dir)
 challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN'))
 with open(challenge_file, 'w') as file_h:
     file_h.write(os.environ.get('CERTBOT_VALIDATION'))
-url = 'http://localhost:{1}/.well-known/acme-challenge/' + os.environ.get('CERTBOT_TOKEN')
-for _ in range(0, 10):
-    time.sleep(1)
-    try:
-        if request.get(url).status_code == 200:
-            sys.exit(0)
-    except requests.exceptions.ConnectionError:
-        pass
-raise ValueError('Error, url did not respond after 10 attempts: {{0}}'.format(url))
 '''.format(http_server_root.replace('\\', '\\\\'), http_port))
         os.chmod(auth_script_path, 0o755)
 
