@@ -763,7 +763,7 @@ A list of common options that may be updated with the ``reconfigure`` command ca
 ``certbot help reconfigure``.
 
 As a practical example, if you were using the ``webroot`` authenticator and had relocated your website to another directory,
-you would need to change the ``--webroot-path`` to the new directory:
+you can change the ``--webroot-path`` to the new directory using the following command:
 
 .. code-block:: shell
 
