@@ -1539,10 +1539,6 @@ def renew_cert(config: configuration.NamespaceConfig, plugins: plugins_disco.Plu
 
     """
     # installers are used in auth mode to determine domain names
-    if getattr(sys.stdin, 'helpplz', 0) == 1:
-        logger.info(config.namespace)
-        if filesystem.POSIX_MODE:
-            raise ValueError
     installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     le_client = _init_le_client(config, auth, installer)
 
