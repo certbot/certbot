@@ -158,14 +158,12 @@ set -e
 
 
 @contextlib.contextmanager
-def manual_http_hooks(http_server_root: str,
-                      http_port: int) -> Generator[Tuple[str, str], None, None]:
+def manual_http_hooks(http_server_root: str) -> Generator[Tuple[str, str], None, None]:
     """
     Generate suitable http-01 hooks command for test purpose in the given HTTP
     server webroot directory. These hooks command use temporary python scripts
     that are deleted upon context exit.
     :param str http_server_root: path to the HTTP server configured to serve http-01 challenges
-    :param int http_port: HTTP port that the HTTP server listen on
     :return (str, str): a tuple containing the authentication hook and cleanup hook commands
     """
     tempdir = tempfile.mkdtemp()

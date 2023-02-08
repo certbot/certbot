@@ -118,7 +118,7 @@ def test_http_01(context: IntegrationTestsContext) -> None:
 def test_manual_http_auth(context: IntegrationTestsContext) -> None:
     """Test the HTTP-01 challenge using manual plugin."""
     with misc.create_http_server(context.http_01_port) as webroot,\
-            misc.manual_http_hooks(webroot, context.http_01_port) as scripts:
+            misc.manual_http_hooks(webroot) as scripts:
 
         certname = context.get_domain()
         context.certbot([
