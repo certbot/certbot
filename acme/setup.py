@@ -22,7 +22,6 @@ docs_extras = [
 
 test_extras = [
     'pytest',
-    'pytest-xdist',
     'typing-extensions',
 ]
 

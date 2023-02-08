@@ -92,7 +92,6 @@ test_extras = [
     'pylint ; python_full_version >= "3.7.2"',
     'pytest',
     'pytest-cov',
-    'pytest-xdist',
     'setuptools',
     'tox',
     'types-pyOpenSSL',
