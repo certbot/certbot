@@ -1,9 +1,12 @@
 """Test :mod:`certbot._internal.display.util`."""
 import io
 import socket
+import sys
 import tempfile
 import unittest
 from unittest import mock
+
+import pytest
 
 from acme import messages as acme_messages
 from certbot import errors
@@ -146,4 +149,4 @@ class DescribeACMEErrorTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

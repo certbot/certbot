@@ -1,10 +1,12 @@
 """Test for certbot_nginx._internal.nginxparser."""
 import copy
 import operator
+import sys
 import tempfile
 import unittest
 
 from pyparsing import ParseException
+import pytest
 
 from certbot_nginx._internal.nginxparser import dump
 from certbot_nginx._internal.nginxparser import dumps
@@ -508,4 +510,4 @@ class TestUnspacedList(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

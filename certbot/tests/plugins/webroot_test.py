@@ -6,11 +6,13 @@ import argparse
 import errno
 import json
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
 
 import josepy as jose
+import pytest
 
 from acme import challenges
 from certbot import achallenges
@@ -360,4 +362,4 @@ class WebrootActionTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

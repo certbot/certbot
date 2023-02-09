@@ -1,5 +1,8 @@
 """Tests for certbot_apache._internal.obj."""
+import sys
 import unittest
+
+import pytest
 
 
 class VirtualHostTest(unittest.TestCase):
@@ -137,4 +140,4 @@ class AddrTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

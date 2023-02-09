@@ -3,6 +3,7 @@
 import contextlib
 from datetime import datetime
 from datetime import timedelta
+import sys
 import unittest
 from unittest import mock
 
@@ -12,6 +13,7 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.x509 import ocsp as ocsp_lib
+import pytest
 import pytz
 
 from certbot import errors
@@ -386,4 +388,4 @@ revoked
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

@@ -4,11 +4,13 @@ import copy
 import datetime
 import http.client as http_client
 import json
+import sys
 from typing import Dict
 import unittest
 from unittest import mock
 
 import josepy as jose
+import pytest
 import requests
 
 from acme import challenges
@@ -792,4 +794,4 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

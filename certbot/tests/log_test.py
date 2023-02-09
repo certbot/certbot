@@ -8,6 +8,8 @@ from typing import Optional
 import unittest
 from unittest import mock
 
+import pytest
+
 from acme import messages
 from certbot import errors
 from certbot import util
@@ -433,4 +435,4 @@ class ExitWithAdviceTest(test_util.TempDirTestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

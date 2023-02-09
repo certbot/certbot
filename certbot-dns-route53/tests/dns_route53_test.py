@@ -1,10 +1,12 @@
 """Tests for certbot_dns_route53._internal.dns_route53.Authenticator"""
 
+import sys
 import unittest
 from unittest import mock
 
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -257,4 +259,4 @@ class ClientTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

@@ -3,9 +3,12 @@ import argparse
 import copy
 from importlib import reload as reload_module
 import io
+import sys
 import tempfile
 import unittest
 from unittest import mock
+
+import pytest
 
 from acme import challenges
 from certbot import errors
@@ -521,4 +524,4 @@ def _call_set_by_cli(var, args, verb):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

@@ -1,8 +1,11 @@
 """Test for certbot_apache._internal.http_01."""
 import errno
+import sys
 from typing import List
 import unittest
 from unittest import mock
+
+import pytest
 
 from acme import challenges
 from certbot import achallenges
@@ -220,4 +223,4 @@ class ApacheHttp01Test(util.ApacheTest):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

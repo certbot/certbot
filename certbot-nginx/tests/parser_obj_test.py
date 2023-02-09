@@ -1,7 +1,10 @@
 """ Tests for functions and classes in parser_obj.py """
 
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot_nginx._internal.parser_obj import COMMENT_BLOCK
 from certbot_nginx._internal.parser_obj import parse_raw
@@ -256,4 +259,4 @@ class StatementsTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

@@ -1,7 +1,9 @@
 """Tests for acme.jws."""
+import sys
 import unittest
 
 import josepy as jose
+import pytest
 
 import test_util
 
@@ -63,4 +65,4 @@ class JWSTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

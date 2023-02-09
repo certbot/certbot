@@ -1,7 +1,10 @@
 """Test for certbot_apache._internal.configurator for Debian overrides"""
 import shutil
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -211,4 +214,4 @@ class MultipleVhostsTestDebian(util.ApacheTest):
             errors.MisconfigurationError, self.config.enable_mod, "ssl")
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

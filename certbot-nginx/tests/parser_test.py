@@ -2,9 +2,12 @@
 import glob
 import re
 import shutil
+import sys
 from typing import List
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -544,4 +547,4 @@ class NginxParserTest(util.NginxTest):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

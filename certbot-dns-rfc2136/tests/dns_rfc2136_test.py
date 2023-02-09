@@ -1,11 +1,13 @@
 """Tests for certbot_dns_rfc2136._internal.dns_rfc2136."""
 
+import sys
 import unittest
 from unittest import mock
 
 import dns.flags
 import dns.rcode
 import dns.tsig
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -234,4 +236,4 @@ class RFC2136ClientTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

@@ -1,5 +1,8 @@
 """ Tests for ParserNode utils """
+import sys
 import unittest
+
+import pytest
 
 from certbot_apache._internal import parsernode_util as util
 
@@ -112,4 +115,4 @@ class ParserNodeUtilTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

@@ -1,7 +1,10 @@
 """Tests for certbot._internal.renewal"""
 import copy
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from acme import challenges
 from certbot import configuration
@@ -305,4 +308,4 @@ class DescribeResultsTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

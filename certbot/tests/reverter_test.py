@@ -2,9 +2,12 @@
 import csv
 import logging
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -454,4 +457,4 @@ def update_file(filename, string):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

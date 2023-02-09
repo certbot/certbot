@@ -1,6 +1,9 @@
 """Tests for renewal updater interfaces"""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import interfaces
 from certbot._internal import main
@@ -120,4 +123,4 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

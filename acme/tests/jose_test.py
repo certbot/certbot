@@ -1,6 +1,9 @@
 """Tests for acme.jose shim."""
 import importlib
+import sys
 import unittest
+
+import pytest
 
 
 class JoseTest(unittest.TestCase):
@@ -51,4 +54,4 @@ class JoseTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

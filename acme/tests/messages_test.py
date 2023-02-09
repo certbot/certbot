@@ -1,11 +1,13 @@
 """Tests for acme.messages."""
 import contextlib
+import sys
 from typing import Dict
 import unittest
 from unittest import mock
 import warnings
 
 import josepy as jose
+import pytest
 
 from acme import challenges
 import test_util
@@ -520,4 +522,4 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

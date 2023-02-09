@@ -1,8 +1,10 @@
 """Tests for certbot_dns_gehirn._internal.dns_gehirn."""
 
+import sys
 import unittest
 from unittest import mock
 
+import pytest
 from requests.exceptions import HTTPError
 
 from certbot.compat import os
@@ -52,4 +54,4 @@ class GehirnLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLex
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

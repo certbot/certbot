@@ -1,8 +1,10 @@
 """Test for certbot_nginx._internal.configurator."""
+import sys
 import unittest
 from unittest import mock
 
 import OpenSSL
+import pytest
 
 from acme import challenges
 from acme import messages
@@ -1133,4 +1135,4 @@ class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

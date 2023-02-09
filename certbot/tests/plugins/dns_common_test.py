@@ -2,8 +2,11 @@
 
 import collections
 import logging
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot import util
@@ -233,4 +236,4 @@ class DomainNameGuessTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

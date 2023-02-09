@@ -1,10 +1,12 @@
 """Tests for certbot.plugins.common."""
 import functools
 import shutil
+import sys
 import unittest
 from unittest import mock
 
 import josepy as jose
+import pytest
 
 from acme import challenges
 from certbot import achallenges
@@ -366,4 +368,4 @@ class InstallVersionControlledFileTest(test_util.TempDirTestCase):
             self.assertIs(mock_logger.warning.called, False)
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

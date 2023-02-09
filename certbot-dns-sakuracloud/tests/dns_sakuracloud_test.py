@@ -1,8 +1,10 @@
 """Tests for certbot_dns_sakuracloud._internal.dns_sakuracloud."""
 
+import sys
 import unittest
 from unittest import mock
 
+import pytest
 from requests.exceptions import HTTPError
 
 from certbot.compat import os
@@ -53,4 +55,4 @@ class SakuraCloudLexiconClientTest(unittest.TestCase,
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

@@ -5,6 +5,7 @@ import unittest
 from unittest import mock
 
 import josepy as jose
+import pytest
 
 from acme import messages
 from certbot import errors
@@ -517,4 +518,4 @@ class ReportExecutedCommand(unittest.TestCase):
         self.assertEqual(mock_notify.call_count, 0)
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

@@ -2,12 +2,14 @@
 import http.client as http_client
 import socket
 import socketserver
+import sys
 import threading
 from typing import Set
 import unittest
 from unittest import mock
 
 import josepy as jose
+import pytest
 import requests
 
 from acme import challenges
@@ -267,4 +269,4 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

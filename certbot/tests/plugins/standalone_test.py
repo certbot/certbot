@@ -1,6 +1,7 @@
 """Tests for certbot._internal.plugins.standalone."""
 import errno
 import socket
+import sys
 from typing import Dict
 from typing import Set
 from typing import Tuple
@@ -9,6 +10,7 @@ from unittest import mock
 
 import josepy as jose
 import OpenSSL.crypto
+import pytest
 
 from acme import challenges
 from acme import standalone as acme_standalone
@@ -185,4 +187,4 @@ class AuthenticatorTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

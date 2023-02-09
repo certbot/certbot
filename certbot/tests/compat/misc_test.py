@@ -1,6 +1,9 @@
 """Tests for certbot.compat.misc"""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot.compat import os
 
@@ -43,4 +46,4 @@ class ExecuteStatusTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

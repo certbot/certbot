@@ -1,8 +1,10 @@
 """Tests for certbot_dns_nsone._internal.dns_nsone."""
 
+import sys
 import unittest
 from unittest import mock
 
+import pytest
 from requests.exceptions import HTTPError
 
 from certbot.compat import os
@@ -49,4 +51,4 @@ class NS1LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexico
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

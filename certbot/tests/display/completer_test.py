@@ -1,19 +1,22 @@
 """Test certbot._internal.display.completer."""
+from importlib import reload as reload_module
+import string
+import sys
 from typing import List
+import unittest
+from unittest import mock
+
+import pytest
+
+from certbot.compat import filesystem
+from certbot.compat import os
+import certbot.tests.util as test_util
 
 try:
     import readline  # pylint: disable=import-error
 except ImportError:
     import certbot._internal.display.dummy_readline as readline  # type: ignore
-from importlib import reload as reload_module
-import string
-import sys
-import unittest
-from unittest import mock
 
-from certbot.compat import filesystem
-from certbot.compat import os
-import certbot.tests.util as test_util
 
 
 class CompleterTest(test_util.TempDirTestCase):
@@ -104,4 +107,4 @@ def enable_tab_completion(unused_command):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover

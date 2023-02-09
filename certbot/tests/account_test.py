@@ -1,10 +1,12 @@
 """Tests for certbot._internal.account."""
 import datetime
 import json
+import sys
 import unittest
 from unittest import mock
 
 import josepy as jose
+import pytest
 import pytz
 
 from acme import messages
@@ -330,4 +332,4 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main([__file__]))  # pragma: no cover
