@@ -15,20 +15,20 @@ import sys
 import tempfile
 import threading
 import time
-import warnings
 from typing import Generator
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
+import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
-from cryptography.x509 import load_pem_x509_certificate
 from cryptography.x509 import Certificate
+from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
 import pkg_resources
 import requests

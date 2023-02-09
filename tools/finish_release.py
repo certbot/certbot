@@ -26,16 +26,16 @@ release with that name already exists.
 """
 
 import argparse
+import getpass
 import glob
 import os.path
 import re
 import subprocess
 import sys
 import tempfile
-import getpass
-from azure.devops.connection import Connection
 from zipfile import ZipFile
 
+from azure.devops.connection import Connection
 import requests
 
 # Path to the root directory of the Certbot repository containing this script

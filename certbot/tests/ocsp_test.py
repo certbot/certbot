@@ -17,7 +17,6 @@ import pytz
 from certbot import errors
 from certbot.tests import util as test_util
 
-
 out = """Missing = in header key=value
 ocsp: Use -help for summary.
 """

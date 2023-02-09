@@ -3,9 +3,9 @@ import unittest
 from unittest import mock
 
 from certbot import errors
-from certbot._internal.cli import HelpfulArgumentParser
-from certbot._internal.cli import _DomainsAction
 from certbot._internal import constants
+from certbot._internal.cli import _DomainsAction
+from certbot._internal.cli import HelpfulArgumentParser
 
 
 class TestScanningFlags(unittest.TestCase):

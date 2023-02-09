@@ -86,6 +86,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_add_parser_arguments(self):  # pylint: disable=no-self-use
         from certbot_apache._internal.configurator import ApacheConfigurator
+
         # Weak test..
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
 
@@ -123,8 +124,8 @@ class MultipleVhostsTest(util.ApacheTest):
             cls.add_parser_arguments(mock.MagicMock())
 
     def test_all_configurators_defaults_defined(self):
-        from certbot_apache._internal.entrypoint import OVERRIDE_CLASSES
         from certbot_apache._internal.configurator import ApacheConfigurator
+        from certbot_apache._internal.entrypoint import OVERRIDE_CLASSES
         parameters = set(ApacheConfigurator.OS_DEFAULTS.__dict__.keys())
         for cls in OVERRIDE_CLASSES.values():
             self.assertIs(parameters.issubset(set(cls.OS_DEFAULTS.__dict__.keys())), True)
@@ -1669,8 +1670,9 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         file has been manually edited by the user, and will refuse to update it.
         This test ensures that all necessary hashes are present.
         """
-        from certbot_apache._internal.constants import ALL_SSL_OPTIONS_HASHES
         import pkg_resources
+
+        from certbot_apache._internal.constants import ALL_SSL_OPTIONS_HASHES
 
         tls_configs_dir = pkg_resources.resource_filename(
             "certbot_apache", os.path.join("_internal", "tls_configs"))

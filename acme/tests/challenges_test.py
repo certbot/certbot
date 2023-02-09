@@ -1,15 +1,14 @@
 """Tests for acme.challenges."""
-import urllib.parse as urllib_parse
 import unittest
 from unittest import mock
+import urllib.parse as urllib_parse
 
 import josepy as jose
+from josepy.jwk import JWKEC
 import OpenSSL
 import requests
-from josepy.jwk import JWKEC
 
 from acme import errors
-
 import test_util
 
 CERT = test_util.load_comparable_cert('cert.pem')

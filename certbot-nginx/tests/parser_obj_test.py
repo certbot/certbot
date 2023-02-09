@@ -26,7 +26,8 @@ class CommentHelpersTest(unittest.TestCase):
             parse_raw(['not', 'even', 'a', 'comment'])))
 
     def test_certbot_comment(self):
-        from certbot_nginx._internal.parser_obj import _certbot_comment, _is_certbot_comment
+        from certbot_nginx._internal.parser_obj import _certbot_comment
+        from certbot_nginx._internal.parser_obj import _is_certbot_comment
         comment = _certbot_comment(None)
         self.assertTrue(_is_certbot_comment(comment))
         self.assertEqual(comment.dump(), COMMENT_BLOCK)
@@ -156,7 +157,8 @@ class BlockTest(unittest.TestCase):
 
     def test_iterate_match(self):
         # can match on contents while expanded
-        from certbot_nginx._internal.parser_obj import Block, Sentence
+        from certbot_nginx._internal.parser_obj import Block
+        from certbot_nginx._internal.parser_obj import Sentence
         expected = [['thing', '1'], ['thing', '2']]
         for i, elem in enumerate(self.bloc.iterate(expanded=True,
             match=lambda x: isinstance(x, Sentence) and 'thing' in x.words)):

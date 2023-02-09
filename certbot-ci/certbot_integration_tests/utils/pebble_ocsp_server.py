@@ -6,6 +6,8 @@ to serve a mock OCSP responder during integration tests against Pebble.
 import datetime
 import http.server as BaseHTTPServer
 import re
+from typing import cast
+from typing import Union
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -16,8 +18,6 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.x509 import ocsp
 from dateutil import parser
 import requests
-from typing import cast
-from typing import Union
 
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL

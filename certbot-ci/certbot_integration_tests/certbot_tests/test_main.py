@@ -6,8 +6,8 @@ import re
 import shutil
 import subprocess
 import time
-from typing import Iterable
 from typing import Generator
+from typing import Iterable
 from typing import Tuple
 from typing import Type
 
@@ -18,7 +18,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import SECP521R1
 from cryptography.x509 import NameOID
 import pytest
 
-from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
 from certbot_integration_tests.certbot_tests.assertions import assert_elliptic_key
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_owner
@@ -31,6 +30,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_saved_rene
 from certbot_integration_tests.certbot_tests.assertions import assert_world_no_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
+from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
 from certbot_integration_tests.utils import misc
 
 
@@ -248,8 +248,9 @@ def test_renew_files_propagate_permissions(context: IntegrationTestsContext) -> 
     if os.name != 'nt':
         os.chmod(privkey1, 0o444)
     else:
-        import win32security  # pylint: disable=import-error
         import ntsecuritycon  # pylint: disable=import-error
+        import win32security  # pylint: disable=import-error
+
         # Get the current DACL of the private key
         security = win32security.GetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION)
         dacl = security.GetSecurityDescriptorDacl()

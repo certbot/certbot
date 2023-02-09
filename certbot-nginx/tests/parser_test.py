@@ -2,8 +2,8 @@
 import glob
 import re
 import shutil
-import unittest
 from typing import List
+import unittest
 from unittest import mock
 
 from certbot import errors
@@ -371,7 +371,8 @@ class NginxParserTest(util.NginxTest):
             ["\n", "a", " ", "b", "\n"],
             ["c", " ", "d"],
             ["\n", "e", " ", "f"]])
-        from certbot_nginx._internal.parser import comment_directive, COMMENT_BLOCK
+        from certbot_nginx._internal.parser import COMMENT_BLOCK
+        from certbot_nginx._internal.parser import comment_directive
         comment_directive(block, 1)
         comment_directive(block, 0)
         self.assertEqual(block.spaced, [

@@ -12,9 +12,9 @@ import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
 
 try:
+    import ntsecuritycon
     import win32api
     import win32security
-    import ntsecuritycon
     POSIX_MODE = False
 except ImportError:
     POSIX_MODE = True
@@ -471,6 +471,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         self.assertIs(filesystem.check_owner(self.probe_path), True)
 
         import os as std_os  # pylint: disable=os-module-forbidden
+
         # See related inline comment in certbot.compat.filesystem.check_owner method
         # that explains why MyPy/PyLint check disable is needed here.
         uid = std_os.getuid()

@@ -278,6 +278,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
     def setUp(self):
         super().setUp()
         from certbot.reverter import Reverter
+
         # Disable spurious errors...
         logging.disable(logging.CRITICAL)
 

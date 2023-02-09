@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 
+
 def call_with_print(command):
     print(command)
     subprocess.check_call(command, shell=True)

@@ -1064,8 +1064,9 @@ class InstallSslOptionsConfTest(util.NginxTest):
         file has been manually edited by the user, and will refuse to update it.
         This test ensures that all necessary hashes are present.
         """
-        from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
         import pkg_resources
+
+        from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
         all_files = [
             pkg_resources.resource_filename("certbot_nginx",
                 os.path.join("_internal", "tls_configs", x))

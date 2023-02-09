@@ -15,11 +15,10 @@ from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
 
-from certbot_apache._internal import apache_util
-from certbot_apache._internal import constants
-
 from certbot import errors
 from certbot.compat import os
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import constants
 
 if TYPE_CHECKING:
     from certbot_apache._internal.configurator import ApacheConfigurator  # pragma: no cover

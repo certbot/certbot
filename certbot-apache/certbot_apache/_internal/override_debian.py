@@ -1,15 +1,14 @@
 """ Distribution specific override class for Debian family (Ubuntu/Debian) """
 import logging
 
-from certbot_apache._internal import apache_util
-from certbot_apache._internal import configurator
-from certbot_apache._internal.configurator import OsOptions
-from certbot_apache._internal.obj import VirtualHost
-
 from certbot import errors
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import configurator
+from certbot_apache._internal.configurator import OsOptions
+from certbot_apache._internal.obj import VirtualHost
 
 logger = logging.getLogger(__name__)
 

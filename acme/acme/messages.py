@@ -1,6 +1,6 @@
 """ACME protocol messages."""
-import datetime
 from collections.abc import Hashable
+import datetime
 import json
 from typing import Any
 from typing import Dict
@@ -20,7 +20,6 @@ from acme import errors
 from acme import fields
 from acme import jws
 from acme import util
-
 
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
 

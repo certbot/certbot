@@ -3,8 +3,8 @@ import http.client as http_client
 import socket
 import socketserver
 import threading
-import unittest
 from typing import Set
+import unittest
 from unittest import mock
 
 import josepy as jose
@@ -13,7 +13,6 @@ import requests
 from acme import challenges
 from acme import crypto_util
 from acme import errors
-
 import test_util
 
 
@@ -190,6 +189,7 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
     @mock.patch("socket.socket.bind")
     def test_fail_to_bind(self, mock_bind):
         from errno import EADDRINUSE
+
         from acme.standalone import BaseDualNetworkedServers
 
         mock_bind.side_effect = socket.error(EADDRINUSE, "Fake addr in use error")

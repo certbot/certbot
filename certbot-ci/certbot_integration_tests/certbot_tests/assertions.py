@@ -5,7 +5,8 @@ from typing import Optional
 from typing import Type
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey, EllipticCurve
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
@@ -13,8 +14,8 @@ try:
     import grp
     POSIX_MODE = True
 except ImportError:
-    import win32security
     import ntsecuritycon
+    import win32security
     POSIX_MODE = False
 
 EVERYBODY_SID = 'S-1-1-0'

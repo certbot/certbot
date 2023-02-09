@@ -5,11 +5,11 @@ from typing import Optional
 import unittest
 from unittest import mock
 
-from certbot_compatibility_test import validator
 from OpenSSL import crypto
 import requests
 
 from acme import errors as acme_errors
+from certbot_compatibility_test import validator
 
 
 class ValidatorTest(unittest.TestCase):

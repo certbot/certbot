@@ -17,7 +17,6 @@ from certbot.compat import os
 import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
 
-
 PLUGINS = disco.PluginsRegistry.find_all()
 
 

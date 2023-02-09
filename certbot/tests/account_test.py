@@ -2,9 +2,9 @@
 import datetime
 import json
 import unittest
+from unittest import mock
 
 import josepy as jose
-from unittest import mock
 import pytz
 
 from acme import messages
@@ -13,7 +13,6 @@ from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
 import certbot.tests.util as test_util
-
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 

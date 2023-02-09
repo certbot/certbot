@@ -18,12 +18,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 
-from certbot_compatibility_test import errors
-from certbot_compatibility_test import util
-from certbot_compatibility_test import validator
-from certbot_compatibility_test.configurators import common
-from certbot_compatibility_test.configurators.apache import common as a_common
-from certbot_compatibility_test.configurators.nginx import common as n_common
 from OpenSSL import crypto
 from urllib3.util import connection
 
@@ -34,6 +28,12 @@ from certbot import achallenges
 from certbot import errors as le_errors
 from certbot._internal.display import obj as display_obj
 from certbot.tests import acme_util
+from certbot_compatibility_test import errors
+from certbot_compatibility_test import util
+from certbot_compatibility_test import validator
+from certbot_compatibility_test.configurators import common
+from certbot_compatibility_test.configurators.apache import common as a_common
+from certbot_compatibility_test.configurators.nginx import common as n_common
 
 DESCRIPTION = """
 Tests Certbot plugins against different server configurations. It is

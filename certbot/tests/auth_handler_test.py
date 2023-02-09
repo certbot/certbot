@@ -2,9 +2,9 @@
 import datetime
 import logging
 import unittest
+from unittest import mock
 
 from josepy import b64encode
-from unittest import mock
 
 from acme import challenges
 from acme import client as acme_client

@@ -12,7 +12,6 @@ from certbot._internal import account
 from certbot._internal import constants
 import certbot.tests.util as test_util
 
-
 _KEY = josepy.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
