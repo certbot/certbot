@@ -421,7 +421,6 @@ class RevokeTest(test_util.TempDirTestCase):
         if not args:
             args = 'revoke --cert-path={0} '
             args = args.format(self.tmp_cert_path).split()
-        cli.set_by_cli.detector = None # required to reset set_by_cli state
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
@@ -587,7 +586,6 @@ class ReconfigureTest(test_util.TempDirTestCase):
 
     def _call(self, passed_args):
         full_args = passed_args + ['--config-dir', self.config_dir]
-        cli.set_by_cli.detector = None # required to reset set_by_cli state
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, full_args))

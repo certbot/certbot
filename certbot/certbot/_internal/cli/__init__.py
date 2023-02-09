@@ -164,7 +164,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         help="When performing a test run using `--dry-run` or `reconfigure`, run any applicable"
              " deploy hooks. This includes hooks set on the command line, saved in the"
              " certificate's renewal configuration file, or present in the renewal-hooks directory."
-             " To exclude direcory hooks, use --no-directory-hooks. The hook(s) will only"
+             " To exclude directory hooks, use --no-directory-hooks. The hook(s) will only"
              " be run if the dry run succeeds, and will use the current active certificate, not"
              " the temporary test certificate acquired during the dry run. This flag is recommended"
              " when modifying the deploy hook using `reconfigure`.")
