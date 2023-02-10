@@ -12,7 +12,6 @@ parameters:
   values:
   - edge
   - beta
-  - candidate
 
 jobs:
   # This job relies on credentials used to publish the Certbot snaps. This
