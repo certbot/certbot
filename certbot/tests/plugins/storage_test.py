@@ -12,7 +12,6 @@ from certbot.compat import os
 from certbot.tests import util as test_util
 
 
-
 class PluginStorageTest(test_util.ConfigTestCase):
     """Test for certbot.plugins.storage.PluginStorage"""
 

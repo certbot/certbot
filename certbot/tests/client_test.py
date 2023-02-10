@@ -1,6 +1,6 @@
 """Tests for certbot._internal.client."""
-import datetime
 import contextlib
+import datetime
 import platform
 import shutil
 import tempfile
@@ -12,12 +12,11 @@ from josepy import interfaces
 
 from certbot import errors
 from certbot import util
-from certbot._internal.display import obj as display_obj
 from certbot._internal import account
 from certbot._internal import constants
+from certbot._internal.display import obj as display_obj
 from certbot.compat import os
 import certbot.tests.util as test_util
-
 
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")

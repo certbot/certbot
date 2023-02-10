@@ -109,8 +109,8 @@ class AddrTest(unittest.TestCase):
 class VirtualHostTest(unittest.TestCase):
     """Test the VirtualHost class."""
     def setUp(self):
-        from certbot_nginx._internal.obj import VirtualHost
         from certbot_nginx._internal.obj import Addr
+        from certbot_nginx._internal.obj import VirtualHost
         raw1 = [
             ['listen', '69.50.225.155:9000'],
             [['if', '($scheme', '!=', '"https") '],
@@ -183,9 +183,9 @@ class VirtualHostTest(unittest.TestCase):
         self.assertIs(self.vhost1.has_header('Bogus-Header'), False)
 
     def test_contains_list(self):
-        from certbot_nginx._internal.obj import VirtualHost
-        from certbot_nginx._internal.obj import Addr
         from certbot_nginx._internal.configurator import _test_block_from_block
+        from certbot_nginx._internal.obj import Addr
+        from certbot_nginx._internal.obj import VirtualHost
         test_block = [
             ['\n    ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
             ['\n']

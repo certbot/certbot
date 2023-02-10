@@ -1,7 +1,7 @@
 """Tests for acme.messages."""
+import contextlib
 from typing import Dict
 import unittest
-import contextlib
 from unittest import mock
 import warnings
 
@@ -19,7 +19,10 @@ class ErrorTest(unittest.TestCase):
     """Tests for acme.messages.Error."""
 
     def setUp(self):
-        from acme.messages import Error, ERROR_PREFIX, Identifier, IDENTIFIER_FQDN
+        from acme.messages import Error
+        from acme.messages import ERROR_PREFIX
+        from acme.messages import Identifier
+        from acme.messages import IDENTIFIER_FQDN
         self.error = Error.with_code('malformed', detail='foo', title='title')
         self.jobj = {
             'detail': 'foo',
@@ -63,7 +66,8 @@ class ErrorTest(unittest.TestCase):
         self.assertIsNone(Error().code)
 
     def test_is_acme_error(self):
-        from acme.messages import is_acme_error, Error
+        from acme.messages import Error
+        from acme.messages import is_acme_error
         self.assertTrue(is_acme_error(self.error))
         self.assertFalse(is_acme_error(self.error_custom))
         self.assertFalse(is_acme_error(Error()))
@@ -71,13 +75,15 @@ class ErrorTest(unittest.TestCase):
         self.assertFalse(is_acme_error("must pet all the {dogs|rabbits}"))
 
     def test_unicode_error(self):
-        from acme.messages import Error, is_acme_error
+        from acme.messages import Error
+        from acme.messages import is_acme_error
         arabic_error = Error.with_code(
             'malformed', detail=u'\u0639\u062f\u0627\u0644\u0629', title='title')
         self.assertTrue(is_acme_error(arabic_error))
 
     def test_with_code(self):
-        from acme.messages import Error, is_acme_error
+        from acme.messages import Error
+        from acme.messages import is_acme_error
         self.assertTrue(is_acme_error(Error.with_code('badCSR')))
         self.assertRaises(ValueError, Error.with_code, 'not an ACME error code')
 
@@ -247,7 +253,9 @@ class RegistrationTest(unittest.TestCase):
         ))
 
     def test_new_registration_from_data_with_eab(self):
-        from acme.messages import NewRegistration, ExternalAccountBinding, Directory
+        from acme.messages import Directory
+        from acme.messages import ExternalAccountBinding
+        from acme.messages import NewRegistration
         key = jose.jwk.JWKRSA(key=KEY.public_key())
         kid = "kid-for-testing"
         hmac_key = "hmac-key-for-testing"

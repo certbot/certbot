@@ -1,14 +1,12 @@
 """Tests for AugeasParserNode classes"""
-from typing import List
-
 import os
-import util
+from typing import List
 from unittest import mock
 
 from certbot import errors
-
 from certbot_apache._internal import assertions
 from certbot_apache._internal import augeasparser
+import util
 
 
 def _get_augeasnode_mock(filepath):

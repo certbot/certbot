@@ -32,6 +32,7 @@ class AuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from certbot._internal.plugins.webroot import Authenticator
+
         # On Linux directories created by tempfile.mkdtemp inherit their permissions from their
         # parent directory. So the actual permissions are inconsistent over various tests env.
         # To circumvent this, a dedicated sub-workspace is created under the workspace, using

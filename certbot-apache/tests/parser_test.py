@@ -128,6 +128,7 @@ class BasicParserTest(util.ParserTest):
 
         """
         from certbot_apache._internal.parser import get_aug_path
+
         # This makes sure that find_dir will work
         self.parser.modules["mod_ssl.c"] = "/fake/path"
 
@@ -142,6 +143,7 @@ class BasicParserTest(util.ParserTest):
 
     def test_add_dir_to_ifmodssl_multiple(self):
         from certbot_apache._internal.parser import get_aug_path
+
         # This makes sure that find_dir will work
         self.parser.modules["mod_ssl.c"] = "/fake/path"
 

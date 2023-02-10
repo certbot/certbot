@@ -13,7 +13,6 @@ from certbot._internal.plugins import null
 from certbot._internal.plugins import standalone
 from certbot._internal.plugins import webroot
 
-
 EP_SA = pkg_resources.EntryPoint(
     "sa", "certbot._internal.plugins.standalone",
     attrs=("Authenticator",),

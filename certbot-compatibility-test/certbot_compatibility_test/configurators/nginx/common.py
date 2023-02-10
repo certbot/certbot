@@ -5,13 +5,12 @@ import subprocess
 from typing import Set
 from typing import Tuple
 
+from certbot import configuration
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
 from certbot_nginx._internal import configurator
 from certbot_nginx._internal import constants
-
-from certbot import configuration
 
 
 class Proxy(configurators_common.Proxy):

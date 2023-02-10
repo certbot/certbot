@@ -1,7 +1,7 @@
 """Test for certbot_apache._internal.http_01."""
-import unittest
 import errno
 from typing import List
+import unittest
 from unittest import mock
 
 from acme import challenges

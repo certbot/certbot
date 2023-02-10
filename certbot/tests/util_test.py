@@ -121,6 +121,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         registered_func = mock_register.call_args[0][0]
 
         from certbot import util
+
         # Despite lock_dir_until_exit has been called twice to subdir, its lock should have been
         # added only once. So we expect to have two lock references: for self.tempdir and subdir
         self.assertEqual(len(util._LOCKS), 2)  # pylint: disable=protected-access

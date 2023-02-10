@@ -24,7 +24,6 @@ from certbot import util
 from certbot.compat.os import getenv
 from certbot.interfaces import RenewableCert
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -5,11 +5,12 @@ import re
 import shutil
 import tempfile
 import unittest
-
-import configobj
 from unittest import mock
 
-from certbot import errors, configuration
+import configobj
+
+from certbot import configuration
+from certbot import errors
 from certbot._internal.storage import ALL_FOUR
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -247,9 +248,11 @@ class CertificatesTest(BaseCertManagerTest):
     def test_report_human_readable(self, mock_revoked, mock_serial):
         mock_revoked.return_value = None
         mock_serial.return_value = 1234567890
-        from certbot._internal import cert_manager
         import datetime
+
         import pytz
+
+        from certbot._internal import cert_manager
         expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
         cert = mock.MagicMock(lineagename="nameone")
@@ -327,6 +330,7 @@ class SearchLineagesTest(BaseCertManagerTest):
         mock_renewal_conf_files.return_value = ["badfile"]
         mock_renewable_cert.side_effect = errors.CertStorageError
         from certbot._internal import cert_manager
+
         # pylint: disable=protected-access
         self.assertEqual(cert_manager._search_lineages(self.config, lambda x: x, "check"), "check")
         self.assertTrue(mock_make_or_verify_dir.called)

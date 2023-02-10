@@ -4,8 +4,8 @@ import copy
 import datetime
 import http.client as http_client
 import json
-import unittest
 from typing import Dict
+import unittest
 from unittest import mock
 
 import josepy as jose

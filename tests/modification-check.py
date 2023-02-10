@@ -4,7 +4,6 @@
 import hashlib
 import os
 
-
 # Relative to the root of the Certbot repo, these files are expected to exist
 # and have the SHA-256 hashes contained in this dictionary. These hashes were
 # taken from our v1.14.0 tag which was the last release we intended to make

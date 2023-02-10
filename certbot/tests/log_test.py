@@ -17,7 +17,6 @@ from certbot.compat import os
 from certbot.tests import util as test_util
 
 
-
 class PreArgParseSetupTest(unittest.TestCase):
     """Tests for certbot._internal.log.pre_arg_parse_setup."""
 
@@ -79,7 +78,8 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
 
         from certbot._internal.log import ColoredStreamHandler
         self.stream_handler = ColoredStreamHandler(io.StringIO())
-        from certbot._internal.log import MemoryHandler, TempHandler
+        from certbot._internal.log import MemoryHandler
+        from certbot._internal.log import TempHandler
         self.temp_handler = TempHandler()
         self.temp_path = self.temp_handler.path
         self.memory_handler = MemoryHandler(self.temp_handler)

@@ -4,7 +4,8 @@ import unittest
 from unittest import mock
 
 from acme import challenges
-from certbot import errors, configuration
+from certbot import configuration
+from certbot import errors
 from certbot._internal import storage
 import certbot.tests.util as test_util
 

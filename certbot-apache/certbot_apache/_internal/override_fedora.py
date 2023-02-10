@@ -1,13 +1,12 @@
 """ Distribution specific override class for Fedora 29+ """
 from typing import Any
 
+from certbot import errors
+from certbot import util
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal import parser
 from certbot_apache._internal.configurator import OsOptions
-
-from certbot import errors
-from certbot import util
 
 
 class FedoraConfigurator(configurator.ApacheConfigurator):

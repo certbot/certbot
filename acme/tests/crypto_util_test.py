@@ -1,12 +1,12 @@
 """Tests for acme.crypto_util."""
-import itertools
 import ipaddress
+import itertools
 import socket
 import socketserver
 import threading
 import time
-import unittest
 from typing import List
+import unittest
 
 import josepy as jose
 import OpenSSL

@@ -3,8 +3,8 @@ import os
 import re
 import subprocess
 import time
-import unittest
 from typing import Any
+import unittest
 
 import pytest
 

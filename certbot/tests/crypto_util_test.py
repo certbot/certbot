@@ -164,6 +164,7 @@ class MakeKeyTest(unittest.TestCase):
     def test_rsa(self):  # pylint: disable=no-self-use
         # RSA Key Type Test
         from certbot.crypto_util import make_key
+
         # Do not test larger keys as it takes too long.
         OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
 
@@ -180,6 +181,7 @@ class MakeKeyTest(unittest.TestCase):
 
     def test_bad_key_sizes(self):
         from certbot.crypto_util import make_key
+
         # Try a bad key size for RSA and ECDSA
         with self.assertRaises(errors.Error) as e:
             make_key(bits=512, key_type='rsa')

@@ -19,7 +19,8 @@ import josepy as jose
 import pytz
 
 from acme.messages import Error as acme_error
-from certbot import crypto_util, configuration
+from certbot import configuration
+from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -35,8 +36,6 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import enhancements
 import certbot.tests.util as test_util
-
-
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.vector_path('cert_512.pem')
