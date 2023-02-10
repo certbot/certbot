@@ -4,7 +4,7 @@ Post-release script to publish artifacts created from Azure Pipelines.
 
 This currently includes:
 
-* Moving snaps from the candidate/beta channel to the stable channel
+* Moving snaps from the beta channel to the stable channel
 * Publishing the Windows installer in a GitHub release
 
 Setup:
@@ -40,16 +40,20 @@ import requests
 
 # Path to the root directory of the Certbot repository containing this script
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-# This list contains the names of all Certbot DNS plugins
-PLUGIN_SNAPS = [os.path.basename(path) for path in glob.glob(os.path.join(REPO_ROOT, 'certbot-dns-*'))]
+# This list contains the names of all Certbot DNS plugins. We used to have a
+# CloudXNS plugin and since it's possible devs still have that directory
+# locally, we filter it out here. If it's included in this list, this script
+# will crash later when it fails to find a CloudXNS snap on the snap store with
+# the current version since we no longer build it.
+PLUGIN_SNAPS = [os.path.basename(path)
+                for path in glob.glob(os.path.join(REPO_ROOT, 'certbot-dns-*'))
+                if not path.endswith('certbot-dns-cloudxns')]
 # This list contains the name of all Certbot snaps that should be published to
 # the stable channel.
 ALL_SNAPS = ['certbot'] + PLUGIN_SNAPS
 # This is the count of the architectures currently supported by our snaps used
 # for sanity checking.
 SNAP_ARCH_COUNT = 3
-# The percentage of users the 2.0 Certbot snap should be deployed to.
-PROGRESSIVE_RELEASE_PERCENTAGE = 10
 
 
 def parse_args(args):
@@ -66,8 +70,7 @@ def parse_args(args):
     # Use the file's docstring for the help text and don't let argparse reformat it.
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--css', type=str, help='hostname of code signing server')
-    parser.add_argument('--progressive-only', action='store_true', help='only do a Certbot 2.0 progressive snap release')
+    parser.add_argument('--css', type=str, required=True, help='hostname of code signing server')
     return parser.parse_args(args)
 
     
@@ -171,7 +174,7 @@ def promote_snaps(snaps, source_channel, version, progressive_percentage=None):
                 print(e.stdout)
                 raise
 
-def fetch_version_number(major_version):
+def fetch_version_number(major_version=None):
     """Retrieve version number for release from Azure Pipelines
 
     :param major_version: only consider releases for the specified major
@@ -198,29 +201,14 @@ def main(args):
     parsed_args = parse_args(args)
 
     css = parsed_args.css
-    version = fetch_version_number('2' if parsed_args.progressive_only else None)
+    version = fetch_version_number()
 
     # Once the GitHub release has been published, trying to publish it
     # again fails. Publishing the snaps can be done multiple times though
     # so we do that first to make it easier to run the script again later
     # if something goes wrong.        
-    #
-    # We only publish all snaps to the stable channel for 1.x releases. For 2.x
-    # releases, we only progressively release the base Certbot snap and update
-    # the Windows installer. Once we feel confident enough about Certbot 2.x,
-    # we should stop doing 1.x releases and unconditionally publish all snaps
-    # and the Windows installer.
-    if version.startswith('1.'):
-        promote_snaps(ALL_SNAPS, 'candidate', version)
-    elif not parsed_args.progressive_only and parsed_args.css is None:
-        # Fail fast if we weren't given a --css argument because we're going to
-        # need it later.
-        raise ValueError('Please provide the --css command line argument')
-    else:
-        promote_snaps(['certbot'], 'beta', version,
-                      progressive_percentage=PROGRESSIVE_RELEASE_PERCENTAGE)
-        if not parsed_args.progressive_only:
-            publish_windows(css)
+    promote_snaps(ALL_SNAPS, 'beta', version)
+    publish_windows(css)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
