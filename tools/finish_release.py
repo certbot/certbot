@@ -47,7 +47,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 # the current version since we no longer build it.
 PLUGIN_SNAPS = [os.path.basename(path)
                 for path in glob.glob(os.path.join(REPO_ROOT, 'certbot-dns-*'))
-                if 'cloudxns' not in path]
+                if not path.endswith('certbot-dns-cloudxns')]
 # This list contains the name of all Certbot snaps that should be published to
 # the stable channel.
 ALL_SNAPS = ['certbot'] + PLUGIN_SNAPS
