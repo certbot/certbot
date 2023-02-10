@@ -158,14 +158,12 @@ set -e
 
 
 @contextlib.contextmanager
-def manual_http_hooks(http_server_root: str,
-                      http_port: int) -> Generator[Tuple[str, str], None, None]:
+def manual_http_hooks(http_server_root: str) -> Generator[Tuple[str, str], None, None]:
     """
     Generate suitable http-01 hooks command for test purpose in the given HTTP
     server webroot directory. These hooks command use temporary python scripts
     that are deleted upon context exit.
     :param str http_server_root: path to the HTTP server configured to serve http-01 challenges
-    :param int http_port: HTTP port that the HTTP server listen on
     :return (str, str): a tuple containing the authentication hook and cleanup hook commands
     """
     tempdir = tempfile.mkdtemp()
@@ -175,24 +173,12 @@ def manual_http_hooks(http_server_root: str,
             file_h.write('''\
 #!/usr/bin/env python
 import os
-import requests
-import time
-import sys
 challenge_dir = os.path.join('{0}', '.well-known', 'acme-challenge')
 os.makedirs(challenge_dir)
 challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN'))
 with open(challenge_file, 'w') as file_h:
     file_h.write(os.environ.get('CERTBOT_VALIDATION'))
-url = 'http://localhost:{1}/.well-known/acme-challenge/' + os.environ.get('CERTBOT_TOKEN')
-for _ in range(0, 10):
-    time.sleep(1)
-    try:
-        if request.get(url).status_code == 200:
-            sys.exit(0)
-    except requests.exceptions.ConnectionError:
-        pass
-raise ValueError('Error, url did not respond after 10 attempts: {{0}}'.format(url))
-'''.format(http_server_root.replace('\\', '\\\\'), http_port))
+'''.format(http_server_root.replace('\\', '\\\\')))
         os.chmod(auth_script_path, 0o755)
 
         cleanup_script_path = os.path.join(tempdir, 'cleanup.py')
