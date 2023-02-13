@@ -181,4 +181,4 @@ class SubscribeTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    sys.exit(pytest.main([__file__]))  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

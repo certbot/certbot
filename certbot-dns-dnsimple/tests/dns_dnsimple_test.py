@@ -50,4 +50,4 @@ class DNSimpleLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseL
 
 
 if __name__ == "__main__":
-    sys.exit(pytest.main([__file__]))  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

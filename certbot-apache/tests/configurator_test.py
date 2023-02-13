@@ -1776,4 +1776,4 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertEqual(self.config._open_module_file("/nonsense/"), "testing 12 3")
 
 if __name__ == "__main__":
-    sys.exit(pytest.main([__file__]))  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

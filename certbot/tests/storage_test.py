@@ -969,4 +969,4 @@ class CertPathForCertNameTest(BaseRenewableCertTest):
         self.assertRaises(errors.CertStorageError, self._call, self.config, 'fake-example.org')
 
 if __name__ == "__main__":
-    sys.exit(pytest.main([__file__]))  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
