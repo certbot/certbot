@@ -1,11 +1,13 @@
 """Tests for certbot._internal.plugins.disco."""
 import functools
 import string
+import sys
 from typing import List
 import unittest
 from unittest import mock
 
 import pkg_resources
+import pytest
 
 from certbot import errors
 from certbot import interfaces
@@ -271,4 +273,4 @@ class PluginsRegistryTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

@@ -1,4 +1,5 @@
 """Tests for acme.challenges."""
+import sys
 import unittest
 from unittest import mock
 import urllib.parse as urllib_parse
@@ -6,6 +7,7 @@ import urllib.parse as urllib_parse
 import josepy as jose
 from josepy.jwk import JWKEC
 import OpenSSL
+import pytest
 import requests
 
 from acme import errors
@@ -505,4 +507,4 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

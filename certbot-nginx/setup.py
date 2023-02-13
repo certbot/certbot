@@ -14,6 +14,10 @@ install_requires = [
     'setuptools>=41.6.0',
 ]
 
+test_extras = [
+    'pytest',
+]
+
 setup(
     name='certbot-nginx',
     version=version,
@@ -47,6 +51,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
+    extras_require={
+        'test': test_extras,
+    },
     entry_points={
         'certbot.plugins': [
             'nginx = certbot_nginx._internal.configurator:NginxConfigurator',

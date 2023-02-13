@@ -1,6 +1,9 @@
 """Test certbot_apache._internal.display_ops."""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.display import util as display_util
@@ -100,4 +103,4 @@ class SelectVhostTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

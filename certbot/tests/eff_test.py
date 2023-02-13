@@ -1,9 +1,11 @@
 """Tests for certbot._internal.eff."""
 import datetime
+import sys
 import unittest
 from unittest import mock
 
 import josepy
+import pytest
 import pytz
 import requests
 
@@ -179,4 +181,4 @@ class SubscribeTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

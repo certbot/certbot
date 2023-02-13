@@ -3,9 +3,12 @@
 import copy
 import shutil
 import socket
+import sys
 import tempfile
 import unittest
 from unittest import mock
+
+import pytest
 
 from acme import challenges
 from certbot import achallenges
@@ -1773,4 +1776,4 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertEqual(self.config._open_module_file("/nonsense/"), "testing 12 3")
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

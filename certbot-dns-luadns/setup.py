@@ -30,6 +30,10 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
+test_extras = [
+    'pytest',
+]
+
 setup(
     name='certbot-dns-luadns',
     version=version,
@@ -65,6 +69,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         'docs': docs_extras,
+        'test': test_extras,
     },
     entry_points={
         'certbot.plugins': [

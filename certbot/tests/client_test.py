@@ -3,12 +3,14 @@ import contextlib
 import datetime
 import platform
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
 from unittest.mock import MagicMock
 
 from josepy import interfaces
+import pytest
 
 from certbot import errors
 from certbot import util
@@ -979,4 +981,4 @@ class RollbackTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

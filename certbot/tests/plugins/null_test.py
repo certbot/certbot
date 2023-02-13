@@ -1,6 +1,9 @@
 """Tests for certbot._internal.plugins.null."""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 
 class InstallerTest(unittest.TestCase):
@@ -17,4 +20,4 @@ class InstallerTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

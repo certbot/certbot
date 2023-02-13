@@ -1,7 +1,10 @@
 """Tests for certbot_dns_linode._internal.dns_linode."""
 
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -144,4 +147,4 @@ class Linode4LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLe
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

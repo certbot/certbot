@@ -1,5 +1,8 @@
 """Test certbot_nginx._internal.display_ops."""
+import sys
 import unittest
+
+import pytest
 
 from certbot.display import util as display_util
 from certbot.tests import util as certbot_util
@@ -40,4 +43,4 @@ class SelectVhostMultiTest(util.NginxTest):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

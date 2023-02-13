@@ -1,9 +1,12 @@
 """Test :mod:`certbot.display.util`."""
 import io
 import socket
+import sys
 import tempfile
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 import certbot.tests.util as test_util
@@ -95,4 +98,4 @@ class DirectorySelectTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

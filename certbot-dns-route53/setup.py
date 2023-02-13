@@ -30,6 +30,10 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
+test_extras = [
+    'pytest',
+]
+
 setup(
     name='certbot-dns-route53',
     version=version,
@@ -65,6 +69,7 @@ setup(
     keywords=['certbot', 'route53', 'aws'],
     extras_require={
         'docs': docs_extras,
+        'test': test_extras,
     },
     entry_points={
         'certbot.plugins': [

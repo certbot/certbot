@@ -1,6 +1,9 @@
 """Test the helper objects in certbot_nginx._internal.obj."""
 import itertools
+import sys
 import unittest
+
+import pytest
 
 
 class AddrTest(unittest.TestCase):
@@ -226,4 +229,4 @@ class VirtualHostTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

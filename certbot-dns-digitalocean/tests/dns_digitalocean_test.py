@@ -1,9 +1,11 @@
 """Tests for certbot_dns_digitalocean._internal.dns_digitalocean."""
 
+import sys
 import unittest
 from unittest import mock
 
 import digitalocean
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -172,4 +174,4 @@ class DigitalOceanClientTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

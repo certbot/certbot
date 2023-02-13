@@ -4,6 +4,8 @@ from typing import List
 import unittest
 from unittest import mock
 
+import pytest
+
 from certbot import errors
 from certbot import interfaces
 from certbot._internal.display import obj as display_obj
@@ -261,4 +263,4 @@ class TestChooseConfiguratorPlugins(unittest.TestCase):
         self.assertEqual(auth.name, "apache")
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

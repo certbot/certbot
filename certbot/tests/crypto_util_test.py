@@ -1,9 +1,11 @@
 """Tests for certbot.crypto_util."""
 import logging
+import sys
 import unittest
 from unittest import mock
 
 import OpenSSL
+import pytest
 
 from certbot import errors
 from certbot import util
@@ -525,4 +527,4 @@ class FindChainWithIssuerTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

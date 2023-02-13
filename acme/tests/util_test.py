@@ -1,5 +1,8 @@
 """Tests for acme.util."""
+import sys
 import unittest
+
+import pytest
 
 
 class MapKeysTest(unittest.TestCase):
@@ -13,4 +16,4 @@ class MapKeysTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

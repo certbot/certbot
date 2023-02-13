@@ -1,6 +1,9 @@
 """Test for certbot_apache._internal.configurator for Gentoo overrides"""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import filesystem
@@ -133,4 +136,4 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.assertEqual(mock_run_script.call_count, 3)
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

@@ -1,6 +1,9 @@
 """Tests for ApacheConfigurator for AugeasParserNode classes"""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 import util
 
@@ -40,4 +43,4 @@ class ConfiguratorParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-p
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

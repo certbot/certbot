@@ -3,10 +3,12 @@
 import datetime
 import shutil
 import stat
+import sys
 import unittest
 from unittest import mock
 
 import configobj
+import pytest
 import pytz
 
 import certbot
@@ -967,4 +969,4 @@ class CertPathForCertNameTest(BaseRenewableCertTest):
         self.assertRaises(errors.CertStorageError, self._call, self.config, 'fake-example.org')
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

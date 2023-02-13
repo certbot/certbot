@@ -1,6 +1,9 @@
 """Test for certbot_apache._internal.configurator for Fedora 29+ overrides"""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import filesystem
@@ -190,4 +193,4 @@ class MultipleVhostsTestFedora(util.ApacheTest):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

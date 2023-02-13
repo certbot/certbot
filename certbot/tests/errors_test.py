@@ -1,6 +1,9 @@
 """Tests for certbot.errors."""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from acme import messages
 from certbot import achallenges
@@ -52,4 +55,4 @@ class StandaloneBindErrorTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

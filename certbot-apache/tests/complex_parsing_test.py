@@ -1,6 +1,9 @@
 """Tests for certbot_apache._internal.parser."""
 import shutil
+import sys
 import unittest
+
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -124,4 +127,4 @@ class ComplexParserTest(util.ParserTest):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

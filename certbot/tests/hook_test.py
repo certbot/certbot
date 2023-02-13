@@ -1,6 +1,9 @@
 """Tests for certbot._internal.hooks."""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot import util
@@ -459,4 +462,4 @@ def create_hook(file_path):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

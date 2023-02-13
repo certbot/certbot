@@ -3,11 +3,13 @@
 # pylint: disable=protected-access
 import re
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
 
 import configobj
+import pytest
 
 from certbot import configuration
 from certbot import errors
@@ -710,4 +712,4 @@ class GetCertnameTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

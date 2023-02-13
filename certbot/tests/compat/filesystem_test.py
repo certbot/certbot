@@ -1,8 +1,11 @@
 """Tests for certbot.compat.filesystem"""
 import contextlib
 import errno
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import util
 from certbot._internal import lock
@@ -679,4 +682,4 @@ def _create_probe(tempdir, name='probe'):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

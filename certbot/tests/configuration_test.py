@@ -1,7 +1,10 @@
 """Tests for certbot.configuration."""
+import sys
 import unittest
 from unittest import mock
 import warnings
+
+import pytest
 
 from certbot import errors
 from certbot._internal import constants
@@ -163,4 +166,4 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

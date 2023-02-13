@@ -1,9 +1,11 @@
 """Tests for acme.fields."""
 import datetime
+import sys
 import unittest
 import warnings
 
 import josepy as jose
+import pytest
 import pytz
 
 
@@ -56,4 +58,4 @@ class RFC3339FieldTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

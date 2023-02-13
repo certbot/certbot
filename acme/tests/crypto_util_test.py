@@ -3,6 +3,7 @@ import ipaddress
 import itertools
 import socket
 import socketserver
+import sys
 import threading
 import time
 from typing import List
@@ -10,6 +11,7 @@ import unittest
 
 import josepy as jose
 import OpenSSL
+import pytest
 
 from acme import errors
 import test_util
@@ -351,4 +353,4 @@ class DumpPyopensslChainTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

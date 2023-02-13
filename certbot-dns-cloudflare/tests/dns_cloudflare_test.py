@@ -1,9 +1,11 @@
 """Tests for certbot_dns_cloudflare._internal.dns_cloudflare."""
 
+import sys
 import unittest
 from unittest import mock
 
 import CloudFlare
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -245,4 +247,4 @@ class CloudflareClientTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

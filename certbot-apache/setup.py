@@ -17,6 +17,10 @@ dev_extras = [
     'apacheconfig>=0.3.2',
 ]
 
+test_extras = [
+    'pytest',
+]
+
 setup(
     name='certbot-apache',
     version=version,
@@ -52,6 +56,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         'dev': dev_extras,
+        'test': test_extras,
     },
     entry_points={
         'certbot.plugins': [

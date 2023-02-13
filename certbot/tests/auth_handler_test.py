@@ -1,10 +1,12 @@
 """Tests for certbot._internal.auth_handler."""
 import datetime
 import logging
+import sys
 import unittest
 from unittest import mock
 
 from josepy import b64encode
+import pytest
 
 from acme import challenges
 from acme import client as acme_client
@@ -592,4 +594,4 @@ def gen_dom_authzr(domain, challs):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

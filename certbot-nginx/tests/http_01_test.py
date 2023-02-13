@@ -1,8 +1,10 @@
 """Tests for certbot_nginx._internal.http_01"""
+import sys
 import unittest
 from unittest import mock
 
 import josepy as jose
+import pytest
 
 from acme import challenges
 from certbot import achallenges
@@ -228,4 +230,4 @@ class HttpPerformTest(util.NginxTest):
         self.assertEqual(addrs, [http_addr])
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
