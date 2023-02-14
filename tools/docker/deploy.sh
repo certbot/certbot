@@ -21,25 +21,25 @@ fi
 source "$WORK_DIR/lib/common"
 ParseRequestedArch "${2}"
 
+
+
+
 # Creates and pushes all Docker images aliases for the requested architectures
 # set in the environment variable ALL_REQUESTED_ARCH.  If the value of the
 # global variable TAG_BASE is a 2.0.0 or greater version tag such as v2.1.0,
-# the "latest" tag is also updated. Tags without the architecture part are also
-# created for the default architecture.
-# As an example, for amd64 (the default architecture) and the tag v0.35.0, the
-# following tags would be created:
-#  - certbot/certbot:v0.35.0
-#  - certbot/certbot:latest
-#  - certbot/certbot:amd64-latest
-# For the architecture arm32v6 and the tag v0.35.0, only the following tag
-# would be created:
-#  - certbot/certbot:arm32v6-latest
-# For other tags such as "nightly", aliases are only created for the default
-# architecture where the tag "nightly" would be used without an architecture
-# part.
+# tags for "latest" are also created. Tags such as "nightly" do not recieve 
+# "latest" tags.
+# As an example, for the tag v2.2.0 and the default set of all target 
+# architectures, the following tags would be created:
+#  - certbot/certbot:amd64-v2.2.0       <- image
+#  - certbot/certbot:arm32v6-v2.2.0     <- image
+#  - certbot/certbot:arm64v8-v2.2.0     <- image
+#  - certbot/certbot:amd64-latest       <- image
+#  - certbot/certbot:arm32v6-latest     <- image
+#  - certbot/certbot:arm64v8-latest     <- image
 # Usage: TagAndPushForAllRequestedArch [IMAGE NAME]
 #   where [IMAGE NAME] is the name of the Docker image in the Docker repository
-#   such as "certbot" or "dns-cloudflare".
+#   such as "certbot" or "dns-cloudflare". 
 # Read globals:
 # * TAG_BASE
 # * ALL_REQUESTED_ARCH
@@ -51,19 +51,9 @@ TagAndPushForAllRequestedArch() {
         # added them, we haven't had another timeout, so until we experience
         # another timeout & can get the deubg logs, we're leaving them in.
         docker --debug push "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}"
-
-        # If TAG_BASE is a valid tag for version 2.0.0 or greater
         if [[ "${TAG_BASE}" =~ ^v([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
             docker tag "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" "${DOCKER_REPO}:${TARGET_ARCH}-latest"
             docker --debug push "${DOCKER_REPO}:${TARGET_ARCH}-latest"
-            if [ "${TARGET_ARCH}" == "${DEFAULT_ARCH}" ]; then
-                docker tag "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" "${DOCKER_REPO}:latest"
-                docker --debug push "${DOCKER_REPO}:latest"
-            fi
-        fi
-        if [ "${TARGET_ARCH}" == "${DEFAULT_ARCH}" ]; then
-            docker tag "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" "${DOCKER_REPO}:${TAG_BASE}"
-            docker --debug push "${DOCKER_REPO}:${TAG_BASE}"
         fi
     done
 }

@@ -11,7 +11,7 @@ stages:
       - template: ../jobs/snap-deploy-job.yml
         parameters:
           snapReleaseChannel: ${{ parameters.snapReleaseChannel }}
-      - job: publish_docker
+      - job: publish_docker_by_arch
         pool:
           vmImage: ubuntu-22.04
         strategy:
@@ -51,4 +51,10 @@ stages:
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
           - bash: set -e && tools/docker/deploy.sh $(dockerTag) $DOCKER_ARCH
-            displayName: Deploy the Docker images
+            displayName: Deploy the Docker images by architecture
+      - job: publish_docker_multiarch
+        pool:
+          vmImage: ubuntu-22.04
+        steps:
+          - bash: set -e && tools/docker/deploy_multiarch.sh $(dockerTag)
+            displayName: Deploy the Docker multiarch manifests
