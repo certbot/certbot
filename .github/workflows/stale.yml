@@ -23,7 +23,7 @@ jobs:
           # Idle number of days before closing stale issues
           days-before-issue-close: 30
 
-          # Never close PRs as stale
+          # Never close PRs
           days-before-pr-close: -1
 
           # Ignore issues with an assignee
