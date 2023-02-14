@@ -11,9 +11,6 @@ jobs:
     steps:
       - uses: actions/stale@v6
         with:
-          # REMOVEME: dry run to see if this works
-          debug-only: true
-
           # Idle number of days before marking issues stale
           days-before-issue-stale: 365
 
