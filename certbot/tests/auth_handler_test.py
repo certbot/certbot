@@ -254,8 +254,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         assert mock_sleep.call_count == 3 # 1s, 20m and 10m sleep
         assert mock_sleep.call_args_list[0][0][0] == 1
-        assert abs(mock_sleep.call_args_list[1][0][0]-interval - 1) < 1
-        assert abs(mock_sleep.call_args_list[2][0][0]-interval/2 - 1) < 1
+        assert abs(mock_sleep.call_args_list[1][0][0] - (interval - 1)) < 1
+        assert abs(mock_sleep.call_args_list[2][0][0] - (interval/2 - 1)) < 1
 
     def test_no_domains(self):
         mock_order = mock.MagicMock(authorizations=[])
