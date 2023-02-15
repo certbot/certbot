@@ -22,7 +22,7 @@ MakeMultiarchManifestForAllTargetArch() {
     echo ${SRC_IMAGES}
     docker buildx imagetools create -t ${DOCKER_REPO}:${TAG_BASE}${SRC_IMAGES}
     if [[ "${TAG_BASE}" =~ ^v([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
-        docker buildx imagetools create -t "${DOCKER_REPO}:latest" "${SRC_IMAGES}"
+        docker buildx imagetools create -t ${DOCKER_REPO}:latest ${SRC_IMAGES}
     fi
 }
 
