@@ -44,22 +44,20 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         self.auth._change_txt_record.assert_called_once_with("UPSERT",
                                                              '_acme-challenge.' + DOMAIN,
                                                              mock.ANY)
-        self.assertEqual(self.auth._wait_for_change.call_count, 1)
+        assert self.auth._wait_for_change.call_count == 1
 
     def test_perform_no_credentials_error(self):
         self.auth._change_txt_record = mock.MagicMock(side_effect=NoCredentialsError)
 
-        self.assertRaises(errors.PluginError,
-                          self.auth.perform,
-                          [self.achall])
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
 
     def test_perform_client_error(self):
         self.auth._change_txt_record = mock.MagicMock(
             side_effect=ClientError({"Error": {"Code": "foo"}}, "bar"))
 
-        self.assertRaises(errors.PluginError,
-                          self.auth.perform,
-                          [self.achall])
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
 
     def test_cleanup(self):
         self.auth._attempt_cleanup = True
@@ -151,7 +149,7 @@ class ClientTest(unittest.TestCase):
         ]
 
         result = self.client._find_zone_id_for_domain("foo.example.com")
-        self.assertEqual(result, "EXAMPLE")
+        assert result == "EXAMPLE"
 
     def test_find_zone_id_for_domain_pagination(self):
         self.client.r53.get_paginator = mock.MagicMock()
@@ -171,15 +169,14 @@ class ClientTest(unittest.TestCase):
         ]
 
         result = self.client._find_zone_id_for_domain("foo.example.com")
-        self.assertEqual(result, "FOO")
+        assert result == "FOO"
 
     def test_find_zone_id_for_domain_no_results(self):
         self.client.r53.get_paginator = mock.MagicMock()
         self.client.r53.get_paginator().paginate.return_value = []
 
-        self.assertRaises(errors.PluginError,
-                          self.client._find_zone_id_for_domain,
-                          "foo.example.com")
+        with pytest.raises(errors.PluginError):
+            self.client._find_zone_id_for_domain("foo.example.com")
 
     def test_find_zone_id_for_domain_no_correct_results(self):
         self.client.r53.get_paginator = mock.MagicMock()
@@ -192,9 +189,8 @@ class ClientTest(unittest.TestCase):
             },
         ]
 
-        self.assertRaises(errors.PluginError,
-                          self.client._find_zone_id_for_domain,
-                          "foo.example.com")
+        with pytest.raises(errors.PluginError):
+            self.client._find_zone_id_for_domain("foo.example.com")
 
     def test_change_txt_record(self):
         self.client._find_zone_id_for_domain = mock.MagicMock()
@@ -204,7 +200,7 @@ class ClientTest(unittest.TestCase):
         self.client._change_txt_record("FOO", DOMAIN, "foo")
 
         call_count = self.client.r53.change_resource_record_sets.call_count
-        self.assertEqual(call_count, 1)
+        assert call_count == 1
 
     def test_change_txt_record_delete(self):
         self.client._find_zone_id_for_domain = mock.MagicMock()
@@ -218,13 +214,12 @@ class ClientTest(unittest.TestCase):
         self.client._change_txt_record("DELETE", DOMAIN, validation)
 
         call_count = self.client.r53.change_resource_record_sets.call_count
-        self.assertEqual(call_count, 1)
+        assert call_count == 1
         call_args = self.client.r53.change_resource_record_sets.call_args_list[0][1]
         call_args_batch = call_args["ChangeBatch"]["Changes"][0]
-        self.assertEqual(call_args_batch["Action"], "DELETE")
-        self.assertEqual(
-            call_args_batch["ResourceRecordSet"]["ResourceRecords"],
-            [validation_record])
+        assert call_args_batch["Action"] == "DELETE"
+        assert call_args_batch["ResourceRecordSet"]["ResourceRecords"] == \
+            [validation_record]
 
     def test_change_txt_record_multirecord(self):
         self.client._find_zone_id_for_domain = mock.MagicMock()
@@ -241,12 +236,11 @@ class ClientTest(unittest.TestCase):
         call_count = self.client.r53.change_resource_record_sets.call_count
         call_args = self.client.r53.change_resource_record_sets.call_args_list[0][1]
         call_args_batch = call_args["ChangeBatch"]["Changes"][0]
-        self.assertEqual(call_args_batch["Action"], "UPSERT")
-        self.assertEqual(
-            call_args_batch["ResourceRecordSet"]["ResourceRecords"],
-            [{"Value": "\"pre-existing-value-two\""}])
+        assert call_args_batch["Action"] == "UPSERT"
+        assert call_args_batch["ResourceRecordSet"]["ResourceRecords"] == \
+            [{"Value": "\"pre-existing-value-two\""}]
 
-        self.assertEqual(call_count, 1)
+        assert call_count == 1
 
     def test_wait_for_change(self):
         self.client.r53.get_change = mock.MagicMock(
@@ -255,7 +249,7 @@ class ClientTest(unittest.TestCase):
 
         self.client._wait_for_change(1)
 
-        self.assertTrue(self.client.r53.get_change.called)
+        assert self.client.r53.get_change.called
 
 
 if __name__ == "__main__":

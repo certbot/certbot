@@ -55,7 +55,7 @@ class FedoraRestartTest(util.ApacheTest):
             self.temp_dir, "centos7_apache/apache")
 
     def _run_fedora_test(self):
-        self.assertIsInstance(self.config, override_fedora.FedoraConfigurator)
+        assert isinstance(self.config, override_fedora.FedoraConfigurator)
         self.config.config_test()
 
     def test_fedora_restart_error(self):
@@ -65,8 +65,8 @@ class FedoraRestartTest(util.ApacheTest):
             mock_test.side_effect = [errors.MisconfigurationError, '']
             with mock.patch("certbot.util.run_script") as mock_run:
                 mock_run.side_effect = errors.SubprocessError
-                self.assertRaises(errors.MisconfigurationError,
-                                  self._run_fedora_test)
+                with pytest.raises(errors.MisconfigurationError):
+                    self._run_fedora_test()
 
     def test_fedora_restart(self):
         c_test = "certbot_apache._internal.configurator.ApacheConfigurator.config_test"
@@ -75,9 +75,9 @@ class FedoraRestartTest(util.ApacheTest):
                 # First call raises error, second doesn't
                 mock_test.side_effect = [errors.MisconfigurationError, '']
                 self._run_fedora_test()
-                self.assertEqual(mock_test.call_count, 2)
-                self.assertEqual(mock_run.call_args[0][0],
-                                ['systemctl', 'restart', 'httpd'])
+                assert mock_test.call_count == 2
+                assert mock_run.call_args[0][0] == \
+                                ['systemctl', 'restart', 'httpd']
 
 
 class MultipleVhostsTestFedora(util.ApacheTest):
@@ -100,7 +100,7 @@ class MultipleVhostsTestFedora(util.ApacheTest):
             self.temp_dir, "centos7_apache/apache")
 
     def test_get_parser(self):
-        self.assertIsInstance(self.config.parser, override_fedora.FedoraParser)
+        assert isinstance(self.config.parser, override_fedora.FedoraParser)
 
     @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):
@@ -130,22 +130,23 @@ class MultipleVhostsTestFedora(util.ApacheTest):
             mock_osi.return_value = ("fedora", "29")
             self.config.parser.update_runtime_variables()
 
-        self.assertEqual(mock_get.call_count, 3)
-        self.assertEqual(len(self.config.parser.modules), 4)
-        self.assertEqual(len(self.config.parser.variables), 2)
-        self.assertIn("TEST2", self.config.parser.variables)
-        self.assertIn("mod_another.c", self.config.parser.modules)
+        assert mock_get.call_count == 3
+        assert len(self.config.parser.modules) == 4
+        assert len(self.config.parser.variables) == 2
+        assert "TEST2" in self.config.parser.variables
+        assert "mod_another.c" in self.config.parser.modules
 
     @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_get_version(self, mock_run_script):
         mock_run_script.return_value = ('', None)
-        self.assertRaises(errors.PluginError, self.config.get_version)
-        self.assertEqual(mock_run_script.call_args[0][0][0], 'httpd')
+        with pytest.raises(errors.PluginError):
+            self.config.get_version()
+        assert mock_run_script.call_args[0][0][0] == 'httpd'
 
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found."""
         vhs = self.config.get_virtual_hosts()
-        self.assertEqual(len(vhs), 2)
+        assert len(vhs) == 2
         found = 0
 
         for vhost in vhs:
@@ -155,7 +156,7 @@ class MultipleVhostsTestFedora(util.ApacheTest):
                     break
             else:
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
-        self.assertEqual(found, 2)
+        assert found == 2
 
     @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
     def test_get_sysconfig_vars(self, mock_cfg):
@@ -171,25 +172,26 @@ class MultipleVhostsTestFedora(util.ApacheTest):
             mock_osi.return_value = ("fedora", "29")
             self.config.parser.update_runtime_variables()
 
-        self.assertIn("mock_define", self.config.parser.variables)
-        self.assertIn("mock_define_too", self.config.parser.variables)
-        self.assertIn("mock_value", self.config.parser.variables)
-        self.assertEqual("TRUE", self.config.parser.variables["mock_value"])
-        self.assertIn("MOCK_NOSEP", self.config.parser.variables)
-        self.assertEqual("NOSEP_VAL", self.config.parser.variables["NOSEP_TWO"])
+        assert "mock_define" in self.config.parser.variables
+        assert "mock_define_too" in self.config.parser.variables
+        assert "mock_value" in self.config.parser.variables
+        assert "TRUE" == self.config.parser.variables["mock_value"]
+        assert "MOCK_NOSEP" in self.config.parser.variables
+        assert "NOSEP_VAL" == self.config.parser.variables["NOSEP_TWO"]
 
     @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_alt_restart_works(self, mock_run_script):
         mock_run_script.side_effect = [None, errors.SubprocessError, None]
         self.config.restart()
-        self.assertEqual(mock_run_script.call_count, 3)
+        assert mock_run_script.call_count == 3
 
     @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_alt_restart_errors(self, mock_run_script):
         mock_run_script.side_effect = [None,
                                        errors.SubprocessError,
                                        errors.SubprocessError]
-        self.assertRaises(errors.MisconfigurationError, self.config.restart)
+        with pytest.raises(errors.MisconfigurationError):
+            self.config.restart()
 
 
 if __name__ == "__main__":

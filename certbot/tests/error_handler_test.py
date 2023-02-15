@@ -63,7 +63,7 @@ class ErrorHandlerTest(unittest.TestCase):
         except ValueError:
             exception_raised = True
 
-        self.assertTrue(exception_raised)
+        assert exception_raised
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
 
@@ -78,14 +78,14 @@ class ErrorHandlerTest(unittest.TestCase):
                 should_be_42 *= 10
 
         # check execution stopped when the signal was sent
-        self.assertEqual(42, should_be_42)
+        assert 42 == should_be_42
         # assert signals were caught
-        self.assertEqual([self.signals[0]], signals_received)
+        assert [self.signals[0]] == signals_received
         # assert the error handling function was just called once
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
         for signum in self.signals:
-            self.assertEqual(init_signals[signum], signal.getsignal(signum))
+            assert init_signals[signum] == signal.getsignal(signum)
 
     def test_bad_recovery(self):
         bad_func = mock.MagicMock(side_effect=[ValueError])
@@ -109,7 +109,7 @@ class ErrorHandlerTest(unittest.TestCase):
         with signal_receiver(self.signals) as signals_received:
             with self.handler:
                 send_signal(sig2)
-        self.assertEqual([sig2, sig1], signals_received)
+        assert [sig2, sig1] == signals_received
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
         bad_func.assert_called_once_with()
@@ -120,7 +120,7 @@ class ErrorHandlerTest(unittest.TestCase):
                 sys.exit(0)
         except SystemExit:
             pass
-        self.assertIs(self.init_func.called, False)
+        assert self.init_func.called is False
 
     def test_regular_exit(self):
         func = mock.MagicMock()

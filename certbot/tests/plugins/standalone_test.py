@@ -30,15 +30,15 @@ class ServerManagerTest(unittest.TestCase):
         self.mgr = ServerManager(self.certs, self.http_01_resources)
 
     def test_init(self):
-        self.assertIs(self.mgr.certs, self.certs)
-        self.assertIs(self.mgr.http_01_resources, self.http_01_resources)
+        assert self.mgr.certs is self.certs
+        assert self.mgr.http_01_resources is self.http_01_resources
 
     def _test_run_stop(self, challenge_type):
         server = self.mgr.run(port=0, challenge_type=challenge_type)
         port = server.getsocknames()[0][1]
-        self.assertEqual(self.mgr.running(), {port: server})
+        assert self.mgr.running() == {port: server}
         self.mgr.stop(port=port)
-        self.assertEqual(self.mgr.running(), {})
+        assert self.mgr.running() == {}
 
     def test_run_stop_http_01(self):
         self._test_run_stop(challenges.HTTP01)
@@ -47,10 +47,10 @@ class ServerManagerTest(unittest.TestCase):
         server = self.mgr.run(port=0, challenge_type=challenges.HTTP01)
         port = server.getsocknames()[0][1]
         server2 = self.mgr.run(port=port, challenge_type=challenges.HTTP01)
-        self.assertEqual(self.mgr.running(), {port: server})
-        self.assertIs(server, server2)
+        assert self.mgr.running() == {port: server}
+        assert server is server2
         self.mgr.stop(port)
-        self.assertEqual(self.mgr.running(), {})
+        assert self.mgr.running() == {}
 
     def test_run_bind_error(self):
         some_server = socket.socket(socket.AF_INET6)
@@ -61,10 +61,10 @@ class ServerManagerTest(unittest.TestCase):
             maybe_another_server.bind(("", port))
         except socket.error:
             pass
-        self.assertRaises(
-            errors.StandaloneBindError, self.mgr.run, port,
+        with pytest.raises(errors.StandaloneBindError):
+            self.mgr.run(port,
             challenge_type=challenges.HTTP01)
-        self.assertEqual(self.mgr.running(), {})
+        assert self.mgr.running() == {}
         some_server.close()
         maybe_another_server.close()
 
@@ -89,18 +89,18 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.servers = mock.MagicMock()
 
     def test_more_info(self):
-        self.assertIsInstance(self.auth.more_info(), str)
+        assert isinstance(self.auth.more_info(), str)
 
     def test_get_chall_pref(self):
-        self.assertEqual(self.auth.get_chall_pref(domain=None),
-                         [challenges.HTTP01])
+        assert self.auth.get_chall_pref(domain=None) == \
+                         [challenges.HTTP01]
 
     def test_perform(self):
         achalls = self._get_achalls()
         response = self.auth.perform(achalls)
 
         expected = [achall.response(achall.account_key) for achall in achalls]
-        self.assertEqual(response, expected)
+        assert response == expected
 
     @test_util.patch_display_util()
     def test_perform_eaddrinuse_retry(self, mock_get_utility):
@@ -121,22 +121,24 @@ class AuthenticatorTest(unittest.TestCase):
         mock_yesno.return_value = False
 
         encountered_errno = errno.EADDRINUSE
-        self.assertRaises(errors.PluginError, self._fail_perform, encountered_errno)
+        with pytest.raises(errors.PluginError):
+            self._fail_perform(encountered_errno)
         self._assert_correct_yesno_call(mock_yesno)
 
     def _assert_correct_yesno_call(self, mock_yesno):
         yesno_args, yesno_kwargs = mock_yesno.call_args
-        self.assertIn("in use", yesno_args[0])
-        self.assertFalse(yesno_kwargs.get("default", True))
+        assert "in use" in yesno_args[0]
+        assert not yesno_kwargs.get("default", True)
 
     def test_perform_eacces(self):
         encountered_errno = errno.EACCES
-        self.assertRaises(errors.PluginError, self._fail_perform, encountered_errno)
+        with pytest.raises(errors.PluginError):
+            self._fail_perform(encountered_errno)
 
     def test_perform_unexpected_socket_error(self):
         encountered_errno = errno.ENOTCONN
-        self.assertRaises(
-            errors.StandaloneBindError, self._fail_perform, encountered_errno)
+        with pytest.raises(errors.StandaloneBindError):
+            self._fail_perform(encountered_errno)
 
     def _fail_perform(self, encountered_errno):
         error = errors.StandaloneBindError(mock.MagicMock(errno=encountered_errno), -1)
@@ -161,29 +163,29 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.served["server2"].update(["chall2", "chall3"])
 
         self.auth.cleanup(["chall1"])
-        self.assertEqual(self.auth.served, {
-            "server1": set(), "server2": {"chall2", "chall3"}})
+        assert self.auth.served == {
+            "server1": set(), "server2": {"chall2", "chall3"}}
         self.auth.servers.stop.assert_called_once_with(1)
 
         self.auth.servers.running.return_value = {
             2: "server2",
         }
         self.auth.cleanup(["chall2"])
-        self.assertEqual(self.auth.served, {
-            "server1": set(), "server2": {"chall3"}})
-        self.assertEqual(1, self.auth.servers.stop.call_count)
+        assert self.auth.served == {
+            "server1": set(), "server2": {"chall3"}}
+        assert 1 == self.auth.servers.stop.call_count
 
         self.auth.cleanup(["chall3"])
-        self.assertEqual(self.auth.served, {
-            "server1": set(), "server2": set()})
+        assert self.auth.served == {
+            "server1": set(), "server2": set()}
         self.auth.servers.stop.assert_called_with(2)
 
     def test_auth_hint(self):
         self.config.http01_port = "80"
         self.config.http01_address = None
-        self.assertIn("on port 80", self.auth.auth_hint([]))
+        assert "on port 80" in self.auth.auth_hint([])
         self.config.http01_address = "127.0.0.1"
-        self.assertIn("on 127.0.0.1:80", self.auth.auth_hint([]))
+        assert "on 127.0.0.1:80" in self.auth.auth_hint([])
 
 
 if __name__ == "__main__":

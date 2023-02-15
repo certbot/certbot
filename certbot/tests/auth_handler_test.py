@@ -37,14 +37,12 @@ class ChallengeFactoryTest(unittest.TestCase):
         achalls = self.handler._challenge_factory(
             self.authzr, range(0, len(acme_util.CHALLENGES)))
 
-        self.assertEqual(
-            [achall.chall for achall in achalls], acme_util.CHALLENGES)
+        assert [achall.chall for achall in achalls] == acme_util.CHALLENGES
 
     def test_one_http(self):
         achalls = self.handler._challenge_factory(self.authzr, [0])
 
-        self.assertEqual(
-            [achall.chall for achall in achalls], [acme_util.HTTP01])
+        assert [achall.chall for achall in achalls] == [acme_util.HTTP01]
 
     def test_unrecognized(self):
         authzr = acme_util.gen_authzr(
@@ -52,8 +50,8 @@ class ChallengeFactoryTest(unittest.TestCase):
              [mock.Mock(chall="chall", typ="unrecognized")],
              [messages.STATUS_PENDING])
 
-        self.assertRaises(
-             errors.Error, self.handler._challenge_factory, authzr, [0])
+        with pytest.raises(errors.Error):
+            self.handler._challenge_factory(authzr, [0])
 
 
 class HandleAuthorizationsTest(unittest.TestCase):
@@ -96,22 +94,21 @@ class HandleAuthorizationsTest(unittest.TestCase):
         with mock.patch('certbot._internal.auth_handler.time') as mock_time:
             authzr = self.handler.handle_authorizations(mock_order, self.mock_config)
 
-            self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
+            assert self.mock_net.answer_challenge.call_count == 1
 
-            self.assertEqual(self.mock_net.poll.call_count, 2)  # Because there is one retry
-            self.assertEqual(mock_time.sleep.call_count, 2)
+            assert self.mock_net.poll.call_count == 2  # Because there is one retry
+            assert mock_time.sleep.call_count == 2
             # Retry-After header is 30 seconds, but at the time sleep is invoked, several
             # instructions are executed, and next pool is in less than 30 seconds.
-            self.assertLessEqual(mock_time.sleep.call_args_list[1][0][0], 30)
+            assert mock_time.sleep.call_args_list[1][0][0] <= 30
             # However, assert that we did not took the default value of 3 seconds.
-            self.assertGreater(mock_time.sleep.call_args_list[1][0][0], 3)
+            assert mock_time.sleep.call_args_list[1][0][0] > 3
 
-            self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+            assert self.mock_auth.cleanup.call_count == 1
             # Test if list first element is http-01, use typ because it is an achall
-            self.assertEqual(
-                self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
+            assert self.mock_auth.cleanup.call_args[0][0][0].typ == "http-01"
 
-            self.assertEqual(len(authzr), 1)
+            assert len(authzr) == 1
 
     def test_name1_http_01_1_acme_2(self):
         self._test_name1_http_01_1_common()
@@ -124,17 +121,17 @@ class HandleAuthorizationsTest(unittest.TestCase):
         mock_order = mock.MagicMock(authorizations=[authzr])
         authzr = self.handler.handle_authorizations(mock_order, self.mock_config)
 
-        self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
+        assert self.mock_net.answer_challenge.call_count == 1
 
-        self.assertEqual(self.mock_net.poll.call_count, 1)
+        assert self.mock_net.poll.call_count == 1
 
-        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+        assert self.mock_auth.cleanup.call_count == 1
         cleaned_up_achalls = self.mock_auth.cleanup.call_args[0][0]
-        self.assertEqual(len(cleaned_up_achalls), 1)
-        self.assertEqual(cleaned_up_achalls[0].typ, "http-01")
+        assert len(cleaned_up_achalls) == 1
+        assert cleaned_up_achalls[0].typ == "http-01"
 
         # Length of authorizations list
-        self.assertEqual(len(authzr), 1)
+        assert len(authzr) == 1
 
     def test_name3_http_01_3_common_acme_2(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES),
@@ -145,14 +142,14 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
         authzr = self.handler.handle_authorizations(mock_order, self.mock_config)
 
-        self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
+        assert self.mock_net.answer_challenge.call_count == 3
 
         # Check poll call
-        self.assertEqual(self.mock_net.poll.call_count, 3)
+        assert self.mock_net.poll.call_count == 3
 
-        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+        assert self.mock_auth.cleanup.call_count == 1
 
-        self.assertEqual(len(authzr), 3)
+        assert len(authzr) == 3
 
     def test_debug_challenges(self):
         config = mock.Mock(debug_challenges=True, verbose_count=0)
@@ -166,15 +163,15 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.handler.handle_authorizations(mock_order, config)
 
-        self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
-        self.assertEqual(self.mock_display.notification.call_count, 1)
-        self.assertIn('Pass "-v" for more info',
-                      self.mock_display.notification.call_args[0][0])
-        self.assertNotIn(f"http://{authzrs[0].body.identifier.value}/.well-known/acme-challenge/" +
-                         b64encode(authzrs[0].body.challenges[0].chall.token).decode(),
-                         self.mock_display.notification.call_args[0][0])
-        self.assertNotIn(b64encode(account_key_thumbprint).decode(),
-                      self.mock_display.notification.call_args[0][0])
+        assert self.mock_net.answer_challenge.call_count == 1
+        assert self.mock_display.notification.call_count == 1
+        assert 'Pass "-v" for more info' in \
+                      self.mock_display.notification.call_args[0][0]
+        assert f"http://{authzrs[0].body.identifier.value}/.well-known/acme-challenge/" + \
+                         b64encode(authzrs[0].body.challenges[0].chall.token).decode() not in \
+                         self.mock_display.notification.call_args[0][0]
+        assert b64encode(account_key_thumbprint).decode() not in \
+                      self.mock_display.notification.call_args[0][0]
 
     def test_debug_challenges_verbose(self):
         config = mock.Mock(debug_challenges=True, verbose_count=1)
@@ -192,19 +189,19 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.handler.handle_authorizations(mock_order, config)
 
-        self.assertEqual(self.mock_net.answer_challenge.call_count, 2)
-        self.assertEqual(self.mock_display.notification.call_count, 1)
-        self.assertNotIn('Pass "-v" for more info',
-                         self.mock_display.notification.call_args[0][0])
-        self.assertIn(f"http://{authzrs[0].body.identifier.value}/.well-known/acme-challenge/" +
-                      b64encode(authzrs[0].body.challenges[0].chall.token).decode(),
-                      self.mock_display.notification.call_args[0][0])
-        self.assertIn(b64encode(account_key_thumbprint).decode(),
-                      self.mock_display.notification.call_args[0][0])
-        self.assertIn(f"_acme-challenge.{authzrs[1].body.identifier.value}",
-                      self.mock_display.notification.call_args[0][0])
-        self.assertIn(authzrs[1].body.challenges[0].validation(self.mock_account.key),
-                      self.mock_display.notification.call_args[0][0])
+        assert self.mock_net.answer_challenge.call_count == 2
+        assert self.mock_display.notification.call_count == 1
+        assert 'Pass "-v" for more info' not in \
+                         self.mock_display.notification.call_args[0][0]
+        assert f"http://{authzrs[0].body.identifier.value}/.well-known/acme-challenge/" + \
+                      b64encode(authzrs[0].body.challenges[0].chall.token).decode() in \
+                      self.mock_display.notification.call_args[0][0]
+        assert b64encode(account_key_thumbprint).decode() in \
+                      self.mock_display.notification.call_args[0][0]
+        assert f"_acme-challenge.{authzrs[1].body.identifier.value}" in \
+                      self.mock_display.notification.call_args[0][0]
+        assert authzrs[1].body.challenges[0].validation(self.mock_account.key) in \
+                      self.mock_display.notification.call_args[0][0]
 
     def test_perform_failure(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
@@ -212,9 +209,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_auth.perform.side_effect = errors.AuthorizationError
 
-        self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations,
-            mock_order, self.mock_config)
+        with pytest.raises(errors.AuthorizationError):
+            self.handler.handle_authorizations(mock_order, self.mock_config)
 
     def test_max_retries_exceeded(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
@@ -223,10 +219,10 @@ class HandleAuthorizationsTest(unittest.TestCase):
         # We will return STATUS_PENDING twice before returning STATUS_VALID.
         self.mock_net.poll.side_effect = _gen_mock_on_poll(retry=2)
 
-        with self.assertRaises(errors.AuthorizationError) as error:
+        with pytest.raises(errors.AuthorizationError) as error:
             # We retry only once, so retries will be exhausted before STATUS_VALID is returned.
             self.handler.handle_authorizations(mock_order, self.mock_config, False, 1)
-        self.assertIn('All authorizations were not finalized by the CA.', str(error.exception))
+        assert 'All authorizations were not finalized by the CA.' in str(error.exception)
 
     @mock.patch('certbot._internal.auth_handler.time.sleep')
     def test_deadline_exceeded(self, mock_sleep):
@@ -248,23 +244,23 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_PENDING,
                                                            wait_value=interval)
 
-        with self.assertRaises(errors.AuthorizationError) as error, \
+        with pytest.raises(errors.AuthorizationError) as error, \
              mock.patch('certbot._internal.auth_handler.datetime.datetime') as mock_dt:
             mock_dt.now.side_effect = mock_now_effect
             # Polling will only proceed for 30 minutes at most, so the second 20 minute sleep
             # should be truncated and the polling should be aborted.
             self.handler.handle_authorizations(mock_order, self.mock_config, False)
-        self.assertIn('All authorizations were not finalized by the CA.', str(error.exception))
+        assert 'All authorizations were not finalized by the CA.' in str(error.exception)
 
-        self.assertEqual(mock_sleep.call_count, 3) # 1s, 20m and 10m sleep
-        self.assertEqual(mock_sleep.call_args_list[0][0][0], 1)
-        self.assertAlmostEqual(mock_sleep.call_args_list[1][0][0], interval - 1, delta=1)
-        self.assertAlmostEqual(mock_sleep.call_args_list[2][0][0], interval/2 - 1, delta=1)
+        assert mock_sleep.call_count == 3 # 1s, 20m and 10m sleep
+        assert mock_sleep.call_args_list[0][0][0] == 1
+        assert abs(mock_sleep.call_args_list[1][0][0]-interval - 1) < 1
+        assert abs(mock_sleep.call_args_list[2][0][0]-interval/2 - 1) < 1
 
     def test_no_domains(self):
         mock_order = mock.MagicMock(authorizations=[])
-        self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations,
-                          mock_order, self.mock_config)
+        with pytest.raises(errors.AuthorizationError):
+            self.handler.handle_authorizations(mock_order, self.mock_config)
 
     def test_preferred_challenge_choice_common_acme_2(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
@@ -278,36 +274,32 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.poll.side_effect = _gen_mock_on_poll()
         self.handler.handle_authorizations(mock_order, self.mock_config)
 
-        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
-        self.assertEqual(
-            self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
+        assert self.mock_auth.cleanup.call_count == 1
+        assert self.mock_auth.cleanup.call_args[0][0][0].typ == "http-01"
 
     def test_preferred_challenges_not_supported_acme_2(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
         self.handler.pref_challs.append(challenges.DNS01.typ)
-        self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations,
-            mock_order, self.mock_config)
+        with pytest.raises(errors.AuthorizationError):
+            self.handler.handle_authorizations(mock_order, self.mock_config)
 
     def test_dns_only_challenge_not_supported(self):
         authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.DNS01])]
         mock_order = mock.MagicMock(authorizations=authzrs)
-        self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations,
-            mock_order, self.mock_config)
+        with pytest.raises(errors.AuthorizationError):
+            self.handler.handle_authorizations(mock_order, self.mock_config)
 
     def test_perform_error(self):
         self.mock_auth.perform.side_effect = errors.AuthorizationError
 
         authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)
         mock_order = mock.MagicMock(authorizations=[authzr])
-        self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations,
-                          mock_order, self.mock_config)
+        with pytest.raises(errors.AuthorizationError):
+            self.handler.handle_authorizations(mock_order, self.mock_config)
 
-        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
-        self.assertEqual(
-            self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
+        assert self.mock_auth.cleanup.call_count == 1
+        assert self.mock_auth.cleanup.call_args[0][0][0].typ == "http-01"
 
     def test_answer_error(self):
         self.mock_net.answer_challenge.side_effect = errors.AuthorizationError
@@ -315,12 +307,10 @@ class HandleAuthorizationsTest(unittest.TestCase):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
-        self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations,
-            mock_order, self.mock_config)
-        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
-        self.assertEqual(
-            self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
+        with pytest.raises(errors.AuthorizationError):
+            self.handler.handle_authorizations(mock_order, self.mock_config)
+        assert self.mock_auth.cleanup.call_count == 1
+        assert self.mock_auth.cleanup.call_args[0][0][0].typ == "http-01"
 
     def test_incomplete_authzr_error(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
@@ -328,12 +318,11 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
         with test_util.patch_display_util():
-            with self.assertRaises(errors.AuthorizationError) as error:
+            with pytest.raises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, self.mock_config, False)
-        self.assertIn('Some challenges have failed.', str(error.exception))
-        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
-        self.assertEqual(
-            self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
+        assert 'Some challenges have failed.' in str(error.exception)
+        assert self.mock_auth.cleanup.call_count == 1
+        assert self.mock_auth.cleanup.call_args[0][0][0].typ == "http-01"
 
     def test_best_effort(self):
         def _conditional_mock_on_poll(authzr):
@@ -357,17 +346,17 @@ class HandleAuthorizationsTest(unittest.TestCase):
             valid_authzr = self.handler.handle_authorizations(mock_order, self.mock_config, True)
 
         # Because best_effort=True, we did not blow up. Instead ...
-        self.assertEqual(len(valid_authzr), 1)  # ... the valid authzr has been processed
-        self.assertEqual(mock_report.call_count, 1)  # ... the invalid authzr has been reported
+        assert len(valid_authzr) == 1  # ... the valid authzr has been processed
+        assert mock_report.call_count == 1  # ... the invalid authzr has been reported
 
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
         with test_util.patch_display_util():
-            with self.assertRaises(errors.AuthorizationError) as error:
+            with pytest.raises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, self.mock_config, True)
 
         # Despite best_effort=True, process will fail because no authzr is valid.
-        self.assertIn('All challenges have failed.', str(error.exception))
+        assert 'All challenges have failed.' in str(error.exception)
 
     def test_validated_challenge_not_rerun(self):
         # With a pending challenge that is not supported by the plugin, we
@@ -377,9 +366,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
                 [acme_util.DNS01],
                 [messages.STATUS_PENDING])
         mock_order = mock.MagicMock(authorizations=[authzr])
-        self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations,
-            mock_order, self.mock_config)
+        with pytest.raises(errors.AuthorizationError):
+            self.handler.handle_authorizations(mock_order, self.mock_config)
 
         # With a validated challenge that is not supported by the plugin, we
         # expect the challenge to not be solved again and
@@ -416,13 +404,13 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         authzrs, failed = self.handler.deactivate_valid_authorizations(orderr)
 
-        self.assertEqual(self.mock_net.deactivate_authorization.call_count, 2)
-        self.assertEqual(len(authzrs), 1)
-        self.assertEqual(len(failed), 1)
-        self.assertEqual(authzrs[0].body.identifier.value, "is_valid")
-        self.assertEqual(authzrs[0].body.status, messages.STATUS_DEACTIVATED)
-        self.assertEqual(failed[0].body.identifier.value, "is_valid_but_will_fail")
-        self.assertEqual(failed[0].body.status, messages.STATUS_VALID)
+        assert self.mock_net.deactivate_authorization.call_count == 2
+        assert len(authzrs) == 1
+        assert len(failed) == 1
+        assert authzrs[0].body.identifier.value == "is_valid"
+        assert authzrs[0].body.status == messages.STATUS_DEACTIVATED
+        assert failed[0].body.identifier.value == "is_valid_but_will_fail"
+        assert failed[0].body.status == messages.STATUS_VALID
 
 
 def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0, wait_value=1):
@@ -448,12 +436,10 @@ class ChallbToAchallTest(unittest.TestCase):
         return challb_to_achall(challb, "account_key", "domain")
 
     def test_it(self):
-        self.assertEqual(
-            self._call(acme_util.HTTP01_P),
+        assert self._call(acme_util.HTTP01_P) == \
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.HTTP01_P, account_key="account_key",
-                domain="domain"),
-        )
+                domain="domain")
 
 
 class GenChallengePathTest(unittest.TestCase):
@@ -476,16 +462,16 @@ class GenChallengePathTest(unittest.TestCase):
         challbs = (acme_util.DNS01_P, acme_util.HTTP01_P)
         prefs = [challenges.DNS01, challenges.HTTP01]
 
-        self.assertEqual(self._call(challbs, prefs), (0,))
-        self.assertEqual(self._call(challbs[::-1], prefs), (1,))
+        assert self._call(challbs, prefs) == (0,)
+        assert self._call(challbs[::-1], prefs) == (1,)
 
     def test_not_supported(self):
         challbs = (acme_util.DNS01_P,)
         prefs = [challenges.HTTP01]
 
         # smart path fails because no challs in prefs satisfies combos
-        self.assertRaises(
-            errors.AuthorizationError, self._call, challbs, prefs)
+        with pytest.raises(errors.AuthorizationError):
+            self._call(challbs, prefs)
 
 
 class ReportFailedAuthzrsTest(unittest.TestCase):
@@ -509,7 +495,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         }
 
         # Prevent future regressions if the error type changes
-        self.assertIsNotNone(kwargs["error"].description)
+        assert kwargs["error"].description is not None
 
         http_01 = messages.ChallengeBody(**kwargs)
 
@@ -577,7 +563,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         self.mock_auth.auth_hint.side_effect = Exception
         self.handler = AuthHandler(self.mock_auth, mock.MagicMock(), mock.MagicMock(), [])
         self.handler._report_failed_authzrs([self.authzr1])
-        self.assertEqual(mock_notify.call_count, 1)
+        assert mock_notify.call_count == 1
 
 
 def gen_auth_resp(chall_list):

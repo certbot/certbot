@@ -13,10 +13,12 @@ class OsTest(unittest.TestCase):
         # Checks for os module
         for method in ['chmod', 'chown', 'open', 'mkdir', 'makedirs', 'rename',
                        'replace', 'access', 'stat', 'fstat']:
-            self.assertRaises(RuntimeError, getattr(os, method))
+            with pytest.raises(RuntimeError):
+                getattr(os, method)()
         # Checks for os.path module
         for method in ['realpath']:
-            self.assertRaises(RuntimeError, getattr(os.path, method))
+            with pytest.raises(RuntimeError):
+                getattr(os.path, method)()
 
 
 if __name__ == "__main__":

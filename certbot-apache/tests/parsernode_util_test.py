@@ -37,25 +37,28 @@ class ParserNodeUtilTest(unittest.TestCase):
     def test_unknown_parameter(self):
         params = self._setup_parsernode()
         params["unknown"] = "unknown"
-        self.assertRaises(TypeError, util.parsernode_kwargs, params)
+        with pytest.raises(TypeError):
+            util.parsernode_kwargs(params)
 
         params = self._setup_commentnode()
         params["unknown"] = "unknown"
-        self.assertRaises(TypeError, util.commentnode_kwargs, params)
+        with pytest.raises(TypeError):
+            util.commentnode_kwargs(params)
 
         params = self._setup_directivenode()
         params["unknown"] = "unknown"
-        self.assertRaises(TypeError, util.directivenode_kwargs, params)
+        with pytest.raises(TypeError):
+            util.directivenode_kwargs(params)
 
     def test_parsernode(self):
         params = self._setup_parsernode()
         ctrl = self._setup_parsernode()
 
         ancestor, dirty, filepath, metadata = util.parsernode_kwargs(params)
-        self.assertEqual(ancestor, ctrl["ancestor"])
-        self.assertEqual(dirty, ctrl["dirty"])
-        self.assertEqual(filepath, ctrl["filepath"])
-        self.assertEqual(metadata, {})
+        assert ancestor == ctrl["ancestor"]
+        assert dirty == ctrl["dirty"]
+        assert filepath == ctrl["filepath"]
+        assert metadata == {}
 
     def test_parsernode_from_metadata(self):
         params = self._setup_parsernode()
@@ -65,14 +68,14 @@ class ParserNodeUtilTest(unittest.TestCase):
 
         # Just testing that error from missing required parameters is not raised
         _, _, _, metadata = util.parsernode_kwargs(params)
-        self.assertEqual(metadata, md)
+        assert metadata == md
 
     def test_commentnode(self):
         params = self._setup_commentnode()
         ctrl = self._setup_commentnode()
 
         comment, _ = util.commentnode_kwargs(params)
-        self.assertEqual(comment, ctrl["comment"])
+        assert comment == ctrl["comment"]
 
     def test_commentnode_from_metadata(self):
         params = self._setup_commentnode()
@@ -87,9 +90,9 @@ class ParserNodeUtilTest(unittest.TestCase):
         ctrl = self._setup_directivenode()
 
         name, parameters, enabled, _ = util.directivenode_kwargs(params)
-        self.assertEqual(name, ctrl["name"])
-        self.assertEqual(parameters, ctrl["parameters"])
-        self.assertEqual(enabled, ctrl["enabled"])
+        assert name == ctrl["name"]
+        assert parameters == ctrl["parameters"]
+        assert enabled == ctrl["enabled"]
 
     def test_directivenode_from_metadata(self):
         params = self._setup_directivenode()
@@ -103,15 +106,18 @@ class ParserNodeUtilTest(unittest.TestCase):
     def test_missing_required(self):
         c_params = self._setup_commentnode()
         c_params.pop("comment")
-        self.assertRaises(TypeError, util.commentnode_kwargs, c_params)
+        with pytest.raises(TypeError):
+            util.commentnode_kwargs(c_params)
 
         d_params = self._setup_directivenode()
         d_params.pop("ancestor")
-        self.assertRaises(TypeError, util.directivenode_kwargs, d_params)
+        with pytest.raises(TypeError):
+            util.directivenode_kwargs(d_params)
 
         p_params = self._setup_parsernode()
         p_params.pop("filepath")
-        self.assertRaises(TypeError, util.parsernode_kwargs, p_params)
+        with pytest.raises(TypeError):
+            util.parsernode_kwargs(p_params)
 
 
 if __name__ == "__main__":

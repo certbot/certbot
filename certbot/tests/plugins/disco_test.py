@@ -55,68 +55,64 @@ class PluginEntryPointTest(unittest.TestCase):
         }
 
         for entry_point, name in names.items():
-            self.assertEqual(
-                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point))
+            assert name == PluginEntryPoint.entry_point_to_plugin_name(entry_point)
 
     def test_description(self):
-        self.assertIn("server locally", self.plugin_ep.description)
+        assert "server locally" in self.plugin_ep.description
 
     def test_description_with_name(self):
         self.plugin_ep.plugin_cls = mock.MagicMock(description="Desc")
-        self.assertEqual(
-            "Desc (sa)", self.plugin_ep.description_with_name)
+        assert "Desc (sa)" == self.plugin_ep.description_with_name
 
     def test_long_description(self):
         self.plugin_ep.plugin_cls = mock.MagicMock(
             long_description="Long desc")
-        self.assertEqual(
-            "Long desc", self.plugin_ep.long_description)
+        assert "Long desc" == self.plugin_ep.long_description
 
     def test_long_description_nonexistent(self):
         self.plugin_ep.plugin_cls = mock.MagicMock(
             description="Long desc not found", spec=["description"])
-        self.assertEqual(
-            "Long desc not found", self.plugin_ep.long_description)
+        assert "Long desc not found" == self.plugin_ep.long_description
 
     def test_ifaces(self):
-        self.assertTrue(self.plugin_ep.ifaces((interfaces.Authenticator,)))
-        self.assertFalse(self.plugin_ep.ifaces((interfaces.Installer,)))
-        self.assertFalse(self.plugin_ep.ifaces((
-            interfaces.Installer, interfaces.Authenticator)))
+        assert self.plugin_ep.ifaces((interfaces.Authenticator,))
+        assert not self.plugin_ep.ifaces((interfaces.Installer,))
+        assert not self.plugin_ep.ifaces((
+            interfaces.Installer, interfaces.Authenticator))
 
     def test__init__(self):
-        self.assertIs(self.plugin_ep.initialized, False)
-        self.assertIs(self.plugin_ep.prepared, False)
-        self.assertIs(self.plugin_ep.misconfigured, False)
-        self.assertIs(self.plugin_ep.available, False)
-        self.assertIsNone(self.plugin_ep.problem)
-        self.assertIs(self.plugin_ep.entry_point, EP_SA)
-        self.assertEqual("sa", self.plugin_ep.name)
+        assert self.plugin_ep.initialized is False
+        assert self.plugin_ep.prepared is False
+        assert self.plugin_ep.misconfigured is False
+        assert self.plugin_ep.available is False
+        assert self.plugin_ep.problem is None
+        assert self.plugin_ep.entry_point is EP_SA
+        assert "sa" == self.plugin_ep.name
 
-        self.assertIs(self.plugin_ep.plugin_cls, standalone.Authenticator)
+        assert self.plugin_ep.plugin_cls is standalone.Authenticator
 
     def test_init(self):
         config = mock.MagicMock()
         plugin = self.plugin_ep.init(config=config)
-        self.assertIs(self.plugin_ep.initialized, True)
-        self.assertIs(plugin.config, config)
+        assert self.plugin_ep.initialized is True
+        assert plugin.config is config
         # memoize!
-        self.assertIs(self.plugin_ep.init(), plugin)
-        self.assertIs(plugin.config, config)
+        assert self.plugin_ep.init() is plugin
+        assert plugin.config is config
         # try to give different config
-        self.assertIs(self.plugin_ep.init(123), plugin)
-        self.assertIs(plugin.config, config)
+        assert self.plugin_ep.init(123) is plugin
+        assert plugin.config is config
 
-        self.assertIs(self.plugin_ep.prepared, False)
-        self.assertIs(self.plugin_ep.misconfigured, False)
-        self.assertIs(self.plugin_ep.available, False)
+        assert self.plugin_ep.prepared is False
+        assert self.plugin_ep.misconfigured is False
+        assert self.plugin_ep.available is False
 
     def test_prepare(self):
         config = mock.MagicMock()
         self.plugin_ep.init(config=config)
         self.plugin_ep.prepare()
-        self.assertTrue(self.plugin_ep.prepared)
-        self.assertIs(self.plugin_ep.misconfigured, False)
+        assert self.plugin_ep.prepared
+        assert self.plugin_ep.misconfigured is False
 
         # output doesn't matter that much, just test if it runs
         str(self.plugin_ep)
@@ -126,41 +122,40 @@ class PluginEntryPointTest(unittest.TestCase):
         plugin.prepare.side_effect = errors.MisconfigurationError
         # pylint: disable=protected-access
         self.plugin_ep._initialized = plugin
-        self.assertIsInstance(self.plugin_ep.prepare(),
-                                   errors.MisconfigurationError)
-        self.assertTrue(self.plugin_ep.prepared)
-        self.assertTrue(self.plugin_ep.misconfigured)
-        self.assertIsInstance(self.plugin_ep.problem, errors.MisconfigurationError)
-        self.assertTrue(self.plugin_ep.available)
+        assert isinstance(self.plugin_ep.prepare(), errors.MisconfigurationError)
+        assert self.plugin_ep.prepared
+        assert self.plugin_ep.misconfigured
+        assert isinstance(self.plugin_ep.problem, errors.MisconfigurationError)
+        assert self.plugin_ep.available
 
     def test_prepare_no_installation(self):
         plugin = mock.MagicMock()
         plugin.prepare.side_effect = errors.NoInstallationError
         # pylint: disable=protected-access
         self.plugin_ep._initialized = plugin
-        self.assertIsInstance(self.plugin_ep.prepare(), errors.NoInstallationError)
-        self.assertIs(self.plugin_ep.prepared, True)
-        self.assertIs(self.plugin_ep.misconfigured, False)
-        self.assertIs(self.plugin_ep.available, False)
+        assert isinstance(self.plugin_ep.prepare(), errors.NoInstallationError)
+        assert self.plugin_ep.prepared is True
+        assert self.plugin_ep.misconfigured is False
+        assert self.plugin_ep.available is False
 
     def test_prepare_generic_plugin_error(self):
         plugin = mock.MagicMock()
         plugin.prepare.side_effect = errors.PluginError
         # pylint: disable=protected-access
         self.plugin_ep._initialized = plugin
-        self.assertIsInstance(self.plugin_ep.prepare(), errors.PluginError)
-        self.assertTrue(self.plugin_ep.prepared)
-        self.assertIs(self.plugin_ep.misconfigured, False)
-        self.assertIs(self.plugin_ep.available, False)
+        assert isinstance(self.plugin_ep.prepare(), errors.PluginError)
+        assert self.plugin_ep.prepared
+        assert self.plugin_ep.misconfigured is False
+        assert self.plugin_ep.available is False
 
     def test_str(self):
         output = str(self.plugin_ep)
-        self.assertIn("Authenticator", output)
-        self.assertNotIn("Installer", output)
-        self.assertIn("Plugin", output)
+        assert "Authenticator" in output
+        assert "Installer" not in output
+        assert "Plugin" in output
 
     def test_repr(self):
-        self.assertEqual("PluginEntryPoint#sa", repr(self.plugin_ep))
+        assert "PluginEntryPoint#sa" == repr(self.plugin_ep)
 
 
 class PluginsRegistryTest(unittest.TestCase):
@@ -191,46 +186,44 @@ class PluginsRegistryTest(unittest.TestCase):
                     standalone.Authenticator, webroot.Authenticator,
                     null.Installer, null.Installer]
                 plugins = PluginsRegistry.find_all()
-        self.assertIs(plugins["sa"].plugin_cls, standalone.Authenticator)
-        self.assertIs(plugins["sa"].entry_point, EP_SA)
-        self.assertIs(plugins["wr"].plugin_cls, webroot.Authenticator)
-        self.assertIs(plugins["wr"].entry_point, EP_WR)
-        self.assertIs(plugins["ep1"].plugin_cls, null.Installer)
-        self.assertIs(plugins["ep1"].entry_point, self.ep1)
-        self.assertNotIn("p1:ep1", plugins)
+        assert plugins["sa"].plugin_cls is standalone.Authenticator
+        assert plugins["sa"].entry_point is EP_SA
+        assert plugins["wr"].plugin_cls is webroot.Authenticator
+        assert plugins["wr"].entry_point is EP_WR
+        assert plugins["ep1"].plugin_cls is null.Installer
+        assert plugins["ep1"].entry_point is self.ep1
+        assert "p1:ep1" not in plugins
 
     def test_getitem(self):
-        self.assertEqual(self.plugin_ep, self.reg["mock"])
+        assert self.plugin_ep == self.reg["mock"]
 
     def test_iter(self):
-        self.assertEqual(["mock"], list(self.reg))
+        assert ["mock"] == list(self.reg)
 
     def test_len(self):
-        self.assertEqual(0, len(self._create_new_registry({})))
-        self.assertEqual(1, len(self.reg))
+        assert 0 == len(self._create_new_registry({}))
+        assert 1 == len(self.reg)
 
     def test_init(self):
         self.plugin_ep.init.return_value = "baz"
-        self.assertEqual(["baz"], self.reg.init("bar"))
+        assert ["baz"] == self.reg.init("bar")
         self.plugin_ep.init.assert_called_once_with("bar")
 
     def test_filter(self):
-        self.assertEqual(
-            self.plugins,
-            self.reg.filter(lambda p_ep: p_ep.name.startswith("m")))
-        self.assertEqual(
-            {}, self.reg.filter(lambda p_ep: p_ep.name.startswith("b")))
+        assert self.plugins == \
+            self.reg.filter(lambda p_ep: p_ep.name.startswith("m"))
+        assert {} == self.reg.filter(lambda p_ep: p_ep.name.startswith("b"))
 
     def test_ifaces(self):
         self.plugin_ep.ifaces.return_value = True
         # pylint: disable=protected-access
-        self.assertEqual(self.plugins, self.reg.ifaces()._plugins)
+        assert self.plugins == self.reg.ifaces()._plugins
         self.plugin_ep.ifaces.return_value = False
-        self.assertEqual({}, self.reg.ifaces()._plugins)
+        assert {} == self.reg.ifaces()._plugins
 
     def test_prepare(self):
         self.plugin_ep.prepare.return_value = "baz"
-        self.assertEqual(["baz"], self.reg.prepare())
+        assert ["baz"] == self.reg.prepare()
         self.plugin_ep.prepare.assert_called_once_with()
 
     def test_prepare_order(self):
@@ -243,33 +236,32 @@ class PluginsRegistryTest(unittest.TestCase):
         reg.prepare()
         # order of prepare calls must be sorted to prevent deadlock
         # caused by plugins acquiring locks during prepare
-        self.assertEqual(order, sorted(string.ascii_letters))
+        assert order == sorted(string.ascii_letters)
 
     def test_available(self):
         self.plugin_ep.available = True
         # pylint: disable=protected-access
-        self.assertEqual(self.plugins, self.reg.available()._plugins)
+        assert self.plugins == self.reg.available()._plugins
         self.plugin_ep.available = False
-        self.assertEqual({}, self.reg.available()._plugins)
+        assert {} == self.reg.available()._plugins
 
     def test_find_init(self):
-        self.assertIsNone(self.reg.find_init(mock.Mock()))
+        assert self.reg.find_init(mock.Mock()) is None
         self.plugin_ep.initialized = True
-        self.assertIs(
-            self.reg.find_init(self.plugin_ep.init()), self.plugin_ep)
+        assert self.reg.find_init(self.plugin_ep.init()) is self.plugin_ep
 
     def test_repr(self):
         self.plugin_ep.__repr__ = lambda _: "PluginEntryPoint#mock"
-        self.assertEqual("PluginsRegistry(PluginEntryPoint#mock)",
-                         repr(self.reg))
+        assert "PluginsRegistry(PluginEntryPoint#mock)" == \
+                         repr(self.reg)
 
     def test_str(self):
-        self.assertEqual("No plugins", str(self._create_new_registry({})))
+        assert "No plugins" == str(self._create_new_registry({}))
         self.plugin_ep.__str__ = lambda _: "Mock"
-        self.assertEqual("Mock", str(self.reg))
+        assert "Mock" == str(self.reg)
         plugins = {self.plugin_ep.name: self.plugin_ep, "foo": "Bar"}
         reg = self._create_new_registry(plugins)
-        self.assertEqual("Bar\n\nMock", str(reg))
+        assert "Bar\n\nMock" == str(reg)
 
 
 if __name__ == "__main__":

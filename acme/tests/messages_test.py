@@ -39,11 +39,11 @@ class ErrorTest(unittest.TestCase):
 
     def test_default_typ(self):
         from acme.messages import Error
-        self.assertEqual(Error().typ, 'about:blank')
+        assert Error().typ == 'about:blank'
 
     def test_from_json_empty(self):
         from acme.messages import Error
-        self.assertEqual(Error(), Error.from_json('{}'))
+        assert Error() == Error.from_json('{}')
 
     def test_from_json_hashable(self):
         from acme.messages import Error
@@ -54,63 +54,62 @@ class ErrorTest(unittest.TestCase):
 
         parsed_error = Error.from_json(self.error_with_subproblems.to_json())
 
-        self.assertEqual(1, len(parsed_error.subproblems))
-        self.assertEqual(self.subproblem, parsed_error.subproblems[0])
+        assert 1 == len(parsed_error.subproblems)
+        assert self.subproblem == parsed_error.subproblems[0]
 
     def test_description(self):
-        self.assertEqual('The request message was malformed', self.error.description)
-        self.assertIsNone(self.error_custom.description)
+        assert 'The request message was malformed' == self.error.description
+        assert self.error_custom.description is None
 
     def test_code(self):
         from acme.messages import Error
-        self.assertEqual('malformed', self.error.code)
-        self.assertIsNone(self.error_custom.code)
-        self.assertIsNone(Error().code)
+        assert 'malformed' == self.error.code
+        assert self.error_custom.code is None
+        assert Error().code is None
 
     def test_is_acme_error(self):
         from acme.messages import Error
         from acme.messages import is_acme_error
-        self.assertTrue(is_acme_error(self.error))
-        self.assertFalse(is_acme_error(self.error_custom))
-        self.assertFalse(is_acme_error(Error()))
-        self.assertFalse(is_acme_error(self.empty_error))
-        self.assertFalse(is_acme_error("must pet all the {dogs|rabbits}"))
+        assert is_acme_error(self.error)
+        assert not is_acme_error(self.error_custom)
+        assert not is_acme_error(Error())
+        assert not is_acme_error(self.empty_error)
+        assert not is_acme_error("must pet all the {dogs|rabbits}")
 
     def test_unicode_error(self):
         from acme.messages import Error
         from acme.messages import is_acme_error
         arabic_error = Error.with_code(
             'malformed', detail=u'\u0639\u062f\u0627\u0644\u0629', title='title')
-        self.assertTrue(is_acme_error(arabic_error))
+        assert is_acme_error(arabic_error)
 
     def test_with_code(self):
         from acme.messages import Error
         from acme.messages import is_acme_error
-        self.assertTrue(is_acme_error(Error.with_code('badCSR')))
-        self.assertRaises(ValueError, Error.with_code, 'not an ACME error code')
+        assert is_acme_error(Error.with_code('badCSR'))
+        with pytest.raises(ValueError):
+            Error.with_code('not an ACME error code')
 
     def test_str(self):
-        self.assertEqual(
-            str(self.error),
-            u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}"
-            .format(self.error))
-        self.assertEqual(
-            str(self.error_with_subproblems),
+        assert str(self.error) == \
+            u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}" \
+            .format(self.error)
+        assert str(self.error_with_subproblems) == \
             (u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}\n"+
             u"Problem for {1.identifier.value}: {1.typ} :: {1.description} :: {1.detail} :: {1.title}").format(
-        self.error_with_subproblems, self.subproblem))
+        self.error_with_subproblems, self.subproblem)
 
     # this test is based on a minimal reproduction of a contextmanager/immutable
     # exception related error: https://github.com/python/cpython/issues/99856
     def test_setting_traceback(self):
-        self.assertIsNone(self.error_custom.__traceback__)
+        assert self.error_custom.__traceback__ is None
 
         try:
             1/0
         except ZeroDivisionError as e:
             self.error_custom.__traceback__ = e.__traceback__
 
-        self.assertIsNotNone(self.error_custom.__traceback__)
+        assert self.error_custom.__traceback__ is not None
 
 
 class ConstantTest(unittest.TestCase):
@@ -127,28 +126,28 @@ class ConstantTest(unittest.TestCase):
         self.const_b = MockConstant('b')
 
     def test_to_partial_json(self):
-        self.assertEqual('a', self.const_a.to_partial_json())
-        self.assertEqual('b', self.const_b.to_partial_json())
+        assert 'a' == self.const_a.to_partial_json()
+        assert 'b' == self.const_b.to_partial_json()
 
     def test_from_json(self):
-        self.assertEqual(self.const_a, self.MockConstant.from_json('a'))
-        self.assertRaises(
-            jose.DeserializationError, self.MockConstant.from_json, 'c')
+        assert self.const_a == self.MockConstant.from_json('a')
+        with pytest.raises(jose.DeserializationError):
+            self.MockConstant.from_json('c')
 
     def test_from_json_hashable(self):
         hash(self.MockConstant.from_json('a'))
 
     def test_repr(self):
-        self.assertEqual('MockConstant(a)', repr(self.const_a))
-        self.assertEqual('MockConstant(b)', repr(self.const_b))
+        assert 'MockConstant(a)' == repr(self.const_a)
+        assert 'MockConstant(b)' == repr(self.const_b)
 
     def test_equality(self):
         const_a_prime = self.MockConstant('a')
-        self.assertNotEqual(self.const_a, self.const_b)
-        self.assertEqual(self.const_a, const_a_prime)
+        assert self.const_a != self.const_b
+        assert self.const_a == const_a_prime
 
-        self.assertNotEqual(self.const_a, self.const_b)
-        self.assertEqual(self.const_a, const_a_prime)
+        assert self.const_a != self.const_b
+        assert self.const_a == const_a_prime
 
 
 class DirectoryTest(unittest.TestCase):
@@ -171,19 +170,21 @@ class DirectoryTest(unittest.TestCase):
         Directory({'foo': 'bar'})
 
     def test_getitem(self):
-        self.assertEqual('reg', self.dir['newReg'])
+        assert 'reg' == self.dir['newReg']
 
     def test_getitem_fails_with_key_error(self):
-        self.assertRaises(KeyError, self.dir.__getitem__, 'foo')
+        with pytest.raises(KeyError):
+            self.dir.__getitem__('foo')
 
     def test_getattr(self):
-        self.assertEqual('reg', self.dir.newReg)
+        assert 'reg' == self.dir.newReg
 
     def test_getattr_fails_with_attribute_error(self):
-        self.assertRaises(AttributeError, self.dir.__getattr__, 'foo')
+        with pytest.raises(AttributeError):
+            self.dir.__getattr__('foo')
 
     def test_to_json(self):
-        self.assertEqual(self.dir.to_json(), {
+        assert self.dir.to_json() == {
             'newReg': 'reg',
             'newCert': 'cert',
             'meta': {
@@ -191,7 +192,7 @@ class DirectoryTest(unittest.TestCase):
                 'website': 'https://www.example.com/',
                 'caaIdentities': ['example.com'],
             },
-        })
+        }
 
     def test_from_json_deserialization_unknown_key_success(self):  # pylint: disable=no-self-use
         from acme.messages import Directory
@@ -202,7 +203,7 @@ class DirectoryTest(unittest.TestCase):
         for k in self.dir.meta:
             if k == 'terms_of_service':
                 result = self.dir.meta[k] == 'https://example.com/acme/terms'
-        self.assertTrue(result)
+        assert result
 
 
 class ExternalAccountBindingTest(unittest.TestCase):
@@ -219,8 +220,8 @@ class ExternalAccountBindingTest(unittest.TestCase):
         from acme.messages import ExternalAccountBinding
         eab = ExternalAccountBinding.from_data(self.key, self.kid, self.hmac_key, self.dir)
 
-        self.assertEqual(len(eab), 3)
-        self.assertEqual(sorted(eab.keys()), sorted(['protected', 'payload', 'signature']))
+        assert len(eab) == 3
+        assert sorted(eab.keys()) == sorted(['protected', 'payload', 'signature'])
 
 
 class RegistrationTest(unittest.TestCase):
@@ -249,10 +250,10 @@ class RegistrationTest(unittest.TestCase):
     def test_from_data(self):
         from acme.messages import Registration
         reg = Registration.from_data(phone='1234', email='admin@foo.com')
-        self.assertEqual(reg.contact, (
+        assert reg.contact == (
             'tel:1234',
             'mailto:admin@foo.com',
-        ))
+        )
 
     def test_new_registration_from_data_with_eab(self):
         from acme.messages import Directory
@@ -266,24 +267,24 @@ class RegistrationTest(unittest.TestCase):
         })
         eab = ExternalAccountBinding.from_data(key, kid, hmac_key, directory)
         reg = NewRegistration.from_data(email='admin@foo.com', external_account_binding=eab)
-        self.assertEqual(reg.contact, (
+        assert reg.contact == (
             'mailto:admin@foo.com',
-        ))
-        self.assertEqual(sorted(reg.external_account_binding.keys()),
-                         sorted(['protected', 'payload', 'signature']))
+        )
+        assert sorted(reg.external_account_binding.keys()) == \
+                         sorted(['protected', 'payload', 'signature'])
 
     def test_phones(self):
-        self.assertEqual(('1234',), self.reg.phones)
+        assert ('1234',) == self.reg.phones
 
     def test_emails(self):
-        self.assertEqual(('admin@foo.com',), self.reg.emails)
+        assert ('admin@foo.com',) == self.reg.emails
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jobj_to, self.reg.to_partial_json())
+        assert self.jobj_to == self.reg.to_partial_json()
 
     def test_from_json(self):
         from acme.messages import Registration
-        self.assertEqual(self.reg, Registration.from_json(self.jobj_from))
+        assert self.reg == Registration.from_json(self.jobj_from)
 
     def test_from_json_hashable(self):
         from acme.messages import Registration
@@ -294,13 +295,13 @@ class RegistrationTest(unittest.TestCase):
         empty_new_reg = NewRegistration()
         new_reg_with_contact = NewRegistration(contact=())
 
-        self.assertEqual(empty_new_reg.contact, ())
-        self.assertEqual(new_reg_with_contact.contact, ())
+        assert empty_new_reg.contact == ()
+        assert new_reg_with_contact.contact == ()
 
-        self.assertNotIn('contact', empty_new_reg.to_partial_json())
-        self.assertNotIn('contact', empty_new_reg.fields_to_partial_json())
-        self.assertIn('contact', new_reg_with_contact.to_partial_json())
-        self.assertIn('contact', new_reg_with_contact.fields_to_partial_json())
+        assert 'contact' not in empty_new_reg.to_partial_json()
+        assert 'contact' not in empty_new_reg.fields_to_partial_json()
+        assert 'contact' in new_reg_with_contact.to_partial_json()
+        assert 'contact' in new_reg_with_contact.fields_to_partial_json()
 
 
 class UpdateRegistrationTest(unittest.TestCase):
@@ -309,9 +310,8 @@ class UpdateRegistrationTest(unittest.TestCase):
     def test_empty(self):
         from acme.messages import UpdateRegistration
         jstring = '{"resource": "reg"}'
-        self.assertEqual('{}', UpdateRegistration().json_dumps())
-        self.assertEqual(
-            UpdateRegistration(), UpdateRegistration.json_loads(jstring))
+        assert '{}' == UpdateRegistration().json_dumps()
+        assert UpdateRegistration() == UpdateRegistration.json_loads(jstring)
 
 
 class RegistrationResourceTest(unittest.TestCase):
@@ -324,11 +324,11 @@ class RegistrationResourceTest(unittest.TestCase):
             terms_of_service=mock.sentinel.terms_of_service)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.regr.to_json(), {
+        assert self.regr.to_json() == {
             'body': mock.sentinel.body,
             'uri': mock.sentinel.uri,
             'terms_of_service': mock.sentinel.terms_of_service,
-        })
+        }
 
 
 class ChallengeResourceTest(unittest.TestCase):
@@ -336,8 +336,8 @@ class ChallengeResourceTest(unittest.TestCase):
 
     def test_uri(self):
         from acme.messages import ChallengeResource
-        self.assertEqual('http://challb', ChallengeResource(body=mock.MagicMock(
-            uri='http://challb'), authzr_uri='http://authz').uri)
+        assert 'http://challb' == ChallengeResource(body=mock.MagicMock(
+            uri='http://challb'), authzr_uri='http://authz').uri
 
 
 class ChallengeBodyTest(unittest.TestCase):
@@ -371,22 +371,22 @@ class ChallengeBodyTest(unittest.TestCase):
         }
 
     def test_encode(self):
-        self.assertEqual(self.challb.encode('uri'), self.challb.uri)
+        assert self.challb.encode('uri') == self.challb.uri
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jobj_to, self.challb.to_partial_json())
+        assert self.jobj_to == self.challb.to_partial_json()
 
     def test_from_json(self):
         from acme.messages import ChallengeBody
-        self.assertEqual(self.challb, ChallengeBody.from_json(self.jobj_from))
+        assert self.challb == ChallengeBody.from_json(self.jobj_from)
 
     def test_from_json_hashable(self):
         from acme.messages import ChallengeBody
         hash(ChallengeBody.from_json(self.jobj_from))
 
     def test_proxy(self):
-        self.assertEqual(jose.b64decode(
-            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'), self.challb.token)
+        assert jose.b64decode(
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA') == self.challb.token
 
 
 class AuthorizationTest(unittest.TestCase):
@@ -434,7 +434,7 @@ class AuthorizationResourceTest(unittest.TestCase):
         authzr = AuthorizationResource(
             uri=mock.sentinel.uri,
             body=mock.sentinel.body)
-        self.assertIsInstance(authzr, jose.JSONDeSerializable)
+        assert isinstance(authzr, jose.JSONDeSerializable)
 
 
 class CertificateRequestTest(unittest.TestCase):
@@ -445,10 +445,9 @@ class CertificateRequestTest(unittest.TestCase):
         self.req = CertificateRequest(csr=CSR)
 
     def test_json_de_serializable(self):
-        self.assertIsInstance(self.req, jose.JSONDeSerializable)
+        assert isinstance(self.req, jose.JSONDeSerializable)
         from acme.messages import CertificateRequest
-        self.assertEqual(
-            self.req, CertificateRequest.from_json(self.req.to_json()))
+        assert self.req == CertificateRequest.from_json(self.req.to_json())
 
 
 class CertificateResourceTest(unittest.TestCase):
@@ -461,10 +460,9 @@ class CertificateResourceTest(unittest.TestCase):
             cert_chain_uri=mock.sentinel.cert_chain_uri)
 
     def test_json_de_serializable(self):
-        self.assertIsInstance(self.certr, jose.JSONDeSerializable)
+        assert isinstance(self.certr, jose.JSONDeSerializable)
         from acme.messages import CertificateResource
-        self.assertEqual(
-            self.certr, CertificateResource.from_json(self.certr.to_json()))
+        assert self.certr == CertificateResource.from_json(self.certr.to_json())
 
 
 class RevocationTest(unittest.TestCase):
@@ -488,11 +486,11 @@ class OrderResourceTest(unittest.TestCase):
             body=mock.sentinel.body, uri=mock.sentinel.uri)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.regr.to_json(), {
+        assert self.regr.to_json() == {
             'body': mock.sentinel.body,
             'uri': mock.sentinel.uri,
             'authorizations': None,
-        })
+        }
 
 
 class NewOrderTest(unittest.TestCase):
@@ -504,9 +502,9 @@ class NewOrderTest(unittest.TestCase):
             identifiers=mock.sentinel.identifiers)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.reg.to_json(), {
+        assert self.reg.to_json() == {
             'identifiers': mock.sentinel.identifiers,
-        })
+        }
 
 
 class JWSPayloadRFC8555Compliant(unittest.TestCase):
@@ -518,7 +516,7 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
 
         jobj = new_order.json_dumps(indent=2).encode()
         # RFC8555 states that JWS bodies must not have a resource field.
-        self.assertEqual(jobj, b'{}')
+        assert jobj == b'{}'
 
 
 if __name__ == '__main__':

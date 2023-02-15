@@ -60,7 +60,7 @@ class HttpPerformTest(util.NginxTest):
 
     def test_perform0(self):
         responses = self.http01.perform()
-        self.assertEqual([], responses)
+        assert [] == responses
 
     @mock.patch("certbot_nginx._internal.configurator.NginxConfigurator.save")
     def test_perform1(self, mock_save):
@@ -69,8 +69,8 @@ class HttpPerformTest(util.NginxTest):
 
         responses = self.http01.perform()
 
-        self.assertEqual([response], responses)
-        self.assertEqual(mock_save.call_count, 1)
+        assert [response] == responses
+        assert mock_save.call_count == 1
 
     def test_perform2(self):
         acme_responses = []
@@ -80,9 +80,9 @@ class HttpPerformTest(util.NginxTest):
 
         http_responses = self.http01.perform()
 
-        self.assertEqual(len(http_responses), 5)
+        assert len(http_responses) == 5
         for i in range(5):
-            self.assertEqual(http_responses[i], acme_responses[i])
+            assert http_responses[i] == acme_responses[i]
 
     def test_mod_config(self):
         self.http01.add_chall(self.achalls[0])
@@ -117,7 +117,7 @@ class HttpPerformTest(util.NginxTest):
 
         # Domain has an HTTP and HTTPS vhost
         # 2 * 'rewrite' + 2 * 'return 200 keyauthz' = 4
-        self.assertEqual(mock_add_server_directives.call_count, 4)
+        assert mock_add_server_directives.call_count == 4
 
     @mock.patch('certbot_nginx._internal.parser.nginxparser.dump')
     @mock.patch('certbot_nginx._internal.parser.NginxParser.add_server_directives')
@@ -127,10 +127,10 @@ class HttpPerformTest(util.NginxTest):
         self.http01._mod_config() # pylint: disable=protected-access
 
         # It should modify the existing HTTPS vhost
-        self.assertEqual(mock_add_server_directives.call_count, 2)
+        assert mock_add_server_directives.call_count == 2
         # since there was no suitable HTTP vhost or default HTTP vhost, a non-empty one
         # should have been created and written to the challenge conf file
-        self.assertNotEqual(mock_dump.call_args[0][0], [])
+        assert mock_dump.call_args[0][0] != []
 
     @mock.patch('certbot_nginx._internal.parser.NginxParser.add_server_directives')
     def test_mod_config_deduplicate(self, mock_add_server_directives):
@@ -143,14 +143,14 @@ class HttpPerformTest(util.NginxTest):
         self.http01._mod_config() # pylint: disable=protected-access
 
         # Should only get called 5 times, rather than 6, because two vhosts are the same
-        self.assertEqual(mock_add_server_directives.call_count, 5*2)
+        assert mock_add_server_directives.call_count == 5*2
 
     def test_mod_config_insert_bucket_directive(self):
         nginx_conf = self.http01.configurator.parser.abs_path('nginx.conf')
 
         expected = ['server_names_hash_bucket_size', '128']
         original_conf = self.http01.configurator.parser.parsed[nginx_conf]
-        self.assertFalse(util.contains_at_depth(original_conf, expected, 2))
+        assert not util.contains_at_depth(original_conf, expected, 2)
 
         self.http01.add_chall(self.achalls[0])
         self.http01._mod_config()  # pylint: disable=protected-access
@@ -158,7 +158,7 @@ class HttpPerformTest(util.NginxTest):
         self.http01.configurator.parser.load()
 
         generated_conf = self.http01.configurator.parser.parsed[nginx_conf]
-        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+        assert util.contains_at_depth(generated_conf, expected, 2)
 
     def test_mod_config_update_bucket_directive_in_included_file(self):
         # save old example.com config
@@ -182,11 +182,11 @@ class HttpPerformTest(util.NginxTest):
         expected = ['server_names_hash_bucket_size', '128']
         nginx_conf_loc = self.http01.configurator.parser.abs_path('nginx.conf')
         nginx_conf = self.http01.configurator.parser.parsed[nginx_conf_loc]
-        self.assertFalse(util.contains_at_depth(nginx_conf, expected, 2))
+        assert not util.contains_at_depth(nginx_conf, expected, 2)
 
         # is updated in example.com conf
         generated_conf = self.http01.configurator.parser.parsed[example_com_loc]
-        self.assertTrue(util.contains_at_depth(generated_conf, expected, 0))
+        assert util.contains_at_depth(generated_conf, expected, 0)
 
         # put back example.com config
         with open(example_com_loc, 'w') as f:
@@ -198,10 +198,10 @@ class HttpPerformTest(util.NginxTest):
         # pylint: disable=protected-access
         ipv6_info.return_value = (True, True)
         self.http01._default_listen_addresses()
-        self.assertEqual(ipv6_info.call_count, 1)
+        assert ipv6_info.call_count == 1
         ipv6_info.return_value = (False, False)
         self.http01._default_listen_addresses()
-        self.assertEqual(ipv6_info.call_count, 2)
+        assert ipv6_info.call_count == 2
 
     @mock.patch("certbot_nginx._internal.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_t_t(self, ipv6_info):
@@ -210,7 +210,7 @@ class HttpPerformTest(util.NginxTest):
         addrs = self.http01._default_listen_addresses()
         http_addr = Addr.fromstring("80")
         http_ipv6_addr = Addr.fromstring("[::]:80")
-        self.assertEqual(addrs, [http_addr, http_ipv6_addr])
+        assert addrs == [http_addr, http_ipv6_addr]
 
     @mock.patch("certbot_nginx._internal.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_t_f(self, ipv6_info):
@@ -219,7 +219,7 @@ class HttpPerformTest(util.NginxTest):
         addrs = self.http01._default_listen_addresses()
         http_addr = Addr.fromstring("80")
         http_ipv6_addr = Addr.fromstring("[::]:80 ipv6only=on")
-        self.assertEqual(addrs, [http_addr, http_ipv6_addr])
+        assert addrs == [http_addr, http_ipv6_addr]
 
     @mock.patch("certbot_nginx._internal.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_f_f(self, ipv6_info):
@@ -227,7 +227,7 @@ class HttpPerformTest(util.NginxTest):
         ipv6_info.return_value = (False, False)
         addrs = self.http01._default_listen_addresses()
         http_addr = Addr.fromstring("80")
-        self.assertEqual(addrs, [http_addr])
+        assert addrs == [http_addr]
 
 if __name__ == "__main__":
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
