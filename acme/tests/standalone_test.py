@@ -193,12 +193,12 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
 
         mock_bind.side_effect = socket.error(EADDRINUSE, "Fake addr in use error")
 
-        with pytest.raises(socket.error) as em:
+        with pytest.raises(socket.error) as exc_info:
             BaseDualNetworkedServers(
                 BaseDualNetworkedServersTest.SingleProtocolServer,
                 ('', 0), socketserver.BaseRequestHandler)
 
-        assert em.exception.errno == EADDRINUSE
+        assert exc_info.value.errno == EADDRINUSE
 
     def test_ports_equal(self):
         from acme.standalone import BaseDualNetworkedServers

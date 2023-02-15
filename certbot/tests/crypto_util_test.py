@@ -1,5 +1,6 @@
 """Tests for certbot.crypto_util."""
 import logging
+import re
 import sys
 import unittest
 from unittest import mock
@@ -184,30 +185,22 @@ class MakeKeyTest(unittest.TestCase):
         from certbot.crypto_util import make_key
 
         # Try a bad key size for RSA and ECDSA
-        with pytest.raises(errors.Error) as e:
+        with pytest.raises(errors.Error, match='Unsupported RSA key length: 512'):
             make_key(bits=512, key_type='rsa')
-        assert "Unsupported RSA key length: 512" == \
-            str(e.exception), \
-            "Unsupported RSA key length: 512"
 
     def test_bad_elliptic_curve_name(self):
         from certbot.crypto_util import make_key
-        with pytest.raises(errors.Error) as e:
+        with pytest.raises(errors.Error, match='Unsupported elliptic curve: nothere'):
             make_key(elliptic_curve="nothere", key_type='ecdsa')
-        assert "Unsupported elliptic curve: nothere" == \
-            str(e.exception), \
-            "Unsupported elliptic curve: nothere"
 
     def test_bad_key_type(self):
         from certbot.crypto_util import make_key
 
         # Try a bad --key-type
-        with pytest.raises(errors.Error) as e:
+        with pytest.raises(errors.Error,
+                           match=re.escape('Invalid key_type specified: unf.  Use [rsa|ecdsa]')):
             OpenSSL.crypto.load_privatekey(
                 OpenSSL.crypto.FILETYPE_PEM, make_key(1024, key_type='unf'))
-        assert "Invalid key_type specified: unf.  Use [rsa|ecdsa]" == \
-            str(e.exception), \
-            "Invalid key_type specified: unf.  Use [rsa|ecdsa]"
 
 
 class VerifyCertSetup(unittest.TestCase):

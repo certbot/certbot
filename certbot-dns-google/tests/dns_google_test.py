@@ -119,9 +119,9 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     def test_client_bad_credentials_file(self, credential_mock):
         credential_mock.side_effect = ValueError('Some exception buried in oauth2client')
-        with pytest.raises(errors.PluginError) as cm:
+        with pytest.raises(errors.PluginError) as exc_info:
             self._setUp_client_with_mock([])
-        assert str(cm.exception) == \
+        assert str(exc_info.value) == \
             "Error parsing credentials file '/not/a/real/path.json': " \
             "Some exception buried in oauth2client"
 

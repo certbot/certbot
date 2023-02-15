@@ -119,9 +119,8 @@ class TestHandleCerts(unittest.TestCase):
         # If --key-type is set and --cert-name isn't, Certbot should error.
         config.key_type = "rsa"
         mock_set.side_effect = lambda var: var != "certname"
-        with pytest.raises(errors.Error) as raised:
+        with pytest.raises(errors.Error, match="Please provide both --cert-name and --key-type"):
             main._handle_unexpected_key_type_migration(config, cert)
-        assert "Please provide both --cert-name and --key-type" in str(raised.exception)
 
         # If --key-type is not set, Certbot should keep the old key type.
         mock_set.side_effect = lambda var: var != "key_type"

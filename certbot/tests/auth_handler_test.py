@@ -219,10 +219,10 @@ class HandleAuthorizationsTest(unittest.TestCase):
         # We will return STATUS_PENDING twice before returning STATUS_VALID.
         self.mock_net.poll.side_effect = _gen_mock_on_poll(retry=2)
 
-        with pytest.raises(errors.AuthorizationError) as error:
+        with pytest.raises(errors.AuthorizationError,
+                           match='All authorizations were not finalized by the CA.'):
             # We retry only once, so retries will be exhausted before STATUS_VALID is returned.
             self.handler.handle_authorizations(mock_order, self.mock_config, False, 1)
-        assert 'All authorizations were not finalized by the CA.' in str(error.exception)
 
     @mock.patch('certbot._internal.auth_handler.time.sleep')
     def test_deadline_exceeded(self, mock_sleep):
@@ -244,13 +244,13 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_PENDING,
                                                            wait_value=interval)
 
-        with pytest.raises(errors.AuthorizationError) as error, \
-             mock.patch('certbot._internal.auth_handler.datetime.datetime') as mock_dt:
-            mock_dt.now.side_effect = mock_now_effect
-            # Polling will only proceed for 30 minutes at most, so the second 20 minute sleep
-            # should be truncated and the polling should be aborted.
-            self.handler.handle_authorizations(mock_order, self.mock_config, False)
-        assert 'All authorizations were not finalized by the CA.' in str(error.exception)
+        with pytest.raises(errors.AuthorizationError,
+                           match='All authorizations were not finalized by the CA.'):
+            with mock.patch('certbot._internal.auth_handler.datetime.datetime') as mock_dt:
+                mock_dt.now.side_effect = mock_now_effect
+                # Polling will only proceed for 30 minutes at most, so the second 20 minute sleep
+                # should be truncated and the polling should be aborted.
+                self.handler.handle_authorizations(mock_order, self.mock_config, False)
 
         assert mock_sleep.call_count == 3 # 1s, 20m and 10m sleep
         assert mock_sleep.call_args_list[0][0][0] == 1
@@ -318,9 +318,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
         with test_util.patch_display_util():
-            with pytest.raises(errors.AuthorizationError) as error:
+            with pytest.raises(errors.AuthorizationError, match='Some challenges have failed.'):
                 self.handler.handle_authorizations(mock_order, self.mock_config, False)
-        assert 'Some challenges have failed.' in str(error.exception)
         assert self.mock_auth.cleanup.call_count == 1
         assert self.mock_auth.cleanup.call_args[0][0][0].typ == "http-01"
 
@@ -352,11 +351,9 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
         with test_util.patch_display_util():
-            with pytest.raises(errors.AuthorizationError) as error:
+            with pytest.raises(errors.AuthorizationError, match='All challenges have failed.'):
+                # Despite best_effort=True, process will fail because no authzr is valid.
                 self.handler.handle_authorizations(mock_order, self.mock_config, True)
-
-        # Despite best_effort=True, process will fail because no authzr is valid.
-        assert 'All challenges have failed.' in str(error.exception)
 
     def test_validated_challenge_not_rerun(self):
         # With a pending challenge that is not supported by the plugin, we

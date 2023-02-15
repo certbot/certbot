@@ -249,9 +249,8 @@ class ClientV2Test(unittest.TestCase):
         # https://github.com/certbot/certbot/issues/9296
         order = self.order.update(error=None, status=messages.STATUS_INVALID)
         self.response.json.return_value = order.to_json()
-        with pytest.raises(errors.Error) as error:
+        with pytest.raises(errors.Error, match="The certificate order failed"):
             self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
-        assert "The certificate order failed" in str(error.exception)
 
     def test_finalize_order_timeout(self):
         deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)

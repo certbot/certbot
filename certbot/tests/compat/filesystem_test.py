@@ -250,9 +250,9 @@ class WindowsOpenTest(TempDirTestCase):
         self._test_one_creation(1, file_exist=False, flags=(os.O_CREAT | os.O_EXCL))
 
         # os.O_CREAT | os.O_EXCL + file exists = EEXIST OS exception
-        with pytest.raises(OSError) as raised:
+        with pytest.raises(OSError) as exc_info:
             self._test_one_creation(2, file_exist=True, flags=(os.O_CREAT | os.O_EXCL))
-        assert raised.exception.errno == errno.EEXIST
+        assert exc_info.value.errno == errno.EEXIST
 
         # os.O_CREAT + file not exists = OK
         self._test_one_creation(3, file_exist=False, flags=os.O_CREAT)
@@ -265,9 +265,9 @@ class WindowsOpenTest(TempDirTestCase):
         open(path, 'w').close()
         filelock = lock.LockFile(path)
         try:
-            with pytest.raises(OSError) as raised:
+            with pytest.raises(OSError) as exc_info:
                 self._test_one_creation(5, file_exist=True, flags=os.O_CREAT)
-            assert raised.exception.errno == errno.EACCES
+            assert exc_info.value.errno == errno.EACCES
         finally:
             filelock.release()
 
@@ -565,9 +565,8 @@ class RealpathTest(test_util.TempDirTestCase):
         os.symlink(link2_path, link3_path)
         os.symlink(link3_path, link1_path)
 
-        with pytest.raises(RuntimeError) as error:
+        with pytest.raises(RuntimeError, match='link1 is a loop!') as error:
             filesystem.realpath(link1_path)
-        assert 'link1 is a loop!' in str(error.exception)
 
 
 class IsExecutableTest(test_util.TempDirTestCase):
