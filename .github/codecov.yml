@@ -4,7 +4,9 @@ coverage:
   status:
     project:
       default:
-        informational: true
+        # PRs should not reduce coverage
+        target: auto
     patch:
       default:
-        informational: true
+        # All new code should have test coverage.
+        target: 100%
