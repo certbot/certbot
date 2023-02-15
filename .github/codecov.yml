@@ -1,7 +1,10 @@
-# This disables all reporting from codecov. Let's just set it up to collect
-# data for now and then we can play with the settings here.
-comment: false
+# This has codecov report everything to us, but makes it not required to pass
+# for PRs to be merged.
 coverage:
   status:
-    project: off
-    patch: off
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
