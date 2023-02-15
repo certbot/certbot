@@ -48,7 +48,7 @@ def _snap_log_name(target: str, arch: str):
 
 def _execute_build(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
-        workspace: str) -> Tuple[int, List[str]]:
+        workspace: str, output_lock: Lock) -> Tuple[int, List[str]]:
 
     # snapcraft remote-build accepts a --build-id flag with snapcraft version
     # 5.0+. We make use of this feature to set a unique build ID so a fresh
@@ -78,7 +78,12 @@ def _execute_build(
         _extract_state(target, line, status)
 
         if any(state for state in status[target].values() if state == 'Chroot problem'):
-            # On this error the snapcraft process stales. Let's finish it.
+            # On this error the snapcraft process hangs. Let's finish it.
+            with output_lock:
+                print('Chroot problem encountered for build '
+                      f'{target} for {",".join(archs)}.\n'
+                      'Launchpad seems to be unable to recover from this '
+                      'state so were terminating the build.')
             process.kill()
 
     process_state = process.wait()
@@ -99,7 +104,7 @@ def _build_snap(
     build_success = False
     retry = 3
     while retry:
-        exit_code, process_output = _execute_build(target, archs, status, workspace)
+        exit_code, process_output = _execute_build(target, archs, status, workspace, output_lock)
         with output_lock:
             print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
                   f'exit code {exit_code}.')
