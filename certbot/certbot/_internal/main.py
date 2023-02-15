@@ -1844,6 +1844,9 @@ def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
 
+    if hasattr(config, 'idontexist'):
+        raise errors.Error("I'm not covered!")
+
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
     misc.raise_for_non_administrative_windows_rights()
