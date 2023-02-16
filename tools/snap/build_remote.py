@@ -97,6 +97,8 @@ def _build_snap(
     build_success = False
     retry = 3
     while retry:
+        # Let's reset the status before each build so we're not starting with
+        # old state values.
         status[target] = {arch: '...' for arch in archs}
         exit_code, process_output = _execute_build(target, archs, status, workspace)
         with output_lock:
