@@ -68,7 +68,7 @@ def _execute_build(
         environ['XDG_CACHE_HOME'] = tempdir
         process = subprocess.Popen([
             'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
-            '--build-on', ','.join(archs), '--build-id', build_id],
+            '--build-for', ','.join(archs), '--build-id', build_id],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             universal_newlines=True, env=environ, cwd=workspace)
 
@@ -89,8 +89,6 @@ def _execute_build(
 def _build_snap(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         running: Dict[str, bool], output_lock: Lock) -> bool:
-    status[target] = {arch: '...' for arch in archs}
-
     if target == 'certbot':
         workspace = CERTBOT_DIR
     else:
@@ -99,6 +97,7 @@ def _build_snap(
     build_success = False
     retry = 3
     while retry:
+        status[target] = {arch: '...' for arch in archs}
         exit_code, process_output = _execute_build(target, archs, status, workspace)
         with output_lock:
             print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
