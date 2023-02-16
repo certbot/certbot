@@ -17,16 +17,17 @@ class FixedTest(unittest.TestCase):
         self.field = fixed('name', 'x')
 
     def test_decode(self):
-        self.assertEqual('x', self.field.decode('x'))
+        assert 'x' == self.field.decode('x')
 
     def test_decode_bad(self):
-        self.assertRaises(jose.DeserializationError, self.field.decode, 'y')
+        with pytest.raises(jose.DeserializationError):
+            self.field.decode('y')
 
     def test_encode(self):
-        self.assertEqual('x', self.field.encode('x'))
+        assert 'x' == self.field.encode('x')
 
     def test_encode_override(self):
-        self.assertEqual('y', self.field.encode('y'))
+        assert 'y' == self.field.encode('y')
 
 
 class RFC3339FieldTest(unittest.TestCase):
@@ -38,23 +39,21 @@ class RFC3339FieldTest(unittest.TestCase):
 
     def test_default_encoder(self):
         from acme.fields import RFC3339Field
-        self.assertEqual(
-            self.encoded, RFC3339Field.default_encoder(self.decoded))
+        assert self.encoded == RFC3339Field.default_encoder(self.decoded)
 
     def test_default_encoder_naive_fails(self):
         from acme.fields import RFC3339Field
-        self.assertRaises(
-            ValueError, RFC3339Field.default_encoder, datetime.datetime.now())
+        with pytest.raises(ValueError):
+            RFC3339Field.default_encoder(datetime.datetime.now())
 
     def test_default_decoder(self):
         from acme.fields import RFC3339Field
-        self.assertEqual(
-            self.decoded, RFC3339Field.default_decoder(self.encoded))
+        assert self.decoded == RFC3339Field.default_decoder(self.encoded)
 
     def test_default_decoder_raises_deserialization_error(self):
         from acme.fields import RFC3339Field
-        self.assertRaises(
-            jose.DeserializationError, RFC3339Field.default_decoder, '')
+        with pytest.raises(jose.DeserializationError):
+            RFC3339Field.default_decoder('')
 
 
 if __name__ == '__main__':

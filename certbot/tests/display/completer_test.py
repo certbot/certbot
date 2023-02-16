@@ -48,12 +48,12 @@ class CompleterTest(test_util.TempDirTestCase):
 
         for i in range(num_paths):
             completion = my_completer.complete(self.tempdir, i)
-            self.assertIn(completion, self.paths)
+            assert completion in self.paths
             self.paths.remove(completion)
 
-        self.assertEqual(len(self.paths), 0)
+        assert len(self.paths) == 0
         completion = my_completer.complete(self.tempdir, num_paths)
-        self.assertIsNone(completion)
+        assert completion is None
 
     @unittest.skipIf('readline' not in sys.modules,
                      reason='Not relevant if readline is not available.')
@@ -75,8 +75,8 @@ class CompleterTest(test_util.TempDirTestCase):
         with completer.Completer():
             pass
 
-        self.assertEqual(readline.get_completer(), original_completer)
-        self.assertEqual(readline.get_completer_delims(), original_delims)
+        assert readline.get_completer() == original_completer
+        assert readline.get_completer_delims() == original_delims
 
     @mock.patch('certbot._internal.display.completer.readline', autospec=True)
     def test_context_manager_libedit(self, mock_readline):
@@ -96,7 +96,7 @@ class CompleterTest(test_util.TempDirTestCase):
         with completer.Completer():
             pass
 
-        self.assertIs(mock_readline.parse_and_bind.called, True)
+        assert mock_readline.parse_and_bind.called is True
 
 
 def enable_tab_completion(unused_command):

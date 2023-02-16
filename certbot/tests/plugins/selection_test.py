@@ -24,7 +24,7 @@ class ConveniencePickPluginTest(unittest.TestCase):
 
         with mock.patch("certbot._internal.plugins.selection.pick_plugin") as mock_p:
             mock_p.return_value = "foo"
-            self.assertEqual("foo", fun(config, default, plugins, "Question?"))
+            assert "foo" == fun(config, default, plugins, "Question?")
         mock_p.assert_called_once_with(
             config, default, plugins, "Question?", ifaces)
 
@@ -60,14 +60,14 @@ class PickPluginTest(unittest.TestCase):
     def test_default_provided(self):
         self.default = "foo"
         self._call()
-        self.assertEqual(1, self.reg.filter.call_count)
+        assert 1 == self.reg.filter.call_count
 
     def test_no_default(self):
         self._call()
-        self.assertEqual(1, self.reg.visible().ifaces.call_count)
+        assert 1 == self.reg.visible().ifaces.call_count
 
     def test_no_candidate(self):
-        self.assertIsNone(self._call())
+        assert self._call() is None
 
     def test_single(self):
         plugin_ep = mock.MagicMock()
@@ -76,7 +76,7 @@ class PickPluginTest(unittest.TestCase):
 
         self.reg.visible().ifaces().available.return_value = {
             "bar": plugin_ep}
-        self.assertEqual("foo", self._call())
+        assert "foo" == self._call()
 
     def test_single_misconfigured(self):
         plugin_ep = mock.MagicMock()
@@ -85,7 +85,7 @@ class PickPluginTest(unittest.TestCase):
 
         self.reg.visible().ifaces().available.return_value = {
             "bar": plugin_ep}
-        self.assertIsNone(self._call())
+        assert self._call() is None
 
     def test_multiple(self):
         plugin_ep = mock.MagicMock()
@@ -96,7 +96,7 @@ class PickPluginTest(unittest.TestCase):
         }
         with mock.patch("certbot._internal.plugins.selection.choose_plugin") as mock_choose:
             mock_choose.return_value = plugin_ep
-            self.assertEqual("foo", self._call())
+            assert "foo" == self._call()
         mock_choose.assert_called_once_with(
             [plugin_ep, plugin_ep], self.question)
 
@@ -108,7 +108,7 @@ class PickPluginTest(unittest.TestCase):
 
         with mock.patch("certbot._internal.plugins.selection.choose_plugin") as mock_choose:
             mock_choose.return_value = None
-            self.assertIsNone(self._call())
+            assert self._call() is None
 
 
 class ChoosePluginTest(unittest.TestCase):
@@ -136,8 +136,8 @@ class ChoosePluginTest(unittest.TestCase):
     def test_selection(self, mock_util):
         mock_util().menu.side_effect = [(display_util.OK, 0),
                                         (display_util.OK, 1)]
-        self.assertEqual(self.mock_stand, self._call())
-        self.assertEqual(mock_util().notification.call_count, 1)
+        assert self.mock_stand == self._call()
+        assert mock_util().notification.call_count == 1
 
     @test_util.patch_display_util()
     def test_more_info(self, mock_util):
@@ -145,12 +145,12 @@ class ChoosePluginTest(unittest.TestCase):
             (display_util.OK, 1),
         ]
 
-        self.assertEqual(self.mock_stand, self._call())
+        assert self.mock_stand == self._call()
 
     @test_util.patch_display_util()
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
-        self.assertIsNone(self._call())
+        assert self._call() is None
 
 
 class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
@@ -177,23 +177,25 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
 
     def test_no_installer_defined(self):
         self.config.configurator = None
-        self.assertIsNone(self._call())
+        assert self._call() is None
 
     def test_no_available_installers(self):
         self.config.configurator = "apache"
         self.plugins = PluginsRegistry({})
-        self.assertRaises(errors.PluginSelectionError, self._call)
+        with pytest.raises(errors.PluginSelectionError):
+            self._call()
 
     def test_get_plugin(self):
         self.config.configurator = "apache"
         installer = self._call()
-        self.assertIs(installer, self.mock_apache_plugin)
+        assert installer is self.mock_apache_plugin
 
     def test_multiple_installers_returned(self):
         self.config.configurator = "apache"
         # Two plugins with the same name
         self.mock_apache_fail_ep.check_name = lambda name: name == "apache"
-        self.assertRaises(errors.PluginSelectionError, self._call)
+        with pytest.raises(errors.PluginSelectionError):
+            self._call()
 
 
 class TestChooseConfiguratorPlugins(unittest.TestCase):
@@ -230,37 +232,37 @@ class TestChooseConfiguratorPlugins(unittest.TestCase):
         # For certonly, setting either the nginx or apache configurators should
         # return both an installer and authenticator
         inst, auth = self._runWithArgs("certonly --nginx")
-        self.assertEqual(inst.name, "nginx")
-        self.assertEqual(auth.name, "nginx")
+        assert inst.name == "nginx"
+        assert auth.name == "nginx"
 
         inst, auth = self._runWithArgs("certonly --apache")
-        self.assertEqual(inst.name, "apache")
-        self.assertEqual(auth.name, "apache")
+        assert inst.name == "apache"
+        assert auth.name == "apache"
     
     def test_noninteractive_inst_arg(self):
         # For certonly, if an installer arg is set, it should be returned as expected
         inst, auth = self._runWithArgs("certonly -a nginx -i nginx")
-        self.assertEqual(inst.name, "nginx")
-        self.assertEqual(auth.name, "nginx")
+        assert inst.name == "nginx"
+        assert auth.name == "nginx"
 
         inst, auth = self._runWithArgs("certonly -a apache -i apache")
-        self.assertEqual(inst.name, "apache")
-        self.assertEqual(auth.name, "apache")
+        assert inst.name == "apache"
+        assert auth.name == "apache"
 
         # if no installer arg is set (or it's set to none), one shouldn't be returned
         inst, auth = self._runWithArgs("certonly -a nginx")
-        self.assertEqual(inst, None)
-        self.assertEqual(auth.name, "nginx")
+        assert inst == None
+        assert auth.name == "nginx"
         inst, auth = self._runWithArgs("certonly -a nginx -i none")
-        self.assertEqual(inst, None)
-        self.assertEqual(auth.name, "nginx")
+        assert inst == None
+        assert auth.name == "nginx"
 
         inst, auth = self._runWithArgs("certonly -a apache")
-        self.assertEqual(inst, None)
-        self.assertEqual(auth.name, "apache")
+        assert inst == None
+        assert auth.name == "apache"
         inst, auth = self._runWithArgs("certonly -a apache -i none")
-        self.assertEqual(inst, None)
-        self.assertEqual(auth.name, "apache")
+        assert inst == None
+        assert auth.name == "apache"
 
 if __name__ == "__main__":
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

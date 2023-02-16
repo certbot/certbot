@@ -45,7 +45,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
-        self.assertEqual(expected, self.mock_client.mock_calls)
+        assert expected == self.mock_client.mock_calls
 
     def test_cleanup(self):
         # _attempt_cleanup | pylint: disable=protected-access
@@ -53,7 +53,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth.cleanup([self.achall])
 
         expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
-        self.assertEqual(expected, self.mock_client.mock_calls)
+        assert expected == self.mock_client.mock_calls
 
     @test_util.patch_display_util()
     def test_api_token(self, unused_mock_get_utility):
@@ -62,43 +62,37 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
-        self.assertEqual(expected, self.mock_client.mock_calls)
+        assert expected == self.mock_client.mock_calls
 
     def test_no_creds(self):
         dns_test_common.write({}, self.config.cloudflare_credentials)
-        self.assertRaises(errors.PluginError,
-                          self.auth.perform,
-                          [self.achall])
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
 
     def test_missing_email_or_key(self):
         dns_test_common.write({"cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
-        self.assertRaises(errors.PluginError,
-                          self.auth.perform,
-                          [self.achall])
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
 
         dns_test_common.write({"cloudflare_email": EMAIL}, self.config.cloudflare_credentials)
-        self.assertRaises(errors.PluginError,
-                          self.auth.perform,
-                          [self.achall])
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
 
     def test_email_or_key_with_token(self):
         dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_email": EMAIL},
                               self.config.cloudflare_credentials)
-        self.assertRaises(errors.PluginError,
-                          self.auth.perform,
-                          [self.achall])
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
 
         dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_api_key": API_KEY},
                               self.config.cloudflare_credentials)
-        self.assertRaises(errors.PluginError,
-                          self.auth.perform,
-                          [self.achall])
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
 
         dns_test_common.write({"cloudflare_api_token": API_TOKEN, "cloudflare_email": EMAIL,
                                "cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
-        self.assertRaises(errors.PluginError,
-                          self.auth.perform,
-                          [self.achall])
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
 
 
 class CloudflareClientTest(unittest.TestCase):
@@ -126,61 +120,47 @@ class CloudflareClientTest(unittest.TestCase):
 
         post_data = self.cf.zones.dns_records.post.call_args[1]['data']
 
-        self.assertEqual('TXT', post_data['type'])
-        self.assertEqual(self.record_name, post_data['name'])
-        self.assertEqual(self.record_content, post_data['content'])
-        self.assertEqual(self.record_ttl, post_data['ttl'])
+        assert 'TXT' == post_data['type']
+        assert self.record_name == post_data['name']
+        assert self.record_content == post_data['content']
+        assert self.record_ttl == post_data['ttl']
 
     def test_add_txt_record_error(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
 
         self.cf.zones.dns_records.post.side_effect = CloudFlare.exceptions.CloudFlareAPIError(1009, '', '')
 
-        self.assertRaises(
-            errors.PluginError,
-            self.cloudflare_client.add_txt_record,
-            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        with pytest.raises(errors.PluginError):
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     def test_add_txt_record_error_during_zone_lookup(self):
         self.cf.zones.get.side_effect = API_ERROR
 
-        self.assertRaises(
-            errors.PluginError,
-            self.cloudflare_client.add_txt_record,
-            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        with pytest.raises(errors.PluginError):
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     def test_add_txt_record_zone_not_found(self):
         self.cf.zones.get.return_value = []
 
-        self.assertRaises(
-            errors.PluginError,
-            self.cloudflare_client.add_txt_record,
-            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        with pytest.raises(errors.PluginError):
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     def test_add_txt_record_bad_creds(self):
         self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(6003, '', '')
-        self.assertRaises(
-            errors.PluginError,
-            self.cloudflare_client.add_txt_record,
-            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        with pytest.raises(errors.PluginError):
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
         self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(9103, '', '')
-        self.assertRaises(
-            errors.PluginError,
-            self.cloudflare_client.add_txt_record,
-            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        with pytest.raises(errors.PluginError):
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
         self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(9109, '', '')
-        self.assertRaises(
-            errors.PluginError,
-            self.cloudflare_client.add_txt_record,
-            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        with pytest.raises(errors.PluginError):
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
         self.cf.zones.get.side_effect = CloudFlare.exceptions.CloudFlareAPIError(0, 'com.cloudflare.api.account.zone.list', '')
-        self.assertRaises(
-            errors.PluginError,
-            self.cloudflare_client.add_txt_record,
-            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        with pytest.raises(errors.PluginError):
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     def test_del_txt_record(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
@@ -192,13 +172,13 @@ class CloudflareClientTest(unittest.TestCase):
                     mock.call.zones.dns_records.get(self.zone_id, params=mock.ANY),
                     mock.call.zones.dns_records.delete(self.zone_id, self.record_id)]
 
-        self.assertEqual(expected, self.cf.mock_calls)
+        assert expected == self.cf.mock_calls
 
         get_data = self.cf.zones.dns_records.get.call_args[1]['params']
 
-        self.assertEqual('TXT', get_data['type'])
-        self.assertEqual(self.record_name, get_data['name'])
-        self.assertEqual(self.record_content, get_data['content'])
+        assert 'TXT' == get_data['type']
+        assert self.record_name == get_data['name']
+        assert self.record_content == get_data['content']
 
     def test_del_txt_record_error_during_zone_lookup(self):
         self.cf.zones.get.side_effect = API_ERROR
@@ -215,7 +195,7 @@ class CloudflareClientTest(unittest.TestCase):
                     mock.call.zones.dns_records.get(self.zone_id, params=mock.ANY),
                     mock.call.zones.dns_records.delete(self.zone_id, self.record_id)]
 
-        self.assertEqual(expected, self.cf.mock_calls)
+        assert expected == self.cf.mock_calls
 
     def test_del_txt_record_error_during_get(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
@@ -225,7 +205,7 @@ class CloudflareClientTest(unittest.TestCase):
         expected = [mock.call.zones.get(params=mock.ANY),
                     mock.call.zones.dns_records.get(self.zone_id, params=mock.ANY)]
 
-        self.assertEqual(expected, self.cf.mock_calls)
+        assert expected == self.cf.mock_calls
 
     def test_del_txt_record_no_record(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
@@ -235,7 +215,7 @@ class CloudflareClientTest(unittest.TestCase):
         expected = [mock.call.zones.get(params=mock.ANY),
                     mock.call.zones.dns_records.get(self.zone_id, params=mock.ANY)]
 
-        self.assertEqual(expected, self.cf.mock_calls)
+        assert expected == self.cf.mock_calls
 
     def test_del_txt_record_no_zone(self):
         self.cf.zones.get.return_value = [{'id': None}]
@@ -243,7 +223,7 @@ class CloudflareClientTest(unittest.TestCase):
         self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
         expected = [mock.call.zones.get(params=mock.ANY)]
 
-        self.assertEqual(expected, self.cf.mock_calls)
+        assert expected == self.cf.mock_calls
 
 
 if __name__ == "__main__":

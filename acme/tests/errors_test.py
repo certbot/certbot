@@ -14,7 +14,7 @@ class BadNonceTest(unittest.TestCase):
         self.error = BadNonce(nonce="xxx", error="error")
 
     def test_str(self):
-        self.assertEqual("Invalid nonce ('xxx'): error", str(self.error))
+        assert "Invalid nonce ('xxx'): error" == str(self.error)
 
 
 class MissingNonceTest(unittest.TestCase):
@@ -27,8 +27,8 @@ class MissingNonceTest(unittest.TestCase):
         self.error = MissingNonce(self.response)
 
     def test_str(self):
-        self.assertIn("FOO", str(self.error))
-        self.assertIn("{}", str(self.error))
+        assert "FOO" in str(self.error)
+        assert "{}" in str(self.error)
 
 
 class PollErrorTest(unittest.TestCase):
@@ -43,12 +43,12 @@ class PollErrorTest(unittest.TestCase):
             mock.sentinel.AR: mock.sentinel.AR2})
 
     def test_timeout(self):
-        self.assertTrue(self.timeout.timeout)
-        self.assertFalse(self.invalid.timeout)
+        assert self.timeout.timeout
+        assert not self.invalid.timeout
 
     def test_repr(self):
-        self.assertEqual('PollError(exhausted=%s, updated={sentinel.AR: '
-                         'sentinel.AR2})' % repr(set()), repr(self.invalid))
+        assert 'PollError(exhausted=%s, updated={sentinel.AR: ' \
+                         'sentinel.AR2})' % repr(set()) == repr(self.invalid)
 
 
 if __name__ == "__main__":

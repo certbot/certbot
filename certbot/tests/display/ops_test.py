@@ -32,8 +32,10 @@ class GetEmailTest(unittest.TestCase):
     def test_cancel_none(self, mock_get_utility):
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.CANCEL, "foo@bar.baz")
-        self.assertRaises(errors.Error, self._call)
-        self.assertRaises(errors.Error, self._call, optional=False)
+        with pytest.raises(errors.Error):
+            self._call()
+        with pytest.raises(errors.Error):
+            self._call(optional=False)
 
     @test_util.patch_display_util()
     def test_ok_safe(self, mock_get_utility):
@@ -41,7 +43,7 @@ class GetEmailTest(unittest.TestCase):
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
-            self.assertEqual(self._call(), "foo@bar.baz")
+            assert self._call() == "foo@bar.baz"
 
     @test_util.patch_display_util()
     def test_ok_not_safe(self, mock_get_utility):
@@ -49,7 +51,7 @@ class GetEmailTest(unittest.TestCase):
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.side_effect = [False, True]
-            self.assertEqual(self._call(), "foo@bar.baz")
+            assert self._call() == "foo@bar.baz"
 
     @test_util.patch_display_util()
     def test_invalid_flag(self, mock_get_utility):
@@ -59,9 +61,9 @@ class GetEmailTest(unittest.TestCase):
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
             self._call()
-            self.assertNotIn(invalid_txt, mock_input.call_args[0][0])
+            assert invalid_txt not in mock_input.call_args[0][0]
             self._call(invalid=True)
-            self.assertIn(invalid_txt, mock_input.call_args[0][0])
+            assert invalid_txt in mock_input.call_args[0][0]
 
     @test_util.patch_display_util()
     def test_optional_flag(self, mock_get_utility):
@@ -71,7 +73,7 @@ class GetEmailTest(unittest.TestCase):
             mock_safe_email.side_effect = [False, True]
             self._call(optional=False)
             for call in mock_input.call_args_list:
-                self.assertNotIn("--register-unsafely-without-email", call[0][0])
+                assert "--register-unsafely-without-email" not in call[0][0]
 
     @test_util.patch_display_util()
     def test_optional_invalid_unsafe(self, mock_get_utility):
@@ -81,7 +83,7 @@ class GetEmailTest(unittest.TestCase):
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.side_effect = [False, True]
             self._call(invalid=True)
-            self.assertIn(invalid_txt, mock_input.call_args[0][0])
+            assert invalid_txt in mock_input.call_args[0][0]
 
 
 class ChooseAccountTest(test_util.TempDirTestCase):
@@ -114,17 +116,17 @@ class ChooseAccountTest(test_util.TempDirTestCase):
     @test_util.patch_display_util()
     def test_one(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 0)
-        self.assertEqual(self._call([self.acc1]), self.acc1)
+        assert self._call([self.acc1]) == self.acc1
 
     @test_util.patch_display_util()
     def test_two(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 1)
-        self.assertEqual(self._call([self.acc1, self.acc2]), self.acc2)
+        assert self._call([self.acc1, self.acc2]) == self.acc2
 
     @test_util.patch_display_util()
     def test_cancel(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 1)
-        self.assertIsNone(self._call([self.acc1, self.acc2]))
+        assert self._call([self.acc1, self.acc2]) is None
 
 
 class GenHttpsNamesTest(unittest.TestCase):
@@ -138,7 +140,7 @@ class GenHttpsNamesTest(unittest.TestCase):
         return _gen_https_names(domains)
 
     def test_zero(self):
-        self.assertEqual(self._call([]), "")
+        assert self._call([]) == ""
 
     def test_one(self):
         doms = [
@@ -146,7 +148,7 @@ class GenHttpsNamesTest(unittest.TestCase):
             "asllkjsadfljasdf.c",
         ]
         for dom in doms:
-            self.assertEqual(self._call([dom]), "https://%s" % dom)
+            assert self._call([dom]) == "https://%s" % dom
 
     def test_two(self):
         domains_list = [
@@ -154,24 +156,22 @@ class GenHttpsNamesTest(unittest.TestCase):
             ["paypal.google.facebook.live.com", "*.zombo.example.com"],
         ]
         for doms in domains_list:
-            self.assertEqual(
-                self._call(doms),
-                "https://{dom[0]} and https://{dom[1]}".format(dom=doms))
+            assert self._call(doms) == \
+                "https://{dom[0]} and https://{dom[1]}".format(dom=doms)
 
     def test_three(self):
         doms = ["a.org", "b.org", "c.org"]
         # We use an oxford comma
-        self.assertEqual(
-            self._call(doms),
+        assert self._call(doms) == \
             "https://{dom[0]}, https://{dom[1]}, and https://{dom[2]}".format(
-                dom=doms))
+                dom=doms)
 
     def test_four(self):
         doms = ["a.org", "b.org", "c.org", "d.org"]
         exp = ("https://{dom[0]}, https://{dom[1]}, https://{dom[2]}, "
                "and https://{dom[3]}".format(dom=doms))
 
-        self.assertEqual(self._call(doms), exp)
+        assert self._call(doms) == exp
 
 
 class ChooseNamesTest(unittest.TestCase):
@@ -188,12 +188,12 @@ class ChooseNamesTest(unittest.TestCase):
     @mock.patch("certbot.display.ops._choose_names_manually")
     def test_no_installer(self, mock_manual):
         self._call(None)
-        self.assertEqual(mock_manual.call_count, 1)
+        assert mock_manual.call_count == 1
 
     @test_util.patch_display_util()
     def test_no_installer_cancel(self, mock_util):
         mock_util().input.return_value = (display_util.CANCEL, [])
-        self.assertEqual(self._call(None), [])
+        assert self._call(None) == []
 
     @test_util.patch_display_util()
     def test_no_names_choose(self, mock_util):
@@ -202,18 +202,18 @@ class ChooseNamesTest(unittest.TestCase):
         mock_util().input.return_value = (display_util.OK, domain)
 
         actual_doms = self._call(self.mock_install)
-        self.assertEqual(mock_util().input.call_count, 1)
-        self.assertEqual(actual_doms, [domain])
+        assert mock_util().input.call_count == 1
+        assert actual_doms == [domain]
 
     def test_sort_names_trivial(self):
         from certbot.display.ops import _sort_names
 
         #sort an empty list
-        self.assertEqual(_sort_names([]), [])
+        assert _sort_names([]) == []
 
         #sort simple domains
         some_domains = ["ex.com", "zx.com", "ax.com"]
-        self.assertEqual(_sort_names(some_domains), ["ax.com", "ex.com", "zx.com"])
+        assert _sort_names(some_domains) == ["ax.com", "ex.com", "zx.com"]
 
         #Sort subdomains of a single domain
         domain = ".ex.com"
@@ -223,7 +223,7 @@ class ChooseNamesTest(unittest.TestCase):
         sorted_short = sorted(unsorted_short)
         sorted_long = [us + domain for us in sorted_short]
 
-        self.assertEqual(_sort_names(unsorted_long), sorted_long)
+        assert _sort_names(unsorted_long) == sorted_long
 
     def test_sort_names_many(self):
         from certbot.display.ops import _sort_names
@@ -241,7 +241,7 @@ class ChooseNamesTest(unittest.TestCase):
         for domain in sorted(unsorted_domains):
             for short in sorted_short:
                 sortd.append(short+domain)
-        self.assertEqual(_sort_names(to_sort), sortd)
+        assert _sort_names(to_sort) == sortd
 
 
     @test_util.patch_display_util()
@@ -250,24 +250,24 @@ class ChooseNamesTest(unittest.TestCase):
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
 
         names = self._call(self.mock_install)
-        self.assertEqual(names, ["example.com"])
-        self.assertEqual(mock_util().checklist.call_count, 1)
+        assert names == ["example.com"]
+        assert mock_util().checklist.call_count == 1
 
     @test_util.patch_display_util()
     def test_filter_namees_override_question(self, mock_util):
         self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
         names = self._call(self.mock_install, "Custom")
-        self.assertEqual(names, ["example.com"])
-        self.assertEqual(mock_util().checklist.call_count, 1)
-        self.assertEqual(mock_util().checklist.call_args[0][0], "Custom")
+        assert names == ["example.com"]
+        assert mock_util().checklist.call_count == 1
+        assert mock_util().checklist.call_args[0][0] == "Custom"
 
     @test_util.patch_display_util()
     def test_filter_names_nothing_selected(self, mock_util):
         self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, [])
 
-        self.assertEqual(self._call(self.mock_install), [])
+        assert self._call(self.mock_install) == []
 
     @test_util.patch_display_util()
     def test_filter_names_cancel(self, mock_util):
@@ -275,7 +275,7 @@ class ChooseNamesTest(unittest.TestCase):
         mock_util().checklist.return_value = (
             display_util.CANCEL, ["example.com"])
 
-        self.assertEqual(self._call(self.mock_install), [])
+        assert self._call(self.mock_install) == []
 
     def test_get_valid_domains(self):
         from certbot.display.ops import get_valid_domains
@@ -284,9 +284,9 @@ class ChooseNamesTest(unittest.TestCase):
                      "justtld", "*.wildcard.com"]
         all_invalid = ["öóòps.net", "uniçodé.com"]
         two_valid = ["example.com", "úniçøde.com", "also.example.com"]
-        self.assertEqual(get_valid_domains(all_valid), all_valid)
-        self.assertEqual(get_valid_domains(all_invalid), [])
-        self.assertEqual(len(get_valid_domains(two_valid)), 2)
+        assert get_valid_domains(all_valid) == all_valid
+        assert get_valid_domains(all_invalid) == []
+        assert len(get_valid_domains(two_valid)) == 2
 
     @test_util.patch_display_util()
     def test_choose_manually(self, mock_util):
@@ -297,23 +297,23 @@ class ChooseNamesTest(unittest.TestCase):
         # IDN and no retry
         utility_mock.input.return_value = (display_util.OK,
                                           "uniçodé.com")
-        self.assertEqual(_choose_names_manually(), [])
+        assert _choose_names_manually() == []
         # IDN exception with previous mocks
         with mock.patch(
                 "certbot.display.ops.internal_display_util.separate_list_input"
         ) as mock_sli:
             unicode_error = UnicodeEncodeError('mock', u'', 0, 1, 'mock')
             mock_sli.side_effect = unicode_error
-            self.assertEqual(_choose_names_manually(), [])
+            assert _choose_names_manually() == []
         # Valid domains
         utility_mock.input.return_value = (display_util.OK,
                                           ("example.com,"
                                            "under_score.example.com,"
                                            "justtld,"
                                            "valid.example.com"))
-        self.assertEqual(_choose_names_manually(),
+        assert _choose_names_manually() == \
                          ["example.com", "under_score.example.com",
-                          "justtld", "valid.example.com"])
+                          "justtld", "valid.example.com"]
 
     @test_util.patch_display_util()
     def test_choose_manually_retry(self, mock_util):
@@ -324,7 +324,7 @@ class ChooseNamesTest(unittest.TestCase):
                                           "uniçodé.com")
         utility_mock.yesno.side_effect = [True, True, False]
         _choose_names_manually()
-        self.assertEqual(utility_mock.yesno.call_count, 3)
+        assert utility_mock.yesno.call_count == 3
 
 
 class SuccessInstallationTest(unittest.TestCase):
@@ -342,11 +342,11 @@ class SuccessInstallationTest(unittest.TestCase):
 
         self._call(names)
 
-        self.assertEqual(mock_notify.call_count, 1)
+        assert mock_notify.call_count == 1
         arg = mock_notify.call_args_list[0][0][0]
 
         for name in names:
-            self.assertIn(name, arg)
+            assert name in arg
 
 
 class SuccessRenewalTest(unittest.TestCase):
@@ -364,7 +364,7 @@ class SuccessRenewalTest(unittest.TestCase):
 
         self._call(names)
 
-        self.assertEqual(mock_notify.call_count, 1)
+        assert mock_notify.call_count == 1
 
 
 class SuccessRevocationTest(unittest.TestCase):
@@ -406,30 +406,29 @@ class ValidatorTests(unittest.TestCase):
                                          (display_util.OK, self.valid_input)]
 
         returned = ops.validated_input(self.__validator, "message", force_interactive=True)
-        self.assertEqual(ValidatorTests.__ERROR, mock_util().notification.call_args[0][0])
-        self.assertEqual(returned, (display_util.OK, self.valid_input))
+        assert ValidatorTests.__ERROR == mock_util().notification.call_args[0][0]
+        assert returned == (display_util.OK, self.valid_input)
 
     @test_util.patch_display_util()
     def test_input_validation_with_default(self, mock_util):
         mock_util().input.side_effect = [(display_util.OK, self.valid_input)]
 
         returned = ops.validated_input(self.__validator, "msg", default="other")
-        self.assertEqual(returned, (display_util.OK, self.valid_input))
+        assert returned == (display_util.OK, self.valid_input)
 
     @test_util.patch_display_util()
     def test_input_validation_with_bad_default(self, mock_util):
         mock_util().input.side_effect = [(display_util.OK, self.valid_input)]
 
-        self.assertRaises(AssertionError,
-                          ops.validated_input,
-                          self.__validator, "msg", default="")
+        with pytest.raises(AssertionError):
+            ops.validated_input(self.__validator, "msg", default="")
 
     @test_util.patch_display_util()
     def test_input_cancel_with_validator(self, mock_util):
         mock_util().input.side_effect = [(display_util.CANCEL, "")]
 
         code, unused_raw = ops.validated_input(self.__validator, "message", force_interactive=True)
-        self.assertEqual(code, display_util.CANCEL)
+        assert code == display_util.CANCEL
 
     @test_util.patch_display_util()
     def test_directory_select_validation(self, mock_util):
@@ -437,23 +436,22 @@ class ValidatorTests(unittest.TestCase):
                                                     (display_util.OK, self.valid_directory)]
 
         returned = ops.validated_directory(self.__validator, "msg", force_interactive=True)
-        self.assertEqual(ValidatorTests.__ERROR, mock_util().notification.call_args[0][0])
-        self.assertEqual(returned, (display_util.OK, self.valid_directory))
+        assert ValidatorTests.__ERROR == mock_util().notification.call_args[0][0]
+        assert returned == (display_util.OK, self.valid_directory)
 
     @test_util.patch_display_util()
     def test_directory_select_validation_with_default(self, mock_util):
         mock_util().directory_select.side_effect = [(display_util.OK, self.valid_directory)]
 
         returned = ops.validated_directory(self.__validator, "msg", default="other")
-        self.assertEqual(returned, (display_util.OK, self.valid_directory))
+        assert returned == (display_util.OK, self.valid_directory)
 
     @test_util.patch_display_util()
     def test_directory_select_validation_with_bad_default(self, mock_util):
         mock_util().directory_select.side_effect = [(display_util.OK, self.valid_directory)]
 
-        self.assertRaises(AssertionError,
-                          ops.validated_directory,
-                          self.__validator, "msg", default="")
+        with pytest.raises(AssertionError):
+            ops.validated_directory(self.__validator, "msg", default="")
 
 
 class ChooseValuesTest(unittest.TestCase):
@@ -468,9 +466,9 @@ class ChooseValuesTest(unittest.TestCase):
         items = ["first", "second", "third"]
         mock_util().checklist.return_value = (display_util.OK, [items[2]])
         result = self._call(items, None)
-        self.assertEqual(result, [items[2]])
-        self.assertIs(mock_util().checklist.called, True)
-        self.assertEqual(mock_util().checklist.call_args[0][0], "")
+        assert result == [items[2]]
+        assert mock_util().checklist.called is True
+        assert mock_util().checklist.call_args[0][0] == ""
 
     @test_util.patch_display_util()
     def test_choose_names_success_question(self, mock_util):
@@ -478,9 +476,9 @@ class ChooseValuesTest(unittest.TestCase):
         question = "Which one?"
         mock_util().checklist.return_value = (display_util.OK, [items[1]])
         result = self._call(items, question)
-        self.assertEqual(result, [items[1]])
-        self.assertIs(mock_util().checklist.called, True)
-        self.assertEqual(mock_util().checklist.call_args[0][0], question)
+        assert result == [items[1]]
+        assert mock_util().checklist.called is True
+        assert mock_util().checklist.call_args[0][0] == question
 
     @test_util.patch_display_util()
     def test_choose_names_user_cancel(self, mock_util):
@@ -488,9 +486,9 @@ class ChooseValuesTest(unittest.TestCase):
         question = "Want to cancel?"
         mock_util().checklist.return_value = (display_util.CANCEL, [])
         result = self._call(items, question)
-        self.assertEqual(result, [])
-        self.assertIs(mock_util().checklist.called, True)
-        self.assertEqual(mock_util().checklist.call_args[0][0], question)
+        assert result == []
+        assert mock_util().checklist.called is True
+        assert mock_util().checklist.call_args[0][0] == question
 
 
 @mock.patch('certbot.display.ops.logger')
@@ -504,18 +502,18 @@ class ReportExecutedCommand(unittest.TestCase):
 
     def test_mixed_success(self, mock_notify, mock_logger):
         self._call("some-hook", 0, "Did a thing", "Some warning")
-        self.assertEqual(mock_logger.warning.call_count, 1)
-        self.assertEqual(mock_notify.call_count, 1)
+        assert mock_logger.warning.call_count == 1
+        assert mock_notify.call_count == 1
 
     def test_mixed_error(self, mock_notify, mock_logger):
         self._call("some-hook", -127, "Did a thing", "Some warning")
-        self.assertEqual(mock_logger.warning.call_count, 2)
-        self.assertEqual(mock_notify.call_count, 1)
+        assert mock_logger.warning.call_count == 2
+        assert mock_notify.call_count == 1
 
     def test_empty_success(self, mock_notify, mock_logger):
         self._call("some-hook", 0, "\n", " ")
-        self.assertEqual(mock_logger.warning.call_count, 0)
-        self.assertEqual(mock_notify.call_count, 0)
+        assert mock_logger.warning.call_count == 0
+        assert mock_notify.call_count == 0
 
 if __name__ == "__main__":
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

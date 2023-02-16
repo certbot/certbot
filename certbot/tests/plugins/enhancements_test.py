@@ -34,31 +34,31 @@ class EnhancementTest(test_util.ConfigTestCase):
             self.config.auto_hsts = True
             self.config.something = True
             enabled = list(enhancements.enabled_enhancements(self.config))
-        self.assertEqual(len(enabled), 2)
-        self.assertTrue([i for i in enabled if i["name"] == "autohsts"])
-        self.assertTrue([i for i in enabled if i["name"] == "somethingelse"])
+        assert len(enabled) == 2
+        assert [i for i in enabled if i["name"] == "autohsts"]
+        assert [i for i in enabled if i["name"] == "somethingelse"]
 
     def test_are_requested(self):
-        self.assertEqual(len(list(enhancements.enabled_enhancements(self.config))), 0)
-        self.assertFalse(enhancements.are_requested(self.config))
+        assert len(list(enhancements.enabled_enhancements(self.config))) == 0
+        assert not enhancements.are_requested(self.config)
         self.config.auto_hsts = True
-        self.assertEqual(len(list(enhancements.enabled_enhancements(self.config))), 1)
-        self.assertTrue(enhancements.are_requested(self.config))
+        assert len(list(enhancements.enabled_enhancements(self.config))) == 1
+        assert enhancements.are_requested(self.config)
 
     def test_are_supported(self):
         self.config.auto_hsts = True
         unsupported = null.Installer(self.config, "null")
-        self.assertTrue(enhancements.are_supported(self.config, self.mockinstaller))
-        self.assertFalse(enhancements.are_supported(self.config, unsupported))
+        assert enhancements.are_supported(self.config, self.mockinstaller)
+        assert not enhancements.are_supported(self.config, unsupported)
 
     def test_enable(self):
         self.config.auto_hsts = True
         domains = ["example.com", "www.example.com"]
         lineage = "lineage"
         enhancements.enable(lineage, domains, self.mockinstaller, self.config)
-        self.assertTrue(self.mockinstaller.enable_autohsts.called)
-        self.assertEqual(self.mockinstaller.enable_autohsts.call_args[0],
-                          (lineage, domains))
+        assert self.mockinstaller.enable_autohsts.called
+        assert self.mockinstaller.enable_autohsts.call_args[0] == \
+                          (lineage, domains)
 
 
 if __name__ == '__main__':

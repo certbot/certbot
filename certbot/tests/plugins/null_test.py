@@ -14,9 +14,9 @@ class InstallerTest(unittest.TestCase):
         self.installer = Installer(config=mock.MagicMock(), name="null")
 
     def test_it(self):
-        self.assertIsInstance(self.installer.more_info(), str)
-        self.assertEqual([], self.installer.get_all_names())
-        self.assertEqual([], self.installer.supported_enhancements())
+        assert isinstance(self.installer.more_info(), str)
+        assert [] == self.installer.get_all_names()
+        assert [] == self.installer.supported_enhancements()
 
 
 if __name__ == "__main__":

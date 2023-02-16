@@ -46,14 +46,13 @@ class AutoHSTSTest(util.ApacheTest):
         self.config.parser.modules.pop("headers_module", None)
         self.config.parser.modules.pop("mod_header.c", None)
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
-        self.assertIs(mock_enable.called, True)
+        assert mock_enable.called is True
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
     def test_autohsts_deploy_already_exists(self, _restart):
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
-        self.assertRaises(errors.PluginEnhancementAlreadyPresent,
-                          self.config.enable_autohsts,
-                          mock.MagicMock(), ["ocspvhost.com"])
+        with pytest.raises(errors.PluginEnhancementAlreadyPresent):
+            self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
 
     @mock.patch("certbot_apache._internal.constants.AUTOHSTS_FREQ", 0)
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
@@ -66,14 +65,14 @@ class AutoHSTSTest(util.ApacheTest):
 
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         # Verify initial value
-        self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
-                          initial_val)
+        assert self.get_autohsts_value(self.vh_truth[7].path) == \
+                          initial_val
         # Increase
         self.config.update_autohsts(mock.MagicMock())
         # Verify increased value
-        self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
-                          inc_val)
-        self.assertIs(mock_prepare.called, True)
+        assert self.get_autohsts_value(self.vh_truth[7].path) == \
+                          inc_val
+        assert mock_prepare.called is True
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator._autohsts_increase")
@@ -82,12 +81,12 @@ class AutoHSTSTest(util.ApacheTest):
         initial_val = maxage.format(constants.AUTOHSTS_STEPS[0])
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         # Verify initial value
-        self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
-                          initial_val)
+        assert self.get_autohsts_value(self.vh_truth[7].path) == \
+                          initial_val
 
         self.config.update_autohsts(mock.MagicMock())
         # Freq not patched, so value shouldn't increase
-        self.assertIs(mock_increase.called, False)
+        assert mock_increase.called is False
 
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
@@ -99,9 +98,8 @@ class AutoHSTSTest(util.ApacheTest):
                                               self.vh_truth[7].path)
         dir_loc = "/".join(dir_locs[0].split("/")[:-1])
         self.config.parser.aug.remove(dir_loc)
-        self.assertRaises(errors.PluginError,
-                          self.config.update_autohsts,
-                          mock.MagicMock())
+        with pytest.raises(errors.PluginError):
+            self.config.update_autohsts(mock.MagicMock())
 
     @mock.patch("certbot_apache._internal.constants.AUTOHSTS_FREQ", 0)
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
@@ -114,49 +112,48 @@ class AutoHSTSTest(util.ApacheTest):
         for i in range(len(constants.AUTOHSTS_STEPS)-1):
             # Ensure that value is not made permanent prematurely
             self.config.deploy_autohsts(mock_lineage)
-            self.assertNotEqual(self.get_autohsts_value(self.vh_truth[7].path),
-                                 max_val)
+            assert self.get_autohsts_value(self.vh_truth[7].path) != \
+                                 max_val
             self.config.update_autohsts(mock.MagicMock())
             # Value should match pre-permanent increment step
             cur_val = maxage.format(constants.AUTOHSTS_STEPS[i+1])
-            self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
-                              cur_val)
+            assert self.get_autohsts_value(self.vh_truth[7].path) == \
+                              cur_val
         # Ensure that the value is raised to max
-        self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
-                          maxage.format(constants.AUTOHSTS_STEPS[-1]))
+        assert self.get_autohsts_value(self.vh_truth[7].path) == \
+                          maxage.format(constants.AUTOHSTS_STEPS[-1])
         # Make permanent
         self.config.deploy_autohsts(mock_lineage)
-        self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
-                          max_val)
+        assert self.get_autohsts_value(self.vh_truth[7].path) == \
+                          max_val
 
     def test_autohsts_update_noop(self):
         with mock.patch("time.time") as mock_time:
             # Time mock is used to make sure that the execution does not
             # continue when no autohsts entries exist in pluginstorage
             self.config.update_autohsts(mock.MagicMock())
-            self.assertIs(mock_time.called, False)
+            assert mock_time.called is False
 
     def test_autohsts_make_permanent_noop(self):
         self.config.storage.put = mock.MagicMock()
         self.config.deploy_autohsts(mock.MagicMock())
         # Make sure that the execution does not continue when no entries in store
-        self.assertIs(self.config.storage.put.called, False)
+        assert self.config.storage.put.called is False
 
     @mock.patch("certbot_apache._internal.display_ops.select_vhost")
     def test_autohsts_no_ssl_vhost(self, mock_select):
         mock_select.return_value = self.vh_truth[0]
         with mock.patch("certbot_apache._internal.configurator.logger.error") as mock_log:
-            self.assertRaises(errors.PluginError,
-                              self.config.enable_autohsts,
-                              mock.MagicMock(), "invalid.example.com")
-            self.assertIn("Certbot was not able to find SSL", mock_log.call_args[0][0])
+            with pytest.raises(errors.PluginError):
+                self.config.enable_autohsts(mock.MagicMock(), "invalid.example.com")
+            assert "Certbot was not able to find SSL" in mock_log.call_args[0][0]
 
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.add_vhost_id")
     def test_autohsts_dont_enhance_twice(self, mock_id, _restart):
         mock_id.return_value = "1234567"
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com", "ocspvhost.com"])
-        self.assertEqual(mock_id.call_count, 1)
+        assert mock_id.call_count == 1
 
     def test_autohsts_remove_orphaned(self):
         # pylint: disable=protected-access
@@ -165,11 +162,11 @@ class AutoHSTSTest(util.ApacheTest):
 
         self.config._autohsts_save_state()
         self.config.update_autohsts(mock.MagicMock())
-        self.assertNotIn("orphan_id", self.config._autohsts)
+        assert "orphan_id" not in self.config._autohsts
         # Make sure it's removed from the pluginstorage file as well
         self.config._autohsts = None
         self.config._autohsts_fetch_state()
-        self.assertFalse(self.config._autohsts)
+        assert not self.config._autohsts
 
     def test_autohsts_make_permanent_vhost_not_found(self):
         # pylint: disable=protected-access
@@ -178,8 +175,8 @@ class AutoHSTSTest(util.ApacheTest):
         self.config._autohsts_save_state()
         with mock.patch("certbot_apache._internal.configurator.logger.error") as mock_log:
             self.config.deploy_autohsts(mock.MagicMock())
-            self.assertIs(mock_log.called, True)
-            self.assertIn("VirtualHost with id orphan_id was not", mock_log.call_args[0][0])
+            assert mock_log.called is True
+            assert "VirtualHost with id orphan_id was not" in mock_log.call_args[0][0]
 
 
 if __name__ == "__main__":
