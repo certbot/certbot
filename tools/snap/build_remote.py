@@ -83,7 +83,7 @@ def _execute_build(
                 print('Chroot problem encountered for build '
                       f'{target} for {",".join(archs)}.\n'
                       'Launchpad seems to be unable to recover from this '
-                      'state so were terminating the build.')
+                      'state so we are terminating the build.')
             process.kill()
 
     process_state = process.wait()
