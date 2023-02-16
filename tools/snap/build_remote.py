@@ -72,19 +72,24 @@ def _execute_build(
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             universal_newlines=True, env=environ, cwd=workspace)
 
+    killed = False
     process_output: List[str] = []
     for line in process.stdout:
         process_output.append(line)
         _extract_state(target, line, status)
 
-        if any(state for state in status[target].values() if state == 'Chroot problem'):
+        if not killed and any(state for state in status[target].values() if state == 'Chroot problem'):
             # On this error the snapcraft process hangs. Let's finish it.
+            #
+            # killed is used to stop us from executing this code path
+            # multiple times per build that encounters "Chroot problem".
             with output_lock:
                 print('Chroot problem encountered for build '
                       f'{target} for {",".join(archs)}.\n'
                       'Launchpad seems to be unable to recover from this '
                       'state so we are terminating the build.')
             process.kill()
+            killed = True
 
     process_state = process.wait()
 
