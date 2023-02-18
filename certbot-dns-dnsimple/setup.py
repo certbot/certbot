@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.3.0.dev0'
+version = '2.4.0.dev0'
 
 install_requires = [
     # This version of lexicon is required to address the problem described in
@@ -30,6 +30,10 @@ if os.environ.get('SNAP_BUILD'):
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
+]
+
+test_extras = [
+    'pytest',
 ]
 
 setup(
@@ -67,6 +71,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         'docs': docs_extras,
+        'test': test_extras,
     },
     entry_points={
         'certbot.plugins': [

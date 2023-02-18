@@ -2,7 +2,23 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 2.3.0 - master
+## 2.4.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.3.0 - 2023-02-14
 
 ### Added
 
@@ -16,6 +32,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   * As always, users should only reference the certificate files within `/etc/letsencrypt/live` and never use `/etc/letsencrypt/archive` directly. See [Where are my certificates?](https://eff-certbot.readthedocs.io/en/stable/using.html#where-are-my-certificates) in the Certbot User Guide.
 * `certbot.configuration.NamespaceConfig.key_dir` and `.csr_dir` are now deprecated.
 * Docker build and deploy scripts now generate multiarch manifests for non-architecture-specific tags, instead of defaulting to amd64 images.
+* All Certbot components now require `pytest` to run tests.
 
 ### Fixed
 

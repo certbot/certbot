@@ -3,10 +3,12 @@
 import datetime
 import shutil
 import stat
+import sys
 import unittest
 from unittest import mock
 
 import configobj
+import pytest
 import pytz
 
 import certbot
@@ -49,8 +51,7 @@ class RelevantValuesTest(unittest.TestCase):
         mock_option_was_set.return_value = True
 
         self.values["certbot_foo:bar_baz"] = 42
-        self.assertEqual(
-            self._call(self.values.copy()), self.values)
+        assert self._call(self.values.copy()) == self.values
 
     @mock.patch("certbot._internal.cli.option_was_set")
     def test_option_set(self, mock_option_was_set):
@@ -62,7 +63,7 @@ class RelevantValuesTest(unittest.TestCase):
         expected_relevant_values = self.values.copy()
         self.values["hello"] = "there"
 
-        self.assertEqual(self._call(self.values), expected_relevant_values)
+        assert self._call(self.values) == expected_relevant_values
 
     @mock.patch("certbot._internal.cli.option_was_set")
     def test_option_unset(self, mock_option_was_set):
@@ -71,18 +72,18 @@ class RelevantValuesTest(unittest.TestCase):
         expected_relevant_values = self.values.copy()
         self.values["rsa_key_size"] = 2048
 
-        self.assertEqual(self._call(self.values), expected_relevant_values)
+        assert self._call(self.values) == expected_relevant_values
 
     @mock.patch("certbot._internal.cli.set_by_cli")
     def test_deprecated_item(self, unused_mock_set_by_cli):
         # deprecated items should never be relevant to store
         expected_relevant_values = self.values.copy()
         self.values["manual_public_ip_logging_ok"] = None
-        self.assertEqual(self._call(self.values), expected_relevant_values)
+        assert self._call(self.values) == expected_relevant_values
         self.values["manual_public_ip_logging_ok"] = True
-        self.assertEqual(self._call(self.values), expected_relevant_values)
+        assert self._call(self.values) == expected_relevant_values
         self.values["manual_public_ip_logging_ok"] = False
-        self.assertEqual(self._call(self.values), expected_relevant_values)
+        assert self._call(self.values) == expected_relevant_values
 
 
 class BaseRenewableCertTest(test_util.ConfigTestCase):
@@ -153,11 +154,10 @@ class RenewableCertTests(BaseRenewableCertTest):
     """Tests for certbot._internal.storage."""
 
     def test_initialization(self):
-        self.assertEqual(self.test_rc.lineagename, "example.org")
+        assert self.test_rc.lineagename == "example.org"
         for kind in ALL_FOUR:
-            self.assertEqual(
-                getattr(self.test_rc, kind), os.path.join(
-                    self.config.config_dir, "live", "example.org", kind + ".pem"))
+            assert getattr(self.test_rc, kind) == os.path.join(
+                    self.config.config_dir, "live", "example.org", kind + ".pem")
 
     def test_renewal_bad_config(self):
         """Test that the RenewableCert constructor will complain if
@@ -168,11 +168,11 @@ class RenewableCertTests(BaseRenewableCertTest):
         broken = os.path.join(self.config.config_dir, "broken.conf")
         with open(broken, "w") as f:
             f.write("[No closing bracket for you!")
-        self.assertRaises(errors.CertStorageError, storage.RenewableCert,
-                          broken, self.config)
+        with pytest.raises(errors.CertStorageError):
+            storage.RenewableCert(broken, self.config)
         os.unlink(broken)
-        self.assertRaises(errors.CertStorageError, storage.RenewableCert,
-                          "fun", self.config)
+        with pytest.raises(errors.CertStorageError):
+            storage.RenewableCert("fun", self.config)
 
     def test_renewal_incomplete_config(self):
         """Test that the RenewableCert constructor will complain if
@@ -185,18 +185,18 @@ class RenewableCertTests(BaseRenewableCertTest):
         config["fullchain"] = "imaginary_fullchain.pem"
         config.filename = os.path.join(self.config.config_dir, "imaginary_config.conf")
         config.write()
-        self.assertRaises(errors.CertStorageError, storage.RenewableCert,
-                          config.filename, self.config)
+        with pytest.raises(errors.CertStorageError):
+            storage.RenewableCert(config.filename, self.config)
 
     def test_no_renewal_version(self):
         from certbot._internal import storage
 
         self._write_out_ex_kinds()
-        self.assertNotIn("version", self.config_file)
+        assert "version" not in self.config_file
 
         with mock.patch("certbot._internal.storage.logger") as mock_logger:
             storage.RenewableCert(self.config_file.filename, self.config)
-        self.assertIs(mock_logger.warning.called, False)
+        assert mock_logger.warning.called is False
 
     def test_renewal_newer_version(self):
         from certbot._internal import storage
@@ -207,68 +207,68 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         with mock.patch("certbot._internal.storage.logger") as mock_logger:
             storage.RenewableCert(self.config_file.filename, self.config)
-        self.assertTrue(mock_logger.info.called)
-        self.assertIn("version", mock_logger.info.call_args[0][0])
+        assert mock_logger.info.called
+        assert "version" in mock_logger.info.call_args[0][0]
 
     def test_consistent(self):
         # pylint: disable=protected-access
         oldcert = self.test_rc.cert
         self.test_rc.cert = "relative/path"
         # Absolute path for item requirement
-        self.assertFalse(self.test_rc._consistent())
+        assert not self.test_rc._consistent()
         self.test_rc.cert = oldcert
         # Items must exist requirement
-        self.assertFalse(self.test_rc._consistent())
+        assert not self.test_rc._consistent()
         # Items must be symlinks requirements
         fill_with_sample_data(self.test_rc)
-        self.assertFalse(self.test_rc._consistent())
+        assert not self.test_rc._consistent()
         unlink_all(self.test_rc)
         # Items must point to desired place if they are relative
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", kind + "17.pem"),
                        getattr(self.test_rc, kind))
-        self.assertFalse(self.test_rc._consistent())
+        assert not self.test_rc._consistent()
         unlink_all(self.test_rc)
         # Items must point to desired place if they are absolute
         for kind in ALL_FOUR:
             os.symlink(os.path.join(self.config.config_dir, kind + "17.pem"),
                        getattr(self.test_rc, kind))
-        self.assertFalse(self.test_rc._consistent())
+        assert not self.test_rc._consistent()
         unlink_all(self.test_rc)
         # Items must point to things that exist
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     kind + "17.pem"),
                        getattr(self.test_rc, kind))
-        self.assertFalse(self.test_rc._consistent())
+        assert not self.test_rc._consistent()
         # This version should work
         fill_with_sample_data(self.test_rc)
-        self.assertTrue(self.test_rc._consistent())
+        assert self.test_rc._consistent()
         # Items must point to things that follow the naming convention
         os.unlink(self.test_rc.fullchain)
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "fullchain_17.pem"), self.test_rc.fullchain)
         with open(self.test_rc.fullchain, "w") as f:
             f.write("wrongly-named fullchain")
-        self.assertFalse(self.test_rc._consistent())
+        assert not self.test_rc._consistent()
 
     def test_current_target(self):
         # Relative path logic
         self._write_out_kind("cert", 17)
-        self.assertTrue(os.path.samefile(self.test_rc.current_target("cert"),
+        assert os.path.samefile(self.test_rc.current_target("cert"),
                                          os.path.join(self.config.config_dir, "archive",
                                                       "example.org",
-                                                      "cert17.pem")))
+                                                      "cert17.pem"))
         # Absolute path logic
         os.unlink(self.test_rc.cert)
         os.symlink(os.path.join(self.config.config_dir, "archive", "example.org",
                                 "cert17.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
             f.write("cert")
-        self.assertTrue(os.path.samefile(self.test_rc.current_target("cert"),
+        assert os.path.samefile(self.test_rc.current_target("cert"),
                                          os.path.join(self.config.config_dir, "archive",
                                                       "example.org",
-                                                      "cert17.pem")))
+                                                      "cert17.pem"))
 
     def test_current_version(self):
         for ver in (1, 5, 10, 20):
@@ -276,33 +276,33 @@ class RenewableCertTests(BaseRenewableCertTest):
         os.unlink(self.test_rc.cert)
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "cert10.pem"), self.test_rc.cert)
-        self.assertEqual(self.test_rc.current_version("cert"), 10)
+        assert self.test_rc.current_version("cert") == 10
 
     def test_no_current_version(self):
-        self.assertIsNone(self.test_rc.current_version("cert"))
+        assert self.test_rc.current_version("cert") is None
 
     def test_latest_and_next_versions(self):
         for ver in range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
-        self.assertEqual(self.test_rc.latest_common_version(), 5)
-        self.assertEqual(self.test_rc.next_free_version(), 6)
+        assert self.test_rc.latest_common_version() == 5
+        assert self.test_rc.next_free_version() == 6
         # Having one kind of file of a later version doesn't change the
         # result
         self._write_out_kind("privkey", 7)
-        self.assertEqual(self.test_rc.latest_common_version(), 5)
+        assert self.test_rc.latest_common_version() == 5
         # ... although it does change the next free version
-        self.assertEqual(self.test_rc.next_free_version(), 8)
+        assert self.test_rc.next_free_version() == 8
         # Nor does having three out of four change the result
         self._write_out_kind("cert", 7)
         self._write_out_kind("fullchain", 7)
-        self.assertEqual(self.test_rc.latest_common_version(), 5)
+        assert self.test_rc.latest_common_version() == 5
         # If we have everything from a much later version, it does change
         # the result
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 17)
-        self.assertEqual(self.test_rc.latest_common_version(), 17)
-        self.assertEqual(self.test_rc.next_free_version(), 18)
+        assert self.test_rc.latest_common_version() == 17
+        assert self.test_rc.next_free_version() == 18
 
     @mock.patch("certbot._internal.storage.logger")
     def test_ensure_deployed(self, mock_logger):
@@ -311,54 +311,54 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.latest_common_version = mock.Mock()
 
         mock_has_pending.return_value = False
-        self.assertIs(self.test_rc.ensure_deployed(), True)
-        self.assertEqual(mock_update.call_count, 0)
-        self.assertEqual(mock_logger.warning.call_count, 0)
+        assert self.test_rc.ensure_deployed() is True
+        assert mock_update.call_count == 0
+        assert mock_logger.warning.call_count == 0
 
         mock_has_pending.return_value = True
-        self.assertIs(self.test_rc.ensure_deployed(), False)
-        self.assertEqual(mock_update.call_count, 1)
-        self.assertEqual(mock_logger.warning.call_count, 1)
+        assert self.test_rc.ensure_deployed() is False
+        assert mock_update.call_count == 1
+        assert mock_logger.warning.call_count == 1
 
 
     def test_update_link_to(self):
         for ver in range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
-                self.assertEqual(ver, self.test_rc.current_version(kind))
+                assert ver == self.test_rc.current_version(kind)
         # pylint: disable=protected-access
         self.test_rc._update_link_to("cert", 3)
         self.test_rc._update_link_to("privkey", 2)
-        self.assertEqual(3, self.test_rc.current_version("cert"))
-        self.assertEqual(2, self.test_rc.current_version("privkey"))
-        self.assertEqual(5, self.test_rc.current_version("chain"))
-        self.assertEqual(5, self.test_rc.current_version("fullchain"))
+        assert 3 == self.test_rc.current_version("cert")
+        assert 2 == self.test_rc.current_version("privkey")
+        assert 5 == self.test_rc.current_version("chain")
+        assert 5 == self.test_rc.current_version("fullchain")
         # Currently we are allowed to update to a version that doesn't exist
         self.test_rc._update_link_to("chain", 3000)
         # However, current_version doesn't allow querying the resulting
         # version (because it's a broken link).
-        self.assertEqual(os.path.basename(filesystem.readlink(self.test_rc.chain)),
-                         "chain3000.pem")
+        assert os.path.basename(filesystem.readlink(self.test_rc.chain)) == \
+                         "chain3000.pem"
 
     def test_version(self):
         self._write_out_kind("cert", 12)
         # TODO: We should probably test that the directory is still the
         #       same, but it's tricky because we can get an absolute
         #       path out when we put a relative path in.
-        self.assertEqual("cert8.pem",
-                         os.path.basename(self.test_rc.version("cert", 8)))
+        assert "cert8.pem" == \
+                         os.path.basename(self.test_rc.version("cert", 8))
 
     def test_update_all_links_to_success(self):
         for ver in range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
-                self.assertEqual(ver, self.test_rc.current_version(kind))
-        self.assertEqual(self.test_rc.latest_common_version(), 5)
+                assert ver == self.test_rc.current_version(kind)
+        assert self.test_rc.latest_common_version() == 5
         for ver in range(1, 6):
             self.test_rc.update_all_links_to(ver)
             for kind in ALL_FOUR:
-                self.assertEqual(ver, self.test_rc.current_version(kind))
-            self.assertEqual(self.test_rc.latest_common_version(), 5)
+                assert ver == self.test_rc.current_version(kind)
+            assert self.test_rc.latest_common_version() == 5
 
     def test_update_all_links_to_partial_failure(self):
         def unlink_or_raise(path, real_unlink=os.unlink):
@@ -371,10 +371,11 @@ class RenewableCertTests(BaseRenewableCertTest):
         self._write_out_ex_kinds()
         with mock.patch("certbot._internal.storage.os.unlink") as mock_unlink:
             mock_unlink.side_effect = unlink_or_raise
-            self.assertRaises(ValueError, self.test_rc.update_all_links_to, 12)
+            with pytest.raises(ValueError):
+                self.test_rc.update_all_links_to(12)
 
         for kind in ALL_FOUR:
-            self.assertEqual(self.test_rc.current_version(kind), 12)
+            assert self.test_rc.current_version(kind) == 12
 
     def test_update_all_links_to_full_failure(self):
         def unlink_or_raise(path, real_unlink=os.unlink):
@@ -386,35 +387,37 @@ class RenewableCertTests(BaseRenewableCertTest):
         self._write_out_ex_kinds()
         with mock.patch("certbot._internal.storage.os.unlink") as mock_unlink:
             mock_unlink.side_effect = unlink_or_raise
-            self.assertRaises(ValueError, self.test_rc.update_all_links_to, 12)
+            with pytest.raises(ValueError):
+                self.test_rc.update_all_links_to(12)
 
         for kind in ALL_FOUR:
-            self.assertEqual(self.test_rc.current_version(kind), 11)
+            assert self.test_rc.current_version(kind) == 11
 
     def test_has_pending_deployment(self):
         for ver in range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
-                self.assertEqual(ver, self.test_rc.current_version(kind))
+                assert ver == self.test_rc.current_version(kind)
         for ver in range(1, 6):
             self.test_rc.update_all_links_to(ver)
             for kind in ALL_FOUR:
-                self.assertEqual(ver, self.test_rc.current_version(kind))
+                assert ver == self.test_rc.current_version(kind)
             if ver < 5:
-                self.assertTrue(self.test_rc.has_pending_deployment())
+                assert self.test_rc.has_pending_deployment()
             else:
-                self.assertFalse(self.test_rc.has_pending_deployment())
+                assert not self.test_rc.has_pending_deployment()
 
     def test_names(self):
         # Trying the current version
         self._write_out_kind("cert", 12, test_util.load_vector("cert-san_512.pem"))
 
-        self.assertEqual(self.test_rc.names(),
-                         ["example.com", "www.example.com"])
+        assert self.test_rc.names() == \
+                         ["example.com", "www.example.com"]
 
         # Trying missing cert
         os.unlink(self.test_rc.cert)
-        self.assertRaises(errors.CertStorageError, self.test_rc.names)
+        with pytest.raises(errors.CertStorageError):
+            self.test_rc.names()
 
     @mock.patch("certbot._internal.storage.cli")
     @mock.patch("certbot._internal.storage.datetime")
@@ -459,16 +462,16 @@ class RenewableCertTests(BaseRenewableCertTest):
             sometime = datetime.datetime.utcfromtimestamp(current_time)
             mock_datetime.datetime.utcnow.return_value = sometime
             self.test_rc.configuration["renew_before_expiry"] = interval
-            self.assertEqual(self.test_rc.should_autorenew(), result)
+            assert self.test_rc.should_autorenew() == result
 
     def test_autorenewal_is_enabled(self):
         self.test_rc.configuration["renewalparams"] = {}
-        self.assertTrue(self.test_rc.autorenewal_is_enabled())
+        assert self.test_rc.autorenewal_is_enabled()
         self.test_rc.configuration["renewalparams"]["autorenew"] = "True"
-        self.assertTrue(self.test_rc.autorenewal_is_enabled())
+        assert self.test_rc.autorenewal_is_enabled()
 
         self.test_rc.configuration["renewalparams"]["autorenew"] = "False"
-        self.assertFalse(self.test_rc.autorenewal_is_enabled())
+        assert not self.test_rc.autorenewal_is_enabled()
 
     @mock.patch("certbot._internal.storage.cli")
     @mock.patch("certbot._internal.storage.RenewableCert.ocsp_revoked")
@@ -478,13 +481,13 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_cli.set_by_cli.return_value = False
         # Autorenewal turned off
         self.test_rc.configuration["renewalparams"] = {"autorenew": "False"}
-        self.assertFalse(self.test_rc.should_autorenew())
+        assert not self.test_rc.should_autorenew()
         self.test_rc.configuration["renewalparams"]["autorenew"] = "True"
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 12)
         # Mandatory renewal on the basis of OCSP revocation
         mock_ocsp.return_value = True
-        self.assertTrue(self.test_rc.should_autorenew())
+        assert self.test_rc.should_autorenew()
         mock_ocsp.return_value = False
 
     @mock.patch("certbot._internal.storage.relevant_values")
@@ -497,58 +500,53 @@ class RenewableCertTests(BaseRenewableCertTest):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
         self.test_rc.update_all_links_to(3)
-        self.assertEqual(
-            6, self.test_rc.save_successor(3, b'new cert', None,
-                                           b'new chain', self.config))
+        assert 6 == self.test_rc.save_successor(3, b'new cert', None,
+                                           b'new chain', self.config)
         with open(self.test_rc.version("cert", 6)) as f:
-            self.assertEqual(f.read(), "new cert")
+            assert f.read() == "new cert"
         with open(self.test_rc.version("chain", 6)) as f:
-            self.assertEqual(f.read(), "new chain")
+            assert f.read() == "new chain"
         with open(self.test_rc.version("fullchain", 6)) as f:
-            self.assertEqual(f.read(), "new cert" + "new chain")
+            assert f.read() == "new cert" + "new chain"
         # version 6 of the key should be a link back to version 3
-        self.assertFalse(os.path.islink(self.test_rc.version("privkey", 3)))
-        self.assertTrue(os.path.islink(self.test_rc.version("privkey", 6)))
+        assert not os.path.islink(self.test_rc.version("privkey", 3))
+        assert os.path.islink(self.test_rc.version("privkey", 6))
         # Let's try two more updates
-        self.assertEqual(
-            7, self.test_rc.save_successor(6, b'again', None,
-                                           b'newer chain', self.config))
-        self.assertEqual(
-            8, self.test_rc.save_successor(7, b'hello', None,
-                                           b'other chain', self.config))
+        assert 7 == self.test_rc.save_successor(6, b'again', None,
+                                           b'newer chain', self.config)
+        assert 8 == self.test_rc.save_successor(7, b'hello', None,
+                                           b'other chain', self.config)
         # All of the subsequent versions should link directly to the original
         # privkey.
         for i in (6, 7, 8):
-            self.assertTrue(os.path.islink(self.test_rc.version("privkey", i)))
-            self.assertEqual("privkey3.pem", os.path.basename(filesystem.readlink(
-                self.test_rc.version("privkey", i))))
+            assert os.path.islink(self.test_rc.version("privkey", i))
+            assert "privkey3.pem" == os.path.basename(filesystem.readlink(
+                self.test_rc.version("privkey", i)))
 
         for kind in ALL_FOUR:
-            self.assertEqual(self.test_rc.available_versions(kind), list(range(1, 9)))
-            self.assertEqual(self.test_rc.current_version(kind), 3)
+            assert self.test_rc.available_versions(kind) == list(range(1, 9))
+            assert self.test_rc.current_version(kind) == 3
         # Test updating from latest version rather than old version
         self.test_rc.update_all_links_to(8)
-        self.assertEqual(
-            9, self.test_rc.save_successor(8, b'last', None,
-                                           b'attempt', self.config))
+        assert 9 == self.test_rc.save_successor(8, b'last', None,
+                                           b'attempt', self.config)
         for kind in ALL_FOUR:
-            self.assertEqual(self.test_rc.available_versions(kind),
-                             list(range(1, 10)))
-            self.assertEqual(self.test_rc.current_version(kind), 8)
+            assert self.test_rc.available_versions(kind) == \
+                             list(range(1, 10))
+            assert self.test_rc.current_version(kind) == 8
         with open(self.test_rc.version("fullchain", 9)) as f:
-            self.assertEqual(f.read(), "last" + "attempt")
+            assert f.read() == "last" + "attempt"
         temp_config_file = os.path.join(self.config.renewal_configs_dir,
                                         self.test_rc.lineagename) + ".conf.new"
         with open(temp_config_file, "w") as f:
             f.write("We previously crashed while writing me :(")
         # Test updating when providing a new privkey.  The key should
         # be saved in a new file rather than creating a new symlink.
-        self.assertEqual(
-            10, self.test_rc.save_successor(9, b'with', b'a',
-                                            b'key', self.config))
-        self.assertTrue(os.path.exists(self.test_rc.version("privkey", 10)))
-        self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
-        self.assertFalse(os.path.exists(temp_config_file))
+        assert 10 == self.test_rc.save_successor(9, b'with', b'a',
+                                            b'key', self.config)
+        assert os.path.exists(self.test_rc.version("privkey", 10))
+        assert not os.path.islink(self.test_rc.version("privkey", 10))
+        assert not os.path.exists(temp_config_file)
 
     @test_util.skip_on_windows('Group/everybody permissions are not maintained on Windows.')
     @mock.patch("certbot._internal.storage.relevant_values")
@@ -559,18 +557,18 @@ class RenewableCertTests(BaseRenewableCertTest):
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
-        self.assertTrue(filesystem.check_mode(self.test_rc.version("privkey", 1), 0o600))
+        assert filesystem.check_mode(self.test_rc.version("privkey", 1), 0o600)
         filesystem.chmod(self.test_rc.version("privkey", 1), 0o444)
         # If no new key, permissions should be the same (we didn't write any keys)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
-        self.assertTrue(filesystem.check_mode(self.test_rc.version("privkey", 2), 0o444))
+        assert filesystem.check_mode(self.test_rc.version("privkey", 2), 0o444)
         # If new key, permissions should be kept as 644
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(filesystem.check_mode(self.test_rc.version("privkey", 3), 0o644))
+        assert filesystem.check_mode(self.test_rc.version("privkey", 3), 0o644)
         # If permissions reverted, next renewal will also revert permissions of new key
         filesystem.chmod(self.test_rc.version("privkey", 3), 0o400)
         self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(filesystem.check_mode(self.test_rc.version("privkey", 4), 0o600))
+        assert filesystem.check_mode(self.test_rc.version("privkey", 4), 0o600)
 
     @mock.patch("certbot._internal.storage.relevant_values")
     @mock.patch("certbot._internal.storage.filesystem.copy_ownership_and_apply_mode")
@@ -582,9 +580,9 @@ class RenewableCertTests(BaseRenewableCertTest):
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
-        self.assertIs(mock_ownership.called, False)
+        assert mock_ownership.called is False
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(mock_ownership.called)
+        assert mock_ownership.called
 
     @mock.patch("certbot._internal.storage.relevant_values")
     def test_new_lineage(self, mock_rv):
@@ -599,41 +597,40 @@ class RenewableCertTests(BaseRenewableCertTest):
         # This consistency check tests most relevant properties about the
         # newly created cert lineage.
         # pylint: disable=protected-access
-        self.assertTrue(result._consistent())
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.renewal_configs_dir, "the-lineage.com.conf")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.live_dir, "README")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.live_dir, "the-lineage.com", "README")))
-        self.assertTrue(filesystem.check_mode(result.key_path, 0o600))
+        assert result._consistent()
+        assert os.path.exists(os.path.join(
+            self.config.renewal_configs_dir, "the-lineage.com.conf"))
+        assert os.path.exists(os.path.join(
+            self.config.live_dir, "README"))
+        assert os.path.exists(os.path.join(
+            self.config.live_dir, "the-lineage.com", "README"))
+        assert filesystem.check_mode(result.key_path, 0o600)
         with open(result.fullchain, "rb") as f:
-            self.assertEqual(f.read(), b"cert" + b"chain")
+            assert f.read() == b"cert" + b"chain"
         # Let's do it again and make sure it makes a different lineage
         result = storage.RenewableCert.new_lineage(
             "the-lineage.com", b"cert2", b"privkey2", b"chain2", self.config)
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.renewal_configs_dir, "the-lineage.com-0001.conf")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.live_dir, "the-lineage.com-0001", "README")))
+        assert os.path.exists(os.path.join(
+            self.config.renewal_configs_dir, "the-lineage.com-0001.conf"))
+        assert os.path.exists(os.path.join(
+            self.config.live_dir, "the-lineage.com-0001", "README"))
         # Allow write to existing but empty dir
         filesystem.mkdir(os.path.join(self.config.default_archive_dir, "the-lineage.com-0002"))
         result = storage.RenewableCert.new_lineage(
             "the-lineage.com", b"cert3", b"privkey3", b"chain3", self.config)
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.live_dir, "the-lineage.com-0002", "README")))
-        self.assertTrue(filesystem.check_mode(result.key_path, 0o600))
+        assert os.path.exists(os.path.join(
+            self.config.live_dir, "the-lineage.com-0002", "README"))
+        assert filesystem.check_mode(result.key_path, 0o600)
         # Now trigger the detection of already existing files
         shutil.copytree(os.path.join(self.config.live_dir, "the-lineage.com"),
                         os.path.join(self.config.live_dir, "the-lineage.com-0003"))
-        self.assertRaises(errors.CertStorageError,
-                          storage.RenewableCert.new_lineage, "the-lineage.com",
+        with pytest.raises(errors.CertStorageError):
+            storage.RenewableCert.new_lineage("the-lineage.com",
                           b"cert4", b"privkey4", b"chain4", self.config)
         shutil.copytree(os.path.join(self.config.live_dir, "the-lineage.com"),
                         os.path.join(self.config.live_dir, "other-example.com"))
-        self.assertRaises(errors.CertStorageError,
-                          storage.RenewableCert.new_lineage,
-                          "other-example.com", b"cert5",
+        with pytest.raises(errors.CertStorageError):
+            storage.RenewableCert.new_lineage("other-example.com", b"cert5",
                           b"privkey5", b"chain5", self.config)
         # Make sure it can accept renewal parameters
         result = storage.RenewableCert.new_lineage(
@@ -655,39 +652,36 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         storage.RenewableCert.new_lineage(
             "the-lineage.com", b"cert2", b"privkey2", b"chain2", self.config)
-        self.assertTrue(os.path.exists(
+        assert os.path.exists(
             os.path.join(
-                self.config.renewal_configs_dir, "the-lineage.com.conf")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.live_dir, "the-lineage.com", "privkey.pem")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.default_archive_dir, "the-lineage.com", "privkey1.pem")))
+                self.config.renewal_configs_dir, "the-lineage.com.conf"))
+        assert os.path.exists(os.path.join(
+            self.config.live_dir, "the-lineage.com", "privkey.pem"))
+        assert os.path.exists(os.path.join(
+            self.config.default_archive_dir, "the-lineage.com", "privkey1.pem"))
 
     @mock.patch("certbot._internal.storage.util.unique_lineage_name")
     def test_invalid_config_filename(self, mock_uln):
         from certbot._internal import storage
         mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"
-        self.assertRaises(errors.CertStorageError,
-                          storage.RenewableCert.new_lineage, "example.com",
+        with pytest.raises(errors.CertStorageError):
+            storage.RenewableCert.new_lineage("example.com",
                           "cert", "privkey", "chain", self.config)
 
     def test_bad_kind(self):
-        self.assertRaises(
-            errors.CertStorageError, self.test_rc.current_target, "elephant")
-        self.assertRaises(
-            errors.CertStorageError, self.test_rc.current_version, "elephant")
-        self.assertRaises(
-            errors.CertStorageError, self.test_rc.version, "elephant", 17)
-        self.assertRaises(
-            errors.CertStorageError,
-            self.test_rc.available_versions, "elephant")
-        self.assertRaises(
-            errors.CertStorageError,
-            self.test_rc.newest_available_version, "elephant")
+        with pytest.raises(errors.CertStorageError):
+            self.test_rc.current_target("elephant")
+        with pytest.raises(errors.CertStorageError):
+            self.test_rc.current_version("elephant")
+        with pytest.raises(errors.CertStorageError):
+            self.test_rc.version("elephant", 17)
+        with pytest.raises(errors.CertStorageError):
+            self.test_rc.available_versions("elephant")
+        with pytest.raises(errors.CertStorageError):
+            self.test_rc.newest_available_version("elephant")
         # pylint: disable=protected-access
-        self.assertRaises(
-            errors.CertStorageError,
-            self.test_rc._update_link_to, "elephant", 17)
+        with pytest.raises(errors.CertStorageError):
+            self.test_rc._update_link_to("elephant", 17)
 
     @mock.patch("certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths")
     def test_ocsp_revoked(self, mock_checker):
@@ -700,24 +694,24 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         # Test with cert revoked
         mock_checker.return_value = True
-        self.assertTrue(self.test_rc.ocsp_revoked(version))
-        self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
-        self.assertEqual(mock_checker.call_args[0][1], expected_chain_path)
+        assert self.test_rc.ocsp_revoked(version)
+        assert mock_checker.call_args[0][0] == expected_cert_path
+        assert mock_checker.call_args[0][1] == expected_chain_path
 
         # Test with cert not revoked
         mock_checker.return_value = False
-        self.assertFalse(self.test_rc.ocsp_revoked(version))
-        self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
-        self.assertEqual(mock_checker.call_args[0][1], expected_chain_path)
+        assert not self.test_rc.ocsp_revoked(version)
+        assert mock_checker.call_args[0][0] == expected_cert_path
+        assert mock_checker.call_args[0][1] == expected_chain_path
 
         # Test with error
         mock_checker.side_effect = ValueError
         with mock.patch("certbot._internal.storage.logger.warning") as logger:
-            self.assertFalse(self.test_rc.ocsp_revoked(version))
-        self.assertEqual(mock_checker.call_args[0][0], expected_cert_path)
-        self.assertEqual(mock_checker.call_args[0][1], expected_chain_path)
+            assert not self.test_rc.ocsp_revoked(version)
+        assert mock_checker.call_args[0][0] == expected_cert_path
+        assert mock_checker.call_args[0][1] == expected_chain_path
         log_msg = logger.call_args[0][0]
-        self.assertIn("An error occurred determining the OCSP status", log_msg)
+        assert "An error occurred determining the OCSP status" in log_msg
 
     def test_add_time_interval(self):
         from certbot._internal import storage
@@ -758,38 +752,36 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         for parameters, excepted in intended.items():
             base_time, interval = parameters
-            self.assertEqual(storage.add_time_interval(base_time, interval),
-                             excepted)
+            assert storage.add_time_interval(base_time, interval) == \
+                             excepted
 
     def test_server(self):
         self.test_rc.configuration["renewalparams"] = {}
-        self.assertIsNone(self.test_rc.server)
+        assert self.test_rc.server is None
         rp = self.test_rc.configuration["renewalparams"]
         rp["server"] = "https://acme.example/dir"
-        self.assertEqual(self.test_rc.server, "https://acme.example/dir")
+        assert self.test_rc.server == "https://acme.example/dir"
 
     def test_is_test_cert(self):
         self.test_rc.configuration["renewalparams"] = {}
         rp = self.test_rc.configuration["renewalparams"]
-        self.assertIs(self.test_rc.is_test_cert, False)
+        assert self.test_rc.is_test_cert is False
         rp["server"] = "https://acme-staging-v02.api.letsencrypt.org/directory"
-        self.assertIs(self.test_rc.is_test_cert, True)
+        assert self.test_rc.is_test_cert is True
         rp["server"] = "https://staging.someotherca.com/directory"
-        self.assertIs(self.test_rc.is_test_cert, True)
+        assert self.test_rc.is_test_cert is True
         rp["server"] = "https://acme-v01.api.letsencrypt.org/directory"
-        self.assertIs(self.test_rc.is_test_cert, False)
+        assert self.test_rc.is_test_cert is False
         rp["server"] = "https://acme-v02.api.letsencrypt.org/directory"
-        self.assertIs(self.test_rc.is_test_cert, False)
+        assert self.test_rc.is_test_cert is False
 
     def test_missing_cert(self):
         from certbot._internal import storage
-        self.assertRaises(errors.CertStorageError,
-                          storage.RenewableCert,
-                          self.config_file.filename, self.config)
+        with pytest.raises(errors.CertStorageError):
+            storage.RenewableCert(self.config_file.filename, self.config)
         os.symlink("missing", self.config_file[ALL_FOUR[0]])
-        self.assertRaises(errors.CertStorageError,
-                          storage.RenewableCert,
-                          self.config_file.filename, self.config)
+        with pytest.raises(errors.CertStorageError):
+            storage.RenewableCert(self.config_file.filename, self.config)
 
     def test_write_renewal_config(self):
         # Mostly tested by the process of creating and updating lineages,
@@ -813,16 +805,16 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(temp2, "r") as f:
             content = f.read()
         # useful value was updated
-        self.assertIn("useful = new_value", content)
+        assert "useful = new_value" in content
         # associated comment was preserved
-        self.assertIn("A useful value", content)
+        assert "A useful value" in content
         # useless value was deleted
-        self.assertNotIn("useless", content)
+        assert "useless" not in content
         # check version was stored
-        self.assertIn("version = {0}".format(certbot.__version__), content)
+        assert "version = {0}".format(certbot.__version__) in content
         # ensure permissions are copied
-        self.assertEqual(stat.S_IMODE(os.lstat(temp).st_mode),
-                         stat.S_IMODE(os.lstat(temp2).st_mode))
+        assert stat.S_IMODE(os.lstat(temp).st_mode) == \
+                         stat.S_IMODE(os.lstat(temp2).st_mode)
 
     def test_update_symlinks(self):
         from certbot._internal import storage
@@ -833,8 +825,8 @@ class RenewableCertTests(BaseRenewableCertTest):
             archive_path = os.path.join(archive_dir_path, basename)
             open(archive_path, 'a').close()
             os.symlink(os.path.join(self.config.config_dir, basename), live_path)
-        self.assertRaises(errors.CertStorageError,
-                          storage.RenewableCert, self.config_file.filename,
+        with pytest.raises(errors.CertStorageError):
+            storage.RenewableCert(self.config_file.filename,
                           self.config)
         storage.RenewableCert(self.config_file.filename, self.config,
             update_symlinks=True)
@@ -853,8 +845,8 @@ class RenewableCertTests(BaseRenewableCertTest):
                 self._write_out_kind(kind, i)
         with mock.patch('certbot.compat.os.unlink') as mock_unlink:
             self.test_rc.truncate()
-            self.assertEqual(mock_unlink.call_count, 1 * len(ALL_FOUR))
-            self.assertIn("1.pem", mock_unlink.call_args_list[0][0][0])
+            assert mock_unlink.call_count == 1 * len(ALL_FOUR)
+            assert "1.pem" in mock_unlink.call_args_list[0][0][0]
 
 class DeleteFilesTest(BaseRenewableCertTest):
     """Tests for certbot._internal.storage.delete_files"""
@@ -867,12 +859,12 @@ class DeleteFilesTest(BaseRenewableCertTest):
             with open(kind_path, 'a'):
                 pass
         self.config_file.write()
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.renewal_configs_dir, "example.org.conf")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.live_dir, "example.org")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.config_dir, "archive", "example.org")))
+        assert os.path.exists(os.path.join(
+            self.config.renewal_configs_dir, "example.org.conf"))
+        assert os.path.exists(os.path.join(
+            self.config.live_dir, "example.org"))
+        assert os.path.exists(os.path.join(
+            self.config.config_dir, "archive", "example.org"))
 
     def _call(self):
         from certbot._internal import storage
@@ -882,69 +874,71 @@ class DeleteFilesTest(BaseRenewableCertTest):
     def test_delete_all_files(self):
         self._call()
 
-        self.assertFalse(os.path.exists(os.path.join(
-            self.config.renewal_configs_dir, "example.org.conf")))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.config.live_dir, "example.org")))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.config.config_dir, "archive", "example.org")))
+        assert not os.path.exists(os.path.join(
+            self.config.renewal_configs_dir, "example.org.conf"))
+        assert not os.path.exists(os.path.join(
+            self.config.live_dir, "example.org"))
+        assert not os.path.exists(os.path.join(
+            self.config.config_dir, "archive", "example.org"))
 
     def test_bad_renewal_config(self):
         with open(self.config_file.filename, 'a') as config_file:
             config_file.write("asdfasfasdfasdf")
 
-        self.assertRaises(errors.CertStorageError, self._call)
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.live_dir, "example.org")))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.config.renewal_configs_dir, "example.org.conf")))
+        with pytest.raises(errors.CertStorageError):
+            self._call()
+        assert os.path.exists(os.path.join(
+            self.config.live_dir, "example.org"))
+        assert not os.path.exists(os.path.join(
+            self.config.renewal_configs_dir, "example.org.conf"))
 
     def test_no_renewal_config(self):
         os.remove(self.config_file.filename)
-        self.assertRaises(errors.CertStorageError, self._call)
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.live_dir, "example.org")))
-        self.assertFalse(os.path.exists(self.config_file.filename))
+        with pytest.raises(errors.CertStorageError):
+            self._call()
+        assert os.path.exists(os.path.join(
+            self.config.live_dir, "example.org"))
+        assert not os.path.exists(self.config_file.filename)
 
     def test_no_cert_file(self):
         os.remove(os.path.join(
             self.config.live_dir, "example.org", "cert.pem"))
         self._call()
-        self.assertFalse(os.path.exists(self.config_file.filename))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.config.live_dir, "example.org")))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.config.config_dir, "archive", "example.org")))
+        assert not os.path.exists(self.config_file.filename)
+        assert not os.path.exists(os.path.join(
+            self.config.live_dir, "example.org"))
+        assert not os.path.exists(os.path.join(
+            self.config.config_dir, "archive", "example.org"))
 
     def test_no_readme_file(self):
         os.remove(os.path.join(
             self.config.live_dir, "example.org", "README"))
         self._call()
-        self.assertFalse(os.path.exists(self.config_file.filename))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.config.live_dir, "example.org")))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.config.config_dir, "archive", "example.org")))
+        assert not os.path.exists(self.config_file.filename)
+        assert not os.path.exists(os.path.join(
+            self.config.live_dir, "example.org"))
+        assert not os.path.exists(os.path.join(
+            self.config.config_dir, "archive", "example.org"))
 
     def test_livedir_not_empty(self):
         with open(os.path.join(
             self.config.live_dir, "example.org", "other_file"), 'a'):
             pass
         self._call()
-        self.assertFalse(os.path.exists(self.config_file.filename))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.live_dir, "example.org")))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.config.config_dir, "archive", "example.org")))
+        assert not os.path.exists(self.config_file.filename)
+        assert os.path.exists(os.path.join(
+            self.config.live_dir, "example.org"))
+        assert not os.path.exists(os.path.join(
+            self.config.config_dir, "archive", "example.org"))
 
     def test_no_archive(self):
         archive_dir = os.path.join(self.config.config_dir, "archive", "example.org")
         os.rmdir(archive_dir)
         self._call()
-        self.assertFalse(os.path.exists(self.config_file.filename))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.config.live_dir, "example.org")))
-        self.assertFalse(os.path.exists(archive_dir))
+        assert not os.path.exists(self.config_file.filename)
+        assert not os.path.exists(os.path.join(
+            self.config.live_dir, "example.org"))
+        assert not os.path.exists(archive_dir)
 
 class CertPathForCertNameTest(BaseRenewableCertTest):
     """Test for certbot._internal.storage.cert_path_for_cert_name"""
@@ -961,10 +955,11 @@ class CertPathForCertNameTest(BaseRenewableCertTest):
         return cert_path_for_cert_name(cli_config, certname)
 
     def test_simple_cert_name(self):
-        self.assertEqual(self._call(self.config, 'example.org'), self.fullchain)
+        assert self._call(self.config, 'example.org') == self.fullchain
 
     def test_no_such_cert_name(self):
-        self.assertRaises(errors.CertStorageError, self._call, self.config, 'fake-example.org')
+        with pytest.raises(errors.CertStorageError):
+            self._call(self.config, 'fake-example.org')
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

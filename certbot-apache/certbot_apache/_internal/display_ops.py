@@ -6,11 +6,10 @@ from typing import Optional
 from typing import Sequence
 from typing import Tuple
 
-from certbot_apache._internal.obj import VirtualHost
-
 from certbot import errors
 from certbot.compat import os
 from certbot.display import util as display_util
+from certbot_apache._internal.obj import VirtualHost
 
 logger = logging.getLogger(__name__)
 

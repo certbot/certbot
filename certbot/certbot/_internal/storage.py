@@ -7,6 +7,7 @@ import re
 import shutil
 import stat
 from typing import Any
+from typing import cast
 from typing import Dict
 from typing import Iterable
 from typing import List
@@ -17,8 +18,8 @@ from typing import Union
 
 import configobj
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
 import pkg_resources
@@ -1133,7 +1134,7 @@ class RenewableCert(interfaces.RenewableCert):
                 password=None,
                 backend=default_backend()
             )
-            return key
+            return cast(Union[RSAPrivateKey, EllipticCurvePrivateKey], key)
 
     @property
     def private_key_type(self) -> str:

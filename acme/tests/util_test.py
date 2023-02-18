@@ -1,5 +1,8 @@
 """Tests for acme.util."""
+import sys
 import unittest
+
+import pytest
 
 
 class MapKeysTest(unittest.TestCase):
@@ -7,10 +10,10 @@ class MapKeysTest(unittest.TestCase):
 
     def test_it(self):
         from acme.util import map_keys
-        self.assertEqual({'a': 'b', 'c': 'd'},
-                         map_keys({'a': 'b', 'c': 'd'}, lambda key: key))
-        self.assertEqual({2: 2, 4: 4}, map_keys({1: 2, 3: 4}, lambda x: x + 1))
+        assert {'a': 'b', 'c': 'd'} == \
+                         map_keys({'a': 'b', 'c': 'd'}, lambda key: key)
+        assert {2: 2, 4: 4} == map_keys({1: 2, 3: 4}, lambda x: x + 1)
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

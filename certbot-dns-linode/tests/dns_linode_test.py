@@ -1,7 +1,10 @@
 """Tests for certbot_dns_linode._internal.dns_linode."""
 
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -43,7 +46,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         auth = Authenticator(config, "linode")
         auth._setup_credentials()
         client = auth._get_linode_client()
-        self.assertEqual(3, client.api_version)
+        assert 3 == client.api_version
 
     # pylint: disable=protected-access
     def test_api_version_4_detection(self):
@@ -55,7 +58,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         auth = Authenticator(config, "linode")
         auth._setup_credentials()
         client = auth._get_linode_client()
-        self.assertEqual(4, client.api_version)
+        assert 4 == client.api_version
 
     # pylint: disable=protected-access
     def test_api_version_3_detection_empty_version(self):
@@ -67,7 +70,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         auth = Authenticator(config, "linode")
         auth._setup_credentials()
         client = auth._get_linode_client()
-        self.assertEqual(3, client.api_version)
+        assert 3 == client.api_version
 
     # pylint: disable=protected-access
     def test_api_version_4_detection_empty_version(self):
@@ -79,7 +82,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         auth = Authenticator(config, "linode")
         auth._setup_credentials()
         client = auth._get_linode_client()
-        self.assertEqual(4, client.api_version)
+        assert 4 == client.api_version
 
     # pylint: disable=protected-access
     def test_api_version_3_manual(self):
@@ -91,7 +94,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         auth = Authenticator(config, "linode")
         auth._setup_credentials()
         client = auth._get_linode_client()
-        self.assertEqual(3, client.api_version)
+        assert 3 == client.api_version
 
     # pylint: disable=protected-access
     def test_api_version_4_manual(self):
@@ -103,7 +106,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         auth = Authenticator(config, "linode")
         auth._setup_credentials()
         client = auth._get_linode_client()
-        self.assertEqual(4, client.api_version)
+        assert 4 == client.api_version
 
     # pylint: disable=protected-access
     def test_api_version_error(self):
@@ -114,7 +117,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                                 linode_propagation_seconds=0)
         auth = Authenticator(config, "linode")
         auth._setup_credentials()
-        self.assertRaises(errors.PluginError, auth._get_linode_client)
+        with pytest.raises(errors.PluginError):
+            auth._get_linode_client()
 
 
 class LinodeLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
@@ -144,4 +148,4 @@ class Linode4LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLe
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

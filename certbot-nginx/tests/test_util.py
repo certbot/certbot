@@ -2,9 +2,9 @@
 import copy
 import shutil
 import tempfile
+from unittest import mock
 
 import josepy as jose
-from unittest import mock
 import pkg_resources
 
 from certbot import util

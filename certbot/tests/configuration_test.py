@@ -1,7 +1,10 @@
 """Tests for certbot.configuration."""
+import sys
 import unittest
 from unittest import mock
 import warnings
+
+import pytest
 
 from certbot import errors
 from certbot._internal import constants
@@ -23,20 +26,21 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
     def test_init_same_ports(self):
         self.config.namespace.https_port = 4321
         from certbot.configuration import NamespaceConfig
-        self.assertRaises(errors.Error, NamespaceConfig, self.config.namespace)
+        with pytest.raises(errors.Error):
+            NamespaceConfig(self.config.namespace)
 
     def test_proxy_getattr(self):
-        self.assertEqual(self.config.foo, 'bar')
-        self.assertEqual(self.config.work_dir, os.path.join(self.tempdir, 'work'))
+        assert self.config.foo == 'bar'
+        assert self.config.work_dir == os.path.join(self.tempdir, 'work')
 
     def test_server_path(self):
-        self.assertEqual(['acme-server.org:443', 'new'],
-                         self.config.server_path.split(os.path.sep))
+        assert ['acme-server.org:443', 'new'] == \
+                         self.config.server_path.split(os.path.sep)
 
         self.config.namespace.server = ('http://user:pass@acme.server:443'
                                  '/p/a/t/h;parameters?query#fragment')
-        self.assertEqual(['user:pass@acme.server:443', 'p', 'a', 't', 'h'],
-                         self.config.server_path.split(os.path.sep))
+        assert ['user:pass@acme.server:443', 'p', 'a', 't', 'h'] == \
+                         self.config.server_path.split(os.path.sep)
 
     @mock.patch('certbot.configuration.constants')
     def test_dynamic_dirs(self, mock_constants):
@@ -50,26 +54,20 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
 
         ref_path = misc.underscores_for_unsupported_characters_in_path(
             'acc/acme-server.org:443/new')
-        self.assertEqual(
-            os.path.normpath(self.config.accounts_dir),
-            os.path.normpath(os.path.join(self.config.config_dir, ref_path)))
-        self.assertEqual(
-            os.path.normpath(self.config.backup_dir),
-            os.path.normpath(os.path.join(self.config.work_dir, 'backups')))
+        assert os.path.normpath(self.config.accounts_dir) == \
+            os.path.normpath(os.path.join(self.config.config_dir, ref_path))
+        assert os.path.normpath(self.config.backup_dir) == \
+            os.path.normpath(os.path.join(self.config.work_dir, 'backups'))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
-            self.assertEqual(
-                os.path.normpath(self.config.csr_dir),
-                os.path.normpath(os.path.join(self.config.config_dir, 'csr')))
-            self.assertEqual(
-                os.path.normpath(self.config.key_dir),
-                os.path.normpath(os.path.join(self.config.config_dir, 'keys')))
-        self.assertEqual(
-            os.path.normpath(self.config.in_progress_dir),
-            os.path.normpath(os.path.join(self.config.work_dir, '../p')))
-        self.assertEqual(
-            os.path.normpath(self.config.temp_checkpoint_dir),
-            os.path.normpath(os.path.join(self.config.work_dir, 't')))
+            assert os.path.normpath(self.config.csr_dir) == \
+                os.path.normpath(os.path.join(self.config.config_dir, 'csr'))
+            assert os.path.normpath(self.config.key_dir) == \
+                os.path.normpath(os.path.join(self.config.config_dir, 'keys'))
+        assert os.path.normpath(self.config.in_progress_dir) == \
+            os.path.normpath(os.path.join(self.config.work_dir, '../p'))
+        assert os.path.normpath(self.config.temp_checkpoint_dir) == \
+            os.path.normpath(os.path.join(self.config.work_dir, 't'))
 
     def test_absolute_paths(self):
         from certbot.configuration import NamespaceConfig
@@ -89,23 +87,23 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_namespace.server = server
         config = NamespaceConfig(mock_namespace)
 
-        self.assertTrue(os.path.isabs(config.config_dir))
-        self.assertEqual(config.config_dir,
-                         os.path.join(os.getcwd(), config_base))
-        self.assertTrue(os.path.isabs(config.work_dir))
-        self.assertEqual(config.work_dir,
-                         os.path.join(os.getcwd(), work_base))
-        self.assertTrue(os.path.isabs(config.logs_dir))
-        self.assertEqual(config.logs_dir,
-                         os.path.join(os.getcwd(), logs_base))
-        self.assertTrue(os.path.isabs(config.accounts_dir))
-        self.assertTrue(os.path.isabs(config.backup_dir))
+        assert os.path.isabs(config.config_dir)
+        assert config.config_dir == \
+                         os.path.join(os.getcwd(), config_base)
+        assert os.path.isabs(config.work_dir)
+        assert config.work_dir == \
+                         os.path.join(os.getcwd(), work_base)
+        assert os.path.isabs(config.logs_dir)
+        assert config.logs_dir == \
+                         os.path.join(os.getcwd(), logs_base)
+        assert os.path.isabs(config.accounts_dir)
+        assert os.path.isabs(config.backup_dir)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
-            self.assertTrue(os.path.isabs(config.csr_dir))
-            self.assertTrue(os.path.isabs(config.key_dir))
-        self.assertTrue(os.path.isabs(config.in_progress_dir))
-        self.assertTrue(os.path.isabs(config.temp_checkpoint_dir))
+            assert os.path.isabs(config.csr_dir)
+            assert os.path.isabs(config.key_dir)
+        assert os.path.isabs(config.in_progress_dir)
+        assert os.path.isabs(config.temp_checkpoint_dir)
 
     @mock.patch('certbot.configuration.constants')
     def test_renewal_dynamic_dirs(self, mock_constants):
@@ -113,13 +111,10 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_constants.LIVE_DIR = 'l'
         mock_constants.RENEWAL_CONFIGS_DIR = 'renewal_configs'
 
-        self.assertEqual(
-                self.config.default_archive_dir, os.path.join(self.config.config_dir, 'a'))
-        self.assertEqual(
-                self.config.live_dir, os.path.join(self.config.config_dir, 'l'))
-        self.assertEqual(
-                self.config.renewal_configs_dir, os.path.join(
-                    self.config.config_dir, 'renewal_configs'))
+        assert self.config.default_archive_dir == os.path.join(self.config.config_dir, 'a')
+        assert self.config.live_dir == os.path.join(self.config.config_dir, 'l')
+        assert self.config.renewal_configs_dir == os.path.join(
+                    self.config.config_dir, 'renewal_configs')
 
     def test_renewal_absolute_paths(self):
         from certbot.configuration import NamespaceConfig
@@ -137,30 +132,30 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_namespace.logs_dir = logs_base
         config = NamespaceConfig(mock_namespace)
 
-        self.assertTrue(os.path.isabs(config.default_archive_dir))
-        self.assertTrue(os.path.isabs(config.live_dir))
-        self.assertTrue(os.path.isabs(config.renewal_configs_dir))
+        assert os.path.isabs(config.default_archive_dir)
+        assert os.path.isabs(config.live_dir)
+        assert os.path.isabs(config.renewal_configs_dir)
 
     def test_get_and_set_attr(self):
         self.config.foo = 42
-        self.assertEqual(self.config.namespace.foo, 42)
+        assert self.config.namespace.foo == 42
         self.config.namespace.bar = 1337
-        self.assertEqual(self.config.bar, 1337)
+        assert self.config.bar == 1337
 
     def test_hook_directories(self):
-        self.assertEqual(self.config.renewal_hooks_dir,
+        assert self.config.renewal_hooks_dir == \
                          os.path.join(self.config.config_dir,
-                                      constants.RENEWAL_HOOKS_DIR))
-        self.assertEqual(self.config.renewal_pre_hooks_dir,
+                                      constants.RENEWAL_HOOKS_DIR)
+        assert self.config.renewal_pre_hooks_dir == \
                          os.path.join(self.config.renewal_hooks_dir,
-                                      constants.RENEWAL_PRE_HOOKS_DIR))
-        self.assertEqual(self.config.renewal_deploy_hooks_dir,
+                                      constants.RENEWAL_PRE_HOOKS_DIR)
+        assert self.config.renewal_deploy_hooks_dir == \
                          os.path.join(self.config.renewal_hooks_dir,
-                                      constants.RENEWAL_DEPLOY_HOOKS_DIR))
-        self.assertEqual(self.config.renewal_post_hooks_dir,
+                                      constants.RENEWAL_DEPLOY_HOOKS_DIR)
+        assert self.config.renewal_post_hooks_dir == \
                          os.path.join(self.config.renewal_hooks_dir,
-                                      constants.RENEWAL_POST_HOOKS_DIR))
+                                      constants.RENEWAL_POST_HOOKS_DIR)
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

@@ -7,15 +7,14 @@ from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from certbot_nginx._internal import nginxparser
-from certbot_nginx._internal.obj import Addr
-
 from acme import challenges
 from acme.challenges import KeyAuthorizationChallengeResponse
 from certbot import errors
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import os
 from certbot.plugins import common
+from certbot_nginx._internal import nginxparser
+from certbot_nginx._internal.obj import Addr
 
 if TYPE_CHECKING:
     from certbot_nginx._internal.configurator import NginxConfigurator

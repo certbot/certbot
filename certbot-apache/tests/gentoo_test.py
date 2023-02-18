@@ -1,6 +1,9 @@
 """Test for certbot_apache._internal.configurator for Gentoo overrides"""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import filesystem
@@ -59,12 +62,12 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
             self.temp_dir, "gentoo_apache/apache")
 
     def test_get_parser(self):
-        self.assertIsInstance(self.config.parser, override_gentoo.GentooParser)
+        assert isinstance(self.config.parser, override_gentoo.GentooParser)
 
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found."""
         vhs = self.config.get_virtual_hosts()
-        self.assertEqual(len(vhs), 3)
+        assert len(vhs) == 3
         found = 0
 
         for vhost in vhs:
@@ -74,7 +77,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
                     break
             else:
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
-        self.assertEqual(found, 3)
+        assert found == 3
 
     def test_get_sysconfig_vars(self):
         """Make sure we read the Gentoo APACHE2_OPTS variable correctly"""
@@ -86,7 +89,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         with mock.patch("certbot_apache._internal.override_gentoo.GentooParser.update_modules"):
             self.config.parser.update_runtime_variables()
         for define in defines:
-            self.assertIn(define, self.config.parser.variables)
+            assert define in self.config.parser.variables
 
     @mock.patch("certbot_apache._internal.apache_util.parse_from_subprocess")
     def test_no_binary_configdump(self, mock_subprocess):
@@ -96,11 +99,11 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         with mock.patch("certbot_apache._internal.override_gentoo.GentooParser.update_modules"):
             self.config.parser.update_runtime_variables()
             self.config.parser.reset_modules()
-        self.assertIs(mock_subprocess.called, False)
+        assert mock_subprocess.called is False
 
         self.config.parser.update_runtime_variables()
         self.config.parser.reset_modules()
-        self.assertIs(mock_subprocess.called, True)
+        assert mock_subprocess.called is True
 
     @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):
@@ -122,15 +125,15 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
             mock_osi.return_value = ("gentoo", "123")
             self.config.parser.update_runtime_variables()
 
-        self.assertEqual(mock_get.call_count, 1)
-        self.assertEqual(len(self.config.parser.modules), 4)
-        self.assertIn("mod_another.c", self.config.parser.modules)
+        assert mock_get.call_count == 1
+        assert len(self.config.parser.modules) == 4
+        assert "mod_another.c" in self.config.parser.modules
 
     @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_alt_restart_works(self, mock_run_script):
         mock_run_script.side_effect = [None, errors.SubprocessError, None]
         self.config.restart()
-        self.assertEqual(mock_run_script.call_count, 3)
+        assert mock_run_script.call_count == 3
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

@@ -1,6 +1,9 @@
 """Test the helper objects in certbot_nginx._internal.obj."""
 import itertools
+import sys
 import unittest
+
+import pytest
 
 
 class AddrTest(unittest.TestCase):
@@ -17,65 +20,65 @@ class AddrTest(unittest.TestCase):
         self.addr8 = Addr.fromstring("*:80 default ssl")
 
     def test_fromstring(self):
-        self.assertEqual(self.addr1.get_addr(), "192.168.1.1")
-        self.assertEqual(self.addr1.get_port(), "")
-        self.assertIs(self.addr1.ssl, False)
-        self.assertIs(self.addr1.default, False)
+        assert self.addr1.get_addr() == "192.168.1.1"
+        assert self.addr1.get_port() == ""
+        assert self.addr1.ssl is False
+        assert self.addr1.default is False
 
-        self.assertEqual(self.addr2.get_addr(), "192.168.1.1")
-        self.assertEqual(self.addr2.get_port(), "*")
-        self.assertIs(self.addr2.ssl, True)
-        self.assertIs(self.addr2.default, False)
+        assert self.addr2.get_addr() == "192.168.1.1"
+        assert self.addr2.get_port() == "*"
+        assert self.addr2.ssl is True
+        assert self.addr2.default is False
 
-        self.assertEqual(self.addr3.get_addr(), "192.168.1.1")
-        self.assertEqual(self.addr3.get_port(), "80")
-        self.assertIs(self.addr3.ssl, False)
-        self.assertIs(self.addr3.default, False)
+        assert self.addr3.get_addr() == "192.168.1.1"
+        assert self.addr3.get_port() == "80"
+        assert self.addr3.ssl is False
+        assert self.addr3.default is False
 
-        self.assertEqual(self.addr4.get_addr(), "*")
-        self.assertEqual(self.addr4.get_port(), "80")
-        self.assertIs(self.addr4.ssl, True)
-        self.assertIs(self.addr4.default, True)
+        assert self.addr4.get_addr() == "*"
+        assert self.addr4.get_port() == "80"
+        assert self.addr4.ssl is True
+        assert self.addr4.default is True
 
-        self.assertEqual(self.addr5.get_addr(), "myhost")
-        self.assertEqual(self.addr5.get_port(), "")
-        self.assertIs(self.addr5.ssl, False)
-        self.assertIs(self.addr5.default, False)
+        assert self.addr5.get_addr() == "myhost"
+        assert self.addr5.get_port() == ""
+        assert self.addr5.ssl is False
+        assert self.addr5.default is False
 
-        self.assertEqual(self.addr6.get_addr(), "")
-        self.assertEqual(self.addr6.get_port(), "80")
-        self.assertIs(self.addr6.ssl, False)
-        self.assertIs(self.addr6.default, True)
+        assert self.addr6.get_addr() == ""
+        assert self.addr6.get_port() == "80"
+        assert self.addr6.ssl is False
+        assert self.addr6.default is True
 
-        self.assertIs(self.addr8.default, True)
+        assert self.addr8.default is True
 
-        self.assertIsNone(self.addr7)
+        assert self.addr7 is None
 
     def test_str(self):
-        self.assertEqual(str(self.addr1), "192.168.1.1")
-        self.assertEqual(str(self.addr2), "192.168.1.1:* ssl")
-        self.assertEqual(str(self.addr3), "192.168.1.1:80")
-        self.assertEqual(str(self.addr4), "*:80 default_server ssl")
-        self.assertEqual(str(self.addr5), "myhost")
-        self.assertEqual(str(self.addr6), "80 default_server")
-        self.assertEqual(str(self.addr8), "*:80 default_server ssl")
+        assert str(self.addr1) == "192.168.1.1"
+        assert str(self.addr2) == "192.168.1.1:* ssl"
+        assert str(self.addr3) == "192.168.1.1:80"
+        assert str(self.addr4) == "*:80 default_server ssl"
+        assert str(self.addr5) == "myhost"
+        assert str(self.addr6) == "80 default_server"
+        assert str(self.addr8) == "*:80 default_server ssl"
 
     def test_to_string(self):
-        self.assertEqual(self.addr1.to_string(), "192.168.1.1")
-        self.assertEqual(self.addr2.to_string(), "192.168.1.1:* ssl")
-        self.assertEqual(self.addr3.to_string(), "192.168.1.1:80")
-        self.assertEqual(self.addr4.to_string(), "*:80 default_server ssl")
-        self.assertEqual(self.addr4.to_string(include_default=False), "*:80 ssl")
-        self.assertEqual(self.addr5.to_string(), "myhost")
-        self.assertEqual(self.addr6.to_string(), "80 default_server")
-        self.assertEqual(self.addr6.to_string(include_default=False), "80")
+        assert self.addr1.to_string() == "192.168.1.1"
+        assert self.addr2.to_string() == "192.168.1.1:* ssl"
+        assert self.addr3.to_string() == "192.168.1.1:80"
+        assert self.addr4.to_string() == "*:80 default_server ssl"
+        assert self.addr4.to_string(include_default=False) == "*:80 ssl"
+        assert self.addr5.to_string() == "myhost"
+        assert self.addr6.to_string() == "80 default_server"
+        assert self.addr6.to_string(include_default=False) == "80"
 
     def test_eq(self):
         from certbot_nginx._internal.obj import Addr
         new_addr1 = Addr.fromstring("192.168.1.1 spdy")
-        self.assertEqual(self.addr1, new_addr1)
-        self.assertNotEqual(self.addr1, self.addr2)
-        self.assertNotEqual(self.addr1, 3333)
+        assert self.addr1 == new_addr1
+        assert self.addr1 != self.addr2
+        assert self.addr1 != 3333
 
     def test_equivalent_any_addresses(self):
         from certbot_nginx._internal.obj import Addr
@@ -84,17 +87,16 @@ class AddrTest(unittest.TestCase):
                          "*:80 default_server ssl",
                          "80 default ssl")
         for first, second in itertools.combinations(any_addresses, 2):
-            self.assertEqual(Addr.fromstring(first), Addr.fromstring(second))
+            assert Addr.fromstring(first) == Addr.fromstring(second)
 
         # Also, make sure ports are checked.
-        self.assertNotEqual(Addr.fromstring(any_addresses[0]),
-                            Addr.fromstring("0.0.0.0:443 default_server ssl"))
+        assert Addr.fromstring(any_addresses[0]) != \
+                            Addr.fromstring("0.0.0.0:443 default_server ssl")
 
         # And they aren't equivalent to a specified address.
         for any_address in any_addresses:
-            self.assertNotEqual(
-                Addr.fromstring("192.168.1.2:80 default_server ssl"),
-                Addr.fromstring(any_address))
+            assert Addr.fromstring("192.168.1.2:80 default_server ssl") != \
+                Addr.fromstring(any_address)
 
     def test_set_inclusion(self):
         from certbot_nginx._internal.obj import Addr
@@ -103,14 +105,14 @@ class AddrTest(unittest.TestCase):
         addr2b = Addr.fromstring("192.168.1.1:* ssl")
         set_b = {addr1b, addr2b}
 
-        self.assertEqual(set_a, set_b)
+        assert set_a == set_b
 
 
 class VirtualHostTest(unittest.TestCase):
     """Test the VirtualHost class."""
     def setUp(self):
-        from certbot_nginx._internal.obj import VirtualHost
         from certbot_nginx._internal.obj import Addr
+        from certbot_nginx._internal.obj import VirtualHost
         raw1 = [
             ['listen', '69.50.225.155:9000'],
             [['if', '($scheme', '!=', '"https") '],
@@ -166,26 +168,26 @@ class VirtualHostTest(unittest.TestCase):
             {Addr.fromstring("localhost blah")}, False, False,
             {'localhost'}, [], [])
 
-        self.assertEqual(vhost1b, self.vhost1)
-        self.assertEqual(str(vhost1b), str(self.vhost1))
-        self.assertNotEqual(vhost1b, 1234)
+        assert vhost1b == self.vhost1
+        assert str(vhost1b) == str(self.vhost1)
+        assert vhost1b != 1234
 
     def test_str(self):
         stringified = '\n'.join(['file: filep', 'addrs: localhost',
                                  "names: ['localhost']", 'ssl: False',
                                  'enabled: False'])
-        self.assertEqual(stringified, str(self.vhost1))
+        assert stringified == str(self.vhost1)
 
     def test_has_header(self):
-        self.assertIs(self.vhost_has_hsts.has_header('Strict-Transport-Security'), True)
-        self.assertIs(self.vhost_has_hsts.has_header('Bogus-Header'), False)
-        self.assertIs(self.vhost1.has_header('Strict-Transport-Security'), False)
-        self.assertIs(self.vhost1.has_header('Bogus-Header'), False)
+        assert self.vhost_has_hsts.has_header('Strict-Transport-Security') is True
+        assert self.vhost_has_hsts.has_header('Bogus-Header') is False
+        assert self.vhost1.has_header('Strict-Transport-Security') is False
+        assert self.vhost1.has_header('Bogus-Header') is False
 
     def test_contains_list(self):
-        from certbot_nginx._internal.obj import VirtualHost
-        from certbot_nginx._internal.obj import Addr
         from certbot_nginx._internal.configurator import _test_block_from_block
+        from certbot_nginx._internal.obj import Addr
+        from certbot_nginx._internal.obj import VirtualHost
         test_block = [
             ['\n    ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
             ['\n']
@@ -221,9 +223,9 @@ class VirtualHostTest(unittest.TestCase):
             "filp",
             {Addr.fromstring("localhost")}, False, False,
             {'localhost'}, test_bad_haystack, [])
-        self.assertTrue(vhost_haystack.contains_list(test_needle))
-        self.assertFalse(vhost_bad_haystack.contains_list(test_needle))
+        assert vhost_haystack.contains_list(test_needle)
+        assert not vhost_bad_haystack.contains_list(test_needle)
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

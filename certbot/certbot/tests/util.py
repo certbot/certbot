@@ -9,17 +9,18 @@ import sys
 import tempfile
 from typing import Any
 from typing import Callable
-from typing import Union
 from typing import cast
 from typing import IO
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Union
 import unittest
 from unittest import mock
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 import josepy as jose
 from OpenSSL import crypto
 import pkg_resources
@@ -128,8 +129,9 @@ def load_rsa_private_key(*names: str) -> jose.ComparableRSAKey:
         loader_fn = serialization.load_pem_private_key
     else:
         loader_fn = serialization.load_der_private_key
-    return jose.ComparableRSAKey(loader_fn(
-        load_vector(*names), password=None, backend=default_backend()))
+    return jose.ComparableRSAKey(
+        cast(RSAPrivateKey,
+             loader_fn(load_vector(*names), password=None, backend=default_backend())))
 
 
 def load_pyopenssl_private_key(*names: str) -> crypto.PKey:

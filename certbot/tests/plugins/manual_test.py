@@ -4,6 +4,8 @@ import textwrap
 import unittest
 from unittest import mock
 
+import pytest
+
 from acme import challenges
 from certbot import errors
 from certbot.compat import filesystem
@@ -45,19 +47,21 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     def test_prepare_no_hook_noninteractive(self):
         self.config.noninteractive_mode = True
-        self.assertRaises(errors.PluginError, self.auth.prepare)
+        with pytest.raises(errors.PluginError):
+            self.auth.prepare()
 
     def test_prepare_bad_hook(self):
         self.config.manual_auth_hook = os.path.abspath(os.sep)  # is / on UNIX
         self.config.validate_hooks = True
-        self.assertRaises(errors.HookCommandNotFound, self.auth.prepare)
+        with pytest.raises(errors.HookCommandNotFound):
+            self.auth.prepare()
 
     def test_more_info(self):
-        self.assertIsInstance(self.auth.more_info(), str)
+        assert isinstance(self.auth.more_info(), str)
 
     def test_get_chall_pref(self):
-        self.assertEqual(self.auth.get_chall_pref('example.org'),
-                         [challenges.HTTP01, challenges.DNS01])
+        assert self.auth.get_chall_pref('example.org') == \
+                         [challenges.HTTP01, challenges.DNS01]
 
     def test_script_perform(self):
         self.config.manual_auth_hook = (
@@ -80,32 +84,28 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             ','.join(achall.domain for achall in self.achalls),
             len(self.achalls) - self.achalls.index(self.http_achall) - 1)
 
-        self.assertEqual(
-            self.auth.perform(self.achalls),
-            [achall.response(achall.account_key) for achall in self.achalls])
-        self.assertEqual(
-            self.auth.env[self.dns_achall]['CERTBOT_AUTH_OUTPUT'],
-            dns_expected)
-        self.assertEqual(
-            self.auth.env[self.http_achall]['CERTBOT_AUTH_OUTPUT'],
-            http_expected)
+        assert self.auth.perform(self.achalls) == \
+            [achall.response(achall.account_key) for achall in self.achalls]
+        assert self.auth.env[self.dns_achall]['CERTBOT_AUTH_OUTPUT'] == \
+            dns_expected
+        assert self.auth.env[self.http_achall]['CERTBOT_AUTH_OUTPUT'] == \
+            http_expected
 
         # Successful hook output should be sent to notify
-        self.assertEqual(self.mock_get_display().notification.call_count, len(self.achalls))
+        assert self.mock_get_display().notification.call_count == len(self.achalls)
         for i, (args, _) in enumerate(self.mock_get_display().notification.call_args_list):
             needle = textwrap.indent(self.auth.env[self.achalls[i]]['CERTBOT_AUTH_OUTPUT'], ' ')
-            self.assertIn(needle, args[0])
+            assert needle in args[0]
 
     def test_manual_perform(self):
-        self.assertEqual(
-            self.auth.perform(self.achalls),
-            [achall.response(achall.account_key) for achall in self.achalls])
+        assert self.auth.perform(self.achalls) == \
+            [achall.response(achall.account_key) for achall in self.achalls]
 
-        self.assertEqual(self.mock_get_display().notification.call_count, len(self.achalls))
+        assert self.mock_get_display().notification.call_count == len(self.achalls)
         for i, (args, kwargs) in enumerate(self.mock_get_display().notification.call_args_list):
             achall = self.achalls[i]
-            self.assertIn(achall.validation(achall.account_key), args[0])
-            self.assertIs(kwargs['wrap'], False)
+            assert achall.validation(achall.account_key) in args[0]
+            assert kwargs['wrap'] is False
 
     def test_cleanup(self):
         self.config.manual_auth_hook = ('{0} -c "import sys; sys.stdout.write(\'foo\')"'
@@ -115,48 +115,38 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
         for achall in self.achalls:
             self.auth.cleanup([achall])
-            self.assertEqual(os.environ['CERTBOT_AUTH_OUTPUT'], 'foo')
-            self.assertEqual(os.environ['CERTBOT_DOMAIN'], achall.domain)
+            assert os.environ['CERTBOT_AUTH_OUTPUT'] == 'foo'
+            assert os.environ['CERTBOT_DOMAIN'] == achall.domain
             if isinstance(achall.chall, (challenges.HTTP01, challenges.DNS01)):
-                self.assertEqual(
-                    os.environ['CERTBOT_VALIDATION'],
-                    achall.validation(achall.account_key))
+                assert os.environ['CERTBOT_VALIDATION'] == \
+                    achall.validation(achall.account_key)
             if isinstance(achall.chall, challenges.HTTP01):
-                self.assertEqual(
-                    os.environ['CERTBOT_TOKEN'],
-                    achall.chall.encode('token'))
+                assert os.environ['CERTBOT_TOKEN'] == \
+                    achall.chall.encode('token')
             else:
-                self.assertNotIn('CERTBOT_TOKEN', os.environ)
+                assert 'CERTBOT_TOKEN' not in os.environ
 
     def test_auth_hint_hook(self):
         self.config.manual_auth_hook = '/bin/true'
-        self.assertEqual(
-            self.auth.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A]),
-            'The Certificate Authority failed to verify the DNS TXT records and challenge '
-            'files created by the --manual-auth-hook. Ensure that this hook is functioning '
-            'correctly and that it waits a sufficient duration of time for DNS propagation. '
+        assert self.auth.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A]) == \
+            'The Certificate Authority failed to verify the DNS TXT records and challenge ' \
+            'files created by the --manual-auth-hook. Ensure that this hook is functioning ' \
+            'correctly and that it waits a sufficient duration of time for DNS propagation. ' \
             'Refer to "certbot --help manual" and the Certbot User Guide.'
-        )
-        self.assertEqual(
-            self.auth.auth_hint([acme_util.HTTP01_A]),
-            'The Certificate Authority failed to verify the challenge files created by the '
-            '--manual-auth-hook. Ensure that this hook is functioning correctly. Refer to '
+        assert self.auth.auth_hint([acme_util.HTTP01_A]) == \
+            'The Certificate Authority failed to verify the challenge files created by the ' \
+            '--manual-auth-hook. Ensure that this hook is functioning correctly. Refer to ' \
             '"certbot --help manual" and the Certbot User Guide.'
-        )
 
     def test_auth_hint_no_hook(self):
-        self.assertEqual(
-            self.auth.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A]),
-            'The Certificate Authority failed to verify the manually created DNS TXT records '
-            'and challenge files. Ensure that you created these in the correct location, or '
+        assert self.auth.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A]) == \
+            'The Certificate Authority failed to verify the manually created DNS TXT records ' \
+            'and challenge files. Ensure that you created these in the correct location, or ' \
             'try waiting longer for DNS propagation on the next attempt.'
-        )
-        self.assertEqual(
-            self.auth.auth_hint([acme_util.HTTP01_A, acme_util.HTTP01_A, acme_util.HTTP01_A]),
-            'The Certificate Authority failed to verify the manually created challenge files. '
+        assert self.auth.auth_hint([acme_util.HTTP01_A, acme_util.HTTP01_A, acme_util.HTTP01_A]) == \
+            'The Certificate Authority failed to verify the manually created challenge files. ' \
             'Ensure that you created these in the correct location.'
-        )
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

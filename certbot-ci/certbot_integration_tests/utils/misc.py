@@ -15,20 +15,20 @@ import sys
 import tempfile
 import threading
 import time
-import warnings
 from typing import Generator
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
+import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
-from cryptography.x509 import load_pem_x509_certificate
 from cryptography.x509 import Certificate
+from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
 import pkg_resources
 import requests
@@ -158,14 +158,12 @@ set -e
 
 
 @contextlib.contextmanager
-def manual_http_hooks(http_server_root: str,
-                      http_port: int) -> Generator[Tuple[str, str], None, None]:
+def manual_http_hooks(http_server_root: str) -> Generator[Tuple[str, str], None, None]:
     """
     Generate suitable http-01 hooks command for test purpose in the given HTTP
     server webroot directory. These hooks command use temporary python scripts
     that are deleted upon context exit.
     :param str http_server_root: path to the HTTP server configured to serve http-01 challenges
-    :param int http_port: HTTP port that the HTTP server listen on
     :return (str, str): a tuple containing the authentication hook and cleanup hook commands
     """
     tempdir = tempfile.mkdtemp()
@@ -175,24 +173,12 @@ def manual_http_hooks(http_server_root: str,
             file_h.write('''\
 #!/usr/bin/env python
 import os
-import requests
-import time
-import sys
 challenge_dir = os.path.join('{0}', '.well-known', 'acme-challenge')
 os.makedirs(challenge_dir)
 challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN'))
 with open(challenge_file, 'w') as file_h:
     file_h.write(os.environ.get('CERTBOT_VALIDATION'))
-url = 'http://localhost:{1}/.well-known/acme-challenge/' + os.environ.get('CERTBOT_TOKEN')
-for _ in range(0, 10):
-    time.sleep(1)
-    try:
-        if request.get(url).status_code == 200:
-            sys.exit(0)
-    except requests.exceptions.ConnectionError:
-        pass
-raise ValueError('Error, url did not respond after 10 attempts: {{0}}'.format(url))
-'''.format(http_server_root.replace('\\', '\\\\'), http_port))
+'''.format(http_server_root.replace('\\', '\\\\')))
         os.chmod(auth_script_path, 0o755)
 
         cleanup_script_path = os.path.join(tempdir, 'cleanup.py')
@@ -230,11 +216,7 @@ def generate_csr(domains: Iterable[str], key_path: str, csr_path: str,
             # Ignore a warning on some old versions of cryptography
             warnings.simplefilter('ignore', category=PendingDeprecationWarning)
             _key = ec.generate_private_key(ec.SECP384R1(), default_backend())
-        # This type ignore directive is required due to an outdated version of types-cryptography.
-        # It can be removed once package types-pyOpenSSL depends on cryptography instead of
-        # types-cryptography and so types-cryptography is not installed anymore.
-        # See https://github.com/python/typeshed/issues/5618
-        _bytes = _key.private_bytes(encoding=Encoding.PEM,  # type: ignore
+        _bytes = _key.private_bytes(encoding=Encoding.PEM,
                                     format=PrivateFormat.TraditionalOpenSSL,
                                     encryption_algorithm=NoEncryption())
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, _bytes)

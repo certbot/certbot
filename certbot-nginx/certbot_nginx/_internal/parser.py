@@ -18,13 +18,13 @@ from typing import Set
 from typing import Tuple
 from typing import Union
 
-from certbot_nginx._internal import nginxparser
-from certbot_nginx._internal import obj
-from certbot_nginx._internal.nginxparser import UnspacedList
 import pyparsing
 
 from certbot import errors
 from certbot.compat import os
+from certbot_nginx._internal import nginxparser
+from certbot_nginx._internal import obj
+from certbot_nginx._internal.nginxparser import UnspacedList
 
 logger = logging.getLogger(__name__)
 
