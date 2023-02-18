@@ -53,8 +53,14 @@ stages:
           - bash: set -e && tools/docker/deploy.sh $(dockerTag) $DOCKER_ARCH
             displayName: Deploy the Docker images by architecture
       - job: publish_docker_multiarch
+        dependsOn: publish_docker_by_arch
         pool:
           vmImage: ubuntu-22.04
         steps:
+          - task: Docker@2
+            inputs:
+              command: login
+              containerRegistry: docker-hub
+            displayName: Login to Docker Hub
           - bash: set -e && tools/docker/deploy_multiarch.sh $(dockerTag)
             displayName: Deploy the Docker multiarch manifests

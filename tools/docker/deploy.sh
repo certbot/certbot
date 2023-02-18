@@ -21,16 +21,13 @@ fi
 source "$WORK_DIR/lib/common"
 ParseRequestedArch "${2}"
 
-
-
-
 # Creates and pushes all Docker images aliases for the requested architectures
 # set in the environment variable ALL_REQUESTED_ARCH.  If the value of the
 # global variable TAG_BASE is a 2.0.0 or greater version tag such as v2.1.0,
 # tags for "latest" are also created. Tags such as "nightly" do not recieve 
 # "latest" tags.
 # As an example, for the tag v2.2.0 and the default set of all target 
-# architectures, the following tags would be created:
+# architectures as of writing this, the following tags would be created:
 #  - certbot/certbot:amd64-v2.2.0       <- image
 #  - certbot/certbot:arm32v6-v2.2.0     <- image
 #  - certbot/certbot:arm64v8-v2.2.0     <- image
@@ -39,7 +36,7 @@ ParseRequestedArch "${2}"
 #  - certbot/certbot:arm64v8-latest     <- image
 # Usage: TagAndPushForAllRequestedArch [IMAGE NAME]
 #   where [IMAGE NAME] is the name of the Docker image in the Docker repository
-#   such as "certbot" or "dns-cloudflare". 
+#   such as "certbot" or "dns-cloudflare".
 # Read globals:
 # * TAG_BASE
 # * ALL_REQUESTED_ARCH
