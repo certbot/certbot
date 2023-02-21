@@ -84,13 +84,6 @@ VERB_HELP = [
         "opts": 'Options for the "plugins" subcommand',
         "usage": "\n\n  certbot plugins [options]\n\n"
     }),
-    ("update_symlinks", {
-        "short": "Recreate symlinks in your /etc/letsencrypt/live/ directory",
-        "opts": ("Recreates certificate and key symlinks in {0}, if you changed them by hand "
-                 "or edited a renewal configuration file".format(
-                  os.path.join(flag_default("config_dir"), "live"))),
-        "usage": "\n\n  certbot update_symlinks [options]\n\n"
-    }),
     ("enhance", {
         "short": "Add security enhancements to your existing configuration",
         "opts": ("Helps to harden the TLS configuration by adding security enhancements "
