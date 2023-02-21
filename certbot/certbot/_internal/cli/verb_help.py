@@ -1,7 +1,5 @@
 """This module contain help information for verbs supported by certbot"""
 from certbot._internal.cli.cli_constants import SHORT_USAGE
-from certbot._internal.cli.cli_utils import flag_default
-from certbot.compat import os
 
 # The attributes here are:
 # short: a string that will be displayed by "certbot -h commands"
