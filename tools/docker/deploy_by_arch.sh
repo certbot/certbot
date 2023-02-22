@@ -4,7 +4,7 @@ IFS=$'\n\t'
 
 # This script deploys new versions of Certbot and Certbot plugin docker images.
 
-# Usage: ./deploy.sh [TAG] [all|amd64|arm32v6|arm64v8]
+# Usage: ./deploy_by_arch.sh [TAG] [all|amd64|arm32v6|arm64v8]
 #   with the [TAG] value corresponding the base of the tag to give the Docker
 #   images and the 2nd value being the architecture to build snaps for.
 #   Values should be something like `v0.34.0` or `nightly`. The given value is

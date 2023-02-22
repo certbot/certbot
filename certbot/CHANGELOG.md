@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Docker build and deploy scripts now generate multiarch manifests for non-architecture-specific tags, instead of defaulting to amd64 images.
 
 ### Fixed
 
@@ -31,7 +31,6 @@ More details about these changes can be found on our GitHub repo.
 * Certbot will now only keep the current and 5 previous certificates in the `/etc/letsencrypt/archive` directory for each certificate lineage. Any prior certificates will be automatically deleted upon renewal. This number may be further lowered in future releases.
   * As always, users should only reference the certificate files within `/etc/letsencrypt/live` and never use `/etc/letsencrypt/archive` directly. See [Where are my certificates?](https://eff-certbot.readthedocs.io/en/stable/using.html#where-are-my-certificates) in the Certbot User Guide.
 * `certbot.configuration.NamespaceConfig.key_dir` and `.csr_dir` are now deprecated.
-* Docker build and deploy scripts now generate multiarch manifests for non-architecture-specific tags, instead of defaulting to amd64 images.
 * All Certbot components now require `pytest` to run tests.
 
 ### Fixed
