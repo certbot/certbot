@@ -15,6 +15,7 @@ from typing import Optional
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
+import warnings
 
 import configobj
 import josepy as jose
@@ -1279,6 +1280,7 @@ def update_symlinks(config: configuration.NamespaceConfig,
     :rtype: None
 
     """
+    warnings.warn("update_symlinks is deprecated and will be removed", PendingDeprecationWarning)
     cert_manager.update_live_symlinks(config)
 
 

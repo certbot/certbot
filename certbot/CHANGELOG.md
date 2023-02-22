@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* We deprecated support for the update_symlinks command. Support will be removed in a following
+  version of Certbot.
 
 ### Changed
 
