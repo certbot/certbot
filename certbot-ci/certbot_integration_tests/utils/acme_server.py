@@ -210,7 +210,7 @@ class ACMEServer:
                                          '-rf', '/workspace/boulder'])
         try:
             # Launch the Boulder server
-            self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
+            self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path, force_stderr=True)
 
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
