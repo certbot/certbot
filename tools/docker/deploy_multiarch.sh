@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euxo pipefail
+IFS=$'\n\t'
 
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
@@ -15,13 +16,13 @@ source "$WORK_DIR/lib/common"
 #  - certbot/certbot:latest             <- multiarch manifest
 MakeMultiarchManifestForAllTargetArch() {
     DOCKER_REPO="${DOCKER_HUB_ORG}/${1}"
-    SRC_IMAGES=""
+    SRC_IMAGES=()
     for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
-        SRC_IMAGES+=" ${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}"
+        SRC_IMAGES+=("${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}")
     done
-    docker buildx imagetools create -t ${DOCKER_REPO}:${TAG_BASE}${SRC_IMAGES}
+    docker buildx imagetools create -t ${DOCKER_REPO}:${TAG_BASE} "${SRC_IMAGES[@]}"
     if [[ "${TAG_BASE}" =~ ^v([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
-        docker buildx imagetools create -t ${DOCKER_REPO}:latest ${SRC_IMAGES}
+        docker buildx imagetools create -t ${DOCKER_REPO}:latest "${SRC_IMAGES[@]}"
     fi
 }
 
