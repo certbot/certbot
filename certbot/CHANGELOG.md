@@ -11,7 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Docker build and deploy scripts now generate multiarch manifests for non-architecture-specific tags, instead of defaulting to amd64 images.
 
 ### Fixed
 
