@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 
-@pytest.skipif(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
+@pytest.mark.skipif(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
 def test_it(request: pytest.FixtureRequest) -> None:
     try:
         subprocess.check_call(['certbot', '--version'])
