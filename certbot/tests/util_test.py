@@ -7,6 +7,8 @@ import sys
 import unittest
 from unittest import mock
 
+import pytest
+
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -27,7 +29,7 @@ class EnvNoSnapForExternalCallsTest(unittest.TestCase):
         env_copy_dict['SNAP'] = 'RANDOM_NONSENSE_GARBAGE'
         env_copy_dict['CERTBOT_SNAPPED'] = 'True'
         with mock.patch('certbot.compat.os.environ.copy', return_value=env_copy_dict):
-            self.assertEqual(self._call()['PATH'], original_path)
+            assert self._call()['PATH'] == original_path
 
     def test_noop(self):
         env_copy_dict_unmodified = os.environ.copy()
@@ -38,13 +40,13 @@ class EnvNoSnapForExternalCallsTest(unittest.TestCase):
             # contains neither necessary key
             env_copy_dict.pop('SNAP', None)
             env_copy_dict.pop('CERTBOT_SNAPPED', None)
-            self.assertEqual(self._call()['PATH'], env_copy_dict_unmodified['PATH'])
+            assert self._call()['PATH'] == env_copy_dict_unmodified['PATH']
             # contains only one necessary key
             env_copy_dict['SNAP'] = 'RANDOM_NONSENSE_GARBAGE'
-            self.assertEqual(self._call()['PATH'], env_copy_dict_unmodified['PATH'])
+            assert self._call()['PATH'] == env_copy_dict_unmodified['PATH']
             del env_copy_dict['SNAP']
             env_copy_dict['CERTBOT_SNAPPED'] = 'True'
-            self.assertEqual(self._call()['PATH'], env_copy_dict_unmodified['PATH'])
+            assert self._call()['PATH'] == env_copy_dict_unmodified['PATH']
 
 
 class RunScriptTest(unittest.TestCase):
@@ -62,20 +64,22 @@ class RunScriptTest(unittest.TestCase):
         mock_run().stderr = "stderr"
 
         out, err = self._call(["test"])
-        self.assertEqual(out, "stdout")
-        self.assertEqual(err, "stderr")
+        assert out == "stdout"
+        assert err == "stderr"
 
     @mock.patch("certbot.util.subprocess.run")
     def test_bad_process(self, mock_run):
         mock_run.side_effect = OSError
 
-        self.assertRaises(errors.SubprocessError, self._call, ["test"])
+        with pytest.raises(errors.SubprocessError):
+            self._call(["test"])
 
     @mock.patch("certbot.util.subprocess.run")
     def test_failure(self, mock_run):
         mock_run().returncode = 1
 
-        self.assertRaises(errors.SubprocessError, self._call, ["test"])
+        with pytest.raises(errors.SubprocessError):
+            self._call(["test"])
 
 
 class ExeExistsTest(unittest.TestCase):
@@ -88,11 +92,11 @@ class ExeExistsTest(unittest.TestCase):
 
     def test_exe_exists(self):
         with mock.patch("certbot.util.filesystem.is_executable", return_value=True):
-            self.assertTrue(self._call("/path/to/exe"))
+            assert self._call("/path/to/exe")
 
     def test_exe_not_exists(self):
         with mock.patch("certbot.util.filesystem.is_executable", return_value=False):
-            self.assertFalse(self._call("/path/to/exe"))
+            assert not self._call("/path/to/exe")
 
 
 class LockDirUntilExit(test_util.TempDirTestCase):
@@ -117,17 +121,18 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         self._call(subdir)
         self._call(subdir)
 
-        self.assertEqual(mock_register.call_count, 1)
+        assert mock_register.call_count == 1
         registered_func = mock_register.call_args[0][0]
 
         from certbot import util
+
         # Despite lock_dir_until_exit has been called twice to subdir, its lock should have been
         # added only once. So we expect to have two lock references: for self.tempdir and subdir
-        self.assertEqual(len(util._LOCKS), 2)  # pylint: disable=protected-access
+        assert len(util._LOCKS) == 2  # pylint: disable=protected-access
         registered_func()  # Exception should not be raised
         # Logically, logger.debug, that would be invoked in case of unlock failure,
         # should never been called.
-        self.assertEqual(mock_logger.debug.call_count, 0)
+        assert mock_logger.debug.call_count == 0
 
 
 class SetUpCoreDirTest(test_util.TempDirTestCase):
@@ -141,13 +146,14 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     def test_success(self, mock_lock):
         new_dir = os.path.join(self.tempdir, 'new')
         self._call(new_dir, 0o700, False)
-        self.assertTrue(os.path.exists(new_dir))
-        self.assertEqual(mock_lock.call_count, 1)
+        assert os.path.exists(new_dir)
+        assert mock_lock.call_count == 1
 
     @mock.patch('certbot.util.make_or_verify_dir')
     def test_failure(self, mock_make_or_verify):
         mock_make_or_verify.side_effect = OSError
-        self.assertRaises(errors.Error, self._call, self.tempdir, 0o700, False)
+        with pytest.raises(errors.Error):
+            self._call(self.tempdir, 0o700, False)
 
 
 class MakeOrVerifyDirTest(test_util.TempDirTestCase):
@@ -171,20 +177,22 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
     def test_creates_dir_when_missing(self):
         path = os.path.join(self.tempdir, "bar")
         self._call(path, 0o650)
-        self.assertTrue(os.path.isdir(path))
-        self.assertTrue(filesystem.check_mode(path, 0o650))
+        assert os.path.isdir(path)
+        assert filesystem.check_mode(path, 0o650)
 
     def test_existing_correct_mode_does_not_fail(self):
         self._call(self.path, 0o600)
-        self.assertTrue(filesystem.check_mode(self.path, 0o600))
+        assert filesystem.check_mode(self.path, 0o600)
 
     def test_existing_wrong_mode_fails(self):
-        self.assertRaises(errors.Error, self._call, self.path, 0o400)
+        with pytest.raises(errors.Error):
+            self._call(self.path, 0o400)
 
     def test_reraises_os_error(self):
         with mock.patch.object(filesystem, "makedirs") as makedirs:
             makedirs.side_effect = OSError()
-            self.assertRaises(OSError, self._call, "bar", 12312312)
+            with pytest.raises(OSError):
+                self._call("bar", 12312312)
 
 
 class UniqueFileTest(test_util.TempDirTestCase):
@@ -204,13 +212,13 @@ class UniqueFileTest(test_util.TempDirTestCase):
         fd.write("bar")
         fd.close()
         with open(name) as f:
-            self.assertEqual(f.read(), "bar")
+            assert f.read() == "bar"
 
     def test_right_mode(self):
         fd1, name1 = self._call(0o700)
         fd2, name2 = self._call(0o600)
-        self.assertTrue(filesystem.check_mode(name1, 0o700))
-        self.assertTrue(filesystem.check_mode(name2, 0o600))
+        assert filesystem.check_mode(name1, 0o700)
+        assert filesystem.check_mode(name2, 0o600)
         fd1.close()
         fd2.close()
 
@@ -219,20 +227,20 @@ class UniqueFileTest(test_util.TempDirTestCase):
         fd2, name2 = self._call()
         fd3, name3 = self._call()
 
-        self.assertNotEqual(name1, name2)
-        self.assertNotEqual(name1, name3)
-        self.assertNotEqual(name2, name3)
+        assert name1 != name2
+        assert name1 != name3
+        assert name2 != name3
 
-        self.assertEqual(os.path.dirname(name1), self.tempdir)
-        self.assertEqual(os.path.dirname(name2), self.tempdir)
-        self.assertEqual(os.path.dirname(name3), self.tempdir)
+        assert os.path.dirname(name1) == self.tempdir
+        assert os.path.dirname(name2) == self.tempdir
+        assert os.path.dirname(name3) == self.tempdir
 
         basename1 = os.path.basename(name2)
-        self.assertTrue(basename1.endswith("foo.txt"))
+        assert basename1.endswith("foo.txt")
         basename2 = os.path.basename(name2)
-        self.assertTrue(basename2.endswith("foo.txt"))
+        assert basename2.endswith("foo.txt")
         basename3 = os.path.basename(name3)
-        self.assertTrue(basename3.endswith("foo.txt"))
+        assert basename3.endswith("foo.txt")
 
         fd1.close()
         fd2.close()
@@ -255,8 +263,8 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
 
     def test_basic(self):
         f, path = self._call("wow")
-        self.assertIsInstance(f, file_type)
-        self.assertEqual(os.path.join(self.tempdir, "wow.conf"), path)
+        assert isinstance(f, file_type)
+        assert os.path.join(self.tempdir, "wow.conf") == path
         f.close()
 
     def test_multiple(self):
@@ -264,15 +272,16 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for _ in range(10):
             items.append(self._call("wow"))
         f, name = items[-1]
-        self.assertIsInstance(f, file_type)
-        self.assertIsInstance(name, str)
-        self.assertIn("wow-0009.conf", name)
+        assert isinstance(f, file_type)
+        assert isinstance(name, str)
+        assert "wow-0009.conf" in name
         for f, _ in items:
             f.close()
 
     def test_failure(self):
         with mock.patch("certbot.compat.filesystem.open", side_effect=OSError(errno.EIO)):
-            self.assertRaises(OSError, self._call, "wow")
+            with pytest.raises(OSError):
+                self._call("wow")
 
 
 class SafelyRemoveTest(test_util.TempDirTestCase):
@@ -291,17 +300,18 @@ class SafelyRemoveTest(test_util.TempDirTestCase):
         with open(self.path, "w"):
             pass  # just create the file
         self._call()
-        self.assertFalse(os.path.exists(self.path))
+        assert not os.path.exists(self.path)
 
     def test_missing(self):
         self._call()
         # no error, yay!
-        self.assertFalse(os.path.exists(self.path))
+        assert not os.path.exists(self.path)
 
     def test_other_error_passthrough(self):
         with mock.patch("certbot.util.os.remove") as mock_remove:
             mock_remove.side_effect = OSError
-            self.assertRaises(OSError, self._call)
+            with pytest.raises(OSError):
+                self._call()
 
 
 class SafeEmailTest(unittest.TestCase):
@@ -318,7 +328,7 @@ class SafeEmailTest(unittest.TestCase):
             "abc_def.jdk@hotmail.museum",
         ]
         for addr in addrs:
-            self.assertTrue(self._call(addr), "%s failed." % addr)
+            assert self._call(addr), "%s failed." % addr
 
     def test_invalid_emails(self):
         addrs = [
@@ -327,7 +337,7 @@ class SafeEmailTest(unittest.TestCase):
             "~/abc_def.jdk@hotmail.museum",
         ]
         for addr in addrs:
-            self.assertFalse(self._call(addr), "%s failed." % addr)
+            assert not self._call(addr), "%s failed." % addr
 
 
 class AddDeprecatedArgumentTest(unittest.TestCase):
@@ -343,17 +353,17 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         self._call("--old-option", 0)
         with mock.patch("warnings.warn") as mock_warn:
             self.parser.parse_args(["--old-option"])
-        self.assertEqual(mock_warn.call_count, 1)
-        self.assertIn("is deprecated", mock_warn.call_args[0][0])
-        self.assertIn("--old-option", mock_warn.call_args[0][0])
+        assert mock_warn.call_count == 1
+        assert "is deprecated" in mock_warn.call_args[0][0]
+        assert "--old-option" in mock_warn.call_args[0][0]
 
     def test_warning_with_arg(self):
         self._call("--old-option", 1)
         with mock.patch("warnings.warn") as mock_warn:
             self.parser.parse_args(["--old-option", "42"])
-        self.assertEqual(mock_warn.call_count, 1)
-        self.assertIn("is deprecated", mock_warn.call_args[0][0])
-        self.assertIn("--old-option", mock_warn.call_args[0][0])
+        assert mock_warn.call_count == 1
+        assert "is deprecated" in mock_warn.call_args[0][0]
+        assert "--old-option" in mock_warn.call_args[0][0]
 
     def test_help(self):
         self._call("--old-option", 2)
@@ -363,7 +373,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
                 self.parser.parse_args(["-h"])
             except SystemExit:
                 pass
-        self.assertNotIn("--old-option", stdout.getvalue())
+        assert "--old-option" not in stdout.getvalue()
 
     def test_set_constant(self):
         """Test when ACTION_TYPES_THAT_DONT_NEED_A_VALUE is a set.
@@ -386,8 +396,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
             mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE = typ()
             self._call("--old-option", 1)
             self._call("--old-option2", 2)
-        self.assertEqual(
-            len(mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE), 1)
+        assert len(mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE) == 1
 
 
 class EnforceLeValidity(unittest.TestCase):
@@ -397,32 +406,36 @@ class EnforceLeValidity(unittest.TestCase):
         return enforce_le_validity(domain)
 
     def test_sanity(self):
-        self.assertRaises(errors.ConfigurationError, self._call, u"..")
+        with pytest.raises(errors.ConfigurationError):
+            self._call(u"..")
 
     def test_invalid_chars(self):
-        self.assertRaises(
-            errors.ConfigurationError, self._call, u"hello_world.example.com")
+        with pytest.raises(errors.ConfigurationError):
+            self._call(u"hello_world.example.com")
 
     def test_leading_hyphen(self):
-        self.assertRaises(
-            errors.ConfigurationError, self._call, u"-a.example.com")
+        with pytest.raises(errors.ConfigurationError):
+            self._call(u"-a.example.com")
 
     def test_trailing_hyphen(self):
-        self.assertRaises(
-            errors.ConfigurationError, self._call, u"a-.example.com")
+        with pytest.raises(errors.ConfigurationError):
+            self._call(u"a-.example.com")
 
     def test_one_label(self):
-        self.assertRaises(errors.ConfigurationError, self._call, u"com")
+        with pytest.raises(errors.ConfigurationError):
+            self._call(u"com")
 
     def test_valid_domain(self):
-        self.assertEqual(self._call(u"example.com"), u"example.com")
+        assert self._call(u"example.com") == u"example.com"
 
     def test_input_with_scheme(self):
-        self.assertRaises(errors.ConfigurationError, self._call, u"http://example.com")
-        self.assertRaises(errors.ConfigurationError, self._call, u"https://example.com")
+        with pytest.raises(errors.ConfigurationError):
+            self._call(u"http://example.com")
+        with pytest.raises(errors.ConfigurationError):
+            self._call(u"https://example.com")
 
     def test_valid_input_with_scheme_name(self):
-        self.assertEqual(self._call(u"http.example.com"), u"http.example.com")
+        assert self._call(u"http.example.com") == u"http.example.com"
 
 
 class EnforceDomainSanityTest(unittest.TestCase):
@@ -433,17 +446,17 @@ class EnforceDomainSanityTest(unittest.TestCase):
         return enforce_domain_sanity(domain)
 
     def test_nonascii_str(self):
-        self.assertRaises(errors.ConfigurationError, self._call,
-                          u"eichh\u00f6rnchen.example.com".encode("utf-8"))
+        with pytest.raises(errors.ConfigurationError):
+            self._call(u"eichh\u00f6rnchen.example.com".encode("utf-8"))
 
     def test_nonascii_unicode(self):
-        self.assertRaises(errors.ConfigurationError, self._call,
-                          u"eichh\u00f6rnchen.example.com")
+        with pytest.raises(errors.ConfigurationError):
+            self._call(u"eichh\u00f6rnchen.example.com")
 
     def test_too_long(self):
         long_domain = u"a"*256
-        self.assertRaises(errors.ConfigurationError, self._call,
-                          long_domain)
+        with pytest.raises(errors.ConfigurationError):
+            self._call(long_domain)
 
     def test_not_too_long(self):
         not_too_long_domain = u"{0}.{1}.{2}.{3}".format("a"*63, "b"*63, "c"*63, "d"*63)
@@ -451,23 +464,23 @@ class EnforceDomainSanityTest(unittest.TestCase):
 
     def test_empty_label(self):
         empty_label_domain = u"fizz..example.com"
-        self.assertRaises(errors.ConfigurationError, self._call,
-                          empty_label_domain)
+        with pytest.raises(errors.ConfigurationError):
+            self._call(empty_label_domain)
 
     def test_empty_trailing_label(self):
         empty_trailing_label_domain = u"example.com.."
-        self.assertRaises(errors.ConfigurationError, self._call,
-                          empty_trailing_label_domain)
+        with pytest.raises(errors.ConfigurationError):
+            self._call(empty_trailing_label_domain)
 
     def test_long_label_1(self):
         long_label_domain = u"a"*64
-        self.assertRaises(errors.ConfigurationError, self._call,
-                          long_label_domain)
+        with pytest.raises(errors.ConfigurationError):
+            self._call(long_label_domain)
 
     def test_long_label_2(self):
         long_label_domain = u"{0}.{1}.com".format(u"a"*64, u"b"*63)
-        self.assertRaises(errors.ConfigurationError, self._call,
-                          long_label_domain)
+        with pytest.raises(errors.ConfigurationError):
+            self._call(long_label_domain)
 
     def test_not_long_label(self):
         not_too_long_label_domain = u"{0}.{1}.com".format(u"a"*63, u"b"*63)
@@ -475,8 +488,8 @@ class EnforceDomainSanityTest(unittest.TestCase):
 
     def test_empty_domain(self):
         empty_domain = u""
-        self.assertRaises(errors.ConfigurationError, self._call,
-                          empty_domain)
+        with pytest.raises(errors.ConfigurationError):
+            self._call(empty_domain)
 
     def test_punycode_ok(self):
         # Punycode is now legal, so no longer an error; instead check
@@ -496,12 +509,12 @@ class IsWildcardDomainTest(unittest.TestCase):
         return is_wildcard_domain(domain)
 
     def test_no_wildcard(self):
-        self.assertFalse(self._call(self.no_wildcard))
-        self.assertFalse(self._call(self.no_wildcard.encode()))
+        assert not self._call(self.no_wildcard)
+        assert not self._call(self.no_wildcard.encode())
 
     def test_wildcard(self):
-        self.assertTrue(self._call(self.wildcard))
-        self.assertTrue(self._call(self.wildcard.encode()))
+        assert self._call(self.wildcard)
+        assert self._call(self.wildcard.encode())
 
 
 class OsInfoTest(unittest.TestCase):
@@ -513,8 +526,8 @@ class OsInfoTest(unittest.TestCase):
         import certbot.util as cbutil
         m_distro.like.return_value = "first debian third"
         id_likes = cbutil.get_systemd_os_like()
-        self.assertEqual(len(id_likes), 3)
-        self.assertIn("debian", id_likes)
+        assert len(id_likes) == 3
+        assert "debian" in id_likes
 
     @mock.patch("certbot.util.distro")
     @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
@@ -525,11 +538,11 @@ class OsInfoTest(unittest.TestCase):
             m_distro.version.return_value = "1.0"
             # empty value on first call for fallback to "get_python_os_info" in get_os_info_ua
             m_distro.name.side_effect = ["", "something", "something"]
-            self.assertEqual(cbutil.get_os_info_ua(),
-                            " ".join(cbutil.get_python_os_info(pretty=True)))
+            assert cbutil.get_os_info_ua() == \
+                            " ".join(cbutil.get_python_os_info(pretty=True))
 
         m_distro.name.side_effect = ["whatever"]
-        self.assertEqual(cbutil.get_os_info_ua(), "whatever")
+        assert cbutil.get_os_info_ua() == "whatever"
 
     @mock.patch("certbot.util.distro")
     @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
@@ -539,36 +552,36 @@ class OsInfoTest(unittest.TestCase):
             m_distro.id.return_value = "name"
             m_distro.version.return_value = "version"
             mock_platform.return_value = "linux"
-            self.assertEqual(cbutil.get_os_info(), ("name", "version"))
+            assert cbutil.get_os_info() == ("name", "version")
 
             m_distro.id.return_value = "something"
             m_distro.version.return_value = "else"
-            self.assertEqual(cbutil.get_os_info(), ("something", "else"))
+            assert cbutil.get_os_info() == ("something", "else")
 
     def test_non_systemd_os_info(self):
         import certbot.util as cbutil
         with mock.patch('certbot.util._USE_DISTRO', False):
             with mock.patch('platform.system_alias',
                             return_value=('NonSystemD', '42', '42')):
-                self.assertEqual(cbutil.get_python_os_info()[0], 'nonsystemd')
+                assert cbutil.get_python_os_info()[0] == 'nonsystemd'
 
             with mock.patch('platform.system_alias',
                             return_value=('darwin', '', '')):
                 with mock.patch("subprocess.run") as run_mock:
                     run_mock().stdout = '42.42.42'
-                    self.assertEqual(cbutil.get_python_os_info()[0], 'darwin')
-                    self.assertEqual(cbutil.get_python_os_info()[1], '42.42.42')
+                    assert cbutil.get_python_os_info()[0] == 'darwin'
+                    assert cbutil.get_python_os_info()[1] == '42.42.42'
 
             with mock.patch('platform.system_alias',
                             return_value=('freebsd', '9.3-RC3-p1', '')):
-                self.assertEqual(cbutil.get_python_os_info(), ("freebsd", "9"))
+                assert cbutil.get_python_os_info() == ("freebsd", "9")
 
             with mock.patch('platform.system_alias',
                             return_value=('windows', '', '')):
                 with mock.patch('platform.win32_ver',
                                 return_value=('4242', '95', '2', '')):
-                    self.assertEqual(cbutil.get_python_os_info(),
-                                    ("windows", "95"))
+                    assert cbutil.get_python_os_info() == \
+                                    ("windows", "95")
 
     @mock.patch("certbot.util.distro")
     @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
@@ -576,7 +589,7 @@ class OsInfoTest(unittest.TestCase):
         import certbot.util as cbutil
         m_distro.id.return_value = ""
         m_distro.version.return_value = ""
-        self.assertEqual(cbutil.get_python_os_info()[0], "linux")
+        assert cbutil.get_python_os_info()[0] == "linux"
 
     @mock.patch("certbot.util.distro")
     @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
@@ -584,7 +597,7 @@ class OsInfoTest(unittest.TestCase):
         import certbot.util as cbutil
         m_distro.id.return_value = "testdist"
         m_distro.version.return_value = "42"
-        self.assertEqual(cbutil.get_python_os_info(), ("testdist", "42"))
+        assert cbutil.get_python_os_info() == ("testdist", "42")
 
 
 class AtexitRegisterTest(unittest.TestCase):
@@ -605,7 +618,7 @@ class AtexitRegisterTest(unittest.TestCase):
 
     def test_not_called(self):
         self._test_common(initial_pid=-1)
-        self.assertIs(self.func.called, False)
+        assert self.func.called is False
 
     def _test_common(self, initial_pid):
         with mock.patch('certbot.util._INITIAL_PID', initial_pid):
@@ -613,7 +626,7 @@ class AtexitRegisterTest(unittest.TestCase):
                 self._call(self.func, *self.args, **self.kwargs)
 
             # _INITIAL_PID must be mocked when calling atexit_func
-            self.assertTrue(mock_atexit.register.called)
+            assert mock_atexit.register.called
             args, kwargs = mock_atexit.register.call_args
             atexit_func = args[0]
             atexit_func(*args[1:], **kwargs)
@@ -640,17 +653,17 @@ class ParseLooseVersionTest(unittest.TestCase):
             ('0.960923', '2.2beta29'),
             ('1.13++', '5.5.kw'))
         for v1, v2 in comparisons:
-            self.assertLess(self._call(v1), self._call(v2))
+            assert self._call(v1) < self._call(v2)
 
     def test_equal(self):
-        self.assertEqual(self._call('8.02'), self._call('8.02'))
+        assert self._call('8.02') == self._call('8.02')
 
     def test_greater_than(self):
         comparisons = (('161', '3.10a'),
             ('3.2.pl0', '3.1.1.6'))
         for v1, v2 in comparisons:
-            self.assertGreater(self._call(v1), self._call(v2))
+            assert self._call(v1) > self._call(v2)
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

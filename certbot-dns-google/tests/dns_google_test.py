@@ -1,13 +1,14 @@
 """Tests for certbot_dns_google._internal.dns_google."""
 
+import sys
 import unittest
+from unittest import mock
 
 from googleapiclient import discovery
 from googleapiclient.errors import Error
 from googleapiclient.http import HttpMock
 from httplib2 import ServerNotFoundError
-
-from unittest import mock
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -46,7 +47,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
-        self.assertEqual(expected, self.mock_client.mock_calls)
+        assert expected == self.mock_client.mock_calls
 
     def test_cleanup(self):
         # _attempt_cleanup | pylint: disable=protected-access
@@ -54,13 +55,14 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth.cleanup([self.achall])
 
         expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
-        self.assertEqual(expected, self.mock_client.mock_calls)
+        assert expected == self.mock_client.mock_calls
 
     @mock.patch('httplib2.Http.request', side_effect=ServerNotFoundError)
     @test_util.patch_display_util()
     def test_without_auth(self, unused_mock_get_utility, unused_mock):
         self.config.google_credentials = None
-        self.assertRaises(PluginError, self.auth.perform, [self.achall])
+        with pytest.raises(PluginError):
+            self.auth.perform([self.achall])
 
 
 class GoogleClientTest(unittest.TestCase):
@@ -111,19 +113,17 @@ class GoogleClientTest(unittest.TestCase):
                                         unused_discovery_mock):
         from certbot_dns_google._internal.dns_google import _GoogleClient
         _GoogleClient(None)
-        self.assertFalse(credential_mock.called)
-        self.assertTrue(get_project_id_mock.called)
+        assert not credential_mock.called
+        assert get_project_id_mock.called
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     def test_client_bad_credentials_file(self, credential_mock):
         credential_mock.side_effect = ValueError('Some exception buried in oauth2client')
-        with self.assertRaises(errors.PluginError) as cm:
+        with pytest.raises(errors.PluginError) as exc_info:
             self._setUp_client_with_mock([])
-        self.assertEqual(
-            str(cm.exception),
-            "Error parsing credentials file '/not/a/real/path.json': "
+        assert str(exc_info.value) == \
+            "Error parsing credentials file '/not/a/real/path.json': " \
             "Some exception buried in oauth2client"
-        )
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -132,7 +132,7 @@ class GoogleClientTest(unittest.TestCase):
     def test_add_txt_record(self, get_project_id_mock, credential_mock):
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
         credential_mock.assert_called_once_with('/not/a/real/path.json', mock.ANY)
-        self.assertFalse(get_project_id_mock.called)
+        assert not get_project_id_mock.called
 
         client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
@@ -182,10 +182,10 @@ class GoogleClientTest(unittest.TestCase):
         with mock.patch(mock_get_rrs) as mock_rrs:
             mock_rrs.return_value = {"rrdatas": ["sample-txt-contents"], "ttl": self.record_ttl}
             client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
-            self.assertIs(changes.create.called, True)
+            assert changes.create.called is True
             deletions = changes.create.call_args_list[0][1]["body"]["deletions"][0]
-            self.assertIn("sample-txt-contents", deletions["rrdatas"])
-            self.assertEqual(self.record_ttl, deletions["ttl"])
+            assert "sample-txt-contents" in deletions["rrdatas"]
+            assert self.record_ttl == deletions["ttl"]
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -199,10 +199,10 @@ class GoogleClientTest(unittest.TestCase):
             custom_ttl = 300
             mock_rrs.return_value = {"rrdatas": ["sample-txt-contents"], "ttl": custom_ttl}
             client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
-            self.assertIs(changes.create.called, True)
+            assert changes.create.called is True
             deletions = changes.create.call_args_list[0][1]["body"]["deletions"][0]
-            self.assertIn("sample-txt-contents", deletions["rrdatas"])
-            self.assertEqual(custom_ttl, deletions["ttl"]) #otherwise HTTP 412
+            assert "sample-txt-contents" in deletions["rrdatas"]
+            assert custom_ttl == deletions["ttl"] #otherwise HTTP 412
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -212,7 +212,7 @@ class GoogleClientTest(unittest.TestCase):
             [{'managedZones': [{'id': self.zone}]}])
         client.add_txt_record(DOMAIN, "_acme-challenge.example.org",
                               "example-txt-contents", self.record_ttl)
-        self.assertIs(changes.create.called, False)
+        assert changes.create.called is False
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -220,8 +220,8 @@ class GoogleClientTest(unittest.TestCase):
     def test_add_txt_record_error_during_zone_lookup(self, unused_credential_mock):
         client, unused_changes = self._setUp_client_with_mock(API_ERROR)
 
-        self.assertRaises(errors.PluginError, client.add_txt_record,
-                          DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        with pytest.raises(errors.PluginError):
+            client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -230,8 +230,8 @@ class GoogleClientTest(unittest.TestCase):
         client, unused_changes = self._setUp_client_with_mock([{'managedZones': []},
                                                                {'managedZones': []}])
 
-        self.assertRaises(errors.PluginError, client.add_txt_record,
-                          DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        with pytest.raises(errors.PluginError):
+            client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -240,8 +240,8 @@ class GoogleClientTest(unittest.TestCase):
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
         changes.create.side_effect = API_ERROR
 
-        self.assertRaises(errors.PluginError, client.add_txt_record,
-                          DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        with pytest.raises(errors.PluginError):
+            client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -345,8 +345,8 @@ class GoogleClientTest(unittest.TestCase):
             [{'managedZones': [{'id': self.zone}]}])
         # Record name mocked in setUp
         found = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
-        self.assertEqual(found["rrdatas"], ["\"example-txt-contents\""])
-        self.assertEqual(found["ttl"], 60)
+        assert found["rrdatas"] == ["\"example-txt-contents\""]
+        assert found["ttl"] == 60
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -355,7 +355,7 @@ class GoogleClientTest(unittest.TestCase):
         client, unused_changes = self._setUp_client_with_mock(
             [{'managedZones': [{'id': self.zone}]}])
         not_found = client.get_existing_txt_rrset(self.zone, "nonexistent.tld")
-        self.assertIsNone(not_found)
+        assert not_found is None
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -365,7 +365,7 @@ class GoogleClientTest(unittest.TestCase):
             [{'managedZones': [{'id': self.zone}]}], API_ERROR)
         # Record name mocked in setUp
         found = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
-        self.assertIsNone(found)
+        assert found is None
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
@@ -374,7 +374,7 @@ class GoogleClientTest(unittest.TestCase):
         client, unused_changes = self._setUp_client_with_mock(
             [{'managedZones': [{'id': self.zone}]}], API_ERROR)
         rrset = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
-        self.assertFalse(rrset)
+        assert not rrset
 
     def test_get_project_id(self):
         from certbot_dns_google._internal.dns_google import _GoogleClient
@@ -384,21 +384,23 @@ class GoogleClientTest(unittest.TestCase):
 
         with mock.patch('httplib2.Http.request', return_value=(response, 'test-test-1')):
             project_id = _GoogleClient.get_project_id()
-            self.assertEqual(project_id, 'test-test-1')
+            assert project_id == 'test-test-1'
 
         with mock.patch('httplib2.Http.request', return_value=(response, b'test-test-1')):
             project_id = _GoogleClient.get_project_id()
-            self.assertEqual(project_id, 'test-test-1')
+            assert project_id == 'test-test-1'
 
         failed_response = DummyResponse()
         failed_response.status = 404
 
         with mock.patch('httplib2.Http.request',
                         return_value=(failed_response, "some detailed http error response")):
-            self.assertRaises(ValueError, _GoogleClient.get_project_id)
+            with pytest.raises(ValueError):
+                _GoogleClient.get_project_id()
 
         with mock.patch('httplib2.Http.request', side_effect=ServerNotFoundError):
-            self.assertRaises(ServerNotFoundError, _GoogleClient.get_project_id)
+            with pytest.raises(ServerNotFoundError):
+                _GoogleClient.get_project_id()
 
 
 class DummyResponse:
@@ -411,4 +413,4 @@ class DummyResponse:
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

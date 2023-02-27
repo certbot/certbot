@@ -2,9 +2,9 @@
 import datetime
 import logging
 import platform
-from typing import cast
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Dict
 from typing import IO
 from typing import List
@@ -14,11 +14,11 @@ from typing import Tuple
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 import josepy as jose
-import OpenSSL
 from josepy import ES256
 from josepy import ES384
 from josepy import ES512
 from josepy import RS256
+import OpenSSL
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util

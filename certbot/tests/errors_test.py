@@ -1,6 +1,9 @@
 """Tests for certbot.errors."""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from acme import messages
 from certbot import achallenges
@@ -18,9 +21,9 @@ class FailedChallengesTest(unittest.TestCase):
                 error=messages.Error.with_code("tls", detail="detail")))})
 
     def test_str(self):
-        self.assertTrue(str(self.error).startswith(
+        assert str(self.error).startswith(
             "Failed authorization procedure. example.com (dns-01): "
-            "urn:ietf:params:acme:error:tls"))
+            "urn:ietf:params:acme:error:tls")
 
     def test_unicode(self):
         from certbot.errors import FailedChallenges
@@ -30,9 +33,9 @@ class FailedChallengesTest(unittest.TestCase):
                 chall=acme_util.DNS01, uri=None,
                 error=messages.Error.with_code("tls", detail=arabic_detail)))})
 
-        self.assertTrue(str(arabic_error).startswith(
+        assert str(arabic_error).startswith(
             "Failed authorization procedure. example.com (dns-01): "
-            "urn:ietf:params:acme:error:tls"))
+            "urn:ietf:params:acme:error:tls")
 
 
 class StandaloneBindErrorTest(unittest.TestCase):
@@ -43,13 +46,13 @@ class StandaloneBindErrorTest(unittest.TestCase):
         self.error = StandaloneBindError(mock.sentinel.error, 1234)
 
     def test_instance_args(self):
-        self.assertEqual(mock.sentinel.error, self.error.socket_error)
-        self.assertEqual(1234, self.error.port)
+        assert mock.sentinel.error == self.error.socket_error
+        assert 1234 == self.error.port
 
     def test_str(self):
-        self.assertTrue(str(self.error).startswith(
-            "Problem binding to port 1234: "))
+        assert str(self.error).startswith(
+            "Problem binding to port 1234: ")
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

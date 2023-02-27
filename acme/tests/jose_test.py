@@ -1,6 +1,9 @@
 """Tests for acme.jose shim."""
 import importlib
+import sys
 import unittest
+
+import pytest
 
 
 class JoseTest(unittest.TestCase):
@@ -16,17 +19,18 @@ class JoseTest(unittest.TestCase):
         acme_jose_mod = importlib.import_module(acme_jose_path)
         josepy_mod = importlib.import_module(josepy_path)
 
-        self.assertIs(acme_jose_mod, josepy_mod)
-        self.assertIs(getattr(acme_jose_mod, attribute), getattr(josepy_mod, attribute))
+        assert acme_jose_mod is josepy_mod
+        assert getattr(acme_jose_mod, attribute) is getattr(josepy_mod, attribute)
 
         # We use the imports below with eval, but pylint doesn't
         # understand that.
-        import acme  # pylint: disable=unused-import
         import josepy  # pylint: disable=unused-import
+
+        import acme  # pylint: disable=unused-import
         acme_jose_mod = eval(acme_jose_path)  # pylint: disable=eval-used
         josepy_mod = eval(josepy_path)  # pylint: disable=eval-used
-        self.assertIs(acme_jose_mod, josepy_mod)
-        self.assertIs(getattr(acme_jose_mod, attribute), getattr(josepy_mod, attribute))
+        assert acme_jose_mod is josepy_mod
+        assert getattr(acme_jose_mod, attribute) is getattr(josepy_mod, attribute)
 
     def test_top_level(self):
         self._test_it('', 'RS512')
@@ -50,4 +54,4 @@ class JoseTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

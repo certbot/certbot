@@ -1,8 +1,11 @@
 """Tests for certbot._internal.lock."""
 import functools
 import multiprocessing
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -49,8 +52,8 @@ class LockFileTest(test_util.TempDirTestCase):
                                         args=(self.lock_path,))
         child.start()
         child.join()
-        self.assertEqual(child.exitcode, 0)
-        self.assertTrue(os.path.exists(self.lock_path))
+        assert child.exitcode == 0
+        assert os.path.exists(self.lock_path)
 
         # Test we're still able to properly acquire and release the lock
         self.test_removed()
@@ -65,7 +68,7 @@ class LockFileTest(test_util.TempDirTestCase):
         try:
             locked_repr = repr(lock_file)
             self._test_repr_common(lock_file, locked_repr)
-            self.assertIn('acquired', locked_repr)
+            assert 'acquired' in locked_repr
         finally:
             lock_file.release()
 
@@ -74,11 +77,11 @@ class LockFileTest(test_util.TempDirTestCase):
         lock_file.release()
         released_repr = repr(lock_file)
         self._test_repr_common(lock_file, released_repr)
-        self.assertIn('released', released_repr)
+        assert 'released' in released_repr
 
     def _test_repr_common(self, lock_file, lock_repr):
-        self.assertIn(lock_file.__class__.__name__, lock_repr)
-        self.assertIn(self.lock_path, lock_repr)
+        assert lock_file.__class__.__name__ in lock_repr
+        assert self.lock_path in lock_repr
 
     @test_util.skip_on_windows(
         'Race conditions on lock are specific to the non-blocking file access approach on Linux.')
@@ -98,12 +101,12 @@ class LockFileTest(test_util.TempDirTestCase):
         with mock.patch('certbot._internal.lock.filesystem.os.stat') as mock_stat:
             mock_stat.side_effect = delete_and_stat
             self._call(self.lock_path)
-        self.assertEqual(len(should_delete), 0)
+        assert len(should_delete) == 0
 
     def test_removed(self):
         lock_file = self._call(self.lock_path)
         lock_file.release()
-        self.assertFalse(os.path.exists(self.lock_path))
+        assert not os.path.exists(self.lock_path)
 
     def test_unexpected_lockf_or_locking_err(self):
         if POSIX_MODE:
@@ -116,7 +119,7 @@ class LockFileTest(test_util.TempDirTestCase):
             try:
                 self._call(self.lock_path)
             except IOError as err:
-                self.assertIn(msg, str(err))
+                assert msg in str(err)
             else:  # pragma: no cover
                 self.fail('IOError not raised')
 
@@ -132,10 +135,10 @@ class LockFileTest(test_util.TempDirTestCase):
             try:
                 self._call(self.lock_path)
             except OSError as err:
-                self.assertIn(msg, str(err))
+                assert msg in str(err)
             else:  # pragma: no cover
                 self.fail('OSError not raised')
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

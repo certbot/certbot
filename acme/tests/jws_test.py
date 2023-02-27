@@ -1,7 +1,9 @@
 """Tests for acme.jws."""
+import sys
 import unittest
 
 import josepy as jose
+import pytest
 
 import test_util
 
@@ -25,9 +27,9 @@ class HeaderTest(unittest.TestCase):
         from acme.jws import Header
         nonce_field = Header._fields['nonce']
 
-        self.assertRaises(
-            jose.DeserializationError, nonce_field.decode, self.wrong_nonce)
-        self.assertEqual(b'foo', nonce_field.decode(self.good_nonce))
+        with pytest.raises(jose.DeserializationError):
+            nonce_field.decode(self.wrong_nonce)
+        assert b'foo' == nonce_field.decode(self.good_nonce)
 
 
 class JWSTest(unittest.TestCase):
@@ -45,22 +47,22 @@ class JWSTest(unittest.TestCase):
         jws = JWS.sign(payload=b'foo', key=self.privkey,
                        alg=jose.RS256, nonce=self.nonce,
                        url=self.url, kid=self.kid)
-        self.assertEqual(jws.signature.combined.nonce, self.nonce)
-        self.assertEqual(jws.signature.combined.url, self.url)
-        self.assertEqual(jws.signature.combined.kid, self.kid)
-        self.assertIsNone(jws.signature.combined.jwk)
+        assert jws.signature.combined.nonce == self.nonce
+        assert jws.signature.combined.url == self.url
+        assert jws.signature.combined.kid == self.kid
+        assert jws.signature.combined.jwk is None
         # TODO: check that nonce is in protected header
 
-        self.assertEqual(jws, JWS.from_json(jws.to_json()))
+        assert jws == JWS.from_json(jws.to_json())
 
     def test_jwk_serialize(self):
         from acme.jws import JWS
         jws = JWS.sign(payload=b'foo', key=self.privkey,
                        alg=jose.RS256, nonce=self.nonce,
                        url=self.url)
-        self.assertIsNone(jws.signature.combined.kid)
-        self.assertEqual(jws.signature.combined.jwk, self.pubkey)
+        assert jws.signature.combined.kid is None
+        assert jws.signature.combined.jwk == self.pubkey
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

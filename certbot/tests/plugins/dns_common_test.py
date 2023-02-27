@@ -2,8 +2,11 @@
 
 import collections
 import logging
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot import util
@@ -58,14 +61,15 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
                                           (display_util.OK, "value",))
 
         self.auth._configure("other_key", "")
-        self.assertEqual(self.auth.config.fake_other_key, "value")
+        assert self.auth.config.fake_other_key == "value"
 
     @test_util.patch_display_util()
     def test_prompt_canceled(self, mock_get_utility):
         mock_display = mock_get_utility()
         mock_display.input.side_effect = ((display_util.CANCEL, "c",),)
 
-        self.assertRaises(errors.PluginError, self.auth._configure, "other_key", "")
+        with pytest.raises(errors.PluginError):
+            self.auth._configure("other_key", "")
 
     @test_util.patch_display_util()
     def test_prompt_file(self, mock_get_utility):
@@ -79,14 +83,15 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
                                                      (display_util.OK, path,))
 
         self.auth._configure_file("file_path", "")
-        self.assertEqual(self.auth.config.fake_file_path, path)
+        assert self.auth.config.fake_file_path == path
 
     @test_util.patch_display_util()
     def test_prompt_file_canceled(self, mock_get_utility):
         mock_display = mock_get_utility()
         mock_display.directory_select.side_effect = ((display_util.CANCEL, "c",),)
 
-        self.assertRaises(errors.PluginError, self.auth._configure_file, "file_path", "")
+        with pytest.raises(errors.PluginError):
+            self.auth._configure_file("file_path", "")
 
     def test_configure_credentials(self):
         path = os.path.join(self.tempdir, 'file.ini')
@@ -95,7 +100,7 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
 
         credentials = self.auth._configure_credentials("credentials", "", {"test": ""})
 
-        self.assertEqual(credentials.conf("test"), "value")
+        assert credentials.conf("test") == "value"
 
     @test_util.patch_display_util()
     def test_prompt_credentials(self, mock_get_utility):
@@ -114,13 +119,11 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
                                                      (display_util.OK, path,))
 
         credentials = self.auth._configure_credentials("credentials", "", {"test": ""})
-        self.assertEqual(credentials.conf("test"), "value")
+        assert credentials.conf("test") == "value"
 
     def test_auth_hint(self):
-        self.assertIn(
-            'try increasing --fake-propagation-seconds (currently 0 seconds).',
+        assert 'try increasing --fake-propagation-seconds (currently 0 seconds).' in \
             self.auth.auth_hint([mock.MagicMock()])
-        )
 
 
 class CredentialsConfigurationTest(test_util.TempDirTestCase):
@@ -144,13 +147,14 @@ class CredentialsConfigurationTest(test_util.TempDirTestCase):
         dns_test_common.write({"test": "value", "other": 1}, path)
 
         credentials_configuration = dns_common.CredentialsConfiguration(path)
-        self.assertEqual("value", credentials_configuration.conf("test"))
-        self.assertEqual("1", credentials_configuration.conf("other"))
+        assert "value" == credentials_configuration.conf("test")
+        assert "1" == credentials_configuration.conf("other")
 
     def test_nonexistent_file(self):
         path = os.path.join(self.tempdir, 'not-a-file.ini')
 
-        self.assertRaises(errors.PluginError, dns_common.CredentialsConfiguration, path)
+        with pytest.raises(errors.PluginError):
+            dns_common.CredentialsConfiguration(path)
 
     def test_valid_file_with_unsafe_permissions(self):
         log = self._MockLoggingHandler()
@@ -161,7 +165,7 @@ class CredentialsConfigurationTest(test_util.TempDirTestCase):
 
         dns_common.CredentialsConfiguration(path)
 
-        self.assertEqual(1, len([_ for _ in log.messages['warning'] if _.startswith("Unsafe")]))
+        assert 1 == len([_ for _ in log.messages['warning'] if _.startswith("Unsafe")])
 
 
 class CredentialsConfigurationRequireTest(test_util.TempDirTestCase):
@@ -196,41 +200,38 @@ class CredentialsConfigurationRequireTest(test_util.TempDirTestCase):
         self._write({})
 
         credentials_configuration = dns_common.CredentialsConfiguration(self.path)
-        self.assertRaises(errors.PluginError, credentials_configuration.require, {"test": ""})
+        with pytest.raises(errors.PluginError):
+            credentials_configuration.require({"test": ""})
 
     def test_blank(self):
         self._write({"test": ""})
 
         credentials_configuration = dns_common.CredentialsConfiguration(self.path)
-        self.assertRaises(errors.PluginError, credentials_configuration.require, {"test": ""})
+        with pytest.raises(errors.PluginError):
+            credentials_configuration.require({"test": ""})
 
     def test_typo(self):
         self._write({"tets": "typo!"})
 
         credentials_configuration = dns_common.CredentialsConfiguration(self.path)
-        self.assertRaises(errors.PluginError, credentials_configuration.require, {"test": ""})
+        with pytest.raises(errors.PluginError):
+            credentials_configuration.require({"test": ""})
 
 
 class DomainNameGuessTest(unittest.TestCase):
 
     def test_simple_case(self):
-        self.assertIn(
-            'example.com',
+        assert 'example.com' in \
             dns_common.base_domain_name_guesses("example.com")
-        )
 
     def test_sub_domain(self):
-        self.assertIn(
-            'example.com',
+        assert 'example.com' in \
             dns_common.base_domain_name_guesses("foo.bar.baz.example.com")
-        )
 
     def test_second_level_domain(self):
-        self.assertIn(
-            'example.co.uk',
+        assert 'example.co.uk' in \
             dns_common.base_domain_name_guesses("foo.bar.baz.example.co.uk")
-        )
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

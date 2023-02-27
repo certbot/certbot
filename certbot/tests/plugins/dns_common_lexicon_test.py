@@ -1,7 +1,10 @@
 """Tests for certbot.plugins.dns_common_lexicon."""
 
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot.plugins import dns_common_lexicon
 from certbot.plugins import dns_test_common_lexicon
@@ -23,4 +26,4 @@ class LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconCl
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

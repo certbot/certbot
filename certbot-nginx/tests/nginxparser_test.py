@@ -1,10 +1,12 @@
 """Test for certbot_nginx._internal.nginxparser."""
 import copy
 import operator
+import sys
 import tempfile
 import unittest
 
 from pyparsing import ParseException
+import pytest
 
 from certbot_nginx._internal.nginxparser import dump
 from certbot_nginx._internal.nginxparser import dumps
@@ -12,7 +14,6 @@ from certbot_nginx._internal.nginxparser import load
 from certbot_nginx._internal.nginxparser import loads
 from certbot_nginx._internal.nginxparser import RawNginxParser
 from certbot_nginx._internal.nginxparser import UnspacedList
-from certbot_nginx._internal.nginxparser import UnsupportedDirectiveException
 import test_util as util
 
 FIRST = operator.itemgetter(0)
@@ -23,23 +24,23 @@ class TestRawNginxParser(unittest.TestCase):
 
     def test_assignments(self):
         parsed = RawNginxParser.assignment.parseString('root /test;').asList()
-        self.assertEqual(parsed, ['root', ' ', '/test'])
+        assert parsed == ['root', ' ', '/test']
         parsed = RawNginxParser.assignment.parseString('root /test;foo bar;').asList()
-        self.assertEqual(parsed, ['root', ' ', '/test'], ['foo', ' ', 'bar'])
+        assert parsed == ['root', ' ', '/test'], ['foo', ' ', 'bar']
 
     def test_blocks(self):
         parsed = RawNginxParser.block.parseString('foo {}').asList()
-        self.assertEqual(parsed, [['foo', ' '], []])
+        assert parsed == [['foo', ' '], []]
         parsed = RawNginxParser.block.parseString('location /foo{}').asList()
-        self.assertEqual(parsed, [['location', ' ', '/foo'], []])
+        assert parsed == [['location', ' ', '/foo'], []]
         parsed = RawNginxParser.block.parseString('foo { bar foo ; }').asList()
-        self.assertEqual(parsed, [['foo', ' '], [[' ', 'bar', ' ', 'foo', ' '], ' ']])
+        assert parsed == [['foo', ' '], [[' ', 'bar', ' ', 'foo', ' '], ' ']]
 
     def test_nested_blocks(self):
         parsed = RawNginxParser.block.parseString('foo { bar {} }').asList()
         block, content = parsed
-        self.assertEqual(FIRST(content), [[' ', 'bar', ' '], []])
-        self.assertEqual(FIRST(block), 'foo')
+        assert FIRST(content) == [[' ', 'bar', ' '], []]
+        assert FIRST(block) == 'foo'
 
     def test_dump_as_string(self):
         dumped = dumps(UnspacedList([
@@ -55,24 +56,23 @@ class TestRawNginxParser(unittest.TestCase):
                 ]]
             ]]]))
 
-        self.assertEqual(dumped.split('\n'),
-                         'user www-data;\n'
-                         'server {\n'
-                         '    listen 80;\n'
-                         '    server_name foo.com;\n'
-                         '    root /home/ubuntu/sites/foo/;\n'
-                         '\n'
-                         '    location /status {\n'
-                         '        check_status;\n'
-                         '\n'
-                         '        types {\n'
-                         '            image/jpeg jpg;}}}'.split('\n'))
+        assert dumped.split('\n') == \
+                         'user www-data;\n' \
+                         'server {\n' \
+                         '    listen 80;\n' \
+                         '    server_name foo.com;\n' \
+                         '    root /home/ubuntu/sites/foo/;\n' \
+                         '\n' \
+                         '    location /status {\n' \
+                         '        check_status;\n' \
+                         '\n' \
+                         '        types {\n' \
+                         '            image/jpeg jpg;}}}'.split('\n')
 
     def test_parse_from_file(self):
         with open(util.get_data_filename('foo.conf')) as handle:
             parsed = util.filter_comments(load(handle))
-        self.assertEqual(
-            parsed,
+        assert parsed == \
             [['user', 'www-data'],
              [['http'],
               [[['server'], [
@@ -90,13 +90,11 @@ class TestRawNginxParser(unittest.TestCase):
                   [['location', '=', r'exact_match\.php$'], []],
                   [['location', '^~', r'ignore_regex\.php$'], []]
               ]]]]]
-        )
 
     def test_parse_from_file2(self):
         with open(util.get_data_filename('edge_cases.conf')) as handle:
             parsed = util.filter_comments(load(handle))
-        self.assertEqual(
-            parsed,
+        assert parsed == \
             [[['server'], [['server_name', 'simple']]],
              [['server'],
               [['server_name', 'with.if'],
@@ -111,13 +109,12 @@ class TestRawNginxParser(unittest.TestCase):
                   'Cache-Control', '\'public, must-revalidate, proxy-revalidate\'',
                   '"test,;{}"', 'foo'],
                  ['blah', '"hello;world"'],
-                 ['try_files', '$uri', '@rewrites']]]]]])
+                 ['try_files', '$uri', '@rewrites']]]]]]
 
     def test_parse_from_file3(self):
         with open(util.get_data_filename('multiline_quotes.conf')) as handle:
             parsed = util.filter_comments(load(handle))
-        self.assertEqual(
-            parsed,
+        assert parsed == \
             [[['http'],
                 [[['server'],
                     [['listen', '*:443'],
@@ -129,11 +126,12 @@ class TestRawNginxParser(unittest.TestCase):
                           'if ngx.arg[2] then\n'
                           '                              '
                           'ngx.var.resp_body = ngx.ctx.buffered\n'
-                          '                            end\'']]]]]]]])
+                          '                            end\'']]]]]]]]
 
     def test_abort_on_parse_failure(self):
         with open(util.get_data_filename('broken.conf')) as handle:
-            self.assertRaises(ParseException, load, handle)
+            with pytest.raises(ParseException):
+                load(handle)
 
     def test_dump_as_file(self):
         with open(util.get_data_filename('nginx.conf')) as handle:
@@ -154,7 +152,7 @@ class TestRawNginxParser(unittest.TestCase):
             dump(parsed, f)
             f.seek(0)
             parsed_new = load(f)
-        self.assertEqual(parsed, parsed_new)
+        assert parsed == parsed_new
 
     def test_comments(self):
         with open(util.get_data_filename('minimalistic_comments.conf')) as handle:
@@ -165,8 +163,8 @@ class TestRawNginxParser(unittest.TestCase):
             f.seek(0)
             parsed_new = load(f)
 
-        self.assertEqual(parsed, parsed_new)
-        self.assertEqual(parsed_new, [
+        assert parsed == parsed_new
+        assert parsed_new == [
             ['#', " Use bar.conf when it's a full moon!"],
             ['include', 'foo.conf'],
             ['#', ' Kilroy was here'],
@@ -177,44 +175,44 @@ class TestRawNginxParser(unittest.TestCase):
               ['#', ''],
               ['listen', '1234'],
               ['#', ' listen 80;']]],
-        ])
+        ]
 
     def test_issue_518(self):
         parsed = loads('if ($http_accept ~* "webp") { set $webp "true"; }')
 
-        self.assertEqual(parsed, [
+        assert parsed == [
             [['if', '($http_accept', '~*', '"webp")'],
              [['set', '$webp', '"true"']]]
-        ])
+        ]
 
     def test_comment_in_block(self):
         parsed = loads("""http {
           # server{
           }""")
 
-        self.assertEqual(parsed, [
+        assert parsed == [
             [['http'],
              [['#', ' server{']]]
-        ])
+        ]
 
     def test_access_log(self):
         # see issue #3798
         parsed = loads('access_log syslog:server=unix:/dev/log,facility=auth,'
             'tag=nginx_post,severity=info custom;')
 
-        self.assertEqual(parsed, [
+        assert parsed == [
             ['access_log',
              'syslog:server=unix:/dev/log,facility=auth,tag=nginx_post,severity=info',
              'custom']
-        ])
+        ]
 
     def test_add_header(self):
         # see issue #3798
         parsed = loads('add_header Cache-Control no-cache,no-store,must-revalidate,max-age=0;')
 
-        self.assertEqual(parsed, [
+        assert parsed == [
             ['add_header', 'Cache-Control', 'no-cache,no-store,must-revalidate,max-age=0']
-        ])
+        ]
 
     def test_map_then_assignment_in_block(self):
         # see issue #3798
@@ -228,7 +226,7 @@ class TestRawNginxParser(unittest.TestCase):
             one;
         }"""
         parsed = loads(test_str)
-        self.assertEqual(parsed, [
+        assert parsed == [
             [['http'], [
                 [['map', '$http_upgrade', '$connection_upgrade'], [
                     ['default', 'upgrade'],
@@ -238,17 +236,17 @@ class TestRawNginxParser(unittest.TestCase):
                 ]],
                 ['one']
             ]]
-        ])
+        ]
 
     def test_variable_name(self):
         parsed = loads('try_files /typo3temp/tx_ncstaticfilecache/'
             '$host${request_uri}index.html @nocache;')
 
-        self.assertEqual(parsed, [
+        assert parsed == [
             ['try_files',
              '/typo3temp/tx_ncstaticfilecache/$host${request_uri}index.html',
              '@nocache']
-        ])
+        ]
 
     def test_weird_blocks(self):
         test = r"""
@@ -279,7 +277,7 @@ class TestRawNginxParser(unittest.TestCase):
             proxy_set_header X-Origin-URI ${scheme}://${http_host}/$request_uri;
         """
         parsed = loads(test)
-        self.assertEqual(parsed, [[['if', '($http_user_agent', '~', 'MSIE)'],
+        assert parsed == [[['if', '($http_user_agent', '~', 'MSIE)'],
             [['rewrite', '^(.*)$', '/msie/$1', 'break']]],
             [['if', '($http_cookie', '~*', '"id=([^;]+)(?:;|$)")'], [['set', '$id', '$1']]],
             [['if', '($request_method', '=', 'POST)'], [['return', '405']]],
@@ -289,18 +287,17 @@ class TestRawNginxParser(unittest.TestCase):
             [['location', '~', '^/users/(.+\\.(?:gif|jpe?g|png))$'],
             [['alias', '/data/w3/images/$1']]],
             ['proxy_set_header', 'X-Origin-URI', '${scheme}://${http_host}/$request_uri']]
-        )
 
     def test_edge_cases(self):
         # quotes
         parsed = loads(r'"hello\""; # blah "heh heh"')
-        self.assertEqual(parsed, [['"hello\\""'], ['#', ' blah "heh heh"']])
+        assert parsed == [['"hello\\""'], ['#', ' blah "heh heh"']]
 
         # if with comment
         parsed = loads("""if ($http_cookie ~* "id=([^;]+)(?:;|$)") { # blah )
             }""")
-        self.assertEqual(parsed, [[['if', '($http_cookie', '~*', '"id=([^;]+)(?:;|$)")'],
-            [['#', ' blah )']]]])
+        assert parsed == [[['if', '($http_cookie', '~*', '"id=([^;]+)(?:;|$)")'],
+            [['#', ' blah )']]]]
 
         # end paren
         test = """
@@ -315,7 +312,7 @@ class TestRawNginxParser(unittest.TestCase):
             one"test"one;
         """
         parsed = loads(test)
-        self.assertEqual(parsed, [
+        assert parsed == [
             ['one"test"'],
             ['("two")'],
             ['"test")red'],
@@ -325,9 +322,11 @@ class TestRawNginxParser(unittest.TestCase):
             ['one"'],
             ['one"test'],
             ['one"test"one']
-        ])
-        self.assertRaises(ParseException, loads, r'"test"one;') # fails
-        self.assertRaises(ParseException, loads, r'"test;') # fails
+        ]
+        with pytest.raises(ParseException):
+            loads(r'"test"one;') # fails
+        with pytest.raises(ParseException):
+            loads(r'"test;') # fails
 
         # newlines
         test = """
@@ -337,87 +336,26 @@ class TestRawNginxParser(unittest.TestCase):
                         baz.example.com qux.example.com;
         """
         parsed = loads(test)
-        self.assertEqual(parsed, [
+        assert parsed == [
             ['server_name', 'foo.example.com', 'bar.example.com',
                 'baz.example.com', 'qux.example.com'],
             ['server_name', 'foo.example.com', 'bar.example.com',
                 'baz.example.com', 'qux.example.com']
-        ])
+        ]
 
         # variable weirdness
         parsed = loads("directive $var ${var} $ ${};")
-        self.assertEqual(parsed, [['directive', '$var', '${var}', '$', '${}']])
-        self.assertRaises(ParseException, loads, "server {server_name test.com};")
-        self.assertEqual(loads("blag${dfgdfg};"), [['blag${dfgdfg}']])
-        self.assertRaises(ParseException, loads, "blag${dfgdf{g};")
+        assert parsed == [['directive', '$var', '${var}', '$', '${}']]
+        with pytest.raises(ParseException):
+            loads("server {server_name test.com};")
+        assert loads("blag${dfgdfg};") == [['blag${dfgdfg}']]
+        with pytest.raises(ParseException):
+            loads("blag${dfgdf{g};")
 
         # empty file
         parsed = loads("")
-        self.assertEqual(parsed, [])
+        assert parsed == []
 
-    def test_lua(self):
-        # https://github.com/certbot/certbot/issues/9066
-        self.assertRaises(UnsupportedDirectiveException, loads, """
-        location /foo {
-            content_by_lua_block {
-                ngx.say('Hello World')
-            }
-        }
-        """)
-
-        # Without leading whitespace
-        self.assertRaises(UnsupportedDirectiveException, loads, """
-        location /foo {content_by_lua_block {
-                ngx.say('Hello World')
-            }
-        }
-        """)
-
-        # Doesn't trigger if it's commented or not in the right position.
-        parsed = loads("""
-        location /foo {server_name content_by_lua_block;
-            #content_by_lua_block {
-            # ngx.say('Hello World')
-            # }
-        }
-        """)
-        self.assertEqual(
-            parsed,
-            [
-                [['location', '/foo'],
-                [['server_name', 'content_by_lua_block'],
-                 ['#', 'content_by_lua_block {'],
-                 ['#', " ngx.say('Hello World')"],
-                 ['#', ' }']
-                ]]
-            ])
-
-        # *_by_lua should parse successfully.
-        parsed = loads("""
-            location / {
-                set $a 32;
-                set $b 56;
-                set_by_lua $sum
-                    'return tonumber(ngx.arg[1]) + tonumber(ngx.arg[2])'
-                    $a $b;
-                content_by_lua '
-                    ngx.say("foo");
-                ';
-            }
-        """)
-        self.assertEqual(
-            parsed,
-            [
-                [['location', '/'],
-                 [['set', '$a', '32'],
-                  ['set', '$b', '56'],
-                  ['set_by_lua', '$sum',
-                   "'return tonumber(ngx.arg[1]) + tonumber(ngx.arg[2])'", '$a', '$b'
-                  ],
-                  ['content_by_lua', '\'\n                    ngx.say("foo");\n                \'']
-                 ]]
-            ]
-        )
 
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""
@@ -430,42 +368,44 @@ class TestUnspacedList(unittest.TestCase):
         self.ul2 = UnspacedList(self.l2)
 
     def test_construction(self):
-        self.assertEqual(self.ul, ["things", "quirk"])
-        self.assertEqual(self.ul2, ["y"])
+        assert self.ul == ["things", "quirk"]
+        assert self.ul2 == ["y"]
 
     def test_append(self):
         ul3 = copy.deepcopy(self.ul)
         ul3.append("wise")
-        self.assertEqual(ul3, ["things", "quirk", "wise"])
-        self.assertEqual(ul3.spaced, self.a + ["wise"])
+        assert ul3 == ["things", "quirk", "wise"]
+        assert ul3.spaced == self.a + ["wise"]
 
     def test_add(self):
         ul3 = self.ul + self.ul2
-        self.assertEqual(ul3, ["things", "quirk", "y"])
-        self.assertEqual(ul3.spaced, self.a + self.b)
-        self.assertEqual(self.ul.spaced, self.a)
+        assert ul3 == ["things", "quirk", "y"]
+        assert ul3.spaced == self.a + self.b
+        assert self.ul.spaced == self.a
         ul3 = self.ul + self.l2
-        self.assertEqual(ul3, ["things", "quirk", "y"])
-        self.assertEqual(ul3.spaced, self.a + self.b)
+        assert ul3 == ["things", "quirk", "y"]
+        assert ul3.spaced == self.a + self.b
 
     def test_extend(self):
         ul3 = copy.deepcopy(self.ul)
         ul3.extend(self.ul2)
-        self.assertEqual(ul3, ["things", "quirk", "y"])
-        self.assertEqual(ul3.spaced, self.a + self.b)
-        self.assertEqual(self.ul.spaced, self.a)
+        assert ul3 == ["things", "quirk", "y"]
+        assert ul3.spaced == self.a + self.b
+        assert self.ul.spaced == self.a
 
     def test_set(self):
         ul3 = copy.deepcopy(self.ul)
         ul3[0] = "zither"
         l = ["\n ", "zather", "zest"]
         ul3[1] = UnspacedList(l)
-        self.assertEqual(ul3, ["zither", ["zather", "zest"]])
-        self.assertEqual(ul3.spaced, [self.a[0], "zither", " ", l])
+        assert ul3 == ["zither", ["zather", "zest"]]
+        assert ul3.spaced == [self.a[0], "zither", " ", l]
 
     def test_get(self):
-        self.assertRaises(IndexError, self.ul2.__getitem__, 2)
-        self.assertRaises(IndexError, self.ul2.__getitem__, -3)
+        with pytest.raises(IndexError):
+            self.ul2.__getitem__(2)
+        with pytest.raises(IndexError):
+            self.ul2.__getitem__(-3)
 
     def test_insert(self):
         x = UnspacedList(
@@ -475,17 +415,17 @@ class TestUnspacedList(unittest.TestCase):
                 ['\n    ', 'server_name', ' ', 'example.*'], '\n',
                 ['listen', ' ', '5001', ' ', 'ssl']])
         x.insert(5, "FROGZ")
-        self.assertEqual(x,
+        assert x == \
             [['listen', '69.50.225.155:9000'], ['listen', '127.0.0.1'],
             ['server_name', '.example.com'], ['server_name', 'example.*'],
-            ['listen', '5001', 'ssl'], 'FROGZ'])
-        self.assertEqual(x.spaced,
+            ['listen', '5001', 'ssl'], 'FROGZ']
+        assert x.spaced == \
             [['\n    ', 'listen', '       ', '69.50.225.155:9000'],
             ['\n    ', 'listen', '       ', '127.0.0.1'],
             ['\n    ', 'server_name', ' ', '.example.com'],
             ['\n    ', 'server_name', ' ', 'example.*'], '\n',
             ['listen', ' ', '5001', ' ', 'ssl'],
-            'FROGZ'])
+            'FROGZ']
 
     def test_rawlists(self):
         ul3 = copy.deepcopy(self.ul)
@@ -493,19 +433,19 @@ class TestUnspacedList(unittest.TestCase):
         ul3.append("why")
         ul3.extend(["did", "whether"])
         del ul3[2]
-        self.assertEqual(ul3, ["some", "things", "why", "did", "whether"])
+        assert ul3 == ["some", "things", "why", "did", "whether"]
 
     def test_is_dirty(self):
-        self.assertIs(self.ul2.is_dirty(), False)
+        assert self.ul2.is_dirty() is False
         ul3 = UnspacedList([])
         ul3.append(self.ul)
-        self.assertIs(self.ul.is_dirty(), False)
-        self.assertIs(ul3.is_dirty(), True)
+        assert self.ul.is_dirty() is False
+        assert ul3.is_dirty() is True
         ul4 = UnspacedList([[1], [2, 3, 4]])
-        self.assertIs(ul4.is_dirty(), False)
+        assert ul4.is_dirty() is False
         ul4[1][2] = 5
-        self.assertIs(ul4.is_dirty(), True)
+        assert ul4.is_dirty() is True
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

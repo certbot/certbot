@@ -41,10 +41,9 @@ import urllib.request as urllib_request
 
 import boto3
 from botocore.exceptions import ClientError
-import yaml
-
 from fabric import Config
 from fabric import Connection
+import yaml
 
 # Command line parser
 #-------------------------------------------------------------------------------

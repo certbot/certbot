@@ -2,18 +2,19 @@
 import http.client as http_client
 import socket
 import socketserver
+import sys
 import threading
-import unittest
 from typing import Set
+import unittest
 from unittest import mock
 
 import josepy as jose
+import pytest
 import requests
 
 from acme import challenges
 from acme import crypto_util
 from acme import errors
-
 import test_util
 
 
@@ -58,14 +59,13 @@ class HTTP01ServerTest(unittest.TestCase):
     def test_index(self):
         response = requests.get(
             'http://localhost:{0}'.format(self.port), verify=False)
-        self.assertEqual(
-            response.text, 'ACME client standalone challenge solver')
-        self.assertTrue(response.ok)
+        assert response.text == 'ACME client standalone challenge solver'
+        assert response.ok
 
     def test_404(self):
         response = requests.get(
             'http://localhost:{0}/foo'.format(self.port), verify=False)
-        self.assertEqual(response.status_code, http_client.NOT_FOUND)
+        assert response.status_code == http_client.NOT_FOUND
 
     def _test_http01(self, add):
         chall = challenges.HTTP01(token=(b'x' * 16))
@@ -81,10 +81,10 @@ class HTTP01ServerTest(unittest.TestCase):
             port=self.port)
 
     def test_http01_found(self):
-        self.assertTrue(self._test_http01(add=True))
+        assert self._test_http01(add=True)
 
     def test_http01_not_found(self):
-        self.assertFalse(self._test_http01(add=False))
+        assert not self._test_http01(add=False)
 
     def test_timely_shutdown(self):
         from acme.standalone import HTTP01Server
@@ -106,7 +106,7 @@ class HTTP01ServerTest(unittest.TestCase):
             # may raise error because socket could already be closed
             pass
 
-        self.assertFalse(is_hung, msg='Server shutdown should not be hung')
+        assert not is_hung, 'Server shutdown should not be hung'
 
 
 @unittest.skipIf(not challenges.TLSALPN01.is_supported(), "pyOpenSSL too old")
@@ -149,14 +149,12 @@ class TLSALPN01ServerTest(unittest.TestCase):
             b'localhost', host=host, port=port, timeout=1,
             alpn_protocols=[b"acme-tls/1"])
         #  Expect challenge cert when connecting with ALPN.
-        self.assertEqual(
-                jose.ComparableX509(cert),
+        assert jose.ComparableX509(cert) == \
                 jose.ComparableX509(self.challenge_certs[b'localhost'][1])
-        )
 
     def test_bad_alpn(self):
         host, port = self.server.socket.getsockname()[:2]
-        with self.assertRaises(errors.Error):
+        with pytest.raises(errors.Error):
             crypto_util.probe_sni(
                 b'localhost', host=host, port=port, timeout=1,
                 alpn_protocols=[b"bad-alpn"])
@@ -190,16 +188,17 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
     @mock.patch("socket.socket.bind")
     def test_fail_to_bind(self, mock_bind):
         from errno import EADDRINUSE
+
         from acme.standalone import BaseDualNetworkedServers
 
         mock_bind.side_effect = socket.error(EADDRINUSE, "Fake addr in use error")
 
-        with self.assertRaises(socket.error) as em:
+        with pytest.raises(socket.error) as exc_info:
             BaseDualNetworkedServers(
                 BaseDualNetworkedServersTest.SingleProtocolServer,
                 ('', 0), socketserver.BaseRequestHandler)
 
-        self.assertEqual(em.exception.errno, EADDRINUSE)
+        assert exc_info.value.errno == EADDRINUSE
 
     def test_ports_equal(self):
         from acme.standalone import BaseDualNetworkedServers
@@ -213,7 +212,7 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
         for sockname in socknames:
             port = sockname[1]
             if prev_port:
-                self.assertEqual(prev_port, port)
+                assert prev_port == port
             prev_port = port
 
 
@@ -237,14 +236,13 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
     def test_index(self):
         response = requests.get(
             'http://localhost:{0}'.format(self.port), verify=False)
-        self.assertEqual(
-            response.text, 'ACME client standalone challenge solver')
-        self.assertTrue(response.ok)
+        assert response.text == 'ACME client standalone challenge solver'
+        assert response.ok
 
     def test_404(self):
         response = requests.get(
             'http://localhost:{0}/foo'.format(self.port), verify=False)
-        self.assertEqual(response.status_code, http_client.NOT_FOUND)
+        assert response.status_code == http_client.NOT_FOUND
 
     def _test_http01(self, add):
         chall = challenges.HTTP01(token=(b'x' * 16))
@@ -260,11 +258,11 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
             port=self.port)
 
     def test_http01_found(self):
-        self.assertTrue(self._test_http01(add=True))
+        assert self._test_http01(add=True)
 
     def test_http01_not_found(self):
-        self.assertFalse(self._test_http01(add=False))
+        assert not self._test_http01(add=False)
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

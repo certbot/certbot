@@ -20,12 +20,6 @@ from typing import Tuple
 from typing import Type
 from typing import Union
 
-from certbot_nginx._internal import constants
-from certbot_nginx._internal import display_ops
-from certbot_nginx._internal import http_01
-from certbot_nginx._internal import nginxparser
-from certbot_nginx._internal import obj
-from certbot_nginx._internal import parser
 import OpenSSL
 import pkg_resources
 
@@ -38,6 +32,12 @@ from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins import common
+from certbot_nginx._internal import constants
+from certbot_nginx._internal import display_ops
+from certbot_nginx._internal import http_01
+from certbot_nginx._internal import nginxparser
+from certbot_nginx._internal import obj
+from certbot_nginx._internal import parser
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1
@@ -1061,8 +1061,8 @@ class NginxConfigurator(common.Configurator):
 
         product_name, product_version = version_matches[0]
         if product_name != 'nginx':
-            logger.warning("nginx derivative %s is not officially supported by "
-                           "Certbot.", product_name)
+            logger.warning("NGINX derivative %s is not officially supported by"
+                           " certbot", product_name)
 
         nginx_version = tuple(int(i) for i in product_version.split("."))
 

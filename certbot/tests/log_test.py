@@ -8,6 +8,8 @@ from typing import Optional
 import unittest
 from unittest import mock
 
+import pytest
+
 from acme import messages
 from certbot import errors
 from certbot import util
@@ -15,7 +17,6 @@ from certbot._internal import constants
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
-
 
 
 class PreArgParseSetupTest(unittest.TestCase):
@@ -43,7 +44,7 @@ class PreArgParseSetupTest(unittest.TestCase):
 
         mock_root_logger = mock_get()
         mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
-        self.assertEqual(mock_root_logger.addHandler.call_count, 2)
+        assert mock_root_logger.addHandler.call_count == 2
 
         memory_handler: Optional[logging.handlers.MemoryHandler] = None
         for call in mock_root_logger.addHandler.call_args_list:
@@ -52,8 +53,8 @@ class PreArgParseSetupTest(unittest.TestCase):
                 memory_handler = handler
                 target = memory_handler.target
             else:
-                self.assertIsInstance(handler, logging.StreamHandler)
-        self.assertIsInstance(target, logging.StreamHandler)
+                assert isinstance(handler, logging.StreamHandler)
+        assert isinstance(target, logging.StreamHandler)
 
         mock_register.assert_called_once_with(logging.shutdown)
         mock_sys.excepthook(1, 2, 3)
@@ -79,7 +80,8 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
 
         from certbot._internal.log import ColoredStreamHandler
         self.stream_handler = ColoredStreamHandler(io.StringIO())
-        from certbot._internal.log import MemoryHandler, TempHandler
+        from certbot._internal.log import MemoryHandler
+        from certbot._internal.log import TempHandler
         self.temp_handler = TempHandler()
         self.temp_path = self.temp_handler.path
         self.memory_handler = MemoryHandler(self.temp_handler)
@@ -106,9 +108,9 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
 
         self.root_logger.removeHandler.assert_called_once_with(
             self.memory_handler)
-        self.assertTrue(self.root_logger.addHandler.called)
-        self.assertTrue(os.path.exists(log_path))
-        self.assertFalse(os.path.exists(self.temp_path))
+        assert self.root_logger.addHandler.called
+        assert os.path.exists(log_path)
+        assert not os.path.exists(self.temp_path)
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(
             1, 2, 3, debug=self.config.debug,
@@ -116,9 +118,9 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
 
         level = self.stream_handler.level
         if self.config.quiet:
-            self.assertEqual(level, constants.QUIET_LOGGING_LEVEL)
+            assert level == constants.QUIET_LOGGING_LEVEL
         else:
-            self.assertEqual(level, constants.DEFAULT_LOGGING_LEVEL)
+            assert level == constants.DEFAULT_LOGGING_LEVEL
 
     def test_debug(self):
         self.config.debug = True
@@ -148,7 +150,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         try:
             self._call(self.config, 'test.log', '%(message)s')
         except errors.Error as err:
-            self.assertIn('--logs-dir', str(err))
+            assert '--logs-dir' in str(err)
         else:  # pragma: no cover
             self.fail('Error not raised.')
 
@@ -164,20 +166,20 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         handler, log_path = self._call(self.config, log_file, '%(message)s')
         handler.close()
 
-        self.assertEqual(handler.level, logging.DEBUG)
-        self.assertEqual(handler.formatter.converter, time.localtime)
+        assert handler.level == logging.DEBUG
+        assert handler.formatter.converter == time.localtime
 
         expected_path = os.path.join(self.config.logs_dir, log_file)
-        self.assertEqual(log_path, expected_path)
+        assert log_path == expected_path
 
         backup_path = os.path.join(self.config.logs_dir, log_file + '.1')
-        self.assertEqual(os.path.exists(backup_path), should_rollover)
+        assert os.path.exists(backup_path) == should_rollover
 
     @mock.patch('certbot._internal.log.logging.handlers.RotatingFileHandler')
     def test_max_log_backups_used(self, mock_handler):
         self._call(self.config, 'test.log', '%(message)s')
         backup_count = mock_handler.call_args[1]['backupCount']
-        self.assertEqual(self.config.max_log_backups, backup_count)
+        assert self.config.max_log_backups == backup_count
 
 
 class ColoredStreamHandlerTest(unittest.TestCase):
@@ -199,17 +201,17 @@ class ColoredStreamHandlerTest(unittest.TestCase):
     def test_format(self):
         msg = 'I did a thing'
         self.logger.debug(msg)
-        self.assertEqual(self.stream.getvalue(), '{0}\n'.format(msg))
+        assert self.stream.getvalue() == '{0}\n'.format(msg)
 
     def test_format_and_red_level(self):
         msg = 'I did another thing'
         self.handler.red_level = logging.DEBUG
         self.logger.debug(msg)
 
-        self.assertEqual(self.stream.getvalue(),
+        assert self.stream.getvalue() == \
                          '{0}{1}{2}\n'.format(util.ANSI_SGR_RED,
                                               msg,
-                                              util.ANSI_SGR_RESET))
+                                              util.ANSI_SGR_RESET)
 
 
 class MemoryHandlerTest(unittest.TestCase):
@@ -232,13 +234,13 @@ class MemoryHandlerTest(unittest.TestCase):
     def test_flush(self):
         self._test_log_debug()
         self.handler.flush(force=True)
-        self.assertEqual(self.stream.getvalue(), self.msg + '\n')
+        assert self.stream.getvalue() == self.msg + '\n'
 
     def test_not_flushed(self):
         # By default, logging.ERROR messages and higher are flushed
         self.logger.critical(self.msg)
         self.handler.flush()
-        self.assertEqual(self.stream.getvalue(), '')
+        assert self.stream.getvalue() == ''
 
     def test_target_reset(self):
         self._test_log_debug()
@@ -247,8 +249,8 @@ class MemoryHandlerTest(unittest.TestCase):
         new_stream_handler = logging.StreamHandler(new_stream)
         self.handler.setTarget(new_stream_handler)
         self.handler.flush(force=True)
-        self.assertEqual(self.stream.getvalue(), '')
-        self.assertEqual(new_stream.getvalue(), self.msg + '\n')
+        assert self.stream.getvalue() == ''
+        assert new_stream.getvalue() == self.msg + '\n'
         new_stream_handler.close()
 
     def _test_log_debug(self):
@@ -266,16 +268,16 @@ class TempHandlerTest(unittest.TestCase):
         self.handler.close()
 
     def test_permissions(self):
-        self.assertTrue(filesystem.check_permissions(self.handler.path, 0o600))
+        assert filesystem.check_permissions(self.handler.path, 0o600)
 
     def test_delete(self):
         self.handler.close()
-        self.assertFalse(os.path.exists(self.handler.path))
+        assert not os.path.exists(self.handler.path)
 
     def test_no_delete(self):
         self.handler.emit(mock.MagicMock())
         self.handler.close()
-        self.assertTrue(os.path.exists(self.handler.path))
+        assert os.path.exists(self.handler.path)
         os.remove(self.handler.path)
 
 
@@ -326,7 +328,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         exc_type = ValueError
         mock_logger, output = self._test_common(exc_type, debug=True, quiet=True)
         self._assert_exception_logged(mock_logger.error, exc_type)
-        self.assertNotIn('See the logfile', output)
+        assert 'See the logfile' not in output
 
     def test_custom_error(self):
         exc_type = errors.PluginError
@@ -345,7 +347,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         mock_logger, output = self._test_common(get_acme_error, debug=False)
         self._assert_exception_logged(mock_logger.debug, messages.Error)
         self._assert_quiet_output(mock_logger, output)
-        self.assertNotIn(messages.ERROR_PREFIX, output)
+        assert messages.ERROR_PREFIX not in output
 
     def test_other_error(self):
         exc_type = ValueError
@@ -385,22 +387,22 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         return mock_logger, output
 
     def _assert_exception_logged(self, log_func, exc_type):
-        self.assertTrue(log_func.called)
+        assert log_func.called
         call_kwargs = log_func.call_args[1]
-        self.assertIn('exc_info', call_kwargs)
+        assert 'exc_info' in call_kwargs
 
         actual_exc_info = call_kwargs['exc_info']
         expected_exc_info = (exc_type, mock.ANY, mock.ANY)
-        self.assertEqual(actual_exc_info, expected_exc_info)
+        assert actual_exc_info == expected_exc_info
 
     def _assert_logfile_output(self, output):
-        self.assertIn('See the logfile', output)
-        self.assertIn(self.log_path, output)
+        assert 'See the logfile' in output
+        assert self.log_path in output
 
     def _assert_quiet_output(self, mock_logger, output):
-        self.assertIs(mock_logger.exception.called, False)
-        self.assertTrue(mock_logger.debug.called)
-        self.assertIn(self.error_msg, output)
+        assert mock_logger.exception.called is False
+        assert mock_logger.debug.called
+        assert self.error_msg in output
 
 
 class ExitWithAdviceTest(test_util.TempDirTestCase):
@@ -415,13 +417,13 @@ class ExitWithAdviceTest(test_util.TempDirTestCase):
         open(log_file, 'w').close()
 
         err_str = self._test_common(log_file)
-        self.assertNotIn('logfiles', err_str)
-        self.assertIn(log_file, err_str)
+        assert 'logfiles' not in err_str
+        assert log_file in err_str
 
     def test_log_dir(self):
         err_str = self._test_common(self.tempdir)
-        self.assertIn('logfiles', err_str)
-        self.assertIn(self.tempdir, err_str)
+        assert 'logfiles' in err_str
+        assert self.tempdir in err_str
 
     # pylint: disable=inconsistent-return-statements
     def _test_common(self, *args, **kwargs):
@@ -433,4 +435,4 @@ class ExitWithAdviceTest(test_util.TempDirTestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

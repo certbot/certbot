@@ -1,9 +1,11 @@
 """Tests for certbot._internal.eff."""
 import datetime
+import sys
 import unittest
 from unittest import mock
 
 import josepy
+import pytest
 import pytz
 import requests
 
@@ -11,7 +13,6 @@ from acme import messages
 from certbot._internal import account
 from certbot._internal import constants
 import certbot.tests.util as test_util
-
 
 _KEY = josepy.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -47,50 +48,50 @@ class PrepareSubscriptionTest(SubscriptionTest):
         self._call()
         actual = mock_notify.call_args[0][0]
         expected_part = "because you didn't provide an e-mail address"
-        self.assertIn(expected_part, actual)
-        self.assertIsNone(self.account.meta.register_to_eff)
+        assert expected_part in actual
+        assert self.account.meta.register_to_eff is None
 
     @test_util.patch_display_util()
     def test_will_not_subscribe_with_no_prompt(self, mock_get_utility):
         self.config.eff_email = False
         self._call()
         self._assert_no_get_utility_calls(mock_get_utility)
-        self.assertIsNone(self.account.meta.register_to_eff)
+        assert self.account.meta.register_to_eff is None
 
     @test_util.patch_display_util()
     def test_will_subscribe_with_no_prompt(self, mock_get_utility):
         self.config.eff_email = True
         self._call()
         self._assert_no_get_utility_calls(mock_get_utility)
-        self.assertEqual(self.account.meta.register_to_eff, self.config.email)
+        assert self.account.meta.register_to_eff == self.config.email
 
     @test_util.patch_display_util()
     def test_will_not_subscribe_with_prompt(self, mock_get_utility):
         mock_get_utility().yesno.return_value = False
         self._call()
-        self.assertFalse(mock_get_utility().add_message.called)
+        assert not mock_get_utility().add_message.called
         self._assert_correct_yesno_call(mock_get_utility)
-        self.assertIsNone(self.account.meta.register_to_eff)
+        assert self.account.meta.register_to_eff is None
 
     @test_util.patch_display_util()
     def test_will_subscribe_with_prompt(self, mock_get_utility):
         mock_get_utility().yesno.return_value = True
         self._call()
-        self.assertFalse(mock_get_utility().add_message.called)
+        assert not mock_get_utility().add_message.called
         self._assert_correct_yesno_call(mock_get_utility)
-        self.assertEqual(self.account.meta.register_to_eff, self.config.email)
+        assert self.account.meta.register_to_eff == self.config.email
 
     def _assert_no_get_utility_calls(self, mock_get_utility):
-        self.assertFalse(mock_get_utility().yesno.called)
-        self.assertFalse(mock_get_utility().add_message.called)
+        assert not mock_get_utility().yesno.called
+        assert not mock_get_utility().add_message.called
 
     def _assert_correct_yesno_call(self, mock_get_utility):
-        self.assertTrue(mock_get_utility().yesno.called)
+        assert mock_get_utility().yesno.called
         call_args, call_kwargs = mock_get_utility().yesno.call_args
         actual = call_args[0]
         expected_part = 'Electronic Frontier Foundation'
-        self.assertIn(expected_part, actual)
-        self.assertFalse(call_kwargs.get('default', True))
+        assert expected_part in actual
+        assert not call_kwargs.get('default', True)
 
 
 class HandleSubscriptionTest(SubscriptionTest):
@@ -102,14 +103,14 @@ class HandleSubscriptionTest(SubscriptionTest):
     @mock.patch('certbot._internal.eff.subscribe')
     def test_no_subscribe(self, mock_subscribe):
         self._call()
-        self.assertIs(mock_subscribe.called, False)
+        assert mock_subscribe.called is False
 
     @mock.patch('certbot._internal.eff.subscribe')
     def test_subscribe(self, mock_subscribe):
         self.account.meta = self.account.meta.update(register_to_eff=self.config.email)
         self._call()
-        self.assertTrue(mock_subscribe.called)
-        self.assertEqual(mock_subscribe.call_args[0][0], self.config.email)
+        assert mock_subscribe.called
+        assert mock_subscribe.call_args[0][0] == self.config.email
 
 
 class SubscribeTest(unittest.TestCase):
@@ -132,20 +133,20 @@ class SubscribeTest(unittest.TestCase):
         self._check_post_call(mock_post)
 
     def _check_post_call(self, mock_post):
-        self.assertEqual(mock_post.call_count, 1)
+        assert mock_post.call_count == 1
         call_args, call_kwargs = mock_post.call_args
-        self.assertEqual(call_args[0], constants.EFF_SUBSCRIBE_URI)
+        assert call_args[0] == constants.EFF_SUBSCRIBE_URI
 
         data = call_kwargs.get('data')
-        self.assertIsNotNone(data)
-        self.assertEqual(data.get('email'), self.email)
+        assert data is not None
+        assert data.get('email') == self.email
 
     def test_bad_status(self):
         self.json['status'] = False
         self._call()
         actual = self._get_reported_message()
         expected_part = 'because your e-mail address appears to be invalid.'
-        self.assertIn(expected_part, actual)
+        assert expected_part in actual
 
     def test_not_ok(self):
         self.response.ok = False
@@ -153,31 +154,31 @@ class SubscribeTest(unittest.TestCase):
         self._call()
         actual = self._get_reported_message()
         unexpected_part = 'because'
-        self.assertNotIn(unexpected_part, actual)
+        assert unexpected_part not in actual
 
     def test_response_not_json(self):
         self.response.json.side_effect = ValueError()
         self._call()
         actual = self._get_reported_message()
         expected_part = 'problem'
-        self.assertIn(expected_part, actual)
+        assert expected_part in actual
 
     def test_response_json_missing_status_element(self):
         self.json.clear()
         self._call()
         actual = self._get_reported_message()
         expected_part = 'problem'
-        self.assertIn(expected_part, actual)
+        assert expected_part in actual
 
     def _get_reported_message(self):
-        self.assertTrue(self.mock_notify.called)
+        assert self.mock_notify.called
         return self.mock_notify.call_args[0][0]
 
     @test_util.patch_display_util()
     def test_subscribe(self, mock_get_utility):
         self._call()
-        self.assertIs(mock_get_utility.called, False)
+        assert mock_get_utility.called is False
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

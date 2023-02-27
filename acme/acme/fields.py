@@ -1,8 +1,7 @@
 """ACME JSON fields."""
 import datetime
-from typing import Any
-
 import logging
+from typing import Any
 
 import josepy as jose
 import pyrfc3339

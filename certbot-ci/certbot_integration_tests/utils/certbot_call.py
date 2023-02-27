@@ -2,13 +2,14 @@
 """Module to call certbot in test mode"""
 
 import os
-import pkg_resources
 import subprocess
 import sys
 from typing import Dict
 from typing import List
 from typing import Mapping
 from typing import Tuple
+
+import pkg_resources
 
 import certbot_integration_tests
 # pylint: disable=wildcard-import,unused-wildcard-import

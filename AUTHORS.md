@@ -68,6 +68,7 @@ Authors
 * [Daniel Convissor](https://github.com/convissor)
 * [Daniel "Drex" Drexler](https://github.com/aeturnum)
 * [Daniel Huang](https://github.com/dhuang)
+* [Daniel McMahon] (https://github.com/igloodan)
 * [Dave Guarino](https://github.com/daguar)
 * [David cz](https://github.com/dave-cz)
 * [David Dworken](https://github.com/ddworken)

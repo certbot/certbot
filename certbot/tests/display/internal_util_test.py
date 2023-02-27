@@ -1,9 +1,12 @@
 """Test :mod:`certbot._internal.display.util`."""
 import io
 import socket
+import sys
 import tempfile
 import unittest
 from unittest import mock
+
+import pytest
 
 from acme import messages as acme_messages
 from certbot import errors
@@ -18,7 +21,7 @@ class WrapLinesTest(unittest.TestCase):
                "really really really really long line...".format('\n'))
         text = wrap_lines(msg)
 
-        self.assertEqual(text.count('\n'), 3)
+        assert text.count('\n') == 3
 
 
 class PlaceParensTest(unittest.TestCase):
@@ -28,11 +31,11 @@ class PlaceParensTest(unittest.TestCase):
         return parens_around_char(label)
 
     def test_single_letter(self):
-        self.assertEqual("(a)", self._call("a"))
+        assert "(a)" == self._call("a")
 
     def test_multiple(self):
-        self.assertEqual("(L)abel", self._call("Label"))
-        self.assertEqual("(y)es please", self._call("yes please"))
+        assert "(L)abel" == self._call("Label")
+        assert "(y)es please" == self._call("yes please")
 
 
 class InputWithTimeoutTest(unittest.TestCase):
@@ -45,14 +48,15 @@ class InputWithTimeoutTest(unittest.TestCase):
     def test_eof(self):
         with tempfile.TemporaryFile("r+") as f:
             with mock.patch("certbot._internal.display.util.sys.stdin", new=f):
-                self.assertRaises(EOFError, self._call)
+                with pytest.raises(EOFError):
+                    self._call()
 
     def test_input(self, prompt=None):
         expected = "foo bar"
         stdin = io.StringIO(expected + "\n")
         with mock.patch("certbot.compat.misc.select.select") as mock_select:
             mock_select.return_value = ([stdin], [], [],)
-            self.assertEqual(self._call(prompt), expected)
+            assert self._call(prompt) == expected
 
     @mock.patch("certbot._internal.display.util.sys.stdout")
     def test_input_with_prompt(self, mock_stdout):
@@ -66,7 +70,8 @@ class InputWithTimeoutTest(unittest.TestCase):
         stdin.bind(('', 0))
         stdin.listen(1)
         with mock.patch("certbot._internal.display.util.sys.stdin", stdin):
-            self.assertRaises(errors.Error, self._call, timeout=0.001)
+            with pytest.raises(errors.Error):
+                self._call(timeout=0.001)
         stdin.close()
 
 
@@ -81,13 +86,13 @@ class SeparateListInputTest(unittest.TestCase):
         return separate_list_input(input_)
 
     def test_commas(self):
-        self.assertEqual(self._call("a,b,c,test"), self.exp)
+        assert self._call("a,b,c,test") == self.exp
 
     def test_spaces(self):
-        self.assertEqual(self._call("a b c test"), self.exp)
+        assert self._call("a b c test") == self.exp
 
     def test_both(self):
-        self.assertEqual(self._call("a, b, c, test"), self.exp)
+        assert self._call("a, b, c, test") == self.exp
 
     def test_mess(self):
         actual = [
@@ -97,7 +102,7 @@ class SeparateListInputTest(unittest.TestCase):
         ]
 
         for act in actual:
-            self.assertEqual(act, self.exp)
+            assert act == self.exp
 
 
 class SummarizeDomainListTest(unittest.TestCase):
@@ -107,18 +112,18 @@ class SummarizeDomainListTest(unittest.TestCase):
         return summarize_domain_list(domains)
 
     def test_single_domain(self):
-        self.assertEqual("example.com", self._call(["example.com"]))
+        assert "example.com" == self._call(["example.com"])
 
     def test_two_domains(self):
-        self.assertEqual("example.com and example.org",
-                         self._call(["example.com", "example.org"]))
+        assert "example.com and example.org" == \
+                         self._call(["example.com", "example.org"])
 
     def test_many_domains(self):
-        self.assertEqual("example.com and 2 more domains",
-                         self._call(["example.com", "example.org", "a.example.com"]))
+        assert "example.com and 2 more domains" == \
+                         self._call(["example.com", "example.org", "a.example.com"])
 
     def test_empty_domains(self):
-        self.assertEqual("", self._call([]))
+        assert "" == self._call([])
 
 
 class DescribeACMEErrorTest(unittest.TestCase):
@@ -131,19 +136,18 @@ class DescribeACMEErrorTest(unittest.TestCase):
             acme_messages.Error(typ=typ, title=title, detail=detail))
 
     def test_title_and_detail(self):
-        self.assertEqual("Unacceptable CSR :: CSR contained unknown extensions", self._call())
+        assert "Unacceptable CSR :: CSR contained unknown extensions" == self._call()
 
     def test_detail(self):
-        self.assertEqual("CSR contained unknown extensions", self._call(title=None))
+        assert "CSR contained unknown extensions" == self._call(title=None)
 
     def test_description(self):
-        self.assertEqual(acme_messages.ERROR_CODES["badCSR"], self._call(title=None, detail=None))
+        assert acme_messages.ERROR_CODES["badCSR"] == self._call(title=None, detail=None)
 
     def test_unknown_type(self):
-        self.assertEqual(
-            "urn:ietf:params:acme:error:unknownErrorType",
-            self._call(typ="urn:ietf:params:acme:error:unknownErrorType", title=None, detail=None))
+        assert "urn:ietf:params:acme:error:unknownErrorType" == \
+            self._call(typ="urn:ietf:params:acme:error:unknownErrorType", title=None, detail=None)
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
