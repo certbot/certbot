@@ -36,9 +36,6 @@ class OCSPTestOpenSSL(unittest.TestCase):
                 mock_exists.return_value = True
                 self.checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
 
-    def tearDown(self):
-        pass
-
     @mock.patch('certbot.ocsp.logger.info')
     @mock.patch('certbot.ocsp.subprocess.run')
     @mock.patch('certbot.util.exe_exists')
