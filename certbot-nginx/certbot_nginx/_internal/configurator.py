@@ -1061,8 +1061,8 @@ class NginxConfigurator(common.Configurator):
 
         product_name, product_version = version_matches[0]
         if product_name != 'nginx':
-            logger.warning("nginx derivative %s is not officially supported by "
-                           "Certbot.", product_name)
+            logger.warning("NGINX derivative %s is not officially supported by"
+                           " certbot", product_name)
 
         nginx_version = tuple(int(i) for i in product_version.split("."))
 
