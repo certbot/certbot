@@ -17,8 +17,9 @@ jobs:
         PR_URL: https://github.com/${{ github.repository }}/pull/${{ github.event.number }}
         REPO: ${{ github.repository }}
         USER: ${{ github.actor }}
+        TITLE: ${{ github.event.pull_request.title }}
       run: |
-        echo "{\"text\":\"[$REPO] | #[$NUMBER]($PR_URL) was merged into master by $USER.\"}" > mattermost.json
+        echo "{\"text\":\"[$REPO] | [$TITLE #$NUMBER]($PR_URL) was merged into master by $USER.\"}" > mattermost.json
     - uses: mattermost/action-mattermost-notify@master
       env:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_MERGE_WEBHOOK }}
