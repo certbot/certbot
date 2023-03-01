@@ -12,8 +12,8 @@ jobs:
     - name: Create Mattermost Message
       run: |
         DATE=$(date  --date="7 days ago" +"%Y-%m-%d")
-        MERGED_URL="https://github.com/pulls?q=merged%3A%3E${DATE}+org%3Acertbot+"
-        UPDATED_URL="https://github.com/pulls?q=updated%3A%3E${DATE}+org%3Acertbot+"
+        MERGED_URL="https://github.com/pulls?q=merged%3A%3E${DATE}+org%3Acertbot"
+        UPDATED_URL="https://github.com/pulls?q=updated%3A%3E${DATE}+org%3Acertbot"
         echo "{\"text\":\"## Updates Across Certbot Repos\n\n
         - Certbot team members SHOULD look at: [link]($MERGED_URL)\n\n
         - Certbot team members MAY also want to look at: [link]($UPDATED_URL)\n\n
