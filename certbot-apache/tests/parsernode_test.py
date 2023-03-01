@@ -104,6 +104,7 @@ interfaces.DirectiveNode.register(DummyDirectiveNode)
 interfaces.BlockNode.register(DummyBlockNode)
 
 def test_dummy():
+    """Dummy placeholder test case for ParserNode interfaces"""
     dummyblock = DummyBlockNode(
         name="None",
         parameters=(),
