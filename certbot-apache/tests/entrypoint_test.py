@@ -12,8 +12,6 @@ from certbot_apache._internal import entrypoint
 class EntryPointTest(unittest.TestCase):
     """Entrypoint tests"""
 
-    _multiprocess_can_split_ = True
-
     def test_get_configurator(self):
 
         with mock.patch("certbot.util.get_os_info") as mock_info:

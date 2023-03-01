@@ -43,8 +43,6 @@ def get_vh_truth(temp_dir, config_name):
 class MultipleVhostsTestGentoo(util.ApacheTest):
     """Multiple vhost tests for non-debian distro"""
 
-    _multiprocess_can_split_ = True
-
     def setUp(self):  # pylint: disable=arguments-differ
         test_dir = "gentoo_apache/apache"
         config_root = "gentoo_apache/apache/apache2"
