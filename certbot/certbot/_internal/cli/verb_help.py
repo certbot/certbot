@@ -1,7 +1,5 @@
 """This module contain help information for verbs supported by certbot"""
 from certbot._internal.cli.cli_constants import SHORT_USAGE
-from certbot._internal.cli.cli_utils import flag_default
-from certbot.compat import os
 
 # The attributes here are:
 # short: a string that will be displayed by "certbot -h commands"
@@ -83,13 +81,6 @@ VERB_HELP = [
         "short": "List plugins that are installed and available on your system",
         "opts": 'Options for the "plugins" subcommand',
         "usage": "\n\n  certbot plugins [options]\n\n"
-    }),
-    ("update_symlinks", {
-        "short": "Recreate symlinks in your /etc/letsencrypt/live/ directory",
-        "opts": ("Recreates certificate and key symlinks in {0}, if you changed them by hand "
-                 "or edited a renewal configuration file".format(
-                  os.path.join(flag_default("config_dir"), "live"))),
-        "usage": "\n\n  certbot update_symlinks [options]\n\n"
     }),
     ("enhance", {
         "short": "Add security enhancements to your existing configuration",

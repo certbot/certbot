@@ -79,7 +79,7 @@ for TARGET_ARCH in "${ALL_REQUESTED_ARCH[@]}"; do
     pushd "${REPO_ROOT}"
     DownloadQemuStatic "${TARGET_ARCH}"
     QEMU_ARCH=$(GetQemuArch "${TARGET_ARCH}")
-    docker build \
+    DOCKER_BUILDKIT=0 docker build \
         --build-arg TARGET_ARCH="${TARGET_ARCH}" \
         --build-arg QEMU_ARCH="${QEMU_ARCH}" \
         -f "${WORK_DIR}/core/Dockerfile" \
@@ -97,7 +97,7 @@ for plugin in "${CERTBOT_PLUGINS[@]}"; do
     for TARGET_ARCH in "${ALL_REQUESTED_ARCH[@]}"; do
         QEMU_ARCH=$(GetQemuArch "${TARGET_ARCH}")
         BASE_IMAGE="${DOCKER_HUB_ORG}/certbot:${TARGET_ARCH}-${TAG_BASE}"
-        docker build \
+        DOCKER_BUILDKIT=0 docker build \
             --build-arg BASE_IMAGE="${BASE_IMAGE}" \
             --build-arg QEMU_ARCH="${QEMU_ARCH}" \
             -f "${WORK_DIR}/plugin/Dockerfile" \

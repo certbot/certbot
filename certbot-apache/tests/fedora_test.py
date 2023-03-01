@@ -83,8 +83,6 @@ class FedoraRestartTest(util.ApacheTest):
 class MultipleVhostsTestFedora(util.ApacheTest):
     """Multiple vhost tests for CentOS / RHEL family of distros"""
 
-    _multiprocess_can_split_ = True
-
     def setUp(self):  # pylint: disable=arguments-differ
         test_dir = "centos7_apache/apache"
         config_root = "centos7_apache/apache/httpd"

@@ -6,15 +6,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* We deprecated support for the update_symlinks command. Support will be removed in a following
+  version of Certbot.
 
 ### Changed
 
-*
+* Docker build and deploy scripts now generate multiarch manifests for non-architecture-specific tags, instead of defaulting to amd64 images.
 
 ### Fixed
 
-*
+* Reverted [#9475](https://github.com/certbot/certbot/pull/9475) due to a performance regression in large nginx deployments.
 
 More details about these changes can be found on our GitHub repo.
 

@@ -17,8 +17,6 @@ import util
 class MultipleVhostsTestDebian(util.ApacheTest):
     """Multiple vhost tests for Debian family of distros"""
 
-    _multiprocess_can_split_ = True
-
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
         self.config = util.get_apache_configurator(
