@@ -2,7 +2,7 @@ name: Weekly Github Update
 
 on:
   schedule:
-    # Every week on Thursday @ 1:00
+    # Every week on Thursday @ 13:00
     - cron: "0 13 * * 4"
 jobs:
   send-mattermost-message:
