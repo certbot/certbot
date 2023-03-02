@@ -1,6 +1,5 @@
 """Tests for certbot.compat.misc"""
 import sys
-import unittest
 from unittest import mock
 
 import pytest
@@ -8,7 +7,7 @@ import pytest
 from certbot.compat import os
 
 
-class ExecuteStatusTest(unittest.TestCase):
+class ExecuteStatusTest:
     """Tests for certbot.compat.misc.execute_command_status."""
 
     @classmethod

@@ -1,7 +1,6 @@
 """ Tests for ParserNode interface """
 
 import sys
-import unittest
 
 import pytest
 
@@ -104,27 +103,25 @@ interfaces.CommentNode.register(DummyCommentNode)
 interfaces.DirectiveNode.register(DummyDirectiveNode)
 interfaces.BlockNode.register(DummyBlockNode)
 
-class ParserNodeTest(unittest.TestCase):
+def test_dummy():
     """Dummy placeholder test case for ParserNode interfaces"""
-
-    def test_dummy(self):
-        dummyblock = DummyBlockNode(
-            name="None",
-            parameters=(),
-            ancestor=None,
-            dirty=False,
-            filepath="/some/random/path"
-        )
-        dummydirective = DummyDirectiveNode(
-            name="Name",
-            ancestor=None,
-            filepath="/another/path"
-        )
-        dummycomment = DummyCommentNode(
-            comment="Comment",
-            ancestor=dummyblock,
-            filepath="/some/file"
-        )
+    dummyblock = DummyBlockNode(
+        name="None",
+        parameters=(),
+        ancestor=None,
+        dirty=False,
+        filepath="/some/random/path"
+    )
+    dummydirective = DummyDirectiveNode(
+        name="Name",
+        ancestor=None,
+        filepath="/another/path"
+    )
+    dummycomment = DummyCommentNode(
+        comment="Comment",
+        ancestor=dummyblock,
+        filepath="/some/file"
+    )
 
 
 if __name__ == "__main__":
