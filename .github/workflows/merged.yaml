@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Create Mattermost Message
-      #https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#example-of-a-script-injection-attack
+      # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#example-of-a-script-injection-attack
       env: 
         NUMBER: ${{ github.event.number }}
         PR_URL: https://github.com/${{ github.repository }}/pull/${{ github.event.number }}
