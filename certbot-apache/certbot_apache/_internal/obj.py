@@ -7,11 +7,10 @@ from typing import Pattern
 from typing import Set
 from typing import Union
 
+from certbot.plugins import common
 from certbot_apache._internal.apacheparser import ApacheBlockNode
 from certbot_apache._internal.augeasparser import AugeasBlockNode
 from certbot_apache._internal.dualparser import DualBlockNode
-
-from certbot.plugins import common
 
 
 class Addr(common.Addr):

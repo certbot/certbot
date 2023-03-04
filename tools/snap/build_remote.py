@@ -48,7 +48,7 @@ def _snap_log_name(target: str, arch: str):
 
 def _execute_build(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
-        workspace: str) -> Tuple[int, List[str]]:
+        workspace: str, output_lock: Lock) -> Tuple[int, List[str]]:
 
     # snapcraft remote-build accepts a --build-id flag with snapcraft version
     # 5.0+. We make use of this feature to set a unique build ID so a fresh
@@ -68,18 +68,28 @@ def _execute_build(
         environ['XDG_CACHE_HOME'] = tempdir
         process = subprocess.Popen([
             'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
-            '--build-on', ','.join(archs), '--build-id', build_id],
+            '--build-for', ','.join(archs), '--build-id', build_id],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             universal_newlines=True, env=environ, cwd=workspace)
 
+    killed = False
     process_output: List[str] = []
     for line in process.stdout:
         process_output.append(line)
         _extract_state(target, line, status)
 
-        if any(state for state in status[target].values() if state == 'Chroot problem'):
-            # On this error the snapcraft process stales. Let's finish it.
+        if not killed and any(state for state in status[target].values() if state == 'Chroot problem'):
+            # On this error the snapcraft process hangs. Let's finish it.
+            #
+            # killed is used to stop us from executing this code path
+            # multiple times per build that encounters "Chroot problem".
+            with output_lock:
+                print('Chroot problem encountered for build '
+                      f'{target} for {",".join(archs)}.\n'
+                      'Launchpad seems to be unable to recover from this '
+                      'state so we are terminating the build.')
             process.kill()
+            killed = True
 
     process_state = process.wait()
 
@@ -89,8 +99,6 @@ def _execute_build(
 def _build_snap(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         running: Dict[str, bool], output_lock: Lock) -> bool:
-    status[target] = {arch: '...' for arch in archs}
-
     if target == 'certbot':
         workspace = CERTBOT_DIR
     else:
@@ -99,7 +107,10 @@ def _build_snap(
     build_success = False
     retry = 3
     while retry:
-        exit_code, process_output = _execute_build(target, archs, status, workspace)
+        # Let's reset the status before each build so we're not starting with
+        # old state values.
+        status[target] = {arch: '...' for arch in archs}
+        exit_code, process_output = _execute_build(target, archs, status, workspace, output_lock)
         with output_lock:
             print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
                   f'exit code {exit_code}.')

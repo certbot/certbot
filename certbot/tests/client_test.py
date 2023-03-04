@@ -3,11 +3,13 @@ import contextlib
 import datetime
 import platform
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
 
 from josepy import interfaces
+import pytest
 
 import certbot.tests.util as test_util
 from acme.client import ClientV2
@@ -99,12 +101,13 @@ class RegisterTest(test_util.ConfigTestCase):
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
                 mock_client().new_account.side_effect = errors.Error
-                self.assertRaises(errors.Error, self._call)
-                self.assertIs(mock_prepare.called, False)
+                with pytest.raises(errors.Error):
+                    self._call()
+                assert mock_prepare.called is False
 
                 mock_client().new_account.side_effect = None
                 self._call()
-                self.assertIs(mock_prepare.called, True)
+                assert mock_prepare.called is True
 
 
     @mock.patch('certbot._internal.eff.prepare_subscription')
@@ -118,7 +121,7 @@ class RegisterTest(test_util.ConfigTestCase):
             mock_client().external_account_required.side_effect = self._false_mock
 
             self._call()
-            self.assertIs(self.tos_cb.called, False)
+            assert self.tos_cb.called is False
 
     @test_util.patch_display_util()
     def test_it(self, unused_mock_get_utility):
@@ -126,7 +129,7 @@ class RegisterTest(test_util.ConfigTestCase):
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
                 self._call()
-            self.assertIs(self.tos_cb.called, True)
+            assert self.tos_cb.called is True
 
     @mock.patch("certbot._internal.client.display_ops.get_email")
     def test_email_retry(self, mock_get_email):
@@ -139,8 +142,8 @@ class RegisterTest(test_util.ConfigTestCase):
             with mock.patch("certbot._internal.eff.prepare_subscription") as mock_prepare:
                 mock_client().new_account.side_effect = [mx_err, mock.MagicMock()]
                 self._call()
-                self.assertEqual(mock_get_email.call_count, 1)
-                self.assertIs(mock_prepare.called, True)
+                assert mock_get_email.call_count == 1
+                assert mock_prepare.called is True
 
     def test_email_invalid_noninteractive(self):
         from acme import messages
@@ -151,11 +154,13 @@ class RegisterTest(test_util.ConfigTestCase):
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription"):
                 mock_client().new_account.side_effect = [mx_err, mock.MagicMock()]
-                self.assertRaises(errors.Error, self._call)
+                with pytest.raises(errors.Error):
+                    self._call()
 
     def test_needs_email(self):
         self.config.email = None
-        self.assertRaises(errors.Error, self._call)
+        with pytest.raises(errors.Error):
+            self._call()
 
     @mock.patch("certbot._internal.client.logger")
     def test_without_email(self, mock_logger):
@@ -167,7 +172,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 self.config.dry_run = False
                 self._call()
                 mock_logger.debug.assert_called_once_with(mock.ANY)
-                self.assertIs(mock_prepare.called, True)
+                assert mock_prepare.called is True
 
     @mock.patch("certbot._internal.client.display_ops.get_email")
     def test_dry_run_no_staging_account(self, mock_get_email):
@@ -178,9 +183,9 @@ class RegisterTest(test_util.ConfigTestCase):
                 self.config.dry_run = True
                 self._call()
                 # check Certbot did not ask the user to provide an email
-                self.assertIs(mock_get_email.called, False)
+                assert mock_get_email.called is False
                 # check Certbot created an account with no email. Contact should return empty
-                self.assertFalse(mock_client().new_account.call_args[0][0].contact)
+                assert not mock_client().new_account.call_args[0][0].contact
 
     @test_util.patch_display_util()
     def test_with_eab_arguments(self, unused_mock_get_utility):
@@ -196,7 +201,7 @@ class RegisterTest(test_util.ConfigTestCase):
                     self.config.eab_hmac_key = "J2OAqW4MHXsrHVa_PVg0Y-L_R4SYw0_aL1le6mfblbE"
                     self._call()
 
-                    self.assertIs(mock_eab_from_data.called, True)
+                    assert mock_eab_from_data.called is True
 
     @test_util.patch_display_util()
     def test_without_eab_arguments(self, unused_mock_get_utility):
@@ -209,7 +214,7 @@ class RegisterTest(test_util.ConfigTestCase):
                     self.config.eab_hmac_key = None
                     self._call()
 
-                    self.assertIs(mock_eab_from_data.called, False)
+                    assert mock_eab_from_data.called is False
 
     def test_external_account_required_without_eab_arguments(self):
         with self._patched_acme_client() as mock_client:
@@ -220,7 +225,8 @@ class RegisterTest(test_util.ConfigTestCase):
                     self.config.eab_kid = None
                     self.config.eab_hmac_key = None
 
-                    self.assertRaises(errors.Error, self._call)
+                    with pytest.raises(errors.Error):
+                        self._call()
 
     def test_unsupported_error(self):
         from acme import messages
@@ -233,8 +239,9 @@ class RegisterTest(test_util.ConfigTestCase):
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot._internal.eff.handle_subscription") as mock_handle:
                 mock_client().new_account.side_effect = [mx_err, mock.MagicMock()]
-                self.assertRaises(messages.Error, self._call)
-        self.assertIs(mock_handle.called, False)
+                with pytest.raises(messages.Error):
+                    self._call()
+        assert mock_handle.called is False
 
 
 class ClientTestCommon(test_util.ConfigTestCase):
@@ -274,7 +281,7 @@ class ClientTest(ClientTestCommon):
             csr_pem=mock.sentinel.csr_pem)
 
     def test_init_acme_verify_ssl(self):
-        self.assertIs(self.client_network.call_args[1]['verify_ssl'], True)
+        assert self.client_network.call_args[1]['verify_ssl'] is True
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
@@ -291,7 +298,7 @@ class ClientTest(ClientTestCommon):
                 self.config,
                 self.config.allow_subset_of_names)
         else:
-            self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, auth_count)
+            assert self.client.auth_handler.handle_authorizations.call_count == auth_count
 
         self.acme.finalize_order.assert_called_once_with(
             self.eg_order, mock.ANY,
@@ -307,22 +314,20 @@ class ClientTest(ClientTestCommon):
 
         orderr = self.acme.new_order(test_csr.data)
         auth_handler.handle_authorizations(orderr, self.config, False)
-        self.assertEqual(
-            (mock.sentinel.cert, mock.sentinel.chain),
+        assert (mock.sentinel.cert, mock.sentinel.chain) == \
             self.client.obtain_certificate_from_csr(
                 test_csr,
-                orderr=orderr))
+                orderr=orderr)
         mock_crypto_util.find_chain_with_issuer.assert_not_called()
         # and that the cert was obtained correctly
         self._check_obtain_certificate()
 
         # Test that --preferred-chain results in chain selection
         self.config.preferred_chain = "some issuer"
-        self.assertEqual(
-            (mock.sentinel.cert, mock.sentinel.chain),
+        assert (mock.sentinel.cert, mock.sentinel.chain) == \
             self.client.obtain_certificate_from_csr(
                 test_csr,
-                orderr=orderr))
+                orderr=orderr)
         mock_crypto_util.find_chain_with_issuer.assert_called_once_with(
             [orderr.fullchain_pem] + orderr.alternative_fullchains_pem,
             "some issuer", True)
@@ -334,8 +339,7 @@ class ClientTest(ClientTestCommon):
                 seconds=constants.CLI_DEFAULTS["issuance_timeout"])
         self.client.obtain_certificate_from_csr(test_csr, orderr=orderr)
         ((_, deadline), _) = self.client.acme.finalize_order.call_args
-        self.assertTrue(
-            abs(expected_deadline - deadline) <= datetime.timedelta(seconds=1))
+        assert abs(expected_deadline - deadline) <= datetime.timedelta(seconds=1)
 
         # Test for specific issuance_timeout (300 seconds)
         expected_deadline = \
@@ -343,23 +347,19 @@ class ClientTest(ClientTestCommon):
         self.config.issuance_timeout = 300
         self.client.obtain_certificate_from_csr(test_csr, orderr=orderr)
         ((_, deadline), _) = self.client.acme.finalize_order.call_args
-        self.assertTrue(
-            abs(expected_deadline - deadline) <= datetime.timedelta(seconds=1))
+        assert abs(expected_deadline - deadline) <= datetime.timedelta(seconds=1)
 
         # Test for orderr=None
-        self.assertEqual(
-            (mock.sentinel.cert, mock.sentinel.chain),
+        assert (mock.sentinel.cert, mock.sentinel.chain) == \
             self.client.obtain_certificate_from_csr(
                 test_csr,
-                orderr=None))
+                orderr=None)
         auth_handler.handle_authorizations.assert_called_with(self.eg_order, self.config, False)
 
         # Test for no auth_handler
         self.client.auth_handler = None
-        self.assertRaises(
-            errors.Error,
-            self.client.obtain_certificate_from_csr,
-            test_csr)
+        with pytest.raises(errors.Error):
+            self.client.obtain_certificate_from_csr(test_csr)
         mock_logger.error.assert_called_once_with(mock.ANY)
 
     @mock.patch("certbot._internal.client.crypto_util")
@@ -395,9 +395,9 @@ class ClientTest(ClientTestCommon):
         self.config.allow_subset_of_names = True
         self._test_obtain_certificate_common(key, csr, authzr_ret=authzr, auth_count=2)
 
-        self.assertEqual(mock_crypto_util.generate_key.call_count, 2)
-        self.assertEqual(mock_crypto_util.generate_csr.call_count, 2)
-        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
+        assert mock_crypto_util.generate_key.call_count == 2
+        assert mock_crypto_util.generate_csr.call_count == 2
+        assert mock_crypto_util.cert_and_chain_from_fullchain.call_count == 1
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_finalize_order_partial_success(self, mock_crypto_util):
@@ -423,18 +423,17 @@ class ClientTest(ClientTestCommon):
         with test_util.patch_display_util():
             result = self.client.obtain_certificate(self.eg_domains)
 
-        self.assertEqual(
-            result,
-            (mock.sentinel.cert, mock.sentinel.chain, key, csr))
-        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 2)
-        self.assertEqual(self.acme.finalize_order.call_count, 2)
+        assert result == \
+            (mock.sentinel.cert, mock.sentinel.chain, key, csr)
+        assert self.client.auth_handler.handle_authorizations.call_count == 2
+        assert self.acme.finalize_order.call_count == 2
 
         successful_domains = [d for d in self.eg_domains if d != 'example.com']
-        self.assertEqual(mock_crypto_util.generate_key.call_count, 2)
+        assert mock_crypto_util.generate_key.call_count == 2
         mock_crypto_util.generate_csr.assert_has_calls([
             mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions),
             mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions)])
-        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
+        assert mock_crypto_util.cert_and_chain_from_fullchain.call_count == 1
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_finalize_order_no_retryable_domains(self, mock_crypto_util):
@@ -459,11 +458,12 @@ class ClientTest(ClientTestCommon):
 
         self.config.allow_subset_of_names = True
 
-        self.assertRaises(messages.Error, self.client.obtain_certificate, self.eg_domains)
-        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 1)
-        self.assertEqual(self.acme.finalize_order.call_count, 1)
-        self.assertEqual(mock_crypto_util.generate_key.call_count, 1)
-        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 0)
+        with pytest.raises(messages.Error):
+            self.client.obtain_certificate(self.eg_domains)
+        assert self.client.auth_handler.handle_authorizations.call_count == 1
+        assert self.acme.finalize_order.call_count == 1
+        assert mock_crypto_util.generate_key.call_count == 1
+        assert mock_crypto_util.cert_and_chain_from_fullchain.call_count == 0
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_finalize_order_rejected_identifier_no_subproblems(self, mock_crypto_util):
@@ -484,12 +484,12 @@ class ClientTest(ClientTestCommon):
 
         self.config.allow_subset_of_names = True
 
-        self.assertRaises(messages.Error, self.client.obtain_certificate,
-                          self.eg_domains)
-        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 1)
-        self.assertEqual(self.acme.finalize_order.call_count, 1)
-        self.assertEqual(mock_crypto_util.generate_key.call_count, 1)
-        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 0)
+        with pytest.raises(messages.Error):
+            self.client.obtain_certificate(self.eg_domains)
+        assert self.client.auth_handler.handle_authorizations.call_count == 1
+        assert self.acme.finalize_order.call_count == 1
+        assert mock_crypto_util.generate_key.call_count == 1
+        assert mock_crypto_util.cert_and_chain_from_fullchain.call_count == 0
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_get_order_partial_success(self, mock_crypto_util):
@@ -515,18 +515,17 @@ class ClientTest(ClientTestCommon):
         with test_util.patch_display_util():
             result = self.client.obtain_certificate(self.eg_domains)
 
-        self.assertEqual(
-            result,
-            (mock.sentinel.cert, mock.sentinel.chain, key, csr))
-        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 1)
-        self.assertEqual(self.acme.new_order.call_count, 2)
+        assert result == \
+            (mock.sentinel.cert, mock.sentinel.chain, key, csr)
+        assert self.client.auth_handler.handle_authorizations.call_count == 1
+        assert self.acme.new_order.call_count == 2
 
         successful_domains = [d for d in self.eg_domains if d != 'example.com']
-        self.assertEqual(mock_crypto_util.generate_key.call_count, 2)
+        assert mock_crypto_util.generate_key.call_count == 2
         mock_crypto_util.generate_csr.assert_has_calls([
             mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions),
             mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions)])
-        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 1)
+        assert mock_crypto_util.cert_and_chain_from_fullchain.call_count == 1
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_get_order_no_retryable_domains(self, mock_crypto_util):
@@ -551,11 +550,12 @@ class ClientTest(ClientTestCommon):
 
         self.config.allow_subset_of_names = True
 
-        self.assertRaises(messages.Error, self.client.obtain_certificate, self.eg_domains)
-        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 0)
-        self.assertEqual(self.acme.new_order.call_count, 1)
-        self.assertEqual(mock_crypto_util.generate_key.call_count, 1)
-        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 0)
+        with pytest.raises(messages.Error):
+            self.client.obtain_certificate(self.eg_domains)
+        assert self.client.auth_handler.handle_authorizations.call_count == 0
+        assert self.acme.new_order.call_count == 1
+        assert mock_crypto_util.generate_key.call_count == 1
+        assert mock_crypto_util.cert_and_chain_from_fullchain.call_count == 0
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_get_order_rejected_identifier_no_subproblems(self, mock_crypto_util):
@@ -576,11 +576,12 @@ class ClientTest(ClientTestCommon):
 
         self.config.allow_subset_of_names = True
 
-        self.assertRaises(messages.Error, self.client.obtain_certificate, self.eg_domains)
-        self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, 0)
-        self.assertEqual(self.acme.new_order.call_count, 1)
-        self.assertEqual(mock_crypto_util.generate_key.call_count, 1)
-        self.assertEqual(mock_crypto_util.cert_and_chain_from_fullchain.call_count, 0)
+        with pytest.raises(messages.Error):
+            self.client.obtain_certificate(self.eg_domains)
+        assert self.client.auth_handler.handle_authorizations.call_count == 0
+        assert self.acme.new_order.call_count == 1
+        assert mock_crypto_util.generate_key.call_count == 1
+        assert mock_crypto_util.cert_and_chain_from_fullchain.call_count == 0
 
     @mock.patch("certbot._internal.client.crypto_util")
     @mock.patch("certbot._internal.client.acme_crypto_util")
@@ -603,7 +604,7 @@ class ClientTest(ClientTestCommon):
             mock.sentinel.key_pem, self.eg_domains, self.config.must_staple)
         mock_crypto.generate_key.assert_not_called()
         mock_crypto.generate_csr.assert_not_called()
-        self.assertEqual(mock_crypto.cert_and_chain_from_fullchain.call_count, 1)
+        assert mock_crypto.cert_and_chain_from_fullchain.call_count == 1
 
     @mock.patch("certbot._internal.client.logger")
     @mock.patch("certbot._internal.client.crypto_util")
@@ -634,14 +635,14 @@ class ClientTest(ClientTestCommon):
         self.client.auth_handler.handle_authorizations.return_value = authzrs
         with test_util.patch_display_util():
             result = self.client.obtain_certificate(self.eg_domains)
-        self.assertEqual(result, (mock.sentinel.cert, mock.sentinel.chain, key, csr))
+        assert result == (mock.sentinel.cert, mock.sentinel.chain, key, csr)
         self._check_obtain_certificate(1)
 
         # Deactivation success/failure should have been handled properly
-        self.assertEqual(auth_handler.deactivate_valid_authorizations.call_count, 1,
-                        "Deactivate authorizations should be called")
-        self.assertEqual(self.acme.new_order.call_count, 2,
-                        "Order should be recreated due to successfully deactivated authorizations")
+        assert auth_handler.deactivate_valid_authorizations.call_count == 1, \
+                        "Deactivate authorizations should be called"
+        assert self.acme.new_order.call_count == 2, \
+                        "Order should be recreated due to successfully deactivated authorizations"
         mock_log.warning.assert_called_with("Certbot was unable to obtain fresh authorizations for"
                                             " every domain. The dry run will continue, but results"
                                             " may not be accurate.")
@@ -679,9 +680,8 @@ class ClientTest(ClientTestCommon):
         with test_util.patch_display_util():
             result = self.client.obtain_certificate(self.eg_domains)
 
-        self.assertEqual(
-            result,
-            (mock.sentinel.cert, mock.sentinel.chain, key, csr))
+        assert result == \
+            (mock.sentinel.cert, mock.sentinel.chain, key, csr)
         self._check_obtain_certificate(auth_count)
 
     @mock.patch('certbot._internal.client.Client.obtain_certificate')
@@ -693,17 +693,17 @@ class ClientTest(ClientTestCommon):
                                                 mock.MagicMock(), mock.MagicMock(), None)
 
         self.client.config.dry_run = False
-        self.assertTrue(self.client.obtain_and_enroll_certificate(domains, "example_cert"))
+        assert self.client.obtain_and_enroll_certificate(domains, "example_cert")
 
-        self.assertTrue(self.client.obtain_and_enroll_certificate(domains, None))
-        self.assertTrue(self.client.obtain_and_enroll_certificate(domains[1:], None))
+        assert self.client.obtain_and_enroll_certificate(domains, None)
+        assert self.client.obtain_and_enroll_certificate(domains[1:], None)
 
         self.client.config.dry_run = True
 
-        self.assertFalse(self.client.obtain_and_enroll_certificate(domains, None))
+        assert not self.client.obtain_and_enroll_certificate(domains, None)
 
         names = [call[0][0] for call in mock_storage.call_args_list]
-        self.assertEqual(names, ["example_cert", "example.com", "example.com"])
+        assert names == ["example_cert", "example.com", "example.com"]
 
     @mock.patch("certbot._internal.cli.helpful_parser")
     def test_save_certificate(self, mock_parser):
@@ -724,28 +724,28 @@ class ClientTest(ClientTestCommon):
             cert_pem, chain_pem, candidate_cert_path, candidate_chain_path,
             candidate_fullchain_path)
 
-        self.assertEqual(os.path.dirname(cert_path),
-                         os.path.dirname(candidate_cert_path))
-        self.assertEqual(os.path.dirname(chain_path),
-                         os.path.dirname(candidate_chain_path))
-        self.assertEqual(os.path.dirname(fullchain_path),
-                         os.path.dirname(candidate_fullchain_path))
+        assert os.path.dirname(cert_path) == \
+                         os.path.dirname(candidate_cert_path)
+        assert os.path.dirname(chain_path) == \
+                         os.path.dirname(candidate_chain_path)
+        assert os.path.dirname(fullchain_path) == \
+                         os.path.dirname(candidate_fullchain_path)
 
         with open(cert_path, "rb") as cert_file:
             cert_contents = cert_file.read()
-        self.assertEqual(cert_contents, test_util.load_vector(certs[0]))
+        assert cert_contents == test_util.load_vector(certs[0])
 
         with open(chain_path, "rb") as chain_file:
             chain_contents = chain_file.read()
-        self.assertEqual(chain_contents, test_util.load_vector(certs[0]) +
-                         test_util.load_vector(certs[1]))
+        assert chain_contents == test_util.load_vector(certs[0]) + \
+                         test_util.load_vector(certs[1])
 
         shutil.rmtree(tmp_path)
 
     @test_util.patch_display_util()
     def test_deploy_certificate_success(self, mock_util):
-        self.assertRaises(errors.Error, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain", "fullchain")
+        with pytest.raises(errors.Error):
+            self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
 
         installer = mock.MagicMock()
         self.client.installer = installer
@@ -757,7 +757,7 @@ class ClientTest(ClientTestCommon):
             domain='foo.bar',
             fullchain_path='fullchain',
             key_path=os.path.abspath("key"))
-        self.assertEqual(installer.save.call_count, 2)
+        assert installer.save.call_count == 2
         installer.restart.assert_called_once_with()
 
     @mock.patch('certbot._internal.client.display_util.notify')
@@ -768,8 +768,8 @@ class ClientTest(ClientTestCommon):
         self.config.installer = "foobar"
 
         installer.deploy_cert.side_effect = errors.PluginError
-        self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain", "fullchain")
+        with pytest.raises(errors.PluginError):
+            self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
         mock_notify.assert_any_call('Deploying certificate')
@@ -781,8 +781,8 @@ class ClientTest(ClientTestCommon):
         self.client.installer = installer
 
         installer.save.side_effect = errors.PluginError
-        self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain", "fullchain")
+        with pytest.raises(errors.PluginError):
+            self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
     @mock.patch('certbot._internal.client.display_util.notify')
@@ -792,13 +792,13 @@ class ClientTest(ClientTestCommon):
         installer.restart.side_effect = [errors.PluginError, None]
         self.client.installer = installer
 
-        self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain", "fullchain")
+        with pytest.raises(errors.PluginError):
+            self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
         mock_notify.assert_called_with(
             'We were unable to install your certificate, however, we successfully restored '
             'your server to its prior configuration.')
         installer.rollback_checkpoints.assert_called_once_with()
-        self.assertEqual(installer.restart.call_count, 2)
+        assert installer.restart.call_count == 2
 
     @mock.patch('certbot._internal.client.logger')
     @test_util.patch_display_util()
@@ -808,14 +808,13 @@ class ClientTest(ClientTestCommon):
         installer.rollback_checkpoints.side_effect = errors.ReverterError
         self.client.installer = installer
 
-        self.assertRaises(errors.PluginError, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain", "fullchain")
-        self.assertEqual(mock_logger.error.call_count, 1)
-        self.assertIn(
-            'An error occurred and we failed to restore your config',
-            mock_logger.error.call_args[0][0])
+        with pytest.raises(errors.PluginError):
+            self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
+        assert mock_logger.error.call_count == 1
+        assert 'An error occurred and we failed to restore your config' in \
+            mock_logger.error.call_args[0][0]
         installer.rollback_checkpoints.assert_called_once_with()
-        self.assertEqual(installer.restart.call_count, 1)
+        assert installer.restart.call_count == 1
 
 
 class EnhanceConfigTest(ClientTestCommon):
@@ -831,8 +830,8 @@ class EnhanceConfigTest(ClientTestCommon):
         self.domain = "example.org"
 
     def test_no_installer(self):
-        self.assertRaises(
-            errors.Error, self.client.enhance_config, [self.domain], None)
+        with pytest.raises(errors.Error):
+            self.client.enhance_config([self.domain], None)
 
     def test_unsupported(self):
         self.client.installer = mock.MagicMock()
@@ -842,36 +841,36 @@ class EnhanceConfigTest(ClientTestCommon):
         self.config.hsts = True
         with mock.patch("certbot._internal.client.logger") as mock_logger:
             self.client.enhance_config([self.domain], None)
-        self.assertEqual(mock_logger.error.call_count, 1)
+        assert mock_logger.error.call_count == 1
         self.client.installer.enhance.assert_not_called()
 
     @mock.patch("certbot._internal.client.logger")
     def test_already_exists_header(self, mock_log):
         self.config.hsts = True
         self._test_with_already_existing()
-        self.assertIs(mock_log.info.called, True)
-        self.assertEqual(mock_log.info.call_args[0][1],
-                          'Strict-Transport-Security')
+        assert mock_log.info.called is True
+        assert mock_log.info.call_args[0][1] == \
+                          'Strict-Transport-Security'
 
     @mock.patch("certbot._internal.client.logger")
     def test_already_exists_redirect(self, mock_log):
         self.config.redirect = True
         self._test_with_already_existing()
-        self.assertIs(mock_log.info.called, True)
-        self.assertEqual(mock_log.info.call_args[0][1],
-                          'redirect')
+        assert mock_log.info.called is True
+        assert mock_log.info.call_args[0][1] == \
+                          'redirect'
 
     @mock.patch("certbot._internal.client.logger")
     def test_config_set_no_warning_redirect(self, mock_log):
         self.config.redirect = False
         self._test_with_already_existing()
-        self.assertIs(mock_log.warning.called, False)
+        assert mock_log.warning.called is False
 
     @mock.patch("certbot._internal.client.logger")
     def test_no_warn_redirect(self, mock_log):
         self.config.redirect = None
         self._test_with_all_supported()
-        self.assertIs(mock_log.warning.called, False)
+        assert mock_log.warning.called is False
 
     def test_no_ask_hsts(self):
         self.config.hsts = True
@@ -924,18 +923,18 @@ class EnhanceConfigTest(ClientTestCommon):
 
     def _test_error_with_rollback(self):
         self._test_error()
-        self.assertIs(self.client.installer.restart.called, True)
+        assert self.client.installer.restart.called is True
 
     def _test_error(self, enhance_error=False, restart_error=False):
         self.config.redirect = True
         with mock.patch('certbot._internal.client.logger') as mock_logger, \
              test_util.patch_display_util() as mock_gu:
-            self.assertRaises(
-                errors.PluginError, self._test_with_all_supported)
+            with pytest.raises(errors.PluginError):
+                self._test_with_all_supported()
 
         if enhance_error:
-            self.assertEqual(mock_logger.error.call_count, 1)
-            self.assertEqual('Unable to set the %s enhancement for %s.', mock_logger.error.call_args_list[0][0][0])
+            assert mock_logger.error.call_count == 1
+            assert 'Unable to set the %s enhancement for %s.' == mock_logger.error.call_args_list[0][0][0]
         if restart_error:
             mock_logger.critical.assert_called_with(
                 'Rolling back to previous server configuration...')
@@ -946,8 +945,8 @@ class EnhanceConfigTest(ClientTestCommon):
         self.client.installer.supported_enhancements.return_value = [
             "ensure-http-header", "redirect", "staple-ocsp"]
         self.client.enhance_config([self.domain], None)
-        self.assertEqual(self.client.installer.save.call_count, 1)
-        self.assertEqual(self.client.installer.restart.call_count, 1)
+        assert self.client.installer.save.call_count == 1
+        assert self.client.installer.restart.call_count == 1
 
     def _test_with_already_existing(self):
         self.client.installer = mock.MagicMock()
@@ -972,12 +971,12 @@ class RollbackTest(unittest.TestCase):
 
     def test_no_problems(self):
         self._call(1, self.m_install)
-        self.assertEqual(self.m_install().rollback_checkpoints.call_count, 1)
-        self.assertEqual(self.m_install().restart.call_count, 1)
+        assert self.m_install().rollback_checkpoints.call_count == 1
+        assert self.m_install().restart.call_count == 1
 
     def test_no_installer(self):
         self._call(1, None)  # Just make sure no exceptions are raised
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

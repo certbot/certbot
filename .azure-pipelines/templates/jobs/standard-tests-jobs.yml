@@ -7,10 +7,10 @@ jobs:
         macos-py37-cover:
           IMAGE_NAME: macOS-12
           PYTHON_VERSION: 3.7
-          TOXENV: py37-cover
+          TOXENV: cover
         macos-cover:
           IMAGE_NAME: macOS-12
-          TOXENV: py3-cover
+          TOXENV: cover
         windows-py37:
           IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.7
@@ -18,7 +18,7 @@ jobs:
         windows-py39-cover:
           IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.9
-          TOXENV: py39-cover-win
+          TOXENV: cover-win
         windows-integration-certbot:
           IMAGE_NAME: windows-2019
           PYTHON_VERSION: 3.9
@@ -37,7 +37,7 @@ jobs:
           TOXENV: py37
         linux-cover:
           IMAGE_NAME: ubuntu-22.04
-          TOXENV: py3-cover
+          TOXENV: cover
         linux-lint:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: lint-posix

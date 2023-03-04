@@ -1,10 +1,12 @@
 """Tests for certbot.plugins.common."""
 import functools
 import shutil
+import sys
 import unittest
 from unittest import mock
 
 import josepy as jose
+import pytest
 
 from acme import challenges
 from certbot import achallenges
@@ -27,15 +29,15 @@ class NamespaceFunctionsTest(unittest.TestCase):
 
     def test_option_namespace(self):
         from certbot.plugins.common import option_namespace
-        self.assertEqual("foo-", option_namespace("foo"))
+        assert "foo-" == option_namespace("foo")
 
     def test_dest_namespace(self):
         from certbot.plugins.common import dest_namespace
-        self.assertEqual("foo_", dest_namespace("foo"))
+        assert "foo_" == dest_namespace("foo")
 
     def test_dest_namespace_with_dashes(self):
         from certbot.plugins.common import dest_namespace
-        self.assertEqual("foo_bar_", dest_namespace("foo-bar"))
+        assert "foo_bar_" == dest_namespace("foo-bar")
 
 
 class PluginTest(unittest.TestCase):
@@ -60,24 +62,24 @@ class PluginTest(unittest.TestCase):
         self.plugin = MockPlugin(config=self.config, name="mock")
 
     def test_init(self):
-        self.assertEqual("mock", self.plugin.name)
-        self.assertEqual(self.config, self.plugin.config)
+        assert "mock" == self.plugin.name
+        assert self.config == self.plugin.config
 
     def test_option_namespace(self):
-        self.assertEqual("mock-", self.plugin.option_namespace)
+        assert "mock-" == self.plugin.option_namespace
 
     def test_option_name(self):
-        self.assertEqual("mock-foo_bar", self.plugin.option_name("foo_bar"))
+        assert "mock-foo_bar" == self.plugin.option_name("foo_bar")
 
     def test_dest_namespace(self):
-        self.assertEqual("mock_", self.plugin.dest_namespace)
+        assert "mock_" == self.plugin.dest_namespace
 
     def test_dest(self):
-        self.assertEqual("mock_foo_bar", self.plugin.dest("foo-bar"))
-        self.assertEqual("mock_foo_bar", self.plugin.dest("foo_bar"))
+        assert "mock_foo_bar" == self.plugin.dest("foo-bar")
+        assert "mock_foo_bar" == self.plugin.dest("foo_bar")
 
     def test_conf(self):
-        self.assertEqual(self.config.mock_foo_bar, self.plugin.conf("foo-bar"))
+        assert self.config.mock_foo_bar == self.plugin.conf("foo-bar")
 
     def test_inject_parser_options(self):
         parser = mock.MagicMock()
@@ -88,11 +90,11 @@ class PluginTest(unittest.TestCase):
             "--mock-foo-bar", dest="different_to_foo_bar", x=1, y=None)
 
     def test_fallback_auth_hint(self):
-        self.assertIn("the mock plugin completed the required dns-01 challenges",
-                      self.plugin.auth_hint([acme_util.DNS01_A, acme_util.DNS01_A]))
-        self.assertIn("the mock plugin completed the required dns-01 and http-01 challenges",
+        assert "the mock plugin completed the required dns-01 challenges" in \
+                      self.plugin.auth_hint([acme_util.DNS01_A, acme_util.DNS01_A])
+        assert "the mock plugin completed the required dns-01 and http-01 challenges" in \
                       self.plugin.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A,
-                                             acme_util.DNS01_A]))
+                                             acme_util.DNS01_A])
 
 
 class InstallerTest(test_util.ConfigTestCase):
@@ -172,12 +174,12 @@ class InstallerTest(test_util.ConfigTestCase):
             installer_func(*passed_args, **passed_kwargs)
             reverter_func.assert_called_once_with(*passed_args, **passed_kwargs)
             reverter_func.side_effect = errors.ReverterError
-            self.assertRaises(
-                errors.PluginError, installer_func, *passed_args, **passed_kwargs)
+            with pytest.raises(errors.PluginError):
+                installer_func(*passed_args, **passed_kwargs)
 
     def test_install_ssl_dhparams(self):
         self.installer.install_ssl_dhparams()
-        self.assertTrue(os.path.isfile(self.installer.ssl_dhparams))
+        assert os.path.isfile(self.installer.ssl_dhparams)
 
     def _current_ssl_dhparams_hash(self):
         from certbot._internal.constants import SSL_DHPARAMS_SRC
@@ -185,9 +187,9 @@ class InstallerTest(test_util.ConfigTestCase):
 
     def test_current_file_hash_in_all_hashes(self):
         from certbot._internal.constants import ALL_SSL_DHPARAMS_HASHES
-        self.assertIn(self._current_ssl_dhparams_hash(), ALL_SSL_DHPARAMS_HASHES,
-            "Constants.ALL_SSL_DHPARAMS_HASHES must be appended"
-            " with the sha256 hash of self.config.ssl_dhparams when it is updated.")
+        assert self._current_ssl_dhparams_hash() in ALL_SSL_DHPARAMS_HASHES, \
+            "Constants.ALL_SSL_DHPARAMS_HASHES must be appended" \
+            " with the sha256 hash of self.config.ssl_dhparams when it is updated."
 
 
 class AddrTest(unittest.TestCase):
@@ -205,53 +207,53 @@ class AddrTest(unittest.TestCase):
         self.addr8 = Addr.fromstring("[fe00:1:2:3:4:5:6:7:8:9]:8080")
 
     def test_fromstring(self):
-        self.assertEqual(self.addr1.get_addr(), "192.168.1.1")
-        self.assertEqual(self.addr1.get_port(), "")
-        self.assertEqual(self.addr2.get_addr(), "192.168.1.1")
-        self.assertEqual(self.addr2.get_port(), "*")
-        self.assertEqual(self.addr3.get_addr(), "192.168.1.1")
-        self.assertEqual(self.addr3.get_port(), "80")
-        self.assertEqual(self.addr4.get_addr(), "[fe00::1]")
-        self.assertEqual(self.addr4.get_port(), "")
-        self.assertEqual(self.addr5.get_addr(), "[fe00::1]")
-        self.assertEqual(self.addr5.get_port(), "*")
-        self.assertEqual(self.addr6.get_addr(), "[fe00::1]")
-        self.assertEqual(self.addr6.get_port(), "80")
-        self.assertEqual(self.addr6.get_ipv6_exploded(),
-                         "fe00:0:0:0:0:0:0:1")
-        self.assertEqual(self.addr1.get_ipv6_exploded(),
-                         "")
-        self.assertEqual(self.addr7.get_port(), "5")
-        self.assertEqual(self.addr8.get_ipv6_exploded(),
-                         "fe00:1:2:3:4:5:6:7")
+        assert self.addr1.get_addr() == "192.168.1.1"
+        assert self.addr1.get_port() == ""
+        assert self.addr2.get_addr() == "192.168.1.1"
+        assert self.addr2.get_port() == "*"
+        assert self.addr3.get_addr() == "192.168.1.1"
+        assert self.addr3.get_port() == "80"
+        assert self.addr4.get_addr() == "[fe00::1]"
+        assert self.addr4.get_port() == ""
+        assert self.addr5.get_addr() == "[fe00::1]"
+        assert self.addr5.get_port() == "*"
+        assert self.addr6.get_addr() == "[fe00::1]"
+        assert self.addr6.get_port() == "80"
+        assert self.addr6.get_ipv6_exploded() == \
+                         "fe00:0:0:0:0:0:0:1"
+        assert self.addr1.get_ipv6_exploded() == \
+                         ""
+        assert self.addr7.get_port() == "5"
+        assert self.addr8.get_ipv6_exploded() == \
+                         "fe00:1:2:3:4:5:6:7"
 
     def test_str(self):
-        self.assertEqual(str(self.addr1), "192.168.1.1")
-        self.assertEqual(str(self.addr2), "192.168.1.1:*")
-        self.assertEqual(str(self.addr3), "192.168.1.1:80")
-        self.assertEqual(str(self.addr4), "[fe00::1]")
-        self.assertEqual(str(self.addr5), "[fe00::1]:*")
-        self.assertEqual(str(self.addr6), "[fe00::1]:80")
+        assert str(self.addr1) == "192.168.1.1"
+        assert str(self.addr2) == "192.168.1.1:*"
+        assert str(self.addr3) == "192.168.1.1:80"
+        assert str(self.addr4) == "[fe00::1]"
+        assert str(self.addr5) == "[fe00::1]:*"
+        assert str(self.addr6) == "[fe00::1]:80"
 
     def test_get_addr_obj(self):
-        self.assertEqual(str(self.addr1.get_addr_obj("443")), "192.168.1.1:443")
-        self.assertEqual(str(self.addr2.get_addr_obj("")), "192.168.1.1")
-        self.assertEqual(str(self.addr1.get_addr_obj("*")), "192.168.1.1:*")
-        self.assertEqual(str(self.addr4.get_addr_obj("443")), "[fe00::1]:443")
-        self.assertEqual(str(self.addr5.get_addr_obj("")), "[fe00::1]")
-        self.assertEqual(str(self.addr4.get_addr_obj("*")), "[fe00::1]:*")
+        assert str(self.addr1.get_addr_obj("443")) == "192.168.1.1:443"
+        assert str(self.addr2.get_addr_obj("")) == "192.168.1.1"
+        assert str(self.addr1.get_addr_obj("*")) == "192.168.1.1:*"
+        assert str(self.addr4.get_addr_obj("443")) == "[fe00::1]:443"
+        assert str(self.addr5.get_addr_obj("")) == "[fe00::1]"
+        assert str(self.addr4.get_addr_obj("*")) == "[fe00::1]:*"
 
     def test_eq(self):
-        self.assertEqual(self.addr1, self.addr2.get_addr_obj(""))
-        self.assertNotEqual(self.addr1, self.addr2)
-        self.assertNotEqual(self.addr1, 3333)
+        assert self.addr1 == self.addr2.get_addr_obj("")
+        assert self.addr1 != self.addr2
+        assert self.addr1 != 3333
 
-        self.assertEqual(self.addr4, self.addr4.get_addr_obj(""))
-        self.assertNotEqual(self.addr4, self.addr5)
-        self.assertNotEqual(self.addr4, 3333)
+        assert self.addr4 == self.addr4.get_addr_obj("")
+        assert self.addr4 != self.addr5
+        assert self.addr4 != 3333
         from certbot.plugins.common import Addr
-        self.assertEqual(self.addr4, Addr.fromstring("[fe00:0:0::1]"))
-        self.assertEqual(self.addr4, Addr.fromstring("[fe00:0::0:0:1]"))
+        assert self.addr4 == Addr.fromstring("[fe00:0:0::1]")
+        assert self.addr4 == Addr.fromstring("[fe00:0::0:0:1]")
 
 
     def test_set_inclusion(self):
@@ -261,14 +263,14 @@ class AddrTest(unittest.TestCase):
         addr2b = Addr.fromstring("192.168.1.1:*")
         set_b = {addr1b, addr2b}
 
-        self.assertEqual(set_a, set_b)
+        assert set_a == set_b
 
         set_c = {self.addr4, self.addr5}
         addr4b = Addr.fromstring("[fe00::1]")
         addr5b = Addr.fromstring("[fe00::1]:*")
         set_d = {addr4b, addr5b}
 
-        self.assertEqual(set_c, set_d)
+        assert set_c == set_d
 
 
 class ChallengePerformerTest(unittest.TestCase):
@@ -282,11 +284,12 @@ class ChallengePerformerTest(unittest.TestCase):
 
     def test_add_chall(self):
         self.performer.add_chall(ACHALL, 0)
-        self.assertEqual(1, len(self.performer.achalls))
-        self.assertEqual([0], self.performer.indices)
+        assert 1 == len(self.performer.achalls)
+        assert [0] == self.performer.indices
 
     def test_perform(self):
-        self.assertRaises(NotImplementedError, self.performer.perform)
+        with pytest.raises(NotImplementedError):
+            self.performer.perform()
 
 
 class InstallVersionControlledFileTest(test_util.TempDirTestCase):
@@ -315,12 +318,12 @@ class InstallVersionControlledFileTest(test_util.TempDirTestCase):
         return crypto_util.sha256sum(self.source_path)
 
     def _assert_current_file(self):
-        self.assertTrue(os.path.isfile(self.dest_path))
-        self.assertEqual(crypto_util.sha256sum(self.dest_path),
-            self._current_file_hash())
+        assert os.path.isfile(self.dest_path)
+        assert crypto_util.sha256sum(self.dest_path) == \
+            self._current_file_hash()
 
     def test_no_file(self):
-        self.assertFalse(os.path.isfile(self.dest_path))
+        assert not os.path.isfile(self.dest_path)
         self._call()
         self._assert_current_file()
 
@@ -341,12 +344,12 @@ class InstallVersionControlledFileTest(test_util.TempDirTestCase):
             mod_ssl_conf.write("a new line for the wrong hash\n")
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
-            self.assertIs(mock_logger.warning.called, False)
-        self.assertTrue(os.path.isfile(self.dest_path))
-        self.assertEqual(crypto_util.sha256sum(self.source_path),
-            self._current_file_hash())
-        self.assertNotEqual(crypto_util.sha256sum(self.dest_path),
-            self._current_file_hash())
+            assert mock_logger.warning.called is False
+        assert os.path.isfile(self.dest_path)
+        assert crypto_util.sha256sum(self.source_path) == \
+            self._current_file_hash()
+        assert crypto_util.sha256sum(self.dest_path) != \
+            self._current_file_hash()
 
     def test_manually_modified_past_file_warns(self):
         with open(self.dest_path, "a") as mod_ssl_conf:
@@ -355,15 +358,15 @@ class InstallVersionControlledFileTest(test_util.TempDirTestCase):
             f.write("hashofanoldversion")
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
-            self.assertEqual(mock_logger.warning.call_args[0][0],
-                "%s has been manually modified; updated file "
-                "saved to %s. We recommend updating %s for security purposes.")
-        self.assertEqual(crypto_util.sha256sum(self.source_path),
-            self._current_file_hash())
+            assert mock_logger.warning.call_args[0][0] == \
+                "%s has been manually modified; updated file " \
+                "saved to %s. We recommend updating %s for security purposes."
+        assert crypto_util.sha256sum(self.source_path) == \
+            self._current_file_hash()
         # only print warning once
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
-            self.assertIs(mock_logger.warning.called, False)
+            assert mock_logger.warning.called is False
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

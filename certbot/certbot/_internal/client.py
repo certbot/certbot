@@ -2,9 +2,9 @@
 import datetime
 import logging
 import platform
-from typing import cast
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Dict
 from typing import IO
 from typing import List

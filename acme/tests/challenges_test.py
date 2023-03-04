@@ -1,15 +1,16 @@
 """Tests for acme.challenges."""
-import urllib.parse as urllib_parse
+import sys
 import unittest
 from unittest import mock
+import urllib.parse as urllib_parse
 
 import josepy as jose
-import OpenSSL
-import requests
 from josepy.jwk import JWKEC
+import OpenSSL
+import pytest
+import requests
 
 from acme import errors
-
 import test_util
 
 CERT = test_util.load_comparable_cert('cert.pem')
@@ -22,7 +23,7 @@ class ChallengeTest(unittest.TestCase):
         from acme.challenges import Challenge
         from acme.challenges import UnrecognizedChallenge
         chall = UnrecognizedChallenge({"type": "foo"})
-        self.assertEqual(chall, Challenge.from_json(chall.jobj))
+        assert chall == Challenge.from_json(chall.jobj)
 
 
 class UnrecognizedChallengeTest(unittest.TestCase):
@@ -33,12 +34,11 @@ class UnrecognizedChallengeTest(unittest.TestCase):
         self.chall = UnrecognizedChallenge(self.jobj)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jobj, self.chall.to_partial_json())
+        assert self.jobj == self.chall.to_partial_json()
 
     def test_from_json(self):
         from acme.challenges import UnrecognizedChallenge
-        self.assertEqual(
-            self.chall, UnrecognizedChallenge.from_json(self.jobj))
+        assert self.chall == UnrecognizedChallenge.from_json(self.jobj)
 
 
 class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
@@ -54,26 +54,26 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
         from acme.challenges import KeyAuthorizationChallengeResponse
         response = KeyAuthorizationChallengeResponse(
             key_authorization='foo.oKGqedy-b-acd5eoybm2f-NVFxvyOoET5CNy3xnv8WY')
-        self.assertTrue(response.verify(self.chall, KEY.public_key()))
+        assert response.verify(self.chall, KEY.public_key())
 
     def test_verify_wrong_token(self):
         from acme.challenges import KeyAuthorizationChallengeResponse
         response = KeyAuthorizationChallengeResponse(
             key_authorization='bar.oKGqedy-b-acd5eoybm2f-NVFxvyOoET5CNy3xnv8WY')
-        self.assertFalse(response.verify(self.chall, KEY.public_key()))
+        assert not response.verify(self.chall, KEY.public_key())
 
     def test_verify_wrong_thumbprint(self):
         from acme.challenges import KeyAuthorizationChallengeResponse
         response = KeyAuthorizationChallengeResponse(
             key_authorization='foo.oKGqedy-b-acd5eoybm2f-NVFxv')
-        self.assertFalse(response.verify(self.chall, KEY.public_key()))
+        assert not response.verify(self.chall, KEY.public_key())
 
     def test_verify_wrong_form(self):
         from acme.challenges import KeyAuthorizationChallengeResponse
         response = KeyAuthorizationChallengeResponse(
             key_authorization='.foo.oKGqedy-b-acd5eoybm2f-'
             'NVFxvyOoET5CNy3xnv8WY')
-        self.assertFalse(response.verify(self.chall, KEY.public_key()))
+        assert not response.verify(self.chall, KEY.public_key())
 
 
 class DNS01ResponseTest(unittest.TestCase):
@@ -92,11 +92,11 @@ class DNS01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual({}, self.msg.to_partial_json())
+        assert {} == self.msg.to_partial_json()
 
     def test_from_json(self):
         from acme.challenges import DNS01Response
-        self.assertEqual(self.msg, DNS01Response.from_json(self.jmsg))
+        assert self.msg == DNS01Response.from_json(self.jmsg)
 
     def test_from_json_hashable(self):
         from acme.challenges import DNS01Response
@@ -106,12 +106,12 @@ class DNS01ResponseTest(unittest.TestCase):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
         public_key = key2.public_key()
         verified = self.response.simple_verify(self.chall, "local", public_key)
-        self.assertFalse(verified)
+        assert not verified
 
     def test_simple_verify_success(self):
         public_key = KEY.public_key()
         verified = self.response.simple_verify(self.chall, "local", public_key)
-        self.assertTrue(verified)
+        assert verified
 
 
 class DNS01Test(unittest.TestCase):
@@ -126,20 +126,19 @@ class DNS01Test(unittest.TestCase):
         }
 
     def test_validation_domain_name(self):
-        self.assertEqual('_acme-challenge.www.example.com',
-                         self.msg.validation_domain_name('www.example.com'))
+        assert '_acme-challenge.www.example.com' == \
+                         self.msg.validation_domain_name('www.example.com')
 
     def test_validation(self):
-        self.assertEqual(
-            "rAa7iIg4K2y63fvUhCfy8dP1Xl7wEhmQq0oChTcE3Zk",
-            self.msg.validation(KEY))
+        assert "rAa7iIg4K2y63fvUhCfy8dP1Xl7wEhmQq0oChTcE3Zk" == \
+            self.msg.validation(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        assert self.jmsg == self.msg.to_partial_json()
 
     def test_from_json(self):
         from acme.challenges import DNS01
-        self.assertEqual(self.msg, DNS01.from_json(self.jmsg))
+        assert self.msg == DNS01.from_json(self.jmsg)
 
     def test_from_json_hashable(self):
         from acme.challenges import DNS01
@@ -162,12 +161,11 @@ class HTTP01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual({}, self.msg.to_partial_json())
+        assert {} == self.msg.to_partial_json()
 
     def test_from_json(self):
         from acme.challenges import HTTP01Response
-        self.assertEqual(
-            self.msg, HTTP01Response.from_json(self.jmsg))
+        assert self.msg == HTTP01Response.from_json(self.jmsg)
 
     def test_from_json_hashable(self):
         from acme.challenges import HTTP01Response
@@ -181,16 +179,16 @@ class HTTP01ResponseTest(unittest.TestCase):
     def test_simple_verify_good_validation(self, mock_get):
         validation = self.chall.validation(KEY)
         mock_get.return_value = mock.MagicMock(text=validation)
-        self.assertTrue(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
+        assert self.response.simple_verify(
+            self.chall, "local", KEY.public_key())
         mock_get.assert_called_once_with(self.chall.uri("local"), verify=False,
                                          timeout=mock.ANY)
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_bad_validation(self, mock_get):
         mock_get.return_value = mock.MagicMock(text="!")
-        self.assertFalse(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
+        assert not self.response.simple_verify(
+            self.chall, "local", KEY.public_key())
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_whitespace_validation(self, mock_get):
@@ -198,24 +196,24 @@ class HTTP01ResponseTest(unittest.TestCase):
         mock_get.return_value = mock.MagicMock(
             text=(self.chall.validation(KEY) +
                   HTTP01Response.WHITESPACE_CUTSET))
-        self.assertTrue(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
+        assert self.response.simple_verify(
+            self.chall, "local", KEY.public_key())
         mock_get.assert_called_once_with(self.chall.uri("local"), verify=False,
                                          timeout=mock.ANY)
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_connection_error(self, mock_get):
         mock_get.side_effect = requests.exceptions.RequestException
-        self.assertFalse(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
+        assert not self.response.simple_verify(
+            self.chall, "local", KEY.public_key())
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_port(self, mock_get):
         self.response.simple_verify(
             self.chall, domain="local",
             account_public_key=KEY.public_key(), port=8080)
-        self.assertEqual("local:8080", urllib_parse.urlparse(
-            mock_get.mock_calls[0][1][0]).netloc)
+        assert "local:8080" == urllib_parse.urlparse(
+            mock_get.mock_calls[0][1][0]).netloc
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_timeout(self, mock_get):
@@ -241,30 +239,28 @@ class HTTP01Test(unittest.TestCase):
         }
 
     def test_path(self):
-        self.assertEqual(self.msg.path, '/.well-known/acme-challenge/'
-                         'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA')
+        assert self.msg.path == '/.well-known/acme-challenge/' \
+                         'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'
 
     def test_uri(self):
-        self.assertEqual(
-            'http://example.com/.well-known/acme-challenge/'
-            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
-            self.msg.uri('example.com'))
+        assert 'http://example.com/.well-known/acme-challenge/' \
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA' == \
+            self.msg.uri('example.com')
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        assert self.jmsg == self.msg.to_partial_json()
 
     def test_from_json(self):
         from acme.challenges import HTTP01
-        self.assertEqual(self.msg, HTTP01.from_json(self.jmsg))
+        assert self.msg == HTTP01.from_json(self.jmsg)
 
     def test_from_json_hashable(self):
         from acme.challenges import HTTP01
         hash(HTTP01.from_json(self.jmsg))
 
     def test_good_token(self):
-        self.assertTrue(self.msg.good_token)
-        self.assertFalse(
-            self.msg.update(token=b'..').good_token)
+        assert self.msg.good_token
+        assert not self.msg.update(token=b'..').good_token
 
 
 class TLSALPN01ResponseTest(unittest.TestCase):
@@ -284,11 +280,11 @@ class TLSALPN01ResponseTest(unittest.TestCase):
         }
 
     def test_to_partial_json(self):
-        self.assertEqual({}, self.response.to_partial_json())
+        assert {} == self.response.to_partial_json()
 
     def test_from_json(self):
         from acme.challenges import TLSALPN01Response
-        self.assertEqual(self.response, TLSALPN01Response.from_json(self.jmsg))
+        assert self.response == TLSALPN01Response.from_json(self.jmsg)
 
     def test_from_json_hashable(self):
         from acme.challenges import TLSALPN01Response
@@ -297,23 +293,23 @@ class TLSALPN01ResponseTest(unittest.TestCase):
     def test_gen_verify_cert(self):
         key1 = test_util.load_pyopenssl_private_key('rsa512_key.pem')
         cert, key2 = self.response.gen_cert(self.domain, key1)
-        self.assertEqual(key1, key2)
-        self.assertTrue(self.response.verify_cert(self.domain, cert))
+        assert key1 == key2
+        assert self.response.verify_cert(self.domain, cert)
 
     def test_gen_verify_cert_gen_key(self):
         cert, key = self.response.gen_cert(self.domain)
-        self.assertIsInstance(key, OpenSSL.crypto.PKey)
-        self.assertTrue(self.response.verify_cert(self.domain, cert))
+        assert isinstance(key, OpenSSL.crypto.PKey)
+        assert self.response.verify_cert(self.domain, cert)
 
     def test_verify_bad_cert(self):
-        self.assertFalse(self.response.verify_cert(self.domain,
-            test_util.load_cert('cert.pem')))
+        assert not self.response.verify_cert(self.domain,
+            test_util.load_cert('cert.pem'))
 
     def test_verify_bad_domain(self):
         key1 = test_util.load_pyopenssl_private_key('rsa512_key.pem')
         cert, key2 = self.response.gen_cert(self.domain, key1)
-        self.assertEqual(key1, key2)
-        self.assertFalse(self.response.verify_cert(self.domain2, cert))
+        assert key1 == key2
+        assert not self.response.verify_cert(self.domain2, cert)
 
     def test_simple_verify_bad_key_authorization(self):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
@@ -322,10 +318,9 @@ class TLSALPN01ResponseTest(unittest.TestCase):
     @mock.patch('acme.challenges.TLSALPN01Response.verify_cert', autospec=True)
     def test_simple_verify(self, mock_verify_cert):
         mock_verify_cert.return_value = mock.sentinel.verification
-        self.assertEqual(
-            mock.sentinel.verification, self.response.simple_verify(
+        assert mock.sentinel.verification == self.response.simple_verify(
                 self.chall, self.domain, KEY.public_key(),
-                cert=mock.sentinel.cert))
+                cert=mock.sentinel.cert)
         mock_verify_cert.assert_called_once_with(
             self.response, self.domain, mock.sentinel.cert)
 
@@ -347,8 +342,8 @@ class TLSALPN01ResponseTest(unittest.TestCase):
     @mock.patch('acme.challenges.TLSALPN01Response.probe_cert')
     def test_simple_verify_false_on_probe_error(self, mock_probe_cert):
         mock_probe_cert.side_effect = errors.Error
-        self.assertFalse(self.response.simple_verify(
-            self.chall, self.domain, KEY.public_key()))
+        assert not self.response.simple_verify(
+            self.chall, self.domain, KEY.public_key())
 
 
 class TLSALPN01Test(unittest.TestCase):
@@ -363,11 +358,11 @@ class TLSALPN01Test(unittest.TestCase):
         }
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        assert self.jmsg == self.msg.to_partial_json()
 
     def test_from_json(self):
         from acme.challenges import TLSALPN01
-        self.assertEqual(self.msg, TLSALPN01.from_json(self.jmsg))
+        assert self.msg == TLSALPN01.from_json(self.jmsg)
 
     def test_from_json_hashable(self):
         from acme.challenges import TLSALPN01
@@ -376,14 +371,14 @@ class TLSALPN01Test(unittest.TestCase):
     def test_from_json_invalid_token_length(self):
         from acme.challenges import TLSALPN01
         self.jmsg['token'] = jose.encode_b64jose(b'abcd')
-        self.assertRaises(
-            jose.DeserializationError, TLSALPN01.from_json, self.jmsg)
+        with pytest.raises(jose.DeserializationError):
+            TLSALPN01.from_json(self.jmsg)
 
     @mock.patch('acme.challenges.TLSALPN01Response.gen_cert')
     def test_validation(self, mock_gen_cert):
         mock_gen_cert.return_value = ('cert', 'key')
-        self.assertEqual(('cert', 'key'), self.msg.validation(
-            KEY, cert_key=mock.sentinel.cert_key, domain=mock.sentinel.domain))
+        assert ('cert', 'key') == self.msg.validation(
+            KEY, cert_key=mock.sentinel.cert_key, domain=mock.sentinel.domain)
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key,
                                               domain=mock.sentinel.domain)
 
@@ -400,11 +395,11 @@ class DNSTest(unittest.TestCase):
         }
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        assert self.jmsg == self.msg.to_partial_json()
 
     def test_from_json(self):
         from acme.challenges import DNS
-        self.assertEqual(self.msg, DNS.from_json(self.jmsg))
+        assert self.msg == DNS.from_json(self.jmsg)
 
     def test_from_json_hashable(self):
         from acme.challenges import DNS
@@ -414,13 +409,13 @@ class DNSTest(unittest.TestCase):
         ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
         for key, alg in [(KEY, jose.RS256), (ec_key_secp384r1, jose.ES384)]:
             with self.subTest(key=key, alg=alg):
-                self.assertTrue(self.msg.check_validation(
-                    self.msg.gen_validation(key, alg=alg), key.public_key()))
+                assert self.msg.check_validation(
+                    self.msg.gen_validation(key, alg=alg), key.public_key())
 
     def test_gen_check_validation_wrong_key(self):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa1024_key.pem'))
-        self.assertFalse(self.msg.check_validation(
-            self.msg.gen_validation(KEY), key2.public_key()))
+        assert not self.msg.check_validation(
+            self.msg.gen_validation(KEY), key2.public_key())
 
     def test_check_validation_wrong_payload(self):
         validations = tuple(
@@ -428,33 +423,32 @@ class DNSTest(unittest.TestCase):
             for payload in (b'', b'{}')
         )
         for validation in validations:
-            self.assertFalse(self.msg.check_validation(
-                validation, KEY.public_key()))
+            assert not self.msg.check_validation(
+                validation, KEY.public_key())
 
     def test_check_validation_wrong_fields(self):
         bad_validation = jose.JWS.sign(
             payload=self.msg.update(
                 token=b'x' * 20).json_dumps().encode('utf-8'),
             alg=jose.RS256, key=KEY)
-        self.assertFalse(self.msg.check_validation(bad_validation, KEY.public_key()))
+        assert not self.msg.check_validation(bad_validation, KEY.public_key())
 
     def test_gen_response(self):
         with mock.patch('acme.challenges.DNS.gen_validation') as mock_gen:
             mock_gen.return_value = mock.sentinel.validation
             response = self.msg.gen_response(KEY)
         from acme.challenges import DNSResponse
-        self.assertIsInstance(response, DNSResponse)
-        self.assertEqual(response.validation, mock.sentinel.validation)
+        assert isinstance(response, DNSResponse)
+        assert response.validation == mock.sentinel.validation
 
     def test_validation_domain_name(self):
-        self.assertEqual('_acme-challenge.le.wtf', self.msg.validation_domain_name('le.wtf'))
+        assert '_acme-challenge.le.wtf' == self.msg.validation_domain_name('le.wtf')
 
     def test_validation_domain_name_ecdsa(self):
         ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
-        self.assertIs(self.msg.check_validation(
+        assert self.msg.check_validation(
             self.msg.gen_validation(ec_key_secp384r1, alg=jose.ES384),
-            ec_key_secp384r1.public_key()), True
-        )
+            ec_key_secp384r1.public_key()) is True
 
 
 class DNSResponseTest(unittest.TestCase):
@@ -479,18 +473,18 @@ class DNSResponseTest(unittest.TestCase):
         }
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg_to, self.msg.to_partial_json())
+        assert self.jmsg_to == self.msg.to_partial_json()
 
     def test_from_json(self):
         from acme.challenges import DNSResponse
-        self.assertEqual(self.msg, DNSResponse.from_json(self.jmsg_from))
+        assert self.msg == DNSResponse.from_json(self.jmsg_from)
 
     def test_from_json_hashable(self):
         from acme.challenges import DNSResponse
         hash(DNSResponse.from_json(self.jmsg_from))
 
     def test_check_validation(self):
-        self.assertTrue(self.msg.check_validation(self.chall, KEY.public_key()))
+        assert self.msg.check_validation(self.chall, KEY.public_key())
 
 
 class JWSPayloadRFC8555Compliant(unittest.TestCase):
@@ -502,8 +496,8 @@ class JWSPayloadRFC8555Compliant(unittest.TestCase):
 
         jobj = challenge_body.json_dumps(indent=2).encode()
         # RFC8555 states that challenge responses must have an empty payload.
-        self.assertEqual(jobj, b'{}')
+        assert jobj == b'{}'
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

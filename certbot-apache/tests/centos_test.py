@@ -1,12 +1,15 @@
 """Test for certbot_apache._internal.configurator for Centos overrides"""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
-from certbot_apache._internal import override_centos
 from certbot_apache._internal import obj
+from certbot_apache._internal import override_centos
 import util
 
 
@@ -48,7 +51,7 @@ class FedoraRestartTest(util.ApacheTest):
             self.temp_dir, "centos7_apache/apache")
 
     def _run_fedora_test(self):
-        self.assertIsInstance(self.config, override_centos.CentOSConfigurator)
+        assert isinstance(self.config, override_centos.CentOSConfigurator)
         with mock.patch("certbot.util.get_os_info") as mock_info:
             mock_info.return_value = ["fedora", "28"]
             self.config.config_test()
@@ -59,8 +62,8 @@ class FedoraRestartTest(util.ApacheTest):
             mock_test.side_effect = errors.MisconfigurationError
             with mock.patch("certbot.util.get_os_info") as mock_info:
                 mock_info.return_value = ["not_fedora"]
-                self.assertRaises(errors.MisconfigurationError,
-                                  self.config.config_test)
+                with pytest.raises(errors.MisconfigurationError):
+                    self.config.config_test()
 
     def test_fedora_restart_error(self):
         c_test = "certbot_apache._internal.configurator.ApacheConfigurator.config_test"
@@ -69,8 +72,8 @@ class FedoraRestartTest(util.ApacheTest):
             mock_test.side_effect = [errors.MisconfigurationError, '']
             with mock.patch("certbot.util.run_script") as mock_run:
                 mock_run.side_effect = errors.SubprocessError
-                self.assertRaises(errors.MisconfigurationError,
-                                  self._run_fedora_test)
+                with pytest.raises(errors.MisconfigurationError):
+                    self._run_fedora_test()
 
     def test_fedora_restart(self):
         c_test = "certbot_apache._internal.configurator.ApacheConfigurator.config_test"
@@ -79,9 +82,9 @@ class FedoraRestartTest(util.ApacheTest):
                 # First call raises error, second doesn't
                 mock_test.side_effect = [errors.MisconfigurationError, '']
                 self._run_fedora_test()
-                self.assertEqual(mock_test.call_count, 2)
-                self.assertEqual(mock_run.call_args[0][0],
-                                ['systemctl', 'restart', 'httpd'])
+                assert mock_test.call_count == 2
+                assert mock_run.call_args[0][0] == \
+                                ['systemctl', 'restart', 'httpd']
 
 
 class UseCorrectApacheExecutableTest(util.ApacheTest):
@@ -102,15 +105,15 @@ class UseCorrectApacheExecutableTest(util.ApacheTest):
             config = util.get_apache_configurator(
                 self.config_path, self.vhost_path, self.config_dir, self.work_dir,
                 os_info="centos")
-            self.assertEqual(config.options.ctl, "apachectl")
-            self.assertEqual(config.options.bin, "httpd")
-            self.assertEqual(config.options.version_cmd, ["apachectl", "-v"])
-            self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
-            self.assertEqual(config.options.restart_cmd_alt, ["apachectl", "restart"])
-            self.assertEqual(config.options.conftest_cmd, ["apachectl", "configtest"])
-            self.assertEqual(config.options.get_defines_cmd, ["apachectl", "-t", "-D", "DUMP_RUN_CFG"])
-            self.assertEqual(config.options.get_includes_cmd, ["apachectl", "-t", "-D", "DUMP_INCLUDES"])
-            self.assertEqual(config.options.get_modules_cmd, ["apachectl", "-t", "-D", "DUMP_MODULES"])
+            assert config.options.ctl == "apachectl"
+            assert config.options.bin == "httpd"
+            assert config.options.version_cmd == ["apachectl", "-v"]
+            assert config.options.restart_cmd == ["apachectl", "graceful"]
+            assert config.options.restart_cmd_alt == ["apachectl", "restart"]
+            assert config.options.conftest_cmd == ["apachectl", "configtest"]
+            assert config.options.get_defines_cmd == ["apachectl", "-t", "-D", "DUMP_RUN_CFG"]
+            assert config.options.get_includes_cmd == ["apachectl", "-t", "-D", "DUMP_INCLUDES"]
+            assert config.options.get_modules_cmd == ["apachectl", "-t", "-D", "DUMP_MODULES"]
 
     @mock.patch("certbot.util.get_os_info")
     def test_new_rhel_derived(self, mock_get_os_info):
@@ -119,21 +122,19 @@ class UseCorrectApacheExecutableTest(util.ApacheTest):
             config = util.get_apache_configurator(
                 self.config_path, self.vhost_path, self.config_dir, self.work_dir,
                 os_info=os_info[0])
-            self.assertEqual(config.options.ctl, "apachectl")
-            self.assertEqual(config.options.bin, "httpd")
-            self.assertEqual(config.options.version_cmd, ["httpd", "-v"])
-            self.assertEqual(config.options.restart_cmd, ["apachectl", "graceful"])
-            self.assertEqual(config.options.restart_cmd_alt, ["apachectl", "restart"])
-            self.assertEqual(config.options.conftest_cmd, ["apachectl", "configtest"])
-            self.assertEqual(config.options.get_defines_cmd, ["httpd", "-t", "-D", "DUMP_RUN_CFG"])
-            self.assertEqual(config.options.get_includes_cmd, ["httpd", "-t", "-D", "DUMP_INCLUDES"])
-            self.assertEqual(config.options.get_modules_cmd, ["httpd", "-t", "-D", "DUMP_MODULES"])
+            assert config.options.ctl == "apachectl"
+            assert config.options.bin == "httpd"
+            assert config.options.version_cmd == ["httpd", "-v"]
+            assert config.options.restart_cmd == ["apachectl", "graceful"]
+            assert config.options.restart_cmd_alt == ["apachectl", "restart"]
+            assert config.options.conftest_cmd == ["apachectl", "configtest"]
+            assert config.options.get_defines_cmd == ["httpd", "-t", "-D", "DUMP_RUN_CFG"]
+            assert config.options.get_includes_cmd == ["httpd", "-t", "-D", "DUMP_INCLUDES"]
+            assert config.options.get_modules_cmd == ["httpd", "-t", "-D", "DUMP_MODULES"]
 
 
 class MultipleVhostsTestCentOS(util.ApacheTest):
     """Multiple vhost tests for CentOS / RHEL family of distros"""
-
-    _multiprocess_can_split_ = True
 
     @mock.patch("certbot.util.get_os_info")
     def setUp(self, mock_get_os_info):  # pylint: disable=arguments-differ
@@ -151,7 +152,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
             self.temp_dir, "centos7_apache/apache")
 
     def test_get_parser(self):
-        self.assertIsInstance(self.config.parser, override_centos.CentOSParser)
+        assert isinstance(self.config.parser, override_centos.CentOSParser)
 
     @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):
@@ -181,16 +182,16 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
             mock_osi.return_value = ("centos", "9")
             self.config.parser.update_runtime_variables()
 
-        self.assertEqual(mock_get.call_count, 3)
-        self.assertEqual(len(self.config.parser.modules), 4)
-        self.assertEqual(len(self.config.parser.variables), 2)
-        self.assertIn("TEST2", self.config.parser.variables)
-        self.assertIn("mod_another.c", self.config.parser.modules)
+        assert mock_get.call_count == 3
+        assert len(self.config.parser.modules) == 4
+        assert len(self.config.parser.variables) == 2
+        assert "TEST2" in self.config.parser.variables
+        assert "mod_another.c" in self.config.parser.modules
 
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found."""
         vhs = self.config.get_virtual_hosts()
-        self.assertEqual(len(vhs), 2)
+        assert len(vhs) == 2
         found = 0
 
         for vhost in vhs:
@@ -200,7 +201,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
                     break
             else:
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
-        self.assertEqual(found, 2)
+        assert found == 2
 
     @mock.patch("certbot_apache._internal.apache_util._get_runtime_cfg")
     def test_get_sysconfig_vars(self, mock_cfg):
@@ -216,26 +217,27 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
             mock_osi.return_value = ("centos", "9")
             self.config.parser.update_runtime_variables()
 
-        self.assertIn("mock_define", self.config.parser.variables)
-        self.assertIn("mock_define_too", self.config.parser.variables)
-        self.assertIn("mock_value", self.config.parser.variables)
-        self.assertEqual("TRUE", self.config.parser.variables["mock_value"])
-        self.assertIn("MOCK_NOSEP", self.config.parser.variables)
-        self.assertEqual("NOSEP_VAL", self.config.parser.variables["NOSEP_TWO"])
+        assert "mock_define" in self.config.parser.variables
+        assert "mock_define_too" in self.config.parser.variables
+        assert "mock_value" in self.config.parser.variables
+        assert "TRUE" == self.config.parser.variables["mock_value"]
+        assert "MOCK_NOSEP" in self.config.parser.variables
+        assert "NOSEP_VAL" == self.config.parser.variables["NOSEP_TWO"]
 
     @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_alt_restart_works(self, mock_run_script):
         mock_run_script.side_effect = [None, errors.SubprocessError, None]
         self.config.restart()
-        self.assertEqual(mock_run_script.call_count, 3)
+        assert mock_run_script.call_count == 3
 
     @mock.patch("certbot_apache._internal.configurator.util.run_script")
     def test_alt_restart_errors(self, mock_run_script):
         mock_run_script.side_effect = [None,
                                        errors.SubprocessError,
                                        errors.SubprocessError]
-        self.assertRaises(errors.MisconfigurationError, self.config.restart)
+        with pytest.raises(errors.MisconfigurationError):
+            self.config.restart()
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

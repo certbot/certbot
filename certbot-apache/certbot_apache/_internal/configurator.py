@@ -21,16 +21,6 @@ from typing import Tuple
 from typing import Type
 from typing import Union
 
-from certbot_apache._internal import apache_util
-from certbot_apache._internal import assertions
-from certbot_apache._internal import constants
-from certbot_apache._internal import display_ops
-from certbot_apache._internal import dualparser
-from certbot_apache._internal import http_01
-from certbot_apache._internal import obj
-from certbot_apache._internal import parser
-from certbot_apache._internal.apacheparser import ApacheBlockNode
-
 from acme import challenges
 from certbot import achallenges
 from certbot import errors
@@ -42,6 +32,15 @@ from certbot.interfaces import RenewableCert
 from certbot.plugins import common
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 from certbot.plugins.util import path_surgery
+from certbot_apache._internal import apache_util
+from certbot_apache._internal import assertions
+from certbot_apache._internal import constants
+from certbot_apache._internal import display_ops
+from certbot_apache._internal import dualparser
+from certbot_apache._internal import http_01
+from certbot_apache._internal import obj
+from certbot_apache._internal import parser
+from certbot_apache._internal.apacheparser import ApacheBlockNode
 
 try:
     import apacheconfig

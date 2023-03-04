@@ -7,6 +7,7 @@ import re
 import shutil
 import stat
 from typing import Any
+from typing import cast
 from typing import Dict
 from typing import Iterable
 from typing import List
@@ -17,8 +18,8 @@ from typing import Union
 
 import configobj
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
 import pkg_resources
@@ -45,6 +46,8 @@ ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 README = "README"
 CURRENT_VERSION = pkg_resources.parse_version(certbot.__version__)
 BASE_PRIVKEY_MODE = 0o600
+
+# pylint: disable=too-many-lines
 
 
 def renewal_conf_files(config: configuration.NamespaceConfig) -> List[str]:
@@ -1131,7 +1134,7 @@ class RenewableCert(interfaces.RenewableCert):
                 password=None,
                 backend=default_backend()
             )
-            return key
+            return cast(Union[RSAPrivateKey, EllipticCurvePrivateKey], key)
 
     @property
     def private_key_type(self) -> str:
@@ -1244,6 +1247,19 @@ class RenewableCert(interfaces.RenewableCert):
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version
+
+    def save_new_config_values(self, cli_config: configuration.NamespaceConfig) -> None:
+        """Save only the config information without writing the new cert.
+
+        :param .NamespaceConfig cli_config: parsed command line
+            arguments
+        """
+        self.cli_config = cli_config
+        symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
+        # Update renewal config file
+        self.configfile = update_configuration(
+            self.lineagename, self.archive_dir, symlinks, cli_config)
+        self.configuration = config_with_defaults(self.configfile)
 
     def truncate(self, num_prior_certs_to_keep: int = 5) -> None:
         """Delete unused historical certificate, chain and key items from the lineage.

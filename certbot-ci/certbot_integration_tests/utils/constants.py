@@ -1,5 +1,6 @@
 """Some useful constants to use throughout certbot-ci integration tests"""
 DEFAULT_HTTP_01_PORT = 5002
+BOULDER_HTTP_01_PORT = 80
 TLS_ALPN_01_PORT = 5001
 CHALLTESTSRV_PORT = 8055
 BOULDER_V2_CHALLTESTSRV_URL = f'http://10.77.77.77:{CHALLTESTSRV_PORT}'

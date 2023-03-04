@@ -2,27 +2,46 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 2.3.0 - master
+## 2.4.0 - master
 
 ### Added
 
-*
-
-### Changed
-
+* We deprecated support for the update_symlinks command. Support will be removed in a following
+  version of Certbot.
 * A flag has been introduced to create an ECDSA ([EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography))
   account key for `certonly`, `register`. Existing accounts will not be affected.
   Reason for this is bandwidth usage on ACME servers, as well as increased security.
   Only new accounts can be registered like this.
+
+### Changed
+
+* Docker build and deploy scripts now generate multiarch manifests for non-architecture-specific tags, instead of defaulting to amd64 images.
+
+### Fixed
+
+* Reverted [#9475](https://github.com/certbot/certbot/pull/9475) due to a performance regression in large nginx deployments.
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.3.0 - 2023-02-14
+
+### Added
+
+* Allow a user to modify the configuration of a certificate without renewing it using the new `reconfigure` subcommand. See `certbot help reconfigure` for details.
+* `certbot show_account` now displays the [ACME Account Thumbprint](https://datatracker.ietf.org/doc/html/rfc8555#section-8.1).
+
+### Changed
+
 * Certbot will no longer save previous CSRs and certificate private keys to `/etc/letsencrypt/csr` and `/etc/letsencrypt/keys`, respectively. These directories may be safely deleted.
 * Certbot will now only keep the current and 5 previous certificates in the `/etc/letsencrypt/archive` directory for each certificate lineage. Any prior certificates will be automatically deleted upon renewal. This number may be further lowered in future releases.
   * As always, users should only reference the certificate files within `/etc/letsencrypt/live` and never use `/etc/letsencrypt/archive` directly. See [Where are my certificates?](https://eff-certbot.readthedocs.io/en/stable/using.html#where-are-my-certificates) in the Certbot User Guide.
 * `certbot.configuration.NamespaceConfig.key_dir` and `.csr_dir` are now deprecated.
+* All Certbot components now require `pytest` to run tests.
 
 ### Fixed
 
->>>>>>> 613e698199e8c81dda07932c12efaf5a77558e0d
-*
+* Fixed a crash when registering an account with BuyPass' ACME server.
+* Fixed a bug where Certbot would crash with `AttributeError: can't set attribute` on ACME server errors in Python 3.11. See [GH #9539](https://github.com/certbot/certbot/issues/9539).
 
 More details about these changes can be found on our GitHub repo.
 
