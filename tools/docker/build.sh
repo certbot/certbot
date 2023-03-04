@@ -19,48 +19,8 @@ source "$WORK_DIR/lib/common"
 trap Cleanup EXIT
 
 Cleanup() {
-    rm -rf "$REPO_ROOT"/qemu-*-static || true
-    for plugin in "${CERTBOT_PLUGINS[@]}"; do
-        rm -rf "$REPO_ROOT/certbot-$plugin"/qemu-*-static || true
-    done
-}
-
-# Returns the translation from Docker to QEMU architecture
-# Usage: GetQemuArch [amd64|arm32v6|arm64v8]
-GetQemuArch() {
-    ARCH=$1
-
-    case "$ARCH" in
-        "amd64")
-            echo "x86_64"
-            ;;
-        "arm32v6")
-            echo "arm"
-            ;;
-        "arm64v8")
-            echo "aarch64"
-            ;;
-        "*")
-            echo "Not supported build architecture '$1'." >&2
-            exit 1
-    esac
-}
-
-# Downloads QEMU static binary file for architecture
-# Usage: DownloadQemuStatic [x86_64|arm|aarch64]
-DownloadQemuStatic() {
-    ARCH=$1
-
-    QEMU_ARCH=$(GetQemuArch "$ARCH")
-    if [ ! -f "qemu-${QEMU_ARCH}-static" ]; then
-        QEMU_DOWNLOAD_URL="https://github.com/multiarch/qemu-user-static/releases/download"
-        QEMU_LATEST_TAG=$(curl -s https://api.github.com/repos/multiarch/qemu-user-static/tags \
-            | grep 'name.*v[0-9]' \
-            | head -n 1 \
-            | cut -d '"' -f 4)
-        curl -SL "${QEMU_DOWNLOAD_URL}/${QEMU_LATEST_TAG}/x86_64_qemu-$QEMU_ARCH-static.tar.gz" \
-            | tar xzv
-    fi
+    docker builder rm certbot_builder || true
+    popd
 }
 
 TAG_BASE="$1"
@@ -70,39 +30,41 @@ if [ -z "$TAG_BASE" ]; then
 fi
 ParseRequestedArch "${2}"
 
-# Register QEMU handlers
-docker run --rm --privileged multiarch/qemu-user-static:register --reset
+# just incase the env is not perfectly clean, remove any old instance of the builder
+docker builder rm certbot_builder || true
+# create the builder instance
+docker buildx create --name certbot_builder --driver docker-container --driver-opt=network=host --bootstrap --use
+# add binfmt tools to the docker environment, with integration into the new builder instance
+docker run --privileged --rm tonistiigi/binfmt --install all
 
 # Step 1: Certbot core Docker
+pushd "${REPO_ROOT}"
 DOCKER_REPO="${DOCKER_HUB_ORG}/certbot"
 for TARGET_ARCH in "${ALL_REQUESTED_ARCH[@]}"; do
-    pushd "${REPO_ROOT}"
-    DownloadQemuStatic "${TARGET_ARCH}"
-    QEMU_ARCH=$(GetQemuArch "${TARGET_ARCH}")
-    DOCKER_BUILDKIT=0 docker build \
-        --build-arg TARGET_ARCH="${TARGET_ARCH}" \
-        --build-arg QEMU_ARCH="${QEMU_ARCH}" \
-        -f "${WORK_DIR}/core/Dockerfile" \
+    docker buildx build \
+        --platform $(getPlatform $TARGET_ARCH) \
+        --target certbot \
+        -f "${WORK_DIR}/Dockerfile" \
         -t "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" \
+        --load \
         .
-    popd
+
 done
 
 # Step 2: Certbot DNS plugins Docker images
 for plugin in "${CERTBOT_PLUGINS[@]}"; do
     DOCKER_REPO="${DOCKER_HUB_ORG}/${plugin}"
-    pushd "${REPO_ROOT}/certbot-${plugin}"
     # Copy QEMU static binaries downloaded when building the core Certbot image
-    cp ../qemu-*-static .
     for TARGET_ARCH in "${ALL_REQUESTED_ARCH[@]}"; do
-        QEMU_ARCH=$(GetQemuArch "${TARGET_ARCH}")
-        BASE_IMAGE="${DOCKER_HUB_ORG}/certbot:${TARGET_ARCH}-${TAG_BASE}"
-        DOCKER_BUILDKIT=0 docker build \
-            --build-arg BASE_IMAGE="${BASE_IMAGE}" \
-            --build-arg QEMU_ARCH="${QEMU_ARCH}" \
-            -f "${WORK_DIR}/plugin/Dockerfile" \
+        docker buildx build \
+            --platform $(getPlatform $TARGET_ARCH) \
+            --target certbot-plugin \
+            --build-context plugin-src="${REPO_ROOT}/certbot-${plugin}" \
+            -f "${WORK_DIR}/Dockerfile" \
             -t "${DOCKER_REPO}:${TARGET_ARCH}-${TAG_BASE}" \
+            --load \
             .
     done
-    popd
 done
+
+# popd

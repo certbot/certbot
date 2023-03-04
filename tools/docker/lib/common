@@ -3,9 +3,8 @@ set -ex
 
 # Current supported architectures
 export ALL_TARGET_ARCH=(amd64 arm32v6 arm64v8)
+export ALL_DOCKER_PLATFORMS=(linux/amd64 linux/arm/v6 linux/arm64)
 
-# Architecture used in tags with no architecture specified (certbot/certbot:latest, certbot/certbot:v0.35.0, ...)
-export DEFAULT_ARCH=amd64
 
 # Name of the Certbot Docker organizaation on GitHub. After creating
 # repositories with the same names (e.g. "certbot", "dns-dnsmadeeasy", etc.)
@@ -30,6 +29,21 @@ export CERTBOT_PLUGINS=(
     "dns-linode"
     "dns-sakuracloud"
 )
+
+getPlatform() {
+    REQUESTED_ARCH="${1}"
+    case $REQUESTED_ARCH in
+        amd64)
+            echo "linux/amd64"
+            ;;
+        arm32v6)
+            echo "linux/arm/v6"
+            ;;
+        arm64v8)
+            echo "linux/arm64"
+            ;;
+    esac
+}
 
 # Parses the requested architecture string and sets ALL_REQUESTED_ARCH to
 # result.
