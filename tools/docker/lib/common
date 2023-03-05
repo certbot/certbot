@@ -3,8 +3,6 @@ set -ex
 
 # Current supported architectures
 export ALL_TARGET_ARCH=(amd64 arm32v6 arm64v8)
-export ALL_DOCKER_PLATFORMS=(linux/amd64 linux/arm/v6 linux/arm64)
-
 
 # Name of the Certbot Docker organizaation on GitHub. After creating
 # repositories with the same names (e.g. "certbot", "dns-dnsmadeeasy", etc.)
@@ -30,7 +28,11 @@ export CERTBOT_PLUGINS=(
     "dns-sakuracloud"
 )
 
-getPlatform() {
+# Converts input architecture identifier to the platform specification
+# understood by `docker build buildx --platform <specification>`.
+# Usage: arch2platform [arm64|arm32v6|arm64v8]
+# If the input is not recognized, an error is returned
+arch2platform() {
     REQUESTED_ARCH="${1}"
     case $REQUESTED_ARCH in
         amd64)
@@ -42,25 +44,39 @@ getPlatform() {
         arm64v8)
             echo "linux/arm64"
             ;;
+        *)
+            return 1
+            ;;
     esac
 }
 
 # Parses the requested architecture string and sets ALL_REQUESTED_ARCH to
 # result.
-# Usage: ParseRequestedArch [all|amd64|arm32v6|arm64v8]
-ParseRequestedArch() {
+# Usage: archList2platformList all
+#        archList2platformList [arch-list]
+#             where [arch-list] is a comma separated list of architectures
+#             as interpreted by the arch2platform function 
+archList2platformList() {
+    local IFS=","
     REQUESTED_ARCH="${1}"
+    # Handle the special value "all"
     if [[ "${REQUESTED_ARCH}" == "all" ]]; then
-        ALL_REQUESTED_ARCH=("${ALL_TARGET_ARCH[@]}")
+        # Recursive call using the list of all known architectures cast to
+        # comma separated list
+        archList2platformList "${ALL_TARGET_ARCH[*]}"
         return 0
     fi
-    for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
-        if [[ "${TARGET_ARCH}" == "${REQUESTED_ARCH}" ]]; then
-            ALL_REQUESTED_ARCH=("${REQUESTED_ARCH}")
-            return 0
-        fi
+    # Convert comma separated list to array of strings
+    read -ra REQUESTED_ARCH_LIST <<< "$REQUESTED_ARCH"
+    # Convert each string to the corresponding docker platform specification.
+    # The internal call to arch2platform might return an error if the arch is
+    # not recognized, crashing the process (`set -ex` called at beginning of 
+    # script)
+    PLATFORM_LIST=()
+    for TARGET_ARCH in "${REQUESTED_ARCH_LIST[@]}"; do
+        PLATFORM_LIST+=($(arch2platform "$TARGET_ARCH"))
     done
-    # If we didn't return above, REQUESTED_ARCH has an unexpected value.
-    echo "Unexpected target architecture \"${REQUESTED_ARCH}\"". >&2
-    exit 1
+
+    # Return a string made from the array of docker platform spedifications
+    echo "${PLATFORM_LIST[*]}"
 }

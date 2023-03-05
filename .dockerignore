@@ -9,3 +9,5 @@
 .tox
 venv
 docs
+/Dockerfile
+/docker_cache

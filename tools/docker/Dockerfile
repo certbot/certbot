@@ -1,6 +1,5 @@
-# Docker Arch (amd64, arm32v6, ...)
+#base image 
 FROM python:3.10-alpine3.16 as certbot
-
 
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
@@ -42,10 +41,10 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk del .build-deps \
     && rm -rf ${HOME}/.cargo
 
-
+#static definition for making a plugin, but beware that
+#using this layer definition will cause collisions if you make
+#extensive use of the cache.
 FROM certbot as certbot-plugin
-# Copy Certbot DNS plugin code
 COPY --from=plugin-src . /opt/certbot/src/plugin
-
-# Install the DNS plugin
 RUN python tools/pip_install.py --no-cache-dir --editable /opt/certbot/src/plugin
+

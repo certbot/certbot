@@ -42,27 +42,18 @@ docker buildx create --name certbot_builder --driver docker-container --driver-o
 # add binfmt tools to the docker environment, with integration into the new builder instance
 docker run --privileged --rm tonistiigi/binfmt --install all
 
-#generate the actual Dockerfile with unique layer names 
-cp ${WORK_DIR}/Dockerfile ${REPO_ROOT}/Dockerfile
-for plugin in "${CERTBOT_PLUGINS[@]}"; do
 
-cat << EOF >> ${REPO_ROOT}/Dockerfile
-FROM certbot as certbot-${plugin}
-COPY certbot-${plugin} /opt/certbot/src/plugin
-RUN python tools/pip_install.py --no-cache-dir --editable /opt/certbot/src/plugin
-
-EOF
-
-done
 
 # Step 1: Certbot core Docker
 DOCKER_REPO="${DOCKER_HUB_ORG}/certbot"
 docker buildx build \
     --platform ${PLATFORM_SPEC} \
     --target certbot \
-    -f "${REPO_ROOT}/Dockerfile" \
+    -f "${WORK_DIR}/Dockerfile" \
     --cache-from=type=local,src=${REPO_ROOT}/docker_cache \
     --cache-to=type=local,dest=${REPO_ROOT}/docker_cache \
+    -t certbot:${TAG_BASE} \
+    --push \
     .
 
 # Step 2: Certbot DNS plugins Docker images
@@ -70,10 +61,12 @@ for plugin in "${CERTBOT_PLUGINS[@]}"; do
     DOCKER_REPO="${DOCKER_HUB_ORG}/${plugin}"
     docker buildx build \
         --platform ${PLATFORM_SPEC} \
-        --target certbot-${plugin} \
+        --target certbot-plugin \
         --build-context plugin-src="${REPO_ROOT}/certbot-${plugin}" \
-        -f "${REPO_ROOT}/Dockerfile" \
+        -f "${WORK_DIR}/Dockerfile" \
         --cache-from=type=local,src=${REPO_ROOT}/docker_cache \
         --cache-to=type=local,dest=${REPO_ROOT}/docker_cache \
+        -t certbot-${plugin}:${TAG_BASE} \
+        --push \
         .
 done
