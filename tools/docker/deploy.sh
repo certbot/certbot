@@ -4,12 +4,16 @@ set -euxo pipefail
 # This script builds certbot docker and certbot dns plugins docker using the
 # local Certbot files.
 
-# Usage: ./deploy.sh [TAG] [all|<comma separated list of arch identifiers>]
-#   with the [TAG] value corresponding the base of the tag to give the Docker
-#   images and the 2nd value being the architecture to build snaps for.
-#   Values for the tag should be something like `v0.34.0` or `nightly`. The
-#   given value is only the base of the tag because the things like the CPU
-#   architecture are also added to the full tag.
+# Usage: 
+#       ./deploy.sh <TAG> all
+#       ./deploy.sh <TAG> <architectures>
+#   The <TAG> argument is an identifier applied to all docker images and manifests.
+#   It may be something like `nightly` or `v2.3.2`. If the tag is a version
+#   stamp greater than v2.0.0, then a `latest` tag will also be generated and
+#   pushed to the docker hub repo.
+#   The argument "all" will build all know architectures. Alternatively, the
+#   user may provide a comma separated list of architectures drawn from the
+#   known architectures. Know architectures include amd64, arm32v6, and arm64v8.
 
 source "$(realpath $(dirname ${BASH_SOURCE[0]}))/lib/common"
 

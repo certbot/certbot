@@ -20,21 +20,21 @@ DNS plugin Docker images to Docker Hub.
 High-level behavior
 -------------------
 
-Running `./build.sh <TAG> all` causes the Docker images to be built for all 
-supported architectures, where `<TAG>` is the base of the tag that should be 
-given to the generated images. The tag should either be `nightly` or a git 
-version tag like `v2.2.0`. For version tags above `v2.0.0`, additional tags 
-for `latest` are also generated. The generated images are stored in a local 
+Running `./build.sh all` causes the Docker images to be built for all 
+supported architectures. The generated images are stored in a docker 
 cache backed by the local filesystem.
 
-Running `./test.sh <TAG> all` either loads images from the filesystem cache
-or generates said images on demand, loads them into the local docker cache,
-and runs a test command to validate the image contents.
+Running `./test.sh all` either loads images from the filesystem cache
+or generates said images on demand, and runs a test command to validate 
+the image contents.
 
 Running `./deploy.sh <TAG> all` will push the previously generated images 
-to Docker Hub. The per-architecture images are accessible through the 
-corresponding multi-arch manifest by using the `docker pull --platform
-<platform spec> <IMAGE>:<TAG>` command.
+to Docker Hub.  The <TAG> argument is an identifier applied to all docker 
+images and manifests. it may be something like `nightly` or `v2.3.2`. If 
+the tag is a version stamp greater than v2.0.0, then a `latest` tag will 
+also be generated and pushed to the docker hub repo. The per-architecture 
+images are accessible through the corresponding multi-arch manifest by 
+using the `docker pull --platform <platform spec> <IMAGE>:<TAG>` command.
 
 Configuration
 -------------

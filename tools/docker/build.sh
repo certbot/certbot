@@ -14,7 +14,7 @@ set -euxo pipefail
 
 source "$(realpath $(dirname ${BASH_SOURCE[0]}))/lib/common"
 
-REQUESTED_ARCH_LIST=$(InterpretArchRequest "$2")
+REQUESTED_ARCH_LIST=$(InterpretArchRequest "$1")
 PLATFORM_SPEC=$(archList2platformList "${REQUESTED_ARCH_LIST[@]}")
 
 #jump to root, matching popd handed by Cleanup on EXIT via trap
