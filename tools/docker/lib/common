@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -euxo pipefail
 
 # Current supported architectures
 export ALL_TARGET_ARCH=(amd64 arm32v6 arm64v8)
@@ -28,6 +28,13 @@ export CERTBOT_PLUGINS=(
     "dns-sakuracloud"
 )
 
+# WORK_DIR is two levels above this file
+export WORK_DIR="$(realpath $(dirname ${BASH_SOURCE[0]})/..)"
+# REPO_ROOT is two levels above that
+export REPO_ROOT="$(realpath ${WORK_DIR}/../..)"
+# location where docker cache should be created (may be anywhere accessble on the host filesystem)
+export DOCKER_CACHE="${REPO_ROOT}/.docker_cache"
+
 # Converts input architecture identifier to the platform specification
 # understood by `docker build buildx --platform <specification>`.
 # Usage: arch2platform [arm64|arm32v6|arm64v8]
@@ -52,8 +59,7 @@ arch2platform() {
 
 # Parses the requested architecture string and sets ALL_REQUESTED_ARCH to
 # result.
-# Usage: archList2platformList all
-#        archList2platformList [arch-list]
+# Usage: archList2platformList [arch-list]
 #             where [arch-list] is a comma separated list of architectures
 #             as interpreted by the arch2platform function 
 archList2platformList() {
@@ -70,13 +76,87 @@ archList2platformList() {
     read -ra REQUESTED_ARCH_LIST <<< "$REQUESTED_ARCH"
     # Convert each string to the corresponding docker platform specification.
     # The internal call to arch2platform might return an error if the arch is
-    # not recognized, crashing the process (`set -ex` called at beginning of 
+    # not recognized, crashing the process (`set -exo` called at beginning of 
     # script)
     PLATFORM_LIST=()
     for TARGET_ARCH in "${REQUESTED_ARCH_LIST[@]}"; do
         PLATFORM_LIST+=($(arch2platform "$TARGET_ARCH"))
+        # fail if lookup in subshell failed
+        if [ $? -ne 0 ]; then exit 1; fi
     done
 
     # Return a string made from the array of docker platform spedifications
     echo "${PLATFORM_LIST[*]}"
+}
+
+# Interpret the user input. Expands "all" to a list of known arches,
+# and validates arches if provided with a list
+InterpretArchRequest() {
+    USER_INPUT="${1}"
+    local IFS=","
+    # Handle the special value "all"
+    if [[ "${USER_INPUT}" == "all" ]]; then
+        # Recursive call using the list of all known architectures cast to
+        # comma separated list
+        echo "${ALL_TARGET_ARCH[*]}"
+        return 0
+    fi
+    # Convert comma separated list to array of strings
+    read -ra REQUESTED_ARCH_ARRAY <<< "$USER_INPUT"
+    for REQUESTED_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
+        local IFS=" "
+        if [[ ! " ${ALL_TARGET_ARCH[*]} " =~ " ${REQUESTED_ARCH} " ]]; then
+            echo "unknown architecture identifier: ${REQUESTED_ARCH}"
+            exit 1
+        fi
+    done
+    echo "$USER_INPUT"
+}
+
+
+# Function for use with trap in the primary scripts to remove the 
+# docker builder and restore the original directory
+Cleanup() {
+    docker builder rm certbot_builder || true
+    popd
+}
+
+# Function to create a docker builder using the buildkit docker-container
+# driver
+CreateBuilder() {
+    # just incase the env is not perfectly clean, remove any old instance of the builder
+    docker builder rm certbot_builder || true
+    # create the builder instance
+    docker buildx create --name certbot_builder --driver docker-container --driver-opt=network=host --bootstrap --use
+    # add binfmt tools to the docker environment, with integration into the new builder instance
+    docker run --privileged --rm tonistiigi/binfmt --install all
+}
+
+# Helper function to generate common args passed to `docker buildx build`
+# calls. This makes sure things are consisten between top level scripts.
+# Base Certbot version
+StandardCertbotBuildArgs() {
+PLATFORM_SPEC=$1
+cat << EOF
+--platform ${PLATFORM_SPEC} \
+-f ${WORK_DIR}/Dockerfile \
+--target certbot \
+--cache-from=type=local,src=${DOCKER_CACHE}/certbot 
+EOF
+}
+
+# Helper function to generate common args passed to `docker buildx build`
+# calls. This makes sure things are consisten between top level scripts.
+# Certbot Plugin version
+StandardPluginBuildArgs() {
+PLATFORM_SPEC=$1
+PLUGIN=$2
+cat << EOF
+--platform ${PLATFORM_SPEC} \
+-f ${WORK_DIR}/Dockerfile \
+--target certbot-plugin \
+--build-context plugin-src=${REPO_ROOT}/certbot-${PLUGIN} \
+--cache-from=type=local,src=${DOCKER_CACHE}/certbot \
+--cache-from=type=local,src=${DOCKER_CACHE}/${PLUGIN}
+EOF
 }
