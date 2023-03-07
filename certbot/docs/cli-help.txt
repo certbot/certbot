@@ -124,7 +124,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/2.3.0 (certbot;
+                        "". (default: CertbotACMEClient/2.4.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -295,8 +295,6 @@ manage:
                         name)
   revoke                Revoke a certificate specified with --cert-path or
                         --cert-name
-  update_symlinks       Recreate symlinks in your /etc/letsencrypt/live/
-                        directory
   reconfigure           Update renewal configuration for a certificate
                         specified by --cert-name
 
@@ -431,10 +429,6 @@ plugins:
   --prepare             Initialize and prepare plugins. (default: False)
   --authenticators      Limit to authenticator plugins only. (default: None)
   --installers          Limit to installer plugins only. (default: None)
-
-update_symlinks:
-  Recreates certificate and key symlinks in /etc/letsencrypt/live, if you
-  changed them by hand or edited a renewal configuration file
 
 enhance:
   Helps to harden the TLS configuration by adding security enhancements to
