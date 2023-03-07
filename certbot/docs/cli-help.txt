@@ -26,6 +26,7 @@ manage certificates:
     certificates    Display information about certificates you have from Certbot
     revoke          Revoke a certificate (supply --cert-name or --cert-path)
     delete          Delete a certificate (supply --cert-name)
+    reconfigure     Update a certificate's configuration (supply --cert-name)
 
 manage your account:
     register        Create an ACME account
@@ -35,7 +36,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -58,18 +59,15 @@ optional arguments:
                         it's not being run in a terminal. This flag cannot be
                         used with the renew subcommand. (default: False)
   -d DOMAIN, --domains DOMAIN, --domain DOMAIN
-                        Domain names to apply. For multiple domains you can
+                        Domain names to include. For multiple domains you can
                         use multiple -d flags or enter a comma separated list
-                        of domains as a parameter. The first domain provided
-                        will be the subject CN of the certificate, and all
-                        domains will be Subject Alternative Names on the
-                        certificate. The first domain will also be used in
-                        some software user interfaces and as the file paths
-                        for the certificate and related material unless
-                        otherwise specified or you already have a certificate
-                        with the same name. In the case of a name collision it
-                        will append a number like 0001 to the file path name.
-                        (default: Ask)
+                        of domains as a parameter. All domains will be
+                        included as Subject Alternative Names on the
+                        certificate. The first domain will be used as the
+                        certificate name, unless otherwise specified or if you
+                        already have a certificate with the same name. In the
+                        case of a name conflict, a number like -0001 will be
+                        appended to the certificate name. (default: Ask)
   --eab-kid EAB_KID     Key Identifier for External Account Binding (default:
                         None)
   --eab-hmac-key EAB_HMAC_KEY
@@ -126,7 +124,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/2.2.0 (certbot;
+                        "". (default: CertbotACMEClient/2.3.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -229,6 +227,17 @@ security:
 testing:
   The following flags are meant for testing and integration purposes only.
 
+  --run-deploy-hooks    When performing a test run using `--dry-run` or
+                        `reconfigure`, run any applicable deploy hooks. This
+                        includes hooks set on the command line, saved in the
+                        certificate's renewal configuration file, or present
+                        in the renewal-hooks directory. To exclude directory
+                        hooks, use --no-directory-hooks. The hook(s) will only
+                        be run if the dry run succeeds, and will use the
+                        current active certificate, not the temporary test
+                        certificate acquired during the dry run. This flag is
+                        recommended when modifying the deploy hook using
+                        `reconfigure`. (default: False)
   --test-cert, --staging
                         Use the staging server to obtain or revoke test
                         (invalid) certificates; equivalent to --server
@@ -288,6 +297,8 @@ manage:
                         --cert-name
   update_symlinks       Recreate symlinks in your /etc/letsencrypt/live/
                         directory
+  reconfigure           Update renewal configuration for a certificate
+                        specified by --cert-name
 
 run:
   Options for obtaining & installing certificates
@@ -431,6 +442,9 @@ enhance:
 
 show_account:
   Options useful for the "show_account" subcommand:
+
+reconfigure:
+  Common options that may be updated with the "reconfigure" subcommand:
 
 plugins:
   Plugin Selection: Certbot client supports an extensible plugins
@@ -707,10 +721,16 @@ null:
   Null Installer
 
 standalone:
-  Spin up a temporary webserver
+  Runs an HTTP server locally which serves the necessary validation files
+  under the /.well-known/acme-challenge/ request path. Suitable if there is
+  no HTTP server already running. HTTP challenge only (wildcards not
+  supported).
 
 webroot:
-  Place files in webroot directory
+  Saves the necessary validation files to a .well-known/acme-challenge/
+  directory within the nominated webroot path. A seperate HTTP server must
+  be running and serving files from the webroot path. HTTP challenge only
+  (wildcards not supported).
 
   --webroot-path WEBROOT_PATH, -w WEBROOT_PATH
                         public_html / webroot path. This can be specified

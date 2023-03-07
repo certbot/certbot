@@ -1,6 +1,9 @@
 """Tests for certbot_apache._internal.parser."""
 import shutil
+import sys
 import unittest
+
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -38,51 +41,49 @@ class ComplexParserTest(util.ParserTest):
         """Note: This may also fail do to Include conf-enabled/ syntax."""
         matches = self.parser.find_dir("TestArgsDirective")
 
-        self.assertEqual(len(self.parser.filter_args_num(matches, 1)), 3)
-        self.assertEqual(len(self.parser.filter_args_num(matches, 2)), 2)
-        self.assertEqual(len(self.parser.filter_args_num(matches, 3)), 1)
+        assert len(self.parser.filter_args_num(matches, 1)) == 3
+        assert len(self.parser.filter_args_num(matches, 2)) == 2
+        assert len(self.parser.filter_args_num(matches, 3)) == 1
 
     def test_basic_variable_parsing(self):
         matches = self.parser.find_dir("TestVariablePort")
 
-        self.assertEqual(len(matches), 1)
-        self.assertEqual(self.parser.get_arg(matches[0]), "1234")
+        assert len(matches) == 1
+        assert self.parser.get_arg(matches[0]) == "1234"
 
     def test_basic_variable_parsing_quotes(self):
         matches = self.parser.find_dir("TestVariablePortStr")
 
-        self.assertEqual(len(matches), 1)
-        self.assertEqual(self.parser.get_arg(matches[0]), "1234")
+        assert len(matches) == 1
+        assert self.parser.get_arg(matches[0]) == "1234"
 
     def test_invalid_variable_parsing(self):
         del self.parser.variables["tls_port"]
 
         matches = self.parser.find_dir("TestVariablePort")
-        self.assertRaises(
-            errors.PluginError, self.parser.get_arg, matches[0])
+        with pytest.raises(errors.PluginError):
+            self.parser.get_arg(matches[0])
 
     def test_basic_ifdefine(self):
-        self.assertEqual(len(self.parser.find_dir("VAR_DIRECTIVE")), 2)
-        self.assertEqual(len(self.parser.find_dir("INVALID_VAR_DIRECTIVE")), 0)
+        assert len(self.parser.find_dir("VAR_DIRECTIVE")) == 2
+        assert len(self.parser.find_dir("INVALID_VAR_DIRECTIVE")) == 0
 
     def test_basic_ifmodule(self):
-        self.assertEqual(len(self.parser.find_dir("MOD_DIRECTIVE")), 2)
-        self.assertEqual(
-            len(self.parser.find_dir("INVALID_MOD_DIRECTIVE")), 0)
+        assert len(self.parser.find_dir("MOD_DIRECTIVE")) == 2
+        assert len(self.parser.find_dir("INVALID_MOD_DIRECTIVE")) == 0
 
     def test_nested(self):
-        self.assertEqual(len(self.parser.find_dir("NESTED_DIRECTIVE")), 3)
-        self.assertEqual(
-            len(self.parser.find_dir("INVALID_NESTED_DIRECTIVE")), 0)
+        assert len(self.parser.find_dir("NESTED_DIRECTIVE")) == 3
+        assert len(self.parser.find_dir("INVALID_NESTED_DIRECTIVE")) == 0
 
     def test_load_modules(self):
         """If only first is found, there is bad variable parsing."""
-        self.assertIn("status_module", self.parser.modules)
-        self.assertIn("mod_status.c", self.parser.modules)
+        assert "status_module" in self.parser.modules
+        assert "mod_status.c" in self.parser.modules
 
         # This is in an IfDefine
-        self.assertIn("ssl_module", self.parser.modules)
-        self.assertIn("mod_ssl.c", self.parser.modules)
+        assert "ssl_module" in self.parser.modules
+        assert "mod_ssl.c" in self.parser.modules
 
     def verify_fnmatch(self, arg, hit=True):
         """Test if Include was correctly parsed."""
@@ -90,9 +91,9 @@ class ComplexParserTest(util.ParserTest):
         self.parser.add_dir(parser.get_aug_path(self.parser.loc["default"]),
                             "Include", [arg])
         if hit:
-            self.assertTrue(self.parser.find_dir("FNMATCH_DIRECTIVE"))
+            assert self.parser.find_dir("FNMATCH_DIRECTIVE")
         else:
-            self.assertFalse(self.parser.find_dir("FNMATCH_DIRECTIVE"))
+            assert not self.parser.find_dir("FNMATCH_DIRECTIVE")
 
     # NOTE: Only run one test per function otherwise you will have
     # inf recursion
@@ -124,4 +125,4 @@ class ComplexParserTest(util.ParserTest):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

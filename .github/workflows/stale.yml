@@ -1,0 +1,45 @@
+name: Update Stale Issues
+on:
+  schedule:
+    # Run at midnight every night
+    - cron: '24 1 * * *'
+permissions:
+  issues: write
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v6
+        with:
+          # Idle number of days before marking issues stale
+          days-before-issue-stale: 365
+
+          # Never mark PRs as stale
+          days-before-pr-stale: -1
+
+          # Idle number of days before closing stale issues
+          days-before-issue-close: 30
+
+          # Never close PRs
+          days-before-pr-close: -1
+
+          # Ignore issues with an assignee
+          exempt-all-issue-assignees: true
+
+          # Label to use when marking as stale
+          stale-issue-label: needs-update
+
+          stale-issue-message: >
+            We've made a lot of changes to Certbot since this issue was opened. If you
+            still have this issue with an up-to-date version of Certbot, can you please
+            add a comment letting us know? This helps us to better see what issues are
+            still affecting our users. If there is no activity in the next 30 days, this
+            issue will be automatically closed.
+
+          close-issue-message: >
+            This issue has been closed due to lack of activity, but if you think it
+            should be reopened, please open a new issue with a link to this one and we'll
+            take a look.
+
+          # Limit the number of actions per hour, from 1-30. Default is 30
+          operations-per-run: 30

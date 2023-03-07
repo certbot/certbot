@@ -11,7 +11,23 @@ stages:
       - template: ../jobs/snap-deploy-job.yml
         parameters:
           snapReleaseChannel: ${{ parameters.snapReleaseChannel }}
-      - job: publish_docker
+      # The credentials used in the following jobs are for the shared
+      # certbotbot account on Docker Hub. The credentials are stored 
+      # in a service account which was created by following the 
+      # instructions at
+      # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#sep-docreg.
+      # The name given to this service account must match the value
+      # given to containerRegistry below. The authentication used when
+      # creating this service account was a personal access token
+      # rather than a password to bypass 2FA. When Brad set this up,
+      # Azure Pipelines failed to verify the credentials with an error
+      # like "access is forbidden with a JWT issued from a personal
+      # access token", but after saving them without verification, the
+      # access token worked when the pipeline actually ran. "Grant
+      # access to all pipelines" should also be checked on the service
+      # account. The access token can be deleted on Docker Hub if
+      # these credentials need to be revoked.
+      - job: publish_docker_by_arch
         pool:
           vmImage: ubuntu-22.04
         strategy:
@@ -33,22 +49,19 @@ stages:
           - task: Docker@2
             inputs:
               command: login
-              # The credentials used here are for the shared certbotbot account
-              # on Docker Hub. The credentials are stored in a service account
-              # which was created by following the instructions at
-              # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#sep-docreg.
-              # The name given to this service account must match the value
-              # given to containerRegistry below. The authentication used when
-              # creating this service account was a personal access token
-              # rather than a password to bypass 2FA. When Brad set this up,
-              # Azure Pipelines failed to verify the credentials with an error
-              # like "access is forbidden with a JWT issued from a personal
-              # access token", but after saving them without verification, the
-              # access token worked when the pipeline actually ran. "Grant
-              # access to all pipelines" should also be checked on the service
-              # account. The access token can be deleted on Docker Hub if
-              # these credentials need to be revoked.
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
-          - bash: set -e && tools/docker/deploy.sh $(dockerTag) $DOCKER_ARCH
-            displayName: Deploy the Docker images
+          - bash: set -e && tools/docker/deploy_by_arch.sh $(dockerTag) $DOCKER_ARCH
+            displayName: Deploy the Docker images by architecture
+      - job: publish_docker_multiarch
+        dependsOn: publish_docker_by_arch
+        pool:
+          vmImage: ubuntu-22.04
+        steps:
+          - task: Docker@2
+            inputs:
+              command: login
+              containerRegistry: docker-hub
+            displayName: Login to Docker Hub
+          - bash: set -e && tools/docker/deploy_multiarch.sh $(dockerTag)
+            displayName: Deploy the Docker multiarch manifests

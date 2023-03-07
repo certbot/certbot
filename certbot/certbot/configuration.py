@@ -5,6 +5,7 @@ from typing import Any
 from typing import List
 from typing import Optional
 from urllib import parse
+import warnings
 
 from certbot import errors
 from certbot import util
@@ -150,6 +151,8 @@ class NamespaceConfig:
     @property
     def csr_dir(self) -> str:
         """Directory where new Certificate Signing Requests (CSRs) are saved."""
+        warnings.warn("NamespaceConfig.csr_dir is deprecated and will be removed in an upcoming "
+                      "release of Certbot", DeprecationWarning)
         return os.path.join(self.namespace.config_dir, constants.CSR_DIR)
 
     @property
@@ -160,6 +163,8 @@ class NamespaceConfig:
     @property
     def key_dir(self) -> str:
         """Keys storage."""
+        warnings.warn("NamespaceConfig.key_dir is deprecated and will be removed in an upcoming "
+                      "release of Certbot", DeprecationWarning)
         return os.path.join(self.namespace.config_dir, constants.KEY_DIR)
 
     @property

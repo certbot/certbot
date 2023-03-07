@@ -3,6 +3,7 @@
 import contextlib
 from datetime import datetime
 from datetime import timedelta
+import sys
 import unittest
 from unittest import mock
 
@@ -12,11 +13,11 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.x509 import ocsp as ocsp_lib
+import pytest
 import pytz
 
 from certbot import errors
 from certbot.tests import util as test_util
-
 
 out = """Missing = in header key=value
 ocsp: Use -help for summary.
@@ -36,9 +37,6 @@ class OCSPTestOpenSSL(unittest.TestCase):
                 mock_exists.return_value = True
                 self.checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
 
-    def tearDown(self):
-        pass
-
     @mock.patch('certbot.ocsp.logger.info')
     @mock.patch('certbot.ocsp.subprocess.run')
     @mock.patch('certbot.util.exe_exists')
@@ -48,20 +46,20 @@ class OCSPTestOpenSSL(unittest.TestCase):
 
         from certbot import ocsp
         checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
-        self.assertEqual(mock_run.call_count, 1)
-        self.assertEqual(checker.host_args("x"), ["Host=x"])
+        assert mock_run.call_count == 1
+        assert checker.host_args("x") == ["Host=x"]
 
         mock_run.return_value.stderr = out.partition("\n")[2]
         checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
-        self.assertEqual(checker.host_args("x"), ["Host", "x"])
-        self.assertIs(checker.broken, False)
+        assert checker.host_args("x") == ["Host", "x"]
+        assert checker.broken is False
 
         mock_exists.return_value = False
         mock_run.call_count = 0
         checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
-        self.assertEqual(mock_run.call_count, 0)
-        self.assertEqual(mock_log.call_count, 1)
-        self.assertIs(checker.broken, True)
+        assert mock_run.call_count == 0
+        assert mock_log.call_count == 1
+        assert checker.broken is True
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp.crypto_util.notAfter')
@@ -75,32 +73,32 @@ class OCSPTestOpenSSL(unittest.TestCase):
 
         self.checker.broken = True
         mock_determine.return_value = ("", "")
-        self.assertIs(self.checker.ocsp_revoked(cert_obj), False)
+        assert self.checker.ocsp_revoked(cert_obj) is False
 
         self.checker.broken = False
         mock_run.return_value = tuple(openssl_happy[1:])
-        self.assertIs(self.checker.ocsp_revoked(cert_obj), False)
-        self.assertEqual(mock_run.call_count, 0)
+        assert self.checker.ocsp_revoked(cert_obj) is False
+        assert mock_run.call_count == 0
 
         mock_determine.return_value = ("http://x.co", "x.co")
-        self.assertIs(self.checker.ocsp_revoked(cert_obj), False)
+        assert self.checker.ocsp_revoked(cert_obj) is False
         mock_run.side_effect = errors.SubprocessError("Unable to load certificate launcher")
-        self.assertIs(self.checker.ocsp_revoked(cert_obj), False)
-        self.assertEqual(mock_run.call_count, 2)
+        assert self.checker.ocsp_revoked(cert_obj) is False
+        assert mock_run.call_count == 2
 
         # cert expired
         mock_na.return_value = now
         mock_determine.return_value = ("", "")
         count_before = mock_determine.call_count
-        self.assertIs(self.checker.ocsp_revoked(cert_obj), False)
-        self.assertEqual(mock_determine.call_count, count_before)
+        assert self.checker.ocsp_revoked(cert_obj) is False
+        assert mock_determine.call_count == count_before
 
     def test_determine_ocsp_server(self):
         cert_path = test_util.vector_path('ocsp_certificate.pem')
 
         from certbot import ocsp
         result = ocsp._determine_ocsp_server(cert_path)
-        self.assertEqual(('http://ocsp.test4.buypass.com', 'ocsp.test4.buypass.com'), result)
+        assert ('http://ocsp.test4.buypass.com', 'ocsp.test4.buypass.com') == result
 
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')
@@ -108,23 +106,23 @@ class OCSPTestOpenSSL(unittest.TestCase):
         # pylint: disable=protected-access
         mock_run.return_value = openssl_confused
         from certbot import ocsp
-        self.assertIs(ocsp._translate_ocsp_query(*openssl_happy), False)
-        self.assertIs(ocsp._translate_ocsp_query(*openssl_confused), False)
-        self.assertEqual(mock_log.debug.call_count, 1)
-        self.assertEqual(mock_log.warning.call_count, 0)
+        assert ocsp._translate_ocsp_query(*openssl_happy) is False
+        assert ocsp._translate_ocsp_query(*openssl_confused) is False
+        assert mock_log.debug.call_count == 1
+        assert mock_log.warning.call_count == 0
         mock_log.debug.call_count = 0
-        self.assertIs(ocsp._translate_ocsp_query(*openssl_unknown), False)
-        self.assertEqual(mock_log.debug.call_count, 1)
-        self.assertEqual(mock_log.warning.call_count, 0)
-        self.assertIs(ocsp._translate_ocsp_query(*openssl_expired_ocsp), False)
-        self.assertEqual(mock_log.debug.call_count, 2)
-        self.assertIs(ocsp._translate_ocsp_query(*openssl_broken), False)
-        self.assertEqual(mock_log.warning.call_count, 1)
+        assert ocsp._translate_ocsp_query(*openssl_unknown) is False
+        assert mock_log.debug.call_count == 1
+        assert mock_log.warning.call_count == 0
+        assert ocsp._translate_ocsp_query(*openssl_expired_ocsp) is False
+        assert mock_log.debug.call_count == 2
+        assert ocsp._translate_ocsp_query(*openssl_broken) is False
+        assert mock_log.warning.call_count == 1
         mock_log.info.call_count = 0
-        self.assertIs(ocsp._translate_ocsp_query(*openssl_revoked), True)
-        self.assertEqual(mock_log.info.call_count, 0)
-        self.assertIs(ocsp._translate_ocsp_query(*openssl_expired_ocsp_revoked), True)
-        self.assertEqual(mock_log.info.call_count, 1)
+        assert ocsp._translate_ocsp_query(*openssl_revoked) is True
+        assert mock_log.info.call_count == 0
+        assert ocsp._translate_ocsp_query(*openssl_expired_ocsp_revoked) is True
+        assert mock_log.info.call_count == 1
 
 
 class OSCPTestCryptography(unittest.TestCase):
@@ -158,7 +156,7 @@ class OSCPTestCryptography(unittest.TestCase):
     def test_revoke(self):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
             revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertTrue(revoked)
+        assert revoked
 
     def test_responder_is_issuer(self):
         issuer = x509.load_pem_x509_certificate(
@@ -178,11 +176,11 @@ class OSCPTestCryptography(unittest.TestCase):
 
         # Here responder and issuer are the same. So only the signature of the OCSP
         # response is checked (using the issuer/responder public key).
-        self.assertEqual(mocks['mock_check'].call_count, 2)
-        self.assertEqual(mocks['mock_check'].call_args_list[0][0][0].public_numbers(),
-            issuer.public_key().public_numbers())
-        self.assertEqual(mocks['mock_check'].call_args_list[1][0][0].public_numbers(),
-            issuer.public_key().public_numbers())
+        assert mocks['mock_check'].call_count == 2
+        assert mocks['mock_check'].call_args_list[0][0][0].public_numbers() == \
+            issuer.public_key().public_numbers()
+        assert mocks['mock_check'].call_args_list[1][0][0].public_numbers() == \
+            issuer.public_key().public_numbers()
 
     def test_responder_is_authorized_delegate(self):
         issuer = x509.load_pem_x509_certificate(
@@ -205,32 +203,32 @@ class OSCPTestCryptography(unittest.TestCase):
         # Here responder and issuer are not the same. Two signatures will be checked then,
         # first to verify the responder cert (using the issuer public key), second to
         # to verify the OCSP response itself (using the responder public key).
-        self.assertEqual(mocks['mock_check'].call_count, 4)
-        self.assertEqual(mocks['mock_check'].call_args_list[0][0][0].public_numbers(),
-                         issuer.public_key().public_numbers())
-        self.assertEqual(mocks['mock_check'].call_args_list[1][0][0].public_numbers(),
-                         responder.public_key().public_numbers())
-        self.assertEqual(mocks['mock_check'].call_args_list[2][0][0].public_numbers(),
-                         issuer.public_key().public_numbers())
-        self.assertEqual(mocks['mock_check'].call_args_list[3][0][0].public_numbers(),
-                         responder.public_key().public_numbers())
+        assert mocks['mock_check'].call_count == 4
+        assert mocks['mock_check'].call_args_list[0][0][0].public_numbers() == \
+                         issuer.public_key().public_numbers()
+        assert mocks['mock_check'].call_args_list[1][0][0].public_numbers() == \
+                         responder.public_key().public_numbers()
+        assert mocks['mock_check'].call_args_list[2][0][0].public_numbers() == \
+                         issuer.public_key().public_numbers()
+        assert mocks['mock_check'].call_args_list[3][0][0].public_numbers() == \
+                         responder.public_key().public_numbers()
 
     def test_revoke_resiliency(self):
         # Server return an invalid HTTP response
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.UNKNOWN, ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
                         http_status_code=400):
             revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertIs(revoked, False)
+        assert revoked is False
 
         # OCSP response in invalid
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.UNKNOWN, ocsp_lib.OCSPResponseStatus.UNAUTHORIZED):
             revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertIs(revoked, False)
+        assert revoked is False
 
         # OCSP response is valid, but certificate status is unknown
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.UNKNOWN, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
             revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertIs(revoked, False)
+        assert revoked is False
 
         # The OCSP response says that the certificate is revoked, but certificate
         # does not contain the OCSP extension.
@@ -239,32 +237,32 @@ class OSCPTestCryptography(unittest.TestCase):
                             side_effect=x509.ExtensionNotFound(
                                 'Not found', x509.AuthorityInformationAccessOID.OCSP)):
                 revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertIs(revoked, False)
+        assert revoked is False
 
         # OCSP response uses an unsupported signature.
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
                         check_signature_side_effect=UnsupportedAlgorithm('foo')):
             revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertIs(revoked, False)
+        assert revoked is False
 
         # OSCP signature response is invalid.
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
                         check_signature_side_effect=InvalidSignature('foo')):
             revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertIs(revoked, False)
+        assert revoked is False
 
         # Assertion error on OCSP response validity
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
                         check_signature_side_effect=AssertionError('foo')):
             revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertIs(revoked, False)
+        assert revoked is False
 
         # No responder cert in OCSP response
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
                         ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
             mocks['mock_response'].return_value.certificates = []
             revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertIs(revoked, False)
+        assert revoked is False
 
         # Responder cert is not signed by certificate issuer
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
@@ -273,7 +271,7 @@ class OSCPTestCryptography(unittest.TestCase):
             mocks['mock_response'].return_value.certificates[0] = mock.Mock(
                 issuer='fake', subject=cert.subject)
             revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertIs(revoked, False)
+        assert revoked is False
 
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
             # This mock is necessary to avoid the first call contained in _determine_ocsp_server
@@ -284,7 +282,7 @@ class OSCPTestCryptography(unittest.TestCase):
                                 side_effect=x509.ExtensionNotFound(
                                     'Not found', x509.AuthorityInformationAccessOID.OCSP)):
                     revoked = self.checker.ocsp_revoked(self.cert_obj)
-        self.assertIs(revoked, False)
+        assert revoked is False
 
 
 @contextlib.contextmanager
@@ -387,4 +385,4 @@ revoked
 
 
 if __name__ == '__main__':
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

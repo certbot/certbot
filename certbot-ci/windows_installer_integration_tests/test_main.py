@@ -3,13 +3,12 @@ import os
 import re
 import subprocess
 import time
-import unittest
 from typing import Any
 
 import pytest
 
 
-@unittest.skipIf(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
+@pytest.mark.skipif(os.name != 'nt', reason='Windows installer tests must be run on Windows.')
 def test_it(request: pytest.FixtureRequest) -> None:
     try:
         subprocess.check_call(['certbot', '--version'])

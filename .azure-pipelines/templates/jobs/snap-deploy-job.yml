@@ -12,14 +12,13 @@ parameters:
   values:
   - edge
   - beta
-  - candidate
 
 jobs:
   # This job relies on credentials used to publish the Certbot snaps. This
   # credential file was created by running:
   #
   #   snapcraft logout
-  #   snapcraft export-login --channels=candidate,beta,edge snapcraft.cfg
+  #   snapcraft export-login --channels=beta,edge snapcraft.cfg
   #     (provide the shared snapcraft credentials when prompted)
   #
   # Then the file was added as a secure file in Azure pipelines
@@ -30,7 +29,7 @@ jobs:
   # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/secure-files?view=azure-devops#q-how-do-i-authorize-a-secure-file-for-use-in-a-specific-pipeline.
   #
   # This file has a maximum lifetime of one year and the current file will
-  # expire on 2023-09-06. The file will need to be updated before then to
+  # expire on 2024-02-10. The file will need to be updated before then to
   # prevent automated deploys from breaking.
   #
   # Revoking these credentials can be done by changing the password of the

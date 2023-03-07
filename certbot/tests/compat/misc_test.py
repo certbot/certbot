@@ -1,11 +1,13 @@
 """Tests for certbot.compat.misc"""
-import unittest
+import sys
 from unittest import mock
+
+import pytest
 
 from certbot.compat import os
 
 
-class ExecuteStatusTest(unittest.TestCase):
+class ExecuteStatusTest:
     """Tests for certbot.compat.misc.execute_command_status."""
 
     @classmethod
@@ -21,7 +23,7 @@ class ExecuteStatusTest(unittest.TestCase):
             mock_run.return_value.stderr = stderr
             mock_run.return_value.returncode = returncode
             with mock.patch("certbot.compat.misc.logger") as mock_logger:
-                self.assertEqual(self._call(given_name, given_command), (returncode, stderr, stdout))
+                assert self._call(given_name, given_command) == (returncode, stderr, stdout)
 
         executed_command = mock_run.call_args[1].get(
             "args", mock_run.call_args[0][0])
@@ -29,8 +31,8 @@ class ExecuteStatusTest(unittest.TestCase):
             expected_command = ['powershell.exe', '-Command', given_command]
         else:
             expected_command = given_command
-        self.assertEqual(executed_command, expected_command)
-        self.assertEqual(executed_command, expected_command)
+        assert executed_command == expected_command
+        assert executed_command == expected_command
 
         mock_logger.info.assert_any_call("Running %s command: %s",
                                          given_name, given_command)
@@ -43,4 +45,4 @@ class ExecuteStatusTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

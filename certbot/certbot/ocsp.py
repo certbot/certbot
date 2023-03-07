@@ -24,7 +24,6 @@ from certbot import util
 from certbot.compat.os import getenv
 from certbot.interfaces import RenewableCert
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -285,6 +284,7 @@ def _check_ocsp_response_signature(response_ocsp: 'ocsp.OCSPResponse',
 
         # Following line may raise UnsupportedAlgorithm
         chosen_cert_hash = responder_cert.signature_hash_algorithm
+        assert chosen_cert_hash # always present for RSA and ECDSA certificates.
         # For a delegate OCSP responder, we need first check that its certificate is effectively
         # signed by the certificate issuer.
         crypto_util.verify_signed_payload(issuer_cert.public_key(), responder_cert.signature,

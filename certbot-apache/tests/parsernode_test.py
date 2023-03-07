@@ -1,6 +1,8 @@
 """ Tests for ParserNode interface """
 
-import unittest
+import sys
+
+import pytest
 
 from certbot_apache._internal import interfaces
 from certbot_apache._internal import parsernode_util as util
@@ -101,28 +103,26 @@ interfaces.CommentNode.register(DummyCommentNode)
 interfaces.DirectiveNode.register(DummyDirectiveNode)
 interfaces.BlockNode.register(DummyBlockNode)
 
-class ParserNodeTest(unittest.TestCase):
+def test_dummy():
     """Dummy placeholder test case for ParserNode interfaces"""
-
-    def test_dummy(self):
-        dummyblock = DummyBlockNode(
-            name="None",
-            parameters=(),
-            ancestor=None,
-            dirty=False,
-            filepath="/some/random/path"
-        )
-        dummydirective = DummyDirectiveNode(
-            name="Name",
-            ancestor=None,
-            filepath="/another/path"
-        )
-        dummycomment = DummyCommentNode(
-            comment="Comment",
-            ancestor=dummyblock,
-            filepath="/some/file"
-        )
+    dummyblock = DummyBlockNode(
+        name="None",
+        parameters=(),
+        ancestor=None,
+        dirty=False,
+        filepath="/some/random/path"
+    )
+    dummydirective = DummyDirectiveNode(
+        name="Name",
+        ancestor=None,
+        filepath="/another/path"
+    )
+    dummycomment = DummyCommentNode(
+        comment="Comment",
+        ancestor=dummyblock,
+        filepath="/some/file"
+    )
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

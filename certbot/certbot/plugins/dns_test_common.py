@@ -2,10 +2,10 @@
 from typing import Any
 from typing import Mapping
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import configobj
 import josepy as jose
-from unittest import mock
 
 from acme import challenges
 from certbot import achallenges

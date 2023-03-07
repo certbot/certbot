@@ -1,6 +1,9 @@
 """Test certbot_apache._internal.display_ops."""
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.display import util as display_util
@@ -19,7 +22,7 @@ class SelectVhostMultiTest(unittest.TestCase):
             self.base_dir, "debian_apache_2_4/multiple_vhosts")
 
     def test_select_no_input(self):
-        self.assertEqual(len(select_vhost_multiple([])), 0)
+        assert len(select_vhost_multiple([])) == 0
 
     @certbot_util.patch_display_util()
     def test_select_correct(self, mock_util):
@@ -29,15 +32,15 @@ class SelectVhostMultiTest(unittest.TestCase):
         vhs = select_vhost_multiple([self.vhosts[3],
                                      self.vhosts[2],
                                      self.vhosts[1]])
-        self.assertIn(self.vhosts[2], vhs)
-        self.assertIn(self.vhosts[3], vhs)
-        self.assertNotIn(self.vhosts[1], vhs)
+        assert self.vhosts[2] in vhs
+        assert self.vhosts[3] in vhs
+        assert self.vhosts[1] not in vhs
 
     @certbot_util.patch_display_util()
     def test_select_cancel(self, mock_util):
         mock_util().checklist.return_value = (display_util.CANCEL, "whatever")
         vhs = select_vhost_multiple([self.vhosts[2], self.vhosts[3]])
-        self.assertEqual(vhs, [])
+        assert vhs == []
 
 
 class SelectVhostTest(unittest.TestCase):
@@ -56,7 +59,7 @@ class SelectVhostTest(unittest.TestCase):
     @certbot_util.patch_display_util()
     def test_successful_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 3)
-        self.assertEqual(self.vhosts[3], self._call(self.vhosts))
+        assert self.vhosts[3] == self._call(self.vhosts)
 
     @certbot_util.patch_display_util()
     def test_noninteractive(self, mock_util):
@@ -64,7 +67,7 @@ class SelectVhostTest(unittest.TestCase):
         try:
             self._call(self.vhosts)
         except errors.MissingCommandlineFlag as e:
-            self.assertIn("vhost ambiguity", str(e))
+            assert "vhost ambiguity" in str(e)
 
     @certbot_util.patch_display_util()
     def test_more_info_cancel(self, mock_util):
@@ -72,10 +75,10 @@ class SelectVhostTest(unittest.TestCase):
             (display_util.CANCEL, -1),
         ]
 
-        self.assertIsNone(self._call(self.vhosts))
+        assert self._call(self.vhosts) is None
 
     def test_no_vhosts(self):
-        self.assertIsNone(self._call([]))
+        assert self._call([]) is None
 
     @mock.patch("certbot_apache._internal.display_ops.display_util")
     @mock.patch("certbot_apache._internal.display_ops.logger")
@@ -84,7 +87,7 @@ class SelectVhostTest(unittest.TestCase):
         mock_display_util.menu.return_value = (display_util.OK, 0)
         self._call(self.vhosts)
 
-        self.assertEqual(mock_logger.debug.call_count, 1)
+        assert mock_logger.debug.call_count == 1
 
     @certbot_util.patch_display_util()
     def test_multiple_names(self, mock_util):
@@ -96,8 +99,8 @@ class SelectVhostTest(unittest.TestCase):
                 False, False,
                 "wildcard.com", {"*.wildcard.com"}))
 
-        self.assertEqual(self.vhosts[5], self._call(self.vhosts))
+        assert self.vhosts[5] == self._call(self.vhosts)
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

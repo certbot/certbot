@@ -5,8 +5,8 @@ import functools
 import hashlib
 import logging
 import socket
-from typing import cast
 from typing import Any
+from typing import cast
 from typing import Dict
 from typing import Mapping
 from typing import Optional

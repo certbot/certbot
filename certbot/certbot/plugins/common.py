@@ -19,12 +19,11 @@ from typing import TypeVar
 import pkg_resources
 
 from acme import challenges
-
 from certbot import achallenges
 from certbot import configuration
 from certbot import crypto_util
-from certbot import interfaces
 from certbot import errors
+from certbot import interfaces
 from certbot import reverter
 from certbot._internal import constants
 from certbot.compat import filesystem

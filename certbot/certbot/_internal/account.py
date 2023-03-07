@@ -126,18 +126,6 @@ class AccountMemoryStorage(interfaces.AccountStorage):
             raise errors.AccountNotFound(account_id)
 
 
-class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
-    """A backwards-compatible RegistrationResource with a new-authz URI.
-
-       Hack: Certbot versions pre-0.11.1 expect to load
-       new_authzr_uri as part of the account. Because people
-       sometimes switch between old and new versions, we will
-       continue to write out this field for some time so older
-       clients don't crash in that scenario.
-    """
-    new_authzr_uri: str = jose.field('new_authzr_uri')
-
-
 class AccountFileStorage(interfaces.AccountStorage):
     """Accounts file storage.
 
@@ -254,20 +242,19 @@ class AccountFileStorage(interfaces.AccountStorage):
             dir_path = self._prepare(account)
             self._create(account, dir_path)
             self._update_meta(account, dir_path)
-            self._update_regr(account, client, dir_path)
+            self._update_regr(account, dir_path)
         except IOError as error:
             raise errors.AccountStorageError(error)
 
-    def update_regr(self, account: Account, client: ClientV2) -> None:
+    def update_regr(self, account: Account) -> None:
         """Update the registration resource.
 
         :param Account account: account to update
-        :param ClientV2 client: ACME client associated to the account
 
         """
         try:
             dir_path = self._prepare(account)
-            self._update_regr(account, client, dir_path)
+            self._update_regr(account, dir_path)
         except IOError as error:
             raise errors.AccountStorageError(error)
 
@@ -358,22 +345,11 @@ class AccountFileStorage(interfaces.AccountStorage):
         with util.safe_open(self._key_path(dir_path), "w", chmod=0o400) as key_file:
             key_file.write(account.key.json_dumps())
 
-    def _update_regr(self, account: Account, acme: ClientV2, dir_path: str) -> None:
+    def _update_regr(self, account: Account, dir_path: str) -> None:
         with open(self._regr_path(dir_path), "w") as regr_file:
-            regr = account.regr
-            # If we have a value for new-authz, save it for forwards
-            # compatibility with older versions of Certbot. If we don't
-            # have a value for new-authz, this is an ACMEv2 directory where
-            # an older version of Certbot won't work anyway.
-            if hasattr(acme.directory, "new-authz"):
-                regr = RegistrationResourceWithNewAuthzrURI(
-                    new_authzr_uri=acme.directory.new_authz,
-                    body={},
-                    uri=regr.uri)
-            else:
-                regr = messages.RegistrationResource(
-                    body={},
-                    uri=regr.uri)
+            regr = messages.RegistrationResource(
+                body={},
+                uri=account.regr.uri)
             regr_file.write(regr.json_dumps())
 
     def _update_meta(self, account: Account, dir_path: str) -> None:

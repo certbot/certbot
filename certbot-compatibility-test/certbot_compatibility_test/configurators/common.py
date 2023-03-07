@@ -8,21 +8,20 @@ import tempfile
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Union
 from typing import overload
 from typing import Set
 from typing import Tuple
 from typing import Type
-
-from certbot_compatibility_test import errors
-from certbot_compatibility_test import interfaces
-from certbot_compatibility_test import util
+from typing import Union
 
 from acme import challenges
 from acme.challenges import Challenge
 from certbot._internal import constants
-from certbot.plugins import common
 from certbot.achallenges import AnnotatedChallenge
+from certbot.plugins import common
+from certbot_compatibility_test import errors
+from certbot_compatibility_test import interfaces
+from certbot_compatibility_test import util
 
 logger = logging.getLogger(__name__)
 

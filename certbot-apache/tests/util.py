@@ -1,10 +1,10 @@
 """Common utilities for certbot_apache."""
 import shutil
 import unittest
+from unittest import mock
 
 import augeas
 import josepy as jose
-from unittest import mock
 
 from certbot.compat import os
 from certbot.plugins import common

@@ -1,8 +1,11 @@
 """Tests for certbot.compat.filesystem"""
 import contextlib
 import errno
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import util
 from certbot._internal import lock
@@ -12,9 +15,9 @@ import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
 
 try:
+    import ntsecuritycon
     import win32api
     import win32security
-    import ntsecuritycon
     POSIX_MODE = False
 except ImportError:
     POSIX_MODE = True
@@ -45,8 +48,8 @@ class WindowsChmodTests(TempDirTestCase):
         # Assert the real file is impacted, not the link.
         cur_dacl_probe = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
         cur_dacl_link = _get_security_dacl(link_path).GetSecurityDescriptorDacl()
-        self.assertFalse(filesystem._compare_dacls(ref_dacl_probe, cur_dacl_probe))  # pylint: disable=protected-access
-        self.assertTrue(filesystem._compare_dacls(ref_dacl_link, cur_dacl_link))  # pylint: disable=protected-access
+        assert not filesystem._compare_dacls(ref_dacl_probe, cur_dacl_probe)  # pylint: disable=protected-access
+        assert filesystem._compare_dacls(ref_dacl_link, cur_dacl_link)  # pylint: disable=protected-access
 
     def test_world_permission(self):
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
@@ -54,14 +57,14 @@ class WindowsChmodTests(TempDirTestCase):
         filesystem.chmod(self.probe_path, 0o700)
         dacl = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
 
-        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                          if dacl.GetAce(index)[2] == everybody])
+        assert not [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody]
 
         filesystem.chmod(self.probe_path, 0o704)
         dacl = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
 
-        self.assertTrue([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                         if dacl.GetAce(index)[2] == everybody])
+        assert [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                         if dacl.GetAce(index)[2] == everybody]
 
     def test_group_permissions_noop(self):
         filesystem.chmod(self.probe_path, 0o700)
@@ -70,7 +73,7 @@ class WindowsChmodTests(TempDirTestCase):
         filesystem.chmod(self.probe_path, 0o740)
         cur_dacl_probe = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
 
-        self.assertTrue(filesystem._compare_dacls(ref_dacl_probe, cur_dacl_probe))  # pylint: disable=protected-access
+        assert filesystem._compare_dacls(ref_dacl_probe, cur_dacl_probe)  # pylint: disable=protected-access
 
     def test_admin_permissions(self):
         system = win32security.ConvertStringSidToSid(SYSTEM_SID)
@@ -84,11 +87,11 @@ class WindowsChmodTests(TempDirTestCase):
         admin_aces = [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
                       if dacl.GetAce(index)[2] == admins]
 
-        self.assertEqual(len(system_aces), 1)
-        self.assertEqual(len(admin_aces), 1)
+        assert len(system_aces) == 1
+        assert len(admin_aces) == 1
 
-        self.assertEqual(system_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS)
-        self.assertEqual(admin_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS)
+        assert system_aces[0][1] == ntsecuritycon.FILE_ALL_ACCESS
+        assert admin_aces[0][1] == ntsecuritycon.FILE_ALL_ACCESS
 
     def test_read_flag(self):
         self._test_flag(4, ntsecuritycon.FILE_GENERIC_READ)
@@ -115,11 +118,11 @@ class WindowsChmodTests(TempDirTestCase):
         acls_everybody = [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
                           if dacl.GetAce(index)[2] == everybody]
 
-        self.assertEqual(len(acls_everybody), 1)
+        assert len(acls_everybody) == 1
 
         acls_everybody = acls_everybody[0]
 
-        self.assertEqual(acls_everybody[1], windows_flag)
+        assert acls_everybody[1] == windows_flag
 
     def test_user_admin_dacl_consistency(self):
         # Set ownership of target to authenticated user
@@ -131,7 +134,7 @@ class WindowsChmodTests(TempDirTestCase):
 
         security_dacl = _get_security_dacl(self.probe_path)
         # We expect three ACE: one for admins, one for system, and one for the user
-        self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 3)
+        assert security_dacl.GetSecurityDescriptorDacl().GetAceCount() == 3
 
         # Set ownership of target to Administrators user group
         admin_user = win32security.ConvertStringSidToSid(ADMINS_SID)
@@ -143,7 +146,7 @@ class WindowsChmodTests(TempDirTestCase):
         security_dacl = _get_security_dacl(self.probe_path)
         # We expect only two ACE: one for admins, one for system,
         # since the user is also the admins group
-        self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
+        assert security_dacl.GetSecurityDescriptorDacl().GetAceCount() == 2
 
 
 class UmaskTest(TempDirTestCase):
@@ -153,17 +156,17 @@ class UmaskTest(TempDirTestCase):
         try:
             dir1 = os.path.join(self.tempdir, 'probe1')
             filesystem.mkdir(dir1)
-            self.assertIs(filesystem.check_mode(dir1, 0o755), True)
+            assert filesystem.check_mode(dir1, 0o755) is True
 
             filesystem.umask(0o077)
 
             dir2 = os.path.join(self.tempdir, 'dir2')
             filesystem.mkdir(dir2)
-            self.assertIs(filesystem.check_mode(dir2, 0o700), True)
+            assert filesystem.check_mode(dir2, 0o700) is True
 
             dir3 = os.path.join(self.tempdir, 'dir3')
             filesystem.mkdir(dir3, mode=0o777)
-            self.assertIs(filesystem.check_mode(dir3, 0o700), True)
+            assert filesystem.check_mode(dir3, 0o700) is True
         finally:
             filesystem.umask(previous_umask)
 
@@ -173,17 +176,17 @@ class UmaskTest(TempDirTestCase):
         try:
             file1 = os.path.join(self.tempdir, 'probe1')
             UmaskTest._create_file(file1)
-            self.assertIs(filesystem.check_mode(file1, 0o755), True)
+            assert filesystem.check_mode(file1, 0o755) is True
 
             filesystem.umask(0o077)
 
             file2 = os.path.join(self.tempdir, 'probe2')
             UmaskTest._create_file(file2)
-            self.assertIs(filesystem.check_mode(file2, 0o700), True)
+            assert filesystem.check_mode(file2, 0o700) is True
 
             file3 = os.path.join(self.tempdir, 'probe3')
             UmaskTest._create_file(file3)
-            self.assertIs(filesystem.check_mode(file3, 0o700), True)
+            assert filesystem.check_mode(file3, 0o700) is True
         finally:
             filesystem.umask(previous_umask)
 
@@ -209,10 +212,10 @@ class ComputePrivateKeyModeTest(TempDirTestCase):
         if POSIX_MODE:
             # On Linux RWX permissions for group and R permission for world
             # are persisted from the existing moe
-            self.assertEqual(new_mode, 0o674)
+            assert new_mode == 0o674
         else:
             # On Windows no permission is persisted
-            self.assertEqual(new_mode, 0o600)
+            assert new_mode == 0o600
 
 
 @unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows security')
@@ -226,8 +229,8 @@ class WindowsOpenTest(TempDirTestCase):
         dacl = _get_security_dacl(path).GetSecurityDescriptorDacl()
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
 
-        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                          if dacl.GetAce(index)[2] == everybody])
+        assert not [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody]
 
     def test_existing_file_correct_permissions(self):
         path = os.path.join(self.tempdir, 'file')
@@ -239,17 +242,17 @@ class WindowsOpenTest(TempDirTestCase):
         dacl = _get_security_dacl(path).GetSecurityDescriptorDacl()
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
 
-        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                          if dacl.GetAce(index)[2] == everybody])
+        assert not [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody]
 
     def test_create_file_on_open(self):
         # os.O_CREAT | os.O_EXCL + file not exists = OK
         self._test_one_creation(1, file_exist=False, flags=(os.O_CREAT | os.O_EXCL))
 
         # os.O_CREAT | os.O_EXCL + file exists = EEXIST OS exception
-        with self.assertRaises(OSError) as raised:
+        with pytest.raises(OSError) as exc_info:
             self._test_one_creation(2, file_exist=True, flags=(os.O_CREAT | os.O_EXCL))
-        self.assertEqual(raised.exception.errno, errno.EEXIST)
+        assert exc_info.value.errno == errno.EEXIST
 
         # os.O_CREAT + file not exists = OK
         self._test_one_creation(3, file_exist=False, flags=os.O_CREAT)
@@ -262,14 +265,14 @@ class WindowsOpenTest(TempDirTestCase):
         open(path, 'w').close()
         filelock = lock.LockFile(path)
         try:
-            with self.assertRaises(OSError) as raised:
+            with pytest.raises(OSError) as exc_info:
                 self._test_one_creation(5, file_exist=True, flags=os.O_CREAT)
-            self.assertEqual(raised.exception.errno, errno.EACCES)
+            assert exc_info.value.errno == errno.EACCES
         finally:
             filelock.release()
 
         # os.O_CREAT not set + file not exists = OS exception
-        with self.assertRaises(OSError):
+        with pytest.raises(OSError):
             self._test_one_creation(6, file_exist=False, flags=os.O_RDONLY)
 
     def _test_one_creation(self, num, file_exist, flags):
@@ -295,20 +298,20 @@ class TempUmaskTests(test_util.TempDirTestCase):
 
     def test_works_normally(self):
         filesystem.umask(0o0022)
-        self.assertEqual(self._check_umask(), 0o0022)
+        assert self._check_umask() == 0o0022
         with filesystem.temp_umask(0o0077):
-            self.assertEqual(self._check_umask(), 0o0077)
-        self.assertEqual(self._check_umask(), 0o0022)
+            assert self._check_umask() == 0o0077
+        assert self._check_umask() == 0o0022
 
     def test_resets_umask_after_exception(self):
         filesystem.umask(0o0022)
-        self.assertEqual(self._check_umask(), 0o0022)
+        assert self._check_umask() == 0o0022
         try:
             with filesystem.temp_umask(0o0077):
-                self.assertEqual(self._check_umask(), 0o0077)
+                assert self._check_umask() == 0o0077
                 raise Exception()
         except:
-            self.assertEqual(self._check_umask(), 0o0022)
+            assert self._check_umask() == 0o0022
 
 
 @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
@@ -322,8 +325,8 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
 
         dacl = _get_security_dacl(path).GetSecurityDescriptorDacl()
-        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                          if dacl.GetAce(index)[2] == everybody])
+        assert not [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody]
 
     def test_makedirs_correct_permissions(self):
         path = os.path.join(self.tempdir, 'dir')
@@ -334,8 +337,8 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
 
         dacl = _get_security_dacl(subpath).GetSecurityDescriptorDacl()
-        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                          if dacl.GetAce(index)[2] == everybody])
+        assert not [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody]
 
     def test_makedirs_switch_os_mkdir(self):
         path = os.path.join(self.tempdir, 'dir')
@@ -343,13 +346,13 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         original_mkdir = std_os.mkdir
 
         filesystem.makedirs(path)
-        self.assertEqual(original_mkdir, std_os.mkdir)
+        assert original_mkdir == std_os.mkdir
 
         try:
             filesystem.makedirs(path)  # Will fail because path already exists
         except OSError:
             pass
-        self.assertEqual(original_mkdir, std_os.mkdir)
+        assert original_mkdir == std_os.mkdir
 
 
 class MakedirsTests(test_util.TempDirTestCase):
@@ -387,19 +390,19 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
                 filesystem.copy_ownership_and_apply_mode(
                     'dummy', self.probe_path, 0o700, copy_user=True, copy_group=False)
 
-        self.assertEqual(mock_set.call_count, 2)
+        assert mock_set.call_count == 2
 
         first_call = mock_set.call_args_list[0]
         security = first_call[0][2]
-        self.assertEqual(system, security.GetSecurityDescriptorOwner())
+        assert system == security.GetSecurityDescriptorOwner()
 
         second_call = mock_set.call_args_list[1]
         security = second_call[0][2]
         dacl = security.GetSecurityDescriptorDacl()
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
-        self.assertTrue(dacl.GetAceCount())
-        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                          if dacl.GetAce(index)[2] == everybody])
+        assert dacl.GetAceCount()
+        assert not [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody]
 
     @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
     def test_copy_ownership_and_apply_mode_linux(self):
@@ -421,7 +424,7 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
         util.safe_open(path1, 'w').close()
         util.safe_open(path2, 'w').close()
 
-        self.assertIs(filesystem.has_same_ownership(path1, path2), True)
+        assert filesystem.has_same_ownership(path1, path2) is True
 
     @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
     def test_copy_ownership_and_mode_windows(self):
@@ -429,8 +432,8 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
         dst = _create_probe(self.tempdir, name='dst')
 
         filesystem.chmod(src, 0o700)
-        self.assertIs(filesystem.check_mode(src, 0o700), True)
-        self.assertIs(filesystem.check_mode(dst, 0o744), True)
+        assert filesystem.check_mode(src, 0o700) is True
+        assert filesystem.check_mode(dst, 0o744) is True
 
         # Checking an actual change of owner is tricky during a unit test, since we do not know
         # if any user exists beside the current one. So we mock _copy_win_ownership. It's behavior
@@ -439,7 +442,7 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
             filesystem.copy_ownership_and_mode(src, dst)
 
         mock_copy_owner.assert_called_once_with(src, dst)
-        self.assertIs(filesystem.check_mode(dst, 0o700), True)
+        assert filesystem.check_mode(dst, 0o700) is True
 
 
 class CheckPermissionsTest(test_util.TempDirTestCase):
@@ -449,14 +452,14 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         self.probe_path = _create_probe(self.tempdir)
 
     def test_check_mode(self):
-        self.assertIs(filesystem.check_mode(self.probe_path, 0o744), True)
+        assert filesystem.check_mode(self.probe_path, 0o744) is True
 
         filesystem.chmod(self.probe_path, 0o700)
-        self.assertFalse(filesystem.check_mode(self.probe_path, 0o744))
+        assert not filesystem.check_mode(self.probe_path, 0o744)
 
     @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
     def test_check_owner_windows(self):
-        self.assertIs(filesystem.check_owner(self.probe_path), True)
+        assert filesystem.check_owner(self.probe_path) is True
 
         system = win32security.ConvertStringSidToSid(SYSTEM_SID)
         security = win32security.SECURITY_ATTRIBUTES().SECURITY_DESCRIPTOR
@@ -464,48 +467,49 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
 
         with mock.patch('win32security.GetFileSecurity') as mock_get:
             mock_get.return_value = security
-            self.assertFalse(filesystem.check_owner(self.probe_path))
+            assert not filesystem.check_owner(self.probe_path)
 
     @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
     def test_check_owner_linux(self):
-        self.assertIs(filesystem.check_owner(self.probe_path), True)
+        assert filesystem.check_owner(self.probe_path) is True
 
         import os as std_os  # pylint: disable=os-module-forbidden
+
         # See related inline comment in certbot.compat.filesystem.check_owner method
         # that explains why MyPy/PyLint check disable is needed here.
         uid = std_os.getuid()
 
         with mock.patch('os.getuid') as mock_uid:
             mock_uid.return_value = uid + 1
-            self.assertFalse(filesystem.check_owner(self.probe_path))
+            assert not filesystem.check_owner(self.probe_path)
 
     def test_check_permissions(self):
-        self.assertIs(filesystem.check_permissions(self.probe_path, 0o744), True)
+        assert filesystem.check_permissions(self.probe_path, 0o744) is True
 
         with mock.patch('certbot.compat.filesystem.check_mode') as mock_mode:
             mock_mode.return_value = False
-            self.assertFalse(filesystem.check_permissions(self.probe_path, 0o744))
+            assert not filesystem.check_permissions(self.probe_path, 0o744)
 
         with mock.patch('certbot.compat.filesystem.check_owner') as mock_owner:
             mock_owner.return_value = False
-            self.assertFalse(filesystem.check_permissions(self.probe_path, 0o744))
+            assert not filesystem.check_permissions(self.probe_path, 0o744)
 
     def test_check_min_permissions(self):
         filesystem.chmod(self.probe_path, 0o744)
-        self.assertIs(filesystem.has_min_permissions(self.probe_path, 0o744), True)
+        assert filesystem.has_min_permissions(self.probe_path, 0o744) is True
 
         filesystem.chmod(self.probe_path, 0o700)
-        self.assertFalse(filesystem.has_min_permissions(self.probe_path, 0o744))
+        assert not filesystem.has_min_permissions(self.probe_path, 0o744)
 
         filesystem.chmod(self.probe_path, 0o741)
-        self.assertFalse(filesystem.has_min_permissions(self.probe_path, 0o744))
+        assert not filesystem.has_min_permissions(self.probe_path, 0o744)
 
     def test_is_world_reachable(self):
         filesystem.chmod(self.probe_path, 0o744)
-        self.assertIs(filesystem.has_world_permissions(self.probe_path), True)
+        assert filesystem.has_world_permissions(self.probe_path) is True
 
         filesystem.chmod(self.probe_path, 0o700)
-        self.assertFalse(filesystem.has_world_permissions(self.probe_path))
+        assert not filesystem.has_world_permissions(self.probe_path)
 
 
 class OsReplaceTest(test_util.TempDirTestCase):
@@ -520,8 +524,8 @@ class OsReplaceTest(test_util.TempDirTestCase):
         # On Windows, a direct call to os.rename would fail because dst already exists.
         filesystem.replace(src, dst)
 
-        self.assertFalse(os.path.exists(src))
-        self.assertIs(os.path.exists(dst), True)
+        assert not os.path.exists(src)
+        assert os.path.exists(dst) is True
 
 
 class RealpathTest(test_util.TempDirTestCase):
@@ -537,8 +541,8 @@ class RealpathTest(test_util.TempDirTestCase):
         link_path = os.path.join(self.tempdir, 'link_abs')
         os.symlink(self.probe_path, link_path)
 
-        self.assertEqual(self.probe_path, filesystem.realpath(self.probe_path))
-        self.assertEqual(self.probe_path, filesystem.realpath(link_path))
+        assert self.probe_path == filesystem.realpath(self.probe_path)
+        assert self.probe_path == filesystem.realpath(link_path)
 
         # Relative resolution
         curdir = os.getcwd()
@@ -548,8 +552,8 @@ class RealpathTest(test_util.TempDirTestCase):
             os.chdir(os.path.dirname(self.probe_path))
             os.symlink(probe_name, link_path)
 
-            self.assertEqual(self.probe_path, filesystem.realpath(probe_name))
-            self.assertEqual(self.probe_path, filesystem.realpath(link_path))
+            assert self.probe_path == filesystem.realpath(probe_name)
+            assert self.probe_path == filesystem.realpath(link_path)
         finally:
             os.chdir(curdir)
 
@@ -561,9 +565,8 @@ class RealpathTest(test_util.TempDirTestCase):
         os.symlink(link2_path, link3_path)
         os.symlink(link3_path, link1_path)
 
-        with self.assertRaises(RuntimeError) as error:
+        with pytest.raises(RuntimeError, match='link1 is a loop!') as error:
             filesystem.realpath(link1_path)
-        self.assertIn('link1 is a loop!', str(error.exception))
 
 
 class IsExecutableTest(test_util.TempDirTestCase):
@@ -591,7 +594,7 @@ class IsExecutableTest(test_util.TempDirTestCase):
         with mock.patch("certbot.compat.filesystem._generate_dacl", side_effect=_execute_mock):
             os.close(filesystem.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
 
-        self.assertFalse(filesystem.is_executable(file_path))
+        assert not filesystem.is_executable(file_path)
 
     @mock.patch("certbot.compat.filesystem.os.path.isfile")
     @mock.patch("certbot.compat.filesystem.os.access")
@@ -599,7 +602,7 @@ class IsExecutableTest(test_util.TempDirTestCase):
         with _fix_windows_runtime():
             mock_access.return_value = True
             mock_isfile.return_value = True
-            self.assertIs(filesystem.is_executable("/path/to/exe"), True)
+            assert filesystem.is_executable("/path/to/exe") is True
 
     @mock.patch("certbot.compat.filesystem.os.path.isfile")
     @mock.patch("certbot.compat.filesystem.os.access")
@@ -607,7 +610,7 @@ class IsExecutableTest(test_util.TempDirTestCase):
         with _fix_windows_runtime():
             mock_access.return_value = True
             mock_isfile.return_value = True
-            self.assertIs(filesystem.is_executable("exe"), True)
+            assert filesystem.is_executable("exe") is True
 
     @mock.patch("certbot.compat.filesystem.os.path.isfile")
     @mock.patch("certbot.compat.filesystem.os.access")
@@ -615,7 +618,7 @@ class IsExecutableTest(test_util.TempDirTestCase):
         with _fix_windows_runtime():
             mock_access.return_value = True
             mock_isfile.return_value = False
-            self.assertFalse(filesystem.is_executable("exe"))
+            assert not filesystem.is_executable("exe")
 
 
 class ReadlinkTest(unittest.TestCase):
@@ -623,25 +626,25 @@ class ReadlinkTest(unittest.TestCase):
     @mock.patch("certbot.compat.filesystem.os.readlink")
     def test_path_posix(self, mock_readlink):
         mock_readlink.return_value = "/normal/path"
-        self.assertEqual(filesystem.readlink("dummy"), "/normal/path")
+        assert filesystem.readlink("dummy") == "/normal/path"
 
     @unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows')
     @mock.patch("certbot.compat.filesystem.os.readlink")
     def test_normal_path_windows(self, mock_readlink):
         # Python <3.8
         mock_readlink.return_value = "C:\\short\\path"
-        self.assertEqual(filesystem.readlink("dummy"), "C:\\short\\path")
+        assert filesystem.readlink("dummy") == "C:\\short\\path"
 
         # Python >=3.8 (os.readlink always returns the extended form)
         mock_readlink.return_value = "\\\\?\\C:\\short\\path"
-        self.assertEqual(filesystem.readlink("dummy"), "C:\\short\\path")
+        assert filesystem.readlink("dummy") == "C:\\short\\path"
 
     @unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows')
     @mock.patch("certbot.compat.filesystem.os.readlink")
     def test_extended_path_windows(self, mock_readlink):
         # Following path is largely over the 260 characters permitted in the normal form.
         mock_readlink.return_value = "\\\\?\\C:\\long" + 1000 * "\\path"
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             filesystem.readlink("dummy")
 
 @contextlib.contextmanager
@@ -678,4 +681,4 @@ def _create_probe(tempdir, name='probe'):
 
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

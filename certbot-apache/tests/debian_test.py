@@ -1,7 +1,10 @@
 """Test for certbot_apache._internal.configurator for Debian overrides"""
 import shutil
+import sys
 import unittest
 from unittest import mock
+
+import pytest
 
 from certbot import errors
 from certbot.compat import os
@@ -13,8 +16,6 @@ import util
 
 class MultipleVhostsTestDebian(util.ApacheTest):
     """Multiple vhost tests for Debian family of distros"""
-
-    _multiprocess_can_split_ = True
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
@@ -41,7 +42,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
     def test_enable_mod_unsupported_dirs(self):
         shutil.rmtree(os.path.join(self.config.parser.root, "mods-enabled"))
-        self.assertRaises(errors.NotSupportedError, self.config.enable_mod, "ssl")
+        with pytest.raises(errors.NotSupportedError):
+            self.config.enable_mod("ssl")
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
@@ -53,29 +55,29 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         mock_exe_exists.return_value = True
 
         self.config.enable_mod("ssl")
-        self.assertIn("ssl_module", self.config.parser.modules)
-        self.assertIn("mod_ssl.c", self.config.parser.modules)
+        assert "ssl_module" in self.config.parser.modules
+        assert "mod_ssl.c" in self.config.parser.modules
 
-        self.assertIs(mock_run_script.called, True)
+        assert mock_run_script.called is True
 
     def test_deploy_cert_enable_new_vhost(self):
         # Create
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
         self.config.parser.modules["ssl_module"] = None
         self.config.parser.modules["mod_ssl.c"] = None
-        self.assertIs(ssl_vhost.enabled, False)
+        assert ssl_vhost.enabled is False
         with certbot_util.patch_display_util():
             self.config.deploy_cert(
                 "encryption-example.demo", "example/cert.pem", "example/key.pem",
                 "example/cert_chain.pem", "example/fullchain.pem")
-            self.assertIs(ssl_vhost.enabled, True)
+            assert ssl_vhost.enabled is True
             # Make sure that we don't error out if symlink already exists
             ssl_vhost.enabled = False
-            self.assertIs(ssl_vhost.enabled, False)
+            assert ssl_vhost.enabled is False
             self.config.deploy_cert(
                 "encryption-example.demo", "example/cert.pem", "example/key.pem",
                 "example/cert_chain.pem", "example/fullchain.pem")
-            self.assertIs(ssl_vhost.enabled, True)
+            assert ssl_vhost.enabled is True
 
     def test_enable_site_failure(self):
         self.config.parser.root = "/tmp/nonexistent"
@@ -83,10 +85,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
             mock_dir.return_value = True
             with mock.patch("certbot.compat.os.path.islink") as mock_link:
                 mock_link.return_value = False
-                self.assertRaises(
-                    errors.NotSupportedError,
-                    self.config.enable_site,
-                    obj.VirtualHost("asdf", "afsaf", set(), False, False))
+                with pytest.raises(errors.NotSupportedError):
+                    self.config.enable_site(obj.VirtualHost("asdf", "afsaf", set(), False, False))
 
     def test_deploy_cert_newssl(self):
         self.config = util.get_apache_configurator(
@@ -105,8 +105,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         self.config.save()
 
         # Verify ssl_module was enabled.
-        self.assertIs(self.vh_truth[1].enabled, True)
-        self.assertIn("ssl_module", self.config.parser.modules)
+        assert self.vh_truth[1].enabled is True
+        assert "ssl_module" in self.config.parser.modules
 
         loc_cert = self.config.parser.find_dir(
             "sslcertificatefile", "example/fullchain.pem",
@@ -115,15 +115,13 @@ class MultipleVhostsTestDebian(util.ApacheTest):
             "sslcertificateKeyfile", "example/key.pem", self.vh_truth[1].path)
 
         # Verify one directive was found in the correct file
-        self.assertEqual(len(loc_cert), 1)
-        self.assertEqual(
-            apache_util.get_file_path(loc_cert[0]),
-            self.vh_truth[1].filep)
+        assert len(loc_cert) == 1
+        assert apache_util.get_file_path(loc_cert[0]) == \
+            self.vh_truth[1].filep
 
-        self.assertEqual(len(loc_key), 1)
-        self.assertEqual(
-            apache_util.get_file_path(loc_key[0]),
-            self.vh_truth[1].filep)
+        assert len(loc_key) == 1
+        assert apache_util.get_file_path(loc_key[0]) == \
+            self.vh_truth[1].filep
 
     def test_deploy_cert_newssl_no_fullchain(self):
         self.config = util.get_apache_configurator(
@@ -135,10 +133,10 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
-        self.assertRaises(errors.PluginError,
-                          lambda: self.config.deploy_cert(
+        with pytest.raises(errors.PluginError):
+            self.config.deploy_cert(
                               "random.demo", "example/cert.pem",
-                              "example/key.pem"))
+                              "example/key.pem")
 
     def test_deploy_cert_old_apache_no_chain(self):
         self.config = util.get_apache_configurator(
@@ -150,10 +148,10 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
-        self.assertRaises(errors.PluginError,
-                          lambda: self.config.deploy_cert(
+        with pytest.raises(errors.PluginError):
+            self.config.deploy_cert(
                               "random.demo", "example/cert.pem",
-                              "example/key.pem"))
+                              "example/key.pem")
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
@@ -165,7 +163,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         # This will create an ssl vhost for certbot.demo
         self.config.choose_vhost("certbot.demo")
         self.config.enhance("certbot.demo", "staple-ocsp")
-        self.assertIn("socache_shmcb_module", self.config.parser.modules)
+        assert "socache_shmcb_module" in self.config.parser.modules
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
@@ -178,7 +176,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         self.config.choose_vhost("certbot.demo")
         self.config.enhance("certbot.demo", "ensure-http-header",
                             "Strict-Transport-Security")
-        self.assertIn("headers_module", self.config.parser.modules)
+        assert "headers_module" in self.config.parser.modules
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
@@ -189,10 +187,10 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         # This will create an ssl vhost for certbot.demo
         self.config.choose_vhost("certbot.demo")
         self.config.enhance("certbot.demo", "redirect")
-        self.assertIn("rewrite_module", self.config.parser.modules)
+        assert "rewrite_module" in self.config.parser.modules
 
     def test_enable_site_already_enabled(self):
-        self.assertIs(self.vh_truth[1].enabled, True)
+        assert self.vh_truth[1].enabled is True
         self.config.enable_site(self.vh_truth[1])
 
     def test_enable_site_call_parent(self):
@@ -202,13 +200,13 @@ class MultipleVhostsTestDebian(util.ApacheTest):
             vh = self.vh_truth[0]
             vh.enabled = False
             self.config.enable_site(vh)
-            self.assertIs(e_s.called, True)
+            assert e_s.called is True
 
     @mock.patch("certbot.util.exe_exists")
     def test_enable_mod_no_disable(self, mock_exe_exists):
         mock_exe_exists.return_value = False
-        self.assertRaises(
-            errors.MisconfigurationError, self.config.enable_mod, "ssl")
+        with pytest.raises(errors.MisconfigurationError):
+            self.config.enable_mod("ssl")
 
 if __name__ == "__main__":
-    unittest.main()  # pragma: no cover
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
