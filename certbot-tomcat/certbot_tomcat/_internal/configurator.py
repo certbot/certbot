@@ -135,7 +135,9 @@ class TomcatConfigurator(common.Installer):
                 "The tomcat plugin currently requires --fullchain-path to "
                 "install a cert.")
         logger.debug("domain name "+domain)
-        logger.debug("cert path"+cert_path)
+        logger.debug("cert path "+cert_path)
+        logger.debug("chain_path path "+chain_path)
+        logger.debug("fullchain_path path "+fullchain_path)
         self.parser._process_cert_change(domain,cert_path,key_path)
 
 
@@ -235,7 +237,7 @@ class TomcatConfigurator(common.Installer):
 
     def _check_and_wait_service(self,serviceName, expectedstatus) :
         """check and wait service status until it gets expectedstatus
-        or timeout with 50 seconds, whichever occurs first
+        or timeout with 2 minues seconds, whichever occurs first
 
         Currently accomodated for windows based service
         Returns Ststus for success scenario, else empty on timeout

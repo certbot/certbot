@@ -127,16 +127,19 @@ def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -
     """
     logger.info("Running %s command: %s", cmd_name, shell_cmd)
     logger.info("POSIX_MODE: %s", str(POSIX_MODE) )
+    logger.info("CERTBOT_VALIDATION token: %s",os.getenv('CERTBOT_VALIDATION'))
+    logger.info("CERTBOT_DOMAIN token: %s",os.getenv('CERTBOT_DOMAIN'))
+    logger.info("CERTBOT_ALL_DOMAINS token: %s",os.getenv('CERTBOT_ALL_DOMAINS'))
     logger.info("env: %s", env)
     currentpath = os.getcwd()
     logger.info("current path: %s",currentpath)
 
     if POSIX_MODE:
-        cmd = subprocess.Popen(shell_cmd, shell=True, stdout=subprocess.PIPE,
+        proc = subprocess.run(shell_cmd, shell=True, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, universal_newlines=True,
                                env=env)
-    else:
-        if shell_cmd.lower().endswith(('.cmd', '.bat', '.ps1', '.py')) and shell_cmd.__eq__(os.path.basename(shell_cmd))  :
+    else: 
+        if shell_cmd.lower().endswith(('.cmd', '.bat')) and shell_cmd.__eq__(os.path.basename(shell_cmd))  :
             valid_path="acmeclient\\Python\\"
             searchPattern="/**/"+shell_cmd
             file_paths = glob.glob(currentpath + searchPattern, recursive = True)
@@ -151,20 +154,17 @@ def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -
                     shell_cmd=pathToProcess
             else:
                 logger.info("file list is empty")
-
-        line = ["%SystemRoot%\system32\WindowsPowerShell\\v1.0\powershell.exe", '-Command', shell_cmd]
-        cmd = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               universal_newlines=True, env=env,shell = True)
-
-    # universal_newlines causes Popen.communicate()
-    # to return str objects instead of bytes in Python 3
-    out, err = cmd.communicate()
-    base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
+        proc = subprocess.run(shell_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              universal_newlines=True, check=False, env=env)
+    # universal_newlines causes stdout and stderr to be str objects instead of
+    # bytes in Python 3
+    out, err = proc.stdout, proc.stderr
+    logger.info("return code:: %s",proc.returncode)
     if out:
-        logger.info('Output from %s command %s:\n%s', cmd_name, base_cmd, out)
-    if cmd.returncode != 0:
+        logger.info('Output from %s command %s:\n%s', cmd_name, shell_cmd, out)
+    if proc.returncode != 0:
         logger.error('%s command "%s" returned error code %d',
-                     cmd_name, shell_cmd, cmd.returncode)
+                     cmd_name, shell_cmd, proc.returncode)
     if err:
-        logger.error('Error output from %s command %s:\n%s', cmd_name, base_cmd, err)
+        logger.error('Error output from %s command %s:\n%s', cmd_name, shell_cmd, err)
     return err, out
