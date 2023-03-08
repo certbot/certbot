@@ -1,0 +1,31 @@
+name: Merge Event
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  if_merged:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create Mattermost Message
+      # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#example-of-a-script-injection-attack
+      env: 
+        NUMBER: ${{ github.event.number }}
+        PR_URL: https://github.com/${{ github.repository }}/pull/${{ github.event.number }}
+        REPO: ${{ github.repository }}
+        USER: ${{ github.actor }}
+        TITLE: ${{ github.event.pull_request.title }}
+      run: |
+        jq --null-input \
+                --arg number "$NUMBER" \
+                --arg pr_url "$PR_URL" \
+                --arg repo "$REPO" \
+                --arg user "$USER" \
+                --arg title "$TITLE" \
+        '{ "text": "[\($repo)] | [\($title) #\($number)](\($pr_url)) was merged into master by \($user)" }' > mattermost.json
+    - uses: mattermost/action-mattermost-notify@master
+      env:
+        MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_MERGE_WEBHOOK }}
