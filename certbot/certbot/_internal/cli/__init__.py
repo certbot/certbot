@@ -387,6 +387,9 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     helpful.add(
         ["renew", "reconfigure"], "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
+        " Unless --disable-hook-validation is used, the command’s first word"
+        " must be the absolute pathname of an executable or one found via the"
+        " PATH environment variable."
         " Intended primarily for renewal, where it can be used to temporarily"
         " shut down a webserver that might conflict with the standalone"
         " plugin. This will only be called if a certificate is actually to be"
@@ -395,7 +398,11 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     helpful.add(
         ["renew", "reconfigure"], "--post-hook",
         help="Command to be run in a shell after attempting to obtain/renew"
-        " certificates. Can be used to deploy renewed certificates, or to"
+        " certificates."
+        " Unless --disable-hook-validation is used, the command’s first word"
+        " must be the absolute pathname of an executable or one found via the"
+        " PATH environment variable."
+        " Can be used to deploy renewed certificates, or to"
         " restart any servers that were stopped by --pre-hook. This is only"
         " run if an attempt was made to obtain/renew a certificate. If"
         " multiple renewed certificates have identical post-hooks, only"
@@ -409,7 +416,11 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     helpful.add(
         ["renew", "reconfigure"], "--deploy-hook", action=_DeployHookAction,
         help='Command to be run in a shell once for each successfully'
-        ' issued certificate. For this command, the shell variable'
+        ' issued certificate.'
+        ' Unless --disable-hook-validation is used, the command’s first word'
+        ' must be the absolute pathname of an executable or one found via the'
+        ' PATH environment variable.'
+        ' For this command, the shell variable'
         ' $RENEWED_LINEAGE will point to the config live subdirectory'
         ' (for example, "/etc/letsencrypt/live/example.com") containing'
         ' the new certificates and keys; the shell variable'
