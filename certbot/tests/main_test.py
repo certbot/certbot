@@ -1,6 +1,7 @@
 # coding=utf-8
 """Tests for certbot._internal.main."""
 # pylint: disable=too-many-lines
+import contextlib
 import datetime
 from importlib import reload as reload_module
 import io
@@ -33,6 +34,7 @@ from certbot._internal import updater
 from certbot._internal.plugins import disco
 from certbot._internal.plugins import manual
 from certbot._internal.plugins import null
+from certbot._internal.plugins import standalone
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import enhancements
@@ -2444,6 +2446,79 @@ class ShowAccountTest(test_util.ConfigTestCase):
                       'ypt.org/directory:\n  Account URL: https://www.letsencry'
                       'pt-demo.org/acme/reg/1\n  Account Thumbprint: Zm9vYmFyYmF6\n'
                       '  Email contacts: foo@example.com, bar@example.com')])
+
+
+class TestLockOrder:
+    """Tests that Certbot's directory locks were acquired in the right order."""
+    EXPECTED_ERROR_TYPE = errors.Error
+    EXPECTED_ERROR_STR = 'Expected TestLockOrder error'
+    # This regex is needed because certbot renew captures raised errors and
+    # raises its own.
+    EXPECTED_ERROR_STR_REGEX = f'{EXPECTED_ERROR_STR}|1 renew failure'
+
+    @pytest.fixture
+    def mock_lock_dir(self):
+        with mock.patch('certbot._internal.lock.lock_dir') as mock_lock_dir:
+            yield mock_lock_dir
+
+    @contextlib.contextmanager
+    def mock_plugin_prepare(self, authenticator_dir, installer_dir, mock_lock_dir, subcommand):
+        """Patches plugin prepare to call mock_lock_dir and raise the expected error."""
+        def authenticator_lock(unused_self):
+            mock_lock_dir(authenticator_dir)
+            raise self.EXPECTED_ERROR_TYPE(self.EXPECTED_ERROR_STR)
+
+        def installer_lock(unused_self):
+            mock_lock_dir(installer_dir)
+            # Unless an installer isn't needed (e.g. certbot install), we
+            # expect the authenticator to raise the expected error because it
+            # is prepared last. See
+            # https://github.com/certbot/certbot/blob/7a6752a68ed77e73c2b29ab20d3ca8927f4fa7b0/certbot/certbot/_internal/plugins/selection.py#L246-L249
+            if subcommand == 'install':
+                raise self.EXPECTED_ERROR_TYPE(self.EXPECTED_ERROR_STR)
+
+        with mock.patch.object(standalone.Authenticator, 'prepare', authenticator_lock):
+            with mock.patch.object(null.Installer, 'prepare', installer_lock):
+                yield
+
+    @pytest.fixture(params='certonly install renew run'.split())
+    def args_and_lock_order(self, mock_lock_dir, request, tmp_path):
+        """Sets up Certbot with args and mocks to error after acquiring the last lock.
+
+        This fixture yields the CLI arguments that should be given to Certbot
+        and the expected order of directories to be locked.
+
+        """
+        # select directories
+        authenticator_dir = str(tmp_path / 'authenticator')
+        config_dir = str(tmp_path / 'config')
+        installer_dir = str(tmp_path / 'installer')
+        logs_dir = str(tmp_path / 'logs')
+        work_dir = str(tmp_path / 'work')
+
+        # prepare args and lineage
+        subcommand = request.param
+        args = [subcommand, '-a', 'standalone', '-i', 'null', '--no-random-sleep-on-renew',
+                '--config-dir', config_dir, '--logs-dir', logs_dir, '--work-dir',
+                work_dir]
+        test_util.make_lineage(config_dir, 'sample-renewal.conf')
+
+        with self.mock_plugin_prepare(authenticator_dir, installer_dir, mock_lock_dir, subcommand):
+            lock_order = [logs_dir, config_dir, work_dir, installer_dir]
+            if subcommand == 'install':
+                yield args, lock_order
+            else:
+                # We expect the installer to be prepared even for certonly
+                # because an installer was requested on the command line.
+                yield args, lock_order + [authenticator_dir]
+
+    def test_lock_order(self, args_and_lock_order, mock_lock_dir):
+        args, lock_order = args_and_lock_order
+        with pytest.raises(self.EXPECTED_ERROR_TYPE, match=self.EXPECTED_ERROR_STR_REGEX):
+            main.main(args)
+        # We use strict = True to ensure the correct number of lock calls were made
+        for call, locked_dir in zip(mock_lock_dir.call_args_list, lock_order, strict=True):
+            assert call[0][0] == locked_dir
 
 
 if __name__ == '__main__':
