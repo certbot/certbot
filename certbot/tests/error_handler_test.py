@@ -2,7 +2,7 @@
 import contextlib
 import signal
 import sys
-from typing import Callable
+from typing import List, Callable
 from typing import Dict
 from typing import Union
 import unittest
@@ -13,19 +13,19 @@ import pytest
 from certbot.compat import os
 
 
-def get_signals(signums):
+def get_signals(signums: List[signal.Signals]) -> Dict[signal.Signals, Callable]:
     """Get the handlers for an iterable of signums."""
     return {s: signal.getsignal(s) for s in signums}
 
 
-def set_signals(sig_handler_dict):
+def set_signals(sig_handler_dict: Dict[signal.Signals, Callable]) -> None:
     """Set the signal (keys) with the handler (values) from the input dict."""
     for s, h in sig_handler_dict.items():
         signal.signal(s, h)
 
 
 @contextlib.contextmanager
-def signal_receiver(signums):
+def signal_receiver(signums: List[signal.Signals]) -> None:
     """Context manager to catch signals"""
     signals = []
     prev_handlers: Dict[int, Union[int, None, Callable]] = get_signals(signums)
@@ -34,7 +34,7 @@ def signal_receiver(signums):
     set_signals(prev_handlers)
 
 
-def send_signal(signum):
+def send_signal(signum: signal.Signals) -> None:
     """Send the given signal"""
     os.kill(os.getpid(), signum)
 
@@ -67,7 +67,7 @@ class ErrorHandlerTest(unittest.TestCase):
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
 
-    def test_context_manager_with_signal(self):
+    def test_context_manager_with_signal(self) -> None:
         if not self.signals:
             self.skipTest(reason='Signals cannot be handled on Windows.')
         init_signals = get_signals(self.signals)
@@ -99,7 +99,7 @@ class ErrorHandlerTest(unittest.TestCase):
                                                **self.init_kwargs)
         bad_func.assert_called_once_with()
 
-    def test_bad_recovery_with_signal(self):
+    def test_bad_recovery_with_signal(self) -> None:
         if not self.signals:
             self.skipTest(reason='Signals cannot be handled on Windows.')
         sig1 = self.signals[0]

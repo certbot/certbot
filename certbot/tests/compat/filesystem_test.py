@@ -406,7 +406,7 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
                           if dacl.GetAce(index)[2] == everybody]
 
     @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
-    def test_copy_ownership_and_apply_mode_linux(self):
+    def test_copy_ownership_and_apply_mode_linux(self) -> None:
         with mock.patch('os.chown') as mock_chown:
             with mock.patch('os.chmod') as mock_chmod:
                 with mock.patch('os.stat') as mock_stat:
@@ -471,7 +471,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
             assert not filesystem.check_owner(self.probe_path)
 
     @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
-    def test_check_owner_linux(self):
+    def test_check_owner_linux(self) -> None:
         assert filesystem.check_owner(self.probe_path) is True
 
         import os as std_os  # pylint: disable=os-module-forbidden
@@ -625,7 +625,7 @@ class IsExecutableTest(test_util.TempDirTestCase):
 class ReadlinkTest(unittest.TestCase):
     @unittest.skipUnless(POSIX_MODE, reason='Tests specific to Linux')
     @mock.patch("certbot.compat.filesystem.os.readlink")
-    def test_path_posix(self, mock_readlink):
+    def test_path_posix(self, mock_readlink: MagicMock) -> None:
         mock_readlink.return_value = "/normal/path"
         assert filesystem.readlink("dummy") == "/normal/path"
 

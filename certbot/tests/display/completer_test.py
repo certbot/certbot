@@ -58,7 +58,7 @@ class CompleterTest(test_util.TempDirTestCase):
 
     @unittest.skipIf('readline' not in sys.modules,
                      reason='Not relevant if readline is not available.')
-    def test_import_error(self):
+    def test_import_error(self) -> None:
         original_readline = sys.modules['readline']
         sys.modules['readline'] = None
 
