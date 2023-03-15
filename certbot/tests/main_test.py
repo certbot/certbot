@@ -2516,8 +2516,8 @@ class TestLockOrder:
         args, lock_order = args_and_lock_order
         with pytest.raises(self.EXPECTED_ERROR_TYPE, match=self.EXPECTED_ERROR_STR_REGEX):
             main.main(args)
-        # We use strict = True to ensure the correct number of lock calls were made
-        for call, locked_dir in zip(mock_lock_dir.call_args_list, lock_order, strict=True):
+        assert mock_lock_dir.call_count == len(lock_order)
+        for call, locked_dir in zip(mock_lock_dir.call_args_list, lock_order):
             assert call[0][0] == locked_dir
 
 
