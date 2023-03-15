@@ -4,5 +4,5 @@ from certbot._internal import cli
 
 
 @pytest.fixture(autouse=True)
-def reset_cli_global():
+def reset_cli_global() -> None:
     cli.set_by_cli.detector = None

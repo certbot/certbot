@@ -18,6 +18,9 @@ import pytz
 
 from certbot import errors
 from certbot.tests import util as test_util
+from cryptography.x509.ocsp import OCSPCertStatus, OCSPResponseStatus
+from typing import Optional, Union
+from unittest.mock import MagicMock, Mock
 
 out = """Missing = in header key=value
 ocsp: Use -help for summary.
@@ -29,7 +32,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
     OCSP revocation tests using OpenSSL binary.
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         from certbot import ocsp
         with mock.patch('certbot.ocsp.subprocess.run') as mock_run:
             with mock.patch('certbot.util.exe_exists') as mock_exists:
@@ -40,7 +43,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
     @mock.patch('certbot.ocsp.logger.info')
     @mock.patch('certbot.ocsp.subprocess.run')
     @mock.patch('certbot.util.exe_exists')
-    def test_init(self, mock_exists, mock_run, mock_log):
+    def test_init(self, mock_exists: MagicMock, mock_run: MagicMock, mock_log: MagicMock) -> None:
         mock_run.return_value.stderr = out
         mock_exists.return_value = True
 
@@ -64,7 +67,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp.crypto_util.notAfter')
     @mock.patch('certbot.util.run_script')
-    def test_ocsp_revoked(self, mock_run, mock_na, mock_determine):
+    def test_ocsp_revoked(self, mock_run: MagicMock, mock_na: MagicMock, mock_determine: MagicMock) -> None:
         now = pytz.UTC.fromutc(datetime.utcnow())
         cert_obj = mock.MagicMock()
         cert_obj.cert_path = "x"
@@ -93,7 +96,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         assert self.checker.ocsp_revoked(cert_obj) is False
         assert mock_determine.call_count == count_before
 
-    def test_determine_ocsp_server(self):
+    def test_determine_ocsp_server(self) -> None:
         cert_path = test_util.vector_path('ocsp_certificate.pem')
 
         from certbot import ocsp
@@ -102,7 +105,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
 
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')
-    def test_translate_ocsp(self, mock_run, mock_log):
+    def test_translate_ocsp(self, mock_run: MagicMock, mock_log: MagicMock) -> None:
         # pylint: disable=protected-access
         mock_run.return_value = openssl_confused
         from certbot import ocsp
@@ -130,7 +133,7 @@ class OSCPTestCryptography(unittest.TestCase):
     OCSP revokation tests using Cryptography >= 2.4.0
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         from certbot import ocsp
         self.checker = ocsp.RevocationChecker()
         self.cert_path = test_util.vector_path('ocsp_certificate.pem')
@@ -147,18 +150,18 @@ class OSCPTestCryptography(unittest.TestCase):
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp._check_ocsp_cryptography')
-    def test_ensure_cryptography_toggled(self, mock_check, mock_determine):
+    def test_ensure_cryptography_toggled(self, mock_check: MagicMock, mock_determine: MagicMock) -> None:
         mock_determine.return_value = ('http://example.com', 'example.com')
         self.checker.ocsp_revoked(self.cert_obj)
 
         mock_check.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com', 10)
 
-    def test_revoke(self):
+    def test_revoke(self) -> None:
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
             revoked = self.checker.ocsp_revoked(self.cert_obj)
         assert revoked
 
-    def test_responder_is_issuer(self):
+    def test_responder_is_issuer(self) -> None:
         issuer = x509.load_pem_x509_certificate(
             test_util.load_vector('ocsp_issuer_certificate.pem'), default_backend())
 
@@ -182,7 +185,7 @@ class OSCPTestCryptography(unittest.TestCase):
         assert mocks['mock_check'].call_args_list[1][0][0].public_numbers() == \
             issuer.public_key().public_numbers()
 
-    def test_responder_is_authorized_delegate(self):
+    def test_responder_is_authorized_delegate(self) -> None:
         issuer = x509.load_pem_x509_certificate(
             test_util.load_vector('ocsp_issuer_certificate.pem'), default_backend())
         responder = x509.load_pem_x509_certificate(
@@ -213,7 +216,7 @@ class OSCPTestCryptography(unittest.TestCase):
         assert mocks['mock_check'].call_args_list[3][0][0].public_numbers() == \
                          responder.public_key().public_numbers()
 
-    def test_revoke_resiliency(self):
+    def test_revoke_resiliency(self) -> None:
         # Server return an invalid HTTP response
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.UNKNOWN, ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
                         http_status_code=400):
@@ -286,8 +289,8 @@ class OSCPTestCryptography(unittest.TestCase):
 
 
 @contextlib.contextmanager
-def _ocsp_mock(certificate_status, response_status,
-               http_status_code=200, check_signature_side_effect=None):
+def _ocsp_mock(certificate_status: OCSPCertStatus, response_status: OCSPResponseStatus,
+               http_status_code: int=200, check_signature_side_effect: Optional[Union[InvalidSignature, AssertionError, UnsupportedAlgorithm]]=None) -> None:
     with mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response') as mock_response:
         mock_response.return_value = _construct_mock_ocsp_response(
             certificate_status, response_status)
@@ -304,7 +307,7 @@ def _ocsp_mock(certificate_status, response_status,
                 }
 
 
-def _construct_mock_ocsp_response(certificate_status, response_status):
+def _construct_mock_ocsp_response(certificate_status: OCSPCertStatus, response_status: OCSPResponseStatus) -> Mock:
     cert = x509.load_pem_x509_certificate(
         test_util.load_vector('ocsp_certificate.pem'), default_backend())
     issuer = x509.load_pem_x509_certificate(

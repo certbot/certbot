@@ -16,6 +16,7 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
+from typing import Callable, Union
 
 AUTH_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 ACHALL = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -27,15 +28,15 @@ ACHALL = achallenges.KeyAuthorizationAnnotatedChallenge(
 class NamespaceFunctionsTest(unittest.TestCase):
     """Tests for certbot.plugins.common.*_namespace functions."""
 
-    def test_option_namespace(self):
+    def test_option_namespace(self) -> None:
         from certbot.plugins.common import option_namespace
         assert "foo-" == option_namespace("foo")
 
-    def test_dest_namespace(self):
+    def test_dest_namespace(self) -> None:
         from certbot.plugins.common import dest_namespace
         assert "foo_" == dest_namespace("foo")
 
-    def test_dest_namespace_with_dashes(self):
+    def test_dest_namespace_with_dashes(self) -> None:
         from certbot.plugins.common import dest_namespace
         assert "foo_bar_" == dest_namespace("foo-bar")
 
@@ -43,7 +44,7 @@ class NamespaceFunctionsTest(unittest.TestCase):
 class PluginTest(unittest.TestCase):
     """Test for certbot.plugins.common.Plugin."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         from certbot.plugins.common import Plugin
 
         class MockPlugin(Plugin):  # pylint: disable=missing-docstring
@@ -61,27 +62,27 @@ class PluginTest(unittest.TestCase):
         self.config = mock.MagicMock()
         self.plugin = MockPlugin(config=self.config, name="mock")
 
-    def test_init(self):
+    def test_init(self) -> None:
         assert "mock" == self.plugin.name
         assert self.config == self.plugin.config
 
-    def test_option_namespace(self):
+    def test_option_namespace(self) -> None:
         assert "mock-" == self.plugin.option_namespace
 
-    def test_option_name(self):
+    def test_option_name(self) -> None:
         assert "mock-foo_bar" == self.plugin.option_name("foo_bar")
 
-    def test_dest_namespace(self):
+    def test_dest_namespace(self) -> None:
         assert "mock_" == self.plugin.dest_namespace
 
-    def test_dest(self):
+    def test_dest(self) -> None:
         assert "mock_foo_bar" == self.plugin.dest("foo-bar")
         assert "mock_foo_bar" == self.plugin.dest("foo_bar")
 
-    def test_conf(self):
+    def test_conf(self) -> None:
         assert self.config.mock_foo_bar == self.plugin.conf("foo-bar")
 
-    def test_inject_parser_options(self):
+    def test_inject_parser_options(self) -> None:
         parser = mock.MagicMock()
         self.plugin_cls.inject_parser_options(parser, "mock")
         # note that inject_parser_options doesn't check if dest has
@@ -89,7 +90,7 @@ class PluginTest(unittest.TestCase):
         parser.add_argument.assert_called_once_with(
             "--mock-foo-bar", dest="different_to_foo_bar", x=1, y=None)
 
-    def test_fallback_auth_hint(self):
+    def test_fallback_auth_hint(self) -> None:
         assert "the mock plugin completed the required dns-01 challenges" in \
                       self.plugin.auth_hint([acme_util.DNS01_A, acme_util.DNS01_A])
         assert "the mock plugin completed the required dns-01 and http-01 challenges" in \
@@ -100,7 +101,7 @@ class PluginTest(unittest.TestCase):
 class InstallerTest(test_util.ConfigTestCase):
     """Tests for certbot.plugins.common.Installer."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         filesystem.mkdir(self.config.config_dir)
         from certbot.tests.util import DummyInstaller
@@ -109,18 +110,18 @@ class InstallerTest(test_util.ConfigTestCase):
                                    name="Installer")
         self.reverter = self.installer.reverter
 
-    def test_add_to_real_checkpoint(self):
+    def test_add_to_real_checkpoint(self) -> None:
         files = {"foo.bar", "baz.qux",}
         save_notes = "foo bar baz qux"
         self._test_wrapped_method("add_to_checkpoint", files, save_notes)
 
-    def test_add_to_real_checkpoint2(self):
+    def test_add_to_real_checkpoint2(self) -> None:
         self._test_add_to_checkpoint_common(False)
 
-    def test_add_to_temporary_checkpoint(self):
+    def test_add_to_temporary_checkpoint(self) -> None:
         self._test_add_to_checkpoint_common(True)
 
-    def _test_add_to_checkpoint_common(self, temporary):
+    def _test_add_to_checkpoint_common(self, temporary: bool) -> None:
         files = {"foo.bar", "baz.qux",}
         save_notes = "foo bar baz qux"
 
@@ -134,19 +135,19 @@ class InstallerTest(test_util.ConfigTestCase):
 
         self._test_adapted_method(installer_func, reverter_func_name, files, save_notes)
 
-    def test_finalize_checkpoint(self):
+    def test_finalize_checkpoint(self) -> None:
         self._test_wrapped_method("finalize_checkpoint", "foo")
 
-    def test_recovery_routine(self):
+    def test_recovery_routine(self) -> None:
         self._test_wrapped_method("recovery_routine")
 
-    def test_revert_temporary_config(self):
+    def test_revert_temporary_config(self) -> None:
         self._test_wrapped_method("revert_temporary_config")
 
-    def test_rollback_checkpoints(self):
+    def test_rollback_checkpoints(self) -> None:
         self._test_wrapped_method("rollback_checkpoints", 42)
 
-    def _test_wrapped_method(self, name, *args, **kwargs):
+    def _test_wrapped_method(self, name: str, *args, **kwargs) -> None:
         """Test a wrapped reverter method.
 
         :param str name: name of the method to test
@@ -157,8 +158,8 @@ class InstallerTest(test_util.ConfigTestCase):
         installer_func = getattr(self.installer, name)
         self._test_adapted_method(installer_func, name, *args, **kwargs)
 
-    def _test_adapted_method(self, installer_func,
-                             reverter_func_name, *passed_args, **passed_kwargs):
+    def _test_adapted_method(self, installer_func: Union[Callable,     functools.partial],
+                             reverter_func_name: str, *passed_args, **passed_kwargs) -> None:
         """Test an adapted reverter method
 
         :param callable installer_func: installer method to test
@@ -177,15 +178,15 @@ class InstallerTest(test_util.ConfigTestCase):
             with pytest.raises(errors.PluginError):
                 installer_func(*passed_args, **passed_kwargs)
 
-    def test_install_ssl_dhparams(self):
+    def test_install_ssl_dhparams(self) -> None:
         self.installer.install_ssl_dhparams()
         assert os.path.isfile(self.installer.ssl_dhparams)
 
-    def _current_ssl_dhparams_hash(self):
+    def _current_ssl_dhparams_hash(self) -> str:
         from certbot._internal.constants import SSL_DHPARAMS_SRC
         return crypto_util.sha256sum(SSL_DHPARAMS_SRC)
 
-    def test_current_file_hash_in_all_hashes(self):
+    def test_current_file_hash_in_all_hashes(self) -> None:
         from certbot._internal.constants import ALL_SSL_DHPARAMS_HASHES
         assert self._current_ssl_dhparams_hash() in ALL_SSL_DHPARAMS_HASHES, \
             "Constants.ALL_SSL_DHPARAMS_HASHES must be appended" \
@@ -195,7 +196,7 @@ class InstallerTest(test_util.ConfigTestCase):
 class AddrTest(unittest.TestCase):
     """Tests for certbot.plugins.common.Addr."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         from certbot.plugins.common import Addr
         self.addr1 = Addr.fromstring("192.168.1.1")
         self.addr2 = Addr.fromstring("192.168.1.1:*")
@@ -206,7 +207,7 @@ class AddrTest(unittest.TestCase):
         self.addr7 = Addr.fromstring("[fe00::1]:5")
         self.addr8 = Addr.fromstring("[fe00:1:2:3:4:5:6:7:8:9]:8080")
 
-    def test_fromstring(self):
+    def test_fromstring(self) -> None:
         assert self.addr1.get_addr() == "192.168.1.1"
         assert self.addr1.get_port() == ""
         assert self.addr2.get_addr() == "192.168.1.1"
@@ -227,7 +228,7 @@ class AddrTest(unittest.TestCase):
         assert self.addr8.get_ipv6_exploded() == \
                          "fe00:1:2:3:4:5:6:7"
 
-    def test_str(self):
+    def test_str(self) -> None:
         assert str(self.addr1) == "192.168.1.1"
         assert str(self.addr2) == "192.168.1.1:*"
         assert str(self.addr3) == "192.168.1.1:80"
@@ -235,7 +236,7 @@ class AddrTest(unittest.TestCase):
         assert str(self.addr5) == "[fe00::1]:*"
         assert str(self.addr6) == "[fe00::1]:80"
 
-    def test_get_addr_obj(self):
+    def test_get_addr_obj(self) -> None:
         assert str(self.addr1.get_addr_obj("443")) == "192.168.1.1:443"
         assert str(self.addr2.get_addr_obj("")) == "192.168.1.1"
         assert str(self.addr1.get_addr_obj("*")) == "192.168.1.1:*"
@@ -243,7 +244,7 @@ class AddrTest(unittest.TestCase):
         assert str(self.addr5.get_addr_obj("")) == "[fe00::1]"
         assert str(self.addr4.get_addr_obj("*")) == "[fe00::1]:*"
 
-    def test_eq(self):
+    def test_eq(self) -> None:
         assert self.addr1 == self.addr2.get_addr_obj("")
         assert self.addr1 != self.addr2
         assert self.addr1 != 3333
@@ -256,7 +257,7 @@ class AddrTest(unittest.TestCase):
         assert self.addr4 == Addr.fromstring("[fe00:0::0:0:1]")
 
 
-    def test_set_inclusion(self):
+    def test_set_inclusion(self) -> None:
         from certbot.plugins.common import Addr
         set_a = {self.addr1, self.addr2}
         addr1b = Addr.fromstring("192.168.1.1")
@@ -276,18 +277,18 @@ class AddrTest(unittest.TestCase):
 class ChallengePerformerTest(unittest.TestCase):
     """Tests for certbot.plugins.common.ChallengePerformer."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         configurator = mock.MagicMock()
 
         from certbot.plugins.common import ChallengePerformer
         self.performer = ChallengePerformer(configurator)
 
-    def test_add_chall(self):
+    def test_add_chall(self) -> None:
         self.performer.add_chall(ACHALL, 0)
         assert 1 == len(self.performer.achalls)
         assert [0] == self.performer.indices
 
-    def test_perform(self):
+    def test_perform(self) -> None:
         with pytest.raises(NotImplementedError):
             self.performer.perform()
 
@@ -295,7 +296,7 @@ class ChallengePerformerTest(unittest.TestCase):
 class InstallVersionControlledFileTest(test_util.TempDirTestCase):
     """Tests for certbot.plugins.common.install_version_controlled_file."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.hashes = ["someotherhash"]
         self.dest_path = os.path.join(self.tempdir, "options-ssl-dest.conf")
@@ -307,38 +308,38 @@ class InstallVersionControlledFileTest(test_util.TempDirTestCase):
                 f.write(path)
             self.hashes.append(crypto_util.sha256sum(path))
 
-    def _call(self):
+    def _call(self) -> None:
         from certbot.plugins.common import install_version_controlled_file
         install_version_controlled_file(self.dest_path,
                                         self.hash_path,
                                         self.source_path,
                                         self.hashes)
 
-    def _current_file_hash(self):
+    def _current_file_hash(self) -> str:
         return crypto_util.sha256sum(self.source_path)
 
-    def _assert_current_file(self):
+    def _assert_current_file(self) -> None:
         assert os.path.isfile(self.dest_path)
         assert crypto_util.sha256sum(self.dest_path) == \
             self._current_file_hash()
 
-    def test_no_file(self):
+    def test_no_file(self) -> None:
         assert not os.path.isfile(self.dest_path)
         self._call()
         self._assert_current_file()
 
-    def test_current_file(self):
+    def test_current_file(self) -> None:
         # 1st iteration installs the file, the 2nd checks if it needs updating
         for _ in range(2):
             self._call()
             self._assert_current_file()
 
-    def test_prev_file_updates_to_current(self):
+    def test_prev_file_updates_to_current(self) -> None:
         shutil.copyfile(self.old_path, self.dest_path)
         self._call()
         self._assert_current_file()
 
-    def test_manually_modified_current_file_does_not_update(self):
+    def test_manually_modified_current_file_does_not_update(self) -> None:
         self._call()
         with open(self.dest_path, "a") as mod_ssl_conf:
             mod_ssl_conf.write("a new line for the wrong hash\n")
@@ -351,7 +352,7 @@ class InstallVersionControlledFileTest(test_util.TempDirTestCase):
         assert crypto_util.sha256sum(self.dest_path) != \
             self._current_file_hash()
 
-    def test_manually_modified_past_file_warns(self):
+    def test_manually_modified_past_file_warns(self) -> None:
         with open(self.dest_path, "a") as mod_ssl_conf:
             mod_ssl_conf.write("a new line for the wrong hash\n")
         with open(self.hash_path, "w") as f:

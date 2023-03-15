@@ -13,16 +13,18 @@ from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
+from typing import Dict, List, Tuple, Type, Union
+from unittest.mock import MagicMock
 
 
 class EnvNoSnapForExternalCallsTest(unittest.TestCase):
     """Tests for certbot.util.env_no_snap_for_external_calls."""
     @classmethod
-    def _call(cls):
+    def _call(cls) -> Dict[str, str]:
         from certbot.util import env_no_snap_for_external_calls
         return env_no_snap_for_external_calls()
 
-    def test_removed(self):
+    def test_removed(self) -> None:
         original_path = os.environ['PATH']
         env_copy_dict = os.environ.copy()
         env_copy_dict['PATH'] = 'RANDOM_NONSENSE_GARBAGE/blah/blah:' + original_path
@@ -31,7 +33,7 @@ class EnvNoSnapForExternalCallsTest(unittest.TestCase):
         with mock.patch('certbot.compat.os.environ.copy', return_value=env_copy_dict):
             assert self._call()['PATH'] == original_path
 
-    def test_noop(self):
+    def test_noop(self) -> None:
         env_copy_dict_unmodified = os.environ.copy()
         env_copy_dict_unmodified['PATH'] = 'RANDOM_NONSENSE_GARBAGE/blah/blah:' \
             + env_copy_dict_unmodified['PATH']
@@ -52,12 +54,12 @@ class EnvNoSnapForExternalCallsTest(unittest.TestCase):
 class RunScriptTest(unittest.TestCase):
     """Tests for certbot.util.run_script."""
     @classmethod
-    def _call(cls, params):
+    def _call(cls, params: List[str]) -> Tuple[str, str]:
         from certbot.util import run_script
         return run_script(params)
 
     @mock.patch("certbot.util.subprocess.run")
-    def test_default(self, mock_run):
+    def test_default(self, mock_run: MagicMock) -> None:
         """These will be changed soon enough with reload."""
         mock_run().returncode = 0
         mock_run().stdout = "stdout"
@@ -68,14 +70,14 @@ class RunScriptTest(unittest.TestCase):
         assert err == "stderr"
 
     @mock.patch("certbot.util.subprocess.run")
-    def test_bad_process(self, mock_run):
+    def test_bad_process(self, mock_run: MagicMock) -> None:
         mock_run.side_effect = OSError
 
         with pytest.raises(errors.SubprocessError):
             self._call(["test"])
 
     @mock.patch("certbot.util.subprocess.run")
-    def test_failure(self, mock_run):
+    def test_failure(self, mock_run: MagicMock) -> None:
         mock_run().returncode = 1
 
         with pytest.raises(errors.SubprocessError):
@@ -86,15 +88,15 @@ class ExeExistsTest(unittest.TestCase):
     """Tests for certbot.util.exe_exists."""
 
     @classmethod
-    def _call(cls, exe):
+    def _call(cls, exe: str) -> bool:
         from certbot.util import exe_exists
         return exe_exists(exe)
 
-    def test_exe_exists(self):
+    def test_exe_exists(self) -> None:
         with mock.patch("certbot.util.filesystem.is_executable", return_value=True):
             assert self._call("/path/to/exe")
 
-    def test_exe_not_exists(self):
+    def test_exe_not_exists(self) -> None:
         with mock.patch("certbot.util.filesystem.is_executable", return_value=False):
             assert not self._call("/path/to/exe")
 
@@ -102,11 +104,11 @@ class ExeExistsTest(unittest.TestCase):
 class LockDirUntilExit(test_util.TempDirTestCase):
     """Tests for certbot.util.lock_dir_until_exit."""
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot.util import lock_dir_until_exit
         return lock_dir_until_exit(*args, **kwargs)
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         # reset global state from other tests
         import certbot.util
@@ -114,7 +116,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
 
     @mock.patch('certbot.util.logger')
     @mock.patch('certbot.util.atexit_register')
-    def test_it(self, mock_register, mock_logger):
+    def test_it(self, mock_register: MagicMock, mock_logger: MagicMock) -> None:
         subdir = os.path.join(self.tempdir, 'subdir')
         filesystem.mkdir(subdir)
         self._call(self.tempdir)
@@ -138,19 +140,19 @@ class LockDirUntilExit(test_util.TempDirTestCase):
 class SetUpCoreDirTest(test_util.TempDirTestCase):
     """Tests for certbot.util.make_or_verify_core_dir."""
 
-    def _call(self, *args, **kwargs):
+    def _call(self, *args, **kwargs) -> None:
         from certbot.util import set_up_core_dir
         return set_up_core_dir(*args, **kwargs)
 
     @mock.patch('certbot.util.lock_dir_until_exit')
-    def test_success(self, mock_lock):
+    def test_success(self, mock_lock: MagicMock) -> None:
         new_dir = os.path.join(self.tempdir, 'new')
         self._call(new_dir, 0o700, False)
         assert os.path.exists(new_dir)
         assert mock_lock.call_count == 1
 
     @mock.patch('certbot.util.make_or_verify_dir')
-    def test_failure(self, mock_make_or_verify):
+    def test_failure(self, mock_make_or_verify: MagicMock) -> None:
         mock_make_or_verify.side_effect = OSError
         with pytest.raises(errors.Error):
             self._call(self.tempdir, 0o700, False)
@@ -164,31 +166,31 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
         filesystem.mkdir(self.path, 0o600)
 
-    def _call(self, directory, mode):
+    def _call(self, directory: str, mode: int) -> None:
         from certbot.util import make_or_verify_dir
         return make_or_verify_dir(directory, mode, strict=True)
 
-    def test_creates_dir_when_missing(self):
+    def test_creates_dir_when_missing(self) -> None:
         path = os.path.join(self.tempdir, "bar")
         self._call(path, 0o650)
         assert os.path.isdir(path)
         assert filesystem.check_mode(path, 0o650)
 
-    def test_existing_correct_mode_does_not_fail(self):
+    def test_existing_correct_mode_does_not_fail(self) -> None:
         self._call(self.path, 0o600)
         assert filesystem.check_mode(self.path, 0o600)
 
-    def test_existing_wrong_mode_fails(self):
+    def test_existing_wrong_mode_fails(self) -> None:
         with pytest.raises(errors.Error):
             self._call(self.path, 0o400)
 
-    def test_reraises_os_error(self):
+    def test_reraises_os_error(self) -> None:
         with mock.patch.object(filesystem, "makedirs") as makedirs:
             makedirs.side_effect = OSError()
             with pytest.raises(OSError):
@@ -198,23 +200,23 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
 class UniqueFileTest(test_util.TempDirTestCase):
     """Tests for certbot.util.unique_file."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.default_name = os.path.join(self.tempdir, "foo.txt")
 
-    def _call(self, mode=0o600):
+    def _call(self, mode: int=0o600) -> Tuple[    io.TextIOWrapper, str]:
         from certbot.util import unique_file
         return unique_file(self.default_name, mode)
 
-    def test_returns_fd_for_writing(self):
+    def test_returns_fd_for_writing(self) -> None:
         fd, name = self._call()
         fd.write("bar")
         fd.close()
         with open(name) as f:
             assert f.read() == "bar"
 
-    def test_right_mode(self):
+    def test_right_mode(self) -> None:
         fd1, name1 = self._call(0o700)
         fd2, name2 = self._call(0o600)
         assert filesystem.check_mode(name1, 0o700)
@@ -222,7 +224,7 @@ class UniqueFileTest(test_util.TempDirTestCase):
         fd1.close()
         fd2.close()
 
-    def test_default_exists(self):
+    def test_default_exists(self) -> None:
         fd1, name1 = self._call()  # create 0000_foo.txt
         fd2, name2 = self._call()
         fd3, name3 = self._call()
@@ -257,17 +259,17 @@ except NameError:
 class UniqueLineageNameTest(test_util.TempDirTestCase):
     """Tests for certbot.util.unique_lineage_name."""
 
-    def _call(self, filename, mode=0o777):
+    def _call(self, filename: str, mode: int=0o777) -> Tuple[    io.TextIOWrapper, str]:
         from certbot.util import unique_lineage_name
         return unique_lineage_name(self.tempdir, filename, mode)
 
-    def test_basic(self):
+    def test_basic(self) -> None:
         f, path = self._call("wow")
         assert isinstance(f, file_type)
         assert os.path.join(self.tempdir, "wow.conf") == path
         f.close()
 
-    def test_multiple(self):
+    def test_multiple(self) -> None:
         items = []
         for _ in range(10):
             items.append(self._call("wow"))
@@ -278,7 +280,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for f, _ in items:
             f.close()
 
-    def test_failure(self):
+    def test_failure(self) -> None:
         with mock.patch("certbot.compat.filesystem.open", side_effect=OSError(errno.EIO)):
             with pytest.raises(OSError):
                 self._call("wow")
@@ -287,27 +289,27 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
 class SafelyRemoveTest(test_util.TempDirTestCase):
     """Tests for certbot.util.safely_remove."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
 
-    def _call(self):
+    def _call(self) -> None:
         from certbot.util import safely_remove
         return safely_remove(self.path)
 
-    def test_exists(self):
+    def test_exists(self) -> None:
         with open(self.path, "w"):
             pass  # just create the file
         self._call()
         assert not os.path.exists(self.path)
 
-    def test_missing(self):
+    def test_missing(self) -> None:
         self._call()
         # no error, yay!
         assert not os.path.exists(self.path)
 
-    def test_other_error_passthrough(self):
+    def test_other_error_passthrough(self) -> None:
         with mock.patch("certbot.util.os.remove") as mock_remove:
             mock_remove.side_effect = OSError
             with pytest.raises(OSError):
@@ -317,11 +319,11 @@ class SafelyRemoveTest(test_util.TempDirTestCase):
 class SafeEmailTest(unittest.TestCase):
     """Test safe_email."""
     @classmethod
-    def _call(cls, addr):
+    def _call(cls, addr: str) -> bool:
         from certbot.util import safe_email
         return safe_email(addr)
 
-    def test_valid_emails(self):
+    def test_valid_emails(self) -> None:
         addrs = [
             "certbot@certbot.org",
             "tbd.ade@gmail.com",
@@ -330,7 +332,7 @@ class SafeEmailTest(unittest.TestCase):
         for addr in addrs:
             assert self._call(addr), "%s failed." % addr
 
-    def test_invalid_emails(self):
+    def test_invalid_emails(self) -> None:
         addrs = [
             "certbot@certbot..org",
             ".tbd.ade@gmail.com",
@@ -342,14 +344,14 @@ class SafeEmailTest(unittest.TestCase):
 
 class AddDeprecatedArgumentTest(unittest.TestCase):
     """Test add_deprecated_argument."""
-    def setUp(self):
+    def setUp(self) -> None:
         self.parser = argparse.ArgumentParser()
 
-    def _call(self, argument_name, nargs):
+    def _call(self, argument_name: str, nargs: int) -> None:
         from certbot.util import add_deprecated_argument
         add_deprecated_argument(self.parser.add_argument, argument_name, nargs)
 
-    def test_warning_no_arg(self):
+    def test_warning_no_arg(self) -> None:
         self._call("--old-option", 0)
         with mock.patch("warnings.warn") as mock_warn:
             self.parser.parse_args(["--old-option"])
@@ -357,7 +359,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         assert "is deprecated" in mock_warn.call_args[0][0]
         assert "--old-option" in mock_warn.call_args[0][0]
 
-    def test_warning_with_arg(self):
+    def test_warning_with_arg(self) -> None:
         self._call("--old-option", 1)
         with mock.patch("warnings.warn") as mock_warn:
             self.parser.parse_args(["--old-option", "42"])
@@ -365,7 +367,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         assert "is deprecated" in mock_warn.call_args[0][0]
         assert "--old-option" in mock_warn.call_args[0][0]
 
-    def test_help(self):
+    def test_help(self) -> None:
         self._call("--old-option", 2)
         stdout = io.StringIO()
         with mock.patch("sys.stdout", new=stdout):
@@ -375,7 +377,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
                 pass
         assert "--old-option" not in stdout.getvalue()
 
-    def test_set_constant(self):
+    def test_set_constant(self) -> None:
         """Test when ACTION_TYPES_THAT_DONT_NEED_A_VALUE is a set.
 
         This variable is a set in configargparse versions < 0.12.0.
@@ -383,7 +385,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         """
         self._test_constant_common(set)
 
-    def test_tuple_constant(self):
+    def test_tuple_constant(self) -> None:
         """Test when ACTION_TYPES_THAT_DONT_NEED_A_VALUE is a tuple.
 
         This variable is a tuple in configargparse versions >= 0.12.0.
@@ -391,7 +393,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         """
         self._test_constant_common(tuple)
 
-    def _test_constant_common(self, typ):
+    def _test_constant_common(self, typ: Union[Type[set], Type[tuple]]) -> None:
         with mock.patch("certbot.util.configargparse") as mock_configargparse:
             mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE = typ()
             self._call("--old-option", 1)
@@ -401,97 +403,97 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
 
 class EnforceLeValidity(unittest.TestCase):
     """Test enforce_le_validity."""
-    def _call(self, domain):
+    def _call(self, domain: str) -> str:
         from certbot.util import enforce_le_validity
         return enforce_le_validity(domain)
 
-    def test_sanity(self):
+    def test_sanity(self) -> None:
         with pytest.raises(errors.ConfigurationError):
             self._call(u"..")
 
-    def test_invalid_chars(self):
+    def test_invalid_chars(self) -> None:
         with pytest.raises(errors.ConfigurationError):
             self._call(u"hello_world.example.com")
 
-    def test_leading_hyphen(self):
+    def test_leading_hyphen(self) -> None:
         with pytest.raises(errors.ConfigurationError):
             self._call(u"-a.example.com")
 
-    def test_trailing_hyphen(self):
+    def test_trailing_hyphen(self) -> None:
         with pytest.raises(errors.ConfigurationError):
             self._call(u"a-.example.com")
 
-    def test_one_label(self):
+    def test_one_label(self) -> None:
         with pytest.raises(errors.ConfigurationError):
             self._call(u"com")
 
-    def test_valid_domain(self):
+    def test_valid_domain(self) -> None:
         assert self._call(u"example.com") == u"example.com"
 
-    def test_input_with_scheme(self):
+    def test_input_with_scheme(self) -> None:
         with pytest.raises(errors.ConfigurationError):
             self._call(u"http://example.com")
         with pytest.raises(errors.ConfigurationError):
             self._call(u"https://example.com")
 
-    def test_valid_input_with_scheme_name(self):
+    def test_valid_input_with_scheme_name(self) -> None:
         assert self._call(u"http.example.com") == u"http.example.com"
 
 
 class EnforceDomainSanityTest(unittest.TestCase):
     """Test enforce_domain_sanity."""
 
-    def _call(self, domain):
+    def _call(self, domain: Union[bytes, str]) -> str:
         from certbot.util import enforce_domain_sanity
         return enforce_domain_sanity(domain)
 
-    def test_nonascii_str(self):
+    def test_nonascii_str(self) -> None:
         with pytest.raises(errors.ConfigurationError):
             self._call(u"eichh\u00f6rnchen.example.com".encode("utf-8"))
 
-    def test_nonascii_unicode(self):
+    def test_nonascii_unicode(self) -> None:
         with pytest.raises(errors.ConfigurationError):
             self._call(u"eichh\u00f6rnchen.example.com")
 
-    def test_too_long(self):
+    def test_too_long(self) -> None:
         long_domain = u"a"*256
         with pytest.raises(errors.ConfigurationError):
             self._call(long_domain)
 
-    def test_not_too_long(self):
+    def test_not_too_long(self) -> None:
         not_too_long_domain = u"{0}.{1}.{2}.{3}".format("a"*63, "b"*63, "c"*63, "d"*63)
         self._call(not_too_long_domain)
 
-    def test_empty_label(self):
+    def test_empty_label(self) -> None:
         empty_label_domain = u"fizz..example.com"
         with pytest.raises(errors.ConfigurationError):
             self._call(empty_label_domain)
 
-    def test_empty_trailing_label(self):
+    def test_empty_trailing_label(self) -> None:
         empty_trailing_label_domain = u"example.com.."
         with pytest.raises(errors.ConfigurationError):
             self._call(empty_trailing_label_domain)
 
-    def test_long_label_1(self):
+    def test_long_label_1(self) -> None:
         long_label_domain = u"a"*64
         with pytest.raises(errors.ConfigurationError):
             self._call(long_label_domain)
 
-    def test_long_label_2(self):
+    def test_long_label_2(self) -> None:
         long_label_domain = u"{0}.{1}.com".format(u"a"*64, u"b"*63)
         with pytest.raises(errors.ConfigurationError):
             self._call(long_label_domain)
 
-    def test_not_long_label(self):
+    def test_not_long_label(self) -> None:
         not_too_long_label_domain = u"{0}.{1}.com".format(u"a"*63, u"b"*63)
         self._call(not_too_long_label_domain)
 
-    def test_empty_domain(self):
+    def test_empty_domain(self) -> None:
         empty_domain = u""
         with pytest.raises(errors.ConfigurationError):
             self._call(empty_domain)
 
-    def test_punycode_ok(self):
+    def test_punycode_ok(self) -> None:
         # Punycode is now legal, so no longer an error; instead check
         # that it's _not_ an error (at the initial sanity check stage)
         self._call('this.is.xn--ls8h.tld')
@@ -500,19 +502,19 @@ class EnforceDomainSanityTest(unittest.TestCase):
 class IsWildcardDomainTest(unittest.TestCase):
     """Tests for is_wildcard_domain."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.wildcard = u"*.example.org"
         self.no_wildcard = u"example.org"
 
-    def _call(self, domain):
+    def _call(self, domain: Union[bytes, str]) -> bool:
         from certbot.util import is_wildcard_domain
         return is_wildcard_domain(domain)
 
-    def test_no_wildcard(self):
+    def test_no_wildcard(self) -> None:
         assert not self._call(self.no_wildcard)
         assert not self._call(self.no_wildcard.encode())
 
-    def test_wildcard(self):
+    def test_wildcard(self) -> None:
         assert self._call(self.wildcard)
         assert self._call(self.wildcard.encode())
 
@@ -558,7 +560,7 @@ class OsInfoTest(unittest.TestCase):
             m_distro.version.return_value = "else"
             assert cbutil.get_os_info() == ("something", "else")
 
-    def test_non_systemd_os_info(self):
+    def test_non_systemd_os_info(self) -> None:
         import certbot.util as cbutil
         with mock.patch('certbot.util._USE_DISTRO', False):
             with mock.patch('platform.system_alias',
@@ -602,25 +604,25 @@ class OsInfoTest(unittest.TestCase):
 
 class AtexitRegisterTest(unittest.TestCase):
     """Tests for certbot.util.atexit_register."""
-    def setUp(self):
+    def setUp(self) -> None:
         self.func = mock.MagicMock()
         self.args = ('hi',)
         self.kwargs = {'answer': 42}
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot.util import atexit_register
         return atexit_register(*args, **kwargs)
 
-    def test_called(self):
+    def test_called(self) -> None:
         self._test_common(os.getpid())
         self.func.assert_called_with(*self.args, **self.kwargs)
 
-    def test_not_called(self):
+    def test_not_called(self) -> None:
         self._test_common(initial_pid=-1)
         assert self.func.called is False
 
-    def _test_common(self, initial_pid):
+    def _test_common(self, initial_pid: int) -> None:
         with mock.patch('certbot.util._INITIAL_PID', initial_pid):
             with mock.patch('certbot.util.atexit') as mock_atexit:
                 self._call(self.func, *self.args, **self.kwargs)
@@ -642,11 +644,11 @@ class ParseLooseVersionTest(unittest.TestCase):
     """
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> List[Union[int, str]]:
         from certbot.util import parse_loose_version
         return parse_loose_version(*args, **kwargs)
 
-    def test_less_than(self):
+    def test_less_than(self) -> None:
         comparisons = (('1.5.1', '1.5.2b2'),
             ('3.4j', '1996.07.12'),
             ('2g6', '11g'),
@@ -655,10 +657,10 @@ class ParseLooseVersionTest(unittest.TestCase):
         for v1, v2 in comparisons:
             assert self._call(v1) < self._call(v2)
 
-    def test_equal(self):
+    def test_equal(self) -> None:
         assert self._call('8.02') == self._call('8.02')
 
-    def test_greater_than(self):
+    def test_greater_than(self) -> None:
         comparisons = (('161', '3.10a'),
             ('3.2.pl0', '3.1.1.6'))
         for v1, v2 in comparisons:

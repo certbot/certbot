@@ -16,6 +16,10 @@ from certbot.compat import os
 from certbot.display import ops
 from certbot.display import util as display_util
 import certbot.tests.util as test_util
+from certbot._internal.account import Account
+from certbot.tests.util import FreezableMock
+from typing import Any, List, Optional, Union
+from unittest.mock import MagicMock
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -24,12 +28,12 @@ class GetEmailTest(unittest.TestCase):
     """Tests for certbot.display.ops.get_email."""
 
     @classmethod
-    def _call(cls, **kwargs):
+    def _call(cls, **kwargs) -> str:
         from certbot.display.ops import get_email
         return get_email(**kwargs)
 
     @test_util.patch_display_util()
-    def test_cancel_none(self, mock_get_utility):
+    def test_cancel_none(self, mock_get_utility: FreezableMock) -> None:
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.CANCEL, "foo@bar.baz")
         with pytest.raises(errors.Error):
@@ -38,7 +42,7 @@ class GetEmailTest(unittest.TestCase):
             self._call(optional=False)
 
     @test_util.patch_display_util()
-    def test_ok_safe(self, mock_get_utility):
+    def test_ok_safe(self, mock_get_utility: FreezableMock) -> None:
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
@@ -46,7 +50,7 @@ class GetEmailTest(unittest.TestCase):
             assert self._call() == "foo@bar.baz"
 
     @test_util.patch_display_util()
-    def test_ok_not_safe(self, mock_get_utility):
+    def test_ok_not_safe(self, mock_get_utility: FreezableMock) -> None:
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
@@ -54,7 +58,7 @@ class GetEmailTest(unittest.TestCase):
             assert self._call() == "foo@bar.baz"
 
     @test_util.patch_display_util()
-    def test_invalid_flag(self, mock_get_utility):
+    def test_invalid_flag(self, mock_get_utility: FreezableMock) -> None:
         invalid_txt = "There seem to be problems"
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
@@ -66,7 +70,7 @@ class GetEmailTest(unittest.TestCase):
             assert invalid_txt in mock_input.call_args[0][0]
 
     @test_util.patch_display_util()
-    def test_optional_flag(self, mock_get_utility):
+    def test_optional_flag(self, mock_get_utility: FreezableMock) -> None:
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
@@ -76,7 +80,7 @@ class GetEmailTest(unittest.TestCase):
                 assert "--register-unsafely-without-email" not in call[0][0]
 
     @test_util.patch_display_util()
-    def test_optional_invalid_unsafe(self, mock_get_utility):
+    def test_optional_invalid_unsafe(self, mock_get_utility: FreezableMock) -> None:
         invalid_txt = "There seem to be problems"
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
@@ -88,7 +92,7 @@ class GetEmailTest(unittest.TestCase):
 
 class ChooseAccountTest(test_util.TempDirTestCase):
     """Tests for certbot.display.ops.choose_account."""
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
@@ -110,39 +114,39 @@ class ChooseAccountTest(test_util.TempDirTestCase):
                 email="email2@g.com", phone="phone")), self.key)
 
     @classmethod
-    def _call(cls, accounts):
+    def _call(cls, accounts: List[Account]) -> Optional[Account]:
         return ops.choose_account(accounts)
 
     @test_util.patch_display_util()
-    def test_one(self, mock_util):
+    def test_one(self, mock_util: FreezableMock) -> None:
         mock_util().menu.return_value = (display_util.OK, 0)
         assert self._call([self.acc1]) == self.acc1
 
     @test_util.patch_display_util()
-    def test_two(self, mock_util):
+    def test_two(self, mock_util: FreezableMock) -> None:
         mock_util().menu.return_value = (display_util.OK, 1)
         assert self._call([self.acc1, self.acc2]) == self.acc2
 
     @test_util.patch_display_util()
-    def test_cancel(self, mock_util):
+    def test_cancel(self, mock_util: FreezableMock) -> None:
         mock_util().menu.return_value = (display_util.CANCEL, 1)
         assert self._call([self.acc1, self.acc2]) is None
 
 
 class GenHttpsNamesTest(unittest.TestCase):
     """Test _gen_https_names."""
-    def setUp(self):
+    def setUp(self) -> None:
         display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
 
     @classmethod
-    def _call(cls, domains):
+    def _call(cls, domains: List[Union[Any, str]]) -> str:
         from certbot.display.ops import _gen_https_names
         return _gen_https_names(domains)
 
-    def test_zero(self):
+    def test_zero(self) -> None:
         assert self._call([]) == ""
 
-    def test_one(self):
+    def test_one(self) -> None:
         doms = [
             "example.com",
             "asllkjsadfljasdf.c",
@@ -150,7 +154,7 @@ class GenHttpsNamesTest(unittest.TestCase):
         for dom in doms:
             assert self._call([dom]) == "https://%s" % dom
 
-    def test_two(self):
+    def test_two(self) -> None:
         domains_list = [
             ["foo.bar.org", "bar.org"],
             ["paypal.google.facebook.live.com", "*.zombo.example.com"],
@@ -159,14 +163,14 @@ class GenHttpsNamesTest(unittest.TestCase):
             assert self._call(doms) == \
                 "https://{dom[0]} and https://{dom[1]}".format(dom=doms)
 
-    def test_three(self):
+    def test_three(self) -> None:
         doms = ["a.org", "b.org", "c.org"]
         # We use an oxford comma
         assert self._call(doms) == \
             "https://{dom[0]}, https://{dom[1]}, and https://{dom[2]}".format(
                 dom=doms)
 
-    def test_four(self):
+    def test_four(self) -> None:
         doms = ["a.org", "b.org", "c.org", "d.org"]
         exp = ("https://{dom[0]}, https://{dom[1]}, https://{dom[2]}, "
                "and https://{dom[3]}".format(dom=doms))
@@ -176,27 +180,27 @@ class GenHttpsNamesTest(unittest.TestCase):
 
 class ChooseNamesTest(unittest.TestCase):
     """Test choose names."""
-    def setUp(self):
+    def setUp(self) -> None:
         display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
         self.mock_install = mock.MagicMock()
 
     @classmethod
-    def _call(cls, installer, question=None):
+    def _call(cls, installer: Optional[MagicMock], question: Optional[str]=None) -> Union[List[str], MagicMock]:
         from certbot.display.ops import choose_names
         return choose_names(installer, question)
 
     @mock.patch("certbot.display.ops._choose_names_manually")
-    def test_no_installer(self, mock_manual):
+    def test_no_installer(self, mock_manual: MagicMock) -> None:
         self._call(None)
         assert mock_manual.call_count == 1
 
     @test_util.patch_display_util()
-    def test_no_installer_cancel(self, mock_util):
+    def test_no_installer_cancel(self, mock_util: FreezableMock) -> None:
         mock_util().input.return_value = (display_util.CANCEL, [])
         assert self._call(None) == []
 
     @test_util.patch_display_util()
-    def test_no_names_choose(self, mock_util):
+    def test_no_names_choose(self, mock_util: FreezableMock) -> None:
         self.mock_install().get_all_names.return_value = set()
         domain = "example.com"
         mock_util().input.return_value = (display_util.OK, domain)
@@ -205,7 +209,7 @@ class ChooseNamesTest(unittest.TestCase):
         assert mock_util().input.call_count == 1
         assert actual_doms == [domain]
 
-    def test_sort_names_trivial(self):
+    def test_sort_names_trivial(self) -> None:
         from certbot.display.ops import _sort_names
 
         #sort an empty list
@@ -225,7 +229,7 @@ class ChooseNamesTest(unittest.TestCase):
 
         assert _sort_names(unsorted_long) == sorted_long
 
-    def test_sort_names_many(self):
+    def test_sort_names_many(self) -> None:
         from certbot.display.ops import _sort_names
 
         unsorted_domains = [".cx.com", ".bx.com", ".ax.com", ".dx.com"]
@@ -245,7 +249,7 @@ class ChooseNamesTest(unittest.TestCase):
 
 
     @test_util.patch_display_util()
-    def test_filter_names_valid_return(self, mock_util):
+    def test_filter_names_valid_return(self, mock_util: FreezableMock) -> None:
         self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
 
@@ -254,7 +258,7 @@ class ChooseNamesTest(unittest.TestCase):
         assert mock_util().checklist.call_count == 1
 
     @test_util.patch_display_util()
-    def test_filter_namees_override_question(self, mock_util):
+    def test_filter_namees_override_question(self, mock_util: FreezableMock) -> None:
         self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
         names = self._call(self.mock_install, "Custom")
@@ -263,21 +267,21 @@ class ChooseNamesTest(unittest.TestCase):
         assert mock_util().checklist.call_args[0][0] == "Custom"
 
     @test_util.patch_display_util()
-    def test_filter_names_nothing_selected(self, mock_util):
+    def test_filter_names_nothing_selected(self, mock_util: FreezableMock) -> None:
         self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, [])
 
         assert self._call(self.mock_install) == []
 
     @test_util.patch_display_util()
-    def test_filter_names_cancel(self, mock_util):
+    def test_filter_names_cancel(self, mock_util: FreezableMock) -> None:
         self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (
             display_util.CANCEL, ["example.com"])
 
         assert self._call(self.mock_install) == []
 
-    def test_get_valid_domains(self):
+    def test_get_valid_domains(self) -> None:
         from certbot.display.ops import get_valid_domains
         all_valid = ["example.com", "second.example.com",
                      "also.example.com", "under_score.example.com",
@@ -289,7 +293,7 @@ class ChooseNamesTest(unittest.TestCase):
         assert len(get_valid_domains(two_valid)) == 2
 
     @test_util.patch_display_util()
-    def test_choose_manually(self, mock_util):
+    def test_choose_manually(self, mock_util: FreezableMock) -> None:
         from certbot.display.ops import _choose_names_manually
         utility_mock = mock_util()
         # No retry
@@ -316,7 +320,7 @@ class ChooseNamesTest(unittest.TestCase):
                           "justtld", "valid.example.com"]
 
     @test_util.patch_display_util()
-    def test_choose_manually_retry(self, mock_util):
+    def test_choose_manually_retry(self, mock_util: FreezableMock) -> None:
         from certbot.display.ops import _choose_names_manually
         utility_mock = mock_util()
         # Three iterations
@@ -330,13 +334,13 @@ class ChooseNamesTest(unittest.TestCase):
 class SuccessInstallationTest(unittest.TestCase):
     """Test the success installation message."""
     @classmethod
-    def _call(cls, names):
+    def _call(cls, names: List[str]) -> None:
         from certbot.display.ops import success_installation
         success_installation(names)
 
     @test_util.patch_display_util()
     @mock.patch("certbot.display.util.notify")
-    def test_success_installation(self, mock_notify, mock_display):
+    def test_success_installation(self, mock_notify: MagicMock, mock_display: FreezableMock) -> None:
         mock_display().notification.return_value = None
         names = ["example.com", "abc.com"]
 
@@ -352,13 +356,13 @@ class SuccessInstallationTest(unittest.TestCase):
 class SuccessRenewalTest(unittest.TestCase):
     """Test the success renewal message."""
     @classmethod
-    def _call(cls, names):
+    def _call(cls, names: List[str]) -> None:
         from certbot.display.ops import success_renewal
         success_renewal(names)
 
     @test_util.patch_display_util()
     @mock.patch("certbot.display.util.notify")
-    def test_success_renewal(self, mock_notify, mock_display):
+    def test_success_renewal(self, mock_notify: MagicMock, mock_display: FreezableMock) -> None:
         mock_display().notification.return_value = None
         names = ["example.com", "abc.com"]
 
@@ -370,13 +374,13 @@ class SuccessRenewalTest(unittest.TestCase):
 class SuccessRevocationTest(unittest.TestCase):
     """Test the success revocation message."""
     @classmethod
-    def _call(cls, path):
+    def _call(cls, path: str) -> None:
         from certbot.display.ops import success_revocation
         success_revocation(path)
 
     @test_util.patch_display_util()
     @mock.patch("certbot.display.util.notify")
-    def test_success_revocation(self, mock_notify, unused_mock_display):
+    def test_success_revocation(self, mock_notify: MagicMock, unused_mock_display: FreezableMock) -> None:
         path = "/path/to/cert.pem"
         self._call(path)
         mock_notify.assert_called_once_with(
@@ -399,7 +403,7 @@ class ValidatorTests(unittest.TestCase):
             raise errors.PluginError(ValidatorTests.__ERROR)
 
     @test_util.patch_display_util()
-    def test_input_blank_with_validator(self, mock_util):
+    def test_input_blank_with_validator(self, mock_util: FreezableMock) -> None:
         mock_util().input.side_effect = [(display_util.OK, ""),
                                          (display_util.OK, ""),
                                          (display_util.OK, ""),
@@ -410,28 +414,28 @@ class ValidatorTests(unittest.TestCase):
         assert returned == (display_util.OK, self.valid_input)
 
     @test_util.patch_display_util()
-    def test_input_validation_with_default(self, mock_util):
+    def test_input_validation_with_default(self, mock_util: FreezableMock) -> None:
         mock_util().input.side_effect = [(display_util.OK, self.valid_input)]
 
         returned = ops.validated_input(self.__validator, "msg", default="other")
         assert returned == (display_util.OK, self.valid_input)
 
     @test_util.patch_display_util()
-    def test_input_validation_with_bad_default(self, mock_util):
+    def test_input_validation_with_bad_default(self, mock_util: FreezableMock) -> None:
         mock_util().input.side_effect = [(display_util.OK, self.valid_input)]
 
         with pytest.raises(AssertionError):
             ops.validated_input(self.__validator, "msg", default="")
 
     @test_util.patch_display_util()
-    def test_input_cancel_with_validator(self, mock_util):
+    def test_input_cancel_with_validator(self, mock_util: FreezableMock) -> None:
         mock_util().input.side_effect = [(display_util.CANCEL, "")]
 
         code, unused_raw = ops.validated_input(self.__validator, "message", force_interactive=True)
         assert code == display_util.CANCEL
 
     @test_util.patch_display_util()
-    def test_directory_select_validation(self, mock_util):
+    def test_directory_select_validation(self, mock_util: FreezableMock) -> None:
         mock_util().directory_select.side_effect = [(display_util.OK, ""),
                                                     (display_util.OK, self.valid_directory)]
 
@@ -440,14 +444,14 @@ class ValidatorTests(unittest.TestCase):
         assert returned == (display_util.OK, self.valid_directory)
 
     @test_util.patch_display_util()
-    def test_directory_select_validation_with_default(self, mock_util):
+    def test_directory_select_validation_with_default(self, mock_util: FreezableMock) -> None:
         mock_util().directory_select.side_effect = [(display_util.OK, self.valid_directory)]
 
         returned = ops.validated_directory(self.__validator, "msg", default="other")
         assert returned == (display_util.OK, self.valid_directory)
 
     @test_util.patch_display_util()
-    def test_directory_select_validation_with_bad_default(self, mock_util):
+    def test_directory_select_validation_with_bad_default(self, mock_util: FreezableMock) -> None:
         mock_util().directory_select.side_effect = [(display_util.OK, self.valid_directory)]
 
         with pytest.raises(AssertionError):
@@ -457,12 +461,12 @@ class ValidatorTests(unittest.TestCase):
 class ChooseValuesTest(unittest.TestCase):
     """Test choose_values."""
     @classmethod
-    def _call(cls, values, question):
+    def _call(cls, values: List[str], question: Optional[str]) -> List[Union[Any, str]]:
         from certbot.display.ops import choose_values
         return choose_values(values, question)
 
     @test_util.patch_display_util()
-    def test_choose_names_success(self, mock_util):
+    def test_choose_names_success(self, mock_util: FreezableMock) -> None:
         items = ["first", "second", "third"]
         mock_util().checklist.return_value = (display_util.OK, [items[2]])
         result = self._call(items, None)
@@ -471,7 +475,7 @@ class ChooseValuesTest(unittest.TestCase):
         assert mock_util().checklist.call_args[0][0] == ""
 
     @test_util.patch_display_util()
-    def test_choose_names_success_question(self, mock_util):
+    def test_choose_names_success_question(self, mock_util: FreezableMock) -> None:
         items = ["first", "second", "third"]
         question = "Which one?"
         mock_util().checklist.return_value = (display_util.OK, [items[1]])
@@ -481,7 +485,7 @@ class ChooseValuesTest(unittest.TestCase):
         assert mock_util().checklist.call_args[0][0] == question
 
     @test_util.patch_display_util()
-    def test_choose_names_user_cancel(self, mock_util):
+    def test_choose_names_user_cancel(self, mock_util: FreezableMock) -> None:
         items = ["first", "second", "third"]
         question = "Want to cancel?"
         mock_util().checklist.return_value = (display_util.CANCEL, [])
@@ -496,21 +500,21 @@ class ChooseValuesTest(unittest.TestCase):
 class ReportExecutedCommand(unittest.TestCase):
     """Test report_executed_command"""
     @classmethod
-    def _call(cls, cmd_name: str, rc: int, out: str, err: str):
+    def _call(cls, cmd_name: str, rc: int, out: str, err: str) -> None:
         from certbot.display.ops import report_executed_command
         report_executed_command(cmd_name, rc, out, err)
 
-    def test_mixed_success(self, mock_notify, mock_logger):
+    def test_mixed_success(self, mock_notify: MagicMock, mock_logger: MagicMock) -> None:
         self._call("some-hook", 0, "Did a thing", "Some warning")
         assert mock_logger.warning.call_count == 1
         assert mock_notify.call_count == 1
 
-    def test_mixed_error(self, mock_notify, mock_logger):
+    def test_mixed_error(self, mock_notify: MagicMock, mock_logger: MagicMock) -> None:
         self._call("some-hook", -127, "Did a thing", "Some warning")
         assert mock_logger.warning.call_count == 2
         assert mock_notify.call_count == 1
 
-    def test_empty_success(self, mock_notify, mock_logger):
+    def test_empty_success(self, mock_notify: MagicMock, mock_logger: MagicMock) -> None:
         self._call("some-hook", 0, "\n", " ")
         assert mock_logger.warning.call_count == 0
         assert mock_notify.call_count == 0

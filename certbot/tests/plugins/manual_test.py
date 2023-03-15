@@ -17,7 +17,7 @@ from certbot.tests import util as test_util
 class AuthenticatorTest(test_util.TempDirTestCase):
     """Tests for certbot._internal.plugins.manual.Authenticator."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         get_display_patch = test_util.patch_display_util()
         self.mock_get_display = get_display_patch.start()
@@ -45,25 +45,25 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         from certbot._internal.plugins.manual import Authenticator
         self.auth = Authenticator(self.config, name='manual')
 
-    def test_prepare_no_hook_noninteractive(self):
+    def test_prepare_no_hook_noninteractive(self) -> None:
         self.config.noninteractive_mode = True
         with pytest.raises(errors.PluginError):
             self.auth.prepare()
 
-    def test_prepare_bad_hook(self):
+    def test_prepare_bad_hook(self) -> None:
         self.config.manual_auth_hook = os.path.abspath(os.sep)  # is / on UNIX
         self.config.validate_hooks = True
         with pytest.raises(errors.HookCommandNotFound):
             self.auth.prepare()
 
-    def test_more_info(self):
+    def test_more_info(self) -> None:
         assert isinstance(self.auth.more_info(), str)
 
-    def test_get_chall_pref(self):
+    def test_get_chall_pref(self) -> None:
         assert self.auth.get_chall_pref('example.org') == \
                          [challenges.HTTP01, challenges.DNS01]
 
-    def test_script_perform(self):
+    def test_script_perform(self) -> None:
         self.config.manual_auth_hook = (
             '{0} -c "'
             'from certbot.compat import os;'
@@ -97,7 +97,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             needle = textwrap.indent(self.auth.env[self.achalls[i]]['CERTBOT_AUTH_OUTPUT'], ' ')
             assert needle in args[0]
 
-    def test_manual_perform(self):
+    def test_manual_perform(self) -> None:
         assert self.auth.perform(self.achalls) == \
             [achall.response(achall.account_key) for achall in self.achalls]
 
@@ -107,7 +107,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             assert achall.validation(achall.account_key) in args[0]
             assert kwargs['wrap'] is False
 
-    def test_cleanup(self):
+    def test_cleanup(self) -> None:
         self.config.manual_auth_hook = ('{0} -c "import sys; sys.stdout.write(\'foo\')"'
                                         .format(sys.executable))
         self.config.manual_cleanup_hook = '# cleanup'
@@ -126,7 +126,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             else:
                 assert 'CERTBOT_TOKEN' not in os.environ
 
-    def test_auth_hint_hook(self):
+    def test_auth_hint_hook(self) -> None:
         self.config.manual_auth_hook = '/bin/true'
         assert self.auth.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A]) == \
             'The Certificate Authority failed to verify the DNS TXT records and challenge ' \
@@ -138,7 +138,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             '--manual-auth-hook. Ensure that this hook is functioning correctly. Refer to ' \
             '"certbot --help manual" and the Certbot User Guide.'
 
-    def test_auth_hint_no_hook(self):
+    def test_auth_hint_no_hook(self) -> None:
         assert self.auth.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A]) == \
             'The Certificate Authority failed to verify the manually created DNS TXT records ' \
             'and challenge files. Ensure that you created these in the correct location, or ' \

@@ -11,6 +11,7 @@ import pytest
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
+from unittest.mock import NonCallableMagicMock
 
 try:
     import readline  # pylint: disable=import-error
@@ -22,7 +23,7 @@ except ImportError:
 class CompleterTest(test_util.TempDirTestCase):
     """Test certbot._internal.display.completer.Completer."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         # directories must end with os.sep for completer to
@@ -41,7 +42,7 @@ class CompleterTest(test_util.TempDirTestCase):
                 with open(path, 'w'):
                     pass
 
-    def test_complete(self):
+    def test_complete(self) -> None:
         from certbot._internal.display import completer
         my_completer = completer.Completer()
         num_paths = len(self.paths)
@@ -65,7 +66,7 @@ class CompleterTest(test_util.TempDirTestCase):
 
         sys.modules['readline'] = original_readline
 
-    def test_context_manager_with_unmocked_readline(self):
+    def test_context_manager_with_unmocked_readline(self) -> None:
         from certbot._internal.display import completer
         reload_module(completer)
 
@@ -79,16 +80,16 @@ class CompleterTest(test_util.TempDirTestCase):
         assert readline.get_completer_delims() == original_delims
 
     @mock.patch('certbot._internal.display.completer.readline', autospec=True)
-    def test_context_manager_libedit(self, mock_readline):
+    def test_context_manager_libedit(self, mock_readline: NonCallableMagicMock) -> None:
         mock_readline.__doc__ = 'libedit'
         self._test_context_manager_with_mock_readline(mock_readline)
 
     @mock.patch('certbot._internal.display.completer.readline', autospec=True)
-    def test_context_manager_readline(self, mock_readline):
+    def test_context_manager_readline(self, mock_readline: NonCallableMagicMock) -> None:
         mock_readline.__doc__ = 'GNU readline'
         self._test_context_manager_with_mock_readline(mock_readline)
 
-    def _test_context_manager_with_mock_readline(self, mock_readline):
+    def _test_context_manager_with_mock_readline(self, mock_readline: NonCallableMagicMock) -> None:
         from certbot._internal.display import completer
 
         mock_readline.parse_and_bind.side_effect = enable_tab_completion
@@ -99,7 +100,7 @@ class CompleterTest(test_util.TempDirTestCase):
         assert mock_readline.parse_and_bind.called is True
 
 
-def enable_tab_completion(unused_command):
+def enable_tab_completion(unused_command: str) -> None:
     """Enables readline tab completion using the system specific syntax."""
     libedit = readline.__doc__ is not None and 'libedit' in readline.__doc__
     command = 'bind ^I rl_complete' if libedit else 'tab: complete'

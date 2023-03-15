@@ -15,6 +15,7 @@ from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
 import certbot.tests.util as test_util
+from unittest.mock import MagicMock
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -22,7 +23,7 @@ KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 class AccountTest(unittest.TestCase):
     """Tests for certbot._internal.account.Account."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         from certbot._internal.account import Account
         self.regr = mock.MagicMock()
         self.meta = Account.Meta(
@@ -38,25 +39,25 @@ class AccountTest(unittest.TestCase):
                 mock_dt.datetime.now.return_value = self.meta.creation_dt
                 self.acc_no_meta = Account(self.regr, KEY)
 
-    def test_init(self):
+    def test_init(self) -> None:
         assert self.regr == self.acc.regr
         assert KEY == self.acc.key
         assert self.meta == self.acc_no_meta.meta
 
-    def test_id(self):
+    def test_id(self) -> None:
         assert self.acc.id == "7adac10320f585ddf118429c0c4af2cd"
 
-    def test_slug(self):
+    def test_slug(self) -> None:
         assert self.acc.slug == "test.certbot.org@2015-07-04T14:04:10Z (7ada)"
 
-    def test_repr(self):
+    def test_repr(self) -> None:
         assert repr(self.acc).startswith(
           "<Account(i_am_a_regr, 7adac10320f585ddf118429c0c4af2cd, Meta(")
 
 
 class MetaTest(unittest.TestCase):
     """Tests for certbot._internal.account.Meta."""
-    def test_deserialize_partial(self):
+    def test_deserialize_partial(self) -> None:
         from certbot._internal.account import Account
         meta = Account.Meta.json_loads(
             '{'
@@ -67,7 +68,7 @@ class MetaTest(unittest.TestCase):
         assert meta.creation_host is not None
         assert meta.register_to_eff is None
 
-    def test_deserialize_full(self):
+    def test_deserialize_full(self) -> None:
         from certbot._internal.account import Account
         meta = Account.Meta.json_loads(
             '{'
@@ -83,11 +84,11 @@ class MetaTest(unittest.TestCase):
 class AccountMemoryStorageTest(unittest.TestCase):
     """Tests for certbot._internal.account.AccountMemoryStorage."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         from certbot._internal.account import AccountMemoryStorage
         self.storage = AccountMemoryStorage()
 
-    def test_it(self):
+    def test_it(self) -> None:
         account = mock.Mock(id="x")
         assert [] == self.storage.find_all()
         with pytest.raises(errors.AccountNotFound):
@@ -102,7 +103,7 @@ class AccountMemoryStorageTest(unittest.TestCase):
 class AccountFileStorageTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.account.AccountFileStorage."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         from certbot._internal.account import AccountFileStorage
@@ -120,11 +121,11 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
             meta=meta)
         self.mock_client = mock.MagicMock()
 
-    def test_init_creates_dir(self):
+    def test_init_creates_dir(self) -> None:
         assert os.path.isdir(
             misc.underscores_for_unsupported_characters_in_path(self.config.accounts_dir))
 
-    def test_save_and_restore(self):
+    def test_save_and_restore(self) -> None:
         self.storage.save(self.acc, self.mock_client)
         account_path = os.path.join(self.config.accounts_dir, self.acc.id)
         assert os.path.exists(account_path)
@@ -137,7 +138,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         loaded = self.storage.load(self.acc.id)
         assert self.acc == loaded
 
-    def test_update_regr(self):
+    def test_update_regr(self) -> None:
         self.storage.update_regr(self.acc)
         account_path = os.path.join(self.config.accounts_dir, self.acc.id)
         assert os.path.exists(account_path)
@@ -146,7 +147,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         assert not os.path.exists(os.path.join(account_path, "meta.json"))
         assert not os.path.exists(os.path.join(account_path, "private_key.json"))
 
-    def test_update_meta(self):
+    def test_update_meta(self) -> None:
         self.storage.update_meta(self.acc)
         account_path = os.path.join(self.config.accounts_dir, self.acc.id)
         assert os.path.exists(account_path)
@@ -155,18 +156,18 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         assert not os.path.exists(os.path.join(account_path, "regr.json"))
         assert not os.path.exists(os.path.join(account_path, "private_key.json"))
 
-    def test_find_all(self):
+    def test_find_all(self) -> None:
         self.storage.save(self.acc, self.mock_client)
         assert [self.acc] == self.storage.find_all()
 
-    def test_find_all_none_empty_list(self):
+    def test_find_all_none_empty_list(self) -> None:
         assert [] == self.storage.find_all()
 
-    def test_find_all_accounts_dir_absent(self):
+    def test_find_all_accounts_dir_absent(self) -> None:
         os.rmdir(self.config.accounts_dir)
         assert [] == self.storage.find_all()
 
-    def test_find_all_load_skips(self):
+    def test_find_all_load_skips(self) -> None:
         # pylint: disable=protected-access
         self.storage._load_for_server_path = mock.MagicMock(
             side_effect=["x", errors.AccountStorageError, "z"])
@@ -174,22 +175,22 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
             mock_listdir.return_value = ["x", "y", "z"]
             assert ["x", "z"] == self.storage.find_all()
 
-    def test_load_non_existent_raises_error(self):
+    def test_load_non_existent_raises_error(self) -> None:
         with pytest.raises(errors.AccountNotFound):
             self.storage.load("missing")
 
-    def _set_server(self, server):
+    def _set_server(self, server: str) -> None:
         self.config.server = server
         from certbot._internal.account import AccountFileStorage
         self.storage = AccountFileStorage(self.config)
 
-    def test_find_all_neither_exists(self):
+    def test_find_all_neither_exists(self) -> None:
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         assert [] == self.storage.find_all()
         assert [] == self.storage.find_all()
         assert not os.path.islink(self.config.accounts_dir)
 
-    def test_find_all_find_before_save(self):
+    def test_find_all_find_before_save(self) -> None:
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         assert [] == self.storage.find_all()
         self.storage.save(self.acc, self.mock_client)
@@ -200,7 +201,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         prev_server_path = 'https://acme-staging.api.letsencrypt.org/directory'
         assert not os.path.isdir(self.config.accounts_dir_for_server_path(prev_server_path))
 
-    def test_find_all_save_before_find(self):
+    def test_find_all_save_before_find(self) -> None:
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         assert [self.acc] == self.storage.find_all()
@@ -210,7 +211,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         prev_server_path = 'https://acme-staging.api.letsencrypt.org/directory'
         assert not os.path.isdir(self.config.accounts_dir_for_server_path(prev_server_path))
 
-    def test_find_all_server_downgrade(self):
+    def test_find_all_server_downgrade(self) -> None:
         # don't use v2 accounts with a v1 url
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         assert [] == self.storage.find_all()
@@ -219,20 +220,20 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         assert [] == self.storage.find_all()
 
-    def test_upgrade_version_staging(self):
+    def test_upgrade_version_staging(self) -> None:
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         assert [self.acc] == self.storage.find_all()
 
-    def test_upgrade_version_production(self):
+    def test_upgrade_version_production(self) -> None:
         self._set_server('https://acme-v01.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         self._set_server('https://acme-v02.api.letsencrypt.org/directory')
         assert [self.acc] == self.storage.find_all()
 
     @mock.patch('certbot.compat.os.rmdir')
-    def test_corrupted_account(self, mock_rmdir):
+    def test_corrupted_account(self, mock_rmdir: MagicMock) -> None:
         # pylint: disable=protected-access
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
@@ -242,7 +243,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         assert [] == self.storage.find_all()
 
-    def test_upgrade_load(self):
+    def test_upgrade_load(self) -> None:
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         prev_account = self.storage.load(self.acc.id)
@@ -250,7 +251,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         account = self.storage.load(self.acc.id)
         assert prev_account == account
 
-    def test_upgrade_load_single_account(self):
+    def test_upgrade_load_single_account(self) -> None:
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         prev_account = self.storage.load(self.acc.id)
@@ -258,7 +259,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         account = self.storage.load(self.acc.id)
         assert prev_account == account
 
-    def test_load_ioerror(self):
+    def test_load_ioerror(self) -> None:
         self.storage.save(self.acc, self.mock_client)
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
@@ -266,24 +267,24 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
             with pytest.raises(errors.AccountStorageError):
                 self.storage.load(self.acc.id)
 
-    def test_save_ioerrors(self):
+    def test_save_ioerrors(self) -> None:
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError  # TODO: [None, None, IOError]
         with mock.patch("builtins.open", mock_open):
             with pytest.raises(errors.AccountStorageError):
                 self.storage.save(self.acc, self.mock_client)
 
-    def test_delete(self):
+    def test_delete(self) -> None:
         self.storage.save(self.acc, self.mock_client)
         self.storage.delete(self.acc.id)
         with pytest.raises(errors.AccountNotFound):
             self.storage.load(self.acc.id)
 
-    def test_delete_no_account(self):
+    def test_delete_no_account(self) -> None:
         with pytest.raises(errors.AccountNotFound):
             self.storage.delete(self.acc.id)
 
-    def _assert_symlinked_account_removed(self):
+    def _assert_symlinked_account_removed(self) -> None:
         # create v1 account
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
@@ -293,7 +294,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
             with pytest.raises(errors.AccountNotFound):
                 self.storage.load(self.acc.id)
 
-    def _test_delete_folders(self, server_url):
+    def _test_delete_folders(self, server_url: str) -> None:
         # create symlinked servers
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
@@ -312,24 +313,24 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         with pytest.raises(errors.AccountNotFound):
             self.storage.load(self.acc.id)
 
-    def test_delete_folders_up(self):
+    def test_delete_folders_up(self) -> None:
         self._test_delete_folders('https://acme-staging.api.letsencrypt.org/directory')
         self._assert_symlinked_account_removed()
 
-    def test_delete_folders_down(self):
+    def test_delete_folders_down(self) -> None:
         self._test_delete_folders('https://acme-staging-v02.api.letsencrypt.org/directory')
         self._assert_symlinked_account_removed()
 
-    def _set_server_and_stop_symlink(self, server_path):
+    def _set_server_and_stop_symlink(self, server_path: str) -> None:
         self._set_server(server_path)
         with open(os.path.join(self.config.accounts_dir, 'foo'), 'w') as f:
             f.write('bar')
 
-    def test_delete_shared_account_up(self):
+    def test_delete_shared_account_up(self) -> None:
         self._set_server_and_stop_symlink('https://acme-staging-v02.api.letsencrypt.org/directory')
         self._test_delete_folders('https://acme-staging.api.letsencrypt.org/directory')
 
-    def test_delete_shared_account_down(self):
+    def test_delete_shared_account_down(self) -> None:
         self._set_server_and_stop_symlink('https://acme-staging-v02.api.letsencrypt.org/directory')
         self._test_delete_folders('https://acme-staging-v02.api.letsencrypt.org/directory')
 

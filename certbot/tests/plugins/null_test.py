@@ -9,11 +9,11 @@ import pytest
 class InstallerTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.null.Installer."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         from certbot._internal.plugins.null import Installer
         self.installer = Installer(config=mock.MagicMock(), name="null")
 
-    def test_it(self):
+    def test_it(self) -> None:
         assert isinstance(self.installer.more_info(), str)
         assert [] == self.installer.get_all_names()
         assert [] == self.installer.supported_enhancements()

@@ -11,29 +11,30 @@ from certbot._internal import constants
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.tests import util as test_util
+from unittest.mock import MagicMock
 
 
 class NamespaceConfigTest(test_util.ConfigTestCase):
     """Tests for certbot.configuration.NamespaceConfig."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.config.foo = 'bar' # pylint: disable=blacklisted-name
         self.config.server = 'https://acme-server.org:443/new'
         self.config.https_port = 1234
         self.config.http01_port = 4321
 
-    def test_init_same_ports(self):
+    def test_init_same_ports(self) -> None:
         self.config.namespace.https_port = 4321
         from certbot.configuration import NamespaceConfig
         with pytest.raises(errors.Error):
             NamespaceConfig(self.config.namespace)
 
-    def test_proxy_getattr(self):
+    def test_proxy_getattr(self) -> None:
         assert self.config.foo == 'bar'
         assert self.config.work_dir == os.path.join(self.tempdir, 'work')
 
-    def test_server_path(self):
+    def test_server_path(self) -> None:
         assert ['acme-server.org:443', 'new'] == \
                          self.config.server_path.split(os.path.sep)
 
@@ -43,7 +44,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
                          self.config.server_path.split(os.path.sep)
 
     @mock.patch('certbot.configuration.constants')
-    def test_dynamic_dirs(self, mock_constants):
+    def test_dynamic_dirs(self, mock_constants: MagicMock) -> None:
         mock_constants.ACCOUNTS_DIR = 'acc'
         mock_constants.BACKUP_DIR = 'backups'
         mock_constants.CSR_DIR = 'csr'
@@ -69,7 +70,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         assert os.path.normpath(self.config.temp_checkpoint_dir) == \
             os.path.normpath(os.path.join(self.config.work_dir, 't'))
 
-    def test_absolute_paths(self):
+    def test_absolute_paths(self) -> None:
         from certbot.configuration import NamespaceConfig
 
         config_base = "foo"
@@ -106,7 +107,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         assert os.path.isabs(config.temp_checkpoint_dir)
 
     @mock.patch('certbot.configuration.constants')
-    def test_renewal_dynamic_dirs(self, mock_constants):
+    def test_renewal_dynamic_dirs(self, mock_constants: MagicMock) -> None:
         mock_constants.ARCHIVE_DIR = 'a'
         mock_constants.LIVE_DIR = 'l'
         mock_constants.RENEWAL_CONFIGS_DIR = 'renewal_configs'
@@ -116,7 +117,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         assert self.config.renewal_configs_dir == os.path.join(
                     self.config.config_dir, 'renewal_configs')
 
-    def test_renewal_absolute_paths(self):
+    def test_renewal_absolute_paths(self) -> None:
         from certbot.configuration import NamespaceConfig
 
         config_base = "foo"
@@ -136,13 +137,13 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         assert os.path.isabs(config.live_dir)
         assert os.path.isabs(config.renewal_configs_dir)
 
-    def test_get_and_set_attr(self):
+    def test_get_and_set_attr(self) -> None:
         self.config.foo = 42
         assert self.config.namespace.foo == 42
         self.config.namespace.bar = 1337
         assert self.config.bar == 1337
 
-    def test_hook_directories(self):
+    def test_hook_directories(self) -> None:
         assert self.config.renewal_hooks_dir == \
                          os.path.join(self.config.config_dir,
                                       constants.RENEWAL_HOOKS_DIR)

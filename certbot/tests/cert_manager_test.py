@@ -13,18 +13,22 @@ import pytest
 
 from certbot import configuration
 from certbot import errors
-from certbot._internal.storage import ALL_FOUR
+from certbot._internal.storage import RenewableCert, ALL_FOUR
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.tests import util as test_util
 import storage_test
+from certbot.configuration import NamespaceConfig
+from certbot.tests.util import FreezableMock
+from typing import Callable, List, Optional
+from unittest.mock import MagicMock
 
 
 class BaseCertManagerTest(test_util.ConfigTestCase):
     """Base class for setting up Cert Manager tests.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.config.quiet = False
@@ -43,7 +47,7 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
         with open(os.path.join(self.config.renewal_configs_dir, "IGNORE.THIS"), "w") as junk:
             junk.write("This file should be ignored!")
 
-    def _set_up_config(self, domain, custom_archive):
+    def _set_up_config(self, domain: str, custom_archive: Optional[str]) ->     configobj.ConfigObj:
         # TODO: maybe provide NamespaceConfig.make_dirs?
         # TODO: main() should create those dirs, c.f. #902
         filesystem.makedirs(os.path.join(self.config.live_dir, domain))
@@ -68,7 +72,7 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
 class UpdateLiveSymlinksTest(BaseCertManagerTest):
     """Tests for certbot._internal.cert_manager.update_live_symlinks
     """
-    def test_update_live_symlinks(self):
+    def test_update_live_symlinks(self) -> None:
         """Test update_live_symlinks"""
         # create files with incorrect symlinks
         from certbot._internal import cert_manager
@@ -107,7 +111,7 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
     """Tests for certbot._internal.cert_manager.delete
     """
 
-    def _call(self):
+    def _call(self) -> None:
         from certbot._internal import cert_manager
         cert_manager.delete(self.config)
 
@@ -115,8 +119,8 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
     @mock.patch('certbot.display.util.notify')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
-    def test_delete_from_config_yes(self, mock_delete_files, mock_lineage_for_certname,
-        mock_notify, mock_util):
+    def test_delete_from_config_yes(self, mock_delete_files: MagicMock, mock_lineage_for_certname: MagicMock,
+        mock_notify: MagicMock, mock_util: FreezableMock) -> None:
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         mock_util().yesno.return_value = True
@@ -130,8 +134,8 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
     @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
-    def test_delete_from_config_no(self, mock_delete_files, mock_lineage_for_certname,
-        mock_util):
+    def test_delete_from_config_no(self, mock_delete_files: MagicMock, mock_lineage_for_certname: MagicMock,
+        mock_util: FreezableMock) -> None:
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         mock_util().yesno.return_value = False
@@ -142,8 +146,8 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
     @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
-    def test_delete_interactive_single_yes(self, mock_delete_files, mock_lineage_for_certname,
-        mock_util):
+    def test_delete_interactive_single_yes(self, mock_delete_files: MagicMock, mock_lineage_for_certname: MagicMock,
+        mock_util: FreezableMock) -> None:
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         mock_util().checklist.return_value = (display_util.OK, ["example.org"])
@@ -154,8 +158,8 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
     @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
-    def test_delete_interactive_single_no(self, mock_delete_files, mock_lineage_for_certname,
-        mock_util):
+    def test_delete_interactive_single_no(self, mock_delete_files: MagicMock, mock_lineage_for_certname: MagicMock,
+        mock_util: FreezableMock) -> None:
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         mock_util().checklist.return_value = (display_util.OK, ["example.org"])
@@ -166,8 +170,8 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
     @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
-    def test_delete_interactive_multiple_yes(self, mock_delete_files, mock_lineage_for_certname,
-        mock_util):
+    def test_delete_interactive_multiple_yes(self, mock_delete_files: MagicMock, mock_lineage_for_certname: MagicMock,
+        mock_util: FreezableMock) -> None:
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         mock_util().checklist.return_value = (display_util.OK, ["example.org", "other.org"])
@@ -180,8 +184,8 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
     @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.storage.delete_files')
-    def test_delete_interactive_multiple_no(self, mock_delete_files, mock_lineage_for_certname,
-        mock_util):
+    def test_delete_interactive_multiple_no(self, mock_delete_files: MagicMock, mock_lineage_for_certname: MagicMock,
+        mock_util: FreezableMock) -> None:
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         mock_util().checklist.return_value = (display_util.OK, ["example.org", "other.org"])
@@ -193,20 +197,20 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
 class CertificatesTest(BaseCertManagerTest):
     """Tests for certbot._internal.cert_manager.certificates
     """
-    def _certificates(self, *args, **kwargs):
+    def _certificates(self, *args, **kwargs) -> None:
         from certbot._internal.cert_manager import certificates
         return certificates(*args, **kwargs)
 
     @mock.patch('certbot._internal.cert_manager.logger')
     @test_util.patch_display_util()
-    def test_certificates_parse_fail(self, mock_utility, mock_logger):
+    def test_certificates_parse_fail(self, mock_utility: FreezableMock, mock_logger: MagicMock) -> None:
         self._certificates(self.config)
         assert mock_logger.warning.called #pylint: disable=no-member
         assert mock_utility.called
 
     @mock.patch('certbot._internal.cert_manager.logger')
     @test_util.patch_display_util()
-    def test_certificates_quiet(self, mock_utility, mock_logger):
+    def test_certificates_quiet(self, mock_utility: FreezableMock, mock_logger: MagicMock) -> None:
         self.config.quiet = True
         self._certificates(self.config)
         assert mock_utility.notification.called is False
@@ -217,8 +221,8 @@ class CertificatesTest(BaseCertManagerTest):
     @test_util.patch_display_util()
     @mock.patch("certbot._internal.storage.RenewableCert")
     @mock.patch('certbot._internal.cert_manager._report_human_readable')
-    def test_certificates_parse_success(self, mock_report, mock_renewable_cert,
-        mock_utility, mock_logger, mock_verifier):
+    def test_certificates_parse_success(self, mock_report: MagicMock, mock_renewable_cert: MagicMock,
+        mock_utility: FreezableMock, mock_logger: MagicMock, mock_verifier: MagicMock) -> None:
         mock_verifier.return_value = None
         mock_report.return_value = ""
         self._certificates(self.config)
@@ -229,7 +233,7 @@ class CertificatesTest(BaseCertManagerTest):
 
     @mock.patch('certbot._internal.cert_manager.logger')
     @test_util.patch_display_util()
-    def test_certificates_no_files(self, mock_utility, mock_logger):
+    def test_certificates_no_files(self, mock_utility: FreezableMock, mock_logger: MagicMock) -> None:
         empty_tempdir = tempfile.mkdtemp()
         empty_config = configuration.NamespaceConfig(mock.MagicMock(
             config_dir=os.path.join(empty_tempdir, "config"),
@@ -246,7 +250,7 @@ class CertificatesTest(BaseCertManagerTest):
 
     @mock.patch('certbot.crypto_util.get_serial_from_cert')
     @mock.patch('certbot._internal.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
-    def test_report_human_readable(self, mock_revoked, mock_serial):
+    def test_report_human_readable(self, mock_revoked: MagicMock, mock_serial: MagicMock) -> None:
         mock_revoked.return_value = None
         mock_serial.return_value = 1234567890
         import datetime
@@ -326,8 +330,8 @@ class SearchLineagesTest(BaseCertManagerTest):
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.RenewableCert')
-    def test_cert_storage_error(self, mock_renewable_cert, mock_renewal_conf_files,
-                                mock_make_or_verify_dir):
+    def test_cert_storage_error(self, mock_renewable_cert: MagicMock, mock_renewal_conf_files: MagicMock,
+                                mock_make_or_verify_dir: MagicMock) -> None:
         mock_renewal_conf_files.return_value = ["badfile"]
         mock_renewable_cert.side_effect = errors.CertStorageError
         from certbot._internal import cert_manager
@@ -343,8 +347,8 @@ class LineageForCertnameTest(BaseCertManagerTest):
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.storage.RenewableCert')
-    def test_found_match(self, mock_renewable_cert, mock_renewal_conf_file,
-                         mock_make_or_verify_dir):
+    def test_found_match(self, mock_renewable_cert: MagicMock, mock_renewal_conf_file: MagicMock,
+                         mock_make_or_verify_dir: MagicMock) -> None:
         mock_renewal_conf_file.return_value = "somefile.conf"
         mock_match = mock.Mock(lineagename="example.com")
         mock_renewable_cert.return_value = mock_match
@@ -354,7 +358,7 @@ class LineageForCertnameTest(BaseCertManagerTest):
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
+    def test_no_match(self, mock_renewal_conf_file: MagicMock, mock_make_or_verify_dir: MagicMock) -> None:
         mock_renewal_conf_file.return_value = "other.com.conf"
         from certbot._internal import cert_manager
         assert cert_manager.lineage_for_certname(self.config, "example.com") is None
@@ -362,7 +366,7 @@ class LineageForCertnameTest(BaseCertManagerTest):
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    def test_no_renewal_file(self, mock_renewal_conf_file, mock_make_or_verify_dir):
+    def test_no_renewal_file(self, mock_renewal_conf_file: MagicMock, mock_make_or_verify_dir: MagicMock) -> None:
         mock_renewal_conf_file.side_effect = errors.CertStorageError()
         from certbot._internal import cert_manager
         assert cert_manager.lineage_for_certname(self.config, "example.com") is None
@@ -375,8 +379,8 @@ class DomainsForCertnameTest(BaseCertManagerTest):
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.storage.RenewableCert')
-    def test_found_match(self, mock_renewable_cert, mock_renewal_conf_file,
-                         mock_make_or_verify_dir):
+    def test_found_match(self, mock_renewable_cert: MagicMock, mock_renewal_conf_file: MagicMock,
+                         mock_make_or_verify_dir: MagicMock) -> None:
         mock_renewal_conf_file.return_value = "somefile.conf"
         mock_match = mock.Mock(lineagename="example.com")
         domains = ["example.com", "example.org"]
@@ -389,7 +393,7 @@ class DomainsForCertnameTest(BaseCertManagerTest):
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
+    def test_no_match(self, mock_renewal_conf_file: MagicMock, mock_make_or_verify_dir: MagicMock) -> None:
         mock_renewal_conf_file.return_value = "somefile.conf"
         from certbot._internal import cert_manager
         assert cert_manager.domains_for_certname(self.config, "other.com") is None
@@ -399,18 +403,18 @@ class DomainsForCertnameTest(BaseCertManagerTest):
 class RenameLineageTest(BaseCertManagerTest):
     """Tests for certbot._internal.cert_manager.rename_lineage"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.config.certname = "example.org"
         self.config.new_certname = "after"
 
-    def _call(self, *args, **kwargs):
+    def _call(self, *args, **kwargs) -> None:
         from certbot._internal import cert_manager
         return cert_manager.rename_lineage(*args, **kwargs)
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @test_util.patch_display_util()
-    def test_no_certname(self, mock_get_utility, mock_renewal_conf_files):
+    def test_no_certname(self, mock_get_utility: FreezableMock, mock_renewal_conf_files: MagicMock) -> None:
         self.config.certname = None
         self.config.new_certname = "two"
 
@@ -430,7 +434,7 @@ class RenameLineageTest(BaseCertManagerTest):
             self._call(self.config)
 
     @test_util.patch_display_util()
-    def test_no_new_certname(self, mock_get_utility):
+    def test_no_new_certname(self, mock_get_utility: FreezableMock) -> None:
         self.config.certname = "one"
         self.config.new_certname = None
 
@@ -445,7 +449,7 @@ class RenameLineageTest(BaseCertManagerTest):
 
     @test_util.patch_display_util()
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
-    def test_no_existing_certname(self, mock_lineage_for_certname, unused_get_utility):
+    def test_no_existing_certname(self, mock_lineage_for_certname: MagicMock, unused_get_utility: FreezableMock) -> None:
         self.config.certname = "one"
         self.config.new_certname = "two"
         mock_lineage_for_certname.return_value = None
@@ -454,7 +458,7 @@ class RenameLineageTest(BaseCertManagerTest):
 
     @test_util.patch_display_util()
     @mock.patch("certbot._internal.storage.RenewableCert._check_symlinks")
-    def test_rename_cert(self, mock_check, unused_get_utility):
+    def test_rename_cert(self, mock_check: MagicMock, unused_get_utility: FreezableMock) -> None:
         mock_check.return_value = True
         self._call(self.config)
         from certbot._internal import cert_manager
@@ -464,7 +468,7 @@ class RenameLineageTest(BaseCertManagerTest):
 
     @test_util.patch_display_util()
     @mock.patch("certbot._internal.storage.RenewableCert._check_symlinks")
-    def test_rename_cert_interactive_certname(self, mock_check, mock_get_utility):
+    def test_rename_cert_interactive_certname(self, mock_check: MagicMock, mock_get_utility: FreezableMock) -> None:
         mock_check.return_value = True
         self.config.certname = None
         util_mock = mock_get_utility()
@@ -477,7 +481,7 @@ class RenameLineageTest(BaseCertManagerTest):
 
     @test_util.patch_display_util()
     @mock.patch("certbot._internal.storage.RenewableCert._check_symlinks")
-    def test_rename_cert_bad_new_certname(self, mock_check, unused_get_utility):
+    def test_rename_cert_bad_new_certname(self, mock_check: MagicMock, unused_get_utility: FreezableMock) -> None:
         mock_check.return_value = True
 
         # for example, don't rename to existing certname
@@ -493,13 +497,13 @@ class RenameLineageTest(BaseCertManagerTest):
 class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
     """Test to avoid duplicate lineages."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.config_file.write()
         self._write_out_ex_kinds()
 
     @mock.patch('certbot.util.make_or_verify_dir')
-    def test_find_duplicative_names(self, unused_makedir):
+    def test_find_duplicative_names(self, unused_makedir: MagicMock) -> None:
         from certbot._internal.cert_manager import find_duplicative_certs
         test_cert = test_util.load_vector('cert-san_512.pem')
         with open(self.test_rc.cert, 'wb') as f:
@@ -531,7 +535,7 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
 class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
     """Tests for certbot._internal.cert_manager.cert_path_to_lineage"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.config_file.write()
         self._write_out_ex_kinds()
@@ -539,18 +543,18 @@ class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
                 'fullchain.pem')
         self.config.cert_path = self.fullchain
 
-    def _call(self, cli_config):
+    def _call(self, cli_config: NamespaceConfig) -> str:
         from certbot._internal.cert_manager import cert_path_to_lineage
         return cert_path_to_lineage(cli_config)
 
-    def _archive_files(self, cli_config, filetype):
+    def _archive_files(self, cli_config: RenewableCert, filetype: str) -> List[str]:
         from certbot._internal.cert_manager import _archive_files
         return _archive_files(cli_config, filetype)
 
-    def test_basic_match(self):
+    def test_basic_match(self) -> None:
         assert 'example.org' == self._call(self.config)
 
-    def test_no_match_exists(self):
+    def test_no_match_exists(self) -> None:
         bad_test_config = self.config
         bad_test_config.cert_path = os.path.join(self.config.config_dir, 'live',
                 'SailorMoon', 'fullchain.pem')
@@ -558,13 +562,13 @@ class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
             self._call(bad_test_config)
 
     @mock.patch('certbot._internal.cert_manager._acceptable_matches')
-    def test_options_fullchain(self, mock_acceptable_matches):
+    def test_options_fullchain(self, mock_acceptable_matches: MagicMock) -> None:
         mock_acceptable_matches.return_value = [lambda x: x.fullchain_path]
         self.config.fullchain_path = self.fullchain
         assert 'example.org' == self._call(self.config)
 
     @mock.patch('certbot._internal.cert_manager._acceptable_matches')
-    def test_options_cert_path(self, mock_acceptable_matches):
+    def test_options_cert_path(self, mock_acceptable_matches: MagicMock) -> None:
         mock_acceptable_matches.return_value = [lambda x: x.cert_path]
         test_cert_path = os.path.join(self.config.config_dir, 'live', 'example.org',
                 'cert.pem')
@@ -572,7 +576,7 @@ class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
         assert 'example.org' == self._call(self.config)
 
     @mock.patch('certbot._internal.cert_manager._acceptable_matches')
-    def test_options_archive_cert(self, mock_acceptable_matches):
+    def test_options_archive_cert(self, mock_acceptable_matches: MagicMock) -> None:
         # Also this and the next test check that the regex of _archive_files is working.
         self.config.cert_path = os.path.join(self.config.config_dir, 'archive', 'example.org',
             'cert11.pem')
@@ -580,14 +584,14 @@ class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
         assert 'example.org' == self._call(self.config)
 
     @mock.patch('certbot._internal.cert_manager._acceptable_matches')
-    def test_options_archive_fullchain(self, mock_acceptable_matches):
+    def test_options_archive_fullchain(self, mock_acceptable_matches: MagicMock) -> None:
         self.config.cert_path = os.path.join(self.config.config_dir, 'archive',
             'example.org', 'fullchain11.pem')
         mock_acceptable_matches.return_value = [lambda x:
                 self._archive_files(x, 'fullchain')]
         assert 'example.org' == self._call(self.config)
 
-    def test_only_path(self):
+    def test_only_path(self) -> None:
         self.config.cert_path = self.fullchain
         assert 'example.org' == self._call(self.config)
 
@@ -596,7 +600,7 @@ class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
     """Tests for certbot._internal.cert_manager.match_and_check_overlaps w/o overlapping
        archive dirs."""
     # A test with real overlapping archive dirs can be found in tests/boulder_integration.sh
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.config_file.write()
         self._write_out_ex_kinds()
@@ -604,23 +608,23 @@ class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
                 'fullchain.pem')
         self.config.cert_path = self.fullchain
 
-    def _call(self, cli_config, acceptable_matches, match_func, rv_func):
+    def _call(self, cli_config: NamespaceConfig, acceptable_matches: Optional[List[Callable]], match_func: Optional[Callable], rv_func: Optional[Callable]) -> List[str]:
         from certbot._internal.cert_manager import match_and_check_overlaps
         return match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func)
 
-    def test_basic_match(self):
+    def test_basic_match(self) -> None:
         from certbot._internal.cert_manager import _acceptable_matches
         assert ['example.org'] == self._call(self.config, _acceptable_matches(),
             lambda x: self.config.cert_path, lambda x: x.lineagename)
 
     @mock.patch('certbot._internal.cert_manager._search_lineages')
-    def test_no_matches(self, mock_search_lineages):
+    def test_no_matches(self, mock_search_lineages: MagicMock) -> None:
         mock_search_lineages.return_value = []
         with pytest.raises(errors.Error):
             self._call(self.config, None, None, None)
 
     @mock.patch('certbot._internal.cert_manager._search_lineages')
-    def test_too_many_matches(self, mock_search_lineages):
+    def test_too_many_matches(self, mock_search_lineages: MagicMock) -> None:
         mock_search_lineages.return_value = ['spider', 'dance']
         with pytest.raises(errors.OverlappingMatchFound):
             self._call(self.config, None, None, None)
@@ -629,7 +633,7 @@ class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
 class GetCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.cert_manager."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         get_utility_patch = test_util.patch_display_util()
         self.mock_get_utility = get_utility_patch.start()
         self.addCleanup(get_utility_patch.stop)
@@ -638,7 +642,7 @@ class GetCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')
-    def test_get_certnames(self, mock_name, mock_files):
+    def test_get_certnames(self, mock_name: MagicMock, mock_files: MagicMock) -> None:
         mock_files.return_value = ['example.com.conf']
         mock_name.return_value = 'example.com'
         from certbot._internal import cert_manager
@@ -650,7 +654,7 @@ class GetCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')
-    def test_get_certnames_custom_prompt(self, mock_name, mock_files):
+    def test_get_certnames_custom_prompt(self, mock_name: MagicMock, mock_files: MagicMock) -> None:
         mock_files.return_value = ['example.com.conf']
         mock_name.return_value = 'example.com'
         from certbot._internal import cert_manager
@@ -664,7 +668,7 @@ class GetCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')
-    def test_get_certnames_user_abort(self, mock_name, mock_files):
+    def test_get_certnames_user_abort(self, mock_name: MagicMock, mock_files: MagicMock) -> None:
         mock_files.return_value = ['example.com.conf']
         mock_name.return_value = 'example.com'
         from certbot._internal import cert_manager
@@ -674,7 +678,7 @@ class GetCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')
-    def test_get_certnames_allow_multiple(self, mock_name, mock_files):
+    def test_get_certnames_allow_multiple(self, mock_name: MagicMock, mock_files: MagicMock) -> None:
         mock_files.return_value = ['example.com.conf']
         mock_name.return_value = 'example.com'
         from certbot._internal import cert_manager
@@ -687,7 +691,7 @@ class GetCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')
-    def test_get_certnames_allow_multiple_custom_prompt(self, mock_name, mock_files):
+    def test_get_certnames_allow_multiple_custom_prompt(self, mock_name: MagicMock, mock_files: MagicMock) -> None:
         mock_files.return_value = ['example.com.conf']
         mock_name.return_value = 'example.com'
         from certbot._internal import cert_manager
@@ -702,7 +706,7 @@ class GetCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot._internal.storage.renewal_conf_files')
     @mock.patch('certbot._internal.storage.lineagename_for_filename')
-    def test_get_certnames_allow_multiple_user_abort(self, mock_name, mock_files):
+    def test_get_certnames_allow_multiple_user_abort(self, mock_name: MagicMock, mock_files: MagicMock) -> None:
         mock_files.return_value = ['example.com.conf']
         mock_name.return_value = 'example.com'
         from certbot._internal import cert_manager

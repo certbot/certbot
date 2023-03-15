@@ -6,7 +6,7 @@ import pytest
 from certbot.compat import os
 
 
-def test_forbidden_methods():
+def test_forbidden_methods() -> None:
     # Checks for os module
     for method in ['chmod', 'chown', 'open', 'mkdir', 'makedirs', 'rename',
                    'replace', 'access', 'stat', 'fstat']:

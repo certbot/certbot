@@ -5,9 +5,10 @@ from unittest import mock
 import pytest
 
 from certbot.compat import os
+from unittest.mock import MagicMock
 
 
-def test_get_prefix():
+def test_get_prefix() -> None:
     from certbot.plugins.util import get_prefixes
     assert get_prefixes('/a/b/c') == \
         [os.path.normpath(path) for path in ['/a/b/c', '/a/b', '/a', '/']]
@@ -16,7 +17,7 @@ def test_get_prefix():
 
 
 @mock.patch("certbot.plugins.util.logger.debug")
-def test_path_surgery(mock_debug):
+def test_path_surgery(mock_debug: MagicMock) -> None:
     from certbot.plugins.util import path_surgery
     all_path = {"PATH": "/usr/local/bin:/bin/:/usr/sbin/:/usr/local/sbin/"}
     with mock.patch.dict('os.environ', all_path):

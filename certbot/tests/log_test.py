@@ -4,7 +4,7 @@ import logging
 import logging.handlers
 import sys
 import time
-from typing import Optional
+from typing import Callable, Tuple, Type, Union, Optional
 import unittest
 from unittest import mock
 
@@ -17,17 +17,18 @@ from certbot._internal import constants
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
+from unittest.mock import MagicMock
 
 
 class PreArgParseSetupTest(unittest.TestCase):
     """Tests for certbot._internal.log.pre_arg_parse_setup."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):  # pylint: disable=unused-argument
+    def _call(cls, *args, **kwargs) -> None:  # pylint: disable=unused-argument
         from certbot._internal.log import pre_arg_parse_setup
         return pre_arg_parse_setup()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         # We need to call logging.shutdown() at the end of this test to
         # properly clean up any resources created by pre_arg_parse_setup.
         logging.shutdown()
@@ -37,7 +38,7 @@ class PreArgParseSetupTest(unittest.TestCase):
     @mock.patch('certbot._internal.log.pre_arg_parse_except_hook')
     @mock.patch('certbot._internal.log.logging.getLogger')
     @mock.patch('certbot._internal.log.util.atexit_register')
-    def test_it(self, mock_register, mock_get, mock_except_hook, mock_sys):
+    def test_it(self, mock_register: MagicMock, mock_get: MagicMock, mock_except_hook: MagicMock, mock_sys: MagicMock) -> None:
         mock_sys.argv = ['--debug']
         mock_sys.version_info = sys.version_info
         self._call()
@@ -66,11 +67,11 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.log.post_arg_parse_setup."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.log import post_arg_parse_setup
         return post_arg_parse_setup(*args, **kwargs)
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.config.debug = False
         self.config.max_log_backups = 1000
@@ -88,14 +89,14 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         self.root_logger = mock.MagicMock(
             handlers=[self.memory_handler, self.stream_handler])
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.memory_handler.close()
         self.stream_handler.close()
         self.temp_handler.close()
         self.devnull.close()
         super().tearDown()
 
-    def test_common(self):
+    def test_common(self) -> None:
         with mock.patch('certbot._internal.log.logging.getLogger') as mock_get_logger:
             mock_get_logger.return_value = self.root_logger
             except_hook_path = 'certbot._internal.log.post_arg_parse_except_hook'
@@ -122,11 +123,11 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         else:
             assert level == constants.DEFAULT_LOGGING_LEVEL
 
-    def test_debug(self):
+    def test_debug(self) -> None:
         self.config.debug = True
         self.test_common()
 
-    def test_quiet(self):
+    def test_quiet(self) -> None:
         self.config.quiet = True
         self.test_common()
 
@@ -135,16 +136,16 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.log.setup_log_file_handler."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> Union[Tuple[MagicMock, str], Tuple[    logging.handlers.RotatingFileHandler, str]]:
         from certbot._internal.log import setup_log_file_handler
         return setup_log_file_handler(*args, **kwargs)
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.config.max_log_backups = 42
 
     @mock.patch('certbot._internal.main.logging.handlers.RotatingFileHandler')
-    def test_failure(self, mock_handler):
+    def test_failure(self, mock_handler: MagicMock) -> None:
         mock_handler.side_effect = IOError
 
         try:
@@ -154,14 +155,14 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         else:  # pragma: no cover
             self.fail('Error not raised.')
 
-    def test_success_with_rollover(self):
+    def test_success_with_rollover(self) -> None:
         self._test_success_common(should_rollover=True)
 
-    def test_success_without_rollover(self):
+    def test_success_without_rollover(self) -> None:
         self.config.max_log_backups = 0
         self._test_success_common(should_rollover=False)
 
-    def _test_success_common(self, should_rollover):
+    def _test_success_common(self, should_rollover: bool) -> None:
         log_file = 'test.log'
         handler, log_path = self._call(self.config, log_file, '%(message)s')
         handler.close()
@@ -176,7 +177,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         assert os.path.exists(backup_path) == should_rollover
 
     @mock.patch('certbot._internal.log.logging.handlers.RotatingFileHandler')
-    def test_max_log_backups_used(self, mock_handler):
+    def test_max_log_backups_used(self, mock_handler: MagicMock) -> None:
         self._call(self.config, 'test.log', '%(message)s')
         backup_count = mock_handler.call_args[1]['backupCount']
         assert self.config.max_log_backups == backup_count
@@ -185,7 +186,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
 class ColoredStreamHandlerTest(unittest.TestCase):
     """Tests for certbot._internal.log.ColoredStreamHandler"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.stream = io.StringIO()
         self.stream.isatty = lambda: True
         self.logger = logging.getLogger()
@@ -195,15 +196,15 @@ class ColoredStreamHandlerTest(unittest.TestCase):
         self.handler = ColoredStreamHandler(self.stream)
         self.logger.addHandler(self.handler)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.handler.close()
 
-    def test_format(self):
+    def test_format(self) -> None:
         msg = 'I did a thing'
         self.logger.debug(msg)
         assert self.stream.getvalue() == '{0}\n'.format(msg)
 
-    def test_format_and_red_level(self):
+    def test_format_and_red_level(self) -> None:
         msg = 'I did another thing'
         self.handler.red_level = logging.DEBUG
         self.logger.debug(msg)
@@ -216,7 +217,7 @@ class ColoredStreamHandlerTest(unittest.TestCase):
 
 class MemoryHandlerTest(unittest.TestCase):
     """Tests for certbot._internal.log.MemoryHandler"""
-    def setUp(self):
+    def setUp(self) -> None:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
         self.msg = 'hi there'
@@ -227,22 +228,22 @@ class MemoryHandlerTest(unittest.TestCase):
         self.handler = MemoryHandler(self.stream_handler)
         self.logger.addHandler(self.handler)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.handler.close()
         self.stream_handler.close()
 
-    def test_flush(self):
+    def test_flush(self) -> None:
         self._test_log_debug()
         self.handler.flush(force=True)
         assert self.stream.getvalue() == self.msg + '\n'
 
-    def test_not_flushed(self):
+    def test_not_flushed(self) -> None:
         # By default, logging.ERROR messages and higher are flushed
         self.logger.critical(self.msg)
         self.handler.flush()
         assert self.stream.getvalue() == ''
 
-    def test_target_reset(self):
+    def test_target_reset(self) -> None:
         self._test_log_debug()
 
         new_stream = io.StringIO()
@@ -253,28 +254,28 @@ class MemoryHandlerTest(unittest.TestCase):
         assert new_stream.getvalue() == self.msg + '\n'
         new_stream_handler.close()
 
-    def _test_log_debug(self):
+    def _test_log_debug(self) -> None:
         self.logger.debug(self.msg)
 
 
 class TempHandlerTest(unittest.TestCase):
     """Tests for certbot._internal.log.TempHandler."""
-    def setUp(self):
+    def setUp(self) -> None:
         self.closed = False
         from certbot._internal.log import TempHandler
         self.handler = TempHandler()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.handler.close()
 
-    def test_permissions(self):
+    def test_permissions(self) -> None:
         assert filesystem.check_permissions(self.handler.path, 0o600)
 
-    def test_delete(self):
+    def test_delete(self) -> None:
         self.handler.close()
         assert not os.path.exists(self.handler.path)
 
-    def test_no_delete(self):
+    def test_no_delete(self) -> None:
         self.handler.emit(mock.MagicMock())
         self.handler.close()
         assert os.path.exists(self.handler.path)
@@ -284,12 +285,12 @@ class TempHandlerTest(unittest.TestCase):
 class PreArgParseExceptHookTest(unittest.TestCase):
     """Tests for certbot._internal.log.pre_arg_parse_except_hook."""
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.log import pre_arg_parse_except_hook
         return pre_arg_parse_except_hook(*args, **kwargs)
 
     @mock.patch('certbot._internal.log.post_arg_parse_except_hook')
-    def test_it(self, mock_post_arg_parse_except_hook):
+    def test_it(self, mock_post_arg_parse_except_hook: MagicMock) -> None:
         memory_handler = mock.MagicMock()
         args = ('some', 'args',)
         kwargs = {'some': 'kwargs'}
@@ -308,35 +309,35 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         from certbot._internal.log import post_arg_parse_except_hook
         return post_arg_parse_except_hook(*args, **kwargs)
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.error_msg = 'test error message'
         self.log_path = 'foo.log'
 
-    def test_base_exception(self):
+    def test_base_exception(self) -> None:
         exc_type = BaseException
         mock_logger, output = self._test_common(exc_type, debug=False)
         self._assert_exception_logged(mock_logger.error, exc_type)
         self._assert_logfile_output(output)
 
-    def test_debug(self):
+    def test_debug(self) -> None:
         exc_type = ValueError
         mock_logger, output = self._test_common(exc_type, debug=True)
         self._assert_exception_logged(mock_logger.error, exc_type)
         self._assert_logfile_output(output)
 
-    def test_quiet(self):
+    def test_quiet(self) -> None:
         exc_type = ValueError
         mock_logger, output = self._test_common(exc_type, debug=True, quiet=True)
         self._assert_exception_logged(mock_logger.error, exc_type)
         assert 'See the logfile' not in output
 
-    def test_custom_error(self):
+    def test_custom_error(self) -> None:
         exc_type = errors.PluginError
         mock_logger, output = self._test_common(exc_type, debug=False)
         self._assert_exception_logged(mock_logger.debug, exc_type)
         self._assert_quiet_output(mock_logger, output)
 
-    def test_acme_error(self):
+    def test_acme_error(self) -> None:
         # Get an arbitrary error code
         acme_code = next(iter(messages.ERROR_CODES))
 
@@ -349,18 +350,18 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         self._assert_quiet_output(mock_logger, output)
         assert messages.ERROR_PREFIX not in output
 
-    def test_other_error(self):
+    def test_other_error(self) -> None:
         exc_type = ValueError
         mock_logger, output = self._test_common(exc_type, debug=False)
         self._assert_exception_logged(mock_logger.debug, exc_type)
         self._assert_quiet_output(mock_logger, output)
 
-    def test_keyboardinterrupt(self):
+    def test_keyboardinterrupt(self) -> None:
         exc_type = KeyboardInterrupt
         mock_logger, output = self._test_common(exc_type, debug=False)
         mock_logger.error.assert_called_once_with('Exiting due to user request.')
 
-    def _test_common(self, error_type, debug, quiet=False):
+    def _test_common(self, error_type: Union[Type[ValueError], Type[BaseException], Type[PluginError], Type[KeyboardInterrupt], Callable], debug: bool, quiet: bool=False) -> Tuple[MagicMock, str]:
         """Returns the mocked logger and stderr output."""
         mock_err = io.StringIO()
 
@@ -386,7 +387,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         output = mock_err.getvalue()
         return mock_logger, output
 
-    def _assert_exception_logged(self, log_func, exc_type):
+    def _assert_exception_logged(self, log_func: MagicMock, exc_type: Union[Type[Error], Type[ValueError], Type[PluginError], Type[BaseException]]) -> None:
         assert log_func.called
         call_kwargs = log_func.call_args[1]
         assert 'exc_info' in call_kwargs
@@ -395,11 +396,11 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         expected_exc_info = (exc_type, mock.ANY, mock.ANY)
         assert actual_exc_info == expected_exc_info
 
-    def _assert_logfile_output(self, output):
+    def _assert_logfile_output(self, output: str) -> None:
         assert 'See the logfile' in output
         assert self.log_path in output
 
-    def _assert_quiet_output(self, mock_logger, output):
+    def _assert_quiet_output(self, mock_logger: MagicMock, output: str) -> None:
         assert mock_logger.exception.called is False
         assert mock_logger.debug.called
         assert self.error_msg in output
@@ -412,7 +413,7 @@ class ExitWithAdviceTest(test_util.TempDirTestCase):
         from certbot._internal.log import exit_with_advice
         return exit_with_advice(*args, **kwargs)
 
-    def test_log_file(self):
+    def test_log_file(self) -> None:
         log_file = os.path.join(self.tempdir, 'test.log')
         open(log_file, 'w').close()
 
@@ -420,13 +421,13 @@ class ExitWithAdviceTest(test_util.TempDirTestCase):
         assert 'logfiles' not in err_str
         assert log_file in err_str
 
-    def test_log_dir(self):
+    def test_log_dir(self) -> None:
         err_str = self._test_common(self.tempdir)
         assert 'logfiles' in err_str
         assert self.tempdir in err_str
 
     # pylint: disable=inconsistent-return-statements
-    def _test_common(self, *args, **kwargs):
+    def _test_common(self, *args, **kwargs) -> str:
         try:
             self._call(*args, **kwargs)
         except SystemExit as err:

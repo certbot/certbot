@@ -8,11 +8,12 @@ from certbot import errors
 from certbot._internal import constants
 from certbot._internal.cli import _DomainsAction
 from certbot._internal.cli import HelpfulArgumentParser
+from unittest.mock import MagicMock
 
 
 class TestScanningFlags:
     '''Test the prescan_for_flag method of HelpfulArgumentParser'''
-    def test_prescan_no_help_flag(self):
+    def test_prescan_no_help_flag(self) -> None:
         arg_parser = HelpfulArgumentParser(['run'], {})
         detected_flag = arg_parser.prescan_for_flag('--help',
                                                         ['all', 'certonly'])
@@ -21,7 +22,7 @@ class TestScanningFlags:
                                                         ['all, certonly'])
         assert detected_flag is False
 
-    def test_prescan_unvalid_topic(self):
+    def test_prescan_unvalid_topic(self) -> None:
         arg_parser = HelpfulArgumentParser(['--help', 'all'], {})
         detected_flag = arg_parser.prescan_for_flag('--help',
                                                     ['potato'])
@@ -30,7 +31,7 @@ class TestScanningFlags:
                                                     arg_parser.help_topics)
         assert detected_flag is False
 
-    def test_prescan_valid_topic(self):
+    def test_prescan_valid_topic(self) -> None:
         arg_parser = HelpfulArgumentParser(['-h', 'all'], {})
         detected_flag = arg_parser.prescan_for_flag('-h',
                                                     arg_parser.help_topics)
@@ -41,12 +42,12 @@ class TestScanningFlags:
 
 class TestDetermineVerbs:
     '''Tests for determine_verb methods of HelpfulArgumentParser'''
-    def test_determine_verb_wrong_verb(self):
+    def test_determine_verb_wrong_verb(self) -> None:
         arg_parser = HelpfulArgumentParser(['potato'], {})
         assert arg_parser.verb == "run"
         assert arg_parser.args == ["potato"]
 
-    def test_determine_verb_help(self):
+    def test_determine_verb_help(self) -> None:
         arg_parser = HelpfulArgumentParser(['--help', 'everything'], {})
         assert arg_parser.verb == "help"
         assert arg_parser.args == ["--help", "everything"]
@@ -56,7 +57,7 @@ class TestDetermineVerbs:
         assert arg_parser.args == ['-d', 'some_domain', '--help',
                                                'all']
 
-    def test_determine_verb(self):
+    def test_determine_verb(self) -> None:
         arg_parser = HelpfulArgumentParser(['certonly'], {})
         assert arg_parser.verb == 'certonly'
         assert arg_parser.args == []
@@ -72,7 +73,7 @@ class TestDetermineVerbs:
 
 class TestAdd:
     '''Tests for add method in HelpfulArgumentParser'''
-    def test_add_trivial_argument(self):
+    def test_add_trivial_argument(self) -> None:
         arg_parser = HelpfulArgumentParser(['run'], {})
         arg_parser.add(None, "--hello-world")
         parsed_args = arg_parser.parser.parse_args(['--hello-world',
@@ -80,7 +81,7 @@ class TestAdd:
         assert parsed_args.hello_world is 'Hello World!'
         assert not hasattr(parsed_args, 'potato')
 
-    def test_add_expected_argument(self):
+    def test_add_expected_argument(self) -> None:
         arg_parser = HelpfulArgumentParser(['--help', 'run'], {})
         arg_parser.add(
                 [None, "run", "certonly", "register"],
@@ -94,12 +95,12 @@ class TestAdd:
 
 class TestAddGroup:
     '''Test add_group method of HelpfulArgumentParser'''
-    def test_add_group_no_input(self):
+    def test_add_group_no_input(self) -> None:
         arg_parser = HelpfulArgumentParser(['run'], {})
         with pytest.raises(TypeError):
             arg_parser.add_group()
 
-    def test_add_group_topic_not_visible(self):
+    def test_add_group_topic_not_visible(self) -> None:
         # The user request help on run. A topic that given somewhere in the
         # args won't be added to the groups in the parser.
         arg_parser = HelpfulArgumentParser(['--help', 'run'], {})
@@ -107,7 +108,7 @@ class TestAddGroup:
                                          description="description of auth")
         assert arg_parser.groups == {}
 
-    def test_add_group_topic_requested_help(self):
+    def test_add_group_topic_requested_help(self) -> None:
         arg_parser = HelpfulArgumentParser(['--help', 'run'], {})
         arg_parser.add_group("run",
                                          description="description of run")
@@ -120,7 +121,7 @@ class TestAddGroup:
 class TestParseArgsErrors:
     '''Tests for errors that should be met for some cases in parse_args method
     in HelpfulArgumentParser'''
-    def test_parse_args_renew_force_interactive(self):
+    def test_parse_args_renew_force_interactive(self) -> None:
         arg_parser = HelpfulArgumentParser(['renew', '--force-interactive'],
                                            {})
         arg_parser.add(
@@ -129,7 +130,7 @@ class TestParseArgsErrors:
         with pytest.raises(errors.Error):
             arg_parser.parse_args()
 
-    def test_parse_args_non_interactive_and_force_interactive(self):
+    def test_parse_args_non_interactive_and_force_interactive(self) -> None:
         arg_parser = HelpfulArgumentParser(['--force-interactive',
                                             '--non-interactive'], {})
         arg_parser.add(
@@ -142,7 +143,7 @@ class TestParseArgsErrors:
         with pytest.raises(errors.Error):
             arg_parser.parse_args()
 
-    def test_parse_args_subset_names_wildcard_domain(self):
+    def test_parse_args_subset_names_wildcard_domain(self) -> None:
         arg_parser = HelpfulArgumentParser(['--domain',
                                            '*.example.com,potato.example.com',
                                            '--allow-subset-of-names'], {})
@@ -168,7 +169,7 @@ class TestParseArgsErrors:
         # with self.assertRaises(errors.Error):
         #    arg_parser.parse_args()
 
-    def test_parse_args_hosts_and_auto_hosts(self):
+    def test_parse_args_hosts_and_auto_hosts(self) -> None:
         arg_parser = HelpfulArgumentParser(['--hsts', '--auto-hsts'], {})
 
         arg_parser.add(
@@ -197,7 +198,7 @@ class TestAddDeprecatedArgument:
     """Tests for add_deprecated_argument method of HelpfulArgumentParser"""
 
     @mock.patch.object(HelpfulArgumentParser, "modify_kwargs_for_default_detection")
-    def test_no_default_detection_modifications(self, mock_modify):
+    def test_no_default_detection_modifications(self, mock_modify: MagicMock) -> None:
         arg_parser = HelpfulArgumentParser(["run"], {}, detect_defaults=True)
         arg_parser.add_deprecated_argument("--foo", 0)
         arg_parser.parse_args()

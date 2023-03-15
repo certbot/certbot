@@ -10,18 +10,20 @@ from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
+from typing import Any, List, Union
+from unittest.mock import MagicMock
 
 
 class ValidateHooksTest(unittest.TestCase):
     """Tests for certbot._internal.hooks.validate_hooks."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.hooks import validate_hooks
         return validate_hooks(*args, **kwargs)
 
     @mock.patch("certbot._internal.hooks.validate_hook")
-    def test_it(self, mock_validate_hook):
+    def test_it(self, mock_validate_hook: MagicMock) -> None:
         config = mock.MagicMock()
         self._call(config)
 
@@ -35,11 +37,11 @@ class ValidateHookTest(test_util.TempDirTestCase):
     """Tests for certbot._internal.hooks.validate_hook."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.hooks import validate_hook
         return validate_hook(*args, **kwargs)
 
-    def test_hook_not_executable(self):
+    def test_hook_not_executable(self) -> None:
         # prevent unnecessary modifications to PATH
         with mock.patch("certbot._internal.hooks.plug_util.path_surgery"):
             # We just mock out filesystem.is_executable since on Windows, it is difficult
@@ -50,7 +52,7 @@ class ValidateHookTest(test_util.TempDirTestCase):
                     self._call('dummy', "foo")
 
     @mock.patch("certbot._internal.hooks.util.exe_exists")
-    def test_not_found(self, mock_exe_exists):
+    def test_not_found(self, mock_exe_exists: MagicMock) -> None:
         mock_exe_exists.return_value = False
         with mock.patch("certbot._internal.hooks.plug_util.path_surgery") as mock_ps:
             with pytest.raises(errors.HookCommandNotFound):
@@ -58,7 +60,7 @@ class ValidateHookTest(test_util.TempDirTestCase):
         assert mock_ps.called
 
     @mock.patch("certbot._internal.hooks._prog")
-    def test_unset(self, mock_prog):
+    def test_unset(self, mock_prog: MagicMock) -> None:
         self._call(None, "foo")
         assert mock_prog.called is False
 
@@ -72,7 +74,7 @@ class HookTest(test_util.ConfigTestCase):
         raise NotImplementedError
 
     @classmethod
-    def _call_with_mock_execute(cls, *args, **kwargs):
+    def _call_with_mock_execute(cls, *args, **kwargs) -> MagicMock:
         """Calls self._call after mocking out certbot.compat.misc.execute_command_status.
 
         The mock execute object is returned rather than the return value
@@ -89,11 +91,11 @@ class PreHookTest(HookTest):
     """Tests for certbot._internal.hooks.pre_hook."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.hooks import pre_hook
         return pre_hook(*args, **kwargs)
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.config.pre_hook = "foo"
 
@@ -104,29 +106,29 @@ class PreHookTest(HookTest):
         # Reset this value as it may have been modified by past tests
         self._reset_pre_hook_already()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         # Reset this value so it's unmodified for future tests
         self._reset_pre_hook_already()
         super().tearDown()
 
-    def _reset_pre_hook_already(self):
+    def _reset_pre_hook_already(self) -> None:
         from certbot._internal.hooks import executed_pre_hooks
         executed_pre_hooks.clear()
 
-    def test_certonly(self):
+    def test_certonly(self) -> None:
         self.config.verb = "certonly"
         self._test_nonrenew_common()
 
-    def test_run(self):
+    def test_run(self) -> None:
         self.config.verb = "run"
         self._test_nonrenew_common()
 
-    def _test_nonrenew_common(self):
+    def _test_nonrenew_common(self) -> None:
         mock_execute = self._call_with_mock_execute(self.config)
         mock_execute.assert_called_once_with("pre-hook", self.config.pre_hook, env=mock.ANY)
         self._test_no_executions_common()
 
-    def test_no_hooks(self):
+    def test_no_hooks(self) -> None:
         self.config.pre_hook = None
         self.config.verb = "renew"
         os.remove(self.dir_hook)
@@ -136,27 +138,27 @@ class PreHookTest(HookTest):
         assert mock_execute.called is False
         assert mock_logger.info.called is False
 
-    def test_renew_disabled_dir_hooks(self):
+    def test_renew_disabled_dir_hooks(self) -> None:
         self.config.directory_hooks = False
         mock_execute = self._call_with_mock_execute(self.config)
         mock_execute.assert_called_once_with("pre-hook", self.config.pre_hook, env=mock.ANY)
         self._test_no_executions_common()
 
-    def test_renew_no_overlap(self):
+    def test_renew_no_overlap(self) -> None:
         self.config.verb = "renew"
         mock_execute = self._call_with_mock_execute(self.config)
         mock_execute.assert_any_call("pre-hook", self.dir_hook, env=mock.ANY)
         mock_execute.assert_called_with("pre-hook", self.config.pre_hook, env=mock.ANY)
         self._test_no_executions_common()
 
-    def test_renew_with_overlap(self):
+    def test_renew_with_overlap(self) -> None:
         self.config.pre_hook = self.dir_hook
         self.config.verb = "renew"
         mock_execute = self._call_with_mock_execute(self.config)
         mock_execute.assert_called_once_with("pre-hook", self.dir_hook, env=mock.ANY)
         self._test_no_executions_common()
 
-    def _test_no_executions_common(self):
+    def _test_no_executions_common(self) -> None:
         with mock.patch("certbot._internal.hooks.logger") as mock_logger:
             mock_execute = self._call_with_mock_execute(self.config)
         assert mock_execute.called is False
@@ -167,11 +169,11 @@ class PostHookTest(HookTest):
     """Tests for certbot._internal.hooks.post_hook."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.hooks import post_hook
         return post_hook(*args, **kwargs)
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.config.post_hook = "bar"
@@ -182,47 +184,47 @@ class PostHookTest(HookTest):
         # Reset this value as it may have been modified by past tests
         self._reset_post_hook_eventually()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         # Reset this value so it's unmodified for future tests
         self._reset_post_hook_eventually()
         super().tearDown()
 
-    def _reset_post_hook_eventually(self):
+    def _reset_post_hook_eventually(self) -> None:
         from certbot._internal.hooks import post_hooks
         del post_hooks[:]
 
-    def test_certonly_and_run_with_hook(self):
+    def test_certonly_and_run_with_hook(self) -> None:
         for verb in ("certonly", "run",):
             self.config.verb = verb
             mock_execute = self._call_with_mock_execute(self.config)
             mock_execute.assert_called_once_with("post-hook", self.config.post_hook, env=mock.ANY)
             assert not self._get_eventually()
 
-    def test_cert_only_and_run_without_hook(self):
+    def test_cert_only_and_run_without_hook(self) -> None:
         self.config.post_hook = None
         for verb in ("certonly", "run",):
             self.config.verb = verb
             assert not self._call_with_mock_execute(self.config).called
             assert not self._get_eventually()
 
-    def test_renew_disabled_dir_hooks(self):
+    def test_renew_disabled_dir_hooks(self) -> None:
         self.config.directory_hooks = False
         self._test_renew_common([self.config.post_hook])
 
-    def test_renew_no_config_hook(self):
+    def test_renew_no_config_hook(self) -> None:
         self.config.post_hook = None
         self._test_renew_common([self.dir_hook])
 
-    def test_renew_no_dir_hook(self):
+    def test_renew_no_dir_hook(self) -> None:
         os.remove(self.dir_hook)
         self._test_renew_common([self.config.post_hook])
 
-    def test_renew_no_hooks(self):
+    def test_renew_no_hooks(self) -> None:
         self.config.post_hook = None
         os.remove(self.dir_hook)
         self._test_renew_common([])
 
-    def test_renew_no_overlap(self):
+    def test_renew_no_overlap(self) -> None:
         expected = [self.dir_hook, self.config.post_hook]
         self._test_renew_common(expected)
 
@@ -230,18 +232,18 @@ class PostHookTest(HookTest):
         expected.append(self.config.post_hook)
         self._test_renew_common(expected)
 
-    def test_renew_with_overlap(self):
+    def test_renew_with_overlap(self) -> None:
         self.config.post_hook = self.dir_hook
         self._test_renew_common([self.dir_hook])
 
-    def _test_renew_common(self, expected):
+    def _test_renew_common(self, expected: List[Union[str, Any]]) -> None:
         self.config.verb = "renew"
 
         for _ in range(2):
             self._call(self.config)
             assert self._get_eventually() == expected
 
-    def _get_eventually(self):
+    def _get_eventually(self) -> List[Union[str, Any]]:
         from certbot._internal.hooks import post_hooks
         return post_hooks
 
@@ -250,11 +252,11 @@ class RunSavedPostHooksTest(HookTest):
     """Tests for certbot._internal.hooks.run_saved_post_hooks."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.hooks import run_saved_post_hooks
         return run_saved_post_hooks()
 
-    def _call_with_mock_execute_and_eventually(self, *args, **kwargs):
+    def _call_with_mock_execute_and_eventually(self, *args, **kwargs) -> MagicMock:
         """Call run_saved_post_hooks but mock out execute and eventually
 
         certbot._internal.hooks.post_hooks is replaced with
@@ -266,14 +268,14 @@ class RunSavedPostHooksTest(HookTest):
         with mock.patch(eventually_path, new=self.eventually):
             return self._call_with_mock_execute(*args, **kwargs)
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.eventually: List[str] = []
 
-    def test_empty(self):
+    def test_empty(self) -> None:
         assert not self._call_with_mock_execute_and_eventually().called
 
-    def test_multiple(self):
+    def test_multiple(self) -> None:
         self.eventually = ["foo", "bar", "baz", "qux"]
         mock_execute = self._call_with_mock_execute_and_eventually()
 
@@ -281,7 +283,7 @@ class RunSavedPostHooksTest(HookTest):
         for actual_call, expected_arg in zip(calls, self.eventually):
             assert actual_call[0][1] == expected_arg
 
-    def test_single(self):
+    def test_single(self) -> None:
         self.eventually = ["foo"]
         mock_execute = self._call_with_mock_execute_and_eventually()
         mock_execute.assert_called_once_with("post-hook", self.eventually[0], env=mock.ANY)
@@ -292,7 +294,7 @@ class RenewalHookTest(HookTest):
     # Needed for https://github.com/PyCQA/pylint/issues/179
     # pylint: disable=abstract-method
 
-    def _call_with_mock_execute(self, *args, **kwargs):
+    def _call_with_mock_execute(self, *args, **kwargs) -> MagicMock:
         """Calls self._call after mocking out certbot.compat.misc.execute_command_status.
 
         The mock execute object is returned rather than the return value
@@ -319,14 +321,14 @@ class RenewalHookTest(HookTest):
             self._call(*args, **kwargs)
         return mock_execute
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.vars_to_clear = {
             var for var in ("RENEWED_DOMAINS", "RENEWED_LINEAGE",)
             if var not in os.environ
         }
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         for var in self.vars_to_clear:
             os.environ.pop(var, None)
         super().tearDown()
@@ -336,12 +338,12 @@ class DeployHookTest(RenewalHookTest):
     """Tests for certbot._internal.hooks.deploy_hook."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.hooks import deploy_hook
         return deploy_hook(*args, **kwargs)
 
     @mock.patch("certbot._internal.hooks.logger")
-    def test_dry_run(self, mock_logger):
+    def test_dry_run(self, mock_logger: MagicMock) -> None:
         self.config.deploy_hook = "foo"
         self.config.dry_run = True
         mock_execute = self._call_with_mock_execute(
@@ -350,14 +352,14 @@ class DeployHookTest(RenewalHookTest):
         assert mock_logger.info.called
 
     @mock.patch("certbot._internal.hooks.logger")
-    def test_no_hook(self, mock_logger):
+    def test_no_hook(self, mock_logger: MagicMock) -> None:
         self.config.deploy_hook = None
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
         assert mock_execute.called is False
         assert mock_logger.info.called is False
 
-    def test_success(self):
+    def test_success(self) -> None:
         domains = ["example.org", "example.net"]
         lineage = "/foo/bar"
         self.config.deploy_hook = "foo"
@@ -370,11 +372,11 @@ class RenewHookTest(RenewalHookTest):
     """Tests for certbot._internal.hooks.renew_hook"""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.hooks import renew_hook
         return renew_hook(*args, **kwargs)
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.config.renew_hook = "foo"
 
@@ -383,21 +385,21 @@ class RenewHookTest(RenewalHookTest):
                                      "bar")
         create_hook(self.dir_hook)
 
-    def test_disabled_dir_hooks(self):
+    def test_disabled_dir_hooks(self) -> None:
         self.config.directory_hooks = False
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
         mock_execute.assert_called_once_with("deploy-hook", self.config.renew_hook, env=mock.ANY)
 
     @mock.patch("certbot._internal.hooks.logger")
-    def test_dry_run(self, mock_logger):
+    def test_dry_run(self, mock_logger: MagicMock) -> None:
         self.config.dry_run = True
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
         assert mock_execute.called is False
         assert mock_logger.info.call_count == 2
 
-    def test_no_hooks(self):
+    def test_no_hooks(self) -> None:
         self.config.renew_hook = None
         os.remove(self.dir_hook)
 
@@ -407,13 +409,13 @@ class RenewHookTest(RenewalHookTest):
         assert mock_execute.called is False
         assert mock_logger.info.called is False
 
-    def test_overlap(self):
+    def test_overlap(self) -> None:
         self.config.renew_hook = self.dir_hook
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.net", "example.org"], "/foo/bar")
         mock_execute.assert_called_once_with("deploy-hook", self.dir_hook, env=mock.ANY)
 
-    def test_no_overlap(self):
+    def test_no_overlap(self) -> None:
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
         mock_execute.assert_any_call("deploy-hook", self.dir_hook, env=mock.ANY)
@@ -424,14 +426,14 @@ class ListHooksTest(test_util.TempDirTestCase):
     """Tests for certbot._internal.hooks.list_hooks."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> List[Union[str, Any]]:
         from certbot._internal.hooks import list_hooks
         return list_hooks(*args, **kwargs)
 
-    def test_empty(self):
+    def test_empty(self) -> None:
         assert not self._call(self.tempdir)
 
-    def test_multiple(self):
+    def test_multiple(self) -> None:
         names = sorted(
             os.path.join(self.tempdir, basename)
             for basename in ("foo", "bar", "baz", "qux")
@@ -441,20 +443,20 @@ class ListHooksTest(test_util.TempDirTestCase):
 
         assert self._call(self.tempdir) == names
 
-    def test_single(self):
+    def test_single(self) -> None:
         name = os.path.join(self.tempdir, "foo")
         create_hook(name)
 
         assert self._call(self.tempdir) == [name]
 
-    def test_ignore_tilde(self):
+    def test_ignore_tilde(self) -> None:
         name = os.path.join(self.tempdir, "foo~")
         create_hook(name)
 
         assert self._call(self.tempdir) == []
 
 
-def create_hook(file_path):
+def create_hook(file_path: str) -> None:
     """Creates an executable file at the specified path.
 
     :param str file_path: path to create the file at

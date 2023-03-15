@@ -15,7 +15,7 @@ class LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconCl
     class _FakeLexiconClient(dns_common_lexicon.LexiconClient):
         pass
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.client = LexiconClientTest._FakeLexiconClient()

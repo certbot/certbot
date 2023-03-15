@@ -1,6 +1,6 @@
 """Tests for letsencrypt.plugins.selection"""
 import sys
-from typing import List
+from typing import Callable, Optional, Tuple, Type, Union, List
 import unittest
 from unittest import mock
 
@@ -12,12 +12,15 @@ from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins.disco import PluginsRegistry
 from certbot.display import util as display_util
 from certbot.tests import util as test_util
+from certbot.configuration import NamespaceConfig
+from certbot.tests.util import FreezableMock
+from unittest.mock import MagicMock, Mock
 
 
 class ConveniencePickPluginTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.pick_*."""
 
-    def _test(self, fun, ifaces):
+    def _test(self, fun: Callable, ifaces: Union[Tuple[Type[Authenticator], Type[Installer]], Tuple[Type[Installer]], Tuple[Type[Authenticator]]]) -> None:
         config = mock.Mock()
         default = mock.Mock()
         plugins = mock.Mock()
@@ -28,15 +31,15 @@ class ConveniencePickPluginTest(unittest.TestCase):
         mock_p.assert_called_once_with(
             config, default, plugins, "Question?", ifaces)
 
-    def test_authenticator(self):
+    def test_authenticator(self) -> None:
         from certbot._internal.plugins.selection import pick_authenticator
         self._test(pick_authenticator, (interfaces.Authenticator,))
 
-    def test_installer(self):
+    def test_installer(self) -> None:
         from certbot._internal.plugins.selection import pick_installer
         self._test(pick_installer, (interfaces.Installer,))
 
-    def test_configurator(self):
+    def test_configurator(self) -> None:
         from certbot._internal.plugins.selection import pick_configurator
         self._test(pick_configurator,
             (interfaces.Authenticator, interfaces.Installer))
@@ -45,31 +48,31 @@ class ConveniencePickPluginTest(unittest.TestCase):
 class PickPluginTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.pick_plugin."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.config = mock.Mock(noninteractive_mode=False)
         self.default = None
         self.reg = mock.MagicMock()
         self.question = "Question?"
         self.ifaces: List[interfaces.Plugin] = []
 
-    def _call(self):
+    def _call(self) -> Optional[str]:
         from certbot._internal.plugins.selection import pick_plugin
         return pick_plugin(self.config, self.default, self.reg,
                            self.question, self.ifaces)
 
-    def test_default_provided(self):
+    def test_default_provided(self) -> None:
         self.default = "foo"
         self._call()
         assert 1 == self.reg.filter.call_count
 
-    def test_no_default(self):
+    def test_no_default(self) -> None:
         self._call()
         assert 1 == self.reg.visible().ifaces.call_count
 
-    def test_no_candidate(self):
+    def test_no_candidate(self) -> None:
         assert self._call() is None
 
-    def test_single(self):
+    def test_single(self) -> None:
         plugin_ep = mock.MagicMock()
         plugin_ep.init.return_value = "foo"
         plugin_ep.misconfigured = False
@@ -78,7 +81,7 @@ class PickPluginTest(unittest.TestCase):
             "bar": plugin_ep}
         assert "foo" == self._call()
 
-    def test_single_misconfigured(self):
+    def test_single_misconfigured(self) -> None:
         plugin_ep = mock.MagicMock()
         plugin_ep.init.return_value = "foo"
         plugin_ep.misconfigured = True
@@ -87,7 +90,7 @@ class PickPluginTest(unittest.TestCase):
             "bar": plugin_ep}
         assert self._call() is None
 
-    def test_multiple(self):
+    def test_multiple(self) -> None:
         plugin_ep = mock.MagicMock()
         plugin_ep.init.return_value = "foo"
         self.reg.visible().ifaces().available.return_value = {
@@ -100,7 +103,7 @@ class PickPluginTest(unittest.TestCase):
         mock_choose.assert_called_once_with(
             [plugin_ep, plugin_ep], self.question)
 
-    def test_choose_plugin_none(self):
+    def test_choose_plugin_none(self) -> None:
         self.reg.visible().ifaces().available.return_value = {
             "bar": None,
             "baz": None,
@@ -114,7 +117,7 @@ class PickPluginTest(unittest.TestCase):
 class ChoosePluginTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.choose_plugin."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))
 
         self.mock_apache = mock.Mock(
@@ -128,19 +131,19 @@ class ChoosePluginTest(unittest.TestCase):
             self.mock_stand,
         ]
 
-    def _call(self):
+    def _call(self) -> Optional[Mock]:
         from certbot._internal.plugins.selection import choose_plugin
         return choose_plugin(self.plugins, "Question?")
 
     @test_util.patch_display_util()
-    def test_selection(self, mock_util):
+    def test_selection(self, mock_util: FreezableMock) -> None:
         mock_util().menu.side_effect = [(display_util.OK, 0),
                                         (display_util.OK, 1)]
         assert self.mock_stand == self._call()
         assert mock_util().notification.call_count == 1
 
     @test_util.patch_display_util()
-    def test_more_info(self, mock_util):
+    def test_more_info(self, mock_util: FreezableMock) -> None:
         mock_util().menu.side_effect = [
             (display_util.OK, 1),
         ]
@@ -148,7 +151,7 @@ class ChoosePluginTest(unittest.TestCase):
         assert self.mock_stand == self._call()
 
     @test_util.patch_display_util()
-    def test_no_choice(self, mock_util):
+    def test_no_choice(self, mock_util: FreezableMock) -> None:
         mock_util().menu.return_value = (display_util.CANCEL, 0)
         assert self._call() is None
 
@@ -156,7 +159,7 @@ class ChoosePluginTest(unittest.TestCase):
 class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.plugins.selection.get_unprepared_installer."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.mock_apache_fail_ep = mock.Mock(
             description_with_name="afail")
@@ -171,26 +174,26 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
             "apache": self.mock_apache_ep,
         })
 
-    def _call(self):
+    def _call(self) -> Optional[MagicMock]:
         from certbot._internal.plugins.selection import get_unprepared_installer
         return get_unprepared_installer(self.config, self.plugins)
 
-    def test_no_installer_defined(self):
+    def test_no_installer_defined(self) -> None:
         self.config.configurator = None
         assert self._call() is None
 
-    def test_no_available_installers(self):
+    def test_no_available_installers(self) -> None:
         self.config.configurator = "apache"
         self.plugins = PluginsRegistry({})
         with pytest.raises(errors.PluginSelectionError):
             self._call()
 
-    def test_get_plugin(self):
+    def test_get_plugin(self) -> None:
         self.config.configurator = "apache"
         installer = self._call()
         assert installer is self.mock_apache_plugin
 
-    def test_multiple_installers_returned(self):
+    def test_multiple_installers_returned(self) -> None:
         self.config.configurator = "apache"
         # Two plugins with the same name
         self.mock_apache_fail_ep.check_name = lambda name: name == "apache"
@@ -201,7 +204,7 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
 class TestChooseConfiguratorPlugins(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.choose_configurator_plugins."""
 
-    def _setupMockPlugin(self, name):
+    def _setupMockPlugin(self, name: str) -> Mock:
         mock_ep = mock.Mock(
             description_with_name=name)
         mock_ep.check_name = lambda n: n == name
@@ -211,24 +214,24 @@ class TestChooseConfiguratorPlugins(unittest.TestCase):
         mock_ep.misconfigured = False
         return mock_ep
 
-    def _parseArgs(self, args):
+    def _parseArgs(self, args: str) -> NamespaceConfig:
         from certbot import configuration
         from certbot._internal import cli
         return configuration.NamespaceConfig(
             cli.prepare_and_parse_args(self.plugins, args.split()))
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.plugins = PluginsRegistry({
             "nginx": self._setupMockPlugin("nginx"),
             "apache": self._setupMockPlugin("apache"),
             "manual": self._setupMockPlugin("manual"),
         })
 
-    def _runWithArgs(self, args):
+    def _runWithArgs(self, args: str) -> Union[Tuple[MagicMock, MagicMock], Tuple[None, MagicMock]]:
         from certbot._internal.plugins.selection import choose_configurator_plugins
         return choose_configurator_plugins(self._parseArgs(args), self.plugins, "certonly")
 
-    def test_noninteractive_configurator(self):
+    def test_noninteractive_configurator(self) -> None:
         # For certonly, setting either the nginx or apache configurators should
         # return both an installer and authenticator
         inst, auth = self._runWithArgs("certonly --nginx")
@@ -239,7 +242,7 @@ class TestChooseConfiguratorPlugins(unittest.TestCase):
         assert inst.name == "apache"
         assert auth.name == "apache"
     
-    def test_noninteractive_inst_arg(self):
+    def test_noninteractive_inst_arg(self) -> None:
         # For certonly, if an installer arg is set, it should be returned as expected
         inst, auth = self._runWithArgs("certonly -a nginx -i nginx")
         assert inst.name == "nginx"

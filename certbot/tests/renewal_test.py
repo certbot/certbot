@@ -11,11 +11,14 @@ from certbot import configuration
 from certbot import errors
 from certbot._internal import storage
 import certbot.tests.util as test_util
+from certbot.tests.util import FreezableMock
+from typing import List
+from unittest.mock import MagicMock
 
 
 class RenewalTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.cli.set_by_cli')
-    def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
+    def test_ancient_webroot_renewal_conf(self, mock_set_by_cli: MagicMock) -> None:
         mock_set_by_cli.return_value = False
         rc_path = test_util.make_lineage(
             self.config.config_dir, 'sample-renewal-ancient.conf')
@@ -31,7 +34,7 @@ class RenewalTest(test_util.ConfigTestCase):
         assert config.webroot_path == ['/var/www/']
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_webroot_params_conservation(self, mock_set_by_cli):
+    def test_webroot_params_conservation(self, mock_set_by_cli: MagicMock) -> None:
         # For more details about why this test is important, see:
         # certbot._internal.plugins.webroot_test::
         #   WebrootActionTest::test_webroot_map_partial_without_perform
@@ -55,7 +58,7 @@ class RenewalTest(test_util.ConfigTestCase):
         assert self.config.webroot_path == ['/var/www/test']
 
     @mock.patch('certbot._internal.renewal._avoid_reuse_key_conflicts')
-    def test_reuse_key_renewal_params(self, unused_mock_avoid_reuse_conflicts):
+    def test_reuse_key_renewal_params(self, unused_mock_avoid_reuse_conflicts: MagicMock) -> None:
         self.config.elliptic_curve = 'INVALID_VALUE'
         self.config.reuse_key = True
         self.config.dry_run = True
@@ -76,7 +79,7 @@ class RenewalTest(test_util.ConfigTestCase):
         assert self.config.elliptic_curve == 'secp256r1'
 
     @mock.patch('certbot._internal.renewal._avoid_reuse_key_conflicts')
-    def test_reuse_ec_key_renewal_params(self, unused_mock_avoid_reuse_conflicts):
+    def test_reuse_ec_key_renewal_params(self, unused_mock_avoid_reuse_conflicts: MagicMock) -> None:
         self.config.elliptic_curve = 'INVALID_CURVE'
         self.config.reuse_key = True
         self.config.dry_run = True
@@ -101,7 +104,7 @@ class RenewalTest(test_util.ConfigTestCase):
         assert self.config.elliptic_curve == 'secp256r1'
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_new_key(self, mock_set_by_cli):
+    def test_new_key(self, mock_set_by_cli: MagicMock) -> None:
         mock_set_by_cli.return_value = False
         # When renewing with both reuse_key and new_key, the key should be regenerated,
         # the key type, key parameters and reuse_key should be kept.
@@ -130,7 +133,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
     @mock.patch('certbot._internal.renewal.hooks.renew_hook')
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_reuse_key_conflicts(self, mock_set_by_cli, unused_mock_renew_hook):
+    def test_reuse_key_conflicts(self, mock_set_by_cli: MagicMock, unused_mock_renew_hook: MagicMock) -> None:
         mock_set_by_cli.return_value = False
 
         # When renewing with reuse_key and a conflicting key parameter (size, curve)
@@ -162,7 +165,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
     @test_util.patch_display_util()
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_remove_deprecated_config_elements(self, mock_set_by_cli, unused_mock_get_utility):
+    def test_remove_deprecated_config_elements(self, mock_set_by_cli: MagicMock, unused_mock_get_utility: FreezableMock) -> None:
         mock_set_by_cli.return_value = False
         config = configuration.NamespaceConfig(self.config)
         config.certname = "sample-renewal-deprecated-option"
@@ -181,25 +184,25 @@ class RenewalTest(test_util.ConfigTestCase):
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.renewal.restore_required_config_elements."""
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.renewal import restore_required_config_elements
         return restore_required_config_elements(*args, **kwargs)
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_allow_subset_of_names_success(self, mock_set_by_cli):
+    def test_allow_subset_of_names_success(self, mock_set_by_cli: MagicMock) -> None:
         mock_set_by_cli.return_value = False
         self._call(self.config, {'allow_subset_of_names': 'True'})
         assert self.config.allow_subset_of_names is True
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_allow_subset_of_names_failure(self, mock_set_by_cli):
+    def test_allow_subset_of_names_failure(self, mock_set_by_cli: MagicMock) -> None:
         mock_set_by_cli.return_value = False
         renewalparams = {'allow_subset_of_names': 'maybe'}
         with pytest.raises(errors.Error):
             self._call(self.config, renewalparams)
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_pref_challs_list(self, mock_set_by_cli):
+    def test_pref_challs_list(self, mock_set_by_cli: MagicMock) -> None:
         mock_set_by_cli.return_value = False
         renewalparams = {'pref_challs': 'http-01, dns'.split(',')}
         self._call(self.config, renewalparams)
@@ -207,7 +210,7 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         assert self.config.pref_challs == expected
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_pref_challs_str(self, mock_set_by_cli):
+    def test_pref_challs_str(self, mock_set_by_cli: MagicMock) -> None:
         mock_set_by_cli.return_value = False
         renewalparams = {'pref_challs': 'dns'}
         self._call(self.config, renewalparams)
@@ -215,27 +218,27 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         assert self.config.pref_challs == expected
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_pref_challs_failure(self, mock_set_by_cli):
+    def test_pref_challs_failure(self, mock_set_by_cli: MagicMock) -> None:
         mock_set_by_cli.return_value = False
         renewalparams = {'pref_challs': 'finding-a-shrubbery'}
         with pytest.raises(errors.Error):
             self._call(self.config, renewalparams)
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_must_staple_success(self, mock_set_by_cli):
+    def test_must_staple_success(self, mock_set_by_cli: MagicMock) -> None:
         mock_set_by_cli.return_value = False
         self._call(self.config, {'must_staple': 'True'})
         assert self.config.must_staple is True
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_must_staple_failure(self, mock_set_by_cli):
+    def test_must_staple_failure(self, mock_set_by_cli: MagicMock) -> None:
         mock_set_by_cli.return_value = False
         renewalparams = {'must_staple': 'maybe'}
         with pytest.raises(errors.Error):
             self._call(self.config, renewalparams)
 
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_ancient_server_renewal_conf(self, mock_set_by_cli):
+    def test_ancient_server_renewal_conf(self, mock_set_by_cli: MagicMock) -> None:
         from certbot._internal import constants
         self.config.server = None
         mock_set_by_cli.return_value = False
@@ -245,30 +248,30 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
 
 class DescribeResultsTest(unittest.TestCase):
     """Tests for certbot._internal.renewal._renew_describe_results."""
-    def setUp(self):
+    def setUp(self) -> None:
         self.patchers = {
             'log_error': mock.patch('certbot._internal.renewal.logger.error'),
             'notify': mock.patch('certbot._internal.renewal.display_util.notify')}
         self.mock_notify = self.patchers['notify'].start()
         self.mock_error = self.patchers['log_error'].start()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         for patch in self.patchers.values():
             patch.stop()
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs) -> None:
         from certbot._internal.renewal import _renew_describe_results
         _renew_describe_results(*args, **kwargs)
 
-    def _assert_success_output(self, lines):
+    def _assert_success_output(self, lines: List[str]) -> None:
         self.mock_notify.assert_has_calls([mock.call(l) for l in lines])
 
-    def test_no_renewal_attempts(self):
+    def test_no_renewal_attempts(self) -> None:
         self._call(mock.MagicMock(dry_run=True), [], [], [], [])
         self._assert_success_output(['No simulated renewals were attempted.'])
 
-    def test_successful_renewal(self):
+    def test_successful_renewal(self) -> None:
         self._call(mock.MagicMock(dry_run=False), ['good.pem'], None, None, None)
         self._assert_success_output([
             '\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
@@ -277,7 +280,7 @@ class DescribeResultsTest(unittest.TestCase):
             '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
         ])
 
-    def test_failed_renewal(self):
+    def test_failed_renewal(self) -> None:
         self._call(mock.MagicMock(dry_run=False), [], ['bad.pem'], [], [])
         self._assert_success_output([
             '\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -',
@@ -288,7 +291,7 @@ class DescribeResultsTest(unittest.TestCase):
             mock.call('  bad.pem (failure)'),
         ])
 
-    def test_all_renewal(self):
+    def test_all_renewal(self) -> None:
         self._call(mock.MagicMock(dry_run=True),
                    ['good.pem', 'good2.pem'], ['bad.pem', 'bad2.pem'],
                    ['foo.pem expires on 123'], ['errored.conf'])

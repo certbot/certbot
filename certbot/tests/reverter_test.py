@@ -12,11 +12,13 @@ import pytest
 from certbot import errors
 from certbot.compat import os
 from certbot.tests import util as test_util
+from typing import List, Set, Tuple
+from unittest.mock import MagicMock
 
 
 class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
     """Test the Reverter Class."""
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         from certbot.reverter import Reverter
 
@@ -28,7 +30,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         tup = setup_test_files()
         self.config1, self.config2, self.dir1, self.dir2, self.sets = tup
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         shutil.rmtree(self.config.work_dir)
         shutil.rmtree(self.dir1)
         shutil.rmtree(self.dir2)
@@ -36,7 +38,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         logging.disable(logging.NOTSET)
 
     @mock.patch("certbot.reverter.Reverter._read_and_append")
-    def test_no_change(self, mock_read):
+    def test_no_change(self, mock_read: MagicMock) -> None:
         mock_read.side_effect = OSError("cannot even")
         try:
             self.reverter.add_to_checkpoint(self.sets[0], "save1")
@@ -49,7 +51,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
             x = f.read()
         assert "No changes" in x
 
-    def test_basic_add_to_temp_checkpoint(self):
+    def test_basic_add_to_temp_checkpoint(self) -> None:
         # These shouldn't conflict even though they are both named config.txt
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save1")
         self.reverter.add_to_temp_checkpoint(self.sets[1], "save2")
@@ -63,13 +65,13 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         assert get_filepaths(self.config.temp_checkpoint_dir) == \
             "{0}\n{1}\n".format(self.config1, self.config2)
 
-    def test_add_to_checkpoint_copy_failure(self):
+    def test_add_to_checkpoint_copy_failure(self) -> None:
         with mock.patch("certbot.reverter.shutil.copy2") as mock_copy2:
             mock_copy2.side_effect = IOError("bad copy")
             with pytest.raises(errors.ReverterError):
                 self.reverter.add_to_checkpoint(self.sets[0], "save1")
 
-    def test_checkpoint_conflict(self):
+    def test_checkpoint_conflict(self) -> None:
         """Make sure that checkpoint errors are thrown appropriately."""
         config3 = os.path.join(self.dir1, "config3.txt")
         self.reverter.register_file_creation(True, config3)
@@ -88,7 +90,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         with pytest.raises(errors.ReverterError):
             self.reverter.add_to_checkpoint({config3}, "invalid save")
 
-    def test_multiple_saves_and_temp_revert(self):
+    def test_multiple_saves_and_temp_revert(self) -> None:
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save1")
         update_file(self.config1, "updated-directive")
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save2-updated dir")
@@ -97,7 +99,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         self.reverter.revert_temporary_config()
         assert read_in(self.config1) == "directive-dir1"
 
-    def test_multiple_registration_fail_and_revert(self):
+    def test_multiple_registration_fail_and_revert(self) -> None:
 
         config3 = os.path.join(self.dir1, "config3.txt")
         update_file(config3, "Config3")
@@ -117,7 +119,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         assert not os.path.isfile(config3)
         assert not os.path.isfile(config4)
 
-    def test_multiple_registration_same_file(self):
+    def test_multiple_registration_same_file(self) -> None:
         self.reverter.register_file_creation(True, self.config1)
         self.reverter.register_file_creation(True, self.config1)
         self.reverter.register_file_creation(True, self.config1)
@@ -127,19 +129,19 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 
         assert len(files) == 1
 
-    def test_register_file_creation_write_error(self):
+    def test_register_file_creation_write_error(self) -> None:
         m_open = mock.mock_open()
         with mock.patch("certbot.reverter.open", m_open, create=True):
             m_open.side_effect = OSError("bad open")
             with pytest.raises(errors.ReverterError):
                 self.reverter.register_file_creation(True, self.config1)
 
-    def test_bad_registration(self):
+    def test_bad_registration(self) -> None:
         # Made this mistake and want to make sure it doesn't happen again...
         with pytest.raises(errors.ReverterError):
             self.reverter.register_file_creation("filepath")
 
-    def test_register_undo_command(self):
+    def test_register_undo_command(self) -> None:
         coms = [
             ["a2dismod", "ssl"],
             ["a2dismod", "rewrite"],
@@ -153,7 +155,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         for a_com, com in zip(act_coms, coms):
             assert a_com == com
 
-    def test_bad_register_undo_command(self):
+    def test_bad_register_undo_command(self) -> None:
         m_open = mock.mock_open()
         with mock.patch("certbot.reverter.open", m_open, create=True):
             m_open.side_effect = OSError("bad open")
@@ -161,7 +163,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
                 self.reverter.register_undo_command(True, ["command"])
 
     @mock.patch("certbot.util.run_script")
-    def test_run_undo_commands(self, mock_run):
+    def test_run_undo_commands(self, mock_run: MagicMock) -> None:
         mock_run.side_effect = ["", errors.SubprocessError]
         coms = [
             ["invalid_command"],
@@ -174,7 +176,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 
         assert mock_run.call_count == 2
 
-    def test_recovery_routine_in_progress_failure(self):
+    def test_recovery_routine_in_progress_failure(self) -> None:
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
 
         # pylint: disable=protected-access
@@ -183,7 +185,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         with pytest.raises(errors.ReverterError):
             self.reverter.recovery_routine()
 
-    def test_recover_checkpoint_revert_temp_failures(self):
+    def test_recover_checkpoint_revert_temp_failures(self) -> None:
 
         mock_recover = mock.MagicMock(
             side_effect=errors.ReverterError("e"))
@@ -196,7 +198,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         with pytest.raises(errors.ReverterError):
             self.reverter.revert_temporary_config()
 
-    def test_recover_checkpoint_rollback_failure(self):
+    def test_recover_checkpoint_rollback_failure(self) -> None:
         mock_recover = mock.MagicMock(
             side_effect=errors.ReverterError("e"))
         # pylint: disable=protected-access
@@ -208,7 +210,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         with pytest.raises(errors.ReverterError):
             self.reverter.rollback_checkpoints(1)
 
-    def test_recover_checkpoint_copy_failure(self):
+    def test_recover_checkpoint_copy_failure(self) -> None:
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save1")
 
         with mock.patch("certbot.reverter.shutil.copy2") as mock_copy2:
@@ -216,7 +218,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
             with pytest.raises(errors.ReverterError):
                 self.reverter.revert_temporary_config()
 
-    def test_recover_checkpoint_rm_failure(self):
+    def test_recover_checkpoint_rm_failure(self) -> None:
         self.reverter.add_to_temp_checkpoint(self.sets[0], "temp save")
 
         with mock.patch("certbot.reverter.shutil.rmtree") as mock_rmtree:
@@ -225,20 +227,20 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
                 self.reverter.revert_temporary_config()
 
     @mock.patch("certbot.reverter.logger.warning")
-    def test_recover_checkpoint_missing_new_files(self, mock_warn):
+    def test_recover_checkpoint_missing_new_files(self, mock_warn: MagicMock) -> None:
         self.reverter.register_file_creation(
             True, os.path.join(self.dir1, "missing_file.txt"))
         self.reverter.revert_temporary_config()
         assert mock_warn.call_count == 1
 
     @mock.patch("certbot.reverter.os.remove")
-    def test_recover_checkpoint_remove_failure(self, mock_remove):
+    def test_recover_checkpoint_remove_failure(self, mock_remove: MagicMock) -> None:
         self.reverter.register_file_creation(True, self.config1)
         mock_remove.side_effect = OSError("Can't remove")
         with pytest.raises(errors.ReverterError):
             self.reverter.revert_temporary_config()
 
-    def test_recovery_routine_temp_and_perm(self):
+    def test_recovery_routine_temp_and_perm(self) -> None:
         # Register a new perm checkpoint file
         config3 = os.path.join(self.dir1, "config3.txt")
         self.reverter.register_file_creation(False, config3)
@@ -274,7 +276,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 
 class TestFullCheckpointsReverter(test_util.ConfigTestCase):
     """Tests functions having to deal with full checkpoints."""
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         from certbot.reverter import Reverter
 
@@ -286,14 +288,14 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         tup = setup_test_files()
         self.config1, self.config2, self.dir1, self.dir2, self.sets = tup
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         shutil.rmtree(self.config.work_dir)
         shutil.rmtree(self.dir1)
         shutil.rmtree(self.dir2)
 
         logging.disable(logging.NOTSET)
 
-    def test_rollback_improper_inputs(self):
+    def test_rollback_improper_inputs(self) -> None:
         with pytest.raises(errors.ReverterError):
             self.reverter.rollback_checkpoints("-1")
         with pytest.raises(errors.ReverterError):
@@ -301,7 +303,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         with pytest.raises(errors.ReverterError):
             self.reverter.rollback_checkpoints("one")
 
-    def test_rollback_finalize_checkpoint_valid_inputs(self):
+    def test_rollback_finalize_checkpoint_valid_inputs(self) -> None:
 
         config3 = self._setup_three_checkpoints()
 
@@ -330,12 +332,12 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         self.reverter.rollback_checkpoints(1)
         assert read_in(self.config1) == "directive-dir1"
 
-    def test_finalize_checkpoint_no_in_progress(self):
+    def test_finalize_checkpoint_no_in_progress(self) -> None:
         # No need to warn for this... just make sure there are no errors.
         self.reverter.finalize_checkpoint("No checkpoint...")
 
     @mock.patch("certbot.reverter.shutil.move")
-    def test_finalize_checkpoint_cannot_title(self, mock_move):
+    def test_finalize_checkpoint_cannot_title(self, mock_move: MagicMock) -> None:
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
         mock_move.side_effect = OSError("cannot move")
 
@@ -343,7 +345,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
             self.reverter.finalize_checkpoint("Title")
 
     @mock.patch("certbot.reverter.filesystem.replace")
-    def test_finalize_checkpoint_no_rename_directory(self, mock_replace):
+    def test_finalize_checkpoint_no_rename_directory(self, mock_replace: MagicMock) -> None:
 
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
         mock_replace.side_effect = OSError
@@ -352,7 +354,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
             self.reverter.finalize_checkpoint("Title")
 
     @mock.patch("certbot.reverter.logger")
-    def test_rollback_too_many(self, mock_logger):
+    def test_rollback_too_many(self, mock_logger: MagicMock) -> None:
         # Test no exist warning...
         self.reverter.rollback_checkpoints(1)
         assert mock_logger.warning.call_count == 1
@@ -363,7 +365,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         self.reverter.rollback_checkpoints(4)
         assert mock_logger.warning.call_count == 1
 
-    def test_multi_rollback(self):
+    def test_multi_rollback(self) -> None:
         config3 = self._setup_three_checkpoints()
         self.reverter.rollback_checkpoints(3)
 
@@ -371,7 +373,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         assert read_in(self.config2) == "directive-dir2"
         assert not os.path.isfile(config3)
 
-    def _setup_three_checkpoints(self):
+    def _setup_three_checkpoints(self) -> str:
         """Generate some finalized checkpoints."""
         # Checkpoint1 - config1
         self.reverter.add_to_checkpoint(self.sets[0], "first save")
@@ -400,7 +402,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         return config3
 
 
-def setup_test_files():
+def setup_test_files() -> Tuple[str, str, str, str, List[Set[str]]]:
     """Setup sample configuration files."""
     dir1 = tempfile.mkdtemp("dir1")
     dir2 = tempfile.mkdtemp("dir2")
@@ -418,34 +420,34 @@ def setup_test_files():
     return config1, config2, dir1, dir2, sets
 
 
-def get_save_notes(dire):
+def get_save_notes(dire: str) -> str:
     """Read save notes"""
     return read_in(os.path.join(dire, "CHANGES_SINCE"))
 
 
-def get_filepaths(dire):
+def get_filepaths(dire: str) -> str:
     """Get Filepaths"""
     return read_in(os.path.join(dire, "FILEPATHS"))
 
 
-def get_new_files(dire):
+def get_new_files(dire: str) -> List[str]:
     """Get new files."""
     return read_in(os.path.join(dire, "NEW_FILES")).splitlines()
 
 
-def get_undo_commands(dire):
+def get_undo_commands(dire: str) -> List[List[str]]:
     """Get new files."""
     with open(os.path.join(dire, "COMMANDS")) as csvfile:
         return list(csv.reader(csvfile))
 
 
-def read_in(path):
+def read_in(path: str) -> str:
     """Read in a file, return the str"""
     with open(path, "r") as file_fd:
         return file_fd.read()
 
 
-def update_file(filename, string):
+def update_file(filename: str, string: str) -> None:
     """Update a file with a new value."""
     with open(filename, "w") as file_fd:
         file_fd.write(string)

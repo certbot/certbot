@@ -42,7 +42,7 @@ def send_signal(signum):
 class ErrorHandlerTest(unittest.TestCase):
     """Tests for certbot._internal.error_handler.ErrorHandler."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         from certbot._internal import error_handler
 
         self.init_func = mock.MagicMock()
@@ -55,7 +55,7 @@ class ErrorHandlerTest(unittest.TestCase):
         # pylint: disable=protected-access
         self.signals = error_handler._SIGNALS
 
-    def test_context_manager(self):
+    def test_context_manager(self) -> None:
         exception_raised = False
         try:
             with self.handler:
@@ -87,7 +87,7 @@ class ErrorHandlerTest(unittest.TestCase):
         for signum in self.signals:
             assert init_signals[signum] == signal.getsignal(signum)
 
-    def test_bad_recovery(self):
+    def test_bad_recovery(self) -> None:
         bad_func = mock.MagicMock(side_effect=[ValueError])
         self.handler.register(bad_func)
         try:
@@ -114,7 +114,7 @@ class ErrorHandlerTest(unittest.TestCase):
                                                **self.init_kwargs)
         bad_func.assert_called_once_with()
 
-    def test_sysexit_ignored(self):
+    def test_sysexit_ignored(self) -> None:
         try:
             with self.handler:
                 sys.exit(0)
@@ -122,7 +122,7 @@ class ErrorHandlerTest(unittest.TestCase):
             pass
         assert self.init_func.called is False
 
-    def test_regular_exit(self):
+    def test_regular_exit(self) -> None:
         func = mock.MagicMock()
         self.handler.register(func)
         with self.handler:
@@ -134,14 +134,14 @@ class ErrorHandlerTest(unittest.TestCase):
 class ExitHandlerTest(ErrorHandlerTest):
     """Tests for certbot._internal.error_handler.ExitHandler."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         from certbot._internal import error_handler
         super().setUp()
         self.handler = error_handler.ExitHandler(self.init_func,
                                                  *self.init_args,
                                                  **self.init_kwargs)
 
-    def test_regular_exit(self):
+    def test_regular_exit(self) -> None:
         func = mock.MagicMock()
         self.handler.register(func)
         with self.handler:

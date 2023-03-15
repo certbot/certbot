@@ -9,10 +9,11 @@ import pytest
 
 from certbot import errors
 import certbot.tests.util as test_util
+from certbot.tests.util import FreezableMock
 
 
 @test_util.patch_display_util()
-def test_notify(mock_util):
+def test_notify(mock_util: FreezableMock) -> None:
     from certbot.display.util import notify
     notify("Hello World")
     mock_util().notification.assert_called_with(
@@ -21,7 +22,7 @@ def test_notify(mock_util):
 
 
 @test_util.patch_display_util()
-def test_notification(mock_util):
+def test_notification(mock_util: FreezableMock) -> None:
     from certbot.display.util import notification
     notification("Hello World")
     mock_util().notification.assert_called_with(
@@ -30,7 +31,7 @@ def test_notification(mock_util):
 
 
 @test_util.patch_display_util()
-def test_menu(mock_util):
+def test_menu(mock_util: FreezableMock) -> None:
     from certbot.display.util import menu
     menu("Hello World", ["one", "two"], default=0)
     mock_util().menu.assert_called_with(
@@ -39,7 +40,7 @@ def test_menu(mock_util):
 
 
 @test_util.patch_display_util()
-def test_input_text(mock_util):
+def test_input_text(mock_util: FreezableMock) -> None:
     from certbot.display.util import input_text
     input_text("Hello World", default="something")
     mock_util().input.assert_called_with(
@@ -48,7 +49,7 @@ def test_input_text(mock_util):
 
 
 @test_util.patch_display_util()
-def test_yesno(mock_util):
+def test_yesno(mock_util: FreezableMock) -> None:
     from certbot.display.util import yesno
     yesno("Hello World", default=True)
     mock_util().yesno.assert_called_with(
@@ -58,7 +59,7 @@ def test_yesno(mock_util):
 
 
 @test_util.patch_display_util()
-def test_checklist(mock_util):
+def test_checklist(mock_util: FreezableMock) -> None:
     from certbot.display.util import checklist
     checklist("Hello World", ["one", "two"], default="one")
     mock_util().checklist.assert_called_with(
@@ -67,7 +68,7 @@ def test_checklist(mock_util):
 
 
 @test_util.patch_display_util()
-def test_directory_select(mock_util):
+def test_directory_select(mock_util: FreezableMock) -> None:
     from certbot.display.util import directory_select
     directory_select("Hello World", default="something")
     mock_util().directory_select.assert_called_with(

@@ -19,13 +19,15 @@ from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
+from typing import List, Union
+from unittest.mock import MagicMock
 
 PLUGINS = disco.PluginsRegistry.find_all()
 
 
 class TestReadFile(TempDirTestCase):
     """Test cli.read_file"""
-    def test_read_file(self):
+    def test_read_file(self) -> None:
         curr_dir = os.getcwd()
         try:
             # On Windows current directory may be on a different drive than self.tempdir.
@@ -58,7 +60,7 @@ class TestReadFile(TempDirTestCase):
 class FlagDefaultTest(unittest.TestCase):
     """Tests cli.flag_default"""
 
-    def test_default_directories(self):
+    def test_default_directories(self) -> None:
         if os.name != 'nt':
             assert cli.flag_default('config_dir') == '/etc/letsencrypt'
             assert cli.flag_default('work_dir') == '/var/lib/letsencrypt'
@@ -73,21 +75,21 @@ class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
 
-    def setUp(self):
+    def setUp(self) -> None:
         reload_module(cli)
 
     @staticmethod
-    def _unmocked_parse(*args, **kwargs):
+    def _unmocked_parse(*args, **kwargs) ->     argparse.Namespace:
         """Get result of cli.prepare_and_parse_args."""
         return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
 
     @staticmethod
-    def parse(*args, **kwargs):
+    def parse(*args, **kwargs) ->     argparse.Namespace:
         """Mocks certbot._internal.display.obj.get_display and calls _unmocked_parse."""
         with test_util.patch_display_util():
             return ParseTest._unmocked_parse(*args, **kwargs)
 
-    def _help_output(self, args):
+    def _help_output(self, args: List[str]) -> str:
         "Run a command, and return the output string for scrutiny"
 
         output = io.StringIO()
@@ -105,7 +107,7 @@ class ParseTest(unittest.TestCase):
         return output.getvalue()
 
     @mock.patch("certbot._internal.cli.helpful.flag_default")
-    def test_cli_ini_domains(self, mock_flag_default):
+    def test_cli_ini_domains(self, mock_flag_default: MagicMock) -> None:
         with tempfile.NamedTemporaryFile() as tmp_config:
             tmp_config.close()  # close now because of compatibility issues on Windows
             # use a shim to get ConfigArgParse to pick up tmp_config
@@ -125,12 +127,12 @@ class ParseTest(unittest.TestCase):
             namespace = self.parse(["renew"])
             assert namespace.domains == []
 
-    def test_no_args(self):
+    def test_no_args(self) -> None:
         namespace = self.parse([])
         for d in ('config_dir', 'logs_dir', 'work_dir'):
             assert getattr(namespace, d) == cli.flag_default(d)
 
-    def test_install_abspath(self):
+    def test_install_abspath(self) -> None:
         cert = 'cert'
         key = 'key'
         chain = 'chain'
@@ -146,7 +148,7 @@ class ParseTest(unittest.TestCase):
         assert namespace.chain_path == os.path.abspath(chain)
         assert namespace.fullchain_path == os.path.abspath(fullchain)
 
-    def test_help(self):
+    def test_help(self) -> None:
         self._help_output(['--help'])  # assert SystemExit is raised here
         out = self._help_output(['--help', 'all'])
         assert "--configurator" in out
@@ -204,7 +206,7 @@ class ParseTest(unittest.TestCase):
         assert "%s" not in out
         assert "{0}" not in out
 
-    def test_help_no_dashes(self):
+    def test_help_no_dashes(self) -> None:
         self._help_output(['help'])  # assert SystemExit is raised here
 
         out = self._help_output(['help', 'all'])
@@ -223,7 +225,7 @@ class ParseTest(unittest.TestCase):
         assert "--cert-path" in out
         assert "--key-path" in out
 
-    def test_parse_domains(self):
+    def test_parse_domains(self) -> None:
         short_args = ['-d', 'example.com']
         namespace = self.parse(short_args)
         assert namespace.domains == ['example.com']
@@ -249,7 +251,7 @@ class ParseTest(unittest.TestCase):
         namespace = self.parse(long_args)
         assert namespace.domains == ['example.com', 'another.net']
 
-    def test_preferred_challenges(self):
+    def test_preferred_challenges(self) -> None:
         short_args = ['--preferred-challenges', 'http, dns']
         namespace = self.parse(short_args)
 
@@ -263,17 +265,17 @@ class ParseTest(unittest.TestCase):
             with pytest.raises(SystemExit):
                 self.parse(short_args)
 
-    def test_server_flag(self):
+    def test_server_flag(self) -> None:
         namespace = self.parse('--server example.com'.split())
         assert namespace.server == 'example.com'
 
-    def test_must_staple_flag(self):
+    def test_must_staple_flag(self) -> None:
         short_args = ['--must-staple']
         namespace = self.parse(short_args)
         assert namespace.must_staple is True
         assert namespace.staple is True
 
-    def _check_server_conflict_message(self, parser_args, conflicting_args):
+    def _check_server_conflict_message(self, parser_args: List[str], conflicting_args: Union[List[str], str]) -> None:
         try:
             self.parse(parser_args)
             self.fail(  # pragma: no cover
@@ -284,7 +286,7 @@ class ParseTest(unittest.TestCase):
             for arg in conflicting_args:
                 assert arg in str(error)
 
-    def test_staging_flag(self):
+    def test_staging_flag(self) -> None:
         short_args = ['--staging']
         namespace = self.parse(short_args)
         assert namespace.staging is True
@@ -293,7 +295,7 @@ class ParseTest(unittest.TestCase):
         short_args += '--server example.com'.split()
         self._check_server_conflict_message(short_args, '--staging')
 
-    def _assert_dry_run_flag_worked(self, namespace, existing_account):
+    def _assert_dry_run_flag_worked(self, namespace:     argparse.Namespace, existing_account: bool) -> None:
         assert namespace.dry_run is True
         assert namespace.break_my_certs is True
         assert namespace.staging is True
@@ -306,7 +308,7 @@ class ParseTest(unittest.TestCase):
             assert namespace.tos is False
             assert namespace.register_unsafely_without_email is False
 
-    def test_dry_run_flag(self):
+    def test_dry_run_flag(self) -> None:
         config_dir = tempfile.mkdtemp()
         short_args = '--dry-run --config-dir {0}'.format(config_dir).split()
         with pytest.raises(errors.Error):
@@ -346,7 +348,7 @@ class ParseTest(unittest.TestCase):
         self._check_server_conflict_message(short_args + ['--server', 'example.com', '--staging'],
                                             conflicts)
 
-    def test_option_was_set(self):
+    def test_option_was_set(self) -> None:
         key_size_option = 'rsa_key_size'
         key_size_value = cli.flag_default(key_size_option)
         self.parse('--rsa-key-size {0}'.format(key_size_value).split())
@@ -360,13 +362,13 @@ class ParseTest(unittest.TestCase):
         assert not cli.option_was_set(
             'authenticator', cli.flag_default('authenticator'))
 
-    def test_ecdsa_key_option(self):
+    def test_ecdsa_key_option(self) -> None:
         elliptic_curve_option = 'elliptic_curve'
         elliptic_curve_option_value = cli.flag_default(elliptic_curve_option)
         self.parse('--elliptic-curve {0}'.format(elliptic_curve_option_value).split())
         assert cli.option_was_set(elliptic_curve_option, elliptic_curve_option_value) is True
 
-    def test_invalid_key_type(self):
+    def test_invalid_key_type(self) -> None:
         key_type_option = 'key_type'
         key_type_value = cli.flag_default(key_type_option)
         self.parse('--key-type {0}'.format(key_type_value).split())
@@ -375,7 +377,7 @@ class ParseTest(unittest.TestCase):
         with pytest.raises(SystemExit):
             self.parse("--key-type foo")
 
-    def test_encode_revocation_reason(self):
+    def test_encode_revocation_reason(self) -> None:
         for reason, code in constants.REVOCATION_REASONS.items():
             namespace = self.parse(['--reason', reason])
             assert namespace.reason == code
@@ -383,18 +385,18 @@ class ParseTest(unittest.TestCase):
             namespace = self.parse(['--reason', reason.upper()])
             assert namespace.reason == code
 
-    def test_force_interactive(self):
+    def test_force_interactive(self) -> None:
         with pytest.raises(errors.Error):
             self.parse("renew --force-interactive".split())
         with pytest.raises(errors.Error):
             self.parse("-n --force-interactive".split())
 
-    def test_deploy_hook_conflict(self):
+    def test_deploy_hook_conflict(self) -> None:
         with mock.patch("certbot._internal.cli.sys.stderr"):
             with pytest.raises(SystemExit):
                 self.parse("--renew-hook foo --deploy-hook bar".split())
 
-    def test_deploy_hook_matches_renew_hook(self):
+    def test_deploy_hook_matches_renew_hook(self) -> None:
         value = "foo"
         namespace = self.parse(["--renew-hook", value,
                                 "--deploy-hook", value,
@@ -402,19 +404,19 @@ class ParseTest(unittest.TestCase):
         assert namespace.deploy_hook == value
         assert namespace.renew_hook == value
 
-    def test_deploy_hook_sets_renew_hook(self):
+    def test_deploy_hook_sets_renew_hook(self) -> None:
         value = "foo"
         namespace = self.parse(
             ["--deploy-hook", value, "--disable-hook-validation"])
         assert namespace.deploy_hook == value
         assert namespace.renew_hook == value
 
-    def test_renew_hook_conflict(self):
+    def test_renew_hook_conflict(self) -> None:
         with mock.patch("certbot._internal.cli.sys.stderr"):
             with pytest.raises(SystemExit):
                 self.parse("--deploy-hook foo --renew-hook bar".split())
 
-    def test_renew_hook_matches_deploy_hook(self):
+    def test_renew_hook_matches_deploy_hook(self) -> None:
         value = "foo"
         namespace = self.parse(["--deploy-hook", value,
                                 "--renew-hook", value,
@@ -422,26 +424,26 @@ class ParseTest(unittest.TestCase):
         assert namespace.deploy_hook == value
         assert namespace.renew_hook == value
 
-    def test_renew_hook_does_not_set_renew_hook(self):
+    def test_renew_hook_does_not_set_renew_hook(self) -> None:
         value = "foo"
         namespace = self.parse(
             ["--renew-hook", value, "--disable-hook-validation"])
         assert namespace.deploy_hook is None
         assert namespace.renew_hook == value
 
-    def test_max_log_backups_error(self):
+    def test_max_log_backups_error(self) -> None:
         with mock.patch('certbot._internal.cli.sys.stderr'):
             with pytest.raises(SystemExit):
                 self.parse("--max-log-backups foo".split())
             with pytest.raises(SystemExit):
                 self.parse("--max-log-backups -42".split())
 
-    def test_max_log_backups_success(self):
+    def test_max_log_backups_success(self) -> None:
         value = "42"
         namespace = self.parse(["--max-log-backups", value])
         assert namespace.max_log_backups == int(value)
 
-    def test_unchanging_defaults(self):
+    def test_unchanging_defaults(self) -> None:
         namespace = self.parse([])
         assert namespace.domains == []
         assert namespace.pref_challs == []
@@ -453,29 +455,29 @@ class ParseTest(unittest.TestCase):
         assert namespace.domains == []
         assert namespace.pref_challs == []
 
-    def test_no_directory_hooks_set(self):
+    def test_no_directory_hooks_set(self) -> None:
         assert not self.parse(["--no-directory-hooks"]).directory_hooks
 
-    def test_no_directory_hooks_unset(self):
+    def test_no_directory_hooks_unset(self) -> None:
         assert self.parse([]).directory_hooks is True
 
-    def test_delete_after_revoke(self):
+    def test_delete_after_revoke(self) -> None:
         namespace = self.parse(["--delete-after-revoke"])
         assert namespace.delete_after_revoke is True
 
-    def test_delete_after_revoke_default(self):
+    def test_delete_after_revoke_default(self) -> None:
         namespace = self.parse([])
         assert namespace.delete_after_revoke is None
 
-    def test_no_delete_after_revoke(self):
+    def test_no_delete_after_revoke(self) -> None:
         namespace = self.parse(["--no-delete-after-revoke"])
         assert namespace.delete_after_revoke is False
 
-    def test_allow_subset_with_wildcard(self):
+    def test_allow_subset_with_wildcard(self) -> None:
         with pytest.raises(errors.Error):
             self.parse("--allow-subset-of-names -d *.example.org".split())
 
-    def test_route53_no_revert(self):
+    def test_route53_no_revert(self) -> None:
         for help_flag in ['-h', '--help']:
             for topic in ['all', 'plugins', 'dns-route53']:
                 assert 'certbot-route53:auth' not in self._help_output([help_flag, topic])
@@ -485,19 +487,19 @@ class DefaultTest(unittest.TestCase):
     """Tests for certbot._internal.cli._Default."""
 
 
-    def setUp(self):
+    def setUp(self) -> None:
         # pylint: disable=protected-access
         self.default1 = cli._Default()
         self.default2 = cli._Default()
 
-    def test_boolean(self):
+    def test_boolean(self) -> None:
         assert bool(self.default1) is False
         assert bool(self.default2) is False
 
-    def test_equality(self):
+    def test_equality(self) -> None:
         assert self.default1 == self.default2
 
-    def test_hash(self):
+    def test_hash(self) -> None:
         assert hash(self.default1) == hash(self.default2)
 
 
@@ -505,20 +507,20 @@ class SetByCliTest(unittest.TestCase):
     """Tests for certbot.set_by_cli and related functions."""
 
 
-    def setUp(self):
+    def setUp(self) -> None:
         reload_module(cli)
 
-    def test_deploy_hook(self):
+    def test_deploy_hook(self) -> None:
         assert _call_set_by_cli(
             'renew_hook', '--deploy-hook foo'.split(), 'renew')
 
-    def test_webroot_map(self):
+    def test_webroot_map(self) -> None:
         args = '-w /var/www/html -d example.com'.split()
         verb = 'renew'
         assert _call_set_by_cli('webroot_map', args, verb) is True
 
 
-def _call_set_by_cli(var, args, verb):
+def _call_set_by_cli(var: str, args: List[str], verb: str) -> bool:
     with mock.patch('certbot._internal.cli.helpful_parser') as mock_parser:
         with test_util.patch_display_util():
             mock_parser.args = args
