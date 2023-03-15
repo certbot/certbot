@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, Mock
 class ConveniencePickPluginTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.pick_*."""
 
-    def _test(self, fun: Callable, ifaces: Union[Tuple[Type[Authenticator], Type[Installer]], Tuple[Type[Installer]], Tuple[Type[Authenticator]]]) -> None:
+    def _test(self, fun: Callable, ifaces: Tuple[Type[interfaces.Plugin], ...]) -> None:
         config = mock.Mock()
         default = mock.Mock()
         plugins = mock.Mock()

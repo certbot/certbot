@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 
 from certbot import errors
+from certbot._internal import lock
 from certbot.compat import os
 from certbot.tests import util as test_util
 
@@ -23,32 +24,22 @@ else:
 
 class LockDirTest(test_util.TempDirTestCase):
     """Tests for certbot._internal.lock.lock_dir."""
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot._internal.lock import lock_dir
-        return lock_dir(*args, **kwargs)
-
     def test_it(self) -> None:
         assert_raises = functools.partial(
-            self.assertRaises, errors.LockError, self._call, self.tempdir)
+            self.assertRaises, errors.LockError, lock.lock_dir, self.tempdir)
         lock_path = os.path.join(self.tempdir, '.certbot.lock')
         test_util.lock_and_call(assert_raises, lock_path)
 
 
 class LockFileTest(test_util.TempDirTestCase):
     """Tests for certbot._internal.lock.LockFile."""
-    @classmethod
-    def _call(cls, *args, **kwargs) -> LockFile:
-        from certbot._internal.lock import LockFile
-        return LockFile(*args, **kwargs)
-
     def setUp(self) -> None:
         super().setUp()
         self.lock_path = os.path.join(self.tempdir, 'test.lock')
 
     def test_acquire_without_deletion(self) -> None:
         # acquire the lock in another process but don't delete the file
-        child = multiprocessing.Process(target=self._call,
+        child = multiprocessing.Process(target=lock.LockFile,
                                         args=(self.lock_path,))
         child.start()
         child.join()
@@ -60,11 +51,11 @@ class LockFileTest(test_util.TempDirTestCase):
 
     def test_contention(self) -> None:
         assert_raises = functools.partial(
-            self.assertRaises, errors.LockError, self._call, self.lock_path)
+            self.assertRaises, errors.LockError, lock.LockFile, self.lock_path)
         test_util.lock_and_call(assert_raises, self.lock_path)
 
     def test_locked_repr(self) -> None:
-        lock_file = self._call(self.lock_path)
+        lock_file = lock.LockFile(self.lock_path)
         try:
             locked_repr = repr(lock_file)
             self._test_repr_common(lock_file, locked_repr)
@@ -73,13 +64,13 @@ class LockFileTest(test_util.TempDirTestCase):
             lock_file.release()
 
     def test_released_repr(self) -> None:
-        lock_file = self._call(self.lock_path)
+        lock_file = lock.LockFile(self.lock_path)
         lock_file.release()
         released_repr = repr(lock_file)
         self._test_repr_common(lock_file, released_repr)
         assert 'released' in released_repr
 
-    def _test_repr_common(self, lock_file: LockFile, lock_repr: str) -> None:
+    def _test_repr_common(self, lock_file: lock.LockFile, lock_repr: str) -> None:
         assert lock_file.__class__.__name__ in lock_repr
         assert self.lock_path in lock_repr
 
@@ -100,11 +91,11 @@ class LockFileTest(test_util.TempDirTestCase):
 
         with mock.patch('certbot._internal.lock.filesystem.os.stat') as mock_stat:
             mock_stat.side_effect = delete_and_stat
-            self._call(self.lock_path)
+            lock.LockFile(self.lock_path)
         assert len(should_delete) == 0
 
     def test_removed(self) -> None:
-        lock_file = self._call(self.lock_path)
+        lock_file = lock.LockFile(self.lock_path)
         lock_file.release()
         assert not os.path.exists(self.lock_path)
 
@@ -117,7 +108,7 @@ class LockFileTest(test_util.TempDirTestCase):
         with mock.patch(mocked_function) as mock_lock:
             mock_lock.side_effect = IOError(msg)
             try:
-                self._call(self.lock_path)
+                lock.LockFile(self.lock_path)
             except IOError as err:
                 assert msg in str(err)
             else:  # pragma: no cover
@@ -133,7 +124,7 @@ class LockFileTest(test_util.TempDirTestCase):
         with mock.patch(mock_function) as mock_os:
             mock_os.side_effect = OSError(msg)
             try:
-                self._call(self.lock_path)
+                lock.LockFile(self.lock_path)
             except OSError as err:
                 assert msg in str(err)
             else:  # pragma: no cover

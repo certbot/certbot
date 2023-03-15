@@ -11,6 +11,7 @@ import pytest
 
 from certbot import errors
 from certbot import interfaces
+from certbot._internal.plugins import disco
 from certbot._internal.plugins import null
 from certbot._internal.plugins import standalone
 from certbot._internal.plugins import webroot
@@ -41,12 +42,9 @@ class PluginEntryPointTest(unittest.TestCase):
         self.ep3 = pkg_resources.EntryPoint(
             "ep3", "a.ep3", dist=mock.MagicMock(key="p3"))
 
-        from certbot._internal.plugins.disco import PluginEntryPoint
-        self.plugin_ep = PluginEntryPoint(EP_SA)
+        self.plugin_ep = disco.PluginEntryPoint(EP_SA)
 
     def test_entry_point_to_plugin_name_not_prefixed(self) -> None:
-        from certbot._internal.plugins.disco import PluginEntryPoint
-
         names = {
             self.ep1: "ep1",
             self.ep1prim: "ep1",
@@ -56,7 +54,7 @@ class PluginEntryPointTest(unittest.TestCase):
         }
 
         for entry_point, name in names.items():
-            assert name == PluginEntryPoint.entry_point_to_plugin_name(entry_point)
+            assert name == disco.PluginEntryPoint.entry_point_to_plugin_name(entry_point)
 
     def test_description(self) -> None:
         assert "server locally" in self.plugin_ep.description
@@ -162,22 +160,16 @@ class PluginEntryPointTest(unittest.TestCase):
 class PluginsRegistryTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.disco.PluginsRegistry."""
 
-    @classmethod
-    def _create_new_registry(cls, plugins: Dict[str, Union[MagicMock, str]]) -> PluginsRegistry:
-        from certbot._internal.plugins.disco import PluginsRegistry
-        return PluginsRegistry(plugins)
-
     def setUp(self) -> None:
         self.plugin_ep = mock.MagicMock()
         self.plugin_ep.name = "mock"
         self.plugin_ep.__hash__.side_effect = TypeError
         self.plugins = {self.plugin_ep.name: self.plugin_ep}
-        self.reg = self._create_new_registry(self.plugins)
+        self.reg = disco.PluginsRegistry(self.plugins)
         self.ep1 = pkg_resources.EntryPoint(
             "ep1", "p1.ep1", dist=mock.MagicMock(key="p1"))
 
     def test_find_all(self) -> None:
-        from certbot._internal.plugins.disco import PluginsRegistry
         with mock.patch("certbot._internal.plugins.disco.pkg_resources") as mock_pkg:
             mock_pkg.iter_entry_points.side_effect = [
                 iter([EP_SA]), iter([EP_WR, self.ep1])
@@ -186,7 +178,7 @@ class PluginsRegistryTest(unittest.TestCase):
                 mock_load.side_effect = [
                     standalone.Authenticator, webroot.Authenticator,
                     null.Installer, null.Installer]
-                plugins = PluginsRegistry.find_all()
+                plugins = disco.PluginsRegistry.find_all()
         assert plugins["sa"].plugin_cls is standalone.Authenticator
         assert plugins["sa"].entry_point is EP_SA
         assert plugins["wr"].plugin_cls is webroot.Authenticator
@@ -202,7 +194,7 @@ class PluginsRegistryTest(unittest.TestCase):
         assert ["mock"] == list(self.reg)
 
     def test_len(self) -> None:
-        assert 0 == len(self._create_new_registry({}))
+        assert 0 == len(disco.PluginsRegistry({}))
         assert 1 == len(self.reg)
 
     def test_init(self) -> None:
@@ -233,7 +225,7 @@ class PluginsRegistryTest(unittest.TestCase):
             c: mock.MagicMock(prepare=functools.partial(order.append, c))
             for c in string.ascii_letters
         }
-        reg = self._create_new_registry(plugins)
+        reg = disco.PluginsRegistry(plugins)
         reg.prepare()
         # order of prepare calls must be sorted to prevent deadlock
         # caused by plugins acquiring locks during prepare
@@ -257,11 +249,11 @@ class PluginsRegistryTest(unittest.TestCase):
                          repr(self.reg)
 
     def test_str(self) -> None:
-        assert "No plugins" == str(self._create_new_registry({}))
+        assert "No plugins" == str(disco.PluginsRegistry({}))
         self.plugin_ep.__str__ = lambda _: "Mock"
         assert "Mock" == str(self.reg)
         plugins = {self.plugin_ep.name: self.plugin_ep, "foo": "Bar"}
-        reg = self._create_new_registry(plugins)
+        reg = disco.PluginsRegistry(plugins)
         assert "Bar\n\nMock" == str(reg)
 
 

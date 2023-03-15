@@ -35,7 +35,7 @@ class ServerManagerTest(unittest.TestCase):
         assert self.mgr.certs is self.certs
         assert self.mgr.http_01_resources is self.http_01_resources
 
-    def _test_run_stop(self, challenge_type: Type[HTTP01]) -> None:
+    def _test_run_stop(self, challenge_type: Type[challenges.HTTP01]) -> None:
         server = self.mgr.run(port=0, challenge_type=challenge_type)
         port = server.getsocknames()[0][1]
         assert self.mgr.running() == {port: server}

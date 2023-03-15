@@ -17,29 +17,31 @@ from certbot.plugins import dns_test_common
 from certbot.tests import util as test_util
 
 
+class _FakeDNSAuthenticator(dns_common.DNSAuthenticator):
+    _setup_credentials = mock.MagicMock()
+    _perform = mock.MagicMock()
+    _cleanup = mock.MagicMock()
+
+    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
+        return 'A fake authenticator for testing.'
+
+
+class _FakeConfig:
+    fake_propagation_seconds = 0
+    fake_config_key = 1
+    fake_other_key = None
+    fake_file_path = None
+
+
 class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
     # pylint: disable=protected-access
-
-    class _FakeDNSAuthenticator(dns_common.DNSAuthenticator):
-        _setup_credentials = mock.MagicMock()
-        _perform = mock.MagicMock()
-        _cleanup = mock.MagicMock()
-
-        def more_info(self):  # pylint: disable=missing-docstring,no-self-use
-            return 'A fake authenticator for testing.'
-
-    class _FakeConfig:
-        fake_propagation_seconds = 0
-        fake_config_key = 1
-        fake_other_key = None
-        fake_file_path = None
 
     def setUp(self):
         super().setUp()
 
-        self.config = DNSAuthenticatorTest._FakeConfig()
+        self.config = _FakeConfig()
 
-        self.auth = DNSAuthenticatorTest._FakeDNSAuthenticator(self.config, "fake")
+        self.auth = _FakeDNSAuthenticator(self.config, "fake")
 
     @test_util.patch_display_util()
     def test_perform(self, unused_mock_get_utility):
@@ -126,21 +128,22 @@ class DNSAuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthen
             self.auth.auth_hint([mock.MagicMock()])
 
 
+class _MockLoggingHandler(logging.Handler):
+    messages = None
+
+    def __init__(self, *args, **kwargs):
+        self.reset()
+        super().__init__(*args, **kwargs)
+
+    def emit(self, record):
+        self.messages[record.levelname.lower()].append(record.getMessage())
+
+    def reset(self):
+        """Allows the handler to be reset between tests."""
+        self.messages = collections.defaultdict(list)
+
+
 class CredentialsConfigurationTest(test_util.TempDirTestCase):
-    class _MockLoggingHandler(logging.Handler):
-        messages = None
-
-        def __init__(self, *args, **kwargs):
-            self.reset()
-            super().__init__(*args, **kwargs)
-
-        def emit(self, record):
-            self.messages[record.levelname.lower()].append(record.getMessage())
-
-        def reset(self):
-            """Allows the handler to be reset between tests."""
-            self.messages = collections.defaultdict(list)
-
     def test_valid_file(self):
         path = os.path.join(self.tempdir, 'too-permissive-file.ini')
 
@@ -157,7 +160,7 @@ class CredentialsConfigurationTest(test_util.TempDirTestCase):
             dns_common.CredentialsConfiguration(path)
 
     def test_valid_file_with_unsafe_permissions(self):
-        log = self._MockLoggingHandler()
+        log = _MockLoggingHandler()
         dns_common.logger.addHandler(log)
 
         path = os.path.join(self.tempdir, 'too-permissive-file.ini')

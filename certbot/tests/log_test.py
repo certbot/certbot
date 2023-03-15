@@ -361,7 +361,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         mock_logger, output = self._test_common(exc_type, debug=False)
         mock_logger.error.assert_called_once_with('Exiting due to user request.')
 
-    def _test_common(self, error_type: Union[Type[ValueError], Type[BaseException], Type[PluginError], Type[KeyboardInterrupt], Callable], debug: bool, quiet: bool=False) -> Tuple[MagicMock, str]:
+    def _test_common(self, error_type: Union[Type[BaseException], Callable], debug: bool, quiet: bool=False) -> Tuple[MagicMock, str]:
         """Returns the mocked logger and stderr output."""
         mock_err = io.StringIO()
 
@@ -387,7 +387,7 @@ class PostArgParseExceptHookTest(unittest.TestCase):
         output = mock_err.getvalue()
         return mock_logger, output
 
-    def _assert_exception_logged(self, log_func: MagicMock, exc_type: Union[Type[Error], Type[ValueError], Type[PluginError], Type[BaseException]]) -> None:
+    def _assert_exception_logged(self, log_func: MagicMock, exc_type: Type[BaseException]) -> None:
         assert log_func.called
         call_kwargs = log_func.call_args[1]
         assert 'exc_info' in call_kwargs

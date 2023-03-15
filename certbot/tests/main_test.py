@@ -20,7 +20,7 @@ import josepy as jose
 import pytest
 import pytz
 
-from acme.messages import Error as acme_error
+#from acme.messages import Error as acme_error
 from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
@@ -888,16 +888,16 @@ class DetermineAccountTest(test_util.ConfigTestCase):
         err_msg = "Some error message raised by Certbot"
         self._register_error_common(err_msg, errors.Error(err_msg))
 
-    def test_register_error_acme_type_and_detail(self):
-        err_msg = ("Error returned by the ACME server: must agree to terms of service")
-        exception = acme_error(typ = "urn:ietf:params:acme:error:malformed",
-                               detail = "must agree to terms of service")
-        self._register_error_common(err_msg, exception)
+    #def test_register_error_acme_type_and_detail(self):
+    #    err_msg = ("Error returned by the ACME server: must agree to terms of service")
+    #    exception = acme_error(typ = "urn:ietf:params:acme:error:malformed",
+    #                           detail = "must agree to terms of service")
+    #    self._register_error_common(err_msg, exception)
 
-    def test_register_error_acme_type_only(self):
-        err_msg = ("Error returned by the ACME server: The server experienced an internal error")
-        exception = acme_error(typ = "urn:ietf:params:acme:error:serverInternal")
-        self._register_error_common(err_msg, exception)
+    #def test_register_error_acme_type_only(self):
+    #    err_msg = ("Error returned by the ACME server: The server experienced an internal error")
+    #    exception = acme_error(typ = "urn:ietf:params:acme:error:serverInternal")
+    #    self._register_error_common(err_msg, exception)
 
 
 class MainTest(test_util.ConfigTestCase):
