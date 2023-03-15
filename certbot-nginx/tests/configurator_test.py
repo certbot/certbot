@@ -63,6 +63,13 @@ class NginxConfiguratorTest(util.NginxTest):
         assert (1, 6, 2) == self.config.version
 
     def test_prepare_locked(self):
+        # It is important to test that server_root is locked during the call to
+        # prepare (as opposed to somewhere else during plugin execution) to
+        # ensure that this lock will be acquired after the Certbot package
+        # acquires all of its locks. (Tests that Certbot calls prepare after
+        # acquiring its locks are part of the Certbot package's tests.) Not
+        # doing this could result in deadlock from two versions of Certbot that
+        # acquire its locks in a different order.
         server_root = self.config.conf("server-root")
 
         from certbot import util as certbot_util
