@@ -2486,7 +2486,9 @@ class TestLockOrder:
         """Sets up Certbot with args and mocks to error after acquiring the last lock.
 
         This fixture yields the CLI arguments that should be given to Certbot
-        and the expected order of directories to be locked.
+        and the expected order of directories to be locked. An error is raised
+        after acquiring the last lock just as a means of stopping Certbot's
+        execution.
 
         """
         # select directories
