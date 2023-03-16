@@ -668,6 +668,19 @@ class NginxConfiguratorTest(util.NginxTest):
             assert mock_logger.info.call_args[0][0] == \
                 "Traffic on port %s already redirecting to ssl in %s"
 
+    def test_custom_redirect_exists(self):
+        # Test that we add no redirect statement if there is already a
+        # redirect for all domains in the block
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        mock_vhost = obj.VirtualHost(example_conf,
+                                     None, None, None,
+                                     set(['.example.com', 'example.*']),
+                                     None, [0])
+        return_301_directive = [['    ', 'return', ' ', '301', ' ', 'https://$host$request_uri']]
+        self.config.parser.add_server_directives(mock_vhost, return_301_directive)
+        self.config.save()
+        self.assertTrue(self.config._has_certbot_redirect(mock_vhost, "www.example.com"))
+
     def test_redirect_dont_enhance(self):
         # Test that we don't accidentally add redirect to ssl-only block
         with mock.patch("certbot_nginx._internal.configurator.logger") as mock_logger:

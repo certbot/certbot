@@ -786,7 +786,11 @@ class NginxConfigurator(common.Configurator):
 
     def _has_certbot_redirect(self, vhost: obj.VirtualHost, domain: str) -> bool:
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
-        return vhost.contains_list(test_redirect_block)
+        return_301_directive = [['return', '301', 'https://$host$request_uri']]
+        test_custom_redirect_block = nginxparser.UnspacedList(return_301_directive)
+        return (
+            vhost.contains_list(test_redirect_block) or
+            vhost.contains_list(test_custom_redirect_block))
 
     def _set_http_header(self, domain: str, header_substring: Union[str, List[str], None]) -> None:
         """Enables header identified by header_substring on domain.
@@ -876,7 +880,7 @@ class NginxConfigurator(common.Configurator):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         If the vhost is listening plaintextishly, separate out the
-        relevant directives into a new server block and add a rewrite directive.
+        relevant directives into a new server block and add a return 301 directive.
 
         .. note:: This function saves the configuration
 
@@ -903,7 +907,7 @@ class NginxConfigurator(common.Configurator):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         If the vhost is listening plaintextishly, separate out the
-        relevant directives into a new server block and add a rewrite directive.
+        relevant directives into a new server block and add a return 301 directive.
 
         .. note:: This function saves the configuration
 
