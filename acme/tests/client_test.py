@@ -815,6 +815,9 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.content_type = None
         self.net.post('uri', self.obj, content_type=None, new_nonce_url='new_nonce_uri')
 
+    def tearDown(self):
+        pass
+
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
