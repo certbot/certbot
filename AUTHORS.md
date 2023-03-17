@@ -23,6 +23,7 @@ Authors
 * [amplifi](https://github.com/amplifi)
 * [Andrew Murray](https://github.com/radarhere)
 * [Andrzej Górski](https://github.com/andrzej3393)
+* [Anna Glasgall](https://github.com/aglasgall)
 * [Anselm Levskaya](https://github.com/levskaya)
 * [Antoine Jacoutot](https://github.com/ajacoutot)
 * [April King](https://github.com/april)
