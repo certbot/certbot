@@ -4,15 +4,30 @@ set -euxo pipefail
 # This script tests certbot docker and certbot dns plugin images.
 
 # Usage: 
-#       ./test.sh all
-#       ./test.sh <architectures>
+#       ./test.sh <tag> all
+#       ./test.sh <tag> <architectures>
+#   The <tag> argument is used to identify the code version (e.g v2.3.1) or type of build
+#   (e.g. nightly). This will be used when saving images to the docker image cache.
 #   The argument "all" will build all know architectures. Alternatively, the
 #   user may provide a comma separated list of architectures drawn from the
 #   known architectures. Know architectures include amd64, arm32v6, and arm64v8.
 
 source "$(realpath $(dirname ${BASH_SOURCE[0]}))/lib/common"
 
-REQUESTED_ARCH_LIST=$(InterpretArchRequest "$1")
+TAG_VER="$1"
+if [ -z "$TAG_VER" ]; then
+    echo "We cannot tag Docker images with an empty string!" >&2
+    exit 1
+fi
+if [ -z "$2" ]; then
+    echo "Architectures must be specified!" >&2
+    exit 1
+fi
+IFS_OLD="$IFS"
+IFS=","
+read -ra REQUESTED_ARCH_ARRAY <<< $(InterpretArchRequest "$2")
+IFS="$IFS_OLD"
+
 
 #jump to root, matching popd handed by Cleanup on EXIT via trap
 pushd "${REPO_ROOT}"
@@ -23,46 +38,19 @@ trap Cleanup EXIT
 CreateBuilder
 
 
-IFS_OLD="$IFS"
-IFS=","
-read -ra REQUESTED_ARCH_ARRAY <<< "$REQUESTED_ARCH_LIST"
-IFS="$IFS_OLD"
+REGISTRY_SPEC="${DOCKER_HUB_ORG}/"
 
-# Helper function to load and test certbot image
-TestCertbot() {
-    ARCH=$1
-    DOCKER_REPO="${DOCKER_HUB_ORG}/certbot"
-    docker buildx build \
-        $(StandardCertbotBuildArgs $(arch2platform ${ARCH})) \
-        -t ${DOCKER_REPO}:${ARCH} \
-        --load \
-        .
-    docker run --rm "${DOCKER_REPO}:${ARCH}" plugins --prepare
-    docker rmi ${DOCKER_REPO}:${ARCH}
+TestImage() {
+    IMAGE_NAME=$1
+    TAG_ARCH=$2
+    TAG_VER=$3
+    docker run --rm "${REGISTRY_SPEC}${IMAGE_NAME}:${TAG_ARCH}-${TAG_VER}" plugins --prepare
 }
 
-# Helper function to load and test plugin image
-TestPlugin() {
-    ARCH=$1
-    PLUGIN=$2
-    DOCKER_REPO="${DOCKER_HUB_ORG}/${PLUGIN}"
-    docker buildx build \
-        $(StandardPluginBuildArgs $(arch2platform ${ARCH}) ${PLUGIN}) \
-        -t ${DOCKER_REPO}:${ARCH} \
-        --load \
-        .
-    docker run --rm "${DOCKER_REPO}:${ARCH}" plugins --prepare
-    docker rmi ${DOCKER_REPO}:${ARCH}
-}
 
-# Step 1: Certbot core Docker
-for ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
-    TestCertbot $ARCH
-done    
-
-# Step 2: Certbot DNS plugins Docker images
-for ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
+for TAG_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
+    TestImage certbot $TAG_ARCH $TAG_VER
     for PLUGIN in "${CERTBOT_PLUGINS[@]}"; do
-        TestPlugin $ARCH $PLUGIN
+        TestImage $PLUGIN $TAG_ARCH $TAG_VER
     done
 done

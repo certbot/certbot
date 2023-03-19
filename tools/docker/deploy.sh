@@ -41,32 +41,39 @@ LatestTag() {
     fi
 }
 
-# Helper function to deploy certbot image with version and optional latest tag
-DeployCertbot() {
-    DOCKER_REPO="${DOCKER_HUB_ORG}/certbot"
 
-    docker buildx build \
-        $(StandardCertbotBuildArgs ${PLATFORM_SPEC}) \
-        -t ${DOCKER_REPO}:${TAG_BASE} $(LatestTag ${TAG_BASE}) \
-        --push \
-        .
+
+REGISTRY_SPEC="${DOCKER_HUB_ORG}/"
+
+DeployImage() {
+    IMAGE_NAME=$1
+    TAG_ARCH=$2
+    TAG_VER=$3
+    docker push "${REGISTRY_SPEC}${IMAGE_NAME}:${TAG_ARCH}-${TAG_VER}"
+    if [[ "${TAG_BASE}" =~ ^v([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
+        docker tag "${REGISTRY_SPEC}${IMAGE_NAME}:${TAG_ARCH}-${TAG_VER}" "${REGISTRY_SPEC}${IMAGE_NAME}:latest"
+    fi
 }
 
-# Helper function to deploy plugin image with version and optional latest tag
-DeployPlugin() {
-    PLUGIN=$1
-    DOCKER_REPO="${DOCKER_HUB_ORG}/${PLUGIN}"
-    docker buildx build \
-        $(StandardPluginBuildArgs ${PLATFORM_SPEC} ${PLUGIN}) \
-        -t ${DOCKER_REPO}:${TAG_BASE} $(LatestTag ${TAG_BASE}) \
-        --push \
-        .
+DeployManifest() {
+    IMAGE_NAME=$1
+    local IFS=","
+    read -ra REQUESTED_ARCH_ARRAY <<< $(InterpretArchRequest "$2")
+    TAG_VER=$3
+    
+    SRC_IMAGES=""
+    for TAG_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
+        SRC_IMAGES+="${REGISTRY_SPEC}${IMAGE_NAME}:${TAG_ARCH}-${TAG_VER} "
+    done
+
+    docker buildx imagetools create -t "${REGISTRY_SPEC}${IMAGE_NAME}:${TAG_VER} $SRC_IMAGES"
 }
 
-# Step 1: Certbot core Docker
-DeployCertbot
-
-# Step 2: Certbot DNS plugins Docker images
-for PLUGIN in "${CERTBOT_PLUGINS[@]}"; do
-    DeployPlugin $PLUGIN
+for TAG_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
+    DeployImage certbot $TAG_ARCH $TAG_VER
+    for PLUGIN in "${CERTBOT_PLUGINS[@]}"; do
+        DeployImage $PLUGIN $TAG_ARCH $TAG_VER
+    done
 done
+
+
