@@ -136,8 +136,6 @@ class UseCorrectApacheExecutableTest(util.ApacheTest):
 class MultipleVhostsTestCentOS(util.ApacheTest):
     """Multiple vhost tests for CentOS / RHEL family of distros"""
 
-    _multiprocess_can_split_ = True
-
     @mock.patch("certbot.util.get_os_info")
     def setUp(self, mock_get_os_info):  # pylint: disable=arguments-differ
         test_dir = "centos7_apache/apache"

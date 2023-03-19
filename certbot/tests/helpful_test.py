@@ -1,6 +1,5 @@
 """Tests for certbot.helpful_parser"""
 import sys
-import unittest
 from unittest import mock
 
 import pytest
@@ -11,7 +10,7 @@ from certbot._internal.cli import _DomainsAction
 from certbot._internal.cli import HelpfulArgumentParser
 
 
-class TestScanningFlags(unittest.TestCase):
+class TestScanningFlags:
     '''Test the prescan_for_flag method of HelpfulArgumentParser'''
     def test_prescan_no_help_flag(self):
         arg_parser = HelpfulArgumentParser(['run'], {})
@@ -40,7 +39,7 @@ class TestScanningFlags(unittest.TestCase):
                                                     arg_parser.help_topics)
         assert detected_flag is False
 
-class TestDetermineVerbs(unittest.TestCase):
+class TestDetermineVerbs:
     '''Tests for determine_verb methods of HelpfulArgumentParser'''
     def test_determine_verb_wrong_verb(self):
         arg_parser = HelpfulArgumentParser(['potato'], {})
@@ -71,7 +70,7 @@ class TestDetermineVerbs(unittest.TestCase):
         assert arg_parser.args == []
 
 
-class TestAdd(unittest.TestCase):
+class TestAdd:
     '''Tests for add method in HelpfulArgumentParser'''
     def test_add_trivial_argument(self):
         arg_parser = HelpfulArgumentParser(['run'], {})
@@ -93,7 +92,7 @@ class TestAdd(unittest.TestCase):
         assert hasattr(parsed_args, 'eab_kid')
 
 
-class TestAddGroup(unittest.TestCase):
+class TestAddGroup:
     '''Test add_group method of HelpfulArgumentParser'''
     def test_add_group_no_input(self):
         arg_parser = HelpfulArgumentParser(['run'], {})
@@ -118,7 +117,7 @@ class TestAddGroup(unittest.TestCase):
             assert arg_parser.groups["certonly"] is False
 
 
-class TestParseArgsErrors(unittest.TestCase):
+class TestParseArgsErrors:
     '''Tests for errors that should be met for some cases in parse_args method
     in HelpfulArgumentParser'''
     def test_parse_args_renew_force_interactive(self):
@@ -194,7 +193,7 @@ class TestParseArgsErrors(unittest.TestCase):
             arg_parser.parse_args()
 
 
-class TestAddDeprecatedArgument(unittest.TestCase):
+class TestAddDeprecatedArgument:
     """Tests for add_deprecated_argument method of HelpfulArgumentParser"""
 
     @mock.patch.object(HelpfulArgumentParser, "modify_kwargs_for_default_detection")
