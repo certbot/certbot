@@ -38,10 +38,12 @@ trap Cleanup EXIT
 # Create the builder
 CreateBuilder
 
+rm -rf .docker_cache
+
 BuildAll() {
     docker buildx bake -f ${WORK_DIR}/docker-bake.hcl \
         --builder certbot_builder  \
-        --set *.cache-to=type=local,dest=.docker_cache \
+        --set *.cache-to=type=local,dest=.docker_cache,mode=min \
         build-all
 }
 # --progress plain
