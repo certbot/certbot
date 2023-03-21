@@ -16,7 +16,10 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 import josepy as jose
 import OpenSSL
-from josepy import ES256, ES384, ES512, RS256
+from josepy import ES256
+from josepy import ES384
+from josepy import ES512
+from josepy import RS256
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util

@@ -211,7 +211,7 @@ def assert_world_read_permissions(file: str) -> None:
 
 def assert_jwk_type(file: str, key_type: Type[josepy.JWK]) -> None:
     """
-    Assert that the given file is world-readable, but not world-writable or world-executable.
+    Assert that the file is a specified JWK key, e.g., jose.EC256
     :param str file: path of the file to check
     :param key_type: The JWK type for the instance check of the JSON file.
     """
