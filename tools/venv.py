@@ -39,6 +39,7 @@ REQUIREMENTS = [
     '-e certbot-dns-rfc2136',
     '-e certbot-dns-route53',
     '-e certbot-dns-sakuracloud',
+    '-e certbot-dns-valuedomain',
     '-e certbot-nginx',
     '-e certbot-compatibility-test',
     '-e certbot-ci',

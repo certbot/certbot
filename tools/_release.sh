@@ -61,7 +61,7 @@ SUBPKGS_NO_CERTBOT="acme certbot-apache certbot-nginx certbot-dns-cloudflare \
                     certbot-dns-digitalocean certbot-dns-dnsimple certbot-dns-dnsmadeeasy \
                     certbot-dns-gehirn certbot-dns-google certbot-dns-linode certbot-dns-luadns \
                     certbot-dns-nsone certbot-dns-ovh certbot-dns-rfc2136 certbot-dns-route53 \
-                    certbot-dns-sakuracloud"
+                    certbot-dns-sakuracloud certbot-dns-valuedomain"
 SUBPKGS="certbot $SUBPKGS_NO_CERTBOT"
 # certbot_compatibility_test is not packaged because:
 # - it is not meant to be used by anyone else than Certbot devs

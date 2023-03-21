@@ -92,6 +92,10 @@ def _plugins_parsing(helpful: "helpful.HelpfulArgumentParser",
                 default=flag_default("dns_sakuracloud"),
                 help=("Obtain certificates using a DNS TXT record "
                      "(if you are using Sakura Cloud for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-valuedomain", action="store_true",
+                default=flag_default("dns_valuedomain"),
+                help=("Obtain certificates using a DNS TXT record "
+                     "(if you are using Sakura Cloud for DNS)."))
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin

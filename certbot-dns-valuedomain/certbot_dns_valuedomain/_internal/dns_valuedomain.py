@@ -31,13 +31,11 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(
-            add, default_propagation_seconds=90)
+        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=90)
         add('credentials', help='Value Domain credentials file.')
 
     def more_info(self) -> str: # pylint: disable=missing-function-docstring
-        return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
-               'the Value Domain API.'
+        return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using the Value Domain API.'
 
     def _setup_credentials(self) -> None:
         self.credentials = self._configure_credentials(
