@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* `acme.messages.OrderResource` now supports being round-tripped
+  through JSON
 
 ### Changed
 

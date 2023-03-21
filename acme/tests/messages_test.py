@@ -492,6 +492,36 @@ class OrderResourceTest(unittest.TestCase):
             'authorizations': None,
         }
 
+    def test_json_de_serializable(self):
+        from acme.messages import ChallengeBody
+        from acme.messages import STATUS_PENDING
+        challbs = (
+            ChallengeBody(
+                uri='http://challb1', status=STATUS_PENDING,
+                chall=challenges.HTTP01(token=b'IlirfxKKXAsHtmzK29Pj8A')),
+            ChallengeBody(uri='http://challb2', status=STATUS_PENDING,
+                          chall=challenges.DNS(
+                              token=b'DGyRejmCefe7v4NfDGDKfA')),
+        )
+
+        from acme.messages import Authorization
+        from acme.messages import AuthorizationResource
+        from acme.messages import Identifier
+        from acme.messages import IDENTIFIER_FQDN
+        identifier = Identifier(typ=IDENTIFIER_FQDN, value='example.com')
+        authz = AuthorizationResource(uri="http://authz1",
+                                      body=Authorization(
+                                          identifier=identifier,
+                                          challenges=challbs))
+        from acme.messages import Order
+        body = Order(identifiers=(identifier,), status=STATUS_PENDING,
+                     authorizations=tuple(challb.uri for challb in challbs))
+        from acme.messages import OrderResource
+        orderr = OrderResource(uri="http://order1", body=body,
+                               csr_pem=b'test blob',
+                               authorizations=(authz,))
+        self.assertEqual(orderr,
+                         OrderResource.from_json(orderr.to_json()))
 
 class NewOrderTest(unittest.TestCase):
     """Tests for acme.messages.NewOrder."""
