@@ -654,11 +654,27 @@ class OrderResource(ResourceWithURI):
     :vartype alternative_fullchains_pem: `list` of `str`
     """
     body: Order = jose.field('body', decoder=Order.from_json)
-    csr_pem: bytes = jose.field('csr_pem', omitempty=True)
+    csr_pem: bytes = jose.field('csr_pem', omitempty=True,
+                                # This looks backwards, but it's not -
+                                # we want the deserialized value to be
+                                # `bytes`, but anything we put into
+                                # JSON needs to be `str`, so we encode
+                                # to decode and decode to
+                                # encode. Otherwise we end up with an
+                                # array of ints on serialization
+                                decoder=lambda s: s.encode("utf-8"),
+                                encoder=lambda b: b.decode("utf-8"))
+
     authorizations: List[AuthorizationResource] = jose.field('authorizations')
     fullchain_pem: str = jose.field('fullchain_pem', omitempty=True)
     alternative_fullchains_pem: List[str] = jose.field('alternative_fullchains_pem',
                                                        omitempty=True)
+
+    # Mypy does not understand the josepy magic happening here, and falsely claims
+    # that authorizations is redefined. Let's ignore the type check here.
+    @authorizations.decoder  # type: ignore
+    def authorizations(value: List[Dict[str, Any]]) -> Tuple[AuthorizationResource, ...]: # pylint: disable=no-self-argument,missing-function-docstring
+        return tuple(AuthorizationResource.from_json(authz) for authz in value)
 
 
 class NewOrder(Order):
