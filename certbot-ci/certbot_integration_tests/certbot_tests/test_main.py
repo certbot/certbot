@@ -17,6 +17,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import SECP384R1
 from cryptography.hazmat.primitives.asymmetric.ec import SECP521R1
 from cryptography.x509 import NameOID
 import pytest
+from josepy import JWKEC
 
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
 from certbot_integration_tests.certbot_tests.assertions import assert_elliptic_key
@@ -24,6 +25,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_equals_gro
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_hook_execution
+from certbot_integration_tests.certbot_tests.assertions import assert_jwk_type
 from certbot_integration_tests.certbot_tests.assertions import assert_rsa_key
 from certbot_integration_tests.certbot_tests.assertions import assert_saved_lineage_option
 from certbot_integration_tests.certbot_tests.assertions import assert_saved_renew_hook
@@ -163,6 +165,45 @@ def test_certonly(context: IntegrationTestsContext) -> None:
     context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname')])
 
     assert_cert_count_for_lineage(context.config_dir, 'newname', 1)
+
+
+def test_certonly_ecdsa_account_flag(context: IntegrationTestsContext) -> None:
+    context.certbot([
+        'certonly',
+        '--cert-name', 'newname',
+        '--ecdsa-account-key',
+        '-d', context.get_domain('newname'),
+    ])
+
+    key_path = misc.get_account_key_path(context)
+    assert_jwk_type(key_path, JWKEC)
+
+
+def test_ecdsa_account_flag_duplicate(context: IntegrationTestsContext) -> None:
+    """
+    Register and check that it fails when trying to use --ecdsa-account-key
+    for an account that was already registered with another
+    """
+
+    context.certbot([
+        'register',
+        '--register-unsafely-without-email',
+        '--ecdsa-account-key',
+    ])
+    key_path = misc.get_account_key_path(context)
+    assert_jwk_type(key_path, JWKEC)
+
+    with pytest.raises(subprocess.CalledProcessError) as error:
+        context.certbot([
+            'certonly',
+            '--register-unsafely-without-email',
+            '--cert-name', 'newname',
+            '--ecdsa-account-key',
+            '-d', context.get_domain('newname'),
+        ])
+
+    assert ("--ecdsa-account-key cannot be used because an "
+            "account has already been registered" in error.value.stderr)
 
 
 def test_certonly_webroot(context: IntegrationTestsContext) -> None:

@@ -5,6 +5,7 @@ or outside during setup/teardown of the integration tests environment.
 import contextlib
 import errno
 import functools
+import glob
 import http.server as SimpleHTTPServer
 import os
 import re
@@ -319,3 +320,13 @@ def get_acme_issuers(context: IntegrationTestsContext) -> List[Certificate]:
         issuers.append(load_pem_x509_certificate(request.content, default_backend()))
 
     return issuers
+
+
+def get_account_key_path(context: IntegrationTestsContext) -> str:
+    """
+    Get the account key. Useful for the integration
+
+    :return: The path to the private key of the ACME account
+    """
+    accounts = glob.glob(os.path.join(context.config_dir, "accounts", "*", "*", "*"))
+    return os.path.join(accounts[0], 'private_key.json')

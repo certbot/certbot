@@ -238,7 +238,6 @@ class GenSsCertTest(unittest.TestCase):
             self.serial_num.append(cert.get_serial_number())
         assert len(set(self.serial_num)) >= self.cert_count
 
-
     def test_no_name(self):
         from acme.crypto_util import gen_ss_cert
         with pytest.raises(AssertionError):

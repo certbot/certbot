@@ -12,6 +12,7 @@ from unittest import mock
 import josepy as jose
 import pytest
 import requests
+from josepy.jwk import JWKEC
 
 from acme import challenges
 from acme import errors
@@ -25,6 +26,8 @@ import test_util
 CERT_SAN_PEM = test_util.load_vector('cert-san.pem')
 CSR_MIXED_PEM = test_util.load_vector('csr-mixed.pem')
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
+KEY2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
+SECP256R1_KEY = JWKEC.load(test_util.load_vector('ec_secp256r1.pem'))
 
 DIRECTORY_V2 = messages.Directory({
     'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
@@ -216,6 +219,29 @@ class ClientV2Test(unittest.TestCase):
         self.response.json.side_effect = (
             self.authz.to_json(), self.authz2.to_json(), updated_authz2.to_json())
         assert self.client.poll_authorizations(self.orderr, deadline) == updated_orderr
+
+    def test_query_registration_client_v2_ecdsa(self):
+        from acme.client import ClientV2
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        regr = messages.NewRegistration(
+            key=SECP256R1_KEY.public_key(),
+        )
+        self.client = ClientV2(
+            directory=self.directory, net=self.net  # type: ignore
+        )
+        self.client.new_account(regr.to_json())
+        self.net.post.assert_called_once_with(
+            DIRECTORY_V2['newAccount'],
+            regr.to_json(),
+            new_nonce_url=DIRECTORY_V2['newNonce'],
+        )
+
+    @mock.patch('acme.client.ClientNetwork')
+    def test_register_ec_keys(self, mock_net):
+        mock_net.return_value = mock.sentinel.net
+        from acme.client import ClientV2
+        self.client = ClientV2(directory=self.directory, net=self.net)
+        mock_net.called_once_with(SECP256R1_KEY.public_key(), alg=jose.ES256, verify_ssl=True)
 
     def test_poll_unexpected_update(self):
         updated_authz = self.authz.update(identifier=self.identifier.update(value='foo'))
@@ -788,6 +814,9 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     def test_new_nonce_uri_removed(self):
         self.content_type = None
         self.net.post('uri', self.obj, content_type=None, new_nonce_url='new_nonce_uri')
+
+    def tearDown(self):
+        pass
 
 
 if __name__ == '__main__':

@@ -1,9 +1,9 @@
 """Certbot command line argument & config processing."""
 # pylint: disable=too-many-lines
 import argparse
-import logging
+import logging  # noqa
 import logging.handlers
-import sys
+import sys  # noqa
 from typing import Any
 from typing import List
 from typing import Optional
@@ -103,6 +103,14 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
+    helpful.add(
+        [None, "register", "certonly"],
+        "--ecdsa-account-key",
+        dest="ecdsa_account_key", action="store_true",
+        default=flag_default("ecdsa_account_key"),
+        help="Create an ECDSA key for the account registration? "
+             "Can only be used for new accounts.",
+    )
     helpful.add(
         [None, "register", "run", "certonly", "enhance"],
         constants.FORCE_INTERACTIVE_FLAG, action="store_true",

@@ -224,6 +224,15 @@ class HelpfulArgumentParser:
                 raise errors.Error("Using --allow-subset-of-names with a"
                                    " wildcard domain is not supported.")
 
+        # error when a private key already exists, and it's not a new account
+        if parsed_args.ecdsa_account_key:
+            # seems to be the fastest way to check for existing accounts
+            if glob.glob(os.path.join(parsed_args.config_dir, constants.ACCOUNTS_DIR, "*")):
+                raise errors.Error(
+                    "--ecdsa-account-key cannot be used because an account "
+                    "has already been registered"
+                )
+
         if parsed_args.hsts and parsed_args.auto_hsts:
             raise errors.Error(
                 "Parameters --hsts and --auto-hsts cannot be used simultaneously.")

@@ -84,6 +84,15 @@ class NamespaceConfig:
         self.namespace.email = mail
 
     @property
+    def ecdsa_account_key(self) -> bool:
+        """
+        Whether or not to use an ECDSA account key for the registration.
+
+        (default: False).
+        """
+        return self.namespace.ecdsa_account_key
+
+    @property
     def rsa_key_size(self) -> int:
         """Size of the RSA key."""
         return self.namespace.rsa_key_size

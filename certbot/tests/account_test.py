@@ -6,6 +6,12 @@ import unittest
 from unittest import mock
 
 import josepy as jose
+from josepy.jwk import JWKEC
+
+try:
+    import mock
+except ImportError: # pragma: no cover
+    from unittest import mock
 import pytest
 import pytz
 
@@ -16,11 +22,13 @@ from certbot.compat import misc
 from certbot.compat import os
 import certbot.tests.util as test_util
 
-KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
-
 
 class AccountTest(unittest.TestCase):
     """Tests for certbot._internal.account.Account."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
     def setUp(self):
         from certbot._internal.account import Account
@@ -29,25 +37,28 @@ class AccountTest(unittest.TestCase):
             creation_host="test.certbot.org",
             creation_dt=datetime.datetime(
                 2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
-        self.acc = Account(self.regr, KEY, self.meta)
+        self.acc = Account(self.regr, self.KEY, self.meta)
         self.regr.__repr__ = mock.MagicMock(return_value="i_am_a_regr")
 
         with mock.patch("certbot._internal.account.socket") as mock_socket:
             mock_socket.getfqdn.return_value = "test.certbot.org"
             with mock.patch("certbot._internal.account.datetime") as mock_dt:
                 mock_dt.datetime.now.return_value = self.meta.creation_dt
-                self.acc_no_meta = Account(self.regr, KEY)
+                self.acc_no_meta = Account(self.regr, self.KEY)
 
     def test_init(self):
+        self.assertEqual(self.regr, self.acc.regr)
+        self.assertEqual(self.KEY, self.acc.key)
+        self.assertEqual(self.meta, self.acc_no_meta.meta)
+
+    def test_slug(self):
+        self.assertEqual(self.acc.slug, "test.certbot.org@2015-07-04T14:04:10Z (7ada)")
         assert self.regr == self.acc.regr
         assert KEY == self.acc.key
         assert self.meta == self.acc_no_meta.meta
 
     def test_id(self):
         assert self.acc.id == "7adac10320f585ddf118429c0c4af2cd"
-
-    def test_slug(self):
-        assert self.acc.slug == "test.certbot.org@2015-07-04T14:04:10Z (7ada)"
 
     def test_repr(self):
         assert repr(self.acc).startswith(
@@ -102,6 +113,8 @@ class AccountMemoryStorageTest(unittest.TestCase):
 class AccountFileStorageTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.account.AccountFileStorage."""
 
+    KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
+
     def setUp(self):
         super().setUp()
 
@@ -109,12 +122,32 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self.storage = AccountFileStorage(self.config)
 
         from certbot._internal.account import Account
+        self.new_authzr_uri = "hi"
+        self.meta = Account.Meta(
         meta = Account.Meta(
             creation_host="test.example.org",
             creation_dt=datetime.datetime(
                 2021, 1, 5, 14, 4, 10, tzinfo=pytz.UTC))
         self.acc = Account(
             regr=messages.RegistrationResource(
+                uri=None, body=messages.Registration(),
+                new_authzr_uri=self.new_authzr_uri),
+            key=self.KEY,
+            meta=self.meta)
+        self.mock_client = mock.MagicMock()
+        self.mock_client.directory.new_authz = self.new_authzr_uri
+
+    def test_ec_key(self):
+        from certbot._internal.account import Account
+        key = JWKEC.load(test_util.load_vector("nistp256_key.pem"))
+        self.acc = Account(
+            regr=messages.RegistrationResource(
+                uri=None, body=messages.Registration(),
+                new_authzr_uri=self.new_authzr_uri),
+            key=key,
+            meta=self.meta,
+        )
+        self.assertEqual(self.acc.key.typ, "EC")
                 uri=None, body=messages.Registration()),
             key=KEY,
             meta=meta)

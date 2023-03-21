@@ -7,18 +7,16 @@ import sys
 import tempfile
 import unittest
 from unittest import mock
-from unittest.mock import MagicMock
 
 from josepy import interfaces
 import pytest
 
-from certbot import errors
-from certbot import util
-from certbot._internal import account
-from certbot._internal import constants
+import certbot.tests.util as test_util
+from acme.client import ClientV2
+from certbot import errors, util
+from certbot._internal import account, constants
 from certbot._internal.display import obj as display_obj
 from certbot.compat import os
-import certbot.tests.util as test_util
 
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
@@ -67,7 +65,7 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
         self.tos_cb = mock.MagicMock()
-        display_obj.set_display(MagicMock())
+        display_obj.set_display(mock.MagicMock())
 
     def _call(self):
         from certbot._internal.client import register
@@ -110,6 +108,7 @@ class RegisterTest(test_util.ConfigTestCase):
                 mock_client().new_account.side_effect = None
                 self._call()
                 assert mock_prepare.called is True
+
 
     @mock.patch('certbot._internal.eff.prepare_subscription')
     def test_empty_meta(self, unused_mock_prepare):
@@ -248,12 +247,14 @@ class RegisterTest(test_util.ConfigTestCase):
 class ClientTestCommon(test_util.ConfigTestCase):
     """Common base class for certbot._internal.client.Client tests."""
 
+    account_key = KEY
+
     def setUp(self):
         super().setUp()
         self.config.no_verify_ssl = False
         self.config.allow_subset_of_names = False
 
-        self.account = mock.MagicMock(**{"key.pem": KEY})
+        self.account = mock.MagicMock(**{"key.pem": self.account_key})
 
         from certbot._internal.client import Client
         with mock.patch("certbot._internal.client.acme_client") as acme:

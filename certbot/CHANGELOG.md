@@ -8,6 +8,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * `acme.messages.OrderResource` now supports being round-tripped
   through JSON
+* A flag has been introduced to create an ECDSA ([EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography))
+  account key for `certonly`, `register`. Existing accounts will not be affected.
+  Reason for this is bandwidth usage on ACME servers, as well as increased security.
+  Only new accounts can be registered like this.
 
 ### Changed
 
@@ -318,6 +322,7 @@ More details about these changes can be found on our GitHub repo.
 * If account registration fails, Certbot did not relay the error from the ACME server
   back to the user. This is now fixed: the error message from the ACME server is now
   presented to the user when account registration fails.
+*
 
 More details about these changes can be found on our GitHub repo.
 
@@ -353,7 +358,7 @@ More details about these changes can be found on our GitHub repo.
 * When the `--debug-challenges` option is used in combination with `-v`, Certbot
   now displays the challenge URLs (for `http-01` challenges) or FQDNs (for
   `dns-01` challenges) and their expected return values.
-*
+
 
 ### Changed
 

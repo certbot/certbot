@@ -12,13 +12,14 @@ from typing import Optional
 from typing import Tuple
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
 import josepy as jose
+import OpenSSL
 from josepy import ES256
 from josepy import ES384
 from josepy import ES512
 from josepy import RS256
-import OpenSSL
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -199,11 +200,22 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
         config.email = None
 
     # Each new registration shall use a fresh new key
-    rsa_key = generate_private_key(
+    key: jose.JWK
+    if config.ecdsa_account_key:
+        # RFC 8555 6.2 says only ES256 is supported, i.e., SECP256R1
+        # mypy complains without the cast, although
+        # EllipticCurvePrivateKeyWithSerialization = EllipticCurvePrivateKey
+        ec_key = cast(ec.EllipticCurvePrivateKeyWithSerialization, ec.generate_private_key(
+            curve=ec.SECP256R1(),
+            backend=default_backend(),
+        ))
+        key = jose.JWKEC(key=jose.ComparableECKey(ec_key))
+    else:
+        rsa_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=config.rsa_key_size,
             backend=default_backend())
-    key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
+        key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
     regr = perform_registration(acme, config, tos_cb)
@@ -407,7 +419,6 @@ class Client:
                     bits=key_size,
                     elliptic_curve=elliptic_curve,
                     key_type=self.config.key_type,
-
                 ),
             )
             csr = util.CSR(file=None, form="pem",
