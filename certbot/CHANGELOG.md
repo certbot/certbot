@@ -8,6 +8,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * `acme.messages.OrderResource` now supports being round-tripped
   through JSON
+* A flag has been introduced to create an ECDSA ([EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography))
+  account key for `certonly`, `register`. Existing accounts will not be affected.
+  Reason for this is bandwidth usage on ACME servers, as well as increased security.
+  Only new accounts can be registered like this.
 
 ### Changed
 
@@ -25,10 +29,6 @@ More details about these changes can be found on our GitHub repo.
 
 * We deprecated support for the update_symlinks command. Support will be removed in a following
   version of Certbot.
-* A flag has been introduced to create an ECDSA ([EC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography))
-  account key for `certonly`, `register`. Existing accounts will not be affected.
-  Reason for this is bandwidth usage on ACME servers, as well as increased security.
-  Only new accounts can be registered like this.
 
 ### Changed
 
