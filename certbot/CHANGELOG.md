@@ -8,6 +8,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * `acme.messages.OrderResource` now supports being round-tripped
   through JSON
+* `acme.client.ClientV2` now provides an asynchronous interface for
+  order finalization (`begin_order_finalization()` and
+  `poll_finalization()`)
 
 ### Changed
 
