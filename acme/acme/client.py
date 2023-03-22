@@ -210,8 +210,8 @@ class ClientV2:
             raise errors.ValidationError(failed)
         return orderr.update(authorizations=responses)
 
-    def begin_order_finalization(self, orderr: messages.OrderResource
-                                 ) -> messages.OrderResource:
+    def begin_finalization(self, orderr: messages.OrderResource
+                           ) -> messages.OrderResource:
         """Start the process of finalizing an order.
 
         :param messages.OrderResource orderr: order to finalize
@@ -272,7 +272,7 @@ class ClientV2:
         :rtype: messages.OrderResource
 
         """
-        self.begin_order_finalization(orderr)
+        self.begin_finalization(orderr)
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
 
     def revoke(self, cert: jose.ComparableX509, rsn: int) -> None:
