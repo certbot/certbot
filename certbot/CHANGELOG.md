@@ -18,6 +18,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   [GetChange API](https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html)
   to determine if a DNS update is complete. The flag has never had any effect and will be
   removed in a future version of Certbot.
+* Packaged tests for all Certbot components besides josepy were moved inside
+  the `_internal/tests` module.
 
 ### Fixed
 
