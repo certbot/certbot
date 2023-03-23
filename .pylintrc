@@ -48,6 +48,9 @@ ignore=CVS
 # ignore-list. The regex matches against paths and can be in Posix or Windows
 # format. Because '\' represents the directory delimiter on Windows systems, it
 # can't be used as an escape character.
+# CERTBOT COMMENT
+# Changing this line back to the default of `ignore-paths=` is being tracked by
+# https://github.com/certbot/certbot/issues/7908.
 ignore-paths=.*/_internal/tests/
 
 # Files or directories matching the regular expression patterns are skipped.
