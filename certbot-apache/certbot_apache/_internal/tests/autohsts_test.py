@@ -9,7 +9,7 @@ import pytest
 
 from certbot import errors
 from certbot_apache._internal import constants
-import util
+from certbot_apache._internal.tests import util
 
 
 class AutoHSTSTest(util.ApacheTest):
