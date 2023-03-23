@@ -3,6 +3,7 @@ import collections
 import logging
 import time
 from typing import Any
+from typing import Callable
 from typing import DefaultDict
 from typing import Dict
 from typing import List
@@ -12,9 +13,11 @@ from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
 
 from acme.challenges import ChallengeResponse
+from certbot import achallenges
 from certbot import errors
 from certbot.achallenges import AnnotatedChallenge
 from certbot.plugins import dns_common
+from certbot.util import add_deprecated_argument
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,17 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def more_info(self) -> str:
         return "Solve a DNS01 challenge using AWS Route53"
+
+    @classmethod
+    def add_parser_arguments(cls, add: Callable[..., None],  # pylint: disable=arguments-differ
+                             default_propagation_seconds: int = 10) -> None:
+        add_deprecated_argument(add, 'propagation-seconds', 1)
+
+    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
+        return (
+            'The Certificate Authority failed to verify the DNS TXT records created by '
+            '--dns-route53. Ensure the above domains have their DNS hosted by AWS Route53.'
+        )
 
     def _setup_credentials(self) -> None:
         pass
