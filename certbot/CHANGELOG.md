@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Packaged tests for all Certbot components besides josepy were moved inside
+  the `_internal/tests` module.
 
 ### Fixed
 
