@@ -1,8 +1,8 @@
 name: Update Stale Issues
 on:
   schedule:
-    # Run at midnight every night
-    - cron: '24 1 * * *'
+    # Run 24 minutes past the hour 4 times a day.
+    - cron: '24 */6 * * *'
 permissions:
   issues: write
 jobs:
