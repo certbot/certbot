@@ -1,5 +1,6 @@
 """Tests for certbot_dns_route53._internal.dns_route53.Authenticator"""
 
+import argparse
 import sys
 import unittest
 from unittest import mock
@@ -113,6 +114,14 @@ class ClientTest(unittest.TestCase):
                             }
                         }
 
+    EXAMPLE_COM_DUPE_ZONE = {
+                            "Id": "EXAMPLE-DUPE",
+                            "Name": "example.com",
+                            "Config": {
+                                "PrivateZone": False
+                            }
+                        }
+
     FOO_EXAMPLE_COM_ZONE = {
                                 "Id": "FOO",
                                 "Name": "foo.example.com",
@@ -125,6 +134,7 @@ class ClientTest(unittest.TestCase):
         from certbot_dns_route53._internal.dns_route53 import Authenticator
 
         self.config = mock.MagicMock()
+        self.config.route53_map = {}
 
         # Set up dummy credentials for testing
         os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
@@ -192,6 +202,20 @@ class ClientTest(unittest.TestCase):
         with pytest.raises(errors.PluginError):
             self.client._find_zone_id_for_domain("foo.example.com")
 
+    def test_file_zone_id_with_map(self):
+        self.config.route53_map = {"example.com": "EXAMPLE-DUPE"}
+        self.client.r53.get_paginator = mock.MagicMock()
+        self.client.r53.get_paginator().paginate.return_value = [
+            {
+                "HostedZones": [
+                    self.EXAMPLE_COM_ZONE,
+                    self.EXAMPLE_COM_DUPE_ZONE,
+                ]
+            }
+        ]
+        result = self.client._find_zone_id_for_domain("foo.example.com")
+        assert result == "EXAMPLE-DUPE"
+
     def test_change_txt_record(self):
         self.client._find_zone_id_for_domain = mock.MagicMock()
         self.client.r53.change_resource_record_sets = mock.MagicMock(
@@ -250,6 +274,19 @@ class ClientTest(unittest.TestCase):
         self.client._wait_for_change(1)
 
         assert self.client.r53.get_change.called
+
+
+def test_zone_map():
+    from certbot_dns_route53._internal.dns_route53 import Authenticator
+    parser = argparse.ArgumentParser()
+    Authenticator.inject_parser_options(parser, "dns-route53")
+
+    args = parser.parse_args(["--dns-route53-map", '{"a.com": "XYZ", "b.com.": "123"}'])
+    assert args.dns_route53_map["a.com"] == "XYZ"
+    assert args.dns_route53_map["b.com"] == "123"
+
+    with pytest.raises(errors.PluginError):
+        parser.parse_args(["--dns-route53-map", '[1, 2, 3]'])
 
 
 if __name__ == "__main__":

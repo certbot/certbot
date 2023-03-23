@@ -1,11 +1,17 @@
 """Certbot Route53 authenticator plugin."""
+import argparse
 import collections
+import json
 import logging
 import time
 from typing import Any
+from typing import Callable
 from typing import DefaultDict
 from typing import Dict
 from typing import List
+from typing import Optional
+from typing import Sequence
+from typing import Union
 
 import boto3
 from botocore.exceptions import ClientError
@@ -40,6 +46,16 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.r53 = boto3.client("route53")
         self._resource_records: DefaultDict[str, List[Dict[str, str]]] = \
             collections.defaultdict(list)
+
+    @classmethod
+    def add_parser_arguments(cls, add: Callable[..., None],  # pylint: disable=arguments-differ
+                             default_propagation_seconds: int = 10) -> None:
+        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds)
+        add("map", default={}, action=_MapAction,
+            help="JSON dictionary mapping zone names to Hosted Zone IDs. e.g. "
+                 "--dns-route53-map '{\"example.com\": \"HHY92PK8\"}'"
+                 ". Certbot will use this map to break the tie if there are duplicate Route53 "
+                 "zones.")
 
     def more_info(self) -> str:
         return "Solve a DNS01 challenge using AWS Route53"
@@ -102,7 +118,11 @@ class Authenticator(dns_common.DNSAuthenticator):
         # ["foo.bar.baz.com", "bar.baz.com", "baz.com", "com"]
         # And then we choose the first one, which will be the most specific.
         zones.sort(key=lambda z: len(z[0]), reverse=True)
-        return zones[0][1]
+
+        # If the best result is one that is present in --dns-route53-map, we choose
+        # the zone ID specified in the map instead. Otherwise, choose the best result.
+        zone_map: Dict[str, str] = self.conf("map")
+        return zone_map.get(zones[0][0].rstrip("."), zones[0][1])
 
     def _change_txt_record(self, action: str, validation_domain_name: str, validation: str) -> str:
         zone_id = self._find_zone_id_for_domain(validation_domain_name)
@@ -152,3 +172,19 @@ class Authenticator(dns_common.DNSAuthenticator):
         raise errors.PluginError(
             "Timed out waiting for Route53 change. Current status: %s" %
             response["ChangeInfo"]["Status"])
+
+
+class _MapAction(argparse.Action):
+    """Action class for parsing dns_route53_map."""
+
+    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
+                 value: Union[str, Sequence[Any], None],
+                 option_string: Optional[str] = None) -> None:
+        if value is None:
+            return
+        jobj = json.loads(str(value))
+        if not isinstance(jobj, dict):
+            raise errors.PluginError('--dns-route53-map must be a JSON dictionary, e.g. '
+                                     '{"example.com: "XYZ"}')
+        for zone_name, zone_id in jobj.items():
+            namespace.dns_route53_map.update({zone_name.rstrip("."): str(zone_id)})

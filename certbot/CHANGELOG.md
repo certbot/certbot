@@ -11,6 +11,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * acme.client.ClientV2 now provides separate `begin_finalization`
   and `poll_finalization` methods, in addition to the existing
   `finalize_order` method.
+* `--dns-route53-map` has been added. It can be used to control which DNS zone will be
+  used when there are duplicates.
 
 ### Changed
 

@@ -16,6 +16,13 @@ Named Arguments
                                           to propagate before asking the ACME
                                           server to verify the DNS record.
                                           (Default: 10)
+``--dns-route53-map``                     JSON dictionary mapping zone names to
+                                          Hosted Zone IDs. e.g.
+                                          ``'{"example.com": "HHY92PK8"}'``.
+
+                                          Certbot will use this map to break the
+                                          tie if there are duplicate Route53
+                                          zones.
 ========================================  =====================================
 
 
