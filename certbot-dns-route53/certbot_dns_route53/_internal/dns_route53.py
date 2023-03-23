@@ -18,9 +18,11 @@ from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
 
 from acme.challenges import ChallengeResponse
+from certbot import achallenges
 from certbot import errors
 from certbot.achallenges import AnnotatedChallenge
 from certbot.plugins import dns_common
+from certbot.util import add_deprecated_argument
 
 logger = logging.getLogger(__name__)
 
@@ -47,18 +49,24 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._resource_records: DefaultDict[str, List[Dict[str, str]]] = \
             collections.defaultdict(list)
 
+    def more_info(self) -> str:
+        return "Solve a DNS01 challenge using AWS Route53"
+
     @classmethod
     def add_parser_arguments(cls, add: Callable[..., None],  # pylint: disable=arguments-differ
                              default_propagation_seconds: int = 10) -> None:
-        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds)
+        add_deprecated_argument(add, 'propagation-seconds', 1)
         add("map", default={}, action=_MapAction,
             help="JSON dictionary mapping zone names to Hosted Zone IDs. e.g. "
                  "--dns-route53-map '{\"example.com\": \"HHY92PK8\"}'"
                  ". Certbot will use this map to break the tie if there are duplicate Route53 "
                  "zones.")
 
-    def more_info(self) -> str:
-        return "Solve a DNS01 challenge using AWS Route53"
+    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
+        return (
+            'The Certificate Authority failed to verify the DNS TXT records created by '
+            '--dns-route53. Ensure the above domains have their DNS hosted by AWS Route53.'
+        )
 
     def _setup_credentials(self) -> None:
         pass

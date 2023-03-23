@@ -86,6 +86,13 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         self.auth.cleanup([self.achall])
 
+    def test_parser_arguments(self) -> None:
+        from certbot.util import DeprecatedArgumentAction
+        m = mock.MagicMock()
+        self.auth.add_parser_arguments(m)  # pylint: disable=no-member
+        m.assert_any_call('propagation-seconds', action=DeprecatedArgumentAction,
+                          help=mock.ANY, nargs=1)
+
 
 class ClientTest(unittest.TestCase):
     # pylint: disable=protected-access
