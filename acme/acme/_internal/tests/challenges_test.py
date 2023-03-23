@@ -11,7 +11,7 @@ import pytest
 import requests
 
 from acme import errors
-import test_util
+from acme._internal.tests import test_util
 
 CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
