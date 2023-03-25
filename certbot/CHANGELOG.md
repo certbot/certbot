@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Docker build steps now explicitly use BuildKit via `docker buildx build`.
 
 ### Fixed
 
