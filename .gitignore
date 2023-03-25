@@ -40,7 +40,6 @@ tags
 
 # docker files
 .docker
-.docker_cache
 
 # certbot tests
 .certbot_test_workspace

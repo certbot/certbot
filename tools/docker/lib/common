@@ -57,37 +57,6 @@ arch2platform() {
     esac
 }
 
-# Parses the requested architecture string and sets ALL_REQUESTED_ARCH to
-# result.
-# Usage: archList2platformList [arch-list]
-#             where [arch-list] is a comma separated list of architectures
-#             as interpreted by the arch2platform function 
-archList2platformList() {
-    local IFS=","
-    REQUESTED_ARCH="${1}"
-    # Handle the special value "all"
-    if [[ "${REQUESTED_ARCH}" == "all" ]]; then
-        # Recursive call using the list of all known architectures cast to
-        # comma separated list
-        archList2platformList "${ALL_TARGET_ARCH[*]}"
-        return 0
-    fi
-    # Convert comma separated list to array of strings
-    read -ra REQUESTED_ARCH_LIST <<< "$REQUESTED_ARCH"
-    # Convert each string to the corresponding docker platform specification.
-    # The internal call to arch2platform might return an error if the arch is
-    # not recognized, crashing the process (`set -exo` called at beginning of 
-    # script)
-    PLATFORM_LIST=()
-    for TARGET_ARCH in "${REQUESTED_ARCH_LIST[@]}"; do
-        PLATFORM_LIST+=($(arch2platform "$TARGET_ARCH"))
-        # fail if lookup in subshell failed
-        if [ $? -ne 0 ]; then exit 1; fi
-    done
-
-    # Return a string made from the array of docker platform spedifications
-    echo "${PLATFORM_LIST[*]}"
-}
 
 # Interpret the user input. Expands "all" to a list of known arches,
 # and validates arches if provided with a list
@@ -121,6 +90,10 @@ Cleanup() {
     popd
 }
 
+InstallMultiarchSupport() {
+    docker run --privileged --rm tonistiigi/binfmt --install all
+}
+
 # Function to create a docker builder using the buildkit docker-container
 # driver
 CreateBuilder() {
@@ -129,34 +102,5 @@ CreateBuilder() {
     # create the builder instance
     docker buildx create --name certbot_builder --driver docker-container --driver-opt=network=host --bootstrap --use
     # add binfmt tools to the docker environment, with integration into the new builder instance
-    docker run --privileged --rm tonistiigi/binfmt --install all
-}
-
-# Helper function to generate common args passed to `docker buildx build`
-# calls. This makes sure things are consisten between top level scripts.
-# Base Certbot version
-StandardCertbotBuildArgs() {
-PLATFORM_SPEC=$1
-cat << EOF
---platform ${PLATFORM_SPEC} \
--f ${WORK_DIR}/Dockerfile \
---target certbot \
---cache-from=type=local,src=${DOCKER_CACHE}/certbot 
-EOF
-}
-
-# Helper function to generate common args passed to `docker buildx build`
-# calls. This makes sure things are consisten between top level scripts.
-# Certbot Plugin version
-StandardPluginBuildArgs() {
-PLATFORM_SPEC=$1
-PLUGIN=$2
-cat << EOF
---platform ${PLATFORM_SPEC} \
--f ${WORK_DIR}/Dockerfile \
---target certbot-plugin \
---build-context plugin-src=${REPO_ROOT}/certbot-${PLUGIN} \
---cache-from=type=local,src=${DOCKER_CACHE}/certbot \
---cache-from=type=local,src=${DOCKER_CACHE}/${PLUGIN}
-EOF
+    InstallMultiarchSupport
 }

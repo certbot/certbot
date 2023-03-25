@@ -9,4 +9,3 @@
 .tox
 venv
 docs
-.docker_cache

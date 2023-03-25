@@ -1,9 +1,8 @@
 #!/bin/bash
 set -euxo pipefail
 
-# This script builds certbot docker and certbot dns plugins docker using the
-# local Certbot files. Results are stored in a docker cache on the local
-# filesystem
+# This script builds docker images for certbot and each dns plugin from the
+# local Certbot source files. Results are stored in the docker image cache
 
 # Usage: 
 #       ./build.sh <tag> all 
@@ -38,38 +37,36 @@ trap Cleanup EXIT
 # Create the builder
 CreateBuilder
 
-rm -rf .docker_cache
 
-BuildAll() {
-    docker buildx bake -f ${WORK_DIR}/docker-bake.hcl \
-        --builder certbot_builder  \
-        --set *.cache-to=type=local,dest=.docker_cache,mode=min \
-        build-all
-}
-# --progress plain
 BuildAndCacheByArch() {
-    export TAG_ARCH=$1
-    docker buildx bake -f ${WORK_DIR}/docker-bake.hcl \
-        --builder certbot_builder  \
-        --set *.platform=$(arch2platform ${TAG_ARCH}) \
-        --set *.cache-from=type=local,src=.docker_cache \
-        build-all --load
+    TAG_ARCH=$1
+    docker buildx build --target certbot --builder certbot_builder \
+        --platform $(arch2platform $TAG_ARCH) \
+        -f "${WORK_DIR}/Dockerfile" \
+        -t "${REGISTRY_SPEC}certbot:${TAG_ARCH}-${TAG_VER}" \
+        --load \
+        .
+    for plugin in "${CERTBOT_PLUGINS[@]}"; do
+        docker buildx build --target certbot-plugin --builder certbot_builder \
+            --platform $(arch2platform $TAG_ARCH) \
+            --build-context plugin-src="${REPO_ROOT}/certbot-${plugin}" \
+            -f "${WORK_DIR}/Dockerfile" \
+            -t "${REGISTRY_SPEC}${plugin}:${TAG_ARCH}-${TAG_VER}" \
+            --load \
+            .
+    done
 }
 
-# If the request was for all, max out the buildkit parallelization logic
-if [ "$ARCH_LIST" = "all" ]; then
-    BuildAll
-fi
-# split arch list into an array for per-arch saving of images to the docker image cache
+# In principle, there is a better way to do with by using `docker buildx back`
+# instead of a for-loop. However, issues have been found in the results
+# of such a build. See git commit adf227fc4.
+
+# split arch list into an array for per-arch image building and saving
 IFS_OLD="$IFS"
 IFS=","
 read -ra REQUESTED_ARCH_ARRAY <<< $(InterpretArchRequest "$ARCH_LIST")
 IFS="$IFS_OLD"
 for ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
-    # If the build was already done by BuildAll, then the existing image is pulled
-    # from the build cache. Otherwise, it gets built on demand here.
-    # Either way, images get tagged and loaded to the docker image cache
-    # for use by test and deploy
     BuildAndCacheByArch $ARCH
 done    
 

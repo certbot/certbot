@@ -33,9 +33,9 @@ IFS="$IFS_OLD"
 pushd "${REPO_ROOT}"
 
 # Set trap here, as the popd won't work as expected if invoked prior to pushd
-trap Cleanup EXIT
+trap popd EXIT
 
-CreateBuilder
+InstallMultiarchSupport
 
 
 REGISTRY_SPEC="${DOCKER_HUB_ORG}/"
