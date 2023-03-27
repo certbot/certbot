@@ -36,24 +36,18 @@ def main(args):
     tools_path = find_tools_path()
 
     with tempfile.TemporaryDirectory() as working_dir:
-        if os.environ.get('CERTBOT_NO_PIN') == '1':
-            # With unpinned dependencies, there is no constraint
-            pip_install_with_print(' '.join(args))
+        repo_path = os.path.dirname(tools_path)
+        if os.environ.get('CERTBOT_OLDEST') == '1':
+            constraints_path = os.path.normpath(os.path.join(
+                repo_path, 'tools', 'oldest_constraints.txt'))
         else:
-            # Otherwise, we pick the constraints file based on the environment
-            # variable CERTBOT_OLDEST.
-            repo_path = os.path.dirname(tools_path)
-            if os.environ.get('CERTBOT_OLDEST') == '1':
-                constraints_path = os.path.normpath(os.path.join(
-                    repo_path, 'tools', 'oldest_constraints.txt'))
-            else:
-                constraints_path = os.path.normpath(os.path.join(
-                    repo_path, 'tools', 'requirements.txt'))
+            constraints_path = os.path.normpath(os.path.join(
+                repo_path, 'tools', 'requirements.txt'))
 
-            env = os.environ.copy()
-            env["PIP_CONSTRAINT"] = constraints_path
+        env = os.environ.copy()
+        env["PIP_CONSTRAINT"] = constraints_path
 
-            pip_install_with_print(' '.join(args), env=env)
+        pip_install_with_print(' '.join(args), env=env)
 
 
 if __name__ == '__main__':
