@@ -55,7 +55,8 @@ def validate_hook(shell_cmd: str, hook_name: str) -> None:
                 msg = f"{cmd}-hook command {hook_name} exists, but is not executable."
             else:
                 msg = (
-                    f"Unable to find {hook_name}-hook command {cmd} in the PATH.\n(PATH is {path})"
+                    f"Unable to find {hook_name}-hook command {cmd} in the PATH.\n(PATH is "
+                    f"{path})\nSee also the --disable-hook-validation option."
                 )
 
             raise errors.HookCommandNotFound(msg)

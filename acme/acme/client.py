@@ -210,23 +210,35 @@ class ClientV2:
             raise errors.ValidationError(failed)
         return orderr.update(authorizations=responses)
 
-    def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
-                       fetch_alternative_chains: bool = False) -> messages.OrderResource:
-        """Finalize an order and obtain a certificate.
+    def begin_finalization(self, orderr: messages.OrderResource
+                           ) -> messages.OrderResource:
+        """Start the process of finalizing an order.
 
         :param messages.OrderResource orderr: order to finalize
         :param datetime.datetime deadline: when to stop polling and timeout
-        :param bool fetch_alternative_chains: whether to also fetch alternative
-            certificate chains
 
-        :returns: finalized order
+        :returns: updated order
         :rtype: messages.OrderResource
-
         """
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
         wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
-        self._post(orderr.body.finalize, wrapped_csr)
+        res = self._post(orderr.body.finalize, wrapped_csr)
+        orderr = orderr.update(body=messages.Order.from_json(res.json()))
+        return orderr
+
+    def poll_finalization(self, orderr: messages.OrderResource,
+                          deadline: datetime.datetime,
+                          fetch_alternative_chains: bool = False
+                          ) -> messages.OrderResource:
+        """
+        Poll an order that has been finalized for its status.
+        If it becomes valid, obtain the certificate.
+
+        :returns: finalized order (with certificate)
+        :rtype: messages.OrderResource
+        """
+
         while datetime.datetime.now() < deadline:
             time.sleep(1)
             response = self._post_as_get(orderr.uri)
@@ -246,6 +258,22 @@ class ClientV2:
                     orderr = orderr.update(alternative_fullchains_pem=alt_chains)
                 return orderr
         raise errors.TimeoutError()
+
+    def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
+                       fetch_alternative_chains: bool = False) -> messages.OrderResource:
+        """Finalize an order and obtain a certificate.
+
+        :param messages.OrderResource orderr: order to finalize
+        :param datetime.datetime deadline: when to stop polling and timeout
+        :param bool fetch_alternative_chains: whether to also fetch alternative
+            certificate chains
+
+        :returns: finalized order
+        :rtype: messages.OrderResource
+
+        """
+        self.begin_finalization(orderr)
+        return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
 
     def revoke(self, cert: jose.ComparableX509, rsn: int) -> None:
         """Revoke certificate.
