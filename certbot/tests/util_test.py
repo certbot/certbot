@@ -351,19 +351,19 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
 
     def test_warning_no_arg(self):
         self._call("--old-option", 0)
-        with mock.patch("warnings.warn") as mock_warn:
+        with mock.patch("certbot.util.logger.warning") as mock_warn:
             self.parser.parse_args(["--old-option"])
         assert mock_warn.call_count == 1
         assert "is deprecated" in mock_warn.call_args[0][0]
-        assert "--old-option" in mock_warn.call_args[0][0]
+        assert "--old-option" in mock_warn.call_args[0][1]
 
     def test_warning_with_arg(self):
         self._call("--old-option", 1)
-        with mock.patch("warnings.warn") as mock_warn:
+        with mock.patch("certbot.util.logger.warning") as mock_warn:
             self.parser.parse_args(["--old-option", "42"])
         assert mock_warn.call_count == 1
         assert "is deprecated" in mock_warn.call_args[0][0]
-        assert "--old-option" in mock_warn.call_args[0][0]
+        assert "--old-option" in mock_warn.call_args[0][1]
 
     def test_help(self):
         self._call("--old-option", 2)
