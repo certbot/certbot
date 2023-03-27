@@ -21,7 +21,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Deprecated flags were inadvertently not printing warnings since v1.16.0. This is now fixed.
 
 More details about these changes can be found on our GitHub repo.
 
