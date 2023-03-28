@@ -10,7 +10,7 @@ import josepy as jose
 import pytest
 
 from acme import challenges
-import test_util
+from acme._internal.tests import test_util
 
 CERT = test_util.load_comparable_cert('cert.der')
 CSR = test_util.load_comparable_csr('csr.der')

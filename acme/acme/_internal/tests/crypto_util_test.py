@@ -14,7 +14,7 @@ import OpenSSL
 import pytest
 
 from acme import errors
-import test_util
+from acme._internal.tests import test_util
 
 
 class SSLSocketAndProbeSNITest(unittest.TestCase):

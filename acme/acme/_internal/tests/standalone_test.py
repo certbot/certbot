@@ -15,7 +15,7 @@ import requests
 from acme import challenges
 from acme import crypto_util
 from acme import errors
-import test_util
+from acme._internal.tests import test_util
 
 
 class TLSServerTest(unittest.TestCase):

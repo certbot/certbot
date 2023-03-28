@@ -17,10 +17,10 @@ from acme import challenges
 from acme import errors
 from acme import jws as acme_jws
 from acme import messages
+from acme._internal.tests import messages_test
+from acme._internal.tests import test_util
 from acme.client import ClientNetwork
 from acme.client import ClientV2
-import messages_test
-import test_util
 
 CERT_SAN_PEM = test_util.load_vector('cert-san.pem')
 CSR_MIXED_PEM = test_util.load_vector('csr-mixed.pem')
