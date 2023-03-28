@@ -14,11 +14,11 @@ import pytest
 from certbot import configuration
 from certbot import errors
 from certbot._internal.storage import ALL_FOUR
+from certbot._internal.tests import storage_test
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.tests import util as test_util
-import storage_test
 
 
 class BaseCertManagerTest(test_util.ConfigTestCase):
