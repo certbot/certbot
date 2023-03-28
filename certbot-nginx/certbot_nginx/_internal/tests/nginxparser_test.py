@@ -14,7 +14,7 @@ from certbot_nginx._internal.nginxparser import load
 from certbot_nginx._internal.nginxparser import loads
 from certbot_nginx._internal.nginxparser import RawNginxParser
 from certbot_nginx._internal.nginxparser import UnspacedList
-import test_util as util
+from certbot_nginx._internal.tests import test_util as util
 
 FIRST = operator.itemgetter(0)
 
