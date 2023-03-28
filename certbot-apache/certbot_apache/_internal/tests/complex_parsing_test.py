@@ -7,7 +7,7 @@ import pytest
 
 from certbot import errors
 from certbot.compat import os
-import util
+from certbot_apache._internal.tests import util
 
 
 class ComplexParserTest(util.ParserTest):

@@ -11,7 +11,7 @@ from certbot.compat import os
 from certbot.tests import util as certbot_util
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import obj
-import util
+from certbot_apache._internal.tests import util
 
 
 class MultipleVhostsTestDebian(util.ApacheTest):

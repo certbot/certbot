@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 
 from certbot import errors
-import util
+from certbot_apache._internal.tests import util
 
 
 class ConfiguratorReverterTest(util.ApacheTest):

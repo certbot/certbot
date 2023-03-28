@@ -3,11 +3,12 @@ import os
 from typing import List
 from unittest import mock
 
+import pytest
+
 from certbot import errors
 from certbot_apache._internal import assertions
 from certbot_apache._internal import augeasparser
-import util
-import pytest
+from certbot_apache._internal.tests import util
 
 
 def _get_augeasnode_mock(filepath):

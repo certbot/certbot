@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-import util
+from certbot_apache._internal.tests import util
 
 try:
     import apacheconfig
