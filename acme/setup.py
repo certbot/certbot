@@ -8,7 +8,8 @@ version = '2.5.0.dev0'
 install_requires = [
     'cryptography>=2.5.0',
     'josepy>=1.13.0',
-    'PyOpenSSL>=17.5.0',
+    # pyOpenSSL 23.1.0 is a bad release: https://github.com/pyca/pyopenssl/issues/1199
+    'PyOpenSSL>=17.5.0,!=23.1.0',
     'pyrfc3339',
     'pytz>=2019.3',
     'requests>=2.20.0',

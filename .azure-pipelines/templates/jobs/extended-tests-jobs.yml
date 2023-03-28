@@ -17,10 +17,6 @@ jobs:
         linux-py310:
           PYTHON_VERSION: 3.10
           TOXENV: py310
-        linux-py37-nopin:
-          PYTHON_VERSION: 3.7
-          TOXENV: py37
-          CERTBOT_NO_PIN: 1
         linux-boulder-v2-integration-certbot-oldest:
           PYTHON_VERSION: 3.7
           TOXENV: integration-certbot-oldest
