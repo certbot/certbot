@@ -177,6 +177,17 @@ class RenewalTest(test_util.ConfigTestCase):
         # value in the renewal conf file
         assert isinstance(lineage_config.manual_public_ip_logging_ok, mock.MagicMock)
 
+    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
+    def test_absent_key_type_restored(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+
+        rc_path = test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
+
+        from certbot._internal import renewal
+        lineage_config = copy.deepcopy(self.config)
+        renewal.reconstitute(lineage_config, rc_path)
+        assert lineage_config.key_type == 'rsa'
+
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.renewal.restore_required_config_elements."""
