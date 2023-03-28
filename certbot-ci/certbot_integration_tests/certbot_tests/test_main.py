@@ -921,3 +921,24 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
         with open(conf_path, 'r') as f:
             assert 'preferred_chain = {}'.format(requested) in f.read(), \
                    'Expected preferred_chain to be set in renewal config'
+
+
+def test_ancient_rsa_key_type_preserved(context: IntegrationTestsContext) -> None:
+    certname = context.get_domain('newname')
+    context.certbot(['certonly', '-d', certname, '--key-type', 'rsa'])
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'rsa')
+
+    # Remove `key_type = rsa` from the renewal config to emulate a <v1.25.0 Certbot certificate.
+    conf_path = join(context.config_dir, 'renewal', f'{certname}.conf')
+    conf_contents: str = ''
+    with open(conf_path) as f:
+        conf_contents = f.read()
+    conf_contents = conf_contents.replace('key_type = rsa', '')
+    with open(conf_path, 'w') as f:
+        f.write(conf_contents)
+
+    context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
+
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'rsa')
+    key2 = join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname))
+    assert_rsa_key(key2, 2048)

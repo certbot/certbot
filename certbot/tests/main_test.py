@@ -1323,13 +1323,13 @@ class MainTest(test_util.ConfigTestCase):
         self._test_renewal_common(True, [], args=args, should_renew=True)
 
     def test_reuse_key(self):
-        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
         args = ["renew", "--dry-run", "--reuse-key"]
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
     @mock.patch('certbot._internal.storage.RenewableCert.save_successor')
     def test_reuse_key_no_dry_run(self, unused_save_successor):
-        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
         args = ["renew", "--reuse-key"]
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
