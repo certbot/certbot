@@ -16,9 +16,12 @@ Named Arguments
                                           Hosted Zone IDs. e.g.
                                           ``'{"example.com": "HHY92PK8"}'``.
 
-                                          Certbot will use this map to break the
-                                          tie if there are duplicate Route53
-                                          zones.
+                                          Certbot will use this map to choose
+                                          the Route53 zone if there multiple
+                                          public zones with the same name.
+
+                                          This flag is optional and usually not
+                                          requried.
 ========================================  =====================================
 
 

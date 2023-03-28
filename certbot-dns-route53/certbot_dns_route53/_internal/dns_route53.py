@@ -59,8 +59,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         add("map", default={}, action=_MapAction,
             help="JSON dictionary mapping zone names to Hosted Zone IDs. e.g. "
                  "--dns-route53-map '{\"example.com\": \"HHY92PK8\"}'"
-                 ". Certbot will use this map to break the tie if there are duplicate Route53 "
-                 "zones.")
+                 ". Certbot will use this map to choose the zone if there are multiple "
+                 "public zones with the same name.")
 
     def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
         return (
