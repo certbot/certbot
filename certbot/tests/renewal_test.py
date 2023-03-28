@@ -181,7 +181,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         from certbot._internal import renewal
         lineage_config = copy.deepcopy(self.config)
-        renewal.reconstitute(lineage_config, rc_path)
+        renewal._reconstitute(lineage_config, rc_path)
         assert lineage_config.key_type == 'rsa'
 
 
