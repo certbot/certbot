@@ -11,7 +11,7 @@ set -euxo pipefail
 #   (e.g. nightly). This will be used when saving images to the docker image cache.
 #   The argument "all" will build all known architectures. Alternatively, the
 #   user may provide a comma separated list of architectures drawn from the
-#   known architectures. Know architectures include amd64, arm32v6, and arm64v8.
+#   known architectures. Known architectures include amd64, arm32v6, and arm64v8.
 
 source "$(realpath $(dirname ${BASH_SOURCE[0]}))/lib/common"
 
