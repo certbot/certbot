@@ -9,7 +9,7 @@ set -euxo pipefail
 #       ./build.sh <tag> <architectures> 
 #   The <tag> argument is used to identify the code version (e.g v2.3.1) or type of build
 #   (e.g. nightly). This will be used when saving images to the docker image cache.
-#   The argument "all" will build all know architectures. Alternatively, the
+#   The argument "all" will build all known architectures. Alternatively, the
 #   user may provide a comma separated list of architectures drawn from the
 #   known architectures. Know architectures include amd64, arm32v6, and arm64v8.
 
