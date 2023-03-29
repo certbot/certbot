@@ -14,7 +14,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* Docker build steps now explicitly use BuildKit via `docker buildx build`.
 * `--dns-route53-propagation-seconds` is now deprecated. The Route53 plugin relies on the
   [GetChange API](https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html)
   to determine if a DNS update is complete. The flag has never had any effect and will be
