@@ -513,6 +513,7 @@ class Client:
             referred to the enrolled cert lineage, or None if doing a successful dry run.
 
         """
+        new_name = self._choose_lineagename(domains, certname)
         cert, chain, key, _ = self.obtain_certificate(domains)
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
@@ -520,8 +521,6 @@ class Client:
             logger.info(
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
-
-        new_name = self._choose_lineagename(domains, certname)
 
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s", new_name)
