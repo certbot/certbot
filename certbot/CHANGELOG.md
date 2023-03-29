@@ -19,7 +19,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   to determine if a DNS update is complete. The flag has never had any effect and will be
   removed in a future version of Certbot.
 
-
 ### Fixed
 
 *
