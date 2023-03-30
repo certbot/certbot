@@ -162,10 +162,10 @@ class ApacheConfigurator(common.Configurator):
         """
         # Disabling TLS session tickets is supported by Apache 2.4.11+ and OpenSSL 1.0.2l+.
         # So for old versions of Apache we pick a configuration without this option.
-        min_openssl_version = util.parse_loose_version('1.0.2l')
+        min_openssl_version = util.LooseVersion('1.0.2l')
         openssl_version = self.openssl_version(warn_on_no_mod_ssl)
         if self.version < (2, 4, 11) or not openssl_version or \
-            util.parse_loose_version(openssl_version) < min_openssl_version:
+            util.LooseVersion(openssl_version) < min_openssl_version:
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 

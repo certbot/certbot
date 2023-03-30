@@ -18,6 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   [GetChange API](https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html)
   to determine if a DNS update is complete. The flag has never had any effect and will be
   removed in a future version of Certbot.
+* Deprecated `certbot.util.parse_loose_version`. Replaced with `certbot.util.LooseVersion` class with type-safe comparison. See [GH #9489](https://github.com/certbot/certbot/issues/9489).
 
 ### Fixed
 

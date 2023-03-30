@@ -8,6 +8,7 @@ import re
 import socket
 import subprocess
 import sys
+from enum import Enum
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -47,6 +48,154 @@ class CSR(NamedTuple):
     data: bytes
     # Note: form is the type of data, "pem" or "der"
     form: str
+
+
+class LooseVersion:
+    """A version with loose rules, i.e. any given string is a valid version number.
+
+    This is based on distutils.version.LooseVersion at
+    https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L269
+    but this class has fully type-safe comparison. This is achieved by having an 'incomparible'
+    comparison result, for example when integer and string version components are present in the
+    same position. If this happens, the two versions being compared are not equal, less than, or
+    greater than eachother.
+
+    Comparison is performed element-wise. If the version components being compared are of different
+    types, the two versions are considered incomparible. Otherwise, if either of the components
+    is not equal to the other, less or greater is returned based on the comparison's result.
+    In case the two versions are of different lengths, some elements in the longer version have
+    not yet been compared. If these are all equal to zero, the two versions are equal.
+    Otherwise, the longer version is greater.
+
+    Examples:
+    - Equality:
+        - LooseVersion('1.0') == LooseVersion('1.0') -> True
+        - LooseVersion('2.0.0a') == LooseVersion('2.0.0a') -> True
+    - Inequality:
+        - LooseVersion('2.0.0') > LooseVersion('1.0') -> True
+        - LooseVersion('1.0.1') < LooseVersion('2.0a') -> True
+    - Incomparability:
+        - LooseVersion('1a') < LooseVersion('1.0') -> False
+        - LooseVersion('1a') > LooseVersion('1.0') -> False
+        - LooseVersion('1a') == LooseVersion('1.0') -> False
+        - LooseVersion('1a') != LooseVersion('1.0') -> True
+    """
+
+    def __init__(self, version_string: str) -> None:
+        self.loose_version = self.__parse_loose_version(version_string)
+
+    def __parse_loose_version(self, version_string: str) -> List[Union[int, str]]:
+        """Parses a version string into its components.
+
+        This code and the returned tuple is based on the now deprecated
+        distutils.version.LooseVersion class from the Python standard library.
+        Two LooseVersion classes and two lists as returned by this function
+        should compare in the same way. See
+        https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L205-L347.
+
+        :param str version_string: version string
+
+        :returns: list of parsed version string components
+        :rtype: list
+
+        """
+        components: List[Union[int, str]]
+        components = [x for x in _VERSION_COMPONENT_RE.split(version_string)
+                              if x and x != '.']
+        for i, obj in enumerate(components):
+            try:
+                components[i] = int(obj)
+            except ValueError:
+                pass
+        return components
+
+    class Comparison(Enum):
+        """All possible return values of self.__compare"""
+        EQUAL = 1
+        LESS = 2
+        GREATER = 3
+        INCOMPARIBLE = 4
+
+    def __compare(self, other: Any) -> Comparison:
+        """Compares the LooseVersion to another value.
+
+        If the other value is another LooseVersion, the version components are compared. Otherwise,
+        incomparible is returned.
+
+        Examples:
+        __compare(LooseVersion('2.0'), LooseVersion('1.0')) -> GREATER
+        __compare(LooseVersion('2.0a'), LooseVersion('2.0')) -> GREATER
+        __compare(LooseVersion('1.0'), LooseVersion('2.0')) -> LESS
+        __compare(LooseVersion('2.0'), LooseVersion('2.0')) -> EQUAL
+        __compare(LooseVersion('2.0'), LooseVersion('2a')) -> INCOMPARIBLE
+
+        :param Any other: the value being compared to self
+
+        :returns: whether self is equal to, greater than, less than, or incomparible to other
+        :rtype: Enum.Comparison
+        """
+        if not isinstance(other, type(self)):
+            return self.Comparison.INCOMPARIBLE
+
+        if self.loose_version == other.loose_version:
+            return self.Comparison.EQUAL
+
+        for i in range(min(len(self.loose_version), len(other.loose_version))):
+            version_component_self = self.loose_version[i]
+            version_component_other = other.loose_version[i]
+
+            if not isinstance(version_component_other, type(version_component_self)):
+                logger.debug("Cannot meaningfully compare version %s with version %s.",
+                             self.loose_version,
+                             other.loose_version)
+                return self.Comparison.INCOMPARIBLE
+
+            if isinstance(version_component_other, str) and \
+               isinstance(version_component_self, str):
+                if version_component_self > version_component_other:
+                    return self.Comparison.GREATER
+
+                if version_component_self < version_component_other:
+                    return self.Comparison.LESS
+
+            elif isinstance(version_component_other, int) and \
+                 isinstance(version_component_self, int):
+                if version_component_self > version_component_other:
+                    return self.Comparison.GREATER
+
+                if version_component_self < version_component_other:
+                    return self.Comparison.LESS
+
+        if len(self.loose_version) > len(other.loose_version):
+            for version_component in self.loose_version[len(other.loose_version)::]:
+                if version_component != 0:
+                    return self.Comparison.GREATER
+        elif len(self.loose_version) < len(other.loose_version):
+            for version_component in other.loose_version[len(self.loose_version)::]:
+                if version_component != 0:
+                    return self.Comparison.LESS
+
+        return self.Comparison.EQUAL
+
+    def __eq__(self, other: Any) -> bool:
+        return self.__compare(other) == self.Comparison.EQUAL
+
+    def __ne__(self, other: Any) -> bool:
+        return self.__compare(other) != self.Comparison.EQUAL
+
+    def __lt__(self, other: Any) -> bool:
+        return self.__compare(other) == self.Comparison.LESS
+
+    def __gt__(self, other: Any) -> bool:
+        return self.__compare(other) == self.Comparison.GREATER
+
+    def __le__(self, other: Any) -> bool:
+        return self.__compare(other) == self.Comparison.LESS or \
+               self.__compare(other) == self.Comparison.EQUAL
+
+    def __ge__(self, other: Any) -> bool:
+        return self.__compare(other) == self.Comparison.GREATER or \
+               self.__compare(other) == self.Comparison.EQUAL
 
 
 # ANSI SGR escape codes
@@ -637,32 +786,6 @@ def atexit_register(func: Callable, *args: Any, **kwargs: Any) -> None:
 
     """
     atexit.register(_atexit_call, func, *args, **kwargs)
-
-
-def parse_loose_version(version_string: str) -> List[Union[int, str]]:
-    """Parses a version string into its components.
-
-    This code and the returned tuple is based on the now deprecated
-    distutils.version.LooseVersion class from the Python standard library.
-    Two LooseVersion classes and two lists as returned by this function should
-    compare in the same way. See
-    https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L205-L347.
-
-    :param str version_string: version string
-
-    :returns: list of parsed version string components
-    :rtype: list
-
-    """
-    components: List[Union[int, str]]
-    components = [x for x in _VERSION_COMPONENT_RE.split(version_string)
-                          if x and x != '.']
-    for i, obj in enumerate(components):
-        try:
-            components[i] = int(obj)
-        except ValueError:
-            pass
-    return components
 
 
 def _atexit_call(func: Callable, *args: Any, **kwargs: Any) -> None:
