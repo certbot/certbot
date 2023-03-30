@@ -59,7 +59,8 @@ BuildAndCacheByArch() {
 
 # In principle, there is a better way to do with by using `docker buildx bake`
 # instead of a for-loop. However, issues have been found in the results
-# of such a build. See git commit adf227fc4.
+# of such a build. See the branch buildx-bake and
+# https://github.com/certbot/certbot/issues/9587.
 
 # split arch list into an array for per-arch image building and saving
 IFS_OLD="$IFS"
