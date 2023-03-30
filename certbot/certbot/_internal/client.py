@@ -564,14 +564,14 @@ class Client:
         # Remember chosen name for new lineage
         lineagename = None
         if certname:
-            lineageName = certname
+            lineagename = certname
         elif util.is_wildcard_domain(domains[0]):
             # Don't make files and directories starting with *.
             lineagename = domains[0][2:]
         else:
             lineagename = domains[0]
         # Verify whether chosen lineage is valid
-        if self._is_valid_lineagename(lineageName):
+        if self._is_valid_lineagename(lineagename):
             return lineagename
         else:
             raise errors.Error(
