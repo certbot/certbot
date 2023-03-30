@@ -67,17 +67,17 @@ class LooseVersion:
     Otherwise, the longer version is greater.
 
     Examples:
-    - Equality:
-        - LooseVersion('1.0') == LooseVersion('1.0') -> True
-        - LooseVersion('2.0.0a') == LooseVersion('2.0.0a') -> True
-    - Inequality:
-        - LooseVersion('2.0.0') > LooseVersion('1.0') -> True
-        - LooseVersion('1.0.1') < LooseVersion('2.0a') -> True
-    - Incomparability:
-        - LooseVersion('1a') < LooseVersion('1.0') -> False
-        - LooseVersion('1a') > LooseVersion('1.0') -> False
-        - LooseVersion('1a') == LooseVersion('1.0') -> False
-        - LooseVersion('1a') != LooseVersion('1.0') -> True
+    Equality:
+    - LooseVersion('1.0') == LooseVersion('1.0') -> True
+    - LooseVersion('2.0.0a') == LooseVersion('2.0.0a') -> True
+    Inequality:
+    - LooseVersion('2.0.0') > LooseVersion('1.0') -> True
+    - LooseVersion('1.0.1') < LooseVersion('2.0a') -> True
+    Incomparability:
+    - LooseVersion('1a') < LooseVersion('1.0') -> False
+    - LooseVersion('1a') > LooseVersion('1.0') -> False
+    - LooseVersion('1a') == LooseVersion('1.0') -> False
+    - LooseVersion('1a') != LooseVersion('1.0') -> True
     """
 
     def __init__(self, version_string: str) -> None:
