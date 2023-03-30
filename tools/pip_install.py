@@ -11,11 +11,9 @@ import subprocess
 import sys
 import tempfile
 
-import readlink
-
 
 def find_tools_path():
-    return os.path.dirname(readlink.main(__file__))
+    return os.path.dirname(os.path.realpath(__file__))
 
 
 def call_with_print(command, env=None):
