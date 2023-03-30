@@ -7,6 +7,7 @@ import josepy as jose
 import pytest
 
 from acme import challenges
+from acme import messages
 from certbot import achallenges
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -23,29 +24,29 @@ class HttpPerformTest(util.NginxTest):
     achalls = [
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.HTTP01(token=b"kNdwjwOeX0I_A8DXt9Msmg"), "pending"),
+                challenges.HTTP01(token=b"kNdwjwOeX0I_A8DXt9Msmg"), messages.STATUS_PENDING),
             domain="www.example.com", account_key=account_key),
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.HTTP01(
                     token=b"\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y"
                           b"\x80\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945"
-                ), "pending"),
+                ), messages.STATUS_PENDING),
             domain="ipv6.com", account_key=account_key),
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.HTTP01(
                     token=b"\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd"
                           b"\xeb9\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4"
-                ), "pending"),
+                ), messages.STATUS_PENDING),
             domain="www.example.org", account_key=account_key),
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
+                challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), messages.STATUS_PENDING),
             domain="migration.com", account_key=account_key),
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
+                challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), messages.STATUS_PENDING),
             domain="ipv6ssl.com", account_key=account_key),
     ]
 
@@ -137,7 +138,7 @@ class HttpPerformTest(util.NginxTest):
         """A vhost that appears in both HTTP and HTTPS vhosts only gets modded once"""
         achall = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
+                challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), messages.STATUS_PENDING),
             domain="ssl.both.com", account_key=AUTH_KEY)
         self.http01.add_chall(achall)
         self.http01._mod_config() # pylint: disable=protected-access
