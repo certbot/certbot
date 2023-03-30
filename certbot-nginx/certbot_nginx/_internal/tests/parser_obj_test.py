@@ -1,3 +1,6 @@
+# type: ignore
+# As done in parser_obj.py, this module is not used for now, so we just skip
+# type check for the sake of simplicity.
 """ Tests for functions and classes in parser_obj.py """
 
 import sys
