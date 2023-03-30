@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 # This script generates multi-arch manifests for images previously pushed to
-# a registry vis deploy_images.sh
+# Docker Hub via deploy_images.sh
 
 # Usage: 
 #       ./deploy_manifest.sh <TAG> all
