@@ -18,11 +18,18 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   [GetChange API](https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html)
   to determine if a DNS update is complete. The flag has never had any effect and will be
   removed in a future version of Certbot.
-* Deprecated `certbot.util.parse_loose_version`. Replaced with `certbot.util.LooseVersion` class with type-safe comparison. See [GH #9489](https://github.com/certbot/certbot/issues/9489).
+* Packaged tests for all Certbot components besides josepy were moved inside
+  the `_internal/tests` module.
+* Deprecated `certbot.util.parse_loose_version`. Replaced with `certbot.util.LooseVersion` class
+  with type-safe comparison. See [GH #9489](https://github.com/certbot/certbot/issues/9489).
 
 ### Fixed
 
-*
+* Fixed `renew` sometimes not preserving the key type of RSA certificates.
+  * Users who upgraded from Certbot <v1.25.0 to Certbot >=v2.0.0 may
+    have had their RSA certificates inadvertently changed to ECDSA certificates. If desired,
+    the key type may be changed back to RSA. See the [User Guide](https://eff-certbot.readthedocs.io/en/stable/using.html#changing-a-certificate-s-key-type).
+* Deprecated flags were inadvertently not printing warnings since v1.16.0. This is now fixed.
 
 More details about these changes can be found on our GitHub repo.
 

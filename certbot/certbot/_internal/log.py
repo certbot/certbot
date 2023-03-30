@@ -75,7 +75,10 @@ def pre_arg_parse_setup() -> None:
 
     stream_handler = ColoredStreamHandler()
     stream_handler.setFormatter(logging.Formatter(CLI_FMT))
-    stream_handler.setLevel(constants.QUIET_LOGGING_LEVEL)
+    # The pre-argparse logging level is set to WARNING here. This is to ensure that
+    # deprecated flags (see DeprecatedArgumentAction) print something to the terminal.
+    # See https://github.com/certbot/certbot/issues/9618.
+    stream_handler.setLevel(logging.WARNING)
 
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)  # send all records to handlers
