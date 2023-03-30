@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 # This script takes docker images in the local docker cache and pushes them to
-# a registry.
+# Docker Hub.
 
 # Usage: 
 #       ./deploy_images.sh <TAG> all
