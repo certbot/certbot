@@ -15,19 +15,7 @@ set -euxo pipefail
 
 source "$(realpath $(dirname ${BASH_SOURCE[0]}))/lib/common"
 
-#used by docker buildx bake, so mark export
-export TAG_VER="$1"
-if [ -z "$TAG_VER" ]; then
-    echo "We cannot tag Docker images with an empty string!" >&2
-    exit 1
-fi
-ARCH_LIST="$2"
-if [ -z "$ARCH_LIST" ]; then
-    echo "Architectures must be specified!" >&2
-    exit 1
-fi
-
-export REGISTRY_SPEC="${DOCKER_HUB_ORG}/"
+ParseArgs $@
 
 #jump to root, matching popd handed by Cleanup on EXIT via trap
 pushd "${REPO_ROOT}"
@@ -36,6 +24,7 @@ pushd "${REPO_ROOT}"
 trap Cleanup EXIT
 # Create the builder
 CreateBuilder
+InstallMultiarchSupport
 
 
 BuildAndCacheByArch() {
@@ -43,7 +32,7 @@ BuildAndCacheByArch() {
     docker buildx build --target certbot --builder certbot_builder \
         --platform $(arch2platform $TAG_ARCH) \
         -f "${WORK_DIR}/Dockerfile" \
-        -t "${REGISTRY_SPEC}certbot:${TAG_ARCH}-${TAG_VER}" \
+        -t "${DOCKER_HUB_ORG}/certbot:${TAG_ARCH}-${TAG_VER}" \
         --load \
         .
     for plugin in "${CERTBOT_PLUGINS[@]}"; do
@@ -51,7 +40,7 @@ BuildAndCacheByArch() {
             --platform $(arch2platform $TAG_ARCH) \
             --build-context plugin-src="${REPO_ROOT}/certbot-${plugin}" \
             -f "${WORK_DIR}/Dockerfile" \
-            -t "${REGISTRY_SPEC}${plugin}:${TAG_ARCH}-${TAG_VER}" \
+            -t "${DOCKER_HUB_ORG}/${plugin}:${TAG_ARCH}-${TAG_VER}" \
             --load \
             .
     done
@@ -62,11 +51,6 @@ BuildAndCacheByArch() {
 # of such a build. See the branch buildx-bake and
 # https://github.com/certbot/certbot/issues/9587.
 
-# split arch list into an array for per-arch image building and saving
-IFS_OLD="$IFS"
-IFS=","
-read -ra REQUESTED_ARCH_ARRAY <<< $(InterpretArchRequest "$ARCH_LIST")
-IFS="$IFS_OLD"
 for ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
     BuildAndCacheByArch $ARCH
 done    

@@ -18,12 +18,7 @@ set -euxo pipefail
 
 source "$(realpath $(dirname ${BASH_SOURCE[0]}))/lib/common"
 
-TAG_VER="$1"
-if [ -z "$TAG_VER" ]; then
-    echo "We cannot tag Docker images with an empty string!" >&2
-    exit 1
-fi
-REQUESTED_ARCH_LIST=$(InterpretArchRequest "$2")
+ParseArgs $@
 
 #jump to root, matching popd handed by Cleanup on EXIT via trap
 pushd "${REPO_ROOT}"
@@ -35,11 +30,6 @@ REGISTRY_SPEC="${DOCKER_HUB_ORG}/"
 
 DeployManifest() {
     IMAGE_NAME=$1
-    local IFS=","
-    read -ra REQUESTED_ARCH_ARRAY <<< ${REQUESTED_ARCH_LIST}
-    TAG_VER=$3
-
-    IFS=" "
     
     SRC_IMAGES=""
     for TAG_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
@@ -52,9 +42,9 @@ DeployManifest() {
     fi
 }
 
-DeployManifest certbot ${REQUESTED_ARCH_LIST} $TAG_VER
+DeployManifest certbot
 for PLUGIN in "${CERTBOT_PLUGINS[@]}"; do
-    DeployManifest $PLUGIN ${REQUESTED_ARCH_LIST} $TAG_VER
+    DeployManifest $PLUGIN
 done
 
 

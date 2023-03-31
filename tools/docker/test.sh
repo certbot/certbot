@@ -14,20 +14,7 @@ set -euxo pipefail
 
 source "$(realpath $(dirname ${BASH_SOURCE[0]}))/lib/common"
 
-TAG_VER="$1"
-if [ -z "$TAG_VER" ]; then
-    echo "We cannot tag Docker images with an empty string!" >&2
-    exit 1
-fi
-if [ -z "$2" ]; then
-    echo "Architectures must be specified!" >&2
-    exit 1
-fi
-IFS_OLD="$IFS"
-IFS=","
-read -ra REQUESTED_ARCH_ARRAY <<< $(InterpretArchRequest "$2")
-IFS="$IFS_OLD"
-
+ParseArgs $@
 
 #jump to root, matching popd handed by Cleanup on EXIT via trap
 pushd "${REPO_ROOT}"

@@ -32,8 +32,6 @@ export CERTBOT_PLUGINS=(
 export WORK_DIR="$(realpath $(dirname ${BASH_SOURCE[0]})/..)"
 # REPO_ROOT is two levels above that
 export REPO_ROOT="$(realpath ${WORK_DIR}/../..)"
-# location where docker cache should be created (may be anywhere accessble on the host filesystem)
-export DOCKER_CACHE="${REPO_ROOT}/.docker_cache"
 
 # Converts input architecture identifier to the platform specification
 # understood by `docker build buildx --platform <specification>`.
@@ -82,6 +80,24 @@ InterpretArchRequest() {
     echo "$USER_INPUT"
 }
 
+ParseArgs() {
+
+    export TAG_VER="$1"
+    if [ -z "$TAG_VER" ]; then
+        echo "We cannot tag Docker images with an empty string!" >&2
+        exit 1
+    fi
+    ARCH_LIST="$2"
+    if [ -z "$ARCH_LIST" ]; then
+        echo "Architectures must be specified!" >&2
+        exit 1
+    fi
+    # split arch list into an array for per-arch image building and saving
+    local IFS=","
+    read -ra REQUESTED_ARCH_ARRAY <<< $(InterpretArchRequest "$ARCH_LIST")
+    export REQUESTED_ARCH_ARRAY
+}
+
 
 # Function for use with trap in the primary scripts to remove the 
 # docker builder and restore the original directory
@@ -90,6 +106,7 @@ Cleanup() {
     popd
 }
 
+# add binfmt tools to the docker environment, with integration into the new builder instance
 InstallMultiarchSupport() {
     docker run --privileged --rm tonistiigi/binfmt --install all
 }
