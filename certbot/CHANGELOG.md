@@ -11,6 +11,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * acme.client.ClientV2 now provides separate `begin_finalization`
   and `poll_finalization` methods, in addition to the existing
   `finalize_order` method.
+* The webroot plugin now also supports the `--webroot-propagation-seconds`
+  option. Note that this is usually not required, but for some systems
+  with distributed webroots requiring syncing this might be useful.
 
 ### Changed
 
