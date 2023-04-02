@@ -120,8 +120,8 @@ to serve all files under specified web root ({0})."""
         resps = [self._perform_single(achall) for achall in achalls]
 
         if self.conf('propagation-seconds'):
-            display_util.notify("Waiting %d seconds for webroot challenge file(s) to propagate" %
-                        self.conf('propagation-seconds'))
+            display_util.notify(f"Waiting {self.conf('propagation-seconds')} seconds for webroot "
+                                 "challenge file(s) to propagate")
             sleep(self.conf('propagation-seconds'))
 
         return resps
