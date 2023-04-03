@@ -93,4 +93,6 @@ DEPRECATED_OPTIONS = {
     "no_self_upgrade",
     "no_bootstrap",
     "no_permissions_check",
+    "dns_route53_propagation_seconds",
+    "certbot_route53:auth_propagation_seconds"
 }
