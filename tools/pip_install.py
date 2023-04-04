@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # pip installs packages using pinned package versions. If CERTBOT_OLDEST is set
 # to 1, tools/oldest_constraints.txt is used, otherwise, tools/requirements.txt
-# is used.
+# is used. Before installing the requested packages, core Python packaging
+# tools like pip, setuptools, and wheel are updated to pinned versions to
+# increase stability of the install.
 
 from __future__ import absolute_import
 from __future__ import print_function
 
+import contextlib
 import os
 import subprocess
 import sys
@@ -16,21 +19,19 @@ def find_tools_path():
     return os.path.dirname(os.path.realpath(__file__))
 
 
-def call_with_print(command, env=None):
-    if not env:
-        env = os.environ
+def call_with_print(command, env):
+    assert env is not None
     print(command)
     subprocess.check_call(command, shell=True, env=env)
 
 
-def pip_install_with_print(args_str, env=None):
-    if not env:
-        env = os.environ
+def pip_install_with_print(args_str, env):
     command = ['"', sys.executable, '" -m pip install --disable-pip-version-check ', args_str]
     call_with_print(''.join(command), env=env)
 
 
-def main(args):
+@contextlib.contextmanager
+def modified_environ():
     tools_path = find_tools_path()
 
     with tempfile.TemporaryDirectory() as working_dir:
@@ -43,8 +44,25 @@ def main(args):
                 repo_path, 'tools', 'requirements.txt'))
 
         env = os.environ.copy()
+        # We set constraints for pip using an environment variable so that they
+        # are also used when installing build dependencies. See
+        # https://github.com/certbot/certbot/pull/8443 for more info.
         env["PIP_CONSTRAINT"] = constraints_path
+        yield env
 
+
+def pipstrap(env=None):
+    if env is None:
+        context_manager = modified_environ()
+    else:
+        context_manager = contextlib.nullcontext(env)
+    with context_manager as env:
+        pip_install_with_print('pip setuptools wheel', env=env)
+
+
+def main(args):
+    with modified_environ() as env:
+        pipstrap(env)
         pip_install_with_print(' '.join(args), env=env)
 
 
