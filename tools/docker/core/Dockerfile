@@ -40,6 +40,7 @@ RUN apk add --no-cache --virtual .build-deps \
         python3-dev \
         cargo \
         git \
+        pkgconfig \
     && python tools/pipstrap.py \
     && python tools/pip_install.py --no-cache-dir \
             --editable src/acme \
