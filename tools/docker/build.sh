@@ -27,7 +27,7 @@ CreateBuilder
 InstallMultiarchSupport
 
 
-BuildAndCacheByArch() {
+BuildAndLoadByArch() {
     TAG_ARCH=$1
     docker buildx build --target certbot --builder certbot_builder \
         --platform $(arch2platform $TAG_ARCH) \
@@ -52,7 +52,7 @@ BuildAndCacheByArch() {
 # https://github.com/certbot/certbot/issues/9587.
 
 for ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
-    BuildAndCacheByArch $ARCH
+    BuildAndLoadByArch $ARCH
 done    
 
 
