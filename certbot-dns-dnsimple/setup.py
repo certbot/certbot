@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.5.0.dev0'
+version = '2.5.0'
 
 install_requires = [
     # This version of lexicon is required to address the problem described in
