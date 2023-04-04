@@ -118,6 +118,4 @@ CreateBuilder() {
     docker builder rm certbot_builder || true
     # create the builder instance
     docker buildx create --name certbot_builder --driver docker-container --driver-opt=network=host --bootstrap
-    # add binfmt tools to the docker environment, with integration into the new builder instance
-    InstallMultiarchSupport
 }
