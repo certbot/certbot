@@ -3,7 +3,7 @@ MAINTAINER Brad Warren <bmw@eff.org>
 
 RUN apt-get update && \
     apt install python3-dev python3-venv gcc libaugeas0 libssl-dev \
-                 libffi-dev ca-certificates openssl -y
+                 libffi-dev ca-certificates openssl pkg-config -y
 
 WORKDIR /opt/certbot/src
 

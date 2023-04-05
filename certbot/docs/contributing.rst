@@ -42,12 +42,12 @@ Install and configure the OS system dependencies required to run Certbot.
    # For APT-based distributions (e.g. Debian, Ubuntu ...)
    sudo apt update
    sudo apt install python3-dev python3-venv gcc libaugeas0 libssl-dev \
-                    libffi-dev ca-certificates openssl
+                    libffi-dev ca-certificates openssl pkg-config
    # For RPM-based distributions (e.g. Fedora, CentOS ...)
    # NB1: old distributions will use yum instead of dnf
    # NB2: RHEL-based distributions use python3X-devel instead of python3-devel (e.g. python36-devel)
    sudo dnf install python3-devel gcc augeas-libs openssl-devel libffi-devel \
-                    redhat-rpm-config ca-certificates openssl
+                    redhat-rpm-config ca-certificates openssl pkg-config
    # For macOS installations with Homebrew already installed and configured
    # NB: If you also run `brew install python` you don't need the ~/lib
    #     directory created below, however, Certbot's Apache plugin won't work

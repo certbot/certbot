@@ -13,10 +13,7 @@ steps:
       sudo apt-get update
       sudo apt-get install -y --no-install-recommends \
         python3-dev \
-        gcc \
         libaugeas0 \
-        libssl-dev \
-        libffi-dev \
         ca-certificates \
         nginx-light \
         openssl
