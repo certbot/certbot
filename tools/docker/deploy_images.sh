@@ -15,9 +15,9 @@ set -euxo pipefail
 #   user may provide a comma separated list of architectures drawn from the
 #   known architectures. Known architectures include amd64, arm32v6, and arm64v8.
 
-source "$(realpath $(dirname ${BASH_SOURCE[0]}))/lib/common"
+source "$(realpath $(dirname "${BASH_SOURCE[0]}"))/lib/common"
 
-ParseArgs $@
+ParseArgs "$@"
 
 #jump to root, matching popd handed by Cleanup on EXIT via trap
 pushd "${REPO_ROOT}"
@@ -39,9 +39,9 @@ DeployImage() {
 
 
 for TAG_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
-    DeployImage certbot $TAG_ARCH
+    DeployImage certbot "$TAG_ARCH"
     for PLUGIN in "${CERTBOT_PLUGINS[@]}"; do
-        DeployImage $PLUGIN $TAG_ARCH
+        DeployImage "$PLUGIN" "$TAG_ARCH"
     done
 done
 

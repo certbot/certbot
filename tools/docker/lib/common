@@ -9,7 +9,7 @@ export ALL_TARGET_ARCH=(amd64 arm32v6 arm64v8)
 # using a different account on Docker Hub, you can change this value to have
 # the scripts modify those Docker repositories rather than the repositories for
 # the official Certbot Docker images.
-export DOCKER_HUB_ORG="certbot"
+export DOCKER_HUB_ORG="humanoid2050"
 
 # List of Certbot plugins
 export CERTBOT_PLUGINS=(
@@ -29,9 +29,9 @@ export CERTBOT_PLUGINS=(
 )
 
 # WORK_DIR is two levels above this file
-export WORK_DIR="$(realpath $(dirname ${BASH_SOURCE[0]})/..)"
+export WORK_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")"
 # REPO_ROOT is two levels above that
-export REPO_ROOT="$(realpath ${WORK_DIR}/../..)"
+export REPO_ROOT="$(realpath "${WORK_DIR}/../..")"
 
 # Converts input architecture identifier to the platform specification
 # understood by `docker build buildx --platform <specification>`.

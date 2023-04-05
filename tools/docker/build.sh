@@ -13,9 +13,9 @@ set -euxo pipefail
 #   user may provide a comma separated list of architectures drawn from the
 #   known architectures. Known architectures include amd64, arm32v6, and arm64v8.
 
-source "$(realpath $(dirname ${BASH_SOURCE[0]}))/lib/common"
+source "$(realpath "$(dirname "${BASH_SOURCE[0]}")")/lib/common"
 
-ParseArgs $@
+ParseArgs "$@"
 
 #jump to root, matching popd handed by Cleanup on EXIT via trap
 pushd "${REPO_ROOT}"
@@ -30,14 +30,14 @@ InstallMultiarchSupport
 BuildAndLoadByArch() {
     TAG_ARCH=$1
     docker buildx build --target certbot --builder certbot_builder \
-        --platform $(arch2platform $TAG_ARCH) \
+        --platform "$(arch2platform "$TAG_ARCH")" \
         -f "${WORK_DIR}/Dockerfile" \
         -t "${DOCKER_HUB_ORG}/certbot:${TAG_ARCH}-${TAG_VER}" \
         --load \
         .
     for plugin in "${CERTBOT_PLUGINS[@]}"; do
         docker buildx build --target certbot-plugin --builder certbot_builder \
-            --platform $(arch2platform $TAG_ARCH) \
+            --platform "$(arch2platform "$TAG_ARCH")" \
             --build-context plugin-src="${REPO_ROOT}/certbot-${plugin}" \
             -f "${WORK_DIR}/Dockerfile" \
             -t "${DOCKER_HUB_ORG}/${plugin}:${TAG_ARCH}-${TAG_VER}" \
@@ -52,7 +52,7 @@ BuildAndLoadByArch() {
 # https://github.com/certbot/certbot/issues/9587.
 
 for ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
-    BuildAndLoadByArch $ARCH
+    BuildAndLoadByArch "$ARCH"
 done    
 
 
