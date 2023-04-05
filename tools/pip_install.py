@@ -16,7 +16,6 @@ from __future__ import print_function
 import os
 import subprocess
 import sys
-import tempfile
 
 
 def find_tools_path():
