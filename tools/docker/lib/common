@@ -102,7 +102,7 @@ ParseArgs() {
 # Function for use with trap in the primary scripts to remove the 
 # docker builder and restore the original directory
 Cleanup() {
-    docker builder rm certbot_builder || true
+    docker buildx rm certbot_builder || true
     popd
 }
 
