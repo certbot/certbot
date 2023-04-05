@@ -9,6 +9,7 @@ import josepy as jose
 import pytest
 
 from acme import challenges
+from acme import messages
 from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
@@ -20,7 +21,7 @@ from certbot.tests import util as test_util
 AUTH_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 ACHALL = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(challenges.HTTP01(token=b'token1'),
-                                             "pending"),
+                                             messages.STATUS_PENDING),
             domain="encryption-example.demo", account_key=AUTH_KEY)
 
 
@@ -51,7 +52,7 @@ class PluginTest(unittest.TestCase):
                 pass
 
             def more_info(self) -> str:
-                pass
+                return "info"
 
             @classmethod
             def add_parser_arguments(cls, add):
