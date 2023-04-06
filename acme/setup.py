@@ -6,7 +6,7 @@ from setuptools import setup
 version = '2.6.0.dev0'
 
 install_requires = [
-    'cryptography>=2.5.0',
+    'cryptography>=3.2.1',
     'josepy>=1.13.0',
     # pyOpenSSL 23.1.0 is a bad release: https://github.com/pyca/pyopenssl/issues/1199
     'PyOpenSSL>=17.5.0,!=23.1.0',
