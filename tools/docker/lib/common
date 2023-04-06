@@ -56,30 +56,6 @@ arch2platform() {
 }
 
 
-# Interpret the user input. Expands "all" to a list of known arches,
-# and validates arches if provided with a list
-InterpretArchRequest() {
-    USER_INPUT="${1}"
-    local IFS=","
-    # Handle the special value "all"
-    if [[ "${USER_INPUT}" == "all" ]]; then
-        # Recursive call using the list of all known architectures cast to
-        # comma separated list
-        echo "${ALL_TARGET_ARCH[*]}"
-        return 0
-    fi
-    # Convert comma separated list to array of strings
-    read -ra REQUESTED_ARCH_ARRAY <<< "$USER_INPUT"
-    for REQUESTED_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
-        local IFS=" "
-        if [[ ! " ${ALL_TARGET_ARCH[*]} " =~ " ${REQUESTED_ARCH} " ]]; then
-            echo "unknown architecture identifier: ${REQUESTED_ARCH}" >&2
-            exit 1
-        fi
-    done
-    echo "$USER_INPUT"
-}
-
 ParseArgs() {
 
     export TAG_VER="$1"
@@ -92,9 +68,24 @@ ParseArgs() {
         echo "Architectures must be specified!" >&2
         exit 1
     fi
-    # split arch list into an array for per-arch image building and saving
+
     local IFS=","
-    read -ra REQUESTED_ARCH_ARRAY <<< $(InterpretArchRequest "$ARCH_LIST")
+    # Handle the special value "all"
+    if [[ "${ARCH_LIST}" == "all" ]]; then
+        # Replace with comma separated 
+        ARCH_LIST="${ALL_TARGET_ARCH[*]}"
+    fi
+
+    # Turn arch list into an array
+    read -ra REQUESTED_ARCH_ARRAY <<< "$ARCH_LIST"
+    # And make sure all individual elements are in the list of all known architectures
+    for REQUESTED_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
+        local IFS=" "
+        if [[ ! " ${ALL_TARGET_ARCH[*]} " =~ " ${REQUESTED_ARCH} " ]]; then
+            echo "unknown architecture identifier: ${REQUESTED_ARCH}" >&2
+            exit 1
+        fi
+    done
     export REQUESTED_ARCH_ARRAY
 }
 
