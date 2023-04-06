@@ -257,6 +257,8 @@ def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]
             value=san_string
         ),
     ]
+    if len(domains) > 0:
+        csr.get_subject().CN = domains[0]
     if must_staple:
         extensions.append(crypto.X509Extension(
             b"1.3.6.1.5.5.7.1.24",
