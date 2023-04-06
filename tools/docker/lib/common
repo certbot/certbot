@@ -73,7 +73,7 @@ InterpretArchRequest() {
     for REQUESTED_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
         local IFS=" "
         if [[ ! " ${ALL_TARGET_ARCH[*]} " =~ " ${REQUESTED_ARCH} " ]]; then
-            echo "unknown architecture identifier: ${REQUESTED_ARCH}"
+            echo "unknown architecture identifier: ${REQUESTED_ARCH}" >&2
             exit 1
         fi
     done
