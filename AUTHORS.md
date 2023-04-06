@@ -270,6 +270,7 @@ Authors
 * [Timothy Guan-tin Chien](https://github.com/timdream)
 * [Torsten Bögershausen](https://github.com/tboegi)
 * [Travis Raines](https://github.com/rainest)
+* [Trim21](https://github.com/trim21)
 * [Trung Ngo](https://github.com/Ngo-The-Trung)
 * [Valentin](https://github.com/e00E)
 * [venyii](https://github.com/venyii)
