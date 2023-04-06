@@ -9,7 +9,7 @@ export ALL_TARGET_ARCH=(amd64 arm32v6 arm64v8)
 # using a different account on Docker Hub, you can change this value to have
 # the scripts modify those Docker repositories rather than the repositories for
 # the official Certbot Docker images.
-export DOCKER_HUB_ORG="humanoid2050"
+export DOCKER_HUB_ORG="certbot"
 
 # List of Certbot plugins
 export CERTBOT_PLUGINS=(
