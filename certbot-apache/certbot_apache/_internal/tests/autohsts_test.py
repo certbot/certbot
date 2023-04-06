@@ -128,7 +128,7 @@ class AutoHSTSTest(util.ApacheTest):
                           max_val
 
     def test_autohsts_update_noop(self):
-        with mock.patch("time.time") as mock_time:
+        with mock.patch("certbot_apache._internal.configurator.time.time") as mock_time:
             # Time mock is used to make sure that the execution does not
             # continue when no autohsts entries exist in pluginstorage
             self.config.update_autohsts(mock.MagicMock())
