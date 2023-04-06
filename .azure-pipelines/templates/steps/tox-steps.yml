@@ -24,7 +24,6 @@ steps:
       addToPath: true
   - bash: |
       set -e
-      python3 tools/pipstrap.py
       python3 tools/pip_install.py tox
     displayName: Install runtime dependencies
   - task: DownloadSecureFile@1

@@ -3,7 +3,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.5.0.dev0'
+version = '2.6.0.dev0'
 
 install_requires = [
     'cryptography>=2.5.0',
