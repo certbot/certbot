@@ -1,3 +1,5 @@
+# This does not include the dependencies needed to build cryptography. See
+# https://cryptography.io/en/latest/installation/#building-cryptography-on-linux
 steps:
   # We run brew update because we've seen attempts to install an older version
   # of a package fail. See
