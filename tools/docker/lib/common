@@ -115,7 +115,7 @@ InstallMultiarchSupport() {
 # driver
 CreateBuilder() {
     # just incase the env is not perfectly clean, remove any old instance of the builder
-    docker builder rm certbot_builder || true
+    docker buildx rm certbot_builder || true
     # create the builder instance
     docker buildx create --name certbot_builder --driver docker-container --driver-opt=network=host --bootstrap
 }
