@@ -12,11 +12,8 @@ steps:
       set -e
       sudo apt-get update
       sudo apt-get install -y --no-install-recommends \
-        python3-dev \
         libaugeas0 \
-        ca-certificates \
-        nginx-light \
-        openssl
+        nginx-light
       sudo systemctl stop nginx
       sudo sysctl net.ipv4.ip_unprivileged_port_start=0
     condition: startswith(variables['IMAGE_NAME'], 'ubuntu')

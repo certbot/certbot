@@ -1,9 +1,10 @@
 FROM debian:buster
 MAINTAINER Brad Warren <bmw@eff.org>
 
+# This does not include the dependencies needed to build cryptography. See
+# https://cryptography.io/en/latest/installation/#building-cryptography-on-linux
 RUN apt-get update && \
-    apt install python3-dev python3-venv gcc libaugeas0 libssl-dev \
-                 libffi-dev ca-certificates openssl pkg-config -y
+    apt install python3-venv libaugeas0 -y
 
 WORKDIR /opt/certbot/src
 
