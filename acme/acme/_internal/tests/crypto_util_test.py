@@ -29,11 +29,9 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
         from acme.crypto_util import SSLSocket
 
         class _TestServer(socketserver.TCPServer):
-
-            def server_bind(self):  # pylint: disable=missing-docstring
-                self.socket = SSLSocket(socket.socket(),
-                        certs)
-                socketserver.TCPServer.server_bind(self)
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.socket = SSLSocket(self.socket, certs)
 
         self.server = _TestServer(('', 0), socketserver.BaseRequestHandler)
         self.port = self.server.socket.getsockname()[1]
