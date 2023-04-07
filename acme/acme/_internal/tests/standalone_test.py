@@ -55,6 +55,7 @@ class HTTP01ServerTest(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.thread.join()
+        self.server.server_close()
 
     def test_index(self):
         response = requests.get(
@@ -133,6 +134,7 @@ class TLSALPN01ServerTest(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()  # pylint: disable=no-member
         self.thread.join()
+        self.server.server_close()
 
     # TODO: This is not implemented yet, see comments in standalone.py
     # def test_certs(self):
@@ -214,6 +216,8 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
             if prev_port:
                 assert prev_port == port
             prev_port = port
+        for server in servers.servers:
+            server.server_close()
 
 
 class HTTP01DualNetworkedServersTest(unittest.TestCase):

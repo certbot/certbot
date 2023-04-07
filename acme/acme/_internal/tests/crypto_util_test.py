@@ -44,6 +44,7 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
         if self.server_thread.is_alive():
             # The thread may have already terminated.
             self.server_thread.join()  # pragma: no cover
+        self.server.server_close()
 
     def _probe(self, name):
         from acme.crypto_util import probe_sni
