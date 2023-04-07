@@ -87,6 +87,14 @@ def reconstitute(config: configuration.NamespaceConfig,
         logger.error("Renewal configuration file %s does not specify "
                        "an authenticator. Skipping.", full_path)
         return None
+
+    # Prior to Certbot v1.25.0, the default value of key_type (rsa) was not persisted to the
+    # renewal params. If the option is absent, it means the certificate was an RSA key.
+    # Restoring the option here is necessary to preserve the certificate key_type if
+    # the user has upgraded directly from Certbot <v1.25.0 to >=v2.0.0, where the default
+    # key_type was changed to ECDSA. See https://github.com/certbot/certbot/issues/9635.
+    renewalparams["key_type"] = renewalparams.get("key_type", "rsa")
+
     # Now restore specific values along with their data types, if
     # those elements are present.
     renewalparams = _remove_deprecated_config_elements(renewalparams)

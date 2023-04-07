@@ -18,7 +18,6 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Union
-import warnings
 
 import configargparse
 
@@ -455,7 +454,7 @@ class DeprecatedArgumentAction(argparse.Action):
     """Action to log a warning when an argument is used."""
     def __call__(self, unused1: Any, unused2: Any, unused3: Any,
                  option_string: Optional[str] = None) -> None:
-        warnings.warn("Use of %s is deprecated." % option_string, DeprecationWarning)
+        logger.warning("Use of %s is deprecated.", option_string)
 
 
 def add_deprecated_argument(add_argument: Callable[..., None], argument_name: str,
