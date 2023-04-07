@@ -66,7 +66,6 @@ jobs:
           addToPath: true
       - script: |
           python -m venv venv
-          venv\Scripts\python tools\pipstrap.py
           venv\Scripts\python tools\pip_install.py -e windows-installer
         displayName: Prepare Windows installer build environment
       - script: |
@@ -103,7 +102,6 @@ jobs:
         displayName: Retrieve Windows installer
       - script: |
           python -m venv venv
-          venv\Scripts\python tools\pipstrap.py
           venv\Scripts\python tools\pip_install.py -e certbot-ci
         env:
           PIP_NO_BUILD_ISOLATION: no
@@ -175,7 +173,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends nginx-light snapd
           python3 -m venv venv
-          venv/bin/python tools/pipstrap.py
           venv/bin/python tools/pip_install.py -U tox
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
@@ -213,7 +210,6 @@ jobs:
       - script: |
           set -e
           python3 -m venv venv
-          venv/bin/python tools/pipstrap.py
           venv/bin/python tools/pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |
