@@ -35,7 +35,7 @@ DeployManifest() {
     for TAG_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
         SRC_IMAGES+="${REGISTRY_SPEC}${IMAGE_NAME}:${TAG_ARCH}-${TAG_VER} "
     done
-    docker buildx imagetools create -t "${REGISTRY_SPEC}${IMAGE_NAME}:${TAG_VER}" "$SRC_IMAGES"
+    docker buildx imagetools create -t "${REGISTRY_SPEC}${IMAGE_NAME}:${TAG_VER}" $SRC_IMAGES
 
     if [[ "${TAG_VER}" =~ ^v([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
         docker buildx imagetools create -t "${REGISTRY_SPEC}${IMAGE_NAME}:latest" "$SRC_IMAGES"
