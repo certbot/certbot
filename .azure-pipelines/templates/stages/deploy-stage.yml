@@ -32,12 +32,12 @@ stages:
           vmImage: ubuntu-22.04
         strategy:
           matrix:
-            amd64:
-              DOCKER_ARCH: amd64
             arm32v6:
               DOCKER_ARCH: arm32v6
             arm64v8:
               DOCKER_ARCH: arm64v8
+            amd64:
+              DOCKER_ARCH: amd64
         steps:
           - task: DownloadPipelineArtifact@2
             inputs:
@@ -51,7 +51,7 @@ stages:
               command: login
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
-          - bash: set -e && tools/docker/deploy_by_arch.sh $(dockerTag) $DOCKER_ARCH
+          - bash: set -e && tools/docker/deploy_images.sh $(dockerTag) $DOCKER_ARCH
             displayName: Deploy the Docker images by architecture
       - job: publish_docker_multiarch
         dependsOn: publish_docker_by_arch
@@ -63,5 +63,5 @@ stages:
               command: login
               containerRegistry: docker-hub
             displayName: Login to Docker Hub
-          - bash: set -e && tools/docker/deploy_multiarch.sh $(dockerTag)
+          - bash: set -e && tools/docker/deploy_manifests.sh $(dockerTag) all
             displayName: Deploy the Docker multiarch manifests
