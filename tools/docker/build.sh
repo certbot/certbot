@@ -53,6 +53,4 @@ BuildAndLoadByArch() {
 
 for ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
     BuildAndLoadByArch "$ARCH"
-done    
-
-
+done

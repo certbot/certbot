@@ -46,4 +46,3 @@ RUN apk add --no-cache --virtual .build-deps \
 FROM certbot as certbot-plugin
 COPY --from=plugin-src . /opt/certbot/src/plugin
 RUN python tools/pip_install.py --no-cache-dir --editable /opt/certbot/src/plugin
-

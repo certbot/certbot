@@ -55,9 +55,7 @@ arch2platform() {
     esac
 }
 
-
 ParseArgs() {
-
     export TAG_VER="$1"
     if [ -z "$TAG_VER" ]; then
         echo "We cannot tag Docker images with an empty string!" >&2

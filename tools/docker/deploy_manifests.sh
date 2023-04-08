@@ -46,6 +46,3 @@ DeployManifest certbot
 for PLUGIN in "${CERTBOT_PLUGINS[@]}"; do
     DeployManifest "$PLUGIN"
 done
-
-
-

@@ -44,5 +44,3 @@ for TAG_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
         DeployImage "$PLUGIN" "$TAG_ARCH"
     done
 done
-
-
