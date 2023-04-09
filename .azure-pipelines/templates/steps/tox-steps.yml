@@ -1,3 +1,5 @@
+# This does not include the dependencies needed to build cryptography. See
+# https://cryptography.io/en/latest/installation/
 steps:
   # We run brew update because we've seen attempts to install an older version
   # of a package fail. See
@@ -12,14 +14,8 @@ steps:
       set -e
       sudo apt-get update
       sudo apt-get install -y --no-install-recommends \
-        python3-dev \
-        gcc \
         libaugeas0 \
-        libssl-dev \
-        libffi-dev \
-        ca-certificates \
-        nginx-light \
-        openssl
+        nginx-light
       sudo systemctl stop nginx
       sudo sysctl net.ipv4.ip_unprivileged_port_start=0
     condition: startswith(variables['IMAGE_NAME'], 'ubuntu')
