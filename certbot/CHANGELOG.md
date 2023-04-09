@@ -21,7 +21,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Packaged tests for all Certbot components besides josepy were moved inside
   the `_internal/tests` module.
 * Lineage name validity is performed for new lineages. `--cert-name` may no longer contain
-  `/` or `\` and may no longer start with `-`.
+  filepath separators (i.e. `/` or `\\`, depending on the platform).
 
 ### Fixed
 

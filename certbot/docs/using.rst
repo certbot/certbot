@@ -375,7 +375,8 @@ This returns information in the following format::
 ``Certificate Name`` shows the name of the certificate. Pass this name
 using the ``--cert-name`` flag to specify a particular certificate for the ``run``,
 ``certonly``, ``certificates``, ``renew``, and ``delete`` commands. The certificate
-name cannot contain characters '/' or '\\', and cannot start with '-'. Example::
+name cannot contain filepath separators (i.e. '/' or '\\', depending on the platform).
+Example::
 
   certbot certonly --cert-name example.com
 

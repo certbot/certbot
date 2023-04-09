@@ -576,12 +576,14 @@ class Client:
         else:
             raise errors.Error(
                 "The provided certname cannot be used as a lineage name because it contains "
-                "an illegal character." if certname else
+                "an illegal character (i.e. filepath separator)." if certname else
                 "Cannot use domain name as lineage name because it contains an illegal "
-                "character. Specify an explicit lineage name with --cert-name.")
+                "character (i.e. filepath separator). Specify an explicit lineage name "
+                "with --cert-name.")
 
     def _is_valid_lineagename(self, name: str) -> bool:
-        """Determines whether the provided name is a valid lineagename.
+        """Determines whether the provided name is a valid lineagename. A lineagename
+        is invalid when it contains filepath separators.
 
         :param name: the lineage name to determine validity for
         :type name: `str`
@@ -590,7 +592,7 @@ class Client:
         :rtype: bool
 
         """
-        return ("/" not in name and "\\" not in name and not name.startswith("-"))
+        return os.path.sep not in name
 
     def save_certificate(self, cert_pem: bytes, chain_pem: bytes,
                          cert_path: str, chain_path: str, fullchain_path: str

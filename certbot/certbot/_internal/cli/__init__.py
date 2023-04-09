@@ -139,7 +139,8 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         metavar="CERTNAME", default=flag_default("certname"),
         help="Certificate name to apply. This name is used by Certbot for housekeeping "
              "and in file paths; it doesn't affect the content of the certificate itself. "
-             "Certificate name cannot contain characters '/' or '\\', and cannot start with '-'."
+             "Certificate name cannot contain filepath separators (i.e. '/' or '\\', depending "
+             "on the platform). "
              "To see certificate names, run 'certbot certificates'. "
              "When creating a new certificate, specifies the new certificate's name. "
              "(default: the first provided domain or the name of an existing "
