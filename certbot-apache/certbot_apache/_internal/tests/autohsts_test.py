@@ -128,11 +128,11 @@ class AutoHSTSTest(util.ApacheTest):
                           max_val
 
     def test_autohsts_update_noop(self):
-        with mock.patch.object(self.config, '_autohsts_save_state') as mock_save_state:
-            # The mock is used to make sure that the execution does not
+        with mock.patch("certbot_apache._internal.configurator.time") as mock_time_module:
+            # Time mock is used to make sure that the execution does not
             # continue when no autohsts entries exist in pluginstorage
             self.config.update_autohsts(mock.MagicMock())
-            assert not mock_save_state.called
+            assert not mock_time_module.time.called
 
     def test_autohsts_make_permanent_noop(self):
         self.config.storage.put = mock.MagicMock()
