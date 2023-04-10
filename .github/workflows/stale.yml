@@ -1,8 +1,8 @@
 name: Update Stale Issues
 on:
   schedule:
-    # Run 24 minutes past the hour 4 times a day.
-    - cron: '24 */6 * * *'
+    # Run 1:24AM every night
+    - cron: '24 1 * * *'
 permissions:
   issues: write
 jobs:
@@ -42,4 +42,4 @@ jobs:
             take a look.
 
           # Limit the number of actions per hour, from 1-30. Default is 30
-          operations-per-run: 30
+          operations-per-run: 120
