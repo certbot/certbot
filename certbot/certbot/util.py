@@ -8,6 +8,7 @@ import re
 import socket
 import subprocess
 import sys
+import warnings
 from enum import Enum
 from typing import Any
 from typing import Callable
@@ -785,6 +786,24 @@ def atexit_register(func: Callable, *args: Any, **kwargs: Any) -> None:
 
     """
     atexit.register(_atexit_call, func, *args, **kwargs)
+
+
+def parse_loose_version(version_string: str) -> List[Union[int, str]]:
+    """Parses a version string into its components.
+    This code and the returned tuple is based on the now deprecated
+    distutils.version.LooseVersion class from the Python standard library.
+    Two LooseVersion classes and two lists as returned by this function should
+    compare in the same way. See
+    https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L205-L347.
+    :param str version_string: version string
+    :returns: list of parsed version string components
+    :rtype: list
+    """
+    warnings.warn("certbot.util.parse_loose_version is deprecated and will be "
+                  "removed in an upcoming release of Certbot",
+                  DeprecationWarning)
+    loose_version = LooseVersion(version_string)
+    return loose_version.version_components
 
 
 def _atexit_call(func: Callable, *args: Any, **kwargs: Any) -> None:
