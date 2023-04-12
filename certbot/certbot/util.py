@@ -81,7 +81,7 @@ class LooseVersion:
     """
 
     def __init__(self, version_string: str) -> None:
-        self.loose_version = self.__parse_loose_version(version_string)
+        self.version_components = self.__parse_loose_version(version_string)
 
     def __parse_loose_version(self, version_string: str) -> List[Union[int, str]]:
         """Parses a version string into its components.
@@ -136,17 +136,17 @@ class LooseVersion:
         if not isinstance(other, type(self)):
             return self.Comparison.INCOMPARIBLE
 
-        if self.loose_version == other.loose_version:
+        if self.version_components == other.version_components:
             return self.Comparison.EQUAL
 
-        for i in range(min(len(self.loose_version), len(other.loose_version))):
-            version_component_self = self.loose_version[i]
-            version_component_other = other.loose_version[i]
+        for i in range(min(len(self.version_components), len(other.version_components))):
+            version_component_self = self.version_components[i]
+            version_component_other = other.version_components[i]
 
             if not isinstance(version_component_other, type(version_component_self)):
                 logger.debug("Cannot meaningfully compare version %s with version %s.",
-                             self.loose_version,
-                             other.loose_version)
+                             self.version_components,
+                             other.version_components)
                 return self.Comparison.INCOMPARIBLE
 
             if isinstance(version_component_other, str) and \
@@ -165,12 +165,12 @@ class LooseVersion:
                 if version_component_self < version_component_other:
                     return self.Comparison.LESS
 
-        if len(self.loose_version) > len(other.loose_version):
-            for version_component in self.loose_version[len(other.loose_version)::]:
+        if len(self.version_components) > len(other.version_components):
+            for version_component in self.version_components[len(other.version_components)::]:
                 if version_component != 0:
                     return self.Comparison.GREATER
-        elif len(self.loose_version) < len(other.loose_version):
-            for version_component in other.loose_version[len(self.loose_version)::]:
+        elif len(self.version_components) < len(other.version_components):
+            for version_component in other.version_components[len(self.version_components)::]:
                 if version_component != 0:
                     return self.Comparison.LESS
 
