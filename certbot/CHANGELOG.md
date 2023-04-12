@@ -20,8 +20,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   removed in a future version of Certbot.
 * Packaged tests for all Certbot components besides josepy were moved inside
   the `_internal/tests` module.
-* Deprecated `certbot.util.parse_loose_version`. Replaced with `certbot.util.LooseVersion` class
-  with type-safe comparison. See [GH #9489](https://github.com/certbot/certbot/issues/9489).
+* Deprecated `certbot.util.parse_loose_version`. Replaced with `certbot.util.LooseVersion` class.
+  See [GH #9489](https://github.com/certbot/certbot/issues/9489).
 
 ### Fixed
 

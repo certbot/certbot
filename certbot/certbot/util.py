@@ -55,30 +55,9 @@ class LooseVersion:
 
     This is based on distutils.version.LooseVersion at
     https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L269
-    but this class has fully type-safe comparison. This is achieved by having an 'incomparible'
-    comparison result, for example when integer and string version components are present in the
-    same position. If this happens, the two versions being compared are not equal, less than, or
-    greater than eachother.
-
-    Comparison is performed element-wise. If the version components being compared are of different
-    types, the two versions are considered incomparible. Otherwise, if either of the components
-    is not equal to the other, less or greater is returned based on the comparison's result.
-    In case the two versions are of different lengths, some elements in the longer version have
-    not yet been compared. If these are all equal to zero, the two versions are equal.
-    Otherwise, the longer version is greater.
-
-    Examples:
-    Equality:
-    - LooseVersion('1.0') == LooseVersion('1.0') -> True
-    - LooseVersion('2.0.0a') == LooseVersion('2.0.0a') -> True
-    Inequality:
-    - LooseVersion('2.0.0') > LooseVersion('1.0') -> True
-    - LooseVersion('1.0.1') < LooseVersion('2.0a') -> True
-    Incomparability:
-    - LooseVersion('1a') < LooseVersion('1.0') -> False
-    - LooseVersion('1a') > LooseVersion('1.0') -> False
-    - LooseVersion('1a') == LooseVersion('1.0') -> False
-    - LooseVersion('1a') != LooseVersion('1.0') -> True
+    but regular comparison is not supported. Instead, the `try_risky_comparison` method is
+    provided, which may return an error if two LooseVersions are 'incomparible'.
+    For example when integer and string version components are present in the same position.
     """
 
     def __init__(self, version_string: str) -> None:
@@ -97,7 +76,6 @@ class LooseVersion:
 
         :returns: list of parsed version string components
         :rtype: list
-
         """
         components: List[Union[int, str]]
         components = [x for x in _VERSION_COMPONENT_RE.split(version_string)
@@ -116,11 +94,8 @@ class LooseVersion:
         GREATER = 3
         INCOMPARIBLE = 4
 
-    def __compare(self, other: Any) -> Comparison:
-        """Compares the LooseVersion to another value.
-
-        If the other value is another LooseVersion, the version components are compared. Otherwise,
-        incomparible is returned.
+    def __compare(self, other: 'LooseVersion') -> Comparison:
+        """Compares the LooseVersion to another LooseVersion.
 
         Examples:
         __compare(LooseVersion('2.0'), LooseVersion('1.0')) -> GREATER
@@ -134,9 +109,6 @@ class LooseVersion:
         :returns: whether self is equal to, greater than, less than, or incomparible to other
         :rtype: Enum.Comparison
         """
-        if not isinstance(other, type(self)):
-            return self.Comparison.INCOMPARIBLE
-
         if self.version_components == other.version_components:
             return self.Comparison.EQUAL
 
@@ -145,9 +117,6 @@ class LooseVersion:
             version_component_other = other.version_components[i]
 
             if not isinstance(version_component_other, type(version_component_self)):
-                logger.debug("Cannot meaningfully compare version %s with version %s.",
-                             self.version_components,
-                             other.version_components)
                 return self.Comparison.INCOMPARIBLE
 
             if isinstance(version_component_other, str) and \
@@ -177,25 +146,102 @@ class LooseVersion:
 
         return self.Comparison.EQUAL
 
+    def try_risky_comparison(self, other: Any) -> int:
+        """Compares the LooseVersion to another value.
+
+        If the other value is another LooseVersion, the version components are compared. Otherwise,
+        an exception is raised.
+
+        Comparison is performed element-wise. If the version components being compared are of
+        different types, the two versions are considered incomparible. Otherwise, if either of the
+        components is not equal to the other, less or greater is returned based on the comparison's
+        result. In case the two versions are of different lengths, some elements in the longer
+        version have not yet been compared. If these are all equal to zero, the two versions are
+        equal. Otherwise, the longer version is greater.
+
+        If the two versions are incomparible, an exception is raised. Otherwise, the returned
+        integer indicates the result of the comparison. If self == other, 0 is returned.
+        If self > other, 1 is returned. If self < other -1 is returned.
+
+        Examples:
+        Equality:
+        - LooseVersion('1.0').try_risky_comparison(LooseVersion('1.0')) -> 0
+        - LooseVersion('2.0.0a').try_risky_comparison(LooseVersion('2.0.0a')) -> 0
+        Inequality:
+        - LooseVersion('2.0.0').try_risky_comparison(LooseVersion('1.0')) -> 1
+        - LooseVersion('1.0.1').try_risky_comparison(LooseVersion('2.0a')) -> -1
+        Incomparability:
+        - LooseVersion('1a').try_risky_comparison(LooseVersion('1.0')) -> ValueError
+        """
+        if not isinstance(other, type(self)):
+            raise TypeError(f'Comparison not supported between LooseVersion and {type(other)}')
+
+        comparison = self.__compare(other)
+
+        if comparison == self.Comparison.EQUAL:
+            return 0
+        elif comparison == self.Comparison.LESS:
+            return -1
+        elif comparison == self.Comparison.GREATER:
+            return 1
+        else:
+            raise ValueError("Cannot meaningfully compare LooseVersion {} with LooseVersion {} "
+                             "due to comparison of version components with different types."
+                             .format(self.version_components, other.version_components))
+
+    # Provide helper methods for comparison without having to use the returned integer value.
+    def try_risky_equal(self, other: Any) -> bool:
+        """Tests if self == other, using `try_risky_comparison`.
+        """
+        return self.try_risky_comparison(other) == 0
+
+    def try_risky_not_equal(self, other: Any) -> bool:
+        """Tests if self != other, using `try_risky_comparison`.
+        """
+        return self.try_risky_comparison(other) != 0
+
+    def try_risky_less(self, other: Any) -> bool:
+        """Tests if self < other, using `try_risky_comparison`.
+        """
+        return self.try_risky_comparison(other) == -1
+
+    def try_risky_greater(self, other: Any) -> bool:
+        """Tests if self > other, using `try_risky_comparison`.
+        """
+        return self.try_risky_comparison(other) == 1
+
+    def try_risky_less_equal(self, other: Any) -> bool:
+        """Tests if self <= other, using `try_risky_comparison`.
+        """
+        return self.try_risky_comparison(other) in (0, -1)
+
+    def try_risky_greater_equal(self, other: Any) -> bool:
+        """Tests if self >= other, using `try_risky_comparison`.
+        """
+        return self.try_risky_comparison(other) in (0, 1)
+
+    # Prevent the use of regular comparison operators
+    def __regular_comparison_exception(self) -> bool:
+        raise TypeError("Regular comparison not supported between LooseVersions, "
+                        "use `try_risky_comparison` instead.")
+
     def __eq__(self, other: Any) -> bool:
-        return self.__compare(other) == self.Comparison.EQUAL
+        return self.__regular_comparison_exception()
 
     def __ne__(self, other: Any) -> bool:
-        return self.__compare(other) != self.Comparison.EQUAL
+        return self.__regular_comparison_exception()
 
     def __lt__(self, other: Any) -> bool:
-        return self.__compare(other) == self.Comparison.LESS
+        return self.__regular_comparison_exception()
 
     def __gt__(self, other: Any) -> bool:
-        return self.__compare(other) == self.Comparison.GREATER
+        return self.__regular_comparison_exception()
 
     def __le__(self, other: Any) -> bool:
-        return self.__compare(other) == self.Comparison.LESS or \
-               self.__compare(other) == self.Comparison.EQUAL
+        return self.__regular_comparison_exception()
 
     def __ge__(self, other: Any) -> bool:
-        return self.__compare(other) == self.Comparison.GREATER or \
-               self.__compare(other) == self.Comparison.EQUAL
+        return self.__regular_comparison_exception()
 
 
 # ANSI SGR escape codes

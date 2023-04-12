@@ -150,7 +150,7 @@ class NginxConfigurator(common.Configurator):
         use_tls13 = self.version >= (1, 13, 0)
         min_openssl_version = util.LooseVersion('1.0.2l')
         session_tix_off = self.version >= (1, 5, 9) and self.openssl_version and\
-            util.LooseVersion(self.openssl_version) >= min_openssl_version
+            util.LooseVersion(self.openssl_version).try_risky_greater_equal(min_openssl_version)
 
         if use_tls13:
             if session_tix_off:

@@ -13,8 +13,8 @@ def main(openssl_version, apache_version):
     conf_file_location = "/etc/letsencrypt/options-ssl-apache.conf"
     with open(conf_file_location) as f:
         contents = f.read()
-    if util.LooseVersion(apache_version.strip()) < util.LooseVersion('2.4.11') or \
-        util.LooseVersion(openssl_version.strip()) < util.LooseVersion('1.0.2l'):
+    if util.LooseVersion(apache_version.strip()).test_risky_less(util.LooseVersion('2.4.11')) or \
+        util.LooseVersion(openssl_version.strip()).test_risky_less(util.LooseVersion('1.0.2l')):
         # should be old version
         # assert SSLSessionTickets not in conf file
         if "SSLSessionTickets" in contents:

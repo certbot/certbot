@@ -165,7 +165,7 @@ class ApacheConfigurator(common.Configurator):
         min_openssl_version = util.LooseVersion('1.0.2l')
         openssl_version = self.openssl_version(warn_on_no_mod_ssl)
         if self.version < (2, 4, 11) or not openssl_version or \
-            util.LooseVersion(openssl_version) < min_openssl_version:
+            util.LooseVersion(openssl_version).try_risky_less(min_openssl_version):
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 

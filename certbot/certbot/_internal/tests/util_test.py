@@ -656,29 +656,35 @@ class LooseVersionTest(unittest.TestCase):
             ('2.0', '2.0.1'),
             ('a', 'b'))
         for v1, v2 in comparisons:
-            assert self._call(v1) < self._call(v2)
+            assert self._call(v1).try_risky_comparison(self._call(v2)) == -1
+            assert self._call(v1).try_risky_less(self._call(v2))
+            assert self._call(v1).try_risky_less_equal(self._call(v2))
 
     def test_equal(self):
         comparisons = (('8.02', '8.02'),
             ('1a', '1a'),
             ('2.0', '2.0.0'))
         for v1, v2 in comparisons:
-            assert self._call(v1) == self._call(v2)
+            assert self._call(v1).try_risky_comparison(self._call(v2)) == 0
+            assert self._call(v1).try_risky_equal(self._call(v2))
+            assert not self._call(v1).try_risky_not_equal(self._call(v2))
+            assert self._call(v1).try_risky_less_equal(self._call(v2))
+            assert self._call(v1).try_risky_greater_equal(self._call(v2))
 
     def test_greater_than(self):
         comparisons = (('161', '3.10a'),
             ('3.2.pl0', '3.1.1.6'))
         for v1, v2 in comparisons:
-            assert self._call(v1) > self._call(v2)
+            assert self._call(v1).try_risky_comparison(self._call(v2)) == 1
+            assert self._call(v1).try_risky_greater(self._call(v2))
+            assert self._call(v1).try_risky_greater_equal(self._call(v2))
 
     def test_incomparible(self):
         comparisons = (('bookworm/sid', '9'),
             ('1a', '1.0'))
         for v1, v2 in comparisons:
-            assert not self._call(v1) < self._call(v2)
-            assert not self._call(v1) > self._call(v2)
-            assert not self._call(v1) == self._call(v2)
-            assert self._call(v1) != self._call(v2)
+            with pytest.raises(ValueError):
+                assert self._call(v1).try_risky_comparison(self._call(v2))
 
 
 class ParseLooseVersionTest(unittest.TestCase):
@@ -701,9 +707,9 @@ class ParseLooseVersionTest(unittest.TestCase):
             ('2g6', '11g'),
             ('0.960923', '2.2beta29'),
             ('1.13++', '5.5.kw'))
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            for v1, v2 in comparisons:
+        for v1, v2 in comparisons:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
                 assert self._call(v1) < self._call(v2)
 
     def test_equal(self):
@@ -714,9 +720,9 @@ class ParseLooseVersionTest(unittest.TestCase):
     def test_greater_than(self):
         comparisons = (('161', '3.10a'),
             ('3.2.pl0', '3.1.1.6'))
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            for v1, v2 in comparisons:
+        for v1, v2 in comparisons:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
                 assert self._call(v1) > self._call(v2)
 
 
