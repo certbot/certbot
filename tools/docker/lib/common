@@ -1,11 +1,8 @@
 #!/bin/bash
-set -ex
+set -euxo pipefail
 
 # Current supported architectures
 export ALL_TARGET_ARCH=(amd64 arm32v6 arm64v8)
-
-# Architecture used in tags with no architecture specified (certbot/certbot:latest, certbot/certbot:v0.35.0, ...)
-export DEFAULT_ARCH=amd64
 
 # Name of the Certbot Docker organizaation on GitHub. After creating
 # repositories with the same names (e.g. "certbot", "dns-dnsmadeeasy", etc.)
@@ -31,22 +28,83 @@ export CERTBOT_PLUGINS=(
     "dns-sakuracloud"
 )
 
-# Parses the requested architecture string and sets ALL_REQUESTED_ARCH to
-# result.
-# Usage: ParseRequestedArch [all|amd64|arm32v6|arm64v8]
-ParseRequestedArch() {
+# WORK_DIR is two levels above this file
+export WORK_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")"
+# REPO_ROOT is two levels above that
+export REPO_ROOT="$(realpath "${WORK_DIR}/../..")"
+
+# Converts input architecture identifier to the platform specification
+# understood by `docker build buildx --platform <specification>`.
+# Usage: arch2platform [arm64|arm32v6|arm64v8]
+# If the input is not recognized, an error is returned
+arch2platform() {
     REQUESTED_ARCH="${1}"
-    if [[ "${REQUESTED_ARCH}" == "all" ]]; then
-        ALL_REQUESTED_ARCH=("${ALL_TARGET_ARCH[@]}")
-        return 0
+    case $REQUESTED_ARCH in
+        amd64)
+            echo "linux/amd64"
+            ;;
+        arm32v6)
+            echo "linux/arm/v6"
+            ;;
+        arm64v8)
+            echo "linux/arm64"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+ParseArgs() {
+    export TAG_VER="$1"
+    if [ -z "$TAG_VER" ]; then
+        echo "We cannot tag Docker images with an empty string!" >&2
+        exit 1
     fi
-    for TARGET_ARCH in "${ALL_TARGET_ARCH[@]}"; do
-        if [[ "${TARGET_ARCH}" == "${REQUESTED_ARCH}" ]]; then
-            ALL_REQUESTED_ARCH=("${REQUESTED_ARCH}")
-            return 0
+    ARCH_LIST="$2"
+    if [ -z "$ARCH_LIST" ]; then
+        echo "Architectures must be specified!" >&2
+        exit 1
+    fi
+
+    local IFS=","
+    # Handle the special value "all"
+    if [[ "${ARCH_LIST}" == "all" ]]; then
+        # Replace with comma separated 
+        ARCH_LIST="${ALL_TARGET_ARCH[*]}"
+    fi
+
+    # Turn arch list into an array
+    read -ra REQUESTED_ARCH_ARRAY <<< "$ARCH_LIST"
+    # And make sure all individual elements are in the list of all known architectures
+    for REQUESTED_ARCH in "${REQUESTED_ARCH_ARRAY[@]}"; do
+        local IFS=" "
+        if [[ ! " ${ALL_TARGET_ARCH[*]} " =~ " ${REQUESTED_ARCH} " ]]; then
+            echo "unknown architecture identifier: ${REQUESTED_ARCH}" >&2
+            exit 1
         fi
     done
-    # If we didn't return above, REQUESTED_ARCH has an unexpected value.
-    echo "Unexpected target architecture \"${REQUESTED_ARCH}\"". >&2
-    exit 1
+    export REQUESTED_ARCH_ARRAY
+}
+
+
+# Function for use with trap in the primary scripts to remove the 
+# docker builder and restore the original directory
+Cleanup() {
+    docker buildx rm certbot_builder || true
+    popd
+}
+
+# add binfmt tools to the docker environment, with integration into the new builder instance
+InstallMultiarchSupport() {
+    docker run --privileged --rm tonistiigi/binfmt --install all
+}
+
+# Function to create a docker builder using the buildkit docker-container
+# driver
+CreateBuilder() {
+    # just incase the env is not perfectly clean, remove any old instance of the builder
+    docker buildx rm certbot_builder || true
+    # create the builder instance
+    docker buildx create --name certbot_builder --driver docker-container --driver-opt=network=host --bootstrap
 }

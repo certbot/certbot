@@ -41,13 +41,11 @@ Install and configure the OS system dependencies required to run Certbot.
 
    # For APT-based distributions (e.g. Debian, Ubuntu ...)
    sudo apt update
-   sudo apt install python3-dev python3-venv gcc libaugeas0 libssl-dev \
-                    libffi-dev ca-certificates openssl
+   sudo apt install python3-venv libaugeas0
    # For RPM-based distributions (e.g. Fedora, CentOS ...)
    # NB1: old distributions will use yum instead of dnf
-   # NB2: RHEL-based distributions use python3X-devel instead of python3-devel (e.g. python36-devel)
-   sudo dnf install python3-devel gcc augeas-libs openssl-devel libffi-devel \
-                    redhat-rpm-config ca-certificates openssl
+   # NB2: RHEL-based distributions use python3X instead of python3 (e.g. python38)
+   sudo dnf install python3 augeas-libs
    # For macOS installations with Homebrew already installed and configured
    # NB: If you also run `brew install python` you don't need the ~/lib
    #     directory created below, however, Certbot's Apache plugin won't work
@@ -56,6 +54,12 @@ Install and configure the OS system dependencies required to run Certbot.
    brew install augeas
    mkdir ~/lib
    ln -s $(brew --prefix)/lib/libaugeas* ~/lib
+
+.. note:: If you have trouble creating the virtual environment below, you may
+   need to install additional dependencies. See the `cryptography project's
+   site`_ for more information.
+
+.. _`cryptography project's site`: https://cryptography.io/en/latest/installation.html#building-cryptography-on-linux
 
 Set up the Python virtual environment that will host your Certbot local instance.
 

@@ -248,13 +248,6 @@ class UniqueFileTest(test_util.TempDirTestCase):
         fd3.close()
 
 
-try:
-    file_type = file
-except NameError:
-    import io
-    file_type = io.TextIOWrapper  # type: ignore
-
-
 class UniqueLineageNameTest(test_util.TempDirTestCase):
     """Tests for certbot.util.unique_lineage_name."""
 
@@ -264,7 +257,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
 
     def test_basic(self):
         f, path = self._call("wow")
-        assert isinstance(f, file_type)
+        assert isinstance(f, io.TextIOWrapper)
         assert os.path.join(self.tempdir, "wow.conf") == path
         f.close()
 
@@ -273,7 +266,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for _ in range(10):
             items.append(self._call("wow"))
         f, name = items[-1]
-        assert isinstance(f, file_type)
+        assert isinstance(f, io.TextIOWrapper)
         assert isinstance(name, str)
         assert "wow-0009.conf" in name
         for f, _ in items:

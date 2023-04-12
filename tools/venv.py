@@ -197,7 +197,6 @@ def install_packages(venv_name, pip_args):
     """
     # Using the python executable from venv, we ensure to execute following commands in this venv.
     py_venv = get_venv_python_path(venv_name)
-    subprocess_with_print([py_venv, os.path.abspath('tools/pipstrap.py')])
     command = [py_venv, os.path.abspath('tools/pip_install.py')]
     command.extend(pip_args)
     subprocess_with_print(command)
