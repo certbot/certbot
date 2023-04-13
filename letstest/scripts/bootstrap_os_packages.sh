@@ -1,6 +1,9 @@
 #!/bin/sh
 #
 # Install OS dependencies for test farm tests.
+#
+# This does not include the dependencies needed to build cryptography. See
+# https://cryptography.io/en/latest/installation/#building-cryptography-on-linux
 
 set -ex  # Work even if somebody does "sh thisscript.sh".
 

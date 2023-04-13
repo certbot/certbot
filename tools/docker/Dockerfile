@@ -1,11 +1,5 @@
-# Docker Arch (amd64, arm32v6, ...)
-ARG TARGET_ARCH
-FROM ${TARGET_ARCH}/python:3.10-alpine3.16
-
-# Qemu Arch (x86_64, arm, ...)
-ARG QEMU_ARCH
-ENV QEMU_ARCH=${QEMU_ARCH}
-COPY qemu-${QEMU_ARCH}-static /usr/bin/
+#base image 
+FROM python:3.10-alpine3.16 as certbot
 
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
@@ -40,9 +34,16 @@ RUN apk add --no-cache --virtual .build-deps \
         python3-dev \
         cargo \
         git \
-    && python tools/pipstrap.py \
+        pkgconfig \
     && python tools/pip_install.py --no-cache-dir \
             --editable src/acme \
             --editable src/certbot \
     && apk del .build-deps \
     && rm -rf ${HOME}/.cargo
+
+#static definition for making a plugin, but beware that
+#using this layer definition will cause collisions if you make
+#extensive use of the cache.
+FROM certbot as certbot-plugin
+COPY --from=plugin-src . /opt/certbot/src/plugin
+RUN python tools/pip_install.py --no-cache-dir --editable /opt/certbot/src/plugin

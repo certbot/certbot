@@ -37,7 +37,9 @@ class _ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                                verify=False, timeout=10)
         issuer_cert = x509.load_pem_x509_certificate(request.content, default_backend())
 
-        content_len = int(self.headers.get('Content-Length'))
+        raw_content_len = self.headers.get('Content-Length')
+        assert isinstance(raw_content_len, str)
+        content_len = int(raw_content_len)
 
         ocsp_request = ocsp.load_der_ocsp_request(self.rfile.read(content_len))
         response = requests.get('{0}/cert-status-by-serial/{1}'.format(

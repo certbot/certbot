@@ -1,5 +1,6 @@
 # type: ignore
-# This module is not used for now, so we just skip type check for the sake of simplicity.
+# This module is not used for now, so we just skip type checking for the sake
+# of simplicity.
 """ This file contains parsing routines and object classes to help derive meaning from
 raw lists of tokens from pyparsing. """
 

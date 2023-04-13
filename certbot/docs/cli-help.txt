@@ -36,7 +36,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -124,7 +124,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/2.4.0 (certbot;
+                        "". (default: CertbotACMEClient/2.5.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -319,25 +319,34 @@ renew:
   more information on these.
 
   --pre-hook PRE_HOOK   Command to be run in a shell before obtaining any
-                        certificates. Intended primarily for renewal, where it
-                        can be used to temporarily shut down a webserver that
-                        might conflict with the standalone plugin. This will
-                        only be called if a certificate is actually to be
-                        obtained/renewed. When renewing several certificates
-                        that have identical pre-hooks, only the first will be
-                        executed. (default: None)
+                        certificates. Unless --disable-hook-validation is
+                        used, the command’s first word must be the absolute
+                        pathname of an executable or one found via the PATH
+                        environment variable. Intended primarily for renewal,
+                        where it can be used to temporarily shut down a
+                        webserver that might conflict with the standalone
+                        plugin. This will only be called if a certificate is
+                        actually to be obtained/renewed. When renewing several
+                        certificates that have identical pre-hooks, only the
+                        first will be executed. (default: None)
   --post-hook POST_HOOK
                         Command to be run in a shell after attempting to
-                        obtain/renew certificates. Can be used to deploy
-                        renewed certificates, or to restart any servers that
-                        were stopped by --pre-hook. This is only run if an
-                        attempt was made to obtain/renew a certificate. If
+                        obtain/renew certificates. Unless --disable-hook-
+                        validation is used, the command’s first word must be
+                        the absolute pathname of an executable or one found
+                        via the PATH environment variable. Can be used to
+                        deploy renewed certificates, or to restart any servers
+                        that were stopped by --pre-hook. This is only run if
+                        an attempt was made to obtain/renew a certificate. If
                         multiple renewed certificates have identical post-
                         hooks, only one will be run. (default: None)
   --deploy-hook DEPLOY_HOOK
                         Command to be run in a shell once for each
-                        successfully issued certificate. For this command, the
-                        shell variable $RENEWED_LINEAGE will point to the
+                        successfully issued certificate. Unless --disable-
+                        hook-validation is used, the command’s first word must
+                        be the absolute pathname of an executable or one found
+                        via the PATH environment variable. For this command,
+                        the shell variable $RENEWED_LINEAGE will point to the
                         config live subdirectory (for example,
                         "/etc/letsencrypt/live/example.com") containing the
                         new certificates and keys; the shell variable
@@ -658,11 +667,6 @@ dns-rfc2136:
 dns-route53:
   Obtain certificates using a DNS TXT record (if you are using AWS Route53
   for DNS).
-
-  --dns-route53-propagation-seconds DNS_ROUTE53_PROPAGATION_SECONDS
-                        The number of seconds to wait for DNS to propagate
-                        before asking the ACME server to verify the DNS
-                        record. (default: 10)
 
 dns-sakuracloud:
   Obtain certificates using a DNS TXT record (if you are using Sakura Cloud

@@ -274,9 +274,9 @@ def open(file_path: str, flags: int, mode: int = 0o777) -> int:  # pylint: disab
         return os.open(file_path, flags ^ os.O_CREAT ^ os.O_EXCL)
 
     # Windows: general case, we call os.open, let exceptions be thrown, then chmod if all is fine.
-    handle = os.open(file_path, flags)
+    fd = os.open(file_path, flags)
     chmod(file_path, mode)
-    return handle
+    return fd
 
 
 def makedirs(file_path: str, mode: int = 0o777) -> None:
