@@ -37,7 +37,7 @@ More details about these changes can be found on our GitHub repo.
 * Packaged tests for all Certbot components besides josepy were moved inside
   the `_internal/tests` module.
 * Lineage name validity is performed for new lineages. `--cert-name` may no longer contain
-  filepath separators (i.e. `/` or `\\`, depending on the platform).
+  filepath separators (i.e. `/` or `\`, depending on the platform).
 
 ### Fixed
 
