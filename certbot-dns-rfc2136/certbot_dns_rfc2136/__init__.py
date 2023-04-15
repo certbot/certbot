@@ -26,8 +26,8 @@ Credentials
 
 Use of this plugin requires a configuration file containing the target DNS
 server and optional port that supports RFC 2136 Dynamic Updates, the name
-of the TSIG key, the TSIG key secret itself and the algorithm used if it's
-different to HMAC-MD5.
+of the TSIG key, the TSIG key secret itself, the algorithm used if it's
+different to HMAC-MD5, and optionally whether to sign the initial SOA query.
 
 .. code-block:: ini
    :name: credentials.ini
@@ -44,6 +44,9 @@ different to HMAC-MD5.
 AmKd7ak51vWKgSl12ib86oQRPkpDjg==
    # TSIG key algorithm
    dns_rfc2136_algorithm = HMAC-SHA512
+   # TSIG sign SOA query
+   dns_rfc2136_sign_query = false
+
 
 The path to this file can be provided interactively or using the
 ``--dns-rfc2136-credentials`` command-line argument. Certbot records the
@@ -191,6 +194,36 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
    view "internal" {
      zone "example.com." IN {
        in-view external;
+     };
+   };
+
+Another solution is to add `dns_rfc2136_sign_query = true` to the configuration file and then 
+add the key to the `match-clients` list within the external zone view. All queries signed with 
+this key should then be directed to this view, regardless of source IP.
+
+.. code-block:: none
+   :caption: Split-view BIND configuration with key-based ACLs
+
+   key "keyname." {
+     algorithm hmac-sha512;
+     secret "4q4wM/2I180UXoMyN4INVhJNi8V9BCV+jMw2mXgZw/CSuxUT8C7NKKFs \
+AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
+   };
+
+   // adjust internal-addresses to suit your needs
+   acl internal-address { 127.0.0.0/8; 10.0.0.0/8; 192.168.0.0/16; 172.16.0.0/12; };
+
+   acl certbot-keys { key keyname.; }
+
+   view "external" {
+     match-clients { acl certbot-keys; !internal-addresses; any; };
+
+     zone "example.com." IN {
+       type master;
+       file "named.example.com";
+       update-policy {
+         grant keyname. name _acme-challenge.example.com. txt;
+       };
      };
    };
 

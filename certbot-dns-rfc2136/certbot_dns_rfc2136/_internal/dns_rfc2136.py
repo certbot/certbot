@@ -40,6 +40,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     }
 
     PORT = 53
+    sign_query = "False"
 
     description = 'Obtain certificates using a DNS TXT record (if you are using BIND for DNS).'
     ttl = 120
@@ -94,7 +95,8 @@ class Authenticator(dns_common.DNSAuthenticator):
                               self.credentials.conf('name'),
                               self.credentials.conf('secret'),
                               self.ALGORITHMS.get(self.credentials.conf('algorithm'),
-                                                  dns.tsig.HMAC_MD5))
+                                                  dns.tsig.HMAC_MD5),
+                              self.credentials.conf('sign_query') or self.sign_query)
 
 
 class _RFC2136Client:
@@ -102,13 +104,19 @@ class _RFC2136Client:
     Encapsulates all communication with the target DNS server.
     """
     def __init__(self, server: str, port: int, key_name: str, key_secret: str,
-                 key_algorithm: dns.name.Name, timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
+                 key_algorithm: dns.name.Name, sign_query: str = "False", 
+                 timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
         self.server = server
         self.port = port
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
         })
         self.algorithm = key_algorithm
+        if sign_query.upper() == "TRUE":
+            self.sign_query = True
+        else:
+            self.sign_query = False
+
         self._default_timeout = timeout
 
     def add_txt_record(self, record_name: str, record_content: str, record_ttl: int) -> None:
@@ -216,8 +224,9 @@ class _RFC2136Client:
         request = dns.message.make_query(domain, dns.rdatatype.SOA, dns.rdataclass.IN)
         # Turn off Recursion Desired bit in query
         request.flags ^= dns.flags.RD
-        # Use our TSIG keyring
-        request.use_tsig(self.keyring, algorithm=self.algorithm)
+        # Use our TSIG keyring if configured
+        if self.sign_query:
+            request.use_tsig(self.keyring, algorithm=self.algorithm)
 
         try:
             try:

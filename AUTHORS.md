@@ -226,6 +226,7 @@ Authors
 * [Rémy HUBSCHER](https://github.com/Natim)
 * [Rémy Léone](https://github.com/sieben)
 * [Richard Barnes](https://github.com/r-barnes)
+* [Richard Harman](https://github.com/warewolf)
 * [Richard Panek](https://github.com/kernelpanek)
 * [Robert Buchholz](https://github.com/rbu)
 * [Robert Dailey](https://github.com/pahrohfit)

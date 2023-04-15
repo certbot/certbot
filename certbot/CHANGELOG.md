@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Optionally sign the SOA query for dns-rfc2136, to help resolve problems with split-view
+  DNS setups and hidden primary setups.
 
 ### Fixed
 
