@@ -515,8 +515,8 @@ Steps:
    virtualenv. You can do this by following the instructions in the
    :ref:`Getting Started <getting_started>` section.
 3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
-4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
-   including coverage. The ``--skip-missing-interpreters`` argument ignores
+4. Run ``tox --skip-missing-interpreters`` to run all the tests we recommend
+   developers run locally. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
 5. If any documentation should be added or updated as part of the changes you
    have made, please include the documentation changes in your PR.
