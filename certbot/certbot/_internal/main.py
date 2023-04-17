@@ -1126,13 +1126,13 @@ def _populate_from_certname(config: configuration.NamespaceConfig) -> configurat
     if not lineage:
         return config
     if not config.key_path:
-        config.namespace.key_path = lineage.key_path
+        config.key_path = lineage.key_path
     if not config.cert_path:
-        config.namespace.cert_path = lineage.cert_path
+        config.cert_path = lineage.cert_path
     if not config.chain_path:
-        config.namespace.chain_path = lineage.chain_path
+        config.chain_path = lineage.chain_path
     if not config.fullchain_path:
-        config.namespace.fullchain_path = lineage.fullchain_path
+        config.fullchain_path = lineage.fullchain_path
     return config
 
 

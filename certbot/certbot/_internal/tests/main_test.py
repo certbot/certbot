@@ -764,7 +764,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
             mock_match_and_check_overlaps, mock_renewal_file_for_certname):
         # pylint: disable = unused-argument
         config = self.config
-        config.namespace.noninteractive_mode = True
+        config.noninteractive_mode = True
         config.cert_path = "/some/reasonable/path"
         config.certname = ""
         mock_cert_path_to_lineage.return_value = "example.com"
@@ -783,7 +783,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
             mock_cert_path_to_lineage, mock_full_archive_dir,
             mock_match_and_check_overlaps, mock_renewal_file_for_certname):
         config = self.config
-        config.namespace.delete_after_revoke = True
+        config.delete_after_revoke = True
         config.cert_path = "/some/reasonable/path"
         config.certname = ""
         mock_cert_path_to_lineage.return_value = "example.com"

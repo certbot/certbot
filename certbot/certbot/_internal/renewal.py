@@ -201,7 +201,7 @@ def restore_required_config_elements(config: configuration.NamespaceConfig,
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not config.set_by_user(item_name):
             value = restore_func(item_name, renewalparams[item_name])
-            setattr(config.namespace, item_name, value)
+            setattr(config, item_name, value)
 
 
 def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> Dict[str, Any]:
