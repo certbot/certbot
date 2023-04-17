@@ -21,7 +21,6 @@ from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
 from certbot._internal.cli.cli_constants import SHORT_USAGE
 from certbot._internal.cli.cli_constants import VAR_MODIFIERS
 from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
-from certbot._internal.cli.cli_utils import _Default
 from certbot._internal.cli.cli_utils import _DeployHookAction
 from certbot._internal.cli.cli_utils import _DomainsAction
 from certbot._internal.cli.cli_utils import _EncodeReasonAction
@@ -55,8 +54,8 @@ logger = logging.getLogger(__name__)
 helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
-def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[str],
-                           detect_defaults: bool = False) -> NamespaceConfig:
+def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[str]
+                           ) -> NamespaceConfig:
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -67,7 +66,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
 
     """
 
-    helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
+    helpful = HelpfulArgumentParser(args, plugins)
     _add_all_groups(helpful)
 
     # --help is automatically provided by argparse
@@ -472,88 +471,9 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
-    if not detect_defaults:
-        global helpful_parser # pylint: disable=global-statement
-        helpful_parser = helpful
+    global helpful_parser # pylint: disable=global-statement
+    helpful_parser = helpful
     return helpful.parse_args()
-
-
-def set_by_cli(var: str) -> bool:
-    """
-    Return True if a particular config variable has been set by the user
-    (CLI or config file) including if the user explicitly set it to the
-    default.  Returns False if the variable was assigned a default value.
-    """
-    # We should probably never actually hit this code. But if we do,
-    # a deprecated option has logically never been set by the CLI.
-    if var in DEPRECATED_OPTIONS:
-        return False
-
-    detector = set_by_cli.detector  # type: ignore
-    if detector is None and helpful_parser is not None:
-        # Setup on first run: `detector` is a weird version of config in which
-        # the default value of every attribute is wrangled to be boolean-false
-        plugins = plugins_disco.PluginsRegistry.find_all()
-        # reconstructed_args == sys.argv[1:], or whatever was passed to main()
-        reconstructed_args = helpful_parser.args + [helpful_parser.verb]
-
-        detector = set_by_cli.detector = prepare_and_parse_args(  # type: ignore
-            plugins, reconstructed_args, detect_defaults=True)
-        # propagate plugin requests: eg --standalone modifies config.authenticator
-        detector.authenticator, detector.installer = (
-            plugin_selection.cli_plugin_requests(detector))
-
-    if not isinstance(getattr(detector, var), _Default):
-        logger.debug("Var %s=%s (set by user).", var, getattr(detector, var))
-        return True
-
-    for modifier in VAR_MODIFIERS.get(var, []):
-        if set_by_cli(modifier):
-            logger.debug("Var %s=%s (set by user).",
-                var, VAR_MODIFIERS.get(var, []))
-            return True
-
-    return False
-
-
-# static housekeeping var
-# functions attributed are not supported by mypy
-# https://github.com/python/mypy/issues/2087
-set_by_cli.detector = None  # type: ignore
-
-
-def has_default_value(option: str, value: Any) -> bool:
-    """Does option have the default value?
-
-    If the default value of option is not known, False is returned.
-
-    :param str option: configuration variable being considered
-    :param value: value of the configuration variable named option
-
-    :returns: True if option has the default value, otherwise, False
-    :rtype: bool
-
-    """
-    if helpful_parser is not None:
-        return (option in helpful_parser.defaults and
-                helpful_parser.defaults[option] == value)
-    return False
-
-
-def option_was_set(option: str, value: Any) -> bool:
-    """Was option set by the user or does it differ from the default?
-
-    :param str option: configuration variable being considered
-    :param value: value of the configuration variable named option
-
-    :returns: True if the option was set, otherwise, False
-    :rtype: bool
-
-    """
-    # If an option is deprecated, it was effectively not set by the user.
-    if option in DEPRECATED_OPTIONS:
-        return False
-    return set_by_cli(option) or not has_default_value(option, value)
 
 
 def argparse_type(variable: Any) -> Type:

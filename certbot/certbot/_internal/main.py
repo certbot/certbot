@@ -168,7 +168,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
 
     # If both --key-type and --cert-name are provided, we consider the user's intent to
     # be unambiguous: to change the key type of this lineage.
-    is_confirmed_via_cli = cli.set_by_cli("key_type") and cli.set_by_cli("certname")
+    is_confirmed_via_cli = config.set_by_user("key_type") and config.set_by_user("certname")
 
     # Failing that, we interactively prompt the user to confirm the change.
     if is_confirmed_via_cli or display_util.yesno(
@@ -181,7 +181,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
 
     # If --key-type was set on the CLI but the user did not confirm the key type change using
     # one of the two above methods, their intent is ambiguous. Error out.
-    if cli.set_by_cli("key_type"):
+    if config.set_by_user("key_type"):
         raise errors.Error(
             'Are you trying to change the key type of the certificate named '
             f'{cert.lineagename} from {cur_key_type} to {new_key_type}? Please provide '
@@ -1364,7 +1364,7 @@ def revoke(config: configuration.NamespaceConfig,
             storage.renewal_file_for_certname(config, config.certname), config)
         config.cert_path = lineage.cert_path
         # --server takes priority over lineage.server
-        if lineage.server and not cli.set_by_cli("server"):
+        if lineage.server and not config.set_by_user("server"):
             config.server = lineage.server
     elif not config.cert_path or (config.cert_path and config.certname):
         # intentionally not supporting --cert-path & --cert-name together,
@@ -1843,8 +1843,7 @@ def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
     misc.prepare_virtual_console()
 
     # note: arg parser internally handles --help (and exits afterwards)
-    args = cli.prepare_and_parse_args(plugins, cli_args)
-    config = configuration.NamespaceConfig(args)
+    config = cli.prepare_and_parse_args(plugins, cli_args)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.

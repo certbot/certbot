@@ -5,6 +5,7 @@ from importlib import reload as reload_module
 import io
 import sys
 import tempfile
+from typing import List
 import unittest
 from unittest import mock
 
@@ -77,17 +78,17 @@ class ParseTest(unittest.TestCase):
         reload_module(cli)
 
     @staticmethod
-    def _unmocked_parse(*args, **kwargs):
+    def _unmocked_parse(args: List[str]):
         """Get result of cli.prepare_and_parse_args."""
-        return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
+        return cli.prepare_and_parse_args(PLUGINS, args)
 
     @staticmethod
-    def parse(*args, **kwargs):
+    def parse(args: List[str]):
         """Mocks certbot._internal.display.obj.get_display and calls _unmocked_parse."""
         with test_util.patch_display_util():
-            return ParseTest._unmocked_parse(*args, **kwargs)
+            return ParseTest._unmocked_parse(args)
 
-    def _help_output(self, args):
+    def _help_output(self, args: List[str]):
         "Run a command, and return the output string for scrutiny"
 
         output = io.StringIO()
@@ -100,7 +101,7 @@ class ParseTest(unittest.TestCase):
                 mock_get_utility().notification.side_effect = write_msg
                 with mock.patch('certbot._internal.main.sys.stderr'):
                     with pytest.raises(SystemExit):
-                        self._unmocked_parse(args, output)
+                        self._unmocked_parse(args)
 
         return output.getvalue()
 
@@ -346,34 +347,47 @@ class ParseTest(unittest.TestCase):
         self._check_server_conflict_message(short_args + ['--server', 'example.com', '--staging'],
                                             conflicts)
 
-    def test_option_was_set(self):
+    def test_user_set_rsa_key_size(self):
         key_size_option = 'rsa_key_size'
         key_size_value = cli.flag_default(key_size_option)
-        self.parse('--rsa-key-size {0}'.format(key_size_value).split())
+        config = self.parse('--rsa-key-size {0}'.format(key_size_value).split())
 
-        assert cli.option_was_set(key_size_option, key_size_value) is True
-        assert cli.option_was_set('no_verify_ssl', True) is True
+        assert config.set_by_user(key_size_option)
 
         config_dir_option = 'config_dir'
-        assert not cli.option_was_set(
-            config_dir_option, cli.flag_default(config_dir_option))
-        assert not cli.option_was_set(
-            'authenticator', cli.flag_default('authenticator'))
+        assert not config.set_by_user(
+            config_dir_option)
+        assert not config.set_by_user('authenticator')
 
-    def test_ecdsa_key_option(self):
+    def test_user_set_ecdsa_key_option(self):
         elliptic_curve_option = 'elliptic_curve'
         elliptic_curve_option_value = cli.flag_default(elliptic_curve_option)
-        self.parse('--elliptic-curve {0}'.format(elliptic_curve_option_value).split())
-        assert cli.option_was_set(elliptic_curve_option, elliptic_curve_option_value) is True
+        config = self.parse('--elliptic-curve {0}'.format(elliptic_curve_option_value).split())
+        assert config.set_by_user(elliptic_curve_option)
 
-    def test_invalid_key_type(self):
+    def test_user_set_invalid_key_type(self):
         key_type_option = 'key_type'
         key_type_value = cli.flag_default(key_type_option)
-        self.parse('--key-type {0}'.format(key_type_value).split())
-        assert cli.option_was_set(key_type_option, key_type_value) is True
+        config = self.parse('--key-type {0}'.format(key_type_value).split())
+        assert config.set_by_user(key_type_option)
 
         with pytest.raises(SystemExit):
             self.parse("--key-type foo")
+
+    @mock.patch('certbot._internal.hooks.validate_hooks')
+    def test_user_set_deploy_hook(self, unused_mock_validate_hooks):
+        args = 'renew --deploy-hook foo'.split()
+        plugins = disco.PluginsRegistry.find_all()
+        config = cli.prepare_and_parse_args(plugins, args)
+        assert config.set_by_user('renew_hook')
+
+    @mock.patch('certbot._internal.plugins.webroot._validate_webroot')
+    def test_user_set_webroot_map(self, mock_validate_webroot):
+        args = 'renew -w /var/www/html -d example.com'.split()
+        mock_validate_webroot.return_value = '/var/www/html'
+        plugins = disco.PluginsRegistry.find_all()
+        config = cli.prepare_and_parse_args(plugins, args)
+        assert config.set_by_user('webroot_map')
 
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
@@ -479,51 +493,6 @@ class ParseTest(unittest.TestCase):
         for help_flag in ['-h', '--help']:
             for topic in ['all', 'plugins', 'dns-route53']:
                 assert 'certbot-route53:auth' not in self._help_output([help_flag, topic])
-
-
-class DefaultTest(unittest.TestCase):
-    """Tests for certbot._internal.cli._Default."""
-
-
-    def setUp(self):
-        # pylint: disable=protected-access
-        self.default1 = cli._Default()
-        self.default2 = cli._Default()
-
-    def test_boolean(self):
-        assert bool(self.default1) is False
-        assert bool(self.default2) is False
-
-    def test_equality(self):
-        assert self.default1 == self.default2
-
-    def test_hash(self):
-        assert hash(self.default1) == hash(self.default2)
-
-
-class SetByCliTest(unittest.TestCase):
-    """Tests for certbot.set_by_cli and related functions."""
-
-
-    def setUp(self):
-        reload_module(cli)
-
-    def test_deploy_hook(self):
-        assert _call_set_by_cli(
-            'renew_hook', '--deploy-hook foo'.split(), 'renew')
-
-    def test_webroot_map(self):
-        args = '-w /var/www/html -d example.com'.split()
-        verb = 'renew'
-        assert _call_set_by_cli('webroot_map', args, verb) is True
-
-
-def _call_set_by_cli(var, args, verb):
-    with mock.patch('certbot._internal.cli.helpful_parser') as mock_parser:
-        with test_util.patch_display_util():
-            mock_parser.args = args
-            mock_parser.verb = verb
-            return cli.set_by_cli(var)
 
 
 if __name__ == '__main__':

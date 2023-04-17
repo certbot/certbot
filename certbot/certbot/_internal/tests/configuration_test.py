@@ -7,7 +7,9 @@ import warnings
 import pytest
 
 from certbot import errors
+from certbot._internal import cli
 from certbot._internal import constants
+from certbot._internal.plugins import disco
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.tests import util as test_util

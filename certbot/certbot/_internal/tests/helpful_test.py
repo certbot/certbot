@@ -193,16 +193,5 @@ class TestParseArgsErrors:
             arg_parser.parse_args()
 
 
-class TestAddDeprecatedArgument:
-    """Tests for add_deprecated_argument method of HelpfulArgumentParser"""
-
-    @mock.patch.object(HelpfulArgumentParser, "modify_kwargs_for_default_detection")
-    def test_no_default_detection_modifications(self, mock_modify):
-        arg_parser = HelpfulArgumentParser(["run"], {}, detect_defaults=True)
-        arg_parser.add_deprecated_argument("--foo", 0)
-        arg_parser.parse_args()
-        mock_modify.assert_not_called()
-
-
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

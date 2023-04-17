@@ -21,13 +21,9 @@ from certbot import errors
 from certbot import util
 from certbot._internal import constants
 from certbot._internal import hooks
-from certbot._internal.cli.cli_constants import ARGPARSE_PARAMS_TO_REMOVE
 from certbot._internal.cli.cli_constants import COMMAND_OVERVIEW
-from certbot._internal.cli.cli_constants import EXIT_ACTIONS
 from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
 from certbot._internal.cli.cli_constants import SHORT_USAGE
-from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
-from certbot._internal.cli.cli_utils import _Default
 from certbot._internal.cli.cli_utils import add_domains
 from certbot._internal.cli.cli_utils import CustomHelpFormatter
 from certbot._internal.cli.cli_utils import flag_default
@@ -47,8 +43,7 @@ class HelpfulArgumentParser:
     'certbot --help security' for security options.
 
     """
-    def __init__(self, args: List[str], plugins: Iterable[str],
-                 detect_defaults: bool = False) -> None:
+    def __init__(self, args: List[str], plugins: Iterable[str]) -> None:
         from certbot._internal import main
         self.VERBS = {
             "auth": main.certonly,
@@ -82,7 +77,6 @@ class HelpfulArgumentParser:
         plugin_names: List[Optional[str]] = list(plugins)
         self.help_topics: List[Optional[str]] = HELP_TOPICS + plugin_names + [None]
 
-        self.detect_defaults = detect_defaults
         self.args = args
 
         if self.args and self.args[0] == 'help':
@@ -175,7 +169,7 @@ class HelpfulArgumentParser:
         if self.verb == "renew":
             for source, flags in self.parser.get_source_to_settings_dict().items():
                 if source.startswith("config_file") and "domains" in flags:
-                    parsed_args.domains = _Default() if self.detect_defaults else []
+                    parsed_args.domains = []
 
     def _build_sources_dict(self) -> Dict[str, ArgumentSource]:
         result = {}
@@ -215,9 +209,6 @@ class HelpfulArgumentParser:
         parsed_args.verb = self.verb
 
         self.remove_config_file_domains_for_renewal(parsed_args)
-
-        if self.detect_defaults:
-            return parsed_args
 
         self.defaults = {key: copy.deepcopy(self.parser.get_default(key))
                              for key in vars(parsed_args)}
@@ -408,9 +399,6 @@ class HelpfulArgumentParser:
         else:
             topic = topics  # there's only one
 
-        if self.detect_defaults:
-            kwargs = self.modify_kwargs_for_default_detection(**kwargs)
-
         if not isinstance(topic, bool) and self.visible_topics[topic]:
             if topic in self.groups:
                 group = self.groups[topic]
@@ -420,28 +408,6 @@ class HelpfulArgumentParser:
         else:
             kwargs["help"] = argparse.SUPPRESS
             return self.parser.add_argument(*args, **kwargs)
-
-    def modify_kwargs_for_default_detection(self, **kwargs: Any) -> Dict[str, Any]:
-        """Modify an arg so we can check if it was set by the user.
-
-        Changes the parameters given to argparse when adding an argument
-        so we can properly detect if the value was set by the user.
-
-        :param dict kwargs: various argparse settings for this argument
-
-        :returns: a modified versions of kwargs
-        :rtype: dict
-
-        """
-        action = kwargs.get("action", None)
-        if action not in EXIT_ACTIONS:
-            kwargs["action"] = ("store_true" if action in ZERO_ARG_ACTIONS else
-                                "store")
-            kwargs["default"] = _Default()
-            for param in ARGPARSE_PARAMS_TO_REMOVE:
-                kwargs.pop(param, None)
-
-        return kwargs
 
     def add_deprecated_argument(self, argument_name: str, num_args: int) -> None:
         """Adds a deprecated argument with the name argument_name.
