@@ -65,8 +65,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         return _GehirnLexiconClient(
-            cast(str,self.credentials.conf('api-token')),
-            cast(str,self.credentials.conf('api-secret')),
+            cast(str, self.credentials.conf('api-token')),
+            cast(str, self.credentials.conf('api-secret')),
             self.ttl
         )
 

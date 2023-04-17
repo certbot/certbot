@@ -62,7 +62,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_linode_client(self) -> '_LinodeLexiconClient':
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
-        api_key = cast(str,self.credentials.conf('key'))
+        api_key = cast(str, self.credentials.conf('key'))
         api_version: Optional[Union[str, int]] = self.credentials.conf('version')
         if api_version == '':
             api_version = None

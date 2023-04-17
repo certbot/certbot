@@ -67,9 +67,9 @@ class Authenticator(dns_common.DNSAuthenticator):
             raise errors.Error("Plugin has not been prepared.")
         return _OVHLexiconClient(
             cast(str, self.credentials.conf('endpoint')),
-            cast(str,self.credentials.conf('application-key')),
-            cast(str,self.credentials.conf('application-secret')),
-            cast(str,self.credentials.conf('consumer-key')),
+            cast(str, self.credentials.conf('application-key')),
+            cast(str, self.credentials.conf('application-secret')),
+            cast(str, self.credentials.conf('consumer-key')),
             self.ttl
         )
 

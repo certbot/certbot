@@ -63,8 +63,8 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_dnsmadeeasy_client(self) -> "_DNSMadeEasyLexiconClient":
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
-        return _DNSMadeEasyLexiconClient(cast(str,self.credentials.conf('api-key')),
-                                         cast(str,self.credentials.conf('secret-key')),
+        return _DNSMadeEasyLexiconClient(cast(str, self.credentials.conf('api-key')),
+                                         cast(str, self.credentials.conf('secret-key')),
                                          self.ttl)
 
 
