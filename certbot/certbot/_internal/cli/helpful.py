@@ -170,7 +170,7 @@ class HelpfulArgumentParser:
         """Make "certbot renew" safe if domains are set in cli.ini."""
         # Works around https://github.com/certbot/certbot/issues/4096
         if self.verb == "renew":
-            for source, flags in self.parser._source_to_settings.items(): # pylint: disable=protected-access
+            for source, flags in self.parser.get_source_to_settings_dict().items():
                 if source.startswith("config_file") and "domains" in flags:
                     parsed_args.domains = _Default() if self.detect_defaults else []
 
