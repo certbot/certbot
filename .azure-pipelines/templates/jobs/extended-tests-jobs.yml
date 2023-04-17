@@ -53,8 +53,6 @@ jobs:
           IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.8
           TOXENV: integration-dns-rfc2136
-        docker-dev:
-          TOXENV: docker_dev
         le-modification:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: modification
