@@ -1,7 +1,10 @@
 """Certbot user-supplied configuration."""
 import argparse
 import copy
+import enum
+import logging
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from urllib import parse
@@ -12,6 +15,46 @@ from certbot import util
 from certbot._internal import constants
 from certbot.compat import misc
 from certbot.compat import os
+
+
+# Maps a config option to a set of config options that may have modified it.
+# This dictionary is used recursively, so if A modifies B and B modifies C,
+# it is determined that C was modified by the user if A was modified.
+VAR_MODIFIERS = {"account": {"server",},
+                 "renew_hook": {"deploy_hook",},
+                 "server": {"dry_run", "staging",},
+                 "webroot_map": {"webroot_path",}}
+
+# This is a list of all CLI options that we have ever deprecated. It lets us
+# opt out of the default detection, which can interact strangely with option
+# deprecation. See https://github.com/certbot/certbot/issues/8540 for more info.
+DEPRECATED_OPTIONS = {
+    "manual_public_ip_logging_ok",
+    "os_packages_only",
+    "no_self_upgrade",
+    "no_bootstrap",
+    "no_permissions_check",
+    "dns_route53_propagation_seconds",
+    "certbot_route53:auth_propagation_seconds"
+}
+
+
+
+logger = logging.getLogger(__name__)
+
+class ArgumentSource(enum.Enum):
+    """Enum for describing where a configuration argument was set."""
+
+    COMMAND_LINE = enum.auto()
+    """Argument was specified on the command line"""
+    CONFIG_FILE = enum.auto()
+    """Argument was specified in a .ini config file"""
+    DEFAULT = enum.auto()
+    """Argument was not set by the user, and was assigned its default value"""
+    ENV_VAR = enum.auto()
+    """Argument was specified in an environment variable"""
+    RUNTIME = enum.auto()
+    """Argument was set at runtime by certbot"""
 
 
 class NamespaceConfig:
@@ -41,10 +84,12 @@ class NamespaceConfig:
 
     """
 
-    def __init__(self, namespace: argparse.Namespace) -> None:
+    def __init__(self, namespace: argparse.Namespace,
+                 argument_sources: Dict[str, ArgumentSource]) -> None:
         self.namespace: argparse.Namespace
         # Avoid recursion loop because of the delegation defined in __setattr__
         object.__setattr__(self, 'namespace', namespace)
+        object.__setattr__(self, 'argument_sources', argument_sources)
 
         self.namespace.config_dir = os.path.abspath(self.namespace.config_dir)
         self.namespace.work_dir = os.path.abspath(self.namespace.work_dir)
@@ -53,12 +98,58 @@ class NamespaceConfig:
         # Check command line parameters sanity, and error out in case of problem.
         _check_config_sanity(self)
 
+    def set_by_user(self, var: str) -> bool:
+        """
+        Return True if a particular config variable has been set by the user
+        (CLI or config file) including if the user explicitly set it to the
+        default.  Returns False if the variable was assigned a default value.
+        """
+        from certbot._internal.plugins import selection
+
+        # We should probably never actually hit this code. But if we do,
+        # a deprecated option has logically never been set by the CLI.
+        if var in DEPRECATED_OPTIONS:
+            return False
+
+        if var in ['authenticator', 'installer']:
+            auth, inst = selection.cli_plugin_requests(self)
+            if var == 'authenticator':
+                return auth is not None
+            if var == 'installer':
+                return inst is not None
+
+        if var in self.argument_sources and self.argument_sources[var] != ArgumentSource.DEFAULT:
+            logger.debug("Var %s=%s (set by user).", var, getattr(self, var))
+            return True
+
+        for modifier in VAR_MODIFIERS.get(var, []):
+            if self.set_by_user(modifier):
+                logger.debug("Var %s=%s (set by user).",
+                    var, VAR_MODIFIERS.get(var, []))
+                return True
+
+        return False
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a dictionary mapping all argument names to their values
+        """
+        return vars(self.namespace)
+
+    def _mark_runtime_override(self, name: str) -> None:
+        """
+        Overwrites an argument's source to be ArgumentSource.RUNTIME. Used when certbot sets an
+        argument's values at runtime.
+        """
+        self.argument_sources[name] = ArgumentSource.RUNTIME
+
     # Delegate any attribute not explicitly defined to the underlying namespace object.
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.namespace, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
+        self._mark_runtime_override(name)
         setattr(self.namespace, name, value)
 
     @property
@@ -68,6 +159,7 @@ class NamespaceConfig:
 
     @server.setter
     def server(self, server_: str) -> None:
+        self._mark_runtime_override('server')
         self.namespace.server = server_
 
     @property
@@ -81,6 +173,7 @@ class NamespaceConfig:
 
     @email.setter
     def email(self, mail: str) -> None:
+        self._mark_runtime_override('email')
         self.namespace.email = mail
 
     @property
@@ -91,6 +184,7 @@ class NamespaceConfig:
     @rsa_key_size.setter
     def rsa_key_size(self, ksize: int) -> None:
         """Set the rsa_key_size property"""
+        self._mark_runtime_override('rsa_key_size')
         self.namespace.rsa_key_size = ksize
 
     @property
@@ -104,6 +198,7 @@ class NamespaceConfig:
     @elliptic_curve.setter
     def elliptic_curve(self, ecurve: str) -> None:
         """Set the elliptic_curve property"""
+        self._mark_runtime_override('elliptic_curve')
         self.namespace.elliptic_curve = ecurve
 
     @property
@@ -117,6 +212,7 @@ class NamespaceConfig:
     @key_type.setter
     def key_type(self, ktype: str) -> None:
         """Set the key_type property"""
+        self._mark_runtime_override('key_type')
         self.namespace.key_type = ktype
 
     @property
@@ -322,7 +418,8 @@ class NamespaceConfig:
         # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
         # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
         new_ns = copy.deepcopy(self.namespace)
-        return type(self)(new_ns)
+        new_sources = copy.deepcopy(self.argument_sources)
+        return type(self)(new_ns, new_sources)
 
 
 def _check_config_sanity(config: NamespaceConfig) -> None:

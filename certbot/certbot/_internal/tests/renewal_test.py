@@ -22,7 +22,7 @@ class RenewalTest(test_util.ConfigTestCase):
         self.config.account = None
         self.config.email = None
         self.config.webroot_path = None
-        config = configuration.NamespaceConfig(self.config)
+        config = configuration.NamespaceConfig(self.config, {})
         lineage = storage.RenewableCert(rc_path, config)
         renewalparams = lineage.configuration['renewalparams']
         # pylint: disable=protected-access
@@ -59,7 +59,7 @@ class RenewalTest(test_util.ConfigTestCase):
         self.config.elliptic_curve = 'INVALID_VALUE'
         self.config.reuse_key = True
         self.config.dry_run = True
-        config = configuration.NamespaceConfig(self.config)
+        config = configuration.NamespaceConfig(self.config, {})
 
         rc_path = test_util.make_lineage(
             self.config.config_dir, 'sample-renewal.conf')
@@ -81,7 +81,7 @@ class RenewalTest(test_util.ConfigTestCase):
         self.config.reuse_key = True
         self.config.dry_run = True
         self.config.key_type = 'ecdsa'
-        config = configuration.NamespaceConfig(self.config)
+        config = configuration.NamespaceConfig(self.config, {})
 
         rc_path = test_util.make_lineage(
             self.config.config_dir,
@@ -108,7 +108,7 @@ class RenewalTest(test_util.ConfigTestCase):
         self.config.reuse_key = True
         self.config.new_key = True
         self.config.dry_run = True
-        config = configuration.NamespaceConfig(self.config)
+        config = configuration.NamespaceConfig(self.config, {})
 
         rc_path = test_util.make_lineage(
             self.config.config_dir, 'sample-renewal.conf')
@@ -140,7 +140,7 @@ class RenewalTest(test_util.ConfigTestCase):
         self.config.rsa_key_size = 4096
         self.config.dry_run = True
 
-        config = configuration.NamespaceConfig(self.config)
+        config = configuration.NamespaceConfig(self.config, {})
 
         rc_path = test_util.make_lineage(
             self.config.config_dir, 'sample-renewal.conf')
@@ -164,7 +164,7 @@ class RenewalTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.renewal.cli.set_by_cli')
     def test_remove_deprecated_config_elements(self, mock_set_by_cli, unused_mock_get_utility):
         mock_set_by_cli.return_value = False
-        config = configuration.NamespaceConfig(self.config)
+        config = configuration.NamespaceConfig(self.config, {})
         config.certname = "sample-renewal-deprecated-option"
 
         rc_path = test_util.make_lineage(

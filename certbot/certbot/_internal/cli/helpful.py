@@ -14,6 +14,8 @@ from typing import Union
 
 import configargparse
 
+from certbot import configuration
+from certbot.configuration import ArgumentSource
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
@@ -71,6 +73,7 @@ class HelpfulArgumentParser:
 
         # Get notification function for printing
         self.notify = display_obj.NoninteractiveDisplay(sys.stdout).notification
+        self.actions: List[configargparse.Action] = []
 
         # List of topics for which additional help can be provided
         HELP_TOPICS: List[Optional[str]] = ["all", "security", "paths", "automation", "testing"]
@@ -174,7 +177,32 @@ class HelpfulArgumentParser:
                 if source.startswith("config_file") and "domains" in flags:
                     parsed_args.domains = _Default() if self.detect_defaults else []
 
-    def parse_args(self) -> argparse.Namespace:
+    def _build_sources_dict(self) -> Dict[str, ArgumentSource]:
+        result = {}
+        for source_str, source_dict in self.parser.get_source_to_settings_dict().items():
+            if source_str.startswith('config_file'):
+                source = ArgumentSource.CONFIG_FILE
+            else:
+                source = {
+                    'defaults': ArgumentSource.DEFAULT,
+                    'env_var': ArgumentSource.ENV_VAR,
+                    'command_line': ArgumentSource.COMMAND_LINE
+                }[source_str]
+            if source == ArgumentSource.COMMAND_LINE:
+                (_, args) = source_dict['']
+                args = [arg for arg in args if arg.startswith('-')]
+                for arg in args:
+                    for action in self.actions:
+                        if arg in action.option_strings:
+                            result[action.dest] = source
+                            continue
+            else:
+                for arg, (action, _) in source_dict.items():
+                    result[action.dest] = source
+
+        return result
+
+    def parse_args(self) -> configuration.NamespaceConfig:
         """Parses command line arguments and returns the result.
 
         :returns: parsed command line arguments
@@ -182,6 +210,7 @@ class HelpfulArgumentParser:
 
         """
         parsed_args = self.parser.parse_args(self.args)
+        sources_dict = self._build_sources_dict()
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
 
@@ -232,7 +261,7 @@ class HelpfulArgumentParser:
             raise errors.Error(
                 "Only *one* --key-type type may be provided at this time.")
 
-        return parsed_args
+        return configuration.NamespaceConfig(parsed_args, sources_dict)
 
     def set_test_server(self, parsed_args: argparse.Namespace) -> None:
         """We have --staging/--dry-run; perform sanity check and set config.server"""
@@ -356,6 +385,10 @@ class HelpfulArgumentParser:
         :param dict **kwargs: various argparse settings for this argument
 
         """
+        self.actions.append(self._add(topics, *args, **kwargs))
+
+    def _add(self, topics: Optional[Union[List[Optional[str]], str]], *args: Any,
+            **kwargs: Any) -> configargparse.Action:
         action = kwargs.get("action")
         if action is util.DeprecatedArgumentAction:
             # If the argument is deprecated through
@@ -366,8 +399,7 @@ class HelpfulArgumentParser:
             # handling default detection since these actions aren't needed and
             # can cause bugs like
             # https://github.com/certbot/certbot/issues/8495.
-            self.parser.add_argument(*args, **kwargs)
-            return
+            return self.parser.add_argument(*args, **kwargs)
 
         if isinstance(topics, list):
             # if this flag can be listed in multiple sections, try to pick the one
@@ -382,12 +414,12 @@ class HelpfulArgumentParser:
         if not isinstance(topic, bool) and self.visible_topics[topic]:
             if topic in self.groups:
                 group = self.groups[topic]
-                group.add_argument(*args, **kwargs)
+                return group.add_argument(*args, **kwargs)
             else:
-                self.parser.add_argument(*args, **kwargs)
+                return self.parser.add_argument(*args, **kwargs)
         else:
             kwargs["help"] = argparse.SUPPRESS
-            self.parser.add_argument(*args, **kwargs)
+            return self.parser.add_argument(*args, **kwargs)
 
     def modify_kwargs_for_default_detection(self, **kwargs: Any) -> Dict[str, Any]:
         """Modify an arg so we can check if it was set by the user.

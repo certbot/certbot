@@ -10,6 +10,7 @@ from typing import Optional
 from typing import Type
 
 import certbot
+from certbot.configuration import NamespaceConfig
 from certbot._internal import constants
 from certbot._internal.cli.cli_constants import ARGPARSE_PARAMS_TO_REMOVE
 from certbot._internal.cli.cli_constants import cli_command
@@ -55,7 +56,7 @@ helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
 def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[str],
-                           detect_defaults: bool = False) -> argparse.Namespace:
+                           detect_defaults: bool = False) -> NamespaceConfig:
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -559,7 +560,7 @@ def argparse_type(variable: Any) -> Type:
     """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
     if helpful_parser is not None:
-        for action in helpful_parser.parser._actions:
+        for action in helpful_parser.actions:
             if action.type is not None and action.dest == variable:
                 return action.type
     return str
