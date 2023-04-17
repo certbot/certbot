@@ -77,7 +77,7 @@ class TestAdd:
         arg_parser.add(None, "--hello-world")
         parsed_args = arg_parser.parser.parse_args(['--hello-world',
                                                     'Hello World!'])
-        assert parsed_args.hello_world is 'Hello World!'
+        assert parsed_args.hello_world == 'Hello World!'
         assert not hasattr(parsed_args, 'potato')
 
     def test_add_expected_argument(self):
