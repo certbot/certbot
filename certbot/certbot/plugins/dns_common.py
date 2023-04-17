@@ -316,8 +316,8 @@ class CredentialsConfiguration:
         """Find a configuration value for variable `var`, as transformed by `mapper`.
 
         :param str var: The variable to get.
-        :returns: The value of the variable.
-        :rtype: str
+        :returns: The value of the variable, if it exists.
+        :rtype: str or None
         """
 
         return self._get(var)
