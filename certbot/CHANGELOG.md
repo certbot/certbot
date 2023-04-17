@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Lineage name validity is performed for new lineages. `--cert-name` may no longer contain
+  filepath separators (i.e. `/` or `\`, depending on the platform).
 
 ### Fixed
 

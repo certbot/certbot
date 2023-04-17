@@ -815,6 +815,25 @@ class ClientTest(ClientTestCommon):
         installer.rollback_checkpoints.assert_called_once_with()
         assert installer.restart.call_count == 1
 
+    def test_choose_lineage_name(self):
+        sep = os.path.sep
+        invalid_domains = [f"exam{sep}ple.com"]
+        valid_domains = ["example.com"]
+        invalid_certname = f"foo{sep}.bar"
+        valid_certname = "foo.bar"
+        invalid_wildcard_domain = [f"*.exam{sep}ple.com"]
+        # Verify errors are raised when invalid lineagename is chosen.
+        with pytest.raises(errors.Error):
+            self.client._choose_lineagename(invalid_domains, None)
+        with pytest.raises(errors.Error):
+            self.client._choose_lineagename(invalid_domains, invalid_certname)
+        with pytest.raises(errors.Error):
+            self.client._choose_lineagename(valid_domains, invalid_certname)
+        with pytest.raises(errors.Error):
+            self.client._choose_lineagename(invalid_wildcard_domain, None)
+        # Verify no error is raised when invalid domain is overriden by valid certname.
+        self.client._choose_lineagename(invalid_domains, valid_certname)
+
 
 class EnhanceConfigTest(ClientTestCommon):
     """Tests for certbot._internal.client.Client.enhance_config."""
