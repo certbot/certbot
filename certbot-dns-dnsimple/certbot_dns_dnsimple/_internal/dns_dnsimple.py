@@ -2,6 +2,7 @@
 import logging
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Optional
 
 from lexicon.providers import dnsimple
@@ -58,7 +59,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_dnsimple_client(self) -> "_DNSimpleLexiconClient":
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
-        return _DNSimpleLexiconClient(self.credentials.conf('token'), self.ttl)
+        return _DNSimpleLexiconClient(cast(str, self.credentials.conf('token')), self.ttl)
 
 
 class _DNSimpleLexiconClient(dns_common_lexicon.LexiconClient):

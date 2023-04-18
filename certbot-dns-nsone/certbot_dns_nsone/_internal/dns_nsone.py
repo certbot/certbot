@@ -2,6 +2,7 @@
 import logging
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Optional
 
 from lexicon.providers import nsone
@@ -58,7 +59,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_nsone_client(self) -> "_NS1LexiconClient":
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
-        return _NS1LexiconClient(self.credentials.conf('api-key'), self.ttl)
+        return _NS1LexiconClient(cast(str, self.credentials.conf('api-key')), self.ttl)
 
 
 class _NS1LexiconClient(dns_common_lexicon.LexiconClient):
