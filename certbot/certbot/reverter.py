@@ -5,7 +5,13 @@ import logging
 import shutil
 import time
 import traceback
+from typing import Iterable
+from typing import List
+from typing import Set
+from typing import TextIO
+from typing import Tuple
 
+from certbot import configuration
 from certbot import errors
 from certbot import util
 from certbot._internal import constants
@@ -54,16 +60,16 @@ class Reverter:
     .. note:: Consider moving everything over to CSV format.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: :class:`certbot.configuration.NamespaceConfig`
 
     """
-    def __init__(self, config):
+    def __init__(self, config: configuration.NamespaceConfig) -> None:
         self.config = config
 
         util.make_or_verify_dir(
             config.backup_dir, constants.CONFIG_DIRS_MODE, self.config.strict_permissions)
 
-    def revert_temporary_config(self):
+    def revert_temporary_config(self) -> None:
         """Reload users original configuration files after a temporary save.
 
         This function should reinstall the users original configuration files
@@ -83,7 +89,7 @@ class Reverter:
                 )
                 raise errors.ReverterError("Unable to revert temporary config")
 
-    def rollback_checkpoints(self, rollback=1):
+    def rollback_checkpoints(self, rollback: int = 1) -> None:
         """Revert 'rollback' number of configuration checkpoints.
 
         :param int rollback: Number of checkpoints to reverse. A str num will be
@@ -125,7 +131,7 @@ class Reverter:
                     "Unable to load checkpoint during rollback")
             rollback -= 1
 
-    def add_to_temp_checkpoint(self, save_files, save_notes):
+    def add_to_temp_checkpoint(self, save_files: Set[str], save_notes: str) -> None:
         """Add files to temporary checkpoint.
 
         :param set save_files: set of filepaths to save
@@ -135,7 +141,7 @@ class Reverter:
         self._add_to_checkpoint_dir(
             self.config.temp_checkpoint_dir, save_files, save_notes)
 
-    def add_to_checkpoint(self, save_files, save_notes):
+    def add_to_checkpoint(self, save_files: Set[str], save_notes: str) -> None:
         """Add files to a permanent checkpoint.
 
         :param set save_files: set of filepaths to save
@@ -147,7 +153,7 @@ class Reverter:
         self._add_to_checkpoint_dir(
             self.config.in_progress_dir, save_files, save_notes)
 
-    def _add_to_checkpoint_dir(self, cp_dir, save_files, save_notes):
+    def _add_to_checkpoint_dir(self, cp_dir: str, save_files: Set[str], save_notes: str) -> None:
         """Add save files to checkpoint directory.
 
         :param str cp_dir: Checkpoint directory filepath
@@ -192,12 +198,13 @@ class Reverter:
         with open(os.path.join(cp_dir, "CHANGES_SINCE"), "a") as notes_fd:
             notes_fd.write(save_notes)
 
-    def _read_and_append(self, filepath):
+    def _read_and_append(self, filepath: str) -> Tuple[TextIO, List[str]]:
         """Reads the file lines and returns a file obj.
 
         Read the file returning the lines, and a pointer to the end of the file.
 
         """
+        # pylint: disable=consider-using-with
         # Open up filepath differently depending on if it already exists
         if os.path.isfile(filepath):
             op_fd = open(filepath, "r+")
@@ -208,7 +215,7 @@ class Reverter:
 
         return op_fd, lines
 
-    def _recover_checkpoint(self, cp_dir):
+    def _recover_checkpoint(self, cp_dir: str) -> None:
         """Recover a specific checkpoint.
 
         Recover a specific checkpoint provided by cp_dir
@@ -234,8 +241,7 @@ class Reverter:
             except (IOError, OSError):
                 # This file is required in all checkpoints.
                 logger.error("Unable to recover files from %s", cp_dir)
-                raise errors.ReverterError(
-                    "Unable to recover files from %s" % cp_dir)
+                raise errors.ReverterError(f"Unable to recover files from {cp_dir}")
 
         # Remove any newly added files if they exist
         self._remove_contained_files(os.path.join(cp_dir, "NEW_FILES"))
@@ -247,7 +253,7 @@ class Reverter:
             raise errors.ReverterError(
                 "Unable to remove directory: %s" % cp_dir)
 
-    def _run_undo_commands(self, filepath):
+    def _run_undo_commands(self, filepath: str) -> None:
         """Run all commands in a file."""
         # NOTE: csv module uses native strings. That is unicode on Python 3
         # It is strongly advised to set newline = '' on Python 3 with CSV,
@@ -262,7 +268,7 @@ class Reverter:
                     logger.error(
                         "Unable to run undo command: %s", " ".join(command))
 
-    def _check_tempfile_saves(self, save_files):
+    def _check_tempfile_saves(self, save_files: Set[str]) -> None:
         """Verify save isn't overwriting any temporary files.
 
         :param set save_files: Set of files about to be saved.
@@ -288,11 +294,9 @@ class Reverter:
         # Verify no save_file is in protected_files
         for filename in protected_files:
             if filename in save_files:
-                raise errors.ReverterError(
-                    "Attempting to overwrite challenge "
-                    "file - %s" % filename)
+                raise errors.ReverterError(f"Attempting to overwrite challenge file - {filename}")
 
-    def register_file_creation(self, temporary, *files):
+    def register_file_creation(self, temporary: bool, *files: str) -> None:
         r"""Register the creation of all files during certbot execution.
 
         Call this method before writing to the file to make sure that the
@@ -331,7 +335,7 @@ class Reverter:
             if new_fd is not None:
                 new_fd.close()
 
-    def register_undo_command(self, temporary, command):
+    def register_undo_command(self, temporary: bool, command: Iterable[str]) -> None:
         """Register a command to be run to undo actions taken.
 
         .. warning:: This function does not enforce order of operations in terms
@@ -348,28 +352,20 @@ class Reverter:
 
         """
         commands_fp = os.path.join(self._get_cp_dir(temporary), "COMMANDS")
-        command_file = None
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
         kwargs = {'newline': ''}
         try:
-            if os.path.isfile(commands_fp):
-                command_file = open(commands_fp, "a", **kwargs)  # type: ignore
-            else:
-                command_file = open(commands_fp, "w", **kwargs)  # type: ignore
-
-            csvwriter = csv.writer(command_file)
-            csvwriter.writerow(command)
-
+            mode = "a" if os.path.isfile(commands_fp) else "w"
+            with open(commands_fp, mode, **kwargs) as f:  # type: ignore
+                csvwriter = csv.writer(f)
+                csvwriter.writerow(command)
         except (IOError, OSError):
             logger.error("Unable to register undo command")
             raise errors.ReverterError(
                 "Unable to register undo command.")
-        finally:
-            if command_file is not None:
-                command_file.close()
 
-    def _get_cp_dir(self, temporary):
+    def _get_cp_dir(self, temporary: bool) -> str:
         """Return the proper reverter directory."""
         if temporary:
             cp_dir = self.config.temp_checkpoint_dir
@@ -381,7 +377,7 @@ class Reverter:
 
         return cp_dir
 
-    def recovery_routine(self):
+    def recovery_routine(self) -> None:
         """Revert configuration to most recent finalized checkpoint.
 
         Remove all changes (temporary and permanent) that have not been
@@ -391,7 +387,7 @@ class Reverter:
         :raises .errors.ReverterError: If unable to recover the configuration
 
         """
-        # First, any changes found in IConfig.temp_checkpoint_dir are removed,
+        # First, any changes found in NamespaceConfig.temp_checkpoint_dir are removed,
         # then IN_PROGRESS changes are removed The order is important.
         # IN_PROGRESS is unable to add files that are already added by a TEMP
         # change.  Thus TEMP must be rolled back first because that will be the
@@ -409,7 +405,7 @@ class Reverter:
                     "Incomplete or failed recovery for IN_PROGRESS checkpoint "
                     "- %s" % self.config.in_progress_dir)
 
-    def _remove_contained_files(self, file_list):
+    def _remove_contained_files(self, file_list: str) -> bool:
         """Erase all files contained within file_list.
 
         :param str file_list: file containing list of file paths to be deleted
@@ -447,7 +443,7 @@ class Reverter:
 
         return True
 
-    def finalize_checkpoint(self, title):
+    def finalize_checkpoint(self, title: str) -> None:
         """Finalize the checkpoint.
 
         Timestamps and permanently saves all changes made through the use
@@ -488,7 +484,7 @@ class Reverter:
         # rename the directory as a timestamp
         self._timestamp_progress_dir()
 
-    def _checkpoint_timestamp(self):
+    def _checkpoint_timestamp(self) -> str:
         "Determine the timestamp of the checkpoint, enforcing monotonicity."
         timestamp = str(time.time())
         others = glob.glob(os.path.join(self.config.backup_dir, "[0-9]*"))
@@ -509,7 +505,7 @@ class Reverter:
             timestamp = timetravel
         return timestamp
 
-    def _timestamp_progress_dir(self):
+    def _timestamp_progress_dir(self) -> None:
         """Timestamp the checkpoint."""
         # It is possible save checkpoints faster than 1 per second resulting in
         # collisions in the naming convention.
@@ -521,7 +517,7 @@ class Reverter:
                 filesystem.replace(self.config.in_progress_dir, final_dir)
                 return
             except OSError:
-                logger.warning("Extreme, unexpected race condition, retrying (%s)", timestamp)
+                logger.warning("Unexpected race condition, retrying (%s)", timestamp)
 
         # After 10 attempts... something is probably wrong here...
         logger.error(

@@ -45,7 +45,6 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
-    'repoze.sphinx.autointerface',
 ]
 
 if sphinx.version_info >= (1, 6):
@@ -85,7 +84,7 @@ release = meta['version']
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -287,7 +286,7 @@ latex_documents = [
 man_pages = [
     ('index', 'certbot', u'Certbot Documentation',
      [project], 7),
-    ('man/certbot', 'certbot', u'certbot script documentation',
+    ('man/certbot', 'certbot', u"Automatically configure HTTPS using Let's Encrypt",
      [project], 1),
 ]
 

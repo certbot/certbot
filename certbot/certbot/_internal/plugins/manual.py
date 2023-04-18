@@ -1,8 +1,12 @@
 """Manual authenticator plugin"""
+import logging
+from typing import Any
+from typing import Callable
 from typing import Dict
-
-import zope.component
-import zope.interface
+from typing import Iterable
+from typing import List
+from typing import Tuple
+from typing import Type
 
 from acme import challenges
 from certbot import achallenges
@@ -11,14 +15,17 @@ from certbot import interfaces
 from certbot import reverter
 from certbot import util
 from certbot._internal import hooks
+from certbot._internal.cli import cli_constants
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.display import ops as display_ops
+from certbot.display import util as display_util
 from certbot.plugins import common
 
+logger = logging.getLogger(__name__)
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
-class Authenticator(common.Plugin):
+
+class Authenticator(common.Plugin, interfaces.Authenticator):
     """Manual authenticator
 
     This plugin allows the user to perform the domain validation
@@ -60,7 +67,7 @@ with the following value:
 {validation}
 """
     _DNS_VERIFY_INSTRUCTIONS = """
-Before continuing, verify the TXT record has been deployed. Depending on the DNS 
+Before continuing, verify the TXT record has been deployed. Depending on the DNS
 provider, this may take some time, from a few seconds to multiple minutes. You can
 check if it has finished deploying with aid of online tools, such as the Google
 Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}.
@@ -87,23 +94,23 @@ asked to create multiple distinct TXT records with the same name. This is
 permitted by DNS standards.)
 """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]] = {}
+        self.env: Dict[achallenges.AnnotatedChallenge, Dict[str, str]] = {}
         self.subsequent_dns_challenge = False
         self.subsequent_any_challenge = False
 
     @classmethod
-    def add_parser_arguments(cls, add):
+    def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         add('auth-hook',
             help='Path or command to execute for the authentication script')
         add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
         util.add_deprecated_argument(add, 'public-ip-logging-ok', 0)
 
-    def prepare(self):  # pylint: disable=missing-function-docstring
+    def prepare(self) -> None:  # pylint: disable=missing-function-docstring
         if self.config.noninteractive_mode and not self.conf('auth-hook'):
             raise errors.PluginError(
                 'An authentication script must be provided with --{0} when '
@@ -111,7 +118,7 @@ permitted by DNS standards.)
                     self.option_name('auth-hook')))
         self._validate_hooks()
 
-    def _validate_hooks(self):
+    def _validate_hooks(self) -> None:
         if self.config.validate_hooks:
             for name in ('auth-hook', 'cleanup-hook'):
                 hook = self.conf(name)
@@ -119,17 +126,55 @@ permitted by DNS standards.)
                     hook_prefix = self.option_name(name)[:-len('-hook')]
                     hooks.validate_hook(hook, hook_prefix)
 
-    def more_info(self):  # pylint: disable=missing-function-docstring
+    def more_info(self) -> str:  # pylint: disable=missing-function-docstring
         return (
             'This plugin allows the user to customize setup for domain '
             'validation challenges either through shell scripts provided by '
             'the user or by performing the setup manually.')
 
-    def get_chall_pref(self, domain):
+    def auth_hint(self, failed_achalls: Iterable[achallenges.AnnotatedChallenge]) -> str:
+        def has_chall(cls: Type[challenges.Challenge]) -> bool:
+            return any(isinstance(achall.chall, cls) for achall in failed_achalls)
+
+        has_dns = has_chall(challenges.DNS01)
+        resource_names = {
+            challenges.DNS01: 'DNS TXT records',
+            challenges.HTTP01: 'challenge files',
+            challenges.TLSALPN01: 'TLS-ALPN certificates'
+        }
+        resources = ' and '.join(sorted([v for k, v in resource_names.items() if has_chall(k)]))
+
+        if self.conf('auth-hook'):
+            return (
+                'The Certificate Authority failed to verify the {resources} created by the '
+                '--manual-auth-hook. Ensure that this hook is functioning correctly{dns_hint}. '
+                'Refer to "{certbot} --help manual" and the Certbot User Guide.'
+                .format(
+                    certbot=cli_constants.cli_command,
+                    resources=resources,
+                    dns_hint=(
+                        ' and that it waits a sufficient duration of time for DNS propagation'
+                    ) if has_dns else ''
+                )
+            )
+        else:
+            return (
+                'The Certificate Authority failed to verify the manually created {resources}. '
+                'Ensure that you created these in the correct location{dns_hint}.'
+                .format(
+                    resources=resources,
+                    dns_hint=(
+                        ', or try waiting longer for DNS propagation on the next attempt'
+                     ) if has_dns else ''
+                )
+            )
+
+    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01, challenges.DNS01]
 
-    def perform(self, achalls):  # pylint: disable=missing-function-docstring
+    def perform(self, achalls: List[achallenges.AnnotatedChallenge]
+                ) -> List[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
         responses = []
         last_dns_achall = 0
         for i, achall in enumerate(achalls):
@@ -143,21 +188,25 @@ permitted by DNS standards.)
             responses.append(achall.response(achall.account_key))
         return responses
 
-    def _perform_achall_with_script(self, achall, achalls):
-        env = dict(CERTBOT_DOMAIN=achall.domain,
-                   CERTBOT_VALIDATION=achall.validation(achall.account_key),
-                   CERTBOT_ALL_DOMAINS=','.join(one_achall.domain for one_achall in achalls),
-                   CERTBOT_REMAINING_CHALLENGES=str(len(achalls) - achalls.index(achall) - 1))
+    def _perform_achall_with_script(self, achall: achallenges.AnnotatedChallenge,
+                                    achalls: List[achallenges.AnnotatedChallenge]) -> None:
+        env = {
+            "CERTBOT_DOMAIN": achall.domain,
+            "CERTBOT_VALIDATION": achall.validation(achall.account_key),
+            "CERTBOT_ALL_DOMAINS": ','.join(one_achall.domain for one_achall in achalls),
+            "CERTBOT_REMAINING_CHALLENGES": str(len(achalls) - achalls.index(achall) - 1),
+        }
         if isinstance(achall.chall, challenges.HTTP01):
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         else:
             os.environ.pop('CERTBOT_TOKEN', None)
         os.environ.update(env)
-        _, out = self._execute_hook('auth-hook')
+        _, out = self._execute_hook('auth-hook', achall.domain)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
-    def _perform_achall_manually(self, achall, last_dns_achall=False):
+    def _perform_achall_manually(self, achall: achallenges.AnnotatedChallenge,
+                                 last_dns_achall: bool = False) -> None:
         validation = achall.validation(achall.account_key)
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
@@ -185,20 +234,26 @@ permitted by DNS standards.)
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
-        display = zope.component.getUtility(interfaces.IDisplay)
-        display.notification(msg, wrap=False, force_interactive=True)
+        display_util.notification(msg, wrap=False, force_interactive=True)
         self.subsequent_any_challenge = True
 
-    def cleanup(self, achalls):  # pylint: disable=missing-function-docstring
+    def cleanup(self, achalls: Iterable[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
         if self.conf('cleanup-hook'):
             for achall in achalls:
                 env = self.env.pop(achall)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)
-                self._execute_hook('cleanup-hook')
+                self._execute_hook('cleanup-hook', achall.domain)
         self.reverter.recovery_routine()
 
-    def _execute_hook(self, hook_name):
-        return misc.execute_command(self.option_name(hook_name), self.conf(hook_name),
-                                    env=util.env_no_snap_for_external_calls())
+    def _execute_hook(self, hook_name: str, achall_domain: str) -> Tuple[str, str]:
+        returncode, err, out = misc.execute_command_status(
+            self.option_name(hook_name), self.conf(hook_name),
+            env=util.env_no_snap_for_external_calls()
+        )
+
+        display_ops.report_executed_command(
+            f"Hook '--manual-{hook_name}' for {achall_domain}", returncode, out, err)
+
+        return err, out

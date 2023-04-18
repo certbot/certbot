@@ -1,52 +1,63 @@
 """Decide which plugins to use for authentication & installation"""
 
 import logging
+from typing import cast
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Type
+from typing import TypeVar
 
-import zope.component
-
+from certbot import configuration
 from certbot import errors
 from certbot import interfaces
+from certbot._internal.plugins import disco
 from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
-z_util = zope.component.getUtility
 
-def pick_configurator(
-        config, default, plugins,
-        question="How would you like to authenticate and install "
-                 "certificates?"):
+
+def pick_configurator(config: configuration.NamespaceConfig, default: Optional[str],
+                      plugins: disco.PluginsRegistry,
+                      question: str = "How would you like to authenticate and install "
+                                      "certificates?") -> Optional[interfaces.Plugin]:
     """Pick configurator plugin."""
     return pick_plugin(
         config, default, plugins, question,
-        (interfaces.IAuthenticator, interfaces.IInstaller))
+        (interfaces.Authenticator, interfaces.Installer))
 
 
-def pick_installer(config, default, plugins,
-                   question="How would you like to install certificates?"):
+def pick_installer(config: configuration.NamespaceConfig, default: Optional[str],
+                   plugins: disco.PluginsRegistry,
+                   question: str = "How would you like to install certificates?"
+                   ) -> Optional[interfaces.Installer]:
     """Pick installer plugin."""
-    return pick_plugin(
-        config, default, plugins, question, (interfaces.IInstaller,))
+    return pick_plugin(config, default, plugins, question, (interfaces.Installer,))
 
 
-def pick_authenticator(
-        config, default, plugins, question="How would you "
-        "like to authenticate with the ACME CA?"):
+def pick_authenticator(config: configuration.NamespaceConfig, default: Optional[str],
+                       plugins: disco.PluginsRegistry,
+                       question: str = "How would you "
+                                       "like to authenticate with the ACME CA?"
+                       ) -> Optional[interfaces.Authenticator]:
     """Pick authentication plugin."""
     return pick_plugin(
-        config, default, plugins, question, (interfaces.IAuthenticator,))
+        config, default, plugins, question, (interfaces.Authenticator,))
 
 
-def get_unprepared_installer(config, plugins):
+def get_unprepared_installer(config: configuration.NamespaceConfig,
+                             plugins: disco.PluginsRegistry) -> Optional[interfaces.Installer]:
     """
-    Get an unprepared interfaces.IInstaller object.
+    Get an unprepared interfaces.Installer object.
 
-    :param certbot.interfaces.IConfig config: Configuration
+    :param certbot.configuration.NamespaceConfig config: Configuration
     :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
 
     :returns: Unprepared installer plugin or None
-    :rtype: IPlugin or None
+    :rtype: Plugin or None
     """
 
     _, req_inst = cli_plugin_requests(config)
@@ -54,7 +65,6 @@ def get_unprepared_installer(config, plugins):
         return None
     installers = plugins.filter(lambda p_ep: p_ep.check_name(req_inst))
     installers.init(config)
-    installers = installers.verify((interfaces.IInstaller,))
     if len(installers) > 1:
         raise errors.PluginSelectionError(
             "Found multiple installers with the name %s, Certbot is unable to "
@@ -67,10 +77,15 @@ def get_unprepared_installer(config, plugins):
         "Could not select or initialize the requested installer %s." % req_inst)
 
 
-def pick_plugin(config, default, plugins, question, ifaces):
+P = TypeVar('P', bound=interfaces.Plugin)
+
+
+def pick_plugin(config: configuration.NamespaceConfig, default: Optional[str],
+                plugins: disco.PluginsRegistry, question: str,
+                ifaces: Iterable[Type]) -> Optional[P]:
     """Pick plugin.
 
-    :param certbot.interfaces.IConfig: Configuration
+    :param certbot.configuration.NamespaceConfig config: Configuration
     :param str default: Plugin name supplied by user or ``None``.
     :param certbot._internal.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
@@ -79,7 +94,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
     :param list ifaces: Interfaces that plugins must provide.
 
     :returns: Initialized plugin.
-    :rtype: IPlugin
+    :rtype: Plugin
 
     """
     if default is not None:
@@ -100,28 +115,28 @@ def pick_plugin(config, default, plugins, question, ifaces):
         filtered = plugins.visible().ifaces(ifaces)
 
     filtered.init(config)
-    verified = filtered.verify(ifaces)
-    verified.prepare()
-    prepared = verified.available()
+    filtered.prepare()
+    prepared = filtered.available()
 
     if len(prepared) > 1:
         logger.debug("Multiple candidate plugins: %s", prepared)
-        plugin_ep = choose_plugin(list(prepared.values()), question)
-        if plugin_ep is None:
+        plugin_ep1 = choose_plugin(list(prepared.values()), question)
+        if plugin_ep1 is None:
             return None
-        return plugin_ep.init()
+        return cast(P, plugin_ep1.init())
     elif len(prepared) == 1:
-        plugin_ep = list(prepared.values())[0]
-        logger.debug("Single candidate plugin: %s", plugin_ep)
-        if plugin_ep.misconfigured:
+        plugin_ep2 = list(prepared.values())[0]
+        logger.debug("Single candidate plugin: %s", plugin_ep2)
+        if plugin_ep2.misconfigured:
             return None
-        return plugin_ep.init()
+        return plugin_ep2.init()
     else:
         logger.debug("No candidate plugin")
         return None
 
 
-def choose_plugin(prepared, question):
+def choose_plugin(prepared: List[disco.PluginEntryPoint],
+                  question: str) -> Optional[disco.PluginEntryPoint]:
     """Allow the user to choose their plugin.
 
     :param list prepared: List of `~.PluginEntryPoint`.
@@ -136,13 +151,12 @@ def choose_plugin(prepared, question):
             for plugin_ep in prepared]
 
     while True:
-        disp = z_util(interfaces.IDisplay)
-        code, index = disp.menu(question, opts, force_interactive=True)
+        code, index = display_util.menu(question, opts, force_interactive=True)
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
             if plugin_ep.misconfigured:
-                z_util(interfaces.IDisplay).notification(
+                display_util.notification(
                     "The selected plugin encountered an error while parsing "
                     "your server configuration and cannot be used. The error "
                     "was:\n\n{0}".format(plugin_ep.prepare()), pause=False)
@@ -151,20 +165,35 @@ def choose_plugin(prepared, question):
         else:
             return None
 
-noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-cloudxns",
+
+noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare",
                         "dns-digitalocean", "dns-dnsimple", "dns-dnsmadeeasy", "dns-gehirn",
                         "dns-google", "dns-linode", "dns-luadns", "dns-nsone", "dns-ovh",
                         "dns-rfc2136", "dns-route53", "dns-sakuracloud"]
 
-def record_chosen_plugins(config, plugins, auth, inst):
-    "Update the config entries to reflect the plugins we actually selected."
-    config.authenticator = plugins.find_init(auth).name if auth else None
-    config.installer = plugins.find_init(inst).name if inst else None
+
+def record_chosen_plugins(config: configuration.NamespaceConfig, plugins: disco.PluginsRegistry,
+                          auth: Optional[interfaces.Authenticator],
+                          inst: Optional[interfaces.Installer]) -> None:
+    """Update the config entries to reflect the plugins we actually selected."""
+    config.authenticator = None
+    if auth:
+        auth_ep = plugins.find_init(auth)
+        if auth_ep:
+            config.authenticator = auth_ep.name
+    config.installer = None
+    if inst:
+        inst_ep = plugins.find_init(inst)
+        if inst_ep:
+            config.installer = inst_ep.name
     logger.info("Plugins selected: Authenticator %s, Installer %s",
-         config.authenticator, config.installer)
+                config.authenticator, config.installer)
 
 
-def choose_configurator_plugins(config, plugins, verb):
+def choose_configurator_plugins(config: configuration.NamespaceConfig,
+                                plugins: disco.PluginsRegistry,
+                                verb: str) -> Tuple[Optional[interfaces.Installer],
+                                                    Optional[interfaces.Authenticator]]:
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if
@@ -172,12 +201,12 @@ def choose_configurator_plugins(config, plugins, verb):
 
     :raises errors.PluginSelectionError if there was a problem
 
-    :returns: (an `IAuthenticator` or None, an `IInstaller` or None)
+    :returns: tuple of (`Installer` or None, `Authenticator` or None)
     :rtype: tuple
     """
 
     req_auth, req_inst = cli_plugin_requests(config)
-    installer_question = None
+    installer_question = ""
 
     if verb == "enhance":
         installer_question = ("Which installer would you like to use to "
@@ -205,17 +234,19 @@ def choose_configurator_plugins(config, plugins, verb):
             logger.warning("Specifying an authenticator doesn't make sense when "
                            "running Certbot with verb \"%s\"", verb)
     # Try to meet the user's request and/or ask them to pick plugins
-    authenticator = installer = None
+    authenticator: Optional[interfaces.Authenticator] = None
+    installer: Optional[interfaces.Installer] = None
     if verb == "run" and req_auth == req_inst:
         # Unless the user has explicitly asked for different auth/install,
         # only consider offering a single choice
-        authenticator = installer = pick_configurator(config, req_inst, plugins)
+        configurator = pick_configurator(config, req_inst, plugins)
+        authenticator = cast(Optional[interfaces.Authenticator], configurator)
+        installer = cast(Optional[interfaces.Installer], configurator)
     else:
         if need_inst or req_inst:
             installer = pick_installer(config, req_inst, plugins, installer_question)
         if need_auth:
             authenticator = pick_authenticator(config, req_auth, plugins)
-    logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
 
     # Report on any failures
     if need_inst and not installer:
@@ -223,15 +254,29 @@ def choose_configurator_plugins(config, plugins, verb):
     if need_auth and not authenticator:
         diagnose_configurator_problem("authenticator", req_auth, plugins)
 
+    # As a special case for certonly, if a user selected apache or nginx, set
+    # the relevant installer (unless the user specifically specified no
+    # installer or only specified an authenticator on the command line)
+    if verb == "certonly" and authenticator is not None:
+        # user specified --nginx or --apache on CLI
+        selected_configurator = config.nginx or config.apache
+        # user didn't request an authenticator, and so interactively chose nginx
+        # or apache
+        interactively_selected = req_auth is None and authenticator.name in ("nginx", "apache")
+
+        if selected_configurator or interactively_selected:
+            installer = cast(Optional[interfaces.Installer], authenticator)
+    logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
+
     record_chosen_plugins(config, plugins, authenticator, installer)
     return installer, authenticator
 
 
-def set_configurator(previously, now):
+def set_configurator(previously: Optional[str], now: Optional[str]) -> Optional[str]:
     """
     Setting configurators multiple ways is okay, as long as they all agree
     :param str previously: previously identified request for the installer/authenticator
-    :param str requested: the request currently being processed
+    :param str now: the request currently being processed
     """
     if not now:
         # we're not actually setting anything
@@ -243,7 +288,8 @@ def set_configurator(previously, now):
     return now
 
 
-def cli_plugin_requests(config):
+def cli_plugin_requests(config: configuration.NamespaceConfig
+                        ) -> Tuple[Optional[str], Optional[str]]:
     """
     Figure out which plugins the user requested with CLI and config options
 
@@ -271,8 +317,6 @@ def cli_plugin_requests(config):
         req_auth = set_configurator(req_auth, "manual")
     if config.dns_cloudflare:
         req_auth = set_configurator(req_auth, "dns-cloudflare")
-    if config.dns_cloudxns:
-        req_auth = set_configurator(req_auth, "dns-cloudxns")
     if config.dns_digitalocean:
         req_auth = set_configurator(req_auth, "dns-digitalocean")
     if config.dns_dnsimple:
@@ -301,7 +345,8 @@ def cli_plugin_requests(config):
     return req_auth, req_inst
 
 
-def diagnose_configurator_problem(cfg_type, requested, plugins):
+def diagnose_configurator_problem(cfg_type: str, requested: Optional[str],
+                                  plugins: disco.PluginsRegistry) -> None:
     """
     Raise the most helpful error message about a plugin being unavailable
 

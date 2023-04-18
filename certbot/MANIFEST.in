@@ -4,7 +4,7 @@ include LICENSE.txt
 recursive-include docs *
 recursive-include examples *
 recursive-include certbot/tests/testdata *
-recursive-include tests *.py
 include certbot/ssl-dhparams.pem
+include certbot/py.typed
 global-exclude __pycache__
 global-exclude *.py[cod]

@@ -33,7 +33,7 @@ different to HMAC-MD5.
    :name: credentials.ini
    :caption: Example credentials file:
 
-   # Target DNS server
+   # Target DNS server (IPv4 or IPv6 address, not a hostname)
    dns_rfc2136_server = 192.0.2.1
    # Target DNS port
    dns_rfc2136_port = 53
@@ -65,49 +65,6 @@ file. This warning will be emitted each time Certbot uses the credentials file,
 including for renewal, and cannot be silenced except by addressing the issue
 (e.g., by using a command like ``chmod 600`` to restrict access to the file).
 
-Sample BIND configuration
-'''''''''''''''''''''''''
-
-Here's a sample BIND configuration for Certbot to use. You will need to
-generate a new TSIG key, include it in the BIND configuration and grant it
-permission to issue updates on the target DNS zone.
-
-.. code-block:: bash
-   :caption: Generate a new SHA512 TSIG key
-
-   dnssec-keygen -a HMAC-SHA512 -b 512 -n HOST keyname.
-
-.. note::
-   There are a few tools shipped with BIND that can all generate TSIG keys;
-   ``dnssec-keygen``, ``rndc-confgen``, and ``ddns-confgen``. Try and use the
-   most secure algorithm supported by your DNS server.
-
-.. code-block:: none
-   :caption: Sample BIND configuration
-
-   key "keyname." {
-     algorithm hmac-sha512;
-     secret "4q4wM/2I180UXoMyN4INVhJNi8V9BCV+jMw2mXgZw/CSuxUT8C7NKKFs \
-AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
-   };
-
-   zone "example.com." IN {
-     type master;
-     file "named.example.com";
-     update-policy {
-       grant keyname. name _acme-challenge.example.com. txt;
-     };
-   };
-
-.. note::
-   This configuration limits the scope of the TSIG key to just be able to
-   add and remove TXT records for one specific host for the purpose of
-   completing the ``dns-01`` challenge. If your version of BIND doesn't
-   support the ``update-policy`` directive, then you can use the less-secure
-   ``allow-update`` directive instead. `See the BIND documentation
-   <https://bind9.readthedocs.io/en/latest/reference.html#dynamic-update-policies>`_
-   for details.
-
 Examples
 --------
 
@@ -138,5 +95,103 @@ Examples
      --dns-rfc2136-credentials ~/.secrets/certbot/rfc2136.ini \\
      --dns-rfc2136-propagation-seconds 30 \\
      -d example.com
+
+
+Sample BIND configuration
+'''''''''''''''''''''''''
+
+Here's a sample BIND configuration for Certbot to use. You will need to
+generate a new TSIG key, include it in the BIND configuration and grant it
+permission to issue updates on the target DNS zone.
+
+.. code-block:: bash
+   :caption: Generate a new SHA512 TSIG key
+
+   tsig-keygen -a HMAC-SHA512 keyname.
+
+.. note::
+   Prior to BIND version 9.10.0, you will need to use ``dnssec-keygen`` to generate
+   TSIG keys. Try and use the most secure algorithm supported by your DNS server.
+
+.. code-block:: none
+   :caption: Sample BIND configuration
+
+   key "keyname." {
+     algorithm hmac-sha512;
+     secret "4q4wM/2I180UXoMyN4INVhJNi8V9BCV+jMw2mXgZw/CSuxUT8C7NKKFs \
+AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
+   };
+
+   zone "example.com." IN {
+     type master;
+     file "named.example.com";
+     update-policy {
+       grant keyname. name _acme-challenge.example.com. txt;
+     };
+   };
+
+.. note::
+   This configuration limits the scope of the TSIG key to just be able to
+   add and remove TXT records for one specific host for the purpose of
+   completing the ``dns-01`` challenge. If your version of BIND doesn't
+   support the ``update-policy`` directive, then you can use the less-secure
+   ``allow-update`` directive instead. `See the BIND documentation
+   <https://bind9.readthedocs.io/en/latest/reference.html#dynamic-update-policies>`_
+   for details.
+
+Special considerations for multiple views in BIND
+'''''''''''''''''''''''''''''''''''''''''''''''''
+
+If your BIND configuration leverages multiple views, Certbot may fail with an
+``Unable to determine base domain for _acme-challenge.example.com`` error.
+This error occurs when Certbot isn't able to communicate with an authorative
+nameserver for the zone, one that answers with the AA (Authorative Answer) flag
+set in the response.
+
+A common multiple view configuration with two views, external and internal,
+can cause this error.  If the zone is only present in the external view, and
+the credentials_ ``dns_rfc2136_server`` setting is set (e.g. 127.0.0.1) so the
+DNS server's ``match-clients`` view option causes the DNS server to route
+Certbot's query to the internal view; the internal view doesn't contain the
+zone, so the response won't have the AA flag set.
+
+One solution is to logically place the zone into the view Certbot is sending
+queries to, with an
+`in-view <https://bind9.readthedocs.io/en/latest/reference.html#multiple-views>`_
+zone option.  The zone will be then visible in both zones with exactly the same content.
+
+.. note::
+   Order matters in BIND views: the ``in-view`` zone option must refer to a
+   view defined preceeding it.  It cannot refer to a view defined later in the configuration file.
+
+.. code-block:: none
+   :caption: Split-view BIND configuration
+
+   key "keyname." {
+     algorithm hmac-sha512;
+     secret "4q4wM/2I180UXoMyN4INVhJNi8V9BCV+jMw2mXgZw/CSuxUT8C7NKKFs \
+AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
+   };
+
+   // adjust internal-addresses to suit your needs
+   acl internal-address { 127.0.0.0/8; 10.0.0.0/8; 192.168.0.0/16; 172.16.0.0/12; };
+
+   view "external" {
+     match-clients { !internal-addresses; any; };
+
+     zone "example.com." IN {
+       type master;
+       file "named.example.com";
+       update-policy {
+         grant keyname. name _acme-challenge.example.com. txt;
+       };
+     };
+   };
+
+   view "internal" {
+     zone "example.com." IN {
+       in-view external;
+     };
+   };
 
 """

@@ -1,15 +1,26 @@
 """Plugin common functions."""
+from abc import ABCMeta
+from abc import abstractmethod
+import argparse
 import logging
 import re
 import shutil
 import tempfile
+from typing import Any
+from typing import Callable
+from typing import Iterable
 from typing import List
+from typing import Optional
+from typing import Set
+from typing import Tuple
+from typing import Type
+from typing import TypeVar
 
-from josepy import util as jose_util
 import pkg_resources
-import zope.interface
 
+from acme import challenges
 from certbot import achallenges
+from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -17,17 +28,19 @@ from certbot import reverter
 from certbot._internal import constants
 from certbot.compat import filesystem
 from certbot.compat import os
+from certbot.interfaces import Installer as AbstractInstaller
+from certbot.interfaces import Plugin as AbstractPlugin
 from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)
 
 
-def option_namespace(name):
+def option_namespace(name: str) -> str:
     """ArgumentParser options namespace (prefix of all options)."""
     return name + "-"
 
 
-def dest_namespace(name):
+def dest_namespace(name: str) -> str:
     """ArgumentParser dest namespace (prefix of all destinations)."""
     return name.replace("-", "_") + "_"
 
@@ -39,18 +52,17 @@ hostname_regex = re.compile(
     r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$", re.IGNORECASE)
 
 
-@zope.interface.implementer(interfaces.IPlugin)
-class Plugin:
+class Plugin(AbstractPlugin, metaclass=ABCMeta):
     """Generic plugin."""
-    # provider is not inherited, subclasses must define it on their own
-    # @zope.interface.provider(interfaces.IPluginFactory)
 
-    def __init__(self, config, name):
+    def __init__(self, config: configuration.NamespaceConfig, name: str) -> None:
+        super().__init__(config, name)
         self.config = config
         self.name = name
 
-    @jose_util.abstractclassmethod
-    def add_parser_arguments(cls, add):
+    @classmethod
+    @abstractmethod
+    def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         """Add plugin arguments to the CLI argument parser.
 
         :param callable add: Function that proxies calls to
@@ -60,56 +72,83 @@ class Plugin:
         """
 
     @classmethod
-    def inject_parser_options(cls, parser, name):
+    def inject_parser_options(cls, parser: argparse.ArgumentParser, name: str) -> None:
         """Inject parser options.
 
-        See `~.IPlugin.inject_parser_options` for docs.
+        See `~.certbot.interfaces.Plugin.inject_parser_options` for docs.
 
         """
         # dummy function, doesn't check if dest.startswith(self.dest_namespace)
-        def add(arg_name_no_prefix, *args, **kwargs):
-            return parser.add_argument(
+        def add(arg_name_no_prefix: str, *args: Any, **kwargs: Any) -> None:
+            parser.add_argument(
                 "--{0}{1}".format(option_namespace(name), arg_name_no_prefix),
                 *args, **kwargs)
         return cls.add_parser_arguments(add)
 
     @property
-    def option_namespace(self):
+    def option_namespace(self) -> str:
         """ArgumentParser options namespace (prefix of all options)."""
         return option_namespace(self.name)
 
-    def option_name(self, name):
+    def option_name(self, name: str) -> str:
         """Option name (include plugin namespace)."""
         return self.option_namespace + name
 
     @property
-    def dest_namespace(self):
+    def dest_namespace(self) -> str:
         """ArgumentParser dest namespace (prefix of all destinations)."""
         return dest_namespace(self.name)
 
-    def dest(self, var):
+    def dest(self, var: str) -> str:
         """Find a destination for given variable ``var``."""
         # this should do exactly the same what ArgumentParser(arg),
         # does to "arg" to compute "dest"
         return self.dest_namespace + var.replace("-", "_")
 
-    def conf(self, var):
+    def conf(self, var: str) -> Any:
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
 
+    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
+        """Human-readable string to help the user troubleshoot the authenticator.
 
-class Installer(Plugin):
+        Shown to the user if one or more of the attempted challenges were not a success.
+
+        Should describe, in simple language, what the authenticator tried to do, what went
+        wrong and what the user should try as their "next steps".
+
+        TODO: auth_hint belongs in Authenticator but can't be added until the next major
+        version of Certbot. For now, it lives in .Plugin and auth_handler will only call it
+        on authenticators that subclass .Plugin. For now, inherit from `.Plugin` to implement
+        and/or override the method.
+
+        :param list failed_achalls: List of one or more failed challenges
+                                    (:class:`achallenges.AnnotatedChallenge` subclasses).
+
+        :rtype str:
+        """
+        # This is a fallback hint. Authenticators should implement their own auth_hint that
+        # addresses the specific mechanics of that authenticator.
+        challs = " and ".join(sorted({achall.typ for achall in failed_achalls}))
+        return ("The Certificate Authority couldn't externally verify that the {name} plugin "
+                "completed the required {challs} challenges. Ensure the plugin is configured "
+                "correctly and that the changes it makes are accessible from the internet."
+                .format(name=self.name, challs=challs))
+
+
+class Installer(AbstractInstaller, Plugin, metaclass=ABCMeta):
     """An installer base class with reverter and ssl_dhparam methods defined.
 
     Installer plugins do not have to inherit from this class.
 
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.storage = PluginStorage(self.config, self.name)
         self.reverter = reverter.Reverter(self.config)
 
-    def add_to_checkpoint(self, save_files, save_notes, temporary=False):
+    def add_to_checkpoint(self, save_files: Set[str], save_notes: str,
+                          temporary: bool = False) -> None:
         """Add files to a checkpoint.
 
         :param set save_files: set of filepaths to save
@@ -131,7 +170,7 @@ class Installer(Plugin):
         except errors.ReverterError as err:
             raise errors.PluginError(str(err))
 
-    def finalize_checkpoint(self, title):
+    def finalize_checkpoint(self, title: str) -> None:
         """Timestamp and save changes made through the reverter.
 
         :param str title: Title describing checkpoint
@@ -144,7 +183,7 @@ class Installer(Plugin):
         except errors.ReverterError as err:
             raise errors.PluginError(str(err))
 
-    def recovery_routine(self):
+    def recovery_routine(self) -> None:
         """Revert all previously modified files.
 
         Reverts all modified files that have not been saved as a checkpoint
@@ -157,7 +196,7 @@ class Installer(Plugin):
         except errors.ReverterError as err:
             raise errors.PluginError(str(err))
 
-    def revert_temporary_config(self):
+    def revert_temporary_config(self) -> None:
         """Rollback temporary checkpoint.
 
         :raises .errors.PluginError: when unable to revert config
@@ -168,7 +207,7 @@ class Installer(Plugin):
         except errors.ReverterError as err:
             raise errors.PluginError(str(err))
 
-    def rollback_checkpoints(self, rollback=1):
+    def rollback_checkpoints(self, rollback: int = 1) -> None:
         """Rollback saved checkpoints.
 
         :param int rollback: Number of checkpoints to revert
@@ -183,22 +222,32 @@ class Installer(Plugin):
             raise errors.PluginError(str(err))
 
     @property
-    def ssl_dhparams(self):
+    def ssl_dhparams(self) -> str:
         """Full absolute path to ssl_dhparams file."""
         return os.path.join(self.config.config_dir, constants.SSL_DHPARAMS_DEST)
 
     @property
-    def updated_ssl_dhparams_digest(self):
+    def updated_ssl_dhparams_digest(self) -> str:
         """Full absolute path to digest of updated ssl_dhparams file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_SSL_DHPARAMS_DIGEST)
 
-    def install_ssl_dhparams(self):
+    def install_ssl_dhparams(self) -> None:
         """Copy Certbot's ssl_dhparams file into the system's config dir if required."""
-        return install_version_controlled_file(
+        install_version_controlled_file(
             self.ssl_dhparams,
             self.updated_ssl_dhparams_digest,
             constants.SSL_DHPARAMS_SRC,
             constants.ALL_SSL_DHPARAMS_HASHES)
+
+
+class Configurator(Installer, interfaces.Authenticator, metaclass=ABCMeta):
+    """
+    A plugin that extends certbot.plugins.common.Installer
+    and implements certbot.interfaces.Authenticator
+    """
+
+
+GenericAddr = TypeVar("GenericAddr", bound="Addr")
 
 
 class Addr:
@@ -208,12 +257,12 @@ class Addr:
     :param str port: port number or \*, or ""
 
     """
-    def __init__(self, tup, ipv6=False):
+    def __init__(self, tup: Tuple[str, str], ipv6: bool = False):
         self.tup = tup
         self.ipv6 = ipv6
 
     @classmethod
-    def fromstring(cls, str_addr):
+    def fromstring(cls: Type[GenericAddr], str_addr: str) -> Optional[GenericAddr]:
         """Initialize Addr from string."""
         if str_addr.startswith('['):
             # ipv6 addresses starts with [
@@ -227,19 +276,19 @@ class Addr:
             tup = str_addr.partition(':')
             return cls((tup[0], tup[2]))
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.tup[1]:
             return "%s:%s" % self.tup
         return self.tup[0]
 
-    def normalized_tuple(self):
+    def normalized_tuple(self) -> Tuple[str, str]:
         """Normalized representation of addr/port tuple
         """
         if self.ipv6:
-            return (self.get_ipv6_exploded(), self.tup[1])
+            return self.get_ipv6_exploded(), self.tup[1]
         return self.tup
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
             # compare normalized to take different
             # styles of representation into account
@@ -247,34 +296,34 @@ class Addr:
 
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.tup)
 
-    def get_addr(self):
+    def get_addr(self) -> str:
         """Return addr part of Addr object."""
         return self.tup[0]
 
-    def get_port(self):
+    def get_port(self) -> str:
         """Return port."""
         return self.tup[1]
 
-    def get_addr_obj(self, port):
+    def get_addr_obj(self: GenericAddr, port: str) -> GenericAddr:
         """Return new address object with same addr and new port."""
         return self.__class__((self.tup[0], port), self.ipv6)
 
-    def _normalize_ipv6(self, addr):
+    def _normalize_ipv6(self, addr: str) -> List[str]:
         """Return IPv6 address in normalized form, helper function"""
         addr = addr.lstrip("[")
         addr = addr.rstrip("]")
         return self._explode_ipv6(addr)
 
-    def get_ipv6_exploded(self):
+    def get_ipv6_exploded(self) -> str:
         """Return IPv6 in normalized form"""
         if self.ipv6:
             return ":".join(self._normalize_ipv6(self.tup[0]))
         return ""
 
-    def _explode_ipv6(self, addr):
+    def _explode_ipv6(self, addr: str) -> List[str]:
         """Explode IPv6 address for comparison"""
         result = ['0', '0', '0', '0', '0', '0', '0', '0']
         addr_list = addr.split(":")
@@ -311,12 +360,13 @@ class ChallengePerformer:
 
     """
 
-    def __init__(self, configurator):
+    def __init__(self, configurator: Configurator):
         self.configurator = configurator
         self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
         self.indices: List[int] = []
 
-    def add_chall(self, achall, idx=None):
+    def add_chall(self, achall: achallenges.KeyAuthorizationAnnotatedChallenge,
+                  idx: Optional[int] = None) -> None:
         """Store challenge to be performed when perform() is called.
 
         :param .KeyAuthorizationAnnotatedChallenge achall: Annotated
@@ -328,7 +378,7 @@ class ChallengePerformer:
         if idx is not None:
             self.indices.append(idx)
 
-    def perform(self):
+    def perform(self) -> List[challenges.KeyAuthorizationChallengeResponse]:
         """Perform all added challenges.
 
         :returns: challenge responses
@@ -339,7 +389,8 @@ class ChallengePerformer:
         raise NotImplementedError()
 
 
-def install_version_controlled_file(dest_path, digest_path, src_path, all_hashes):
+def install_version_controlled_file(dest_path: str, digest_path: str, src_path: str,
+                                    all_hashes: Iterable[str]) -> None:
     """Copy a file into an active location (likely the system's config dir) if required.
 
        :param str dest_path: destination path for version controlled file
@@ -349,11 +400,11 @@ def install_version_controlled_file(dest_path, digest_path, src_path, all_hashes
     """
     current_hash = crypto_util.sha256sum(src_path)
 
-    def _write_current_hash():
-        with open(digest_path, "w") as f:
-            f.write(current_hash)
+    def _write_current_hash() -> None:
+        with open(digest_path, "w") as file_h:
+            file_h.write(current_hash)
 
-    def _install_current_file():
+    def _install_current_file() -> None:
         shutil.copyfile(src_path, dest_path)
         _write_current_hash()
 
@@ -389,9 +440,9 @@ def install_version_controlled_file(dest_path, digest_path, src_path, all_hashes
 # "pragma: no cover") TODO: this might quickly lead to dead code (also
 # c.f. #383)
 
-def dir_setup(test_dir, pkg):  # pragma: no cover
+def dir_setup(test_dir: str, pkg: str) -> Tuple[str, str, str]:  # pragma: no cover
     """Setup the directories necessary for the configurator."""
-    def expanded_tempdir(prefix):
+    def expanded_tempdir(prefix: str) -> str:
         """Return the real path of a temp directory with the specified prefix
 
         Some plugins rely on real paths of symlinks for working correctly. For

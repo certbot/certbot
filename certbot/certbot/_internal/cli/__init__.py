@@ -4,7 +4,10 @@ import argparse
 import logging
 import logging.handlers
 import sys
+from typing import Any
+from typing import List
 from typing import Optional
+from typing import Type
 
 import certbot
 from certbot._internal import constants
@@ -42,7 +45,7 @@ from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
 from certbot._internal.plugins import disco as plugins_disco
 import certbot._internal.plugins.selection as plugin_selection
-import certbot.plugins.enhancements as enhancements
+from certbot.plugins import enhancements
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +54,8 @@ logger = logging.getLogger(__name__)
 helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
-def prepare_and_parse_args(plugins, args, detect_defaults=False):
+def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[str],
+                           detect_defaults: bool = False) -> argparse.Namespace:
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -71,6 +75,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         default=flag_default("verbose_count"), help="This flag can be used "
         "multiple times to incrementally increase the verbosity of output, "
         "e.g. -vvv.")
+    # This is for developers to set the level in the cli.ini, and overrides
+    # the --verbose flag
+    helpful.add(
+        None, "--verbose-level", dest="verbose_level",
+        default=flag_default("verbose_level"), help=argparse.SUPPRESS)
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
         default=flag_default("text_mode"), help=argparse.SUPPRESS)
@@ -106,17 +115,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction,
         default=flag_default("domains"),
-        help="Domain names to apply. For multiple domains you can use "
-             "multiple -d flags or enter a comma separated list of domains "
-             "as a parameter. The first domain provided will be the "
-             "subject CN of the certificate, and all domains will be "
-             "Subject Alternative Names on the certificate. "
-             "The first domain will also be used in "
-             "some software user interfaces and as the file paths for the "
-             "certificate and related material unless otherwise "
-             "specified or you already have a certificate with the same "
-             "name. In the case of a name collision it will append a number "
-             "like 0001 to the file path name. (default: Ask)")
+        help="Domain names to include. For multiple domains you can use multiple -d flags "
+             "or enter a comma separated list of domains as a parameter. All domains will "
+             "be included as Subject Alternative Names on the certificate. The first domain "
+             "will be used as the certificate name, unless otherwise specified or if you "
+             "already have a certificate with the same name. In the case of a name conflict, "
+             "a number like -0001 will be appended to the certificate name. (default: Ask)")
     helpful.add(
         [None, "run", "certonly", "register"],
         "--eab-kid", dest="eab_kid",
@@ -131,10 +135,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     )
     helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates",
-         "renew", "enhance"], "--cert-name", dest="certname",
+         "renew", "enhance", "reconfigure"], "--cert-name", dest="certname",
         metavar="CERTNAME", default=flag_default("certname"),
         help="Certificate name to apply. This name is used by Certbot for housekeeping "
              "and in file paths; it doesn't affect the content of the certificate itself. "
+             "Certificate name cannot contain filepath separators (i.e. '/' or '\\', depending "
+             "on the platform). "
              "To see certificate names, run 'certbot certificates'. "
              "When creating a new certificate, specifies the new certificate's name. "
              "(default: the first provided domain or the name of an existing "
@@ -153,6 +159,17 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              " roll back those changes.  It also calls --pre-hook and --post-hook commands"
              " if they are defined because they may be necessary to accurately simulate"
              " renewal. --deploy-hook commands are not called.")
+    helpful.add(
+        ["testing", "renew", "certonly", "reconfigure"],
+        "--run-deploy-hooks", action="store_true", dest="run_deploy_hooks",
+        default=flag_default("run_deploy_hooks"),
+        help="When performing a test run using `--dry-run` or `reconfigure`, run any applicable"
+             " deploy hooks. This includes hooks set on the command line, saved in the"
+             " certificate's renewal configuration file, or present in the renewal-hooks directory."
+             " To exclude directory hooks, use --no-directory-hooks. The hook(s) will only"
+             " be run if the dry run succeeds, and will use the current active certificate, not"
+             " the temporary test certificate acquired during the dry run. This flag is recommended"
+             " when modifying the deploy hook using `reconfigure`.")
     helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         default=flag_default("register_unsafely_without_email"),
@@ -207,6 +224,20 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         action="store_true", default=flag_default("reuse_key"),
         help="When renewing, use the same private key as the existing "
              "certificate.")
+    helpful.add(
+        "automation", "--no-reuse-key", dest="reuse_key",
+        action="store_false", default=flag_default("reuse_key"),
+        help="When renewing, do not use the same private key as the existing "
+             "certificate. Not reusing private keys is the default behavior of "
+             "Certbot. This option may be used to unset --reuse-key on an "
+             "existing certificate.")
+    helpful.add(
+        "automation", "--new-key",
+        dest="new_key", action="store_true", default=flag_default("new_key"),
+        help="When renewing or replacing a certificate, generate a new private key, "
+             "even if --reuse-key is set on the existing certificate. Combining "
+             "--new-key and --reuse-key will result in the private key being replaced and "
+             "then reused in future renewals.")
 
     helpful.add(
         ["automation", "renew", "certonly"],
@@ -248,7 +279,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         [None, "certonly", "run"], "--debug-challenges", action="store_true",
         default=flag_default("debug_challenges"),
         help="After setting up challenges, wait for user input before "
-             "submitting to CA")
+             "submitting to CA. When used in combination with the `-v` "
+             "option, the challenge URLs or FQDNs and their expected "
+             "return values are shown.")
     helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),
@@ -349,37 +382,53 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              'than "http-01", Certbot will select the latest version '
              'automatically.')
     helpful.add(
-        "renew", "--pre-hook",
+        [None, "certonly", "run"], "--issuance-timeout", type=nonnegative_int,
+        dest="issuance_timeout",
+        default=flag_default("issuance_timeout"),
+        help=config_help("issuance_timeout"))
+    helpful.add(
+        ["renew", "reconfigure"], "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
+        " Unless --disable-hook-validation is used, the command’s first word"
+        " must be the absolute pathname of an executable or one found via the"
+        " PATH environment variable."
         " Intended primarily for renewal, where it can be used to temporarily"
         " shut down a webserver that might conflict with the standalone"
         " plugin. This will only be called if a certificate is actually to be"
         " obtained/renewed. When renewing several certificates that have"
         " identical pre-hooks, only the first will be executed.")
     helpful.add(
-        "renew", "--post-hook",
+        ["renew", "reconfigure"], "--post-hook",
         help="Command to be run in a shell after attempting to obtain/renew"
-        " certificates. Can be used to deploy renewed certificates, or to"
+        " certificates."
+        " Unless --disable-hook-validation is used, the command’s first word"
+        " must be the absolute pathname of an executable or one found via the"
+        " PATH environment variable."
+        " Can be used to deploy renewed certificates, or to"
         " restart any servers that were stopped by --pre-hook. This is only"
         " run if an attempt was made to obtain/renew a certificate. If"
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
-    helpful.add("renew", "--renew-hook",
+    helpful.add(["renew", "reconfigure"], "--renew-hook",
                 action=_RenewHookAction, help=argparse.SUPPRESS)
     helpful.add(
         "renew", "--no-random-sleep-on-renew", action="store_false",
         default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
         help=argparse.SUPPRESS)
     helpful.add(
-        "renew", "--deploy-hook", action=_DeployHookAction,
+        ["renew", "reconfigure"], "--deploy-hook", action=_DeployHookAction,
         help='Command to be run in a shell once for each successfully'
-        ' issued certificate. For this command, the shell variable'
+        ' issued certificate.'
+        ' Unless --disable-hook-validation is used, the command’s first word'
+        ' must be the absolute pathname of an executable or one found via the'
+        ' PATH environment variable.'
+        ' For this command, the shell variable'
         ' $RENEWED_LINEAGE will point to the config live subdirectory'
         ' (for example, "/etc/letsencrypt/live/example.com") containing'
         ' the new certificates and keys; the shell variable'
         ' $RENEWED_DOMAINS will contain a space-delimited list of'
         ' renewed certificate domains (for example, "example.com'
-        ' www.example.com"')
+        ' www.example.com")')
     helpful.add(
         "renew", "--disable-hook-validation",
         action="store_false", dest="validate_hooks",
@@ -408,7 +457,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     helpful.add(
         "renew", "--no-autorenew", action="store_false",
         default=flag_default("autorenew"), dest="autorenew",
-        help="Disable auto renewal of certificates.")
+        help="Disable auto renewal of certificates. (default: False)")
     helpful.add(
         [None,"automation", "certonly", "run","renew"], "--max-retry",type=int,
         dest="max_retry",
@@ -440,7 +489,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     return helpful.parse_args()
 
 
-def set_by_cli(var):
+def set_by_cli(var: str) -> bool:
     """
     Return True if a particular config variable has been set by the user
     (CLI or config file) including if the user explicitly set it to the
@@ -458,10 +507,11 @@ def set_by_cli(var):
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = helpful_parser.args + [helpful_parser.verb]
+
         detector = set_by_cli.detector = prepare_and_parse_args(  # type: ignore
             plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
-        detector.authenticator, detector.installer = (  # type: ignore
+        detector.authenticator, detector.installer = (
             plugin_selection.cli_plugin_requests(detector))
 
     if not isinstance(getattr(detector, var), _Default):
@@ -483,7 +533,7 @@ def set_by_cli(var):
 set_by_cli.detector = None  # type: ignore
 
 
-def has_default_value(option, value):
+def has_default_value(option: str, value: Any) -> bool:
     """Does option have the default value?
 
     If the default value of option is not known, False is returned.
@@ -501,7 +551,7 @@ def has_default_value(option, value):
     return False
 
 
-def option_was_set(option, value):
+def option_was_set(option: str, value: Any) -> bool:
     """Was option set by the user or does it differ from the default?
 
     :param str option: configuration variable being considered
@@ -517,7 +567,7 @@ def option_was_set(option, value):
     return set_by_cli(option) or not has_default_value(option, value)
 
 
-def argparse_type(variable):
+def argparse_type(variable: Any) -> Type:
     """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
     if helpful_parser is not None:

@@ -1,17 +1,17 @@
 import codecs
-from distutils.version import LooseVersion
 import os
 import re
 import sys
 
+from pkg_resources import parse_version
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
 
-min_setuptools_version='39.0.1'
+min_setuptools_version='41.6.0'
 # This conditional isn't necessary, but it provides better error messages to
 # people who try to install this package with older versions of setuptools.
-if LooseVersion(setuptools_version) < LooseVersion(min_setuptools_version):
+if parse_version(setuptools_version) < parse_version(min_setuptools_version):
     raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
 
 # Workaround for https://bugs.python.org/issue8876, see
@@ -41,57 +41,76 @@ version = meta['version']
 # here to avoid masking the more specific request requirements in acme. See
 # https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=1.8.0',
+    # We specify the minimum acme version as the current Certbot version for
+    # simplicity. See https://github.com/certbot/certbot/issues/8761 for more
+    # info.
+    f'acme>={version}',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
     'configobj>=5.0.6',
-    'cryptography>=2.1.4',
+    'cryptography>=3.2.1',
     'distro>=1.0.1',
-    # 1.1.0+ is required to avoid the warnings described at
-    # https://github.com/certbot/josepy/issues/13.
-    'josepy>=1.1.0',
+    'josepy>=1.13.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
-    'pytz',
+    'pytz>=2019.3',
     # This dependency needs to be added using environment markers to avoid its
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
     f'setuptools>={min_setuptools_version}',
-    'zope.component',
-    'zope.interface',
 ]
 
 dev_extras = [
-    'astroid',
     'azure-devops',
-    'coverage',
     'ipdb',
-    'mypy',
-    'PyGithub',
-    # 1.1.0+ is required for poetry to use the poetry-core library for the
-    # build system declared in tools/pinning/pyproject.toml.
-    'poetry>=1.1.0',
-    'pylint',
-    'pytest',
-    'pytest-cov',
-    'pytest-xdist',
-    # typing-extensions is required to import typing.Protocol and make the mypy checks
-    # pass (along with pylint about non-existent objects) on Python 3.6 & 3.7
-    'typing-extensions',
-    'tox',
+    # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
+    # https://github.com/python-poetry/poetry/issues/1584.
+    'poetry>=1.2.0',
+    # poetry-plugin-export>=1.1.0 is required to use the constraints.txt export
+    # format. See
+    # https://github.com/python-poetry/poetry-plugin-export/blob/efcfd34859e72f6a79a80398f197ce6eb2bbd7cd/CHANGELOG.md#added.
+    'poetry-plugin-export>=1.1.0',
     'twine',
-    'wheel',
 ]
 
 docs_extras = [
     # If you have Sphinx<1.5.1, you need docutils<0.13.1
     # https://github.com/sphinx-doc/sphinx/issues/3212
-    'repoze.sphinx.autointerface',
-    'Sphinx>=1.2', # Annotation support
+    'Sphinx>=1.2',  # Annotation support
     'sphinx_rtd_theme',
 ]
+
+# Tools like pip, wheel, and tox are listed here to ensure they are properly
+# pinned and installed during automated testing.
+test_extras = [
+    'coverage',
+    'mypy',
+    'pip',
+    # Our pinned version of pylint requires Python >= 3.7.2.
+    'pylint ; python_full_version >= "3.7.2"',
+    'pytest',
+    'pytest-cov',
+    'pytest-xdist',
+    'setuptools',
+    'tox',
+    'types-httplib2',
+    'types-pyOpenSSL',
+    'types-pyRFC3339',
+    'types-pytz',
+    'types-pywin32',
+    'types-requests',
+    'types-setuptools',
+    'types-six',
+    # typing-extensions is required to import typing.Protocol and make the mypy checks
+    # pass (along with pylint about non-existent objects) on Python 3.7
+    'typing-extensions',
+    'wheel',
+]
+
+
+all_extras = dev_extras + docs_extras + test_extras
 
 setup(
     name='certbot',
@@ -102,7 +121,7 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -112,10 +131,11 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
@@ -129,8 +149,10 @@ setup(
 
     install_requires=install_requires,
     extras_require={
+        'all': all_extras,
         'dev': dev_extras,
         'docs': docs_extras,
+        'test': test_extras,
     },
 
     entry_points={

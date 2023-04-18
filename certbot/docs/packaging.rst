@@ -12,7 +12,6 @@ We release packages and upload them to PyPI (wheels and source tarballs).
 - https://pypi.python.org/pypi/certbot-apache
 - https://pypi.python.org/pypi/certbot-nginx
 - https://pypi.python.org/pypi/certbot-dns-cloudflare
-- https://pypi.python.org/pypi/certbot-dns-cloudxns
 - https://pypi.python.org/pypi/certbot-dns-digitalocean
 - https://pypi.python.org/pypi/certbot-dns-dnsimple
 - https://pypi.python.org/pypi/certbot-dns-dnsmadeeasy
@@ -33,9 +32,20 @@ example: `v0.11.1`.
 
 .. _`Semantic Versioning`: https://semver.org/
 
-Our packages are cryptographically signed and their signature can be verified
-using the PGP key ``A2CFB51FA275A7286234E7B24D17C995CD9775F2``. This key can be
-found on major key servers and at https://dl.eff.org/certbot.pub.
+Since version 1.21.0, our packages are cryptographically signed by one of four
+PGP keys:
+
+- ``BF6BCFC89E90747B9A680FD7B6029E8500F7DB16``
+- ``86379B4F0AF371B50CD9E5FF3402831161D1D280``
+- ``20F201346BF8F3F455A73F9A780CC99432A28621``
+- ``F2871B4152AE13C49519111F447BF683AA3B26C3```
+
+These keys can be found on major key servers and at
+https://dl.eff.org/certbot.pub.
+
+Releases before 1.21.0 were signed by the PGP key
+``A2CFB51FA275A7286234E7B24D17C995CD9775F2`` which can still be found on major
+key servers.
 
 Notes for package maintainers
 =============================

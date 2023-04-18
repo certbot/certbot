@@ -11,7 +11,15 @@ import subprocess
 import sys
 import tempfile
 import time
+from types import TracebackType
+from typing import Any
+from typing import cast
+from typing import Dict
 from typing import List
+from typing import Mapping
+from typing import Optional
+from typing import Tuple
+from typing import Type
 
 import requests
 
@@ -34,11 +42,12 @@ class ACMEServer:
     ACMEServer is also a context manager, and so can be used to ensure ACME server is
     started/stopped upon context enter/exit.
     """
-    def __init__(self, acme_server, nodes, http_proxy=True, stdout=False,
-                 dns_server=None, http_01_port=DEFAULT_HTTP_01_PORT):
+    def __init__(self, acme_server: str, nodes: List[str], http_proxy: bool = True,
+                 stdout: bool = False, dns_server: Optional[str] = None,
+                 http_01_port: Optional[int] = None) -> None:
         """
         Create an ACMEServer instance.
-        :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
+        :param str acme_server: the type of acme server used (boulder-v2 or pebble)
         :param list nodes: list of node names that will be setup by pytest xdist
         :param bool http_proxy: if False do not start the HTTP proxy
         :param bool stdout: if True stream all subprocesses stdout to standard stdout
@@ -52,15 +61,18 @@ class ACMEServer:
         self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
         self._processes: List[subprocess.Popen] = []
-        self._stdout = sys.stdout if stdout else open(os.devnull, 'w')
+        self._stdout = sys.stdout if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
         self._dns_server = dns_server
-        self._http_01_port = http_01_port
-        if http_01_port != DEFAULT_HTTP_01_PORT:
-            if self._acme_type != 'pebble' or self._proxy:
-                raise ValueError('setting http_01_port is not currently supported '
-                                  'with boulder or the HTTP proxy')
+        self._preterminate_cmds_args: List[Tuple[Tuple[Any, ...], Dict[str, Any]]] = []
+        self._http_01_port = BOULDER_HTTP_01_PORT if self._acme_type == 'boulder' \
+                             else DEFAULT_HTTP_01_PORT
+        if http_01_port:
+            if (self._acme_type == 'pebble' and self._proxy) or self._acme_type == 'boulder':
+                raise ValueError('Setting http_01_port is not currently supported when '
+                                 'using Boulder or the HTTP proxy')
+            self._http_01_port = http_01_port
 
-    def start(self):
+    def start(self) -> None:
         """Start the test stack"""
         try:
             if self._proxy:
@@ -73,10 +85,11 @@ class ACMEServer:
             self.stop()
             raise e
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the test stack, and clean its resources"""
         print('=> Tear down the test infrastructure...')
         try:
+            self._run_preterminate_cmds()
             for process in self._processes:
                 try:
                     process.terminate()
@@ -86,17 +99,7 @@ class ACMEServer:
                     if e.errno != errno.ESRCH:
                         raise
             for process in self._processes:
-                process.wait()
-
-            if os.path.exists(os.path.join(self._workspace, 'boulder')):
-                # Boulder docker generates build artifacts owned by root with 0o744 permissions.
-                # If we started the acme server from a normal user that has access to the Docker
-                # daemon, this user will not be able to delete these artifacts from the host.
-                # We need to do it through a docker.
-                process = self._launch_process(['docker', 'run', '--rm', '-v',
-                                                '{0}:/workspace'.format(self._workspace),
-                                                'alpine', 'rm', '-rf', '/workspace/boulder'])
-                process.wait()
+                process.wait(MAX_SUBPROCESS_WAIT)
         finally:
             if os.path.exists(self._workspace):
                 shutil.rmtree(self._workspace)
@@ -104,41 +107,34 @@ class ACMEServer:
             self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')
 
-    def __enter__(self):
+    def __enter__(self) -> Dict[str, Any]:
         self.start()
         return self.acme_xdist
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> None:
         self.stop()
 
-    def _construct_acme_xdist(self, acme_server, nodes):
+    def _construct_acme_xdist(self, acme_server: str, nodes: List[str]) -> None:
         """Generate and return the acme_xdist dict"""
-        acme_xdist = {'acme_server': acme_server, 'challtestsrv_port': CHALLTESTSRV_PORT}
+        acme_xdist: Dict[str, Any] = {'acme_server': acme_server}
 
         # Directory and ACME port are set implicitly in the docker-compose.yml
         # files of Boulder/Pebble.
         if acme_server == 'pebble':
             acme_xdist['directory_url'] = PEBBLE_DIRECTORY_URL
+            acme_xdist['challtestsrv_url'] = PEBBLE_CHALLTESTSRV_URL
         else:  # boulder
-            acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL \
-                if acme_server == 'boulder-v2' else BOULDER_V1_DIRECTORY_URL
+            acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL
+            acme_xdist['challtestsrv_url'] = BOULDER_V2_CHALLTESTSRV_URL
 
-        acme_xdist['http_port'] = {
-            node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
-            zip(nodes, range(5200, 5200 + len(nodes)))
-        }
-        acme_xdist['https_port'] = {
-            node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
-            zip(nodes, range(5100, 5100 + len(nodes)))
-        }
-        acme_xdist['other_port'] = {
-            node: port for (node, port) in  # pylint: disable=unnecessary-comprehension
-            zip(nodes, range(5300, 5300 + len(nodes)))
-        }
+        acme_xdist['http_port'] = dict(zip(nodes, range(5200, 5200 + len(nodes))))
+        acme_xdist['https_port'] = dict(zip(nodes, range(5100, 5100 + len(nodes))))
+        acme_xdist['other_port'] = dict(zip(nodes, range(5300, 5300 + len(nodes))))
 
         self.acme_xdist = acme_xdist
 
-    def _prepare_pebble_server(self):
+    def _prepare_pebble_server(self) -> None:
         """Configure and launch the Pebble server"""
         print('=> Starting pebble instance deployment...')
         pebble_artifacts_rv = pebble_artifacts.fetch(self._workspace, self._http_01_port)
@@ -178,7 +174,7 @@ class ACMEServer:
 
         print('=> Finished pebble instance deployment.')
 
-    def _prepare_boulder_server(self):
+    def _prepare_boulder_server(self) -> None:
         """Configure and launch the Boulder server"""
         print('=> Starting boulder instance deployment...')
         instance_path = join(self._workspace, 'boulder')
@@ -186,7 +182,7 @@ class ACMEServer:
         # Load Boulder from git, that includes a docker-compose.yml ready for production.
         process = self._launch_process(['git', 'clone', 'https://github.com/letsencrypt/boulder',
                                         '--single-branch', '--depth=1', instance_path])
-        process.wait()
+        process.wait(MAX_SUBPROCESS_WAIT)
 
         # Allow Boulder to ignore usual limit rate policies, useful for tests.
         os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
@@ -201,18 +197,32 @@ class ACMEServer:
                 with open(join(instance_path, 'test/config/va{}.json'.format(suffix)), 'w') as f:
                     f.write(json.dumps(config, indent=2, separators=(',', ': ')))
 
+        # This command needs to be run before we try and terminate running processes because
+        # docker-compose up doesn't always respond to SIGTERM. See
+        # https://github.com/certbot/certbot/pull/9435.
+        self._register_preterminate_cmd(['docker-compose', 'down'], cwd=instance_path)
+        # Boulder docker generates build artifacts owned by root with 0o744 permissions.
+        # If we started the acme server from a normal user that has access to the Docker
+        # daemon, this user will not be able to delete these artifacts from the host.
+        # We need to do it through a docker.
+        self._register_preterminate_cmd(['docker', 'run', '--rm', '-v',
+                                         '{0}:/workspace'.format(self._workspace), 'alpine', 'rm',
+                                         '-rf', '/workspace/boulder'])
         try:
             # Launch the Boulder server
             self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
 
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
-            misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=300)
+            misc.check_until_timeout(
+                self.acme_xdist['directory_url'], attempts=300)
 
             if not self._dns_server:
                 # Configure challtestsrv to answer any A record request with ip of the docker host.
-                response = requests.post('http://localhost:{0}/set-default-ipv4'.format(
-                    CHALLTESTSRV_PORT), json={'ip': '10.77.77.1'}
+                response = requests.post(
+                    f'{BOULDER_V2_CHALLTESTSRV_URL}/set-default-ipv4',
+                    json={'ip': '10.77.77.1'},
+                    timeout=10
                 )
                 response.raise_for_status()
         except BaseException:
@@ -221,40 +231,55 @@ class ACMEServer:
             process = self._launch_process([
                 'docker-compose', 'logs'], cwd=instance_path, force_stderr=True
             )
-            process.wait()
+            process.wait(MAX_SUBPROCESS_WAIT)
             raise
 
         print('=> Finished boulder instance deployment.')
 
-    def _prepare_http_proxy(self):
+    def _prepare_http_proxy(self) -> None:
         """Configure and launch an HTTP proxy"""
-        print('=> Configuring the HTTP proxy...')
+        print(f'=> Configuring the HTTP proxy on port {self._http_01_port}...')
+        http_port_map = cast(Dict[str, int], self.acme_xdist['http_port'])
         mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
-                   for node, port in self.acme_xdist['http_port'].items()}
-        command = [sys.executable, proxy.__file__, str(DEFAULT_HTTP_01_PORT), json.dumps(mapping)]
+                   for node, port in http_port_map.items()}
+        command = [sys.executable, proxy.__file__, str(self._http_01_port), json.dumps(mapping)]
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')
 
-    def _launch_process(self, command, cwd=os.getcwd(), env=None, force_stderr=False):
+    def _launch_process(self, command: List[str], cwd: str = os.getcwd(),
+                        env: Optional[Mapping[str, str]] = None,
+                        force_stderr: bool = False) -> subprocess.Popen:
         """Launch silently a subprocess OS command"""
         if not env:
             env = os.environ
         stdout = sys.stderr if force_stderr else self._stdout
+        # pylint: disable=consider-using-with
         process = subprocess.Popen(
             command, stdout=stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env
         )
         self._processes.append(process)
         return process
 
+    def _register_preterminate_cmd(self, *args: Any, **kwargs: Any) -> None:
+        self._preterminate_cmds_args.append((args, kwargs))
 
-def main():
+    def _run_preterminate_cmds(self) -> None:
+        for args, kwargs in self._preterminate_cmds_args:
+            process = self._launch_process(*args, **kwargs)
+            process.wait(MAX_SUBPROCESS_WAIT)
+        # It's unlikely to matter, but let's clear the list of cleanup commands
+        # once they've been run.
+        self._preterminate_cmds_args.clear()
+
+
+def main() -> None:
     # pylint: disable=missing-function-docstring
     parser = argparse.ArgumentParser(
         description='CLI tool to start a local instance of Pebble or Boulder CA server.')
     parser.add_argument('--server-type', '-s',
-                        choices=['pebble', 'boulder-v1', 'boulder-v2'], default='pebble',
-                        help='type of CA server to start: can be Pebble or Boulder '
-                             '(in ACMEv1 or ACMEv2 mode), Pebble is used if not set.')
+                        choices=['pebble', 'boulder-v2'], default='pebble',
+                        help='type of CA server to start: can be Pebble or Boulder. '
+                             'Pebble is used if not set.')
     parser.add_argument('--dns-server', '-d',
                         help='specify the DNS server as `IP:PORT` to use by '
                              'Pebble; if not specified, a local mock DNS server will be used to '

@@ -25,14 +25,22 @@ Credentials
 -----------
 
 Use of this plugin requires a configuration file containing OVH API
-credentials for an account with the following access rules:
+credentials for an account with the following access rules (allowing all domains):
 
 * ``GET /domain/zone/*``
 * ``PUT /domain/zone/*``
 * ``POST /domain/zone/*``
 * ``DELETE /domain/zone/*``
 
-These credentials can be obtained there:
+Alternatively, to allow a single domain only, the following access rules apply:
+
+* ``GET /domain/zone/``
+* ``GET /domain/zone/<REQUIRED_DOMAIN>/*``
+* ``PUT /domain/zone/<REQUIRED_DOMAIN>/*``
+* ``POST /domain/zone/<REQUIRED_DOMAIN>/*``
+* ``DELETE /domain/zone/<REQUIRED_DOMAIN>/*``
+
+These credentials can be obtained at the following links:
 
 * `OVH Europe <https://eu.api.ovh.com/createToken/>`_ (endpoint: ``ovh-eu``)
 * `OVH North America <https://ca.api.ovh.com/createToken/>`_ (endpoint:

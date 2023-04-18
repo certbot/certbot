@@ -2,92 +2,63 @@ jobs:
   - job: extended_test
     variables:
       - name: IMAGE_NAME
-        value: ubuntu-18.04
+        value: ubuntu-22.04
       - name: PYTHON_VERSION
-        value: 3.9
+        value: 3.11
       - group: certbot-common
     strategy:
       matrix:
-        linux-py36:
-          PYTHON_VERSION: 3.6
-          TOXENV: py36
-        linux-py37:
-          PYTHON_VERSION: 3.7
-          TOXENV: py37
         linux-py38:
           PYTHON_VERSION: 3.8
           TOXENV: py38
-        linux-py37-nopin:
-          PYTHON_VERSION: 3.7
-          TOXENV: py37
-          CERTBOT_NO_PIN: 1
-        linux-external-mock:
-          TOXENV: external-mock
-        linux-boulder-v1-integration-certbot-oldest:
-          PYTHON_VERSION: 3.6
-          TOXENV: integration-certbot-oldest
-          ACME_SERVER: boulder-v1
+        linux-py39:
+          PYTHON_VERSION: 3.9
+          TOXENV: py39
+        linux-py310:
+          PYTHON_VERSION: 3.10
+          TOXENV: py310
+        linux-isolated:
+          TOXENV: 'isolated-{acme,certbot,apache,cloudflare,digitalocean,dnsimple,dnsmadeeasy,gehirn,google,linode,luadns,nsone,ovh,rfc2136,route53,sakuracloud,nginx}'
         linux-boulder-v2-integration-certbot-oldest:
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.7
           TOXENV: integration-certbot-oldest
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-integration-nginx-oldest:
-          PYTHON_VERSION: 3.6
-          TOXENV: integration-nginx-oldest
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-integration-nginx-oldest:
-          PYTHON_VERSION: 3.6
+          PYTHON_VERSION: 3.7
           TOXENV: integration-nginx-oldest
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py36-integration:
-          PYTHON_VERSION: 3.6
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
-        linux-boulder-v2-py36-integration:
-          PYTHON_VERSION: 3.6
-          TOXENV: integration
-          ACME_SERVER: boulder-v2
-        linux-boulder-v1-py37-integration:
-          PYTHON_VERSION: 3.7
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-py37-integration:
           PYTHON_VERSION: 3.7
           TOXENV: integration
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py38-integration:
-          PYTHON_VERSION: 3.8
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-py38-integration:
           PYTHON_VERSION: 3.8
           TOXENV: integration
           ACME_SERVER: boulder-v2
-        linux-boulder-v1-py39-integration:
-          PYTHON_VERSION: 3.9
-          TOXENV: integration
-          ACME_SERVER: boulder-v1
         linux-boulder-v2-py39-integration:
           PYTHON_VERSION: 3.9
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v2-py310-integration:
+          PYTHON_VERSION: 3.10
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v2-py311-integration:
+          PYTHON_VERSION: 3.11
           TOXENV: integration
           ACME_SERVER: boulder-v2
         nginx-compat:
           TOXENV: nginx_compat
         linux-integration-rfc2136:
-          IMAGE_NAME: ubuntu-18.04
+          IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.8
           TOXENV: integration-dns-rfc2136
-        docker-dev:
-          TOXENV: docker_dev
-        macos-farmtest-apache2:
-          # We run one of these test farm tests on macOS to help ensure the
-          # tests continue to work on the platform.
-          IMAGE_NAME: macOS-10.15
+        le-modification:
+          IMAGE_NAME: ubuntu-22.04
+          TOXENV: modification
+        farmtest-apache2:
           PYTHON_VERSION: 3.8
           TOXENV: test-farm-apache2
-        farmtest-sdists:
-          PYTHON_VERSION: 3.7
-          TOXENV: test-farm-sdists
     pool:
       vmImage: $(IMAGE_NAME)
     steps:

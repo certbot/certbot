@@ -1,15 +1,16 @@
 steps:
   - bash: |
+      set -e
+      sudo apt-get update
+      sudo apt-get install -y --no-install-recommends libaugeas0
       FINAL_STATUS=0
       declare -a FAILED_BUILDS
-      python3 -m venv .venv
-      source .venv/bin/activate
-      python tools/pipstrap.py
+      tools/venv.py
+      source venv/bin/activate
       for doc_path in */docs
       do
         echo ""
         echo "##[group]Building $doc_path"
-        tools/pip_install_editable.py $doc_path/..[docs]
         if ! sphinx-build -W --keep-going -b html $doc_path $doc_path/_build/html; then
           FINAL_STATUS=1
           FAILED_BUILDS[${#FAILED_BUILDS[@]}]="${doc_path%/docs}"

@@ -13,7 +13,7 @@ and properly flushed before program exit.
 
 The `logging` module is useful for recording messages about about what
 Certbot is doing under the hood, but do not necessarily need to be shown
-to the user on the terminal. The default verbosity is INFO.
+to the user on the terminal. The default verbosity is WARNING.
 
 The preferred method to display important information to the user is to
 use `certbot.display.util` and `certbot.display.ops`.
@@ -28,11 +28,20 @@ import shutil
 import sys
 import tempfile
 import traceback
+from types import TracebackType
+from typing import Any
+from typing import cast
+from typing import IO
+from typing import Optional
+from typing import Tuple
+from typing import Type
 
 from acme import messages
+from certbot import configuration
 from certbot import errors
 from certbot import util
 from certbot._internal import constants
+from certbot._internal.display import util as display_util
 from certbot.compat import os
 
 # Logging format
@@ -43,7 +52,7 @@ FILE_FMT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 logger = logging.getLogger(__name__)
 
 
-def pre_arg_parse_setup():
+def pre_arg_parse_setup() -> None:
     """Setup logging before command line arguments are parsed.
 
     Terminal logging is setup using
@@ -66,7 +75,10 @@ def pre_arg_parse_setup():
 
     stream_handler = ColoredStreamHandler()
     stream_handler.setFormatter(logging.Formatter(CLI_FMT))
-    stream_handler.setLevel(constants.QUIET_LOGGING_LEVEL)
+    # The pre-argparse logging level is set to WARNING here. This is to ensure that
+    # deprecated flags (see DeprecatedArgumentAction) print something to the terminal.
+    # See https://github.com/certbot/certbot/issues/9618.
+    stream_handler.setLevel(logging.WARNING)
 
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)  # send all records to handlers
@@ -78,10 +90,12 @@ def pre_arg_parse_setup():
     util.atexit_register(logging.shutdown)
     sys.excepthook = functools.partial(
         pre_arg_parse_except_hook, memory_handler,
-        debug='--debug' in sys.argv, log_path=temp_handler.path)
+        debug='--debug' in sys.argv,
+        quiet='--quiet' in sys.argv or '-q' in sys.argv,
+        log_path=temp_handler.path)
 
 
-def post_arg_parse_setup(config):
+def post_arg_parse_setup(config: configuration.NamespaceConfig) -> None:
     """Setup logging after command line arguments are parsed.
 
     This function assumes `pre_arg_parse_setup` was called earlier and
@@ -90,12 +104,11 @@ def post_arg_parse_setup(config):
     sent to that handler. Terminal logging output is set to the level
     requested by the user.
 
-    :param certbot.interface.IConfig config: Configuration object
+    :param certbot.configuration.NamespaceConfig config: Configuration object
 
     """
     file_handler, file_path = setup_log_file_handler(
         config, 'letsencrypt.log', FILE_FMT)
-    logs_dir = os.path.dirname(file_path)
 
     root_logger = logging.getLogger()
     memory_handler = stderr_handler = None
@@ -118,20 +131,27 @@ def post_arg_parse_setup(config):
 
     if config.quiet:
         level = constants.QUIET_LOGGING_LEVEL
+    elif config.verbose_level is not None:
+        level = constants.DEFAULT_LOGGING_LEVEL - int(config.verbose_level) * 10
     else:
-        level = -config.verbose_count * 10
+        level = constants.DEFAULT_LOGGING_LEVEL - config.verbose_count * 10
+
     stderr_handler.setLevel(level)
     logger.debug('Root logging level set at %d', level)
-    logger.info('Saving debug log to %s', file_path)
+
+    if not config.quiet:
+        print(f'Saving debug log to {file_path}', file=sys.stderr)
 
     sys.excepthook = functools.partial(
-        post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
+        post_arg_parse_except_hook,
+        debug=config.debug, quiet=config.quiet, log_path=file_path)
 
 
-def setup_log_file_handler(config, logfile, fmt):
+def setup_log_file_handler(config: configuration.NamespaceConfig, logfile: str,
+                           fmt: str) -> Tuple[logging.Handler, str]:
     """Setup file debug logging.
 
-    :param certbot.interface.IConfig config: Configuration object
+    :param certbot.configuration.NamespaceConfig config: Configuration object
     :param str logfile: basename for the log file
     :param str fmt: logging format string
 
@@ -170,13 +190,13 @@ class ColoredStreamHandler(logging.StreamHandler):
     :ivar bool red_level: The level at which to output
 
     """
-    def __init__(self, stream=None):
+    def __init__(self, stream: Optional[IO] = None) -> None:
         super().__init__(stream)
         self.colored = (sys.stderr.isatty() if stream is None else
                         stream.isatty())
         self.red_level = logging.WARNING
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         """Formats the string representation of record.
 
         :param logging.LogRecord record: Record to be formatted
@@ -198,11 +218,12 @@ class MemoryHandler(logging.handlers.MemoryHandler):
     only happens when flush(force=True) is called.
 
     """
-    def __init__(self, target=None, capacity=10000):
+    def __init__(self, target: Optional[logging.Handler] = None,
+                 capacity: int = 10000) -> None:
         # capacity doesn't matter because should_flush() is overridden
         super().__init__(capacity, target=target)
 
-    def close(self):
+    def close(self) -> None:
         """Close the memory handler, but don't set the target to None."""
         # This allows the logging module which may only have a weak
         # reference to the target handler to properly flush and close it.
@@ -210,7 +231,7 @@ class MemoryHandler(logging.handlers.MemoryHandler):
         super().close()
         self.target = target
 
-    def flush(self, force=False):  # pylint: disable=arguments-differ
+    def flush(self, force: bool = False) -> None:  # pylint: disable=arguments-differ
         """Flush the buffer if force=True.
 
         If force=False, this call is a noop.
@@ -223,7 +244,7 @@ class MemoryHandler(logging.handlers.MemoryHandler):
         if force:
             super().flush()
 
-    def shouldFlush(self, record):
+    def shouldFlush(self, record: logging.LogRecord) -> bool:
         """Should the buffer be automatically flushed?
 
         :param logging.LogRecord record: log record to be considered
@@ -245,14 +266,17 @@ class TempHandler(logging.StreamHandler):
     :ivar str path: file system path to the temporary log file
 
     """
-    def __init__(self):
-        self._workdir = tempfile.mkdtemp()
+    def __init__(self) -> None:
+        self._workdir = tempfile.mkdtemp(prefix="certbot-log-")
         self.path = os.path.join(self._workdir, 'log')
         stream = util.safe_open(self.path, mode='w', chmod=0o600)
         super().__init__(stream)
+        # Super constructor assigns the provided stream object to self.stream.
+        # Let's help mypy be aware of this by giving a type hint.
+        self.stream: IO[str]
         self._delete = True
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """Log the specified logging record.
 
         :param logging.LogRecord record: Record to be formatted
@@ -261,7 +285,7 @@ class TempHandler(logging.StreamHandler):
         self._delete = False
         super().emit(record)
 
-    def close(self):
+    def close(self) -> None:
         """Close the handler and the temporary log file.
 
         The temporary log file is deleted if it wasn't used.
@@ -280,7 +304,8 @@ class TempHandler(logging.StreamHandler):
             self.release()
 
 
-def pre_arg_parse_except_hook(memory_handler, *args, **kwargs):
+def pre_arg_parse_except_hook(memory_handler: MemoryHandler,
+                              *args: Any, **kwargs: Any) -> None:
     """A simple wrapper around post_arg_parse_except_hook.
 
     The additional functionality provided by this wrapper is the memory
@@ -307,7 +332,9 @@ def pre_arg_parse_except_hook(memory_handler, *args, **kwargs):
         memory_handler.flush(force=True)
 
 
-def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
+def post_arg_parse_except_hook(exc_type: Type[BaseException], exc_value: BaseException,
+                               trace: TracebackType, debug: bool, quiet: bool,
+                               log_path: str) -> None:
     """Logs fatal exceptions and reports them to the user.
 
     If debug is True, the full exception and traceback is shown to the
@@ -318,10 +345,17 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
     :param BaseException exc_value: raised exception
     :param traceback trace: traceback of where the exception was raised
     :param bool debug: True if the traceback should be shown to the user
+    :param bool quiet: True if Certbot is running in quiet mode
     :param str log_path: path to file or directory containing the log
 
     """
     exc_info = (exc_type, exc_value, trace)
+    # Only print human advice if not running under --quiet
+    def exit_func() -> None:
+        if quiet:
+            sys.exit(1)
+        else:
+            exit_with_advice(log_path)
     # constants.QUIET_LOGGING_LEVEL or higher should be used to
     # display message the user, otherwise, a lower level like
     # logger.DEBUG should be used
@@ -337,12 +371,10 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
         # our logger printing warnings and errors in red text.
         if issubclass(exc_type, errors.Error):
             logger.error(str(exc_value))
-            sys.exit(1)
+            exit_func()
         logger.error('An unexpected error occurred:')
         if messages.is_acme_error(exc_value):
-            # Remove the ACME error prefix from the exception
-            _, _, exc_str = str(exc_value).partition(':: ')
-            logger.error(exc_str)
+            logger.error(display_util.describe_acme_error(cast(messages.Error, exc_value)))
         else:
             output = traceback.format_exception_only(exc_type, exc_value)
             # format_exception_only returns a list of strings each
@@ -350,11 +382,11 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
             # and remove the final newline before passing it to
             # logger.error.
             logger.error(''.join(output).rstrip())
-    exit_with_log_path(log_path)
+    exit_func()
 
 
-def exit_with_log_path(log_path):
-    """Print a message about the log location and exit.
+def exit_with_advice(log_path: str) -> None:
+    """Print a link to the community forums, the debug log path, and exit
 
     The message is printed to stderr and the program will exit with a
     nonzero status.
@@ -362,10 +394,11 @@ def exit_with_log_path(log_path):
     :param str log_path: path to file or directory containing the log
 
     """
-    msg = 'Please see the '
+    msg = ("Ask for help or search for solutions at https://community.letsencrypt.org. "
+           "See the ")
     if os.path.isdir(log_path):
-        msg += 'logfiles in {0} '.format(log_path)
+        msg += f'logfiles in {log_path} '
     else:
-        msg += "logfile '{0}' ".format(log_path)
-    msg += 'for more details.'
+        msg += f"logfile {log_path} "
+    msg += 'or re-run Certbot with -v for more details.'
     sys.exit(msg)

@@ -2,9 +2,12 @@
 
 from contextlib import contextmanager
 import tempfile
+from typing import Generator
+from typing import Iterable
+from typing import Tuple
 
 from pkg_resources import resource_filename
-from pytest import skip
+import pytest
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import certbot_call
@@ -12,7 +15,7 @@ from certbot_integration_tests.utils import certbot_call
 
 class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
     """Integration test context for certbot-dns-rfc2136"""
-    def __init__(self, request):
+    def __init__(self, request: pytest.FixtureRequest) -> None:
         super().__init__(request)
 
         self.request = request
@@ -20,9 +23,9 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         if hasattr(request.config, 'workerinput'):  # Worker node
             self._dns_xdist = request.config.workerinput['dns_xdist']
         else:  # Primary node
-            self._dns_xdist = request.config.dns_xdist
+            self._dns_xdist = request.config.dns_xdist  # type: ignore[attr-defined]
 
-    def certbot_test_rfc2136(self, args):
+    def certbot_test_rfc2136(self, args: Iterable[str]) -> Tuple[str, str]:
         """
         Main command to execute certbot using the RFC2136 DNS authenticator.
         :param list args: list of arguments to pass to Certbot
@@ -34,7 +37,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
             self.config_dir, self.workspace, force_renew=True)
 
     @contextmanager
-    def rfc2136_credentials(self, label='default'):
+    def rfc2136_credentials(self, label: str = 'default') -> Generator[str, None, None]:
         """
         Produces the contents of a certbot-dns-rfc2136 credentials file.
         :param str label: which RFC2136 credential to use
@@ -57,8 +60,8 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
             fp.flush()
             yield fp.name
 
-    def skip_if_no_bind9_server(self):
+    def skip_if_no_bind9_server(self) -> None:
         """Skips the test if there was no RFC2136-capable DNS server configured
         in the test environment"""
         if not self._dns_xdist:
-            skip('No RFC2136-capable DNS server is configured')
+            pytest.skip('No RFC2136-capable DNS server is configured')

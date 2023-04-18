@@ -1,13 +1,19 @@
 """Common code for DNS Authenticator Plugins."""
-
 import abc
 import logging
 from time import sleep
+from typing import Callable
+from typing import Iterable
+from typing import List
+from typing import Mapping
+from typing import Optional
+from typing import Type
 
 import configobj
-import zope.interface
 
 from acme import challenges
+from certbot import achallenges
+from certbot import configuration
 from certbot import errors
 from certbot import interfaces
 from certbot.compat import filesystem
@@ -19,34 +25,44 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
-class DNSAuthenticator(common.Plugin):
-    """Base class for DNS  Authenticators"""
+class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.ABCMeta):
+    """Base class for DNS Authenticators"""
 
-    def __init__(self, config, name):
+    def __init__(self, config: configuration.NamespaceConfig, name: str) -> None:
         super().__init__(config, name)
 
         self._attempt_cleanup = False
 
     @classmethod
-    def add_parser_arguments(cls, add, default_propagation_seconds=10):  # pylint: disable=arguments-differ
+    def add_parser_arguments(cls, add: Callable[..., None],  # pylint: disable=arguments-differ
+                             default_propagation_seconds: int = 10) -> None:
         add('propagation-seconds',
             default=default_propagation_seconds,
             type=int,
             help='The number of seconds to wait for DNS to propagate before asking the ACME server '
                  'to verify the DNS record.')
 
-    def get_chall_pref(self, unused_domain):  # pylint: disable=missing-function-docstring
+    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
+        """See certbot.plugins.common.Plugin.auth_hint."""
+        delay = self.conf('propagation-seconds')
+        return (
+            'The Certificate Authority failed to verify the DNS TXT records created by --{name}. '
+            'Ensure the above domains are hosted by this DNS provider, or try increasing '
+            '--{name}-propagation-seconds (currently {secs} second{suffix}).'
+            .format(name=self.name, secs=delay, suffix='s' if delay != 1 else '')
+        )
+
+    def get_chall_pref(self, unused_domain: str) -> Iterable[Type[challenges.Challenge]]:  # pylint: disable=missing-function-docstring
         return [challenges.DNS01]
 
-    def prepare(self): # pylint: disable=missing-function-docstring
+    def prepare(self) -> None:  # pylint: disable=missing-function-docstring
         pass
 
     def more_info(self) -> str:  # pylint: disable=missing-function-docstring
         raise NotImplementedError()
 
-    def perform(self, achalls): # pylint: disable=missing-function-docstring
+    def perform(self, achalls: List[achallenges.AnnotatedChallenge]
+                ) -> List[challenges.ChallengeResponse]: # pylint: disable=missing-function-docstring
         self._setup_credentials()
 
         self._attempt_cleanup = True
@@ -63,13 +79,13 @@ class DNSAuthenticator(common.Plugin):
         # DNS updates take time to propagate and checking to see if the update has occurred is not
         # reliable (the machine this code is running on might be able to see an update before
         # the ACME server). So: we sleep for a short amount of time we believe to be long enough.
-        logger.info("Waiting %d seconds for DNS changes to propagate",
+        display_util.notify("Waiting %d seconds for DNS changes to propagate" %
                     self.conf('propagation-seconds'))
         sleep(self.conf('propagation-seconds'))
 
         return responses
 
-    def cleanup(self, achalls):  # pylint: disable=missing-function-docstring
+    def cleanup(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
         if self._attempt_cleanup:
             for achall in achalls:
                 domain = achall.domain
@@ -79,14 +95,15 @@ class DNSAuthenticator(common.Plugin):
                 self._cleanup(domain, validation_domain_name, validation)
 
     @abc.abstractmethod
-    def _setup_credentials(self):  # pragma: no cover
+    def _setup_credentials(self) -> None:  # pragma: no cover
         """
         Establish credentials, prompting if necessary.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _perform(self, domain, validation_name, validation):  # pragma: no cover
+    def _perform(self, domain: str, validation_name: str,
+                 validation: str) -> None:  # pragma: no cover
         """
         Performs a dns-01 challenge by creating a DNS TXT record.
 
@@ -98,7 +115,8 @@ class DNSAuthenticator(common.Plugin):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _cleanup(self, domain, validation_name, validation):  # pragma: no cover
+    def _cleanup(self, domain: str, validation_name: str,
+                 validation: str) -> None:  # pragma: no cover
         """
         Deletes the DNS TXT record which would have been created by `_perform_achall`.
 
@@ -110,7 +128,7 @@ class DNSAuthenticator(common.Plugin):
         """
         raise NotImplementedError()
 
-    def _configure(self, key, label):
+    def _configure(self, key: str, label: str) -> None:
         """
         Ensure that a configuration value is available.
 
@@ -126,7 +144,8 @@ class DNSAuthenticator(common.Plugin):
 
             setattr(self.config, self.dest(key), new_value)
 
-    def _configure_file(self, key, label, validator=None):
+    def _configure_file(self, key: str, label: str,
+                        validator: Optional[Callable[[str], None]] = None) -> None:
         """
         Ensure that a configuration value is available for a path.
 
@@ -142,8 +161,10 @@ class DNSAuthenticator(common.Plugin):
 
             setattr(self.config, self.dest(key), os.path.abspath(os.path.expanduser(new_value)))
 
-    def _configure_credentials(self, key, label, required_variables=None,
-                               validator=None) -> 'CredentialsConfiguration':
+    def _configure_credentials(
+        self, key: str, label: str, required_variables: Optional[Mapping[str, str]] = None,
+        validator: Optional[Callable[['CredentialsConfiguration'], None]] = None
+    ) -> 'CredentialsConfiguration':
         """
         As `_configure_file`, but for a credential configuration file.
 
@@ -160,14 +181,14 @@ class DNSAuthenticator(common.Plugin):
             indicate any issue.
         """
 
-        def __validator(filename):
-            configuration = CredentialsConfiguration(filename, self.dest)
+        def __validator(filename: str) -> None:  # pylint: disable=unused-private-member
+            applied_configuration = CredentialsConfiguration(filename, self.dest)
 
             if required_variables:
-                configuration.require(required_variables)
+                applied_configuration.require(required_variables)
 
             if validator:
-                validator(configuration)
+                validator(applied_configuration)
 
         self._configure_file(key, label, __validator)
 
@@ -181,7 +202,7 @@ class DNSAuthenticator(common.Plugin):
         return credentials_configuration
 
     @staticmethod
-    def _prompt_for_data(label):
+    def _prompt_for_data(label: str) -> str:
         """
         Prompt the user for a piece of information.
 
@@ -190,7 +211,7 @@ class DNSAuthenticator(common.Plugin):
         :rtype: str
         """
 
-        def __validator(i):
+        def __validator(i: str) -> None:  # pylint: disable=unused-private-member
             if not i:
                 raise errors.PluginError('Please enter your {0}.'.format(label))
 
@@ -204,7 +225,7 @@ class DNSAuthenticator(common.Plugin):
         raise errors.PluginError('{0} required to proceed.'.format(label))
 
     @staticmethod
-    def _prompt_for_file(label, validator=None):
+    def _prompt_for_file(label: str, validator: Optional[Callable[[str], None]] = None) -> str:
         """
         Prompt the user for a path.
 
@@ -216,7 +237,7 @@ class DNSAuthenticator(common.Plugin):
         :rtype: str
         """
 
-        def __validator(filename):
+        def __validator(filename: str) -> None:  # pylint: disable=unused-private-member
             if not filename:
                 raise errors.PluginError('Please enter a valid path to your {0}.'.format(label))
 
@@ -240,7 +261,7 @@ class DNSAuthenticator(common.Plugin):
 class CredentialsConfiguration:
     """Represents a user-supplied filed which stores API credentials."""
 
-    def __init__(self, filename, mapper=lambda x: x):
+    def __init__(self, filename: str, mapper: Callable[[str], str] = lambda x: x) -> None:
         """
         :param str filename: A path to the configuration file.
         :param callable mapper: A transformation to apply to configuration key names
@@ -251,12 +272,22 @@ class CredentialsConfiguration:
         try:
             self.confobj = configobj.ConfigObj(filename)
         except configobj.ConfigObjError as e:
-            logger.debug("Error parsing credentials configuration: %s", e, exc_info=True)
-            raise errors.PluginError("Error parsing credentials configuration: {0}".format(e))
+            logger.debug(
+                "Error parsing credentials configuration '%s': %s",
+                filename,
+                e,
+                exc_info=True
+            )
+            raise errors.PluginError(
+                "Error parsing credentials configuration '{}': {}".format(
+                    filename,
+                    e
+                )
+            )
 
         self.mapper = mapper
 
-    def require(self, required_variables):
+    def require(self, required_variables: Mapping[str, str]) -> None:
         """Ensures that the supplied set of variables are all present in the file.
 
         :param dict required_variables: Map of variable which must be present to error to display.
@@ -281,24 +312,24 @@ class CredentialsConfiguration:
                     )
             )
 
-    def conf(self, var):
+    def conf(self, var: str) -> Optional[str]:
         """Find a configuration value for variable `var`, as transformed by `mapper`.
 
         :param str var: The variable to get.
-        :returns: The value of the variable.
-        :rtype: str
+        :returns: The value of the variable, if it exists.
+        :rtype: str or None
         """
 
         return self._get(var)
 
-    def _has(self, var):
+    def _has(self, var: str) -> bool:
         return self.mapper(var) in self.confobj
 
-    def _get(self, var):
+    def _get(self, var: str) -> Optional[str]:
         return self.confobj.get(self.mapper(var))
 
 
-def validate_file(filename):
+def validate_file(filename: str) -> None:
     """Ensure that the specified file exists."""
 
     if not os.path.exists(filename):
@@ -308,7 +339,7 @@ def validate_file(filename):
         raise errors.PluginError('Path is a directory: {0}'.format(filename))
 
 
-def validate_file_permissions(filename):
+def validate_file_permissions(filename: str) -> None:
     """Ensure that the specified file exists and warn about unsafe permissions."""
 
     validate_file(filename)
@@ -317,7 +348,7 @@ def validate_file_permissions(filename):
         logger.warning('Unsafe permissions on credentials configuration file: %s', filename)
 
 
-def base_domain_name_guesses(domain):
+def base_domain_name_guesses(domain: str) -> List[str]:
     """Return a list of progressively less-specific domain names.
 
     One of these will probably be the domain name known to the DNS provider.

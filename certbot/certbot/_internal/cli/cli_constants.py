@@ -39,11 +39,13 @@ manage certificates:
     certificates    Display information about certificates you have from Certbot
     revoke          Revoke a certificate (supply --cert-name or --cert-path)
     delete          Delete a certificate (supply --cert-name)
+    reconfigure     Update a certificate's configuration (supply --cert-name)
 
 manage your account:
     register        Create an ACME account
     unregister      Deactivate an ACME account
     update_account  Update an ACME account
+    show_account    Display account details
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 """
@@ -92,4 +94,6 @@ DEPRECATED_OPTIONS = {
     "no_self_upgrade",
     "no_bootstrap",
     "no_permissions_check",
+    "dns_route53_propagation_seconds",
+    "certbot_route53:auth_propagation_seconds"
 }

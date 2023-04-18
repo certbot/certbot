@@ -1,0 +1,104 @@
+# Security alerts about vulnerable packages in this file can be ignored since
+# they are only used during testing.
+[tool.poetry]
+name = "certbot-pinner"
+version = "0.1.0"
+description = "A simple project for pinning Certbot's dependencies using Poetry."
+authors = ["Certbot Project"]
+license = "Apache License 2.0"
+
+[tool.poetry.dependencies]
+# The Python version here should be kept in sync with the one used in our
+# oldest tests in tox.ini.
+python = "3.7.*"
+
+# Local dependencies
+# Any local packages that have dependencies on other local packages must be
+# listed below before the package it depends on. For instance, certbot depends
+# on acme so certbot must be listed before acme.
+certbot-ci = {path = "../../../certbot-ci"}
+certbot-dns-cloudflare = {path = "../../../certbot-dns-cloudflare"}
+certbot-dns-digitalocean = {path = "../../../certbot-dns-digitalocean"}
+certbot-dns-dnsimple = {path = "../../../certbot-dns-dnsimple"}
+certbot-dns-dnsmadeeasy = {path = "../../../certbot-dns-dnsmadeeasy"}
+certbot-dns-gehirn = {path = "../../../certbot-dns-gehirn"}
+certbot-dns-google = {path = "../../../certbot-dns-google"}
+certbot-dns-linode = {path = "../../../certbot-dns-linode"}
+certbot-dns-luadns = {path = "../../../certbot-dns-luadns"}
+certbot-dns-nsone = {path = "../../../certbot-dns-nsone"}
+certbot-dns-ovh = {path = "../../../certbot-dns-ovh"}
+certbot-dns-rfc2136 = {path = "../../../certbot-dns-rfc2136"}
+certbot-dns-route53 = {path = "../../../certbot-dns-route53"}
+certbot-dns-sakuracloud = {path = "../../../certbot-dns-sakuracloud"}
+certbot-nginx = {path = "../../../certbot-nginx"}
+certbot-apache = {path = "../../../certbot-apache", extras = ["dev"]}
+certbot = {path = "../../../certbot", extras = ["test"]}
+acme = {path = "../../../acme", extras = ["test"]}
+
+# Oldest dependencies
+# We specify the oldest versions of our dependencies that we keep support for
+# below. These dependencies can be updated as desired to simplify or improve
+# Certbot or its development. If the dependency being updated is a direct
+# dependency of one of our own packages, the minimum required version of that
+# dependency should be updated in our setup.py files as well to communicate
+# this information to our users.
+
+ConfigArgParse = "0.10.0"
+apacheconfig = "0.3.2"
+asn1crypto = "0.24.0"
+boto3 = "1.15.15"
+botocore = "1.18.15"
+cffi = "1.11.5"
+chardet = "3.0.4"
+cloudflare = "1.5.1"
+configobj = "5.0.6"
+cryptography = "3.2.1"
+distro = "1.0.1"
+dns-lexicon = "3.2.1"
+dnspython = "1.15.0"
+funcsigs = "0.4"
+google-api-python-client = "1.5.5"
+httplib2 = "0.9.2"
+idna = "2.6"
+ipaddress = "1.0.16"
+ndg-httpsclient = "0.3.2"
+oauth2client = "4.0.0"
+parsedatetime = "2.4"
+pbr = "1.8.0"
+ply = "3.4"
+pyOpenSSL = "17.5.0"
+pyRFC3339 = "1.0"
+pyasn1 = "0.1.9"
+pycparser = "2.14"
+pyparsing = "2.2.1"
+python-augeas = "0.5.0"
+python-digitalocean = "1.11"
+pytz = "2019.3"
+requests = "2.20.0"
+setuptools = "41.6.0"
+six = "1.11.0"
+urllib3 = "1.24.2"
+
+# Build dependencies
+# Since there doesn't appear to
+# doesn't appear to be a good way to automatically track down and pin build
+# dependencies in Python (see
+# https://discuss.python.org/t/how-to-pin-build-dependencies/8238), we list any
+# build dependencies here to ensure they're pinned for extra stability.
+
+# cython is a build dependency of pyyaml
+cython = "*"
+
+# Other dependencies
+# We add any dependencies that must be specified in this file for any another
+# reason below.
+
+# wheel 0.34.1+ does not support the version of setuptools pinned above (and
+# wheel 0.34.0 is buggy).
+wheel = "<0.34.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

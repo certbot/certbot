@@ -1,4 +1,9 @@
 """Certbot client errors."""
+from typing import Set
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from certbot.achallenges import AnnotatedChallenge
 
 
 class Error(Exception):
@@ -50,12 +55,12 @@ class FailedChallenges(AuthorizationError):
     :ivar set failed_achalls: Failed `.AnnotatedChallenge` instances.
 
     """
-    def __init__(self, failed_achalls):
+    def __init__(self, failed_achalls: Set['AnnotatedChallenge']) -> None:
         assert failed_achalls
         self.failed_achalls = failed_achalls
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Failed authorization procedure. {0}".format(
             ", ".join(
                 "{0} ({1}): {2}".format(achall.domain, achall.typ, achall.error)
@@ -94,7 +99,7 @@ class PluginStorageError(PluginError):
 class StandaloneBindError(Error):
     """Standalone plugin bind error."""
 
-    def __init__(self, socket_error, port):
+    def __init__(self, socket_error: OSError, port: int) -> None:
         super().__init__(
             "Problem binding to port {0}: {1}".format(port, socket_error))
         self.socket_error = socket_error
@@ -104,7 +109,7 @@ class StandaloneBindError(Error):
 class ConfigurationError(Error):
     """Configuration sanity error."""
 
-# NoninteractiveDisplay iDisplay plugin error:
+# NoninteractiveDisplay error:
 
 class MissingCommandlineFlag(Error):
     """A command line argument was missing in noninteractive usage"""

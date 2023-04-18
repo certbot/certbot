@@ -4,32 +4,19 @@
 import hashlib
 import os
 
-
 # Relative to the root of the Certbot repo, these files are expected to exist
 # and have the SHA-256 hashes contained in this dictionary. These hashes were
 # taken from our v1.14.0 tag which was the last release we intended to make
 # changes to certbot-auto.
 #
-# certbot-auto, letsencrypt-auto, and letsencrypt-auto-source/certbot-auto.asc
-# can be removed from this dict after coordinating with tech ops to ensure we
-# get the behavior we want from https://dl.eff.org. See
-# https://github.com/certbot/certbot/issues/8742 for more info.
-#
-# Deleting letsencrypt-auto-source/letsencrypt-auto and
-# letsencrypt-auto-source/letsencrypt-auto.sig can be done once we're
-# comfortable breaking any certbot-auto scripts that haven't already updated to
-# the last version. See
-# https://opensource.eff.org/eff-open-source/pl/65geri7c4tr6iqunc1rpb3mpna for
-# more info.
+# We can delete this script and the files under letsencrypt-auto-source when
+# we're comfortable breaking any old certbot-auto scripts that haven't updated
+# to the last version of the script yet.  See
+# https://opensource.eff.org/eff-open-source/pl/65geri7c4tr6iqunc1rpb3mpna and
+# letsencrypt-auto-source/README.md for more info.
 EXPECTED_FILES = {
-    'certbot-auto':
-        'b997e3608526650a08e36e682fc3bf0c29903c06fa5ba4cc49308c43832450c2',
-    'letsencrypt-auto':
-        'b997e3608526650a08e36e682fc3bf0c29903c06fa5ba4cc49308c43832450c2',
     os.path.join('letsencrypt-auto-source', 'letsencrypt-auto'):
         'b997e3608526650a08e36e682fc3bf0c29903c06fa5ba4cc49308c43832450c2',
-    os.path.join('letsencrypt-auto-source', 'certbot-auto.asc'):
-        '0558ba7bd816732b38c092e8fedb6033dad01f263e290ec6b946263aaf6625a8',
     os.path.join('letsencrypt-auto-source', 'letsencrypt-auto.sig'):
         '61c036aabf75da350b0633da1b2bef0260303921ecda993455ea5e6d3af3b2fe',
 }

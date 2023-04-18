@@ -1,15 +1,14 @@
 """DNS Authenticator for Cloudflare."""
 import logging
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
 
 import CloudFlare
-import zope.interface
 
 from certbot import errors
-from certbot import interfaces
 from certbot.plugins import dns_common
 from certbot.plugins.dns_common import CredentialsConfiguration
 
@@ -18,8 +17,6 @@ logger = logging.getLogger(__name__)
 ACCOUNT_URL = 'https://dash.cloudflare.com/?to=/:account/profile/api-tokens'
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator for Cloudflare
 
@@ -30,20 +27,21 @@ class Authenticator(dns_common.DNSAuthenticator):
                    'DNS).')
     ttl = 120
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.credentials: Optional[CredentialsConfiguration] = None
 
     @classmethod
-    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super().add_parser_arguments(add)
+    def add_parser_arguments(cls, add: Callable[..., None],
+                             default_propagation_seconds: int = 10) -> None:
+        super().add_parser_arguments(add, default_propagation_seconds)
         add('credentials', help='Cloudflare credentials INI file.')
 
-    def more_info(self):  # pylint: disable=missing-function-docstring
+    def more_info(self) -> str:
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'the Cloudflare API.'
 
-    def _validate_credentials(self, credentials):
+    def _validate_credentials(self, credentials: CredentialsConfiguration) -> None:
         token = credentials.conf('api-token')
         email = credentials.conf('email')
         key = credentials.conf('api-key')
@@ -66,7 +64,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                                      'dns_cloudflare_email and dns_cloudflare_api_key are required.'
                                      ' (see {})'.format(credentials.confobj.filename, ACCOUNT_URL))
 
-    def _setup_credentials(self):
+    def _setup_credentials(self) -> None:
         self.credentials = self._configure_credentials(
             'credentials',
             'Cloudflare credentials INI file',
@@ -74,18 +72,19 @@ class Authenticator(dns_common.DNSAuthenticator):
             self._validate_credentials
         )
 
-    def _perform(self, domain, validation_name, validation):
+    def _perform(self, domain: str, validation_name: str, validation: str) -> None:
         self._get_cloudflare_client().add_txt_record(domain, validation_name, validation, self.ttl)
 
-    def _cleanup(self, domain, validation_name, validation):
+    def _cleanup(self, domain: str, validation_name: str, validation: str) -> None:
         self._get_cloudflare_client().del_txt_record(domain, validation_name, validation)
 
-    def _get_cloudflare_client(self):
+    def _get_cloudflare_client(self) -> "_CloudflareClient":
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         if self.credentials.conf('api-token'):
-            return _CloudflareClient(None, self.credentials.conf('api-token'))
-        return _CloudflareClient(self.credentials.conf('email'), self.credentials.conf('api-key'))
+            return _CloudflareClient(api_token = self.credentials.conf('api-token'))
+        return _CloudflareClient(email = self.credentials.conf('email'),
+                                 api_key = self.credentials.conf('api-key'))
 
 
 class _CloudflareClient:
@@ -93,10 +92,22 @@ class _CloudflareClient:
     Encapsulates all communication with the Cloudflare API.
     """
 
-    def __init__(self, email, api_key):
-        self.cf = CloudFlare.CloudFlare(email, api_key)
+    def __init__(self, email: Optional[str] = None, api_key: Optional[str] = None,
+                 api_token: Optional[str] = None) -> None:
+        if email:
+            # If an email was specified, we're using an email/key combination and not a token.
+            # We can't use named arguments in this case, as it would break compatibility with
+            # the Cloudflare library since version 2.10.1, as the `token` argument was used for
+            # tokens and keys alike and the `key` argument did not exist in earlier versions.
+            self.cf = CloudFlare.CloudFlare(email, api_key)
+        else:
+            # If no email was specified, we're using just a token. Let's use the named argument
+            # for simplicity, which is compatible with all (current) versions of the Cloudflare
+            # library.
+            self.cf = CloudFlare.CloudFlare(token=api_token)
 
-    def add_txt_record(self, domain, record_name, record_content, record_ttl):
+    def add_txt_record(self, domain: str, record_name: str, record_content: str,
+                       record_ttl: int) -> None:
         """
         Add a TXT record using the supplied information.
 
@@ -131,7 +142,7 @@ class _CloudflareClient:
         record_id = self._find_txt_record_id(zone_id, record_name, record_content)
         logger.debug('Successfully added TXT record with record_id: %s', record_id)
 
-    def del_txt_record(self, domain, record_name, record_content):
+    def del_txt_record(self, domain: str, record_name: str, record_content: str) -> None:
         """
         Delete a TXT record using the supplied information.
 
@@ -165,7 +176,7 @@ class _CloudflareClient:
         else:
             logger.debug('Zone not found; no cleanup needed.')
 
-    def _find_zone_id(self, domain):
+    def _find_zone_id(self, domain: str) -> str:
         """
         Find the zone_id for a given domain.
 
@@ -230,7 +241,8 @@ class _CloudflareClient:
                                      'supplied Cloudflare account.'
                                      .format(domain, zone_name_guesses))
 
-    def _find_txt_record_id(self, zone_id, record_name, record_content):
+    def _find_txt_record_id(self, zone_id: str, record_name: str,
+                            record_content: str) -> Optional[str]:
         """
         Find the record_id for a TXT record with the given name and content.
 

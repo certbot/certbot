@@ -7,7 +7,7 @@ set -e
 
 PLUGIN_PATH=$1
 PLUGIN=$(basename "${PLUGIN_PATH}")
-DESCRIPTION=$(grep description "${PLUGIN_PATH}/setup.py" | sed -E 's|\s+description="(.*)",|\1|g')
+DESCRIPTION=$(sed -E -n "/[[:space:]]+description=/ s/[[:space:]]+description=['\"](.*)['\"],/\1/ p" "${PLUGIN_PATH}/setup.py")
 mkdir -p "${PLUGIN_PATH}/snap"
 cat <<EOF > "${PLUGIN_PATH}/snap/snapcraft.yaml"
 # This file is generated automatically and should not be edited manually.
@@ -27,6 +27,10 @@ parts:
         snapcraftctl pull
         snapcraftctl set-version \`grep ^version \$SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"\`
     build-environment:
+      # We set this environment variable while building to try and increase the
+      # stability of fetching the rust crates needed to build the cryptography
+      # library.
+      - CARGO_NET_GIT_FETCH_WITH_CLI: "true"
       # Constraints are passed through the environment variable PIP_CONSTRAINTS instead of using the
       # parts.[part_name].constraints option available in snapcraft.yaml when the Python plugin is
       # used. This is done to let these constraints be applied not only on the certbot package
@@ -43,6 +47,7 @@ parts:
       - libffi-dev
       - python3-dev
       - cargo
+      - pkg-config
   certbot-metadata:
     plugin: dump
     source: .

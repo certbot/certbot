@@ -1,0 +1,78 @@
+[tool.poetry]
+name = "certbot-pinner"
+version = "0.1.0"
+description = "A simple project for pinning Certbot's dependencies using Poetry."
+authors = ["Certbot Project"]
+license = "Apache License 2.0"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+# Local dependencies
+# Any local packages that have dependencies on other local packages must be
+# listed below before the package it depends on. For instance, certbot depends
+# on acme so certbot must be listed before acme.
+certbot-ci = {path = "../../../certbot-ci"}
+certbot-compatibility-test = {path = "../../../certbot-compatibility-test"}
+certbot-dns-cloudflare = {path = "../../../certbot-dns-cloudflare", extras = ["docs"]}
+certbot-dns-digitalocean = {path = "../../../certbot-dns-digitalocean", extras = ["docs"]}
+certbot-dns-dnsimple = {path = "../../../certbot-dns-dnsimple", extras = ["docs"]}
+certbot-dns-dnsmadeeasy = {path = "../../../certbot-dns-dnsmadeeasy", extras = ["docs"]}
+certbot-dns-gehirn = {path = "../../../certbot-dns-gehirn", extras = ["docs"]}
+certbot-dns-google = {path = "../../../certbot-dns-google", extras = ["docs"]}
+certbot-dns-linode = {path = "../../../certbot-dns-linode", extras = ["docs"]}
+certbot-dns-luadns = {path = "../../../certbot-dns-luadns", extras = ["docs"]}
+certbot-dns-nsone = {path = "../../../certbot-dns-nsone", extras = ["docs"]}
+certbot-dns-ovh = {path = "../../../certbot-dns-ovh", extras = ["docs"]}
+certbot-dns-rfc2136 = {path = "../../../certbot-dns-rfc2136", extras = ["docs"]}
+certbot-dns-route53 = {path = "../../../certbot-dns-route53", extras = ["docs"]}
+certbot-dns-sakuracloud = {path = "../../../certbot-dns-sakuracloud", extras = ["docs"]}
+certbot-nginx = {path = "../../../certbot-nginx"}
+certbot-apache = {path = "../../../certbot-apache", extras = ["dev"]}
+certbot = {path = "../../../certbot", extras = ["all"]}
+acme = {path = "../../../acme", extras = ["docs", "test"]}
+letstest = {path = "../../../letstest"}
+windows-installer = {path = "../../../windows-installer"}
+
+# Extra dependencies
+# As of writing this, cython is a build dependency of pyyaml. Since there
+# doesn't appear to be a good way to automatically track down and pin build
+# dependencies in Python (see
+# https://discuss.python.org/t/how-to-pin-build-dependencies/8238), we list it
+# as a dependency here to ensure a version of cython is pinned for extra
+# stability.
+cython = "*"
+# setuptools-rust is a build dependency of cryptography, and since we don't have
+# a great way of pinning build dependencies, we simply list it here to ensure a
+# working version. Note: if build dependencies of setuptools-rust break at some
+# point, it's probably worth enumerating and pinning them (and recursing to
+# THEIR build dependencies) as well.
+setuptools-rust = "*"
+# pylint often adds new checks that we need to conform our code to when
+# upgrading our dependencies. To help control when this needs to be done, we
+# pin pylint to a compatible version here.
+#
+# If this pinning is removed, we may still need to add a lower bound for the
+# pylint version. See https://github.com/certbot/certbot/pull/9229.
+pylint = { version="2.15.5", python = ">=3.7.2" }
+
+# Bug in poetry, where still installes yanked versions from pypi (source: https://github.com/python-poetry/poetry/issues/2453)
+# this version of cryptography introduced a security vulnrability.
+# Making sure that it would not get installed (Fixing https://github.com/certbot/certbot/issues/9336)
+cryptography = "!= 37.0.3"
+
+# If poetry>=1.3.0 is selected, multiple versions of virtualenv are selected
+# causing problems when exporting dependencies so let's pin poetry back until
+# https://github.com/python-poetry/poetry-plugin-export/issues/168 is resolved.
+poetry = "<1.3.0"
+
+# setuptools 67.5.0 deprecated pkg_resources which we still use. Let's pin it
+# back until this is fixed. Doing this work is being tracked by
+# https://github.com/certbot/certbot/issues/9606.
+setuptools = "<67.5.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

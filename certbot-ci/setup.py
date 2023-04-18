@@ -1,6 +1,4 @@
-from distutils.version import LooseVersion
-import sys
-
+from pkg_resources import parse_version
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
@@ -11,13 +9,12 @@ version = '0.32.0.dev0'
 min_setuptools_version='36.2'
 # This conditional isn't necessary, but it provides better error messages to
 # people who try to install this package with older versions of setuptools.
-if LooseVersion(setuptools_version) < LooseVersion(min_setuptools_version):
+if parse_version(setuptools_version) < parse_version(min_setuptools_version):
     raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
 
 install_requires = [
     'coverage',
     'cryptography',
-    'docker-compose',
     'pyopenssl',
     'pytest',
     'pytest-cov',
@@ -30,6 +27,8 @@ install_requires = [
     'pywin32>=300 ; sys_platform == "win32"',
     'pyyaml',
     'requests',
+    'setuptools',
+    'types-python-dateutil'
 ]
 
 setup(
@@ -40,17 +39,18 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],

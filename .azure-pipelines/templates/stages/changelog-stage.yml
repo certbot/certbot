@@ -3,7 +3,7 @@ stages:
     jobs:
       - job: prepare
         pool:
-          vmImage: vs2017-win2016
+          vmImage: windows-2019
         steps:
           # If we change the output filename from `release_notes.md`, it should also be changed in tools/create_github_release.py
           - bash: |

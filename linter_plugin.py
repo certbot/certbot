@@ -6,12 +6,17 @@ deprecated modules. You can check its behavior as a reference to what is coded h
 See https://github.com/PyCQA/pylint/blob/b20a2984c94e2946669d727dbda78735882bf50a/pylint/checkers/imports.py#L287
 See https://docs.pytest.org/en/latest/writing_plugins.html
 """
+import os.path
+import re
+
 from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 
-# Modules in theses packages can import the os module.
-WHITELIST_PACKAGES = [
-    'acme', 'certbot_integration_tests', 'certbot_compatibility_test', 'lock_test'
+# Modules whose file is matching one of these paths can import the os module.
+WHITELIST_PATHS = [
+    '/acme/acme/',
+    '/certbot-ci/',
+    '/certbot-compatibility-test/',
 ]
 
 
@@ -50,5 +55,5 @@ def register(linter):
 
 def _check_disabled(node):
     module = node.root()
-    return any(package for package in WHITELIST_PACKAGES
-               if module.name.startswith(package + '.') or module.name == package)
+    return any(path for path in WHITELIST_PATHS
+               if os.path.normpath(path) in os.path.normpath(module.file))

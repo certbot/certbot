@@ -16,7 +16,10 @@ from certbot import errors
 from certbot.compat import os
 
 try:
+    from pywintypes import error as pywinerror
     from win32com.shell import shell as shellwin32
+    from win32console import GetStdHandle
+    from win32console import STD_OUTPUT_HANDLE
     POSIX_MODE = False
 except ImportError:  # pragma: no cover
     POSIX_MODE = True
@@ -39,7 +42,27 @@ def raise_for_non_administrative_windows_rights() -> None:
         raise errors.Error('Error, certbot must be run on a shell with administrative rights.')
 
 
-def readline_with_timeout(timeout: float, prompt: str) -> str:
+def prepare_virtual_console() -> None:
+    """
+    On Windows, ensure that Console Virtual Terminal Sequences are enabled.
+
+    """
+    if POSIX_MODE:
+        return
+
+    # https://docs.microsoft.com/en-us/windows/console/setconsolemode
+    ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+
+    # stdout/stderr will be the same console screen buffer, but this could return None or raise
+    try:
+        h = GetStdHandle(STD_OUTPUT_HANDLE)
+        if h:
+            h.SetConsoleMode(h.GetConsoleMode() | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+    except pywinerror:
+        logger.debug("Failed to set console mode", exc_info=True)
+
+
+def readline_with_timeout(timeout: float, prompt: Optional[str]) -> str:
     """
     Read user input to return the first line entered, or raise after specified timeout.
 
@@ -57,7 +80,7 @@ def readline_with_timeout(timeout: float, prompt: str) -> str:
         rlist, _, _ = select.select([sys.stdin], [], [], timeout)
         if not rlist:
             raise errors.Error(
-                "Timed out waiting for answer to prompt '{0}'".format(prompt))
+                "Timed out waiting for answer to prompt '{0}'".format(prompt if prompt else ""))
         return rlist[0].readline()
     except OSError:
         # Windows specific
@@ -113,17 +136,22 @@ def underscores_for_unsupported_characters_in_path(path: str) -> str:
     return drive + tail.replace(':', '_')
 
 
-def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -> Tuple[str, str]:
+def execute_command_status(cmd_name: str, shell_cmd: str,
+                           env: Optional[dict] = None) -> Tuple[int, str, str]:
     """
     Run a command:
-        - on Linux command will be run by the standard shell selected with Popen(shell=True)
+        - on Linux command will be run by the standard shell selected with
+          subprocess.run(shell=True)
         - on Windows command will be run in a Powershell shell
+
+    This function returns the exit code, and does not log the result and output
+    of the command.
 
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
-    :param dict env: environ to pass into Popen
+    :param dict env: environ to pass into subprocess.run
 
-    :returns: `tuple` (`str` stderr, `str` stdout)
+    :returns: `tuple` (`int` returncode, `str` stderr, `str` stdout)
     """
     logger.info("Running %s command: %s", cmd_name, shell_cmd)
     logger.info("POSIX_MODE: %s", str(POSIX_MODE) )
@@ -167,4 +195,4 @@ def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -
                      cmd_name, shell_cmd, proc.returncode)
     if err:
         logger.error('Error output from %s command %s:\n%s', cmd_name, shell_cmd, err)
-    return err, out
+    return proc.returncode, err, out

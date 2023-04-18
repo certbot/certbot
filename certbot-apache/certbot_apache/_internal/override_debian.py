@@ -1,21 +1,18 @@
 """ Distribution specific override class for Debian family (Ubuntu/Debian) """
 import logging
 
-import zope.interface
-
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot_apache._internal import apache_util
 from certbot_apache._internal import configurator
 from certbot_apache._internal.configurator import OsOptions
+from certbot_apache._internal.obj import VirtualHost
 
 logger = logging.getLogger(__name__)
 
 
-@zope.interface.provider(interfaces.IPluginFactory)
 class DebianConfigurator(configurator.ApacheConfigurator):
     """Debian specific ApacheConfigurator override class"""
 
@@ -26,7 +23,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         handle_sites=True,
     )
 
-    def enable_site(self, vhost):
+    def enable_site(self, vhost: VirtualHost) -> None:
         """Enables an available site, Apache reload required.
 
         .. note:: Does not make sure that the site correctly works or that all
@@ -58,7 +55,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
                 # Already in shape
                 vhost.enabled = True
                 return None
-            logger.warning(
+            logger.error(
                 "Could not symlink %s to %s, got error: %s", enabled_path,
                 vhost.filep, err.strerror)
             errstring = ("Encountered error while trying to enable a " +
@@ -71,7 +68,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         self.save_notes += "Enabled site %s\n" % vhost.filep
         return None
 
-    def enable_mod(self, mod_name, temp=False):
+    def enable_mod(self, mod_name: str, temp: bool = False) -> None:
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -117,16 +114,16 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         # Reload is not necessary as DUMP_RUN_CFG uses latest config.
         self.parser.update_runtime_variables()
 
-    def _enable_mod_debian(self, mod_name, temp):
+    def _enable_mod_debian(self, mod_name: str, temp: bool) -> None:
         """Assumes mods-available, mods-enabled layout."""
         # Generate reversal command.
         # Try to be safe here... check that we can probably reverse before
         # applying enmod command
-        if not util.exe_exists(self.options.dismod):
+        if (self.options.dismod is None or self.options.enmod is None
+                or not util.exe_exists(self.options.dismod)):
             raise errors.MisconfigurationError(
                 "Unable to find a2dismod, please make sure a2enmod and "
                 "a2dismod are configured correctly for certbot.")
 
-        self.reverter.register_undo_command(
-            temp, [self.options.dismod, "-f", mod_name])
+        self.reverter.register_undo_command(temp, [self.options.dismod, "-f", mod_name])
         util.run_script([self.options.enmod, mod_name])

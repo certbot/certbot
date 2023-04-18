@@ -1,7 +1,5 @@
 """This module contain help information for verbs supported by certbot"""
 from certbot._internal.cli.cli_constants import SHORT_USAGE
-from certbot._internal.cli.cli_utils import flag_default
-from certbot.compat import os
 
 # The attributes here are:
 # short: a string that will be displayed by "certbot -h commands"
@@ -23,14 +21,14 @@ VERB_HELP = [
     }),
     ("renew", {
         "short": "Renew all certificates (or one specified with --cert-name)",
-        "opts": ("The 'renew' subcommand will attempt to renew all"
-                 " certificates (or more precisely, certificate lineages) you have"
+        "opts": ("The 'renew' subcommand will attempt to renew any certificates"
                  " previously obtained if they are close to expiry, and print a"
-                 " summary of the results. By default, 'renew' will reuse the options"
-                 " used to create obtain or most recently successfully renew each"
-                 " certificate lineage. You can try it with `--dry-run` first. For"
-                 " more fine-grained control, you can renew individual lineages with"
-                 " the `certonly` subcommand. Hooks are available to run commands"
+                 " summary of the results. By default, 'renew' will reuse the"
+                 " plugins and options used to obtain or most recently renew each"
+                 " certificate. You can test whether future renewals will succeed"
+                 " with `--dry-run`."
+                 " Individual certificates can be renewed with the `--cert-name`"
+                 " option. Hooks are available to run commands"
                  " before and after renewal; see"
                  " https://certbot.eff.org/docs/using.html#renewal for more"
                  " information on these."),
@@ -84,18 +82,21 @@ VERB_HELP = [
         "opts": 'Options for the "plugins" subcommand',
         "usage": "\n\n  certbot plugins [options]\n\n"
     }),
-    ("update_symlinks", {
-        "short": "Recreate symlinks in your /etc/letsencrypt/live/ directory",
-        "opts": ("Recreates certificate and key symlinks in {0}, if you changed them by hand "
-                 "or edited a renewal configuration file".format(
-                  os.path.join(flag_default("config_dir"), "live"))),
-        "usage": "\n\n  certbot update_symlinks [options]\n\n"
-    }),
     ("enhance", {
         "short": "Add security enhancements to your existing configuration",
         "opts": ("Helps to harden the TLS configuration by adding security enhancements "
                  "to already existing configuration."),
         "usage": "\n\n  certbot enhance [options]\n\n"
+    }),
+    ("show_account", {
+        "short": "Show account details from an ACME server",
+        "opts": 'Options useful for the "show_account" subcommand:',
+        "usage": "\n\n  certbot show_account [options]\n\n"
+    }),
+    ("reconfigure", {
+        "short": "Update renewal configuration for a certificate specified by --cert-name",
+        "opts": 'Common options that may be updated with the "reconfigure" subcommand:',
+        "usage": "\n\n  certbot reconfigure --cert-name CERTNAME [options]\n\n"
     }),
 ]
 

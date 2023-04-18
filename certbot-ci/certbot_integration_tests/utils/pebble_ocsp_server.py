@@ -6,11 +6,15 @@ to serve a mock OCSP responder during integration tests against Pebble.
 import datetime
 import http.server as BaseHTTPServer
 import re
+from typing import cast
+from typing import Union
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.x509 import ocsp
 from dateutil import parser
 import requests
@@ -22,19 +26,25 @@ from certbot_integration_tests.utils.misc import GracefulTCPServer
 
 class _ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     # pylint: disable=missing-function-docstring
-    def do_POST(self):
-        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediate-keys/0', verify=False)
-        issuer_key = serialization.load_pem_private_key(request.content, None, default_backend())
+    def do_POST(self) -> None:
+        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediate-keys/0',
+                               verify=False, timeout=10)
+        issuer_key = cast(
+            Union[RSAPrivateKey, EllipticCurvePrivateKey],
+            serialization.load_pem_private_key(request.content, None, default_backend()))
 
-        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/0', verify=False)
+        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/0',
+                               verify=False, timeout=10)
         issuer_cert = x509.load_pem_x509_certificate(request.content, default_backend())
 
-        content_len = int(self.headers.get('Content-Length'))
+        raw_content_len = self.headers.get('Content-Length')
+        assert isinstance(raw_content_len, str)
+        content_len = int(raw_content_len)
 
         ocsp_request = ocsp.load_der_ocsp_request(self.rfile.read(content_len))
         response = requests.get('{0}/cert-status-by-serial/{1}'.format(
             PEBBLE_MANAGEMENT_URL, str(hex(ocsp_request.serial_number)).replace('0x', '')),
-            verify=False
+            verify=False, timeout=10
         )
 
         if not response.ok:

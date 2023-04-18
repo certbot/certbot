@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# A hackish script to see if the client is behaving as expected 
+# with each of the "passing" conf files.
+
+if [ -z "$SERVER" ]; then
+    echo "Please set SERVER to the ACME server's directory URL."
+    exit 1
+fi
+
+export EA=/etc/apache2/ 
+TESTDIR="`dirname $0`"
+cd $TESTDIR/passing
+
+function CleanupExit() {
+    echo control c, exiting tests...
+    if [ "$f" != "" ] ; then
+        Cleanup
+    fi
+    exit 1
+}
+
+function Setup() {
+    if [ "$APPEND_APACHECONF" = "" ] ; then
+        sudo cp "$f" "$EA"/sites-available/
+        sudo ln -sf "$EA/sites-available/$f" "$EA/sites-enabled/$f"
+        echo "
+<VirtualHost *:80>
+    ServerName example.com
+    DocumentRoot /tmp/
+    ErrorLog /tmp/error.log
+    CustomLog /tmp/requests.log combined
+</VirtualHost>" | sudo tee $EA/sites-available/throwaway-example.conf >/dev/null
+        sudo ln -sf $EA/sites-available/throwaway-example.conf $EA/sites-enabled/throwaway-example.conf
+    else
+        TMP="/tmp/`basename \"$APPEND_APACHECONF\"`.$$"
+        sudo cp -a "$APPEND_APACHECONF" "$TMP"
+        sudo bash -c "cat \"$f\" >> \"$APPEND_APACHECONF\""
+    fi
+}
+
+function Cleanup() {
+    if [ "$APPEND_APACHECONF" = "" ] ; then
+        sudo rm /etc/apache2/sites-{enabled,available}/"$f"
+        sudo rm $EA/sites-available/throwaway-example.conf
+        sudo rm $EA/sites-enabled/throwaway-example.conf
+    else
+        sudo mv "$TMP" "$APPEND_APACHECONF"
+    fi
+}
+
+# if our environment asks us to enable modules, do our best!
+if [ "$1" = --debian-modules ] ; then
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apache2
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libapache2-mod-wsgi-py3
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libapache2-mod-macro
+
+    for mod in  ssl rewrite macro wsgi deflate userdir version mime setenvif ; do
+        echo -n enabling $mod
+        sudo a2enmod $mod
+    done
+fi
+
+CERTBOT_CMD="sudo $(command -v certbot) --server $SERVER -vvvv"
+CERTBOT_CMD="$CERTBOT_CMD --debug --apache --register-unsafely-without-email"
+CERTBOT_CMD="$CERTBOT_CMD --agree-tos certonly -t --no-verify-ssl"
+
+FAILS=0
+trap CleanupExit INT
+for f in *.conf ; do 
+    echo -n  testing "$f"...
+    Setup
+    RESULT=`echo c | $CERTBOT_CMD 2>&1`
+    if echo $RESULT | grep -Eq \("Which names would you like"\|"mod_macro is not yet"\) ; then
+        echo passed
+    else
+        echo failed
+        echo $RESULT
+        echo
+        echo
+        FAILS=`expr $FAILS + 1`
+    fi
+    Cleanup
+done
+if [ "$FAILS" -ne 0 ] ; then
+    exit 1
+fi
+exit 0

@@ -1,17 +1,15 @@
 jobs:
   - job: docker_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     strategy:
       matrix:
+        arm32v6:
+          DOCKER_ARCH: arm32v6
+        arm64v8:
+          DOCKER_ARCH: arm64v8
         amd64:
           DOCKER_ARCH: amd64
-        # Do not run the heavy non-amd64 builds for test branches
-        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-          arm32v6:
-            DOCKER_ARCH: arm32v6
-          arm64v8:
-            DOCKER_ARCH: arm64v8
     # The default timeout of 60 minutes is a little low for compiling
     # cryptography on ARM architectures.
     timeoutInMinutes: 180
@@ -34,37 +32,40 @@ jobs:
           path: $(Build.ArtifactStagingDirectory)
           artifact: docker_$(DOCKER_ARCH)
         displayName: Store Docker artifact
-  - job: docker_run
+  - job: docker_test
     dependsOn: docker_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
+    strategy:
+      matrix:
+        arm32v6:
+          DOCKER_ARCH: arm32v6
+        arm64v8:
+          DOCKER_ARCH: arm64v8
+        amd64:
+          DOCKER_ARCH: amd64
     steps:
       - task: DownloadPipelineArtifact@2
         inputs:
-          artifact: docker_amd64
+          artifact: docker_$(DOCKER_ARCH)
           path: $(Build.SourcesDirectory)
         displayName: Retrieve Docker images
       - bash: set -e && docker load --input $(Build.SourcesDirectory)/images.tar
         displayName: Load Docker images
       - bash: |
-          set -ex
-          DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}:{{.Tag}}')
-          for DOCKER_IMAGE in ${DOCKER_IMAGES}
-            do docker run --rm "${DOCKER_IMAGE}" plugins --prepare
-          done
+          set -e && tools/docker/test.sh $(dockerTag) $DOCKER_ARCH
         displayName: Run integration tests for Docker images
   - job: installer_build
     pool:
-      vmImage: vs2017-win2016
+      vmImage: windows-2019
     steps:
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.8
-          architecture: x86
+          versionSpec: 3.9
+          architecture: x64
           addToPath: true
       - script: |
           python -m venv venv
-          venv\Scripts\python tools\pipstrap.py
           venv\Scripts\python tools\pip_install.py -e windows-installer
         displayName: Prepare Windows installer build environment
       - script: |
@@ -87,20 +88,12 @@ jobs:
       matrix:
         win2019:
           imageName: windows-2019
-        win2016:
-          imageName: vs2017-win2016
     pool:
       vmImage: $(imageName)
     steps:
-      - powershell: |
-          if ($PSVersionTable.PSVersion.Major -ne 5) {
-              throw "Powershell version is not 5.x"
-          }
-        condition: eq(variables['imageName'], 'vs2017-win2016')
-        displayName: Check Powershell 5.x is used in vs2017-win2016
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.8
+          versionSpec: 3.9
           addToPath: true
       - task: DownloadPipelineArtifact@2
         inputs:
@@ -109,32 +102,29 @@ jobs:
         displayName: Retrieve Windows installer
       - script: |
           python -m venv venv
-          venv\Scripts\python tools\pipstrap.py
           venv\Scripts\python tools\pip_install.py -e certbot-ci
         env:
           PIP_NO_BUILD_ISOLATION: no
         displayName: Prepare Certbot-CI
       - script: |
-          set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
-          venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --allow-persistent-changes --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win32.exe
+          set PATH=%ProgramFiles%\Certbot\bin;%PATH%
+          venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --allow-persistent-changes --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win_amd64.exe
         displayName: Run windows installer integration tests
       - script: |
-          set PATH=%ProgramFiles(x86)%\Certbot\bin;%PATH%
+          set PATH=%ProgramFiles%\Certbot\bin;%PATH%
           venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
         displayName: Run certbot integration tests
   - job: snaps_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     strategy:
       matrix:
         amd64:
           SNAP_ARCH: amd64
-        # Do not run the heavy non-amd64 builds for test branches
-        ${{ if not(startsWith(variables['Build.SourceBranchName'], 'test-')) }}:
-          armhf:
-            SNAP_ARCH: armhf
-          arm64:
-            SNAP_ARCH: arm64
+        armhf:
+          SNAP_ARCH: armhf
+        arm64:
+          SNAP_ARCH: arm64
     timeoutInMinutes: 0
     steps:
       - script: |
@@ -157,7 +147,7 @@ jobs:
           git config --global user.name "$(Build.RequestedFor)"
           mkdir -p ~/.local/share/snapcraft/provider/launchpad
           cp $(credentials.secureFilePath) ~/.local/share/snapcraft/provider/launchpad/credentials
-          python3 tools/snap/build_remote.py ALL --archs ${SNAP_ARCH} --timeout 19800
+          python3 tools/snap/build_remote.py ALL --archs ${SNAP_ARCH} --timeout $(snapBuildTimeout)
         displayName: Build snaps
       - script: |
           set -e
@@ -172,7 +162,7 @@ jobs:
   - job: snap_run
     dependsOn: snaps_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     steps:
       - task: UsePythonVersion@0
         inputs:
@@ -183,7 +173,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends nginx-light snapd
           python3 -m venv venv
-          venv/bin/python tools/pipstrap.py
           venv/bin/python tools/pip_install.py -U tox
         displayName: Install dependencies
       - task: DownloadPipelineArtifact@2
@@ -202,7 +191,7 @@ jobs:
   - job: snap_dns_run
     dependsOn: snaps_build
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     steps:
       - script: |
           set -e
@@ -221,7 +210,6 @@ jobs:
       - script: |
           set -e
           python3 -m venv venv
-          venv/bin/python tools/pipstrap.py
           venv/bin/python tools/pip_install.py -e certbot-ci
         displayName: Prepare Certbot-CI
       - script: |

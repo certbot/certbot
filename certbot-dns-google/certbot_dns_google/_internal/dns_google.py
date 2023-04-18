@@ -1,15 +1,17 @@
 """DNS Authenticator for Google Cloud DNS."""
 import json
 import logging
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Optional
 
 from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
 import httplib2
 from oauth2client.service_account import ServiceAccountCredentials
-import zope.interface
 
 from certbot import errors
-from certbot import interfaces
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
@@ -20,8 +22,6 @@ METADATA_URL = 'http://metadata.google.internal/computeMetadata/v1/'
 METADATA_HEADERS = {'Metadata-Flavor': 'Google'}
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator for Google Cloud DNS
 
@@ -33,7 +33,8 @@ class Authenticator(dns_common.DNSAuthenticator):
     ttl = 60
 
     @classmethod
-    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
+    def add_parser_arguments(cls, add: Callable[..., None],
+                             default_propagation_seconds: int = 60) -> None:
         super().add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials',
             help=('Path to Google Cloud DNS service account JSON file. (See {0} for' +
@@ -41,11 +42,11 @@ class Authenticator(dns_common.DNSAuthenticator):
                   'required permissions.)').format(ACCT_URL, PERMISSIONS_URL),
             default=None)
 
-    def more_info(self): # pylint: disable=missing-function-docstring
+    def more_info(self) -> str:
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'the Google Cloud DNS API.'
 
-    def _setup_credentials(self):
+    def _setup_credentials(self) -> None:
         if self.conf('credentials') is None:
             try:
                 # use project_id query to check for availability of google metadata server
@@ -62,13 +63,13 @@ class Authenticator(dns_common.DNSAuthenticator):
 
             dns_common.validate_file_permissions(self.conf('credentials'))
 
-    def _perform(self, domain, validation_name, validation):
+    def _perform(self, domain: str, validation_name: str, validation: str) -> None:
         self._get_google_client().add_txt_record(domain, validation_name, validation, self.ttl)
 
-    def _cleanup(self, domain, validation_name, validation):
+    def _cleanup(self, domain: str, validation_name: str, validation: str) -> None:
         self._get_google_client().del_txt_record(domain, validation_name, validation, self.ttl)
 
-    def _get_google_client(self):
+    def _get_google_client(self) -> '_GoogleClient':
         return _GoogleClient(self.conf('credentials'))
 
 
@@ -77,7 +78,8 @@ class _GoogleClient:
     Encapsulates all communication with the Google Cloud DNS API.
     """
 
-    def __init__(self, account_json=None, dns_api=None):
+    def __init__(self, account_json: Optional[str] = None,
+                 dns_api: Optional[discovery.Resource] = None) -> None:
 
         scopes = ['https://www.googleapis.com/auth/ndev.clouddns.readwrite']
         if account_json is not None:
@@ -99,7 +101,8 @@ class _GoogleClient:
         else:
             self.dns = dns_api
 
-    def add_txt_record(self, domain, record_name, record_content, record_ttl):
+    def add_txt_record(self, domain: str, record_name: str, record_content: str,
+                       record_ttl: int) -> None:
         """
         Add a TXT record using the supplied information.
 
@@ -114,9 +117,9 @@ class _GoogleClient:
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
         if record_contents is None:
-        # If it wasn't possible to fetch the records at this label (missing .list permission),
-        # assume there aren't any (#5678). If there are actually records here, this will fail
-        # with HTTP 409/412 API errors.
+            # If it wasn't possible to fetch the records at this label (missing .list permission),
+            # assume there aren't any (#5678). If there are actually records here, this will fail
+            # with HTTP 409/412 API errors.
             record_contents = {"rrdatas": []}
         add_records = record_contents["rrdatas"][:]
 
@@ -168,7 +171,8 @@ class _GoogleClient:
             raise errors.PluginError('Error communicating with the Google Cloud DNS API: {0}'
                                      .format(e))
 
-    def del_txt_record(self, domain, record_name, record_content, record_ttl):
+    def del_txt_record(self, domain: str, record_name: str, record_content: str,
+                       record_ttl: int) -> None:
         """
         Delete a TXT record using the supplied information.
 
@@ -181,7 +185,7 @@ class _GoogleClient:
 
         try:
             zone_id = self._find_managed_zone_id(domain)
-        except errors.PluginError as e:
+        except errors.PluginError:
             logger.warning('Error finding zone. Skipping cleanup.')
             return
 
@@ -228,7 +232,7 @@ class _GoogleClient:
         except googleapiclient_errors.Error as e:
             logger.warning('Encountered error deleting TXT record: %s', e)
 
-    def get_existing_txt_rrset(self, zone_id, record_name):
+    def get_existing_txt_rrset(self, zone_id: str, record_name: str) -> Optional[Dict[str, Any]]:
         """
         Get existing TXT records from the RRset for the record name.
 
@@ -258,7 +262,7 @@ class _GoogleClient:
                 return response["rrsets"][0]
         return None
 
-    def _find_managed_zone_id(self, domain):
+    def _find_managed_zone_id(self, domain: str) -> str:
         """
         Find the managed zone for a given domain.
 
@@ -290,7 +294,7 @@ class _GoogleClient:
                                  .format(domain, zone_dns_name_guesses))
 
     @staticmethod
-    def get_project_id():
+    def get_project_id() -> str:
         """
         Query the google metadata service for the current project ID
 

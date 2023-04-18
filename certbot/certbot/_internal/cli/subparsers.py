@@ -1,4 +1,6 @@
 """This module creates subparsers for the argument parser"""
+from typing import TYPE_CHECKING
+
 from certbot import interfaces
 from certbot._internal import constants
 from certbot._internal.cli.cli_utils import _EncodeReasonAction
@@ -7,8 +9,11 @@ from certbot._internal.cli.cli_utils import CaseInsensitiveList
 from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.cli.cli_utils import read_file
 
+if TYPE_CHECKING:
+    from certbot._internal.cli import helpful
 
-def _create_subparsers(helpful):
+
+def _create_subparsers(helpful: "helpful.HelpfulArgumentParser") -> None:
     from certbot._internal.client import sample_user_agent  # avoid import loops
     helpful.add(
         None, "--user-agent", default=flag_default("user_agent"),
@@ -61,8 +66,8 @@ def _create_subparsers(helpful):
     helpful.add("plugins",
                 "--authenticators", action="append_const", dest="ifaces",
                 default=flag_default("ifaces"),
-                const=interfaces.IAuthenticator, help="Limit to authenticator plugins only.")
+                const=interfaces.Authenticator, help="Limit to authenticator plugins only.")
     helpful.add("plugins",
                 "--installers", action="append_const", dest="ifaces",
                 default=flag_default("ifaces"),
-                const=interfaces.IInstaller, help="Limit to installer plugins only.")
+                const=interfaces.Installer, help="Limit to installer plugins only.")

@@ -1,21 +1,13 @@
-import sys
-
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.16.0.dev0'
+version = '2.6.0.dev0'
 
 install_requires = [
     'certbot',
     'certbot-apache',
     'requests',
-    'zope.interface',
 ]
-
-if sys.version_info < (2, 7, 9):
-    # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
-    install_requires.append('ndg-httpsclient')
-    install_requires.append('pyasn1')
 
 
 setup(
@@ -26,17 +18,18 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],

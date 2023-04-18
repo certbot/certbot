@@ -8,17 +8,6 @@ subsequently removing, TXT records using the Amazon Web Services Route 53 API.
    `certbot.eff.org <https://certbot.eff.org/instructions#wildcard>`_, choosing your system and
    selecting the Wildcard tab.
 
-Named Arguments
----------------
-
-========================================  =====================================
-``--dns-route53-propagation-seconds``     The number of seconds to wait for DNS
-                                          to propagate before asking the ACME
-                                          server to verify the DNS record.
-                                          (Default: 10)
-========================================  =====================================
-
-
 Credentials
 -----------
 Use of this plugin requires a configuration file containing Amazon Web Sevices

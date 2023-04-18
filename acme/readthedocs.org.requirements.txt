@@ -7,4 +7,7 @@
 # in --editable mode (-e), just "pip install acme[docs]" does not work as
 # expected and "pip install -e acme[docs]" must be used instead
 
+# We also pin our dependencies for increased stability.
+
+-c ../tools/requirements.txt
 -e acme[docs]

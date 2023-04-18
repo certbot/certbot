@@ -4,8 +4,8 @@ or outside during setup/teardown of the integration tests environment.
 """
 import contextlib
 import errno
+import functools
 import http.server as SimpleHTTPServer
-import multiprocessing
 import os
 import re
 import shutil
@@ -13,7 +13,13 @@ import socketserver
 import stat
 import sys
 import tempfile
+import threading
 import time
+from typing import Generator
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Tuple
 import warnings
 
 from cryptography.hazmat.backends import default_backend
@@ -21,11 +27,13 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
+from cryptography.x509 import Certificate
 from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
 import pkg_resources
 import requests
 
+from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
 from certbot_integration_tests.utils.constants import PEBBLE_ALTERNATE_ROOTS
 from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
 
@@ -33,7 +41,7 @@ RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
 
 
-def _suppress_x509_verification_warnings():
+def _suppress_x509_verification_warnings() -> None:
     try:
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -41,10 +49,11 @@ def _suppress_x509_verification_warnings():
         # Handle old versions of request with vendorized urllib3
         # pylint: disable=no-member
         from requests.packages.urllib3.exceptions import InsecureRequestWarning
-        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+        requests.packages.urllib3.disable_warnings(  # type: ignore[attr-defined]
+            InsecureRequestWarning)
 
 
-def check_until_timeout(url, attempts=30):
+def check_until_timeout(url: str, attempts: int = 30) -> None:
     """
     Wait and block until given url responds with status 200, or raise an exception
     after the specified number of attempts.
@@ -56,9 +65,9 @@ def check_until_timeout(url, attempts=30):
     for _ in range(attempts):
         time.sleep(1)
         try:
-            if requests.get(url, verify=False).status_code == 200:
+            if requests.get(url, verify=False, timeout=10).status_code == 200:
                 return
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.RequestException:
             pass
 
     raise ValueError('Error, url did not respond after {0} attempts: {1}'.format(attempts, url))
@@ -72,12 +81,8 @@ class GracefulTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
 
 
-def _run_server(port):
-    GracefulTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
-
-
 @contextlib.contextmanager
-def create_http_server(port):
+def create_http_server(port: int) -> Generator[str, None, None]:
     """
     Setup and start an HTTP server for the given TCP port.
     This server stays active for the lifetime of the context, and is automatically
@@ -85,33 +90,23 @@ def create_http_server(port):
     :param int port: the TCP port to use
     :return str: the temporary webroot attached to this server
     """
-    current_cwd = os.getcwd()
-    webroot = tempfile.mkdtemp()
-
-    process = multiprocessing.Process(target=_run_server, args=(port,))
-
-    try:
-        # SimpleHTTPServer is designed to serve files from the current working directory at the
-        # time it starts. So we temporarily change the cwd to our crafted webroot before launch.
+    with tempfile.TemporaryDirectory() as webroot:
+        # Setting the directory argument of SimpleHTTPRequestHandler causes
+        # files to be served from that directory.
+        handler = functools.partial(SimpleHTTPServer.SimpleHTTPRequestHandler, directory=webroot)
+        server = GracefulTCPServer(('', port), handler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
         try:
-            os.chdir(webroot)
-            process.start()
+            check_until_timeout('http://localhost:{0}/'.format(port))
+            yield webroot
         finally:
-            os.chdir(current_cwd)
-
-        check_until_timeout('http://localhost:{0}/'.format(port))
-
-        yield webroot
-    finally:
-        try:
-            if process.is_alive():
-                process.terminate()
-                process.join()  # Block until process is effectively terminated
-        finally:
-            shutil.rmtree(webroot)
+            server.shutdown()
+            thread.join()
+            server.server_close()
 
 
-def list_renewal_hooks_dirs(config_dir):
+def list_renewal_hooks_dirs(config_dir: str) -> List[str]:
     """
     Find and return paths of all hook directories for the given certbot config directory
     :param str config_dir: path to the certbot config directory
@@ -121,14 +116,14 @@ def list_renewal_hooks_dirs(config_dir):
     return [os.path.join(renewal_hooks_root, item) for item in ['pre', 'deploy', 'post']]
 
 
-def generate_test_file_hooks(config_dir, hook_probe):
+def generate_test_file_hooks(config_dir: str, hook_probe: str) -> None:
     """
     Create a suite of certbot hook scripts and put them in the relevant hook directory
     for the given certbot configuration directory. These scripts, when executed, will write
     specific verbs in the given hook_probe file to allow asserting they have effectively
     been executed. The deploy hook also checks that the renewal environment variables are set.
     :param str config_dir: current certbot config directory
-    :param hook_probe: path to the hook probe to test hook scripts execution
+    :param str hook_probe: path to the hook probe to test hook scripts execution
     """
     hook_path = pkg_resources.resource_filename('certbot_integration_tests', 'assets/hook.py')
 
@@ -163,13 +158,12 @@ set -e
 
 
 @contextlib.contextmanager
-def manual_http_hooks(http_server_root, http_port):
+def manual_http_hooks(http_server_root: str) -> Generator[Tuple[str, str], None, None]:
     """
     Generate suitable http-01 hooks command for test purpose in the given HTTP
     server webroot directory. These hooks command use temporary python scripts
     that are deleted upon context exit.
     :param str http_server_root: path to the HTTP server configured to serve http-01 challenges
-    :param int http_port: HTTP port that the HTTP server listen on
     :return (str, str): a tuple containing the authentication hook and cleanup hook commands
     """
     tempdir = tempfile.mkdtemp()
@@ -179,24 +173,12 @@ def manual_http_hooks(http_server_root, http_port):
             file_h.write('''\
 #!/usr/bin/env python
 import os
-import requests
-import time
-import sys
 challenge_dir = os.path.join('{0}', '.well-known', 'acme-challenge')
 os.makedirs(challenge_dir)
 challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN'))
 with open(challenge_file, 'w') as file_h:
     file_h.write(os.environ.get('CERTBOT_VALIDATION'))
-url = 'http://localhost:{1}/.well-known/acme-challenge/' + os.environ.get('CERTBOT_TOKEN')
-for _ in range(0, 10):
-    time.sleep(1)
-    try:
-        if request.get(url).status_code == 200:
-            sys.exit(0)
-    except requests.exceptions.ConnectionError:
-        pass
-raise ValueError('Error, url did not respond after 10 attempts: {{0}}'.format(url))
-'''.format(http_server_root.replace('\\', '\\\\'), http_port))
+'''.format(http_server_root.replace('\\', '\\\\')))
         os.chmod(auth_script_path, 0o755)
 
         cleanup_script_path = os.path.join(tempdir, 'cleanup.py')
@@ -216,7 +198,8 @@ shutil.rmtree(well_known)
         shutil.rmtree(tempdir)
 
 
-def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
+def generate_csr(domains: Iterable[str], key_path: str, csr_path: str,
+                 key_type: str = RSA_KEY_TYPE) -> None:
     """
     Generate a private key, and a CSR for the given domains using this key.
     :param domains: the domain names to include in the CSR
@@ -232,10 +215,11 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
         with warnings.catch_warnings():
             # Ignore a warning on some old versions of cryptography
             warnings.simplefilter('ignore', category=PendingDeprecationWarning)
-            key = ec.generate_private_key(ec.SECP384R1(), default_backend())
-        key = key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.TraditionalOpenSSL,
-                                encryption_algorithm=NoEncryption())
-        key = crypto.load_privatekey(crypto.FILETYPE_PEM, key)
+            _key = ec.generate_private_key(ec.SECP384R1(), default_backend())
+        _bytes = _key.private_bytes(encoding=Encoding.PEM,
+                                    format=PrivateFormat.TraditionalOpenSSL,
+                                    encryption_algorithm=NoEncryption())
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, _bytes)
     else:
         raise ValueError('Invalid key type: {0}'.format(key_type))
 
@@ -255,7 +239,7 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
         file_h.write(crypto.dump_certificate_request(crypto.FILETYPE_ASN1, req))
 
 
-def read_certificate(cert_path):
+def read_certificate(cert_path: str) -> str:
     """
     Load the certificate from the provided path, and return a human readable version
     of it (TEXT mode).
@@ -269,7 +253,7 @@ def read_certificate(cert_path):
     return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
 
 
-def load_sample_data_path(workspace):
+def load_sample_data_path(workspace: str) -> str:
     """
     Load the certbot configuration example designed to make OCSP tests, and return its path
     :param str workspace: current test workspace directory path
@@ -300,7 +284,7 @@ def load_sample_data_path(workspace):
     return copied
 
 
-def echo(keyword, path=None):
+def echo(keyword: str, path: Optional[str] = None) -> str:
     """
     Generate a platform independent executable command
     that echoes the given keyword into the given file.
@@ -315,7 +299,7 @@ def echo(keyword, path=None):
         os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
 
 
-def get_acme_issuers(context):
+def get_acme_issuers(context: IntegrationTestsContext) -> List[Certificate]:
     """Gets the list of one or more issuer certificates from the ACME server used by the
     context.
     :param context: the testing context.
@@ -329,7 +313,9 @@ def get_acme_issuers(context):
 
     issuers = []
     for i in range(PEBBLE_ALTERNATE_ROOTS + 1):
-        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/{}'.format(i), verify=False)
+        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/{}'.format(i),
+                               verify=False,
+                               timeout=10)
         issuers.append(load_pem_x509_certificate(request.content, default_backend()))
 
     return issuers

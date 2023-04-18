@@ -30,7 +30,26 @@ echo Releasing production version "$version"...
 nextversion="$2"
 RELEASE_BRANCH="candidate-$version"
 
-RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-A2CFB51FA275A7286234E7B24D17C995CD9775F2}
+# If RELEASE_GPG_KEY isn't set, determine the key to use.
+if [ "$RELEASE_GPG_KEY" = "" ]; then
+    TRUSTED_KEYS="
+        BF6BCFC89E90747B9A680FD7B6029E8500F7DB16
+        86379B4F0AF371B50CD9E5FF3402831161D1D280
+        20F201346BF8F3F455A73F9A780CC99432A28621
+        F2871B4152AE13C49519111F447BF683AA3B26C3
+    "
+    for key in $TRUSTED_KEYS; do
+        if gpg2 --with-colons --card-status | grep -q "$key"; then
+            RELEASE_GPG_KEY="$key"
+            break
+        fi
+    done
+    if [ "$RELEASE_GPG_KEY" = "" ]; then
+        echo A trusted PGP key was not found on your PGP card.
+        exit 1
+    fi
+fi
+
 # Needed to fix problems with git signatures and pinentry
 export GPG_TTY=$(tty)
 
@@ -38,7 +57,7 @@ export GPG_TTY=$(tty)
 PORT=${PORT:-1234}
 
 # subpackages to be released (the way the script thinks about them)
-SUBPKGS_NO_CERTBOT="acme certbot-apache certbot-nginx certbot-dns-cloudflare certbot-dns-cloudxns \
+SUBPKGS_NO_CERTBOT="acme certbot-apache certbot-nginx certbot-dns-cloudflare \
                     certbot-dns-digitalocean certbot-dns-dnsimple certbot-dns-dnsmadeeasy \
                     certbot-dns-gehirn certbot-dns-google certbot-dns-linode certbot-dns-luadns \
                     certbot-dns-nsone certbot-dns-ovh certbot-dns-rfc2136 certbot-dns-route53 \
@@ -57,14 +76,8 @@ git tag --delete "$tag" || true
 tmpvenv=$(mktemp -d)
 python3 -m venv "$tmpvenv"
 . $tmpvenv/bin/activate
-# update setuptools/pip just like in other places in the repo
-pip install -U setuptools
-pip install -U pip  # latest pip => no --pre for dev releases
-pip install -U wheel  # setup.py bdist_wheel
-
-# newer versions of virtualenv inherit setuptools/pip/wheel versions
-# from current env when creating a child env
-pip install -U virtualenv
+# update packaging tools to their pinned versions
+tools/pip_install.py virtualenv
 
 root_without_le="$version.$$"
 root="$RELEASE_DIR/le.$root_without_le"
@@ -87,14 +100,6 @@ for pkg_dir in $SUBPKGS certbot-compatibility-test
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
   git add "$pkg_dir/setup.py"
-
-  if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
-    sed -i "s/-e acme\[dev\]/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e acme/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e certbot\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    sed -i "s/-e certbot/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-    git add "$pkg_dir/local-oldest-requirements.txt"
-  fi
 done
 
 SetVersion() {
@@ -147,29 +152,33 @@ done
 mkdir "dist.$version"
 for pkg_dir in $SUBPKGS
 do
-  mv $pkg_dir/dist "dist.$version/$pkg_dir/"
+  mv $pkg_dir/dist/* "dist.$version"
 done
 
 echo "Testing packages"
 cd "dist.$version"
-# start local PyPI
-python -m http.server $PORT &
 # cd .. is NOT done on purpose: we make sure that all subpackages are
-# installed from local PyPI rather than current directory (repo root)
+# installed from local archives rather than current directory (repo root)
 VIRTUALENV_NO_DOWNLOAD=1 virtualenv ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
-# Now, use our local PyPI. Disable cache so we get the correct KGS even if we
-# (or our dependencies) have conditional dependencies implemented with if
-# statements in setup.py and we have cached wheels lying around that would
-# cause those ifs to not be evaluated.
+
+# This creates a string like "acme==a.b.c certbot==a.b.c ..." which can be used
+# with pip to ensure the correct versions of our packages installed.
+subpkgs_with_version=""
+for pkg in $SUBPKGS; do
+    subpkgs_with_version="$subpkgs_with_version $pkg==$version"
+done
+
+# Now, use our local archives. Disable cache so we get the correct packages even if
+# we (or our dependencies) have conditional dependencies implemented with if
+# statements in setup.py and we have cached wheels lying around that would cause
+# those ifs to not be evaluated.
 python ../tools/pip_install.py \
   --no-cache-dir \
-  --extra-index-url http://localhost:$PORT \
-  $SUBPKGS
-# stop local PyPI
-kill $!
+  --find-links . \
+  $subpkgs_with_version
 cd ~-
 
 # get a snapshot of the CLI help for the docs

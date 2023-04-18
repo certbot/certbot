@@ -1,23 +1,29 @@
 #!/usr/bin/env python
 """Module to call certbot in test mode"""
 
-from distutils.version import LooseVersion
 import os
 import subprocess
 import sys
+from typing import Dict
+from typing import List
+from typing import Mapping
+from typing import Tuple
+
+import pkg_resources
 
 import certbot_integration_tests
 # pylint: disable=wildcard-import,unused-wildcard-import
 from certbot_integration_tests.utils.constants import *
 
 
-def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                 config_dir, workspace, force_renew=True):
+def certbot_test(certbot_args: List[str], directory_url: str, http_01_port: int,
+                 tls_alpn_01_port: int, config_dir: str, workspace: str,
+                 force_renew: bool = True) -> Tuple[str, str]:
     """
     Invoke the certbot executable available in PATH in a test context for the given args.
     The test context consists in running certbot in debug mode, with various flags suitable
     for tests (eg. no ssl check, customizable ACME challenge ports and config directory ...).
-    This command captures stdout and returns it to the caller.
+    This command captures both stdout and stderr and returns it to the caller.
     :param list certbot_args: the arguments to pass to the certbot executable
     :param str directory_url: URL of the ACME directory server to use
     :param int http_01_port: port for the HTTP-01 challenges
@@ -25,16 +31,22 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     :param str config_dir: certbot configuration directory to use
     :param str workspace: certbot current directory to use
     :param bool force_renew: set False to not force renew existing certificates (default: True)
-    :return: stdout as string
-    :rtype: str
+    :return: stdout and stderr as strings
+    :rtype: `tuple` of `str`
     """
     command, env = _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
                                      config_dir, workspace, force_renew)
 
-    return subprocess.check_output(command, universal_newlines=True, cwd=workspace, env=env)
+    proc = subprocess.run(command, stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE, check=False, universal_newlines=True,
+                          cwd=workspace, env=env)
+    print('--> Certbot log output was:')
+    print(proc.stderr)
+    proc.check_returncode()
+    return proc.stdout, proc.stderr
 
 
-def _prepare_environ(workspace):
+def _prepare_environ(workspace: str) -> Dict[str, str]:
     # pylint: disable=missing-function-docstring
 
     new_environ = os.environ.copy()
@@ -72,14 +84,15 @@ def _prepare_environ(workspace):
     return new_environ
 
 
-def _compute_additional_args(workspace, environ, force_renew):
+def _compute_additional_args(workspace: str, environ: Mapping[str, str],
+                             force_renew: bool) -> List[str]:
     additional_args = []
     output = subprocess.check_output(['certbot', '--version'],
                                      universal_newlines=True, stderr=subprocess.STDOUT,
                                      cwd=workspace, env=environ)
     # Typical response is: output = 'certbot 0.31.0.dev0'
     version_str = output.split(' ')[1].strip()
-    if LooseVersion(version_str) >= LooseVersion('0.30.0'):
+    if pkg_resources.parse_version(version_str) >= pkg_resources.parse_version('0.30.0'):
         additional_args.append('--no-random-sleep-on-renew')
 
     if force_renew:
@@ -88,8 +101,9 @@ def _compute_additional_args(workspace, environ, force_renew):
     return additional_args
 
 
-def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                      config_dir, workspace, force_renew):
+def _prepare_args_env(certbot_args: List[str], directory_url: str, http_01_port: int,
+                      tls_alpn_01_port: int, config_dir: str, workspace: str,
+                      force_renew: bool) -> Tuple[List[str], Dict[str, str]]:
 
     new_environ = _prepare_environ(workspace)
     additional_args = _compute_additional_args(workspace, new_environ, force_renew)
@@ -120,7 +134,7 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
     return command, new_environ
 
 
-def main():
+def main() -> None:
     # pylint: disable=missing-function-docstring
     args = sys.argv[1:]
 

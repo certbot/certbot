@@ -1,53 +1,65 @@
 """Certbot compatibility test interfaces"""
-import zope.interface
+from abc import ABCMeta
+from abc import abstractmethod
+import argparse
+from typing import cast
+from typing import Set
 
-import certbot.interfaces
+from certbot import interfaces
+from certbot.configuration import NamespaceConfig
 
-# pylint: disable=no-self-argument,no-method-argument
 
-
-class IPluginProxy(zope.interface.Interface):  # pylint: disable=inherit-non-class
+class PluginProxy(interfaces.Plugin, metaclass=ABCMeta):
     """Wraps a Certbot plugin"""
 
-    http_port = zope.interface.Attribute(
-        "The port to connect to on localhost for HTTP traffic")
+    http_port: int = NotImplemented
+    """The port to connect to on localhost for HTTP traffic"""
 
-    https_port = zope.interface.Attribute(
-        "The port to connect to on localhost for HTTPS traffic")
+    https_port: int = NotImplemented
+    """The port to connect to on localhost for HTTPS traffic"""
 
-    def add_parser_arguments(cls, parser):
+    @classmethod
+    @abstractmethod
+    def add_parser_arguments(cls, parser: argparse.ArgumentParser) -> None:
         """Adds command line arguments needed by the parser"""
 
-    def __init__(args):  # pylint: disable=super-init-not-called
+    @abstractmethod
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initializes the plugin with the given command line args"""
+        super().__init__(cast(NamespaceConfig, args), 'proxy')
 
-    def cleanup_from_tests():  # type: ignore
+    @abstractmethod
+    def cleanup_from_tests(self) -> None:
         """Performs any necessary cleanup from running plugin tests.
 
         This is guaranteed to be called before the program exits.
 
         """
 
-    def has_more_configs():  # type: ignore
+    @abstractmethod
+    def has_more_configs(self) -> bool:
         """Returns True if there are more configs to test"""
 
-    def load_config():  # type: ignore
+    @abstractmethod
+    def load_config(self) -> str:
         """Loads the next config and returns its name"""
 
-    def get_testable_domain_names():  # type: ignore
+    @abstractmethod
+    def get_testable_domain_names(self) -> Set[str]:
         """Returns the domain names that can be used in testing"""
 
 
-class IAuthenticatorProxy(IPluginProxy, certbot.interfaces.IAuthenticator):
+class AuthenticatorProxy(PluginProxy, interfaces.Authenticator, metaclass=ABCMeta):
     """Wraps a Certbot authenticator"""
 
 
-class IInstallerProxy(IPluginProxy, certbot.interfaces.IInstaller):
+class InstallerProxy(PluginProxy, interfaces.Installer, metaclass=ABCMeta):
     """Wraps a Certbot installer"""
 
-    def get_all_names_answer():  # type: ignore
+    @abstractmethod
+    def get_all_names_answer(self) -> Set[str]:
         """Returns all names that should be found by the installer"""
 
 
-class IConfiguratorProxy(IAuthenticatorProxy, IInstallerProxy):
+class ConfiguratorProxy(AuthenticatorProxy, InstallerProxy, metaclass=ABCMeta):
     """Wraps a Certbot configurator"""

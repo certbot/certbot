@@ -14,19 +14,21 @@ elif platform.system() in ('NetBSD',):
 else:
     server_root_tmp = LINUX_SERVER_ROOT
 
-CLI_DEFAULTS: Dict[str, Any] = dict(
-    server_root=server_root_tmp,
-    ctl="nginx",
-    sleep_seconds=1
-)
+CLI_DEFAULTS: Dict[str, Any] = {
+    "server_root": server_root_tmp,
+    "ctl": "nginx",
+    "sleep_seconds": 1
+}
 """CLI defaults."""
 
 
 MOD_SSL_CONF_DEST = "options-ssl-nginx.conf"
-"""Name of the mod_ssl config file as saved in `IConfig.config_dir`."""
+"""Name of the mod_ssl config file as saved
+in `certbot.configuration.NamespaceConfig.config_dir`."""
 
 UPDATED_MOD_SSL_CONF_DIGEST = ".updated-options-ssl-nginx-conf-digest.txt"
-"""Name of the hash of the updated or informed mod_ssl_conf as saved in `IConfig.config_dir`."""
+"""Name of the hash of the updated or informed mod_ssl_conf as saved
+in `certbot.configuration.NamespaceConfig.config_dir`."""
 
 ALL_SSL_OPTIONS_HASHES = [
     '0f81093a1465e3d4eaa8b0c14e77b2a2e93568b0fc1351c2b87893a95f0de87c',
@@ -47,10 +49,15 @@ ALL_SSL_OPTIONS_HASHES = [
     'af85f6193808a44789a1d293e6cffa249cad9a21135940800958b8e3c72dbc69',
     'a2a612fd21b02abaa32d9d11ac63d987d6e3054dbfa356de5800eea0d7ce17f3',
     '2d9648302e3588a172c318e46bff88ade46fc7a16d6afc85322776a04800d473',
+    '5e21cc66989f26ec46116d979421e538131cf8ab33ffff3f682fbfe491b0ace8',
+    'f5615544105c4eee44f02a604e3e9ae55b3d5bad247160bb18731a0ac531af02',
+    '05a799c4db12f8e15e68219c98056824cbd5ae7b05863225318ae112f343880b',
+    'dc81acfd9670f137d5abbccfe3438d9306d4b6a906439b0fbf6a6756272e7cc7',
 ]
 """SHA256 hashes of the contents of all versions of MOD_SSL_CONF_SRC"""
 
-def os_constant(key):
+
+def os_constant(key: str) -> Any:
     # XXX TODO: In the future, this could return different constants
     #           based on what OS we are running under.  To see an
     #           approach to how to handle different OSes, see the
@@ -59,10 +66,11 @@ def os_constant(key):
     """
     Get a constant value for operating system
 
-    :param key: name of cli constant
+    :param str key: name of cli constant
     :return: value of constant for active os
     """
     return CLI_DEFAULTS[key]
+
 
 HSTS_ARGS = ['\"max-age=31536000\"', ' ', 'always']
 

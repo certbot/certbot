@@ -1,12 +1,8 @@
 """ Distribution specific override class for Arch Linux """
-import zope.interface
-
-from certbot import interfaces
 from certbot_apache._internal import configurator
 from certbot_apache._internal.configurator import OsOptions
 
 
-@zope.interface.provider(interfaces.IPluginFactory)
 class ArchConfigurator(configurator.ApacheConfigurator):
     """Arch Linux specific ApacheConfigurator override class"""
 

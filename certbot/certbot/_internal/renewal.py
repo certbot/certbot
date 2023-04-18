@@ -7,19 +7,22 @@ import random
 import sys
 import time
 import traceback
+from typing import Any
+from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Optional
+from typing import Union
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-import OpenSSL
-import zope.component
 
+from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import util
 from certbot._internal import cli
 from certbot._internal import client
@@ -27,6 +30,7 @@ from certbot._internal import constants
 from certbot._internal import hooks
 from certbot._internal import storage
 from certbot._internal import updater
+from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -49,7 +53,8 @@ CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
 
 
-def _reconstitute(config, full_path):
+def reconstitute(config: configuration.NamespaceConfig,
+                  full_path: str) -> Optional[storage.RenewableCert]:
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
@@ -68,20 +73,28 @@ def _reconstitute(config, full_path):
     """
     try:
         renewal_candidate = storage.RenewableCert(full_path, config)
-    except (errors.CertStorageError, IOError):
-        logger.warning("", exc_info=True)
-        logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
+    except (errors.CertStorageError, IOError) as error:
+        logger.error("Renewal configuration file %s is broken.", full_path)
+        logger.error("The error was: %s\nSkipping.", str(error))
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
     if "renewalparams" not in renewal_candidate.configuration:
-        logger.warning("Renewal configuration file %s lacks "
+        logger.error("Renewal configuration file %s lacks "
                        "renewalparams. Skipping.", full_path)
         return None
     renewalparams = renewal_candidate.configuration["renewalparams"]
     if "authenticator" not in renewalparams:
-        logger.warning("Renewal configuration file %s does not specify "
+        logger.error("Renewal configuration file %s does not specify "
                        "an authenticator. Skipping.", full_path)
         return None
+
+    # Prior to Certbot v1.25.0, the default value of key_type (rsa) was not persisted to the
+    # renewal params. If the option is absent, it means the certificate was an RSA key.
+    # Restoring the option here is necessary to preserve the certificate key_type if
+    # the user has upgraded directly from Certbot <v1.25.0 to >=v2.0.0, where the default
+    # key_type was changed to ECDSA. See https://github.com/certbot/certbot/issues/9635.
+    renewalparams["key_type"] = renewalparams.get("key_type", "rsa")
+
     # Now restore specific values along with their data types, if
     # those elements are present.
     renewalparams = _remove_deprecated_config_elements(renewalparams)
@@ -89,7 +102,7 @@ def _reconstitute(config, full_path):
         restore_required_config_elements(config, renewalparams)
         _restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
-        logger.warning(
+        logger.error(
             "An error occurred while parsing %s. The error was %s. "
             "Skipping the file.", full_path, str(error))
         logger.debug("Traceback was:\n%s", traceback.format_exc())
@@ -99,7 +112,7 @@ def _reconstitute(config, full_path):
         config.domains = [util.enforce_domain_sanity(d)
                           for d in renewal_candidate.names()]
     except errors.ConfigurationError as error:
-        logger.warning("Renewal configuration file %s references a certificate "
+        logger.error("Renewal configuration file %s references a certificate "
                        "that contains an invalid domain name. The problem "
                        "was: %s. Skipping.", full_path, error)
         return None
@@ -107,7 +120,8 @@ def _reconstitute(config, full_path):
     return renewal_candidate
 
 
-def _restore_webroot_config(config, renewalparams):
+def _restore_webroot_config(config: configuration.NamespaceConfig,
+                            renewalparams: Mapping[str, Any]) -> None:
     """
     webroot_map is, uniquely, a dict, and the general-purpose configuration
     restoring logic is not able to correctly parse it from the serialized
@@ -124,7 +138,8 @@ def _restore_webroot_config(config, renewalparams):
         config.webroot_path = wp
 
 
-def _restore_plugin_configs(config, renewalparams):
+def _restore_plugin_configs(config: configuration.NamespaceConfig,
+                            renewalparams: Mapping[str, Any]) -> None:
     """Sets plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
@@ -167,7 +182,8 @@ def _restore_plugin_configs(config, renewalparams):
                     setattr(config, config_item, cast(config_value))
 
 
-def restore_required_config_elements(config, renewalparams):
+def restore_required_config_elements(config: configuration.NamespaceConfig,
+                                     renewalparams: Mapping[str, Any]) -> None:
     """Sets non-plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
@@ -185,10 +201,10 @@ def restore_required_config_elements(config, renewalparams):
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
-            setattr(config, item_name, value)
+            setattr(config.namespace, item_name, value)
 
 
-def _remove_deprecated_config_elements(renewalparams):
+def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> Dict[str, Any]:
     """Removes deprecated config options from the parsed renewalparams.
 
     :param dict renewalparams: list of parsed renewalparams
@@ -201,7 +217,7 @@ def _remove_deprecated_config_elements(renewalparams):
         if option_name not in cli.DEPRECATED_OPTIONS}
 
 
-def _restore_pref_challs(unused_name, value):
+def _restore_pref_challs(unused_name: str, value: Union[List[str], str]) -> List[str]:
     """Restores preferred challenges from a renewal config file.
 
     If value is a `str`, it should be a single challenge type.
@@ -223,7 +239,7 @@ def _restore_pref_challs(unused_name, value):
     return cli.parse_preferred_challenges(value)
 
 
-def _restore_bool(name, value):
+def _restore_bool(name: str, value: str) -> bool:
     """Restores a boolean key-value pair from a renewal config file.
 
     :param str name: option name
@@ -237,12 +253,11 @@ def _restore_bool(name, value):
     """
     lowercase_value = value.lower()
     if lowercase_value not in ("true", "false"):
-        raise errors.Error(
-            "Expected True or False for {0} but found {1}".format(name, value))
+        raise errors.Error(f"Expected True or False for {name} but found {value}")
     return lowercase_value == "true"
 
 
-def _restore_int(name, value):
+def _restore_int(name: str, value: str) -> int:
     """Restores an integer key-value pair from a renewal config file.
 
     :param str name: option name
@@ -261,10 +276,10 @@ def _restore_int(name, value):
     try:
         return int(value)
     except ValueError:
-        raise errors.Error("Expected a numeric value for {0}".format(name))
+        raise errors.Error(f"Expected a numeric value for {name}")
 
 
-def _restore_str(name, value):
+def _restore_str(name: str, value: str) -> Optional[str]:
     """Restores a string key-value pair from a renewal config file.
 
     :param str name: option name
@@ -289,51 +304,90 @@ def _restore_str(name, value):
     return None if value == "None" else value
 
 
-def should_renew(config, lineage):
+def should_renew(config: configuration.NamespaceConfig, lineage: storage.RenewableCert) -> bool:
     """Return true if any of the circumstances for automatic renewal apply."""
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
     if lineage.should_autorenew():
-        logger.info("Cert is due for renewal, auto-renewing...")
+        logger.info("Certificate is due for renewal, auto-renewing...")
         return True
     if config.dry_run:
-        logger.info("Cert not due for renewal, but simulating renewal for dry run")
+        logger.info("Certificate not due for renewal, but simulating renewal for dry run")
         return True
-    logger.info("Cert not yet due for renewal")
+    display_util.notify("Certificate not yet due for renewal")
     return False
 
 
-def _avoid_invalidating_lineage(config, lineage, original_server):
+def _avoid_invalidating_lineage(config: configuration.NamespaceConfig,
+                                lineage: storage.RenewableCert, original_server: str) -> None:
     """Do not renew a valid cert with one from a staging server!"""
-    # Some lineages may have begun with --staging, but then had production
-    # certificates added to them
-    with open(lineage.cert) as the_file:
-        contents = the_file.read()
-    latest_cert = OpenSSL.crypto.load_certificate(
-        OpenSSL.crypto.FILETYPE_PEM, contents)
-
     if util.is_staging(config.server):
         if not util.is_staging(original_server):
             if not config.break_my_certs:
                 names = ", ".join(lineage.names())
                 raise errors.Error(
                     "You've asked to renew/replace a seemingly valid certificate with "
-                    "a test certificate (domains: {0}). We will not do that "
-                    "unless you use the --break-my-certs flag!".format(names))
+                    f"a test certificate (domains: {names}). We will not do that "
+                    "unless you use the --break-my-certs flag!")
 
 
-def renew_cert(config: interfaces.IConfig, domains: Optional[List[str]], le_client: client.Client,
-               lineage: storage.RenewableCert) -> None:
+def _avoid_reuse_key_conflicts(config: configuration.NamespaceConfig,
+                               lineage: storage.RenewableCert) -> None:
+    """Don't allow combining --reuse-key with any flags that would conflict
+    with key reuse (--key-type, --rsa-key-size, --elliptic-curve), unless
+    --new-key is also set.
+    """
+    # If --no-reuse-key is set, no conflict
+    if cli.set_by_cli("reuse_key") and not config.reuse_key:
+        return
+
+    # If reuse_key is not set on the lineage and --reuse-key is not
+    # set on the CLI, no conflict.
+    if not lineage.reuse_key and not config.reuse_key:
+        return
+
+    # If --new-key is set, no conflict
+    if config.new_key:
+        return
+
+    kt = config.key_type.lower()
+
+    # The remaining cases where conflicts are present:
+    # - --key-type is set on the CLI and doesn't match the stored private key
+    # - It's an RSA key and --rsa-key-size is set and doesn't match
+    # - It's an ECDSA key and --eliptic-curve is set and doesn't match
+    potential_conflicts = [
+        ("--key-type",
+         lambda: kt != lineage.private_key_type.lower()),
+        ("--rsa-key-size",
+         lambda: kt == "rsa" and config.rsa_key_size != lineage.rsa_key_size),
+        ("--elliptic-curve",
+         lambda: kt == "ecdsa" and lineage.elliptic_curve and \
+                 config.elliptic_curve.lower() != lineage.elliptic_curve.lower())
+    ]
+
+    for conflict in potential_conflicts:
+        if conflict[1]():
+            raise errors.Error(
+                f"Unable to change the {conflict[0]} of this certificate because --reuse-key "
+                "is set. To stop reusing the private key, specify --no-reuse-key. "
+                "To change the private key this one time and then reuse it in future, "
+                "add --new-key.")
+
+
+def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str]],
+               le_client: client.Client, lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
     _avoid_invalidating_lineage(config, lineage, original_server)
+    _avoid_reuse_key_conflicts(config, lineage)
     if not domains:
         domains = lineage.names()
     # The private key is the existing lineage private key if reuse_key is set.
     # Otherwise, generate a fresh private key by passing None.
-    if config.reuse_key:
+    if config.reuse_key and not config.new_key:
         new_key = os.path.normpath(lineage.privkey)
         _update_renewal_params_from_key(new_key, config)
     else:
@@ -346,32 +400,33 @@ def renew_cert(config: interfaces.IConfig, domains: Optional[List[str]], le_clie
         # TODO: Check return value of save_successor
         lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, config)
         lineage.update_all_links_to(lineage.latest_common_version())
+        lineage.truncate()
 
     hooks.renew_hook(config, domains, lineage.live_dir)
 
 
-def report(msgs, category):
+def report(msgs: Iterable[str], category: str) -> str:
     """Format a results report for a category of renewal outcomes"""
     lines = ("%s (%s)" % (m, category) for m in msgs)
     return "  " + "\n  ".join(lines)
 
 
-def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[str],
+def _renew_describe_results(config: configuration.NamespaceConfig, renew_successes: List[str],
                             renew_failures: List[str], renew_skipped: List[str],
                             parse_failures: List[str]) -> None:
     """
     Print a report to the terminal about the results of the renewal process.
 
-    :param interfaces.IConfig config: Configuration
+    :param configuration.NamespaceConfiguration config: Configuration
     :param list renew_successes: list of fullchain paths which were renewed
     :param list renew_failures: list of fullchain paths which failed to be renewed
     :param list renew_skipped: list of messages to print about skipped certificates
-    :param list parse_failures: list of renewal parameter paths which had erorrs
+    :param list parse_failures: list of renewal parameter paths which had errors
     """
     notify = display_util.notify
     notify_error = logger.error
 
-    notify('\n{}'.format(display_util.SIDE_FRAME))
+    notify(f'\n{display_obj.SIDE_FRAME}')
 
     renewal_noun = "simulated renewal" if config.dry_run else "renewal"
 
@@ -379,19 +434,19 @@ def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[st
         notify("The following certificates are not due for renewal yet:")
         notify(report(renew_skipped, "skipped"))
     if not renew_successes and not renew_failures:
-        notify("No {renewal}s were attempted.".format(renewal=renewal_noun))
+        notify(f"No {renewal_noun}s were attempted.")
         if (config.pre_hook is not None or
                 config.renew_hook is not None or config.post_hook is not None):
             notify("No hooks were run.")
     elif renew_successes and not renew_failures:
-        notify("Congratulations, all {renewal}s succeeded: ".format(renewal=renewal_noun))
+        notify(f"Congratulations, all {renewal_noun}s succeeded: ")
         notify(report(renew_successes, "success"))
     elif renew_failures and not renew_successes:
         notify_error("All %ss failed. The following certificates could "
                "not be renewed:", renewal_noun)
         notify_error(report(renew_failures, "failure"))
     elif renew_failures and renew_successes:
-        notify("The following {renewal}s succeeded:".format(renewal=renewal_noun))
+        notify(f"The following {renewal_noun}s succeeded:")
         notify(report(renew_successes, "success") + "\n")
         notify_error("The following %ss failed:", renewal_noun)
         notify_error(report(renew_failures, "failure"))
@@ -401,10 +456,10 @@ def _renew_describe_results(config: interfaces.IConfig, renew_successes: List[st
                "were invalid: ")
         notify(report(parse_failures, "parsefail"))
 
-    notify(display_util.SIDE_FRAME)
+    notify(display_obj.SIDE_FRAME)
 
 
-def handle_renewal_request(config):
+def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -437,17 +492,16 @@ def handle_renewal_request(config):
     apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
 
     for renewal_file in conf_files:
-        disp = zope.component.getUtility(interfaces.IDisplay)
-        disp.notification("Processing " + renewal_file, pause=False)
+        display_util.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
         lineagename = storage.lineagename_for_filename(renewal_file)
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
-            renewal_candidate = _reconstitute(lineage_config, renewal_file)
+            renewal_candidate = reconstitute(lineage_config, renewal_file)
         except Exception as e:  # pylint: disable=broad-except
-            logger.warning("Renewal configuration file %s (cert: %s) "
+            logger.error("Renewal configuration file %s (cert: %s) "
                            "produced an unexpected error: %s. Skipping.",
                            renewal_file, lineagename, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
@@ -455,11 +509,9 @@ def handle_renewal_request(config):
             continue
 
         try:
-            if renewal_candidate is None:
+            if not renewal_candidate:
                 parse_failures.append(renewal_file)
             else:
-                # XXX: ensure that each call here replaces the previous one
-                zope.component.provideUtility(lineage_config)
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()
@@ -496,22 +548,23 @@ def handle_renewal_request(config):
                 lineagename, e
             )
             logger.debug("Traceback was:\n%s", traceback.format_exc())
-            renew_failures.append(renewal_candidate.fullchain)
+            if renewal_candidate:
+                renew_failures.append(renewal_candidate.fullchain)
 
     # Describe all the results
     _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures)
 
     if renew_failures or parse_failures:
-        raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
-            len(renew_failures), len(parse_failures)))
+        raise errors.Error(
+            f"{len(renew_failures)} renew failure(s), {len(parse_failures)} parse failure(s)")
 
     # Windows installer integration tests rely on handle_renewal_request behavior here.
     # If the text below changes, these tests will need to be updated accordingly.
     logger.debug("no renewal failures")
 
 
-def _update_renewal_params_from_key(key_path: str, config: interfaces.IConfig) -> None:
+def _update_renewal_params_from_key(key_path: str, config: configuration.NamespaceConfig) -> None:
     with open(key_path, 'rb') as file_h:
         key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
     if isinstance(key, rsa.RSAPrivateKey):
@@ -521,4 +574,4 @@ def _update_renewal_params_from_key(key_path: str, config: interfaces.IConfig) -
         config.key_type = 'ecdsa'
         config.elliptic_curve = key.curve.name
     else:
-        raise errors.Error('Key at {0} is of an unsupported type: {1}.'.format(key_path, type(key)))
+        raise errors.Error(f'Key at {key_path} is of an unsupported type: {type(key)}.')

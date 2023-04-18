@@ -19,7 +19,7 @@ JWK = jose.JWKRSA(key=test_util.load_rsa_private_key(_KEY_BASE))
 IP_REGEX = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 
 
-def create_le_config(parent_dir):
+def create_le_config(parent_dir: str) -> argparse.Namespace:
     """Sets up LE dirs in parent_dir and returns the config dict"""
     config = copy.deepcopy(constants.CLI_DEFAULTS)
 
@@ -36,7 +36,7 @@ def create_le_config(parent_dir):
     return argparse.Namespace(**config)
 
 
-def extract_configs(configs, parent_dir):
+def extract_configs(configs: str, parent_dir: str) -> str:
     """Extracts configs to a new dir under parent_dir and returns it"""
     config_dir = os.path.join(parent_dir, "configs")
 

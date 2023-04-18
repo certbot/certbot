@@ -13,8 +13,10 @@ from os.path import dirname
 from os.path import exists
 from os.path import join
 from os.path import realpath
+import random
 import re
 import shutil
+import string
 import subprocess
 import sys
 import tempfile
@@ -46,59 +48,57 @@ def _snap_log_name(target: str, arch: str):
 
 def _execute_build(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
-        workspace: str) -> Tuple[int, List[str]]:
+        workspace: str, output_lock: Lock) -> Tuple[int, List[str]]:
 
-    # Snapcraft remote-build has a recover feature, that will make it reconnect to an existing
-    # build on Launchpad if possible. However, the signature used to retrieve a potential
-    # build is not based on the content of the sources used to build a snap, but on a hash
-    # of the snapcraft current working directory (the path itself, not the content).
-    # It means that every build started from /my/path/to/certbot will always be considered
-    # as the same build, whatever the actual sources are.
-    # To circumvent this, we create a temporary folder and use it as a workspace to build
-    # the snap: this path is random, making the recover feature effectively noop.
-    with tempfile.TemporaryDirectory() as temp_workspace:
-        ignore = None
-        if target == 'certbot':
-            ignore = shutil.ignore_patterns(".git", "venv*", ".tox")
-        shutil.copytree(workspace, temp_workspace,
-                        dirs_exist_ok=True, symlinks=True, ignore=ignore)  # type:ignore
+    # snapcraft remote-build accepts a --build-id flag with snapcraft version
+    # 5.0+. We make use of this feature to set a unique build ID so a fresh
+    # build is started for each run instead of potentially reusing an old
+    # build. See https://github.com/certbot/certbot/pull/8719 and
+    # https://github.com/snapcore/snapcraft/pull/3554 for more info.
+    #
+    # This random string was chosen because snapcraft uses a MD5 hash
+    # represented as a 32 character hex string by default, so we use the same
+    # length but from a larger character set just because we can.
+    random_string = ''.join(random.choice(string.ascii_lowercase + string.digits)
+                            for _ in range(32))
+    build_id = f'snapcraft-{target}-{random_string}'
 
-        with tempfile.TemporaryDirectory() as tempdir:
-            environ = os.environ.copy()
-            environ['XDG_CACHE_HOME'] = tempdir
-            process = subprocess.Popen([
-                'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
-                '--build-on', ','.join(archs)],
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                universal_newlines=True, env=environ, cwd=temp_workspace)
+    with tempfile.TemporaryDirectory() as tempdir:
+        environ = os.environ.copy()
+        environ['XDG_CACHE_HOME'] = tempdir
+        process = subprocess.Popen([
+            'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
+            '--build-for', ','.join(archs), '--build-id', build_id],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            universal_newlines=True, env=environ, cwd=workspace)
 
-        process_output: List[str] = []
-        for line in process.stdout:
-            process_output.append(line)
-            _extract_state(target, line, status)
+    killed = False
+    process_output: List[str] = []
+    for line in process.stdout:
+        process_output.append(line)
+        _extract_state(target, line, status)
 
-            if any(state for state in status[target].values() if state == 'Chroot problem'):
-                # On this error the snapcraft process stales. Let's finish it.
-                process.kill()
+        if not killed and any(state for state in status[target].values() if state == 'Chroot problem'):
+            # On this error the snapcraft process hangs. Let's finish it.
+            #
+            # killed is used to stop us from executing this code path
+            # multiple times per build that encounters "Chroot problem".
+            with output_lock:
+                print('Chroot problem encountered for build '
+                      f'{target} for {",".join(archs)}.\n'
+                      'Launchpad seems to be unable to recover from this '
+                      'state so we are terminating the build.')
+            process.kill()
+            killed = True
 
-        process_state = process.wait()
+    process_state = process.wait()
 
-        for path in glob.glob(join(temp_workspace, '*.snap')):
-            shutil.copy(path, workspace)
-        for arch in archs:
-            log_name = _snap_log_name(target, arch)
-            log_path = join(temp_workspace, log_name)
-            if exists(log_path):
-                shutil.copy(log_path, workspace)
-
-        return process_state, process_output
+    return process_state, process_output
 
 
 def _build_snap(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         running: Dict[str, bool], output_lock: Lock) -> bool:
-    status[target] = {arch: '...' for arch in archs}
-
     if target == 'certbot':
         workspace = CERTBOT_DIR
     else:
@@ -107,7 +107,10 @@ def _build_snap(
     build_success = False
     retry = 3
     while retry:
-        exit_code, process_output = _execute_build(target, archs, status, workspace)
+        # Let's reset the status before each build so we're not starting with
+        # old state values.
+        status[target] = {arch: '...' for arch in archs}
+        exit_code, process_output = _execute_build(target, archs, status, workspace, output_lock)
         with output_lock:
             print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
                   f'exit code {exit_code}.')
@@ -261,6 +264,12 @@ def main():
             process.join(args.timeout)
 
             if process.is_alive():
+                for target in targets:
+                    if target == 'certbot':
+                        workspace = CERTBOT_DIR
+                    else:
+                        workspace = join(CERTBOT_DIR, target)
+                    _dump_failed_build_logs(target, archs, status, workspace)
                 raise ValueError(f"Timeout out reached ({args.timeout} seconds) during the build!")
 
             build_success = True
