@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* There is now a new `Other` annotated challenge object to allow plugins to support entirely novel challenges.
 
 ### Changed
 
