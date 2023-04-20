@@ -59,3 +59,9 @@ class DNS(AnnotatedChallenge):
     """Client annotated "dns" ACME challenge."""
     __slots__ = ('challb', 'domain') # pylint: disable=redefined-slots-in-subclass
     acme_type = challenges.DNS
+
+
+class Other(AnnotatedChallenge):
+    """Client annotated ACME challenge of an unknown type."""
+    __slots__ = ('challb', 'domain') # pylint: disable=redefined-slots-in-subclass
+    acme_type = challenges.Challenge
