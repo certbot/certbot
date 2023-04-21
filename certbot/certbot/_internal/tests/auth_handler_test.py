@@ -44,6 +44,15 @@ class ChallengeFactoryTest(unittest.TestCase):
 
         assert [achall.chall for achall in achalls] == [acme_util.HTTP01]
 
+    def test_unrecognized(self):
+        authzr = acme_util.gen_authzr(
+            messages.STATUS_PENDING, "test",
+            [mock.Mock(chall="chall", typ="unrecognized")],
+            [messages.STATUS_PENDING])
+
+        achalls = self.handler._challenge_factory(authzr, [0])
+        assert type(achalls[0]) == achallenges.Other
+
 
 class HandleAuthorizationsTest(unittest.TestCase):
     """handle_authorizations test.
