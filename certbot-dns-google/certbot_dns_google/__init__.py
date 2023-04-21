@@ -36,8 +36,8 @@ Use of this plugin requires Google Cloud Platform credentials with the ability t
 DNS managed zone(s) for which certificates are being issued.
 
 In most cases, configuring credentials for Certbot will require `creating a service account
-<https://cloud.google.com/iam/docs/service-accounts-create>`_ and granting the `required
-permissions`_ using IAM.
+<https://cloud.google.com/iam/docs/service-accounts-create>`_, and then either `granting permissions
+with predefined roles`_ or `granting permissions with custom roles`_ using IAM.
 
 
 Providing Credentials
@@ -102,14 +102,14 @@ Actions <https://cloud.google.com/blog/products/identity-security/enabling-keyle
 google_cloud/>`_.
 
 
-Required Permissions
-^^^^^^^^^^^^^^^^^^^^
+Granting Permissions with Predefined Roles
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The simplest method of granting the required permissions to the user or service account that Certbot
 is authenticating with is to use either of these predefined role strategies:
 
 * `dns.admin <https://cloud.google.com/dns/docs/access-control#dns.admin>`_ against the *DNS
-  zone(s)* that Certbot will issuing certificates for.
+  zone(s)* that Certbot will be issuing certificates for.
 * `dns.reader <https://cloud.google.com/dns/docs/access-control#dns.reader>`_ against the *project*
   containing the relevant DNS zones.
 
@@ -128,13 +128,22 @@ iam-per-resource-zones#set_access_control_policy_for_a_specific_resource>`_.
    provides full administrative access to all DNS zones within the project, granting the ability to
    perform any action up to and including deleting all zones within a project.
 
-   In almost all cases it is preferable to `create a custom IAM role <https://cloud.google.com/iam/
-   docs/creating-custom-roles>`_ containing only the permissions required for each resource, and
-   assign that custom role to individual resources as required.
 
-The following granular permissions are required to make DNS record updates during the process of
-issuing a new certificate, and may be assigned on a per-zone basis (recommended) or at the project
-level:
+Granting Permissions with Custom Roles
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Custom roles are an alternative to predefined roles that provide the ability to define fine grained
+permission sets for specific use cases. They should generally be used when it is desirable to adhere
+to the principle of least privilege, such as within production or other security sensitive
+workloads.
+
+The following is an example strategy for granting granular permissions to Certbot using custom
+roles. If you are not already familiar with how to do so, Google provides documentation for
+`creating a custom IAM role <https://cloud.google.com/iam/docs/creating-custom-roles#creating>`_.
+
+Firstly, create a custom role containing the permissions required to make DNS record updates. We
+suggest naming the custom role ``Certbot - Zone Editor`` with the ID ``certbot.zoneEditor``. The
+following permissions are required:
 
 * ``dns.changes.create``
 * ``dns.changes.get``
@@ -144,10 +153,25 @@ level:
 * ``dns.resourceRecordSets.list``
 * ``dns.resourceRecordSets.update``
 
-Additionally, the following permissions are required at the project to identify relevant DNS zones:
+Next, create a custom role granting Certbot the ability to discover DNS zones. We suggest naming the
+custom role ``Certbot - Zone Lister`` with the ID ``certbot.zoneLister``. The following permissions
+are required:
 
 * ``dns.managedZones.get``
 * ``dns.managedZones.list``
+
+Finally, grant the custom roles to the user or service account that Certbot is authenticating with:
+
+* Grant your custom ``Certbot - Zone Editor`` role against the *DNS zone(s)* that Certbot will be
+  issuing certificates for.
+* Grant your custom ``Certbot - Zone Lister`` role against the *project* containing the relevant DNS
+  zones.
+
+For instructions on how to grant roles, please read the Google provided documentation for `granting
+access roles against a project <https://cloud.google.com/iam/docs/granting-changing-revoking-access
+#single-role>`_ and `granting access roles against zones <https://cloud.google.com/dns/docs/zones/
+iam-per-resource-zones#set_access_control_policy_for_a_specific_resource>`_.
+
 
 Examples
 --------
