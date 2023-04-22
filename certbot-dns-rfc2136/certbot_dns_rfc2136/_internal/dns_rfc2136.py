@@ -2,6 +2,7 @@
 import logging
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Optional
 
 import dns.flags
@@ -59,7 +60,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                'RFC 2136 Dynamic Updates.'
 
     def _validate_credentials(self, credentials: CredentialsConfiguration) -> None:
-        server = credentials.conf('server')
+        server = cast(str, credentials.conf('server'))
         if not is_ipaddress(server):
             raise errors.PluginError("The configured target DNS server ({0}) is not a valid IPv4 "
                                      "or IPv6 address. A hostname is not allowed.".format(server))
@@ -91,14 +92,14 @@ class Authenticator(dns_common.DNSAuthenticator):
             raise errors.Error("Plugin has not been prepared.")
 
         sign_query = False
-        if str(self.credentials.conf('sign_query')).upper() == "TRUE":
+        if cast(str, self.credentials.conf('sign_query')).upper() == "TRUE":
             sign_query = True
 
-        return _RFC2136Client(self.credentials.conf('server'),
-                              int(self.credentials.conf('port') or self.PORT),
-                              self.credentials.conf('name'),
-                              self.credentials.conf('secret'),
-                              self.ALGORITHMS.get(self.credentials.conf('algorithm'),
+        return _RFC2136Client(cast(str, self.credentials.conf('server')),
+                              int(cast(str, self.credentials.conf('port')) or self.PORT),
+                              cast(str, self.credentials.conf('name')),
+                              cast(str, self.credentials.conf('secret')),
+                              self.ALGORITHMS.get(self.credentials.conf('algorithm') or '',
                                                   dns.tsig.HMAC_MD5),
                               sign_query)
 
