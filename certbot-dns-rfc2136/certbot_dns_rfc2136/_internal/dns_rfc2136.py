@@ -40,7 +40,6 @@ class Authenticator(dns_common.DNSAuthenticator):
     }
 
     PORT = 53
-    sign_query = "False"
 
     description = 'Obtain certificates using a DNS TXT record (if you are using BIND for DNS).'
     ttl = 120
@@ -90,13 +89,18 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_rfc2136_client(self) -> "_RFC2136Client":
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
+
+        sign_query = False
+        if str(self.credentials.conf('sign_query')).upper() == "TRUE":
+            sign_query = True
+
         return _RFC2136Client(self.credentials.conf('server'),
                               int(self.credentials.conf('port') or self.PORT),
                               self.credentials.conf('name'),
                               self.credentials.conf('secret'),
                               self.ALGORITHMS.get(self.credentials.conf('algorithm'),
                                                   dns.tsig.HMAC_MD5),
-                              self.credentials.conf('sign_query') or self.sign_query)
+                              sign_query)
 
 
 class _RFC2136Client:
@@ -104,7 +108,7 @@ class _RFC2136Client:
     Encapsulates all communication with the target DNS server.
     """
     def __init__(self, server: str, port: int, key_name: str, key_secret: str,
-                 key_algorithm: dns.name.Name, sign_query: str = "False", 
+                 key_algorithm: dns.name.Name, sign_query: bool,
                  timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
         self.server = server
         self.port = port
@@ -112,11 +116,7 @@ class _RFC2136Client:
             key_name: key_secret
         })
         self.algorithm = key_algorithm
-        if sign_query.upper() == "TRUE":
-            self.sign_query = True
-        else:
-            self.sign_query = False
-
+        self.sign_query = sign_query
         self._default_timeout = timeout
 
     def add_txt_record(self, record_name: str, record_content: str, record_ttl: int) -> None:

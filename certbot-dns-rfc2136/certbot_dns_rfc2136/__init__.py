@@ -44,7 +44,7 @@ different to HMAC-MD5, and optionally whether to sign the initial SOA query.
 AmKd7ak51vWKgSl12ib86oQRPkpDjg==
    # TSIG key algorithm
    dns_rfc2136_algorithm = HMAC-SHA512
-   # TSIG sign SOA query
+   # TSIG sign SOA query (optional, default: false)
    dns_rfc2136_sign_query = false
 
 
@@ -197,8 +197,8 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
      };
    };
 
-Another solution is to add `dns_rfc2136_sign_query = true` to the configuration file and then 
-add the key to the `match-clients` list within the external zone view. All queries signed with 
+Another solution is to add `dns_rfc2136_sign_query = true` to the configuration file and then
+add the key to the `match-clients` list within the external zone view. All queries signed with
 this key should then be directed to this view, regardless of source IP.
 
 .. code-block:: none
