@@ -364,7 +364,8 @@ class CertonlyTest(unittest.TestCase):
                                unused_report_new, unused_report_next):
         mock_get_cert.return_value = mock.MagicMock()
         mock_find_cert.return_value = (True, None)
-        self._call('certonly --webroot -w /tmp -i standalone -d example.com'.split())
+        self._call((f'certonly --webroot -w {tempfile.gettempdir()} ' +
+                    '-i standalone -d example.com').split())
 
 
 class FindDomainsOrCertnameTest(unittest.TestCase):
