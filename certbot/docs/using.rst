@@ -1097,14 +1097,6 @@ can use the `REQUESTS_CA_BUNDLE
 environment variable to override the root certificates trusted by Certbot. Certbot
 uses the ``requests`` library, which does not use the operating system trusted root store.
 
-If you use ``--server`` to specify an ACME CA that implements the standardized
-version of the spec, you may be able to obtain a certificate for a
-wildcard domain. Some CAs (such as Let's Encrypt) require that domain
-validation for wildcard domains must be done through modifications to
-DNS records which means that the dns-01_ challenge type must be used. To
-see a list of Certbot plugins that support this challenge type and how
-to use them, see plugins_.
-
 Lock Files
 ==========
 
