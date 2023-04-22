@@ -644,6 +644,6 @@ pay attention to which distributions are actively packaging Certbot. In particul
   these distros.
 
 If a dependency is already packaged in these distros and is acceptable for use in Certbot,
-the oldest common version of that dependency should be chosen and set as the minimum
+the oldest packaged version of that dependency should be chosen and set as the minimum
 version in ``setup.py``.
 
