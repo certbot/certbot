@@ -1091,11 +1091,19 @@ ACME directory. For example, if you would like to use Let's Encrypt's
 staging server, you would add ``--server
 https://acme-staging-v02.api.letsencrypt.org/directory`` to the command line.
 
+.. note:: ``--dry-run`` uses the Let's Encrypt staging server, unless ``--server``
+   is specified on the CLI or in the :ref:`cli.ini configuration file <config-file>`.
+   Take caution when using ``--dry-run`` with a custom server, as it may cause real
+   certificates to be issued and discarded.
+
 If Certbot does not trust the SSL certificate used by the ACME server, you
 can use the `REQUESTS_CA_BUNDLE
 <https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification>`_
 environment variable to override the root certificates trusted by Certbot. Certbot
 uses the ``requests`` library, which does not use the operating system trusted root store.
+Make sure that ``REQUESTS_CA_BUNDLE`` is set globally in the environment and not only on
+the CLI, or scheduled renewal will not succeed.
+
 
 Lock Files
 ==========
