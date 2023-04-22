@@ -356,6 +356,16 @@ class CertonlyTest(unittest.TestCase):
         self._call('certonly --nginx -d example.com --dry-run'.split())
         mock_installer.restart.assert_not_called()
 
+    @mock.patch('certbot._internal.main._report_next_steps')
+    @mock.patch('certbot._internal.main._report_new_cert')
+    @mock.patch('certbot._internal.main._find_cert')
+    @mock.patch('certbot._internal.main._get_and_save_cert')
+    def test_invalid_installer(self, mock_get_cert, mock_find_cert,
+                               unused_report_new, unused_report_next):
+        mock_get_cert.return_value = mock.MagicMock()
+        mock_find_cert.return_value = (True, None)
+        self._call('certonly --webroot -w /tmp -i standalone -d example.com'.split())
+
 
 class FindDomainsOrCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.main._find_domains_or_certname."""

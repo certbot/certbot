@@ -110,6 +110,14 @@ class PickPluginTest(unittest.TestCase):
             mock_choose.return_value = None
             assert self._call() is None
 
+    def test_default_must_be_filtered(self):
+        # https://github.com/certbot/certbot/issues/9664
+        self.default = "foo"
+        filtered = mock.MagicMock()
+        self.reg.filter.return_value = filtered
+        self._call()
+        assert filtered.ifaces.call_count == 1
+
 
 class ChoosePluginTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.selection.choose_plugin."""
