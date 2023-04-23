@@ -91,17 +91,13 @@ class Authenticator(dns_common.DNSAuthenticator):
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
 
-        sign_query = False
-        if cast(str, self.credentials.conf('sign_query')).upper() == "TRUE":
-            sign_query = True
-
         return _RFC2136Client(cast(str, self.credentials.conf('server')),
                               int(cast(str, self.credentials.conf('port')) or self.PORT),
                               cast(str, self.credentials.conf('name')),
                               cast(str, self.credentials.conf('secret')),
                               self.ALGORITHMS.get(self.credentials.conf('algorithm') or '',
                                                   dns.tsig.HMAC_MD5),
-                              sign_query)
+                              (self.credentials.conf('sign_query') or '').upper() == "TRUE")
 
 
 class _RFC2136Client:
