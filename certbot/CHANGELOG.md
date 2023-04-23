@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   DNS setups and hidden primary setups.
   * Certbot versions prior to v1.32.0 did not sign queries with the specified TSIG key
     resulting in difficulty with split-horizon implementations.
-  * Certbot versions later than v1.32.0 signed queries by default, potentially causing
+  * Certbot v1.32.0 through v2.5.0 signed queries by default, potentially causing
     incompatibility with hidden primary setups with `allow-update-forwarding` enabled
     if the secondary did not also have the TSIG key within its config.
   * Certbot v2.6.0 and later no longer signs queries by default, but allows
