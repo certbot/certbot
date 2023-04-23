@@ -123,6 +123,7 @@ Authors
 * [James Balazs](https://github.com/jamesbalazs)
 * [James Kasten](https://github.com/jdkasten)
 * [Jason Grinblat](https://github.com/ptychomancer)
+* [Jawshua](https://github.com/jawshua)
 * [Jay Faulkner](https://github.com/jayofdoom)
 * [J.C. Jones](https://github.com/jcjones)
 * [Jeff Hodges](https://github.com/jmhodges)

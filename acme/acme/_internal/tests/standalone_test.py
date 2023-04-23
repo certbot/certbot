@@ -55,6 +55,7 @@ class HTTP01ServerTest(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.thread.join()
+        self.server.server_close()
 
     def test_index(self):
         response = requests.get(
@@ -88,25 +89,25 @@ class HTTP01ServerTest(unittest.TestCase):
 
     def test_timely_shutdown(self):
         from acme.standalone import HTTP01Server
-        server = HTTP01Server(('', 0), resources=set(), timeout=0.05)
-        server_thread = threading.Thread(target=server.serve_forever)
-        server_thread.start()
+        with HTTP01Server(('', 0), resources=set(), timeout=0.05) as server:
+            server_thread = threading.Thread(target=server.serve_forever)
+            server_thread.start()
 
-        client = socket.socket()
-        client.connect(('localhost', server.socket.getsockname()[1]))
+            with socket.socket() as client:
+                client.connect(('localhost', server.socket.getsockname()[1]))
 
-        stop_thread = threading.Thread(target=server.shutdown)
-        stop_thread.start()
-        server_thread.join(5.)
+                stop_thread = threading.Thread(target=server.shutdown)
+                stop_thread.start()
+                server_thread.join(5.)
 
-        is_hung = server_thread.is_alive()
-        try:
-            client.shutdown(socket.SHUT_RDWR)
-        except: # pragma: no cover, pylint: disable=bare-except
-            # may raise error because socket could already be closed
-            pass
+                is_hung = server_thread.is_alive()
+                try:
+                    client.shutdown(socket.SHUT_RDWR)
+                except: # pragma: no cover, pylint: disable=bare-except
+                    # may raise error because socket could already be closed
+                    pass
 
-        assert not is_hung, 'Server shutdown should not be hung'
+                assert not is_hung, 'Server shutdown should not be hung'
 
 
 @unittest.skipIf(not challenges.TLSALPN01.is_supported(), "pyOpenSSL too old")
@@ -133,6 +134,7 @@ class TLSALPN01ServerTest(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()  # pylint: disable=no-member
         self.thread.join()
+        self.server.server_close()
 
     # TODO: This is not implemented yet, see comments in standalone.py
     # def test_certs(self):
@@ -214,6 +216,8 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
             if prev_port:
                 assert prev_port == port
             prev_port = port
+        for server in servers.servers:
+            server.server_close()
 
 
 class HTTP01DualNetworkedServersTest(unittest.TestCase):
