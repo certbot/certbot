@@ -17,7 +17,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   * Certbot versions later than v1.32.0 signed queries by default, potentially causing
     incompatibility with hidden primary setups with `allow-update-forwarding` enabled
     if the secondary did not also have the TSIG key within its config.
-  * Certbot versions later than v2.6.0 now do not sign queries by default, but allow
+  * Certbot v2.6.0 and later no longer signs queries by default, but allows
     the user to optionally sign these queries by explicit configuration using the
     `dns_rfc2136_sign_query` option in the credentials .ini file.
 
