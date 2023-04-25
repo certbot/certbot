@@ -151,7 +151,8 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         default=flag_default("dry_run"),
         help="Perform a test run against the Let's Encrypt staging server, obtaining test"
              " (invalid) certificates but not saving them to disk. This can only be used with the"
-             " 'certonly' and 'renew' subcommands."
+             " 'certonly' and 'renew' subcommands. It may trigger webserver reloads to "
+             " temporarily modify & roll back configuration files."
              " --pre-hook and --post-hook commands run by default."
              " --deploy-hook commands do not run, unless enabled by --run-deploy-hooks."
              " The test server may be overridden with --server.")
