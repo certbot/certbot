@@ -102,7 +102,7 @@ For this reason the internal representation of data should not ignore the case.
 import abc
 import six
 
-from acme.magic_typing import Any, Dict, Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
+from typing  import Any, Dict, Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
 
 
 @six.add_metaclass(abc.ABCMeta)

@@ -3,7 +3,7 @@
 import logging
 
 from acme import challenges
-from acme.magic_typing import List
+from typing  import List
 from certbot import errors
 from certbot.compat import os
 from certbot.plugins import common

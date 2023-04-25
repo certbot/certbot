@@ -1,7 +1,7 @@
 """Module contains classes used by the Apache Configurator."""
 import re
 
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from typing  import Set  # pylint: disable=unused-import, no-name-in-module
 from certbot.plugins import common
 
 

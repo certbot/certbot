@@ -7,9 +7,9 @@ import sys
 
 import six
 
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from typing  import Dict  # pylint: disable=unused-import, no-name-in-module
+from typing  import List  # pylint: disable=unused-import, no-name-in-module
+from typing  import Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.compat import os
 from certbot_apache_win._internal import apache_util

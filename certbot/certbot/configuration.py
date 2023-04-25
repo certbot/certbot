@@ -316,6 +316,18 @@ class NamespaceConfig:
         """
         return self.namespace.new_key
 
+    @property
+    def max_retry(self) -> int:
+        """This option specifies Maximum number of retries before exiting.
+        """
+        return self.namespace.max_retry
+
+    @property
+    def retry_interval(self) -> int:
+        """This option specifies Retry interval between two consecutive requests.
+        """
+        return self.namespace.retry_interval
+
     # Magic methods
 
     def __deepcopy__(self, _memo: Any) -> 'NamespaceConfig':

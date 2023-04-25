@@ -64,7 +64,7 @@ Translates over to:
     "/files/etc/apache2/apache2.conf/bLoCk[1]",
 ]
 """
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from typing import Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.compat import os
 

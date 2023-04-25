@@ -4,7 +4,7 @@ import unittest
 import mock
 
 from acme import challenges
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from typing  import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import filesystem
