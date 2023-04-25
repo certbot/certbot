@@ -149,16 +149,13 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
         default=flag_default("dry_run"),
-        help="Perform a test run of the client, obtaining test (invalid) certificates"
-             " but not saving them to disk. This can currently only be used"
-             " with the 'certonly' and 'renew' subcommands. \nNote: Although --dry-run"
-             " tries to avoid making any persistent changes on a system, it "
-             " is not completely side-effect free: if used with webserver authenticator plugins"
-             " like apache and nginx, it makes and then reverts temporary config changes"
-             " in order to obtain test certificates, and reloads webservers to deploy and then"
-             " roll back those changes.  It also calls --pre-hook and --post-hook commands"
-             " if they are defined because they may be necessary to accurately simulate"
-             " renewal. --deploy-hook commands are not called.")
+        help="Perform a test run against the Let's Encrypt staging server, obtaining test"
+             " (invalid) certificates but not saving them to disk. This can only be used with the"
+             " 'certonly' and 'renew' subcommands. It may trigger webserver reloads to "
+             " temporarily modify & roll back configuration files."
+             " --pre-hook and --post-hook commands run by default."
+             " --deploy-hook commands do not run, unless enabled by --run-deploy-hooks."
+             " The test server may be overridden with --server.")
     helpful.add(
         ["testing", "renew", "certonly", "reconfigure"],
         "--run-deploy-hooks", action="store_true", dest="run_deploy_hooks",
@@ -270,8 +267,8 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     # overwrites server, handled in HelpfulArgumentParser.parse_args()
     helpful.add(["testing", "revoke", "run"], "--test-cert", "--staging",
         dest="staging", action="store_true", default=flag_default("staging"),
-        help="Use the staging server to obtain or revoke test (invalid) certificates; equivalent"
-             " to --server " + constants.STAGING_URI)
+        help="Use the Let's Encrypt staging server to obtain or revoke test (invalid) "
+             "certificates; equivalent to --server " + constants.STAGING_URI)
     helpful.add(
         "testing", "--debug", action="store_true", default=flag_default("debug"),
         help="Show tracebacks in case of errors")
