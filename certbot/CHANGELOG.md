@@ -13,6 +13,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* Optionally sign the SOA query for dns-rfc2136, to help resolve problems with split-view
+  DNS setups and hidden primary setups.
+  * Certbot versions prior to v1.32.0 did not sign queries with the specified TSIG key
+    resulting in difficulty with split-horizon implementations.
+  * Certbot v1.32.0 through v2.5.0 signed queries by default, potentially causing
+    incompatibility with hidden primary setups with `allow-update-forwarding` enabled
+    if the secondary did not also have the TSIG key within its config.
+  * Certbot v2.6.0 and later no longer signs queries by default, but allows
+    the user to optionally sign these queries by explicit configuration using the
+    `dns_rfc2136_sign_query` option in the credentials .ini file.
 * Lineage name validity is performed for new lineages. `--cert-name` may no longer contain
   filepath separators (i.e. `/` or `\`, depending on the platform).
 * `certbot-dns-google` now loads credentials using the standard [Application Default
