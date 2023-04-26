@@ -9,7 +9,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * `--dns-google-project` optionally allows for specifying the project that the DNS zone(s) reside in,
   which allows for Certbot usage in scenarios where the auth credentials reside in a different
   project to the zone(s) that are being managed.
-*
+* There is now a new `Other` annotated challenge object to allow plugins to support entirely novel challenges.
 
 ### Changed
 
