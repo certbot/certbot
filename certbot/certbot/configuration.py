@@ -39,7 +39,6 @@ DEPRECATED_OPTIONS = {
 }
 
 
-
 logger = logging.getLogger(__name__)
 
 class ArgumentSource(enum.Enum):

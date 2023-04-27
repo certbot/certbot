@@ -26,7 +26,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         self.config.http01_port = 4321
 
     def test_init_same_ports(self):
-        self.config.namespace.https_port = 4321
+        self.config.https_port = 4321
         from certbot.configuration import NamespaceConfig
         with pytest.raises(errors.Error):
             NamespaceConfig(self.config.namespace, {})
@@ -39,7 +39,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         assert ['acme-server.org:443', 'new'] == \
                          self.config.server_path.split(os.path.sep)
 
-        self.config.namespace.server = ('http://user:pass@acme.server:443'
+        self.config.server = ('http://user:pass@acme.server:443'
                                  '/p/a/t/h;parameters?query#fragment')
         assert ['user:pass@acme.server:443', 'p', 'a', 't', 'h'] == \
                          self.config.server_path.split(os.path.sep)

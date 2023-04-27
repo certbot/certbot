@@ -5,7 +5,7 @@ from importlib import reload as reload_module
 import io
 import sys
 import tempfile
-from typing import List
+from typing import Any, List
 import unittest
 from unittest import mock
 
@@ -13,6 +13,7 @@ import pytest
 
 from acme import challenges
 from certbot import errors
+from certbot.configuration import ArgumentSource, NamespaceConfig
 from certbot._internal import cli
 from certbot._internal import constants
 from certbot._internal.plugins import disco
@@ -70,6 +71,16 @@ class FlagDefaultTest(unittest.TestCase):
             assert cli.flag_default('logs_dir') == 'C:\\Certbot\\log'
 
 
+def assert_set_by_user_with_value(namespace, attr: str, value: Any):
+    assert getattr(namespace, attr) == value
+    assert namespace.set_by_user(attr)
+
+
+def assert_value_and_source(namespace, attr: str, value: Any, source: ArgumentSource):
+    assert getattr(namespace, attr) == value
+    assert namespace.argument_sources[attr] == source
+
+
 class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
@@ -78,12 +89,12 @@ class ParseTest(unittest.TestCase):
         reload_module(cli)
 
     @staticmethod
-    def _unmocked_parse(args: List[str]):
+    def _unmocked_parse(args: List[str]) -> NamespaceConfig:
         """Get result of cli.prepare_and_parse_args."""
         return cli.prepare_and_parse_args(PLUGINS, args)
 
     @staticmethod
-    def parse(args: List[str]):
+    def parse(args: List[str]) -> NamespaceConfig:
         """Mocks certbot._internal.display.obj.get_display and calls _unmocked_parse."""
         with test_util.patch_display_util():
             return ParseTest._unmocked_parse(args)
@@ -118,18 +129,19 @@ class ParseTest(unittest.TestCase):
             mock_flag_default.side_effect = shim
 
             namespace = self.parse(["certonly"])
-            assert namespace.domains == []
+            assert_value_and_source(namespace, 'domains', [], ArgumentSource.DEFAULT)
             with open(tmp_config.name, 'w') as file_h:
                 file_h.write("domains = example.com")
             namespace = self.parse(["certonly"])
-            assert namespace.domains == ["example.com"]
+            assert_value_and_source(namespace, 'domains', ["example.com"], ArgumentSource.CONFIG_FILE)
             namespace = self.parse(["renew"])
-            assert namespace.domains == []
+            assert_value_and_source(namespace, 'domains', [], ArgumentSource.RUNTIME)
 
     def test_no_args(self):
         namespace = self.parse([])
         for d in ('config_dir', 'logs_dir', 'work_dir'):
             assert getattr(namespace, d) == cli.flag_default(d)
+            assert not namespace.set_by_user(d)
 
     def test_install_abspath(self):
         cert = 'cert'
@@ -227,35 +239,35 @@ class ParseTest(unittest.TestCase):
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
         namespace = self.parse(short_args)
-        assert namespace.domains == ['example.com']
+        assert_set_by_user_with_value(namespace, 'domains', ['example.com'])
 
         short_args = ['-d', 'trailing.period.com.']
         namespace = self.parse(short_args)
-        assert namespace.domains == ['trailing.period.com']
+        assert_set_by_user_with_value(namespace, 'domains', ['trailing.period.com'])
 
         short_args = ['-d', 'example.com,another.net,third.org,example.com']
         namespace = self.parse(short_args)
-        assert namespace.domains == ['example.com', 'another.net',
-                                             'third.org']
+        assert_set_by_user_with_value(namespace, 'domains',
+            ['example.com', 'another.net', 'third.org'])
 
         long_args = ['--domains', 'example.com']
         namespace = self.parse(long_args)
-        assert namespace.domains == ['example.com']
+        assert_set_by_user_with_value(namespace, 'domains', ['example.com'])
 
         long_args = ['--domains', 'trailing.period.com.']
         namespace = self.parse(long_args)
-        assert namespace.domains == ['trailing.period.com']
+        assert_set_by_user_with_value(namespace, 'domains', ['trailing.period.com'])
 
         long_args = ['--domains', 'example.com,another.net,example.com']
         namespace = self.parse(long_args)
-        assert namespace.domains == ['example.com', 'another.net']
+        assert_set_by_user_with_value(namespace, 'domains', ['example.com', 'another.net'])
 
     def test_preferred_challenges(self):
         short_args = ['--preferred-challenges', 'http, dns']
         namespace = self.parse(short_args)
 
         expected = [challenges.HTTP01.typ, challenges.DNS01.typ]
-        assert namespace.pref_challs == expected
+        assert_set_by_user_with_value(namespace, 'pref_challs', expected)
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         # argparse.ArgumentError makes argparse print more information
@@ -266,13 +278,13 @@ class ParseTest(unittest.TestCase):
 
     def test_server_flag(self):
         namespace = self.parse('--server example.com'.split())
-        assert namespace.server == 'example.com'
+        assert_set_by_user_with_value(namespace, 'server', 'example.com')
 
     def test_must_staple_flag(self):
         short_args = ['--must-staple']
         namespace = self.parse(short_args)
-        assert namespace.must_staple is True
-        assert namespace.staple is True
+        assert_set_by_user_with_value(namespace, 'must_staple', True)
+        assert_set_by_user_with_value(namespace, 'staple', True)
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:
@@ -288,8 +300,8 @@ class ParseTest(unittest.TestCase):
     def test_staging_flag(self):
         short_args = ['--staging']
         namespace = self.parse(short_args)
-        assert namespace.staging is True
-        assert namespace.server == constants.STAGING_URI
+        assert_set_by_user_with_value(namespace, 'staging', True)
+        assert_set_by_user_with_value(namespace, 'server', constants.STAGING_URI)
 
         short_args += '--server example.com'.split()
         self._check_server_conflict_message(short_args, '--staging')
@@ -359,6 +371,15 @@ class ParseTest(unittest.TestCase):
             config_dir_option)
         assert not config.set_by_user('authenticator')
 
+    def test_user_set_installer_and_authenticator(self):
+        config = self.parse('--apache')
+        assert config.set_by_user('installer')
+        assert config.set_by_user('authenticator')
+
+        config = self.parse('--installer webroot')
+        assert config.set_by_user('installer')
+        assert not config.set_by_user('authenticator')
+
     def test_user_set_ecdsa_key_option(self):
         elliptic_curve_option = 'elliptic_curve'
         elliptic_curve_option_value = cli.flag_default(elliptic_curve_option)
@@ -413,15 +434,15 @@ class ParseTest(unittest.TestCase):
         namespace = self.parse(["--renew-hook", value,
                                 "--deploy-hook", value,
                                 "--disable-hook-validation"])
-        assert namespace.deploy_hook == value
-        assert namespace.renew_hook == value
+        assert_set_by_user_with_value(namespace, 'deploy_hook', value)
+        assert_set_by_user_with_value(namespace, 'renew_hook', value)
 
     def test_deploy_hook_sets_renew_hook(self):
         value = "foo"
         namespace = self.parse(
             ["--deploy-hook", value, "--disable-hook-validation"])
-        assert namespace.deploy_hook == value
-        assert namespace.renew_hook == value
+        assert_set_by_user_with_value(namespace, 'deploy_hook', value)
+        assert_set_by_user_with_value(namespace, 'renew_hook', value)
 
     def test_renew_hook_conflict(self):
         with mock.patch("certbot._internal.cli.sys.stderr"):
@@ -433,15 +454,15 @@ class ParseTest(unittest.TestCase):
         namespace = self.parse(["--deploy-hook", value,
                                 "--renew-hook", value,
                                 "--disable-hook-validation"])
-        assert namespace.deploy_hook == value
-        assert namespace.renew_hook == value
+        assert_set_by_user_with_value(namespace, 'deploy_hook', value)
+        assert_set_by_user_with_value(namespace, 'renew_hook', value)
 
     def test_renew_hook_does_not_set_renew_hook(self):
         value = "foo"
         namespace = self.parse(
             ["--renew-hook", value, "--disable-hook-validation"])
         assert namespace.deploy_hook is None
-        assert namespace.renew_hook == value
+        assert_set_by_user_with_value(namespace, 'renew_hook', value)
 
     def test_max_log_backups_error(self):
         with mock.patch('certbot._internal.cli.sys.stderr'):
@@ -453,37 +474,40 @@ class ParseTest(unittest.TestCase):
     def test_max_log_backups_success(self):
         value = "42"
         namespace = self.parse(["--max-log-backups", value])
-        assert namespace.max_log_backups == int(value)
+        assert_set_by_user_with_value(namespace, 'max_log_backups', int(value))
 
     def test_unchanging_defaults(self):
         namespace = self.parse([])
-        assert namespace.domains == []
-        assert namespace.pref_challs == []
+        assert_value_and_source(namespace, 'domains', [], ArgumentSource.DEFAULT)
+        assert_value_and_source(namespace, 'pref_challs', [], ArgumentSource.DEFAULT)
 
         namespace.pref_challs = [challenges.HTTP01.typ]
         namespace.domains = ['example.com']
 
         namespace = self.parse([])
-        assert namespace.domains == []
-        assert namespace.pref_challs == []
+        assert_value_and_source(namespace, 'domains', [], ArgumentSource.DEFAULT)
+        assert_value_and_source(namespace, 'pref_challs', [], ArgumentSource.DEFAULT)
 
     def test_no_directory_hooks_set(self):
-        assert not self.parse(["--no-directory-hooks"]).directory_hooks
+        namespace = self.parse(["--no-directory-hooks"])
+        assert_set_by_user_with_value(namespace, 'directory_hooks', False)
 
     def test_no_directory_hooks_unset(self):
-        assert self.parse([]).directory_hooks is True
+        namespace = self.parse([])
+        assert_value_and_source(namespace, 'directory_hooks', True, ArgumentSource.DEFAULT)
 
     def test_delete_after_revoke(self):
         namespace = self.parse(["--delete-after-revoke"])
-        assert namespace.delete_after_revoke is True
+        assert_set_by_user_with_value(namespace, 'delete_after_revoke', True)
 
     def test_delete_after_revoke_default(self):
         namespace = self.parse([])
         assert namespace.delete_after_revoke is None
+        assert not namespace.set_by_user('delete_after_revoke')
 
     def test_no_delete_after_revoke(self):
         namespace = self.parse(["--no-delete-after-revoke"])
-        assert namespace.delete_after_revoke is False
+        assert_set_by_user_with_value(namespace, 'delete_after_revoke', False)
 
     def test_allow_subset_with_wildcard(self):
         with pytest.raises(errors.Error):

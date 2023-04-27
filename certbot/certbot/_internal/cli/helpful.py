@@ -163,16 +163,24 @@ class HelpfulArgumentParser:
 
         return usage
 
-    def remove_config_file_domains_for_renewal(self, parsed_args: argparse.Namespace) -> None:
+    def remove_config_file_domains_for_renewal(self, parsed_args: argparse.Namespace,
+                                               sources_dict: Dict[str, ArgumentSource]) -> None:
         """Make "certbot renew" safe if domains are set in cli.ini."""
         # Works around https://github.com/certbot/certbot/issues/4096
         if self.verb == "renew":
             for source, flags in self.parser.get_source_to_settings_dict().items():
                 if source.startswith("config_file") and "domains" in flags:
                     parsed_args.domains = []
+                    sources_dict['domains'] = ArgumentSource.RUNTIME
 
     def _build_sources_dict(self) -> Dict[str, ArgumentSource]:
-        result = {}
+        # ConfigArgparse's source dict doesn't actually create default entries
+        # for each argument with a default value, omitting many args we'd
+        # otherwise care about. So in general, unless an argument was specified
+        # in a config file/environment variable/command line arg, consider it as
+        # having a "default" value
+        result = { action.dest: ArgumentSource.DEFAULT for action in self.actions }
+
         for source_str, source_dict in self.parser.get_source_to_settings_dict().items():
             if source_str.startswith('config_file'):
                 source = ArgumentSource.CONFIG_FILE
@@ -208,7 +216,7 @@ class HelpfulArgumentParser:
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
 
-        self.remove_config_file_domains_for_renewal(parsed_args)
+        self.remove_config_file_domains_for_renewal(parsed_args, sources_dict)
 
         self.defaults = {key: copy.deepcopy(self.parser.get_default(key))
                              for key in vars(parsed_args)}
@@ -235,6 +243,7 @@ class HelpfulArgumentParser:
 
         if parsed_args.must_staple:
             parsed_args.staple = True
+            sources_dict['staple'] = sources_dict['must_staple']
 
         if parsed_args.validate_hooks:
             hooks.validate_hooks(parsed_args)
