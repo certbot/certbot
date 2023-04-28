@@ -518,6 +518,10 @@ class ParseTest(unittest.TestCase):
             for topic in ['all', 'plugins', 'dns-route53']:
                 assert 'certbot-route53:auth' not in self._help_output([help_flag, topic])
 
+    def test_parse_args_hosts_and_auto_hosts(self):
+        with pytest.raises(errors.Error):
+            self.parse(['--hsts', '--auto-hsts'])
+
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
