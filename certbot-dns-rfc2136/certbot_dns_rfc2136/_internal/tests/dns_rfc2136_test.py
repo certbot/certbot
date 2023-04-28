@@ -43,7 +43,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.orig_get_client = self.auth._get_rfc2136_client
         self.auth._get_rfc2136_client = mock.MagicMock(return_value=self.mock_client)
 
-    def test_get_client(self):
+    def test_get_client_default_conf_values(self):
         # algorithm and sign_query are intentionally absent to test that the default (None)
         # value does not crash Certbot.
         creds = { "server": SERVER, "port": PORT, "name": NAME, "secret": SECRET }
