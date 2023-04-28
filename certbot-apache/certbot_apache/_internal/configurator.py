@@ -372,10 +372,8 @@ class ApacheConfigurator(common.Configurator):
         # Recover from previous crash before Augeas initialization to have the
         # correct parse tree from the get go.
         self.recovery_routine()
-        logger.debug('recovery routine completed')
         # Perform the actual Augeas initialization to be able to react
         self.parser = self.get_parser()
-        logger.debug('get_parser completed')
         # Set up ParserNode root
         pn_meta = {"augeasparser": self.parser,
                    "augeaspath": self.parser.get_root_augpath(),
@@ -386,12 +384,9 @@ class ApacheConfigurator(common.Configurator):
             self.parsed_paths = parser_root.parsed_paths()
 
         # Check for errors in parsing files with Augeas
-        logger.debug('check_parsing_errors staritng')
         self.parser.check_parsing_errors("httpd.aug")
-        logger.debug('check_parsing_errors completed')
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
-        logger.debug('got vhosts completed')
         # We may try to enable mod_ssl later. If so, we shouldn't warn if we can't find it now.
         # This is currently only true for debian/ubuntu.
         warn_on_no_mod_ssl = not self.options.handle_modules

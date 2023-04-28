@@ -124,15 +124,17 @@ class ApacheParser:
         """ Checks that we have recent enough version of libaugeas.
         If augeas version is recent enough, it will support case insensitive
         regexp matching"""
-
+        logger.debug('testing augeas')
         self.aug.set("/test/path/testing/arg", "aRgUMeNT")
         try:
             matches = self.aug.match(
                 "/test//*[self::arg=~regexp('argument', 'i')]")
         except RuntimeError:
             self.aug.remove("/test/path")
+            logger.debug('false')
             return False
         self.aug.remove("/test/path")
+        logger.debug(matches)
         return matches
 
     def unsaved_files(self) -> Set[str]:
