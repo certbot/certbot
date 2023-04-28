@@ -101,7 +101,8 @@ class NamespaceConfig:
         """
         Return True if a particular config variable has been set by the user
         (CLI or config file) including if the user explicitly set it to the
-        default.  Returns False if the variable was assigned a default value.
+        default, or if it was dynamically set at runtime.  Returns False if the
+        variable was assigned a default value.
         """
         from certbot._internal.plugins import selection
 

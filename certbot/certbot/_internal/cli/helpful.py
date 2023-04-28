@@ -14,8 +14,8 @@ from typing import Union
 
 import configargparse
 
-from certbot import configuration
 from certbot.configuration import ArgumentSource
+from certbot.configuration import NamespaceConfig
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
@@ -97,8 +97,6 @@ class HelpfulArgumentParser:
 
         # elements are added by .add_group()
         self.groups: Dict[str, argparse._ArgumentGroup] = {}
-        # elements are added by .parse_args()
-        self.defaults: Dict[str, Any] = {}
 
         self.parser = configargparse.ArgParser(
             prog="certbot",
@@ -163,22 +161,18 @@ class HelpfulArgumentParser:
 
         return usage
 
-    def remove_config_file_domains_for_renewal(self, parsed_args: argparse.Namespace,
-                                               sources_dict: Dict[str, ArgumentSource]) -> None:
+    def remove_config_file_domains_for_renewal(self, config: NamespaceConfig) -> None:
         """Make "certbot renew" safe if domains are set in cli.ini."""
         # Works around https://github.com/certbot/certbot/issues/4096
-        if self.verb == "renew":
-            for source, flags in self.parser.get_source_to_settings_dict().items():
-                if source.startswith("config_file") and "domains" in flags:
-                    parsed_args.domains = []
-                    sources_dict['domains'] = ArgumentSource.RUNTIME
+        if self.verb == "renew" and config.argument_sources['domains'] == ArgumentSource.CONFIG_FILE:
+            config.domains = []
 
     def _build_sources_dict(self) -> Dict[str, ArgumentSource]:
-        # ConfigArgparse's source dict doesn't actually create default entries
-        # for each argument with a default value, omitting many args we'd
-        # otherwise care about. So in general, unless an argument was specified
-        # in a config file/environment variable/command line arg, consider it as
-        # having a "default" value
+        # ConfigArgparse's get_source_to_settings_dict doesn't actually create
+        # default entries for each argument with a default value, omitting many
+        # args we'd otherwise care about. So in general, unless an argument was
+        # specified in a config file/environment variable/command line arg,
+        # consider it as having a "default" value
         result = { action.dest: ArgumentSource.DEFAULT for action in self.actions }
 
         for source_str, source_dict in self.parser.get_source_to_settings_dict().items():
@@ -204,7 +198,7 @@ class HelpfulArgumentParser:
 
         return result
 
-    def parse_args(self) -> configuration.NamespaceConfig:
+    def parse_args(self) -> NamespaceConfig:
         """Parses command line arguments and returns the result.
 
         :returns: parsed command line arguments
@@ -212,58 +206,54 @@ class HelpfulArgumentParser:
 
         """
         parsed_args = self.parser.parse_args(self.args)
-        sources_dict = self._build_sources_dict()
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
+        config = NamespaceConfig(parsed_args, self._build_sources_dict())
 
-        self.remove_config_file_domains_for_renewal(parsed_args, sources_dict)
-
-        self.defaults = {key: copy.deepcopy(self.parser.get_default(key))
-                             for key in vars(parsed_args)}
+        self.remove_config_file_domains_for_renewal(config)
 
         # Do any post-parsing homework here
 
         if self.verb == "renew":
-            if parsed_args.force_interactive:
+            if config.force_interactive:
                 raise errors.Error(
                     "{0} cannot be used with renew".format(
                         constants.FORCE_INTERACTIVE_FLAG))
-            parsed_args.noninteractive_mode = True
+            config.noninteractive_mode = True
 
-        if parsed_args.force_interactive and parsed_args.noninteractive_mode:
+        if config.force_interactive and config.noninteractive_mode:
             raise errors.Error(
                 "Flag for non-interactive mode and {0} conflict".format(
                     constants.FORCE_INTERACTIVE_FLAG))
 
-        if parsed_args.staging or parsed_args.dry_run:
-            self.set_test_server(parsed_args)
+        if config.staging or config.dry_run:
+            self.set_test_server(config)
 
-        if parsed_args.csr:
-            self.handle_csr(parsed_args)
+        if config.csr:
+            self.handle_csr(config)
 
-        if parsed_args.must_staple:
-            parsed_args.staple = True
-            sources_dict['staple'] = sources_dict['must_staple']
+        if config.must_staple and not config.staple:
+            config.staple = True
 
-        if parsed_args.validate_hooks:
-            hooks.validate_hooks(parsed_args)
+        if config.validate_hooks:
+            hooks.validate_hooks(config)
 
-        if parsed_args.allow_subset_of_names:
-            if any(util.is_wildcard_domain(d) for d in parsed_args.domains):
+        if config.allow_subset_of_names:
+            if any(util.is_wildcard_domain(d) for d in config.domains):
                 raise errors.Error("Using --allow-subset-of-names with a"
                                    " wildcard domain is not supported.")
 
-        if parsed_args.hsts and parsed_args.auto_hsts:
+        if config.hsts and config.auto_hsts:
             raise errors.Error(
                 "Parameters --hsts and --auto-hsts cannot be used simultaneously.")
 
-        if isinstance(parsed_args.key_type, list) and len(parsed_args.key_type) > 1:
+        if isinstance(config.key_type, list) and len(config.key_type) > 1:
             raise errors.Error(
                 "Only *one* --key-type type may be provided at this time.")
 
-        return configuration.NamespaceConfig(parsed_args, sources_dict)
+        return config
 
-    def set_test_server(self, parsed_args: argparse.Namespace) -> None:
+    def set_test_server(self, config: NamespaceConfig) -> None:
         """We have --staging/--dry-run; perform sanity check and set config.server"""
 
         # Flag combinations should produce these results:
@@ -275,51 +265,51 @@ class HelpfulArgumentParser:
 
         default_servers = (flag_default("server"), constants.STAGING_URI)
 
-        if parsed_args.staging and parsed_args.server not in default_servers:
+        if config.staging and config.server not in default_servers:
             raise errors.Error("--server value conflicts with --staging")
 
-        if parsed_args.server in default_servers:
-            parsed_args.server = constants.STAGING_URI
+        if config.server == flag_default("server"):
+            config.server = constants.STAGING_URI
 
-        if parsed_args.dry_run:
+        if config.dry_run:
             if self.verb not in ["certonly", "renew"]:
                 raise errors.Error("--dry-run currently only works with the "
                                    "'certonly' or 'renew' subcommands (%r)" % self.verb)
-            parsed_args.break_my_certs = parsed_args.staging = True
-            if glob.glob(os.path.join(parsed_args.config_dir, constants.ACCOUNTS_DIR, "*")):
+            config.break_my_certs = config.staging = True
+            if glob.glob(os.path.join(config.config_dir, constants.ACCOUNTS_DIR, "*")):
                 # The user has a prod account, but might not have a staging
                 # one; we don't want to start trying to perform interactive registration
-                parsed_args.tos = True
-                parsed_args.register_unsafely_without_email = True
+                config.tos = True
+                config.register_unsafely_without_email = True
 
-    def handle_csr(self, parsed_args: argparse.Namespace) -> None:
+    def handle_csr(self, config: NamespaceConfig) -> None:
         """Process a --csr flag."""
-        if parsed_args.verb != "certonly":
+        if config.verb != "certonly":
             raise errors.Error("Currently, a CSR file may only be specified "
                                "when obtaining a new or replacement "
                                "via the certonly command. Please try the "
                                "certonly command instead.")
-        if parsed_args.allow_subset_of_names:
+        if config.allow_subset_of_names:
             raise errors.Error("--allow-subset-of-names cannot be used with --csr")
 
-        csrfile, contents = parsed_args.csr[0:2]
+        csrfile, contents = config.csr[0:2]
         typ, csr, domains = crypto_util.import_csr_file(csrfile, contents)
 
         # This is not necessary for webroot to work, however,
-        # obtain_certificate_from_csr requires parsed_args.domains to be set
+        # obtain_certificate_from_csr requires config.domains to be set
         for domain in domains:
-            add_domains(parsed_args, domain)
+            add_domains(config, domain)
 
         if not domains:
             # TODO: add CN to domains instead:
             raise errors.Error(
                 "Unfortunately, your CSR %s needs to have a SubjectAltName for every domain"
-                % parsed_args.csr[0])
+                % config.csr[0])
 
-        parsed_args.actual_csr = (csr, typ)
+        config.actual_csr = (csr, typ)
 
         csr_domains = {d.lower() for d in domains}
-        config_domains = set(parsed_args.domains)
+        config_domains = set(config.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
                 "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"

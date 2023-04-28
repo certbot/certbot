@@ -84,10 +84,6 @@ def assert_value_and_source(namespace, attr: str, value: Any, source: ArgumentSo
 class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
-
-    def setUp(self):
-        reload_module(cli)
-
     @staticmethod
     def _unmocked_parse(args: List[str]) -> NamespaceConfig:
         """Get result of cli.prepare_and_parse_args."""
@@ -281,8 +277,12 @@ class ParseTest(unittest.TestCase):
         assert_set_by_user_with_value(namespace, 'server', 'example.com')
 
     def test_must_staple_flag(self):
-        short_args = ['--must-staple']
-        namespace = self.parse(short_args)
+        namespace = self.parse(['--must-staple'])
+        assert_set_by_user_with_value(namespace, 'must_staple', True)
+        assert_value_and_source(namespace, 'staple', True, ArgumentSource.RUNTIME)
+
+    def test_must_staple_and_staple_ocsp_flags(self):
+        namespace = self.parse(['--must-staple', '--staple-ocsp'])
         assert_set_by_user_with_value(namespace, 'must_staple', True)
         assert_set_by_user_with_value(namespace, 'staple', True)
 
@@ -307,17 +307,17 @@ class ParseTest(unittest.TestCase):
         self._check_server_conflict_message(short_args, '--staging')
 
     def _assert_dry_run_flag_worked(self, namespace, existing_account):
-        assert namespace.dry_run is True
-        assert namespace.break_my_certs is True
-        assert namespace.staging is True
-        assert namespace.server == constants.STAGING_URI
+        assert_set_by_user_with_value(namespace, 'dry_run', True)
+        assert_value_and_source(namespace, 'break_my_certs', True, ArgumentSource.RUNTIME)
+        assert_value_and_source(namespace, 'staging', True, ArgumentSource.RUNTIME)
+        assert_value_and_source(namespace, 'server', constants.STAGING_URI, ArgumentSource.RUNTIME)
 
         if existing_account:
-            assert namespace.tos is True
-            assert namespace.register_unsafely_without_email is True
+            assert_value_and_source(namespace, 'tos', True, ArgumentSource.RUNTIME)
+            assert_value_and_source(namespace, 'register_unsafely_without_email', True, ArgumentSource.RUNTIME)
         else:
-            assert namespace.tos is False
-            assert namespace.register_unsafely_without_email is False
+            assert_value_and_source(namespace, 'tos', False, ArgumentSource.DEFAULT)
+            assert_value_and_source(namespace, 'register_unsafely_without_email', False, ArgumentSource.DEFAULT)
 
     def test_dry_run_flag(self):
         config_dir = tempfile.mkdtemp()
@@ -343,16 +343,16 @@ class ParseTest(unittest.TestCase):
         short_args += ['certonly']
 
         # `--dry-run --server example.com` should emit example.com
-        assert self.parse(short_args + ['--server', 'example.com']).server == \
-                         'example.com'
+        config = self.parse(short_args + ['--server', 'example.com'])
+        assert_set_by_user_with_value(config, 'server', 'example.com')
 
         # `--dry-run --server STAGING_URI` should emit STAGING_URI
-        assert self.parse(short_args + ['--server', constants.STAGING_URI]).server == \
-                         constants.STAGING_URI
+        config = self.parse(short_args + ['--server', constants.STAGING_URI])
+        assert_set_by_user_with_value(config, 'server', constants.STAGING_URI)
 
         # `--dry-run --server LIVE` should emit STAGING_URI
-        assert self.parse(short_args + ['--server', cli.flag_default("server")]).server == \
-                         constants.STAGING_URI
+        config = self.parse(short_args + ['--server', cli.flag_default("server")])
+        assert_value_and_source(config, 'server', constants.STAGING_URI, ArgumentSource.RUNTIME)
 
         # `--dry-run --server example.com --staging` should emit an error
         conflicts = ['--staging']
