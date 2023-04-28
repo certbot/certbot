@@ -1,7 +1,6 @@
 """Certbot command line argument parser"""
 
 import argparse
-import copy
 import functools
 import glob
 import sys
@@ -164,7 +163,8 @@ class HelpfulArgumentParser:
     def remove_config_file_domains_for_renewal(self, config: NamespaceConfig) -> None:
         """Make "certbot renew" safe if domains are set in cli.ini."""
         # Works around https://github.com/certbot/certbot/issues/4096
-        if self.verb == "renew" and config.argument_sources['domains'] == ArgumentSource.CONFIG_FILE:
+        if (config.argument_sources['domains'] == ArgumentSource.CONFIG_FILE and
+                self.verb == "renew"):
             config.domains = []
 
     def _build_sources_dict(self) -> Dict[str, ArgumentSource]:
