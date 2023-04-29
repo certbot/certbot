@@ -40,4 +40,4 @@ targets:
     name: centos9stream
     type: centos
     virt: hvm
-    user: centos
+    user: ec2-user
