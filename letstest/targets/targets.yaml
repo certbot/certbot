@@ -16,11 +16,6 @@ targets:
     type: ubuntu
     virt: hvm
     user: ubuntu
-  - ami: ami-095192256fe1477ad
-    name: ubuntu18.04LTS
-    type: ubuntu
-    virt: hvm
-    user: ubuntu
   #-----------------------------------------------------------------------------
   # Debian
   - ami: ami-01db78123b2b99496
@@ -28,12 +23,21 @@ targets:
     type: ubuntu
     virt: hvm
     user: admin
+  - ami: ami-0fec2c2e2017f4e7b
+    name: debian11
+    type: ubuntu
+    virt: hvm
+    user: admin
   #-----------------------------------------------------------------------------
   # CentOS
-  # This AMI was found on
-  # https://web.archive.org/web/20211126215532/https://wiki.centos.org/Cloud/AWS.
+  # These AMI were found on https://wiki.centos.org/Cloud/AWS.
   - ami: ami-00e87074e52e6c9f9
     name: centos7
+    type: centos
+    virt: hvm
+    user: centos
+  - ami: ami-0c0e36522a91d66e1
+    name: centos9stream
     type: centos
     virt: hvm
     user: centos
