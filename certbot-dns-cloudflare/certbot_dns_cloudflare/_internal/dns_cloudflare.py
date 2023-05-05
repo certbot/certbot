@@ -1,5 +1,6 @@
 """DNS Authenticator for Cloudflare."""
 import logging
+import os
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -42,9 +43,9 @@ class Authenticator(dns_common.DNSAuthenticator):
                'the Cloudflare API.'
 
     def _validate_credentials(self, credentials: CredentialsConfiguration) -> None:
-        token = credentials.conf('api-token')
-        email = credentials.conf('email')
-        key = credentials.conf('api-key')
+        token = os.getenv("CLOUDFLARE_API_TOKEN", default = credentials.conf('api-token'))
+        email = os.getenv("CLOUDFLARE_EMAIL", default = credentials.conf('email'))
+        key = os.getenv("CLOUDFLARE_API_KEY", default = credentials.conf('api-key'))
         if token:
             if email or key:
                 raise errors.PluginError('{}: dns_cloudflare_email and dns_cloudflare_api_key are '
