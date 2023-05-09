@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.6.0'
+version = '2.7.0.dev0'
 
 install_requires = [
     'dnspython>=1.15.0',
