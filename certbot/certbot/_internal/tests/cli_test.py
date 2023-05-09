@@ -522,6 +522,22 @@ class ParseTest(unittest.TestCase):
         with pytest.raises(errors.Error):
             self.parse(['--hsts', '--auto-hsts'])
 
+    def test_parse_with_multiple_argument_sources(self):
+        with tempfile.NamedTemporaryFile() as tmp_config:
+            with open(tmp_config.name, 'w') as file_h:
+                file_h.write('key-type = ecdsa')
+            namespace = self.parse([
+                'renew',
+                '-c', tmp_config.name,
+            ])
+            assert_value_and_source(namespace, 'key_type', 'ecdsa', ArgumentSource.CONFIG_FILE)
+            namespace = self.parse([
+                'renew',
+                '-c', tmp_config.name,
+                '--key-type', 'ecdsa',
+            ])
+            assert_value_and_source(namespace, 'key_type', 'ecdsa', ArgumentSource.COMMAND_LINE)
+
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

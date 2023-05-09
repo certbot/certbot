@@ -13,8 +13,6 @@ from typing import Union
 
 import configargparse
 
-from certbot.configuration import ArgumentSource
-from certbot.configuration import NamespaceConfig
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
@@ -32,6 +30,8 @@ from certbot._internal.cli.verb_help import VERB_HELP_MAP
 from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins import disco
 from certbot.compat import os
+from certbot.configuration import ArgumentSource
+from certbot.configuration import NamespaceConfig
 
 
 class HelpfulArgumentParser:
@@ -67,6 +67,7 @@ class HelpfulArgumentParser:
 
         # Get notification function for printing
         self.notify = display_obj.NoninteractiveDisplay(sys.stdout).notification
+
         self.actions: List[configargparse.Action] = []
 
         # List of topics for which additional help can be provided
@@ -202,7 +203,7 @@ class HelpfulArgumentParser:
         """Parses command line arguments and returns the result.
 
         :returns: parsed command line arguments
-        :rtype: argparse.Namespace
+        :rtype: configuration.NamespaceConfig
 
         """
         parsed_args = self.parser.parse_args(self.args)

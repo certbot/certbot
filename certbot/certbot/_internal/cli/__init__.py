@@ -62,7 +62,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     :param list args: command line arguments with the program name removed
 
     :returns: parsed command line arguments
-    :rtype: argparse.Namespace
+    :rtype: configuration.NamespaceConfig
 
     """
 

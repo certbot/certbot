@@ -80,6 +80,8 @@ class NamespaceConfig:
     :ivar namespace: Namespace typically produced by
         :meth:`argparse.ArgumentParser.parse_args`.
     :type namespace: :class:`argparse.Namespace`
+    :ivar argument_sources: dictionary of argument names to their :class:`ArgumentSource`
+    :type argument_sources: :class:`Dict[str, ArgumentSource]`
 
     """
 
