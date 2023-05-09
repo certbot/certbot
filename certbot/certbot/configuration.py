@@ -25,6 +25,7 @@ VAR_MODIFIERS = {"account": {"server",},
                  "server": {"dry_run", "staging",},
                  "webroot_map": {"webroot_path",}}
 
+
 # This is a list of all CLI options that we have ever deprecated. It lets us
 # opt out of the default detection, which can interact strangely with option
 # deprecation. See https://github.com/certbot/certbot/issues/8540 for more info.

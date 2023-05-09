@@ -524,6 +524,7 @@ class ParseTest(unittest.TestCase):
 
     def test_parse_with_multiple_argument_sources(self):
         with tempfile.NamedTemporaryFile() as tmp_config:
+            tmp_config.close()  # close now because of compatibility issues on Windows
             with open(tmp_config.name, 'w') as file_h:
                 file_h.write('key-type = ecdsa')
             namespace = self.parse([
