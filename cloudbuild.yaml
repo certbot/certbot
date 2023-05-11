@@ -1,20 +1,12 @@
 timeout: 3600s
 steps:
-- id: certbot
-  name: 'gcr.io/cloud-builders/docker'
-  args: ["build", "-t", "us.gcr.io/$PROJECT_ID/certbot:latest", "."]
-  dir: .
-  waitFor: ['-']
-
 - id: certbot-dns
   name: 'gcr.io/cloud-builders/docker'
   args: ["build", "-t", "us.gcr.io/$PROJECT_ID/certbot-dns-google:latest", "."]
   dir: certbot-dns-google
-  waitFor:
-    - certbot
+  waitFor: ['-']
 
 images:
-  - us.gcr.io/$PROJECT_ID/certbot
   - us.gcr.io/$PROJECT_ID/certbot-dns-google
 
 logsBucket: fathom-containers-cloud-build-logs-36tugmiz
