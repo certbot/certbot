@@ -66,7 +66,7 @@ Current Features
 
 * Supports multiple web servers:
 
-  - apache/2.x
+  - Apache 2.4+
   - nginx/0.8.48+
   - webroot (adds files to webroot directories in order to prove control of
     domains and obtain certificates)
@@ -78,9 +78,7 @@ Current Features
   compliant services.
 * Can get domain-validated (DV) certificates.
 * Can revoke certificates.
-* Adjustable EC Keys by default `EC <https://en.wikipedia.org/wiki/Elliptic-curve_cryptography>`_
-  key (`secp256r1` (default), `secp384r1`, `secp521r1`).
-* Adjustable RSA key bit-length (2048 (default), 4096, ...).
+* Supports ECDSA (default) and RSA certificate private keys.
 * Can optionally install a http -> https redirect, so your site effectively
   runs https only.
 * Fully automated.
