@@ -9,6 +9,7 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 import configargparse
@@ -176,26 +177,42 @@ class HelpfulArgumentParser:
         # consider it as having a "default" value
         result = { action.dest: ArgumentSource.DEFAULT for action in self.actions }
 
-        for source_str, source_dict in self.parser.get_source_to_settings_dict().items():
-            if source_str.startswith('config_file'):
-                source = ArgumentSource.CONFIG_FILE
-            else:
-                source = {
-                    'defaults': ArgumentSource.DEFAULT,
-                    'env_var': ArgumentSource.ENV_VAR,
-                    'command_line': ArgumentSource.COMMAND_LINE
-                }[source_str]
-            if source == ArgumentSource.COMMAND_LINE:
-                (_, args) = source_dict['']
-                args = [arg for arg in args if arg.startswith('-')]
-                for arg in args:
-                    for action in self.actions:
-                        if arg in action.option_strings:
-                            result[action.dest] = source
-                            continue
-            else:
-                for arg, (action, _) in source_dict.items():
-                    result[action.dest] = source
+        source_to_settings_dict: Dict[str, Dict[str, Tuple[configargparse.Action, str]]]
+        source_to_settings_dict = self.parser.get_source_to_settings_dict()
+
+        # We'll process the sources dict in order of each source's "priority",
+        # i.e. the order in which ConfigArgparse ultimately sets argument
+        # values:
+        #   1. defaults
+        #   2. config files
+        #   3. env vars (shouldn't be any)
+        #   4. command line
+        def update_result(settings_dict: Dict[str, Tuple[configargparse.Action, str]],
+                          source: ArgumentSource) -> None:
+            actions = [action for _, (action, _) in settings_dict.items()]
+            result.update({ action.dest: source for action in actions})
+
+        update_result(source_to_settings_dict.get('defaults', {}), ArgumentSource.DEFAULT)
+
+        # config file sources look like "config_file|<name of file>"
+        for source_key in source_to_settings_dict:
+            if source_key.startswith('config_file'):
+                update_result(source_to_settings_dict[source_key], ArgumentSource.CONFIG_FILE)
+
+        update_result(source_to_settings_dict.get('env_var', {}), ArgumentSource.ENV_VAR)
+
+        # The command line settings dict is weird, so handle it separately
+        if 'command_line' in source_to_settings_dict:
+            settings_dict: Dict[str, Tuple[None, List[str]]]
+            settings_dict = source_to_settings_dict['command_line'] # type: ignore
+            (_, args) = settings_dict['']
+            args = [arg for arg in args if arg.startswith('-')]
+            for arg in args:
+                # find the action corresponding to this arg
+                for action in self.actions:
+                    if arg in action.option_strings:
+                        result[action.dest] = ArgumentSource.COMMAND_LINE
+                        continue
 
         return result
 

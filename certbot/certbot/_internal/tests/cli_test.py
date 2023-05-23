@@ -3,6 +3,7 @@ import argparse
 import copy
 from importlib import reload as reload_module
 import io
+import os
 import sys
 import tempfile
 from typing import Any, List
@@ -16,6 +17,7 @@ from certbot import errors
 from certbot.configuration import ArgumentSource, NamespaceConfig
 from certbot._internal import cli
 from certbot._internal import constants
+from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.plugins import disco
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -523,21 +525,33 @@ class ParseTest(unittest.TestCase):
             self.parse(['--hsts', '--auto-hsts'])
 
     def test_parse_with_multiple_argument_sources(self):
+        DEFAULT_VALUE = flag_default('server')
+        CONFIG_FILE_VALUE = 'configfile.biz'
+        COMMAND_LINE_VALUE = 'commandline.edu'
+
+        # check that the default is set
+        namespace = self.parse(['certonly'])
+        assert_value_and_source(namespace, 'server', DEFAULT_VALUE, ArgumentSource.DEFAULT)
+
         with tempfile.NamedTemporaryFile() as tmp_config:
             tmp_config.close()  # close now because of compatibility issues on Windows
             with open(tmp_config.name, 'w') as file_h:
-                file_h.write('key-type = ecdsa')
+                file_h.write(f'server = {CONFIG_FILE_VALUE}')
+
+            # first, just provide a value from a config file
             namespace = self.parse([
-                'renew',
+                'certonly',
                 '-c', tmp_config.name,
             ])
-            assert_value_and_source(namespace, 'key_type', 'ecdsa', ArgumentSource.CONFIG_FILE)
+            assert_value_and_source(namespace, 'server', CONFIG_FILE_VALUE, ArgumentSource.CONFIG_FILE)
+
+            # now provide config file + command line values
             namespace = self.parse([
-                'renew',
+                'certonly',
                 '-c', tmp_config.name,
-                '--key-type', 'ecdsa',
+                '--server', COMMAND_LINE_VALUE,
             ])
-            assert_value_and_source(namespace, 'key_type', 'ecdsa', ArgumentSource.COMMAND_LINE)
+            assert_value_and_source(namespace, 'server', COMMAND_LINE_VALUE, ArgumentSource.COMMAND_LINE)
 
 
 if __name__ == '__main__':
