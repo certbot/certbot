@@ -46,12 +46,12 @@ class ChallengeFactoryTest(unittest.TestCase):
 
     def test_unrecognized(self):
         authzr = acme_util.gen_authzr(
-             messages.STATUS_PENDING, "test",
-             [mock.Mock(chall="chall", typ="unrecognized")],
-             [messages.STATUS_PENDING])
+            messages.STATUS_PENDING, "test",
+            [mock.Mock(chall="chall", typ="unrecognized")],
+            [messages.STATUS_PENDING])
 
-        with pytest.raises(errors.Error):
-            self.handler._challenge_factory(authzr, [0])
+        achalls = self.handler._challenge_factory(authzr, [0])
+        assert type(achalls[0]) == achallenges.Other
 
 
 class HandleAuthorizationsTest(unittest.TestCase):

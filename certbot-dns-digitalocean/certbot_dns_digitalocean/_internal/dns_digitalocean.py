@@ -2,6 +2,7 @@
 import logging
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Optional
 
 import digitalocean
@@ -56,7 +57,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_digitalocean_client(self) -> "_DigitalOceanClient":
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
-        return _DigitalOceanClient(self.credentials.conf('token'))
+        return _DigitalOceanClient(cast(str, self.credentials.conf('token')))
 
 
 class _DigitalOceanClient:

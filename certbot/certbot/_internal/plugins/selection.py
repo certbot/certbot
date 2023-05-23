@@ -112,8 +112,9 @@ def pick_plugin(config: configuration.NamespaceConfig, default: Optional[str],
                 "https://eff.org/letsencrypt-plugins for more detail on what "
                 "the plugins do and how to use them.")
 
-        filtered = plugins.visible().ifaces(ifaces)
+        filtered = plugins.visible()
 
+    filtered = filtered.ifaces(ifaces)
     filtered.init(config)
     filtered.prepare()
     prepared = filtered.available()

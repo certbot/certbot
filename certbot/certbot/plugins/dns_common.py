@@ -312,12 +312,12 @@ class CredentialsConfiguration:
                     )
             )
 
-    def conf(self, var: str) -> str:
+    def conf(self, var: str) -> Optional[str]:
         """Find a configuration value for variable `var`, as transformed by `mapper`.
 
         :param str var: The variable to get.
-        :returns: The value of the variable.
-        :rtype: str
+        :returns: The value of the variable, if it exists.
+        :rtype: str or None
         """
 
         return self._get(var)
@@ -325,7 +325,7 @@ class CredentialsConfiguration:
     def _has(self, var: str) -> bool:
         return self.mapper(var) in self.confobj
 
-    def _get(self, var: str) -> str:
+    def _get(self, var: str) -> Optional[str]:
         return self.confobj.get(self.mapper(var))
 
 

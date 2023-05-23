@@ -36,7 +36,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -74,26 +74,24 @@ optional arguments:
                         HMAC key for External Account Binding (default: None)
   --cert-name CERTNAME  Certificate name to apply. This name is used by
                         Certbot for housekeeping and in file paths; it doesn't
-                        affect the content of the certificate itself. To see
+                        affect the content of the certificate itself.
+                        Certificate name cannot contain filepath separators
+                        (i.e. '/' or '\', depending on the platform). To see
                         certificate names, run 'certbot certificates'. When
                         creating a new certificate, specifies the new
                         certificate's name. (default: the first provided
                         domain or the name of an existing certificate on your
                         system for the same domains)
-  --dry-run             Perform a test run of the client, obtaining test
-                        (invalid) certificates but not saving them to disk.
-                        This can currently only be used with the 'certonly'
-                        and 'renew' subcommands. Note: Although --dry-run
-                        tries to avoid making any persistent changes on a
-                        system, it is not completely side-effect free: if used
-                        with webserver authenticator plugins like apache and
-                        nginx, it makes and then reverts temporary config
-                        changes in order to obtain test certificates, and
-                        reloads webservers to deploy and then roll back those
-                        changes. It also calls --pre-hook and --post-hook
-                        commands if they are defined because they may be
-                        necessary to accurately simulate renewal. --deploy-
-                        hook commands are not called. (default: False)
+  --dry-run             Perform a test run against the Let's Encrypt staging
+                        server, obtaining test (invalid) certificates but not
+                        saving them to disk. This can only be used with the
+                        'certonly' and 'renew' subcommands. It may trigger
+                        webserver reloads to temporarily modify & roll back
+                        configuration files. --pre-hook and --post-hook
+                        commands run by default. --deploy-hook commands do not
+                        run, unless enabled by --run-deploy-hooks. The test
+                        server may be overridden with --server. (default:
+                        False)
   --debug-challenges    After setting up challenges, wait for user input
                         before submitting to CA. When used in combination with
                         the `-v` option, the challenge URLs or FQDNs and their
@@ -124,7 +122,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/2.5.0 (certbot;
+                        "". (default: CertbotACMEClient/2.6.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -239,10 +237,11 @@ testing:
                         recommended when modifying the deploy hook using
                         `reconfigure`. (default: False)
   --test-cert, --staging
-                        Use the staging server to obtain or revoke test
-                        (invalid) certificates; equivalent to --server
-                        https://acme-staging-v02.api.letsencrypt.org/directory
-                        (default: False)
+                        Use the Let's Encrypt staging server to obtain or
+                        revoke test (invalid) certificates; equivalent to
+                        --server https://acme-
+                        staging-v02.api.letsencrypt.org/directory (default:
+                        False)
   --debug               Show tracebacks in case of errors (default: False)
   --no-verify-ssl       Disable verification of the ACME server's certificate.
                         The root certificates trusted by Certbot can be
@@ -603,13 +602,22 @@ dns-google:
                         before asking the ACME server to verify the DNS
                         record. (default: 60)
   --dns-google-credentials DNS_GOOGLE_CREDENTIALS
-                        Path to Google Cloud DNS service account JSON file.
-                        (See https://developers.google.com/identity/protocols/
-                        OAuth2ServiceAccount#creatinganaccount forinformation
-                        about creating a service account and
-                        https://cloud.google.com/dns/access-
+                        Path to Google Cloud DNS service account JSON file to
+                        use instead of relying on Application Default
+                        Credentials (ADC). (See https://cloud.google.com/docs/
+                        authentication/application-default-credentials for
+                        information about ADC, https://developers.google.com/i
+                        dentity/protocols/OAuth2ServiceAccount#creatinganaccou
+                        nt for information about creating a service account,
+                        and https://cloud.google.com/dns/access-
                         control#permissions_and_roles for information about
-                        therequired permissions.) (default: None)
+                        the permissions required to modify Cloud DNS records.)
+                        (default: None)
+  --dns-google-project DNS_GOOGLE_PROJECT
+                        The ID of the Google Cloud project that the Google
+                        Cloud DNS managed zone(s) reside in. This will be
+                        determined automatically if not specified. (default:
+                        None)
 
 dns-linode:
   Obtain certificates using a DNS TXT record (if you are using Linode for
