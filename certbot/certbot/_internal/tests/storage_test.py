@@ -87,6 +87,26 @@ class RelevantValuesTest(unittest.TestCase):
         self.values[deprected_option] = False
         assert self._call(self.values) == expected_relevant_values
 
+    def test_with_real_parser(self):
+        from certbot._internal.storage import relevant_values
+        from certbot._internal.plugins import disco
+        from certbot._internal import cli
+        from certbot._internal import constants
+
+        PLUGINS = disco.PluginsRegistry.find_all()
+        namespace = cli.prepare_and_parse_args(PLUGINS, [
+            '--allow-subset-of-names',
+            '--authenticator', 'apache',
+        ])
+        expected_relevant_values = {
+            'server': constants.CLI_DEFAULTS['server'],
+            'key_type': 'ecdsa',
+            'allow_subset_of_names': True,
+            'authenticator': 'apache',
+        }
+
+        assert relevant_values(namespace) == expected_relevant_values
+
 
 class BaseRenewableCertTest(test_util.ConfigTestCase):
     """Base class for setting up Renewable Cert tests.
