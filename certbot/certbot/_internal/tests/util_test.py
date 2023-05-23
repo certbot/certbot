@@ -650,27 +650,20 @@ class LooseVersionTest(unittest.TestCase):
             ('a', 'b'))
         for v1, v2 in comparisons:
             assert self._call(v1).try_risky_comparison(self._call(v2)) == -1
-            assert self._call(v1).try_risky_less(self._call(v2))
-            assert self._call(v1).try_risky_less_equal(self._call(v2))
 
     def test_equal(self):
         comparisons = (('8.02', '8.02'),
             ('1a', '1a'),
+            ('2', '2.0.0'),
             ('2.0', '2.0.0'))
         for v1, v2 in comparisons:
             assert self._call(v1).try_risky_comparison(self._call(v2)) == 0
-            assert self._call(v1).try_risky_equal(self._call(v2))
-            assert not self._call(v1).try_risky_not_equal(self._call(v2))
-            assert self._call(v1).try_risky_less_equal(self._call(v2))
-            assert self._call(v1).try_risky_greater_equal(self._call(v2))
 
     def test_greater_than(self):
         comparisons = (('161', '3.10a'),
             ('3.2.pl0', '3.1.1.6'))
         for v1, v2 in comparisons:
             assert self._call(v1).try_risky_comparison(self._call(v2)) == 1
-            assert self._call(v1).try_risky_greater(self._call(v2))
-            assert self._call(v1).try_risky_greater_equal(self._call(v2))
 
     def test_incomparible(self):
         comparisons = (('bookworm/sid', '9'),

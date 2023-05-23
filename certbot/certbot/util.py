@@ -2,14 +2,13 @@
 import argparse
 import atexit
 import errno
+import itertools
 import logging
 import platform
 import re
 import socket
 import subprocess
 import sys
-import warnings
-from enum import Enum
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -53,29 +52,21 @@ class CSR(NamedTuple):
 class LooseVersion:
     """A version with loose rules, i.e. any given string is a valid version number.
 
-    This is based on distutils.version.LooseVersion at
-    https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L269
     but regular comparison is not supported. Instead, the `try_risky_comparison` method is
     provided, which may return an error if two LooseVersions are 'incomparible'.
     For example when integer and string version components are present in the same position.
+
+    Differences with old distutils.version.LooseVersion:
+    (https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L269)
+    Most version comparisons should give the same result. However, if a version has multiple
+    trailing zeroes, not all of them are used in the comparison. This ensure that, for example,
+    "2.0" and "2.0.0" are equal.
     """
 
     def __init__(self, version_string: str) -> None:
-        self.version_components = self.__parse_loose_version(version_string)
-
-    def __parse_loose_version(self, version_string: str) -> List[Union[int, str]]:
         """Parses a version string into its components.
 
-        This code and the returned tuple is based on the now deprecated
-        distutils.version.LooseVersion class from the Python standard library.
-        Two LooseVersion classes and two lists as returned by this function
-        should compare in the same way. See
-        https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L205-L347.
-
         :param str version_string: version string
-
-        :returns: list of parsed version string components
-        :rtype: list
         """
         components: List[Union[int, str]]
         components = [x for x in _VERSION_COMPONENT_RE.split(version_string)
@@ -85,66 +76,8 @@ class LooseVersion:
                 components[i] = int(obj)
             except ValueError:
                 pass
-        return components
 
-    class Comparison(Enum):
-        """All possible return values of self.__compare"""
-        EQUAL = 1
-        LESS = 2
-        GREATER = 3
-        INCOMPARIBLE = 4
-
-    def __compare(self, other: 'LooseVersion') -> Comparison:
-        """Compares the LooseVersion to another LooseVersion.
-
-        Examples:
-        __compare(LooseVersion('2.0'), LooseVersion('1.0')) -> GREATER
-        __compare(LooseVersion('2.0a'), LooseVersion('2.0')) -> GREATER
-        __compare(LooseVersion('1.0'), LooseVersion('2.0')) -> LESS
-        __compare(LooseVersion('2.0'), LooseVersion('2.0')) -> EQUAL
-        __compare(LooseVersion('2.0'), LooseVersion('2a')) -> INCOMPARIBLE
-
-        :param Any other: the value being compared to self
-
-        :returns: whether self is equal to, greater than, less than, or incomparible to other
-        :rtype: Enum.Comparison
-        """
-        if self.version_components == other.version_components:
-            return self.Comparison.EQUAL
-
-        for i in range(min(len(self.version_components), len(other.version_components))):
-            version_component_self = self.version_components[i]
-            version_component_other = other.version_components[i]
-
-            if not isinstance(version_component_other, type(version_component_self)):
-                return self.Comparison.INCOMPARIBLE
-
-            if isinstance(version_component_other, str) and \
-               isinstance(version_component_self, str):
-                if version_component_self > version_component_other:
-                    return self.Comparison.GREATER
-
-                if version_component_self < version_component_other:
-                    return self.Comparison.LESS
-
-            elif isinstance(version_component_other, int) and \
-                 isinstance(version_component_self, int):
-                if version_component_self > version_component_other:
-                    return self.Comparison.GREATER
-
-                if version_component_self < version_component_other:
-                    return self.Comparison.LESS
-
-        if len(self.version_components) > len(other.version_components):
-            for version_component in self.version_components[len(other.version_components)::]:
-                if version_component != 0:
-                    return self.Comparison.GREATER
-        elif len(self.version_components) < len(other.version_components):
-            for version_component in other.version_components[len(self.version_components)::]:
-                if version_component != 0:
-                    return self.Comparison.LESS
-
-        return self.Comparison.EQUAL
+        self.version_components = components
 
     def try_risky_comparison(self, other: Any) -> int:
         """Compares the LooseVersion to another value.
@@ -176,72 +109,20 @@ class LooseVersion:
         if not isinstance(other, type(self)):
             raise TypeError(f'Comparison not supported between LooseVersion and {type(other)}')
 
-        comparison = self.__compare(other)
-
-        if comparison == self.Comparison.EQUAL:
+        try:
+            for self_vc, other_vc in itertools.zip_longest(self.version_components,
+                                                           other.version_components,
+                                                           fillvalue=0):
+                # ensure mypy ignores types here and catch any TypeErrors
+                if self_vc < other_vc:  # type: ignore
+                    return -1
+                elif self_vc > other_vc:  # type: ignore
+                    return 1
             return 0
-        elif comparison == self.Comparison.LESS:
-            return -1
-        elif comparison == self.Comparison.GREATER:
-            return 1
-        else:
+        except TypeError:
             raise ValueError("Cannot meaningfully compare LooseVersion {} with LooseVersion {} "
                              "due to comparison of version components with different types."
                              .format(self.version_components, other.version_components))
-
-    # Provide helper methods for comparison without having to use the returned integer value.
-    def try_risky_equal(self, other: Any) -> bool:
-        """Tests if self == other, using `try_risky_comparison`.
-        """
-        return self.try_risky_comparison(other) == 0
-
-    def try_risky_not_equal(self, other: Any) -> bool:
-        """Tests if self != other, using `try_risky_comparison`.
-        """
-        return self.try_risky_comparison(other) != 0
-
-    def try_risky_less(self, other: Any) -> bool:
-        """Tests if self < other, using `try_risky_comparison`.
-        """
-        return self.try_risky_comparison(other) == -1
-
-    def try_risky_greater(self, other: Any) -> bool:
-        """Tests if self > other, using `try_risky_comparison`.
-        """
-        return self.try_risky_comparison(other) == 1
-
-    def try_risky_less_equal(self, other: Any) -> bool:
-        """Tests if self <= other, using `try_risky_comparison`.
-        """
-        return self.try_risky_comparison(other) in (0, -1)
-
-    def try_risky_greater_equal(self, other: Any) -> bool:
-        """Tests if self >= other, using `try_risky_comparison`.
-        """
-        return self.try_risky_comparison(other) in (0, 1)
-
-    # Prevent the use of regular comparison operators
-    def __regular_comparison_exception(self) -> bool:
-        raise TypeError("Regular comparison not supported between LooseVersions, "
-                        "use `try_risky_comparison` instead.")
-
-    def __eq__(self, other: Any) -> bool:
-        return self.__regular_comparison_exception()
-
-    def __ne__(self, other: Any) -> bool:
-        return self.__regular_comparison_exception()
-
-    def __lt__(self, other: Any) -> bool:
-        return self.__regular_comparison_exception()
-
-    def __gt__(self, other: Any) -> bool:
-        return self.__regular_comparison_exception()
-
-    def __le__(self, other: Any) -> bool:
-        return self.__regular_comparison_exception()
-
-    def __ge__(self, other: Any) -> bool:
-        return self.__regular_comparison_exception()
 
 
 # ANSI SGR escape codes
@@ -845,9 +726,6 @@ def parse_loose_version(version_string: str) -> List[Union[int, str]]:
     :returns: list of parsed version string components
     :rtype: list
     """
-    warnings.warn("certbot.util.parse_loose_version is deprecated and will be "
-                  "removed in an upcoming release of Certbot",
-                  DeprecationWarning)
     loose_version = LooseVersion(version_string)
     return loose_version.version_components
 

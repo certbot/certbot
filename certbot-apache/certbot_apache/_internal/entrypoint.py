@@ -48,8 +48,8 @@ def get_configurator() -> Type[configurator.ApacheConfigurator]:
     override_class = None
 
     # Special case for older Fedora versions
-    min_version = util.LooseVersion('29')
-    if os_name == 'fedora' and util.LooseVersion(os_version).try_risky_less(min_version):
+    min_version = util.parse_loose_version('29')
+    if os_name == 'fedora' and util.parse_loose_version(os_version) < min_version:
         os_name = 'fedora_old'
 
     try:
