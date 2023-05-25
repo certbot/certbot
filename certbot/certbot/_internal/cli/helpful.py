@@ -183,7 +183,7 @@ class HelpfulArgumentParser:
         # We'll process the sources dict in order of each source's "priority",
         # i.e. the order in which ConfigArgparse ultimately sets argument
         # values:
-        #   1. defaults
+        #   1. defaults (`result` already has everything marked as such)
         #   2. config files
         #   3. env vars (shouldn't be any)
         #   4. command line
@@ -191,8 +191,6 @@ class HelpfulArgumentParser:
                           source: ArgumentSource) -> None:
             actions = [action for _, (action, _) in settings_dict.items()]
             result.update({ action.dest: source for action in actions})
-
-        update_result(source_to_settings_dict.get('defaults', {}), ArgumentSource.DEFAULT)
 
         # config file sources look like "config_file|<name of file>"
         for source_key in source_to_settings_dict:
