@@ -17,30 +17,8 @@ from certbot.compat import misc
 from certbot.compat import os
 
 
-# Maps a config option to a set of config options that may have modified it.
-# This dictionary is used recursively, so if A modifies B and B modifies C,
-# it is determined that C was modified by the user if A was modified.
-VAR_MODIFIERS = {"account": {"server",},
-                 "renew_hook": {"deploy_hook",},
-                 "server": {"dry_run", "staging",},
-                 "webroot_map": {"webroot_path",}}
-
-
-# This is a list of all CLI options that we have ever deprecated. It lets us
-# opt out of the default detection, which can interact strangely with option
-# deprecation. See https://github.com/certbot/certbot/issues/8540 for more info.
-DEPRECATED_OPTIONS = {
-    "manual_public_ip_logging_ok",
-    "os_packages_only",
-    "no_self_upgrade",
-    "no_bootstrap",
-    "no_permissions_check",
-    "dns_route53_propagation_seconds",
-    "certbot_route53:auth_propagation_seconds"
-}
-
-
 logger = logging.getLogger(__name__)
+
 
 class ArgumentSource(enum.Enum):
     """Enum for describing where a configuration argument was set."""
@@ -103,10 +81,12 @@ class NamespaceConfig:
     def set_by_user(self, var: str) -> bool:
         """
         Return True if a particular config variable has been set by the user
-        (CLI or config file) including if the user explicitly set it to the
+        (via CLI or config file) including if the user explicitly set it to the
         default, or if it was dynamically set at runtime.  Returns False if the
         variable was assigned a default value.
         """
+        from certbot._internal.cli.cli_constants import DEPRECATED_OPTIONS
+        from certbot._internal.cli.cli_constants import VAR_MODIFIERS
         from certbot._internal.plugins import selection
 
         # We should probably never actually hit this code. But if we do,
