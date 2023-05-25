@@ -16,6 +16,7 @@ from acme.challenges import ChallengeResponse
 from certbot import achallenges
 from certbot import errors
 from certbot.achallenges import AnnotatedChallenge
+from certbot.compat import os
 from certbot.plugins import dns_common
 from certbot.util import add_deprecated_argument
 
@@ -40,7 +41,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.r53 = boto3.client("route53")
+        self.r53 = boto3.client("route53", endpoint_url=os.getenv("AWS_ENDPOINT_URL"))
         self._resource_records: DefaultDict[str, List[Dict[str, str]]] = \
             collections.defaultdict(list)
 

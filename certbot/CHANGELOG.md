@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* `certbot-dns-route53` now supports API endpoint URL overriding.  This can be used for cloud platforms,
+  which provide AWS Route53-compatible API.  See `certbot-dns-route53` README for more details.
 
 ### Changed
 
