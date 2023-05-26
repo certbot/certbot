@@ -136,27 +136,33 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
     def accept(self) -> Tuple[FakeConnection, Any]:  # pylint: disable=missing-function-docstring
         sock, addr = self.sock.accept()
 
-        context = SSL.Context(self.method)
-        context.set_options(SSL.OP_NO_SSLv2)
-        context.set_options(SSL.OP_NO_SSLv3)
-        context.set_tlsext_servername_callback(self._pick_certificate_cb)
-        if self.alpn_selection is not None:
-            context.set_alpn_select_callback(self.alpn_selection)
-
-        ssl_sock = self.FakeConnection(SSL.Connection(context, sock))
-        ssl_sock.set_accept_state()
-
-        # This log line is especially desirable because without it requests to
-        # our standalone TLSALPN server would not be logged.
-        logger.debug("Performing handshake with %s", addr)
         try:
-            ssl_sock.do_handshake()
-        except SSL.Error as error:
-            # _pick_certificate_cb might have returned without
-            # creating SSL context (wrong server name)
-            raise socket.error(error)
+            context = SSL.Context(self.method)
+            context.set_options(SSL.OP_NO_SSLv2)
+            context.set_options(SSL.OP_NO_SSLv3)
+            context.set_tlsext_servername_callback(self._pick_certificate_cb)
+            if self.alpn_selection is not None:
+                context.set_alpn_select_callback(self.alpn_selection)
 
-        return ssl_sock, addr
+            ssl_sock = self.FakeConnection(SSL.Connection(context, sock))
+            ssl_sock.set_accept_state()
+
+            # This log line is especially desirable because without it requests to
+            # our standalone TLSALPN server would not be logged.
+            logger.debug("Performing handshake with %s", addr)
+            try:
+                ssl_sock.do_handshake()
+            except SSL.Error as error:
+                # _pick_certificate_cb might have returned without
+                # creating SSL context (wrong server name)
+                raise socket.error(error)
+
+            return ssl_sock, addr
+        except:
+            # If we encounter any error, close the new socket before reraising
+            # the exception.
+            sock.close()
+            raise
 
 
 def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # pylint: disable=too-many-arguments

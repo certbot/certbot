@@ -374,7 +374,9 @@ This returns information in the following format::
 
 ``Certificate Name`` shows the name of the certificate. Pass this name
 using the ``--cert-name`` flag to specify a particular certificate for the ``run``,
-``certonly``, ``certificates``, ``renew``, and ``delete`` commands. Example::
+``certonly``, ``certificates``, ``renew``, and ``delete`` commands. The certificate
+name cannot contain filepath separators (i.e. '/' or '\\', depending on the platform).
+Example::
 
   certbot certonly --cert-name example.com
 
@@ -1089,19 +1091,19 @@ ACME directory. For example, if you would like to use Let's Encrypt's
 staging server, you would add ``--server
 https://acme-staging-v02.api.letsencrypt.org/directory`` to the command line.
 
+.. note:: ``--dry-run`` uses the Let's Encrypt staging server, unless ``--server``
+   is specified on the CLI or in the :ref:`cli.ini configuration file <config-file>`.
+   Take caution when using ``--dry-run`` with a custom server, as it may cause real
+   certificates to be issued and discarded.
+
 If Certbot does not trust the SSL certificate used by the ACME server, you
 can use the `REQUESTS_CA_BUNDLE
 <https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification>`_
 environment variable to override the root certificates trusted by Certbot. Certbot
 uses the ``requests`` library, which does not use the operating system trusted root store.
+Make sure that ``REQUESTS_CA_BUNDLE`` is set globally in the environment and not only on
+the CLI, or scheduled renewal will not succeed.
 
-If you use ``--server`` to specify an ACME CA that implements the standardized
-version of the spec, you may be able to obtain a certificate for a
-wildcard domain. Some CAs (such as Let's Encrypt) require that domain
-validation for wildcard domains must be done through modifications to
-DNS records which means that the dns-01_ challenge type must be used. To
-see a list of Certbot plugins that support this challenge type and how
-to use them, see plugins_.
 
 Lock Files
 ==========

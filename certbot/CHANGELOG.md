@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 2.6.0 - master
+## 2.7.0 - master
 
 ### Added
 
@@ -17,6 +17,46 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.6.0 - 2023-05-09
+
+### Added
+
+* `--dns-google-project` optionally allows for specifying the project that the DNS zone(s) reside in,
+  which allows for Certbot usage in scenarios where the auth credentials reside in a different
+  project to the zone(s) that are being managed.
+* There is now a new `Other` annotated challenge object to allow plugins to support entirely novel challenges.
+
+### Changed
+
+* Optionally sign the SOA query for dns-rfc2136, to help resolve problems with split-view
+  DNS setups and hidden primary setups.
+  * Certbot versions prior to v1.32.0 did not sign queries with the specified TSIG key
+    resulting in difficulty with split-horizon implementations.
+  * Certbot v1.32.0 through v2.5.0 signed queries by default, potentially causing
+    incompatibility with hidden primary setups with `allow-update-forwarding` enabled
+    if the secondary did not also have the TSIG key within its config.
+  * Certbot v2.6.0 and later no longer signs queries by default, but allows
+    the user to optionally sign these queries by explicit configuration using the
+    `dns_rfc2136_sign_query` option in the credentials .ini file.
+* Lineage name validity is performed for new lineages. `--cert-name` may no longer contain
+  filepath separators (i.e. `/` or `\`, depending on the platform).
+* `certbot-dns-google` now loads credentials using the standard [Application Default
+  Credentials](https://cloud.google.com/docs/authentication/application-default-credentials) strategy,
+  rather than explicitly requiring the Google Compute metadata server to be present if a service account
+  is not provided using `--dns-google-credentials`.
+* `--dns-google-credentials` now supports additional types of file-based credential, such as
+  [External Account Credentials](https://google.aip.dev/auth/4117) created by Workload Identity
+  Federation. All file-based credentials implemented by the Google Auth library are supported.
+
+### Fixed
+
+* `certbot-dns-google` no longer requires deprecated `oauth2client` library.
+* Certbot will no longer try to invoke plugins which do not subclass from the proper
+  `certbot.interfaces.{Installer,Authenticator}` interface (e.g. `certbot -i standalone`
+  will now be ignored). See [GH-9664](https://github.com/certbot/certbot/issues/9664).
 
 More details about these changes can be found on our GitHub repo.
 

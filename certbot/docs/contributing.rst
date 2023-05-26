@@ -41,13 +41,11 @@ Install and configure the OS system dependencies required to run Certbot.
 
    # For APT-based distributions (e.g. Debian, Ubuntu ...)
    sudo apt update
-   sudo apt install python3-dev python3-venv gcc libaugeas0 libssl-dev \
-                    libffi-dev ca-certificates openssl
+   sudo apt install python3-venv libaugeas0
    # For RPM-based distributions (e.g. Fedora, CentOS ...)
    # NB1: old distributions will use yum instead of dnf
-   # NB2: RHEL-based distributions use python3X-devel instead of python3-devel (e.g. python36-devel)
-   sudo dnf install python3-devel gcc augeas-libs openssl-devel libffi-devel \
-                    redhat-rpm-config ca-certificates openssl
+   # NB2: RHEL-based distributions use python3X instead of python3 (e.g. python38)
+   sudo dnf install python3 augeas-libs
    # For macOS installations with Homebrew already installed and configured
    # NB: If you also run `brew install python` you don't need the ~/lib
    #     directory created below, however, Certbot's Apache plugin won't work
@@ -56,6 +54,12 @@ Install and configure the OS system dependencies required to run Certbot.
    brew install augeas
    mkdir ~/lib
    ln -s $(brew --prefix)/lib/libaugeas* ~/lib
+
+.. note:: If you have trouble creating the virtual environment below, you may
+   need to install additional dependencies. See the `cryptography project's
+   site`_ for more information.
+
+.. _`cryptography project's site`: https://cryptography.io/en/latest/installation.html#building-cryptography-on-linux
 
 Set up the Python virtual environment that will host your Certbot local instance.
 
@@ -511,8 +515,8 @@ Steps:
    virtualenv. You can do this by following the instructions in the
    :ref:`Getting Started <getting_started>` section.
 3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
-4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
-   including coverage. The ``--skip-missing-interpreters`` argument ignores
+4. Run ``tox --skip-missing-interpreters`` to run all the tests we recommend
+   developers run locally. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
 5. If any documentation should be added or updated as part of the changes you
    have made, please include the documentation changes in your PR.
@@ -618,33 +622,28 @@ https://python-poetry.org/docs/dependency-specification/.
 If you want to learn more about the design used here, see
 ``tools/pinning/DESIGN.md`` in the Certbot repo.
 
-.. _docker-dev:
+Choosing dependency versions
+----------------------------
 
-Running the client with Docker
-==============================
+A number of Unix distributions create third-party Certbot packages for their users.
+Where feasible, the Certbot project tries to manage its dependencies in a way that
+does not create avoidable work for packagers.
 
-You can use Docker Compose to quickly set up an environment for running and
-testing Certbot. To install Docker Compose, follow the instructions at
-https://docs.docker.com/compose/install/.
+Avoiding adding new dependencies is a good way to help with this.
 
-.. note:: Linux users can simply run ``pip install docker-compose`` to get
-  Docker Compose after installing Docker Engine and activating your shell as
-  described in the :ref:`Getting Started <getting_started>` section.
+When adding new or upgrading existing Python dependencies, Certbot developers should
+pay attention to which distributions are actively packaging Certbot. In particular:
 
-Now you can develop on your host machine, but run Certbot and test your changes
-in Docker. When using ``docker-compose`` make sure you are inside your clone of
-the Certbot repository. As an example, you can run the following command to
-check for linting errors::
+- EPEL (used by RHEL/CentOS/Fedora) updates Certbot regularly. At the time of writing,
+  EPEL9 is the release of EPEL where Certbot is being updated, but check the `EPEL
+  home page <https://docs.fedoraproject.org/en-US/epel/>`_ and `pkgs.org
+  <https://pkgs.org/search/?q=python3-certbot>`_ for the latest release.
+- Debian and Ubuntu only package Certbot when making new releases of their distros.
+  Checking the available version of dependencies in Debian "sid" and "unstable" can help
+  to identify dependencies that are likely to be available in the next stable release of
+  these distros.
 
-  docker-compose run --rm --service-ports development bash -c 'tox -e lint'
+If a dependency is already packaged in these distros and is acceptable for use in Certbot,
+the oldest packaged version of that dependency should be chosen and set as the minimum
+version in ``setup.py``.
 
-You can also leave a terminal open running a shell in the Docker container and
-modify Certbot code in another window. The Certbot repo on your host machine is
-mounted inside of the container so any changes you make immediately take
-effect. To do this, run::
-
-  docker-compose run --rm --service-ports development bash
-
-Now running the check for linting errors described above is as easy as::
-
-  tox -e lint

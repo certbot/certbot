@@ -513,6 +513,7 @@ class Client:
             referred to the enrolled cert lineage, or None if doing a successful dry run.
 
         """
+        new_name = self._choose_lineagename(domains, certname)
         cert, chain, key, _ = self.obtain_certificate(domains)
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
@@ -520,8 +521,6 @@ class Client:
             logger.info(
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
-
-        new_name = self._choose_lineagename(domains, certname)
 
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s", new_name)
@@ -559,13 +558,41 @@ class Client:
         :returns: lineage name that should be used
         :rtype: str
 
+        :raises errors.Error: If the chosen lineage name is invalid.
+
         """
+        # Remember chosen name for new lineage
+        lineagename = None
         if certname:
-            return certname
+            lineagename = certname
         elif util.is_wildcard_domain(domains[0]):
             # Don't make files and directories starting with *.
-            return domains[0][2:]
-        return domains[0]
+            lineagename = domains[0][2:]
+        else:
+            lineagename = domains[0]
+        # Verify whether chosen lineage is valid
+        if self._is_valid_lineagename(lineagename):
+            return lineagename
+        else:
+            raise errors.Error(
+                "The provided certname cannot be used as a lineage name because it contains "
+                "an illegal character (i.e. filepath separator)." if certname else
+                "Cannot use domain name as lineage name because it contains an illegal "
+                "character (i.e. filepath separator). Specify an explicit lineage name "
+                "with --cert-name.")
+
+    def _is_valid_lineagename(self, name: str) -> bool:
+        """Determines whether the provided name is a valid lineagename. A lineagename
+        is invalid when it contains filepath separators.
+
+        :param name: the lineage name to determine validity for
+        :type name: `str`
+
+        :returns: Whether the provided string constitutes a valid lineage name.
+        :rtype: bool
+
+        """
+        return os.path.sep not in name
 
     def save_certificate(self, cert_pem: bytes, chain_pem: bytes,
                          cert_path: str, chain_path: str, fullchain_path: str

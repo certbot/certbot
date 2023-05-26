@@ -17,6 +17,8 @@ jobs:
         linux-py310:
           PYTHON_VERSION: 3.10
           TOXENV: py310
+        linux-isolated:
+          TOXENV: 'isolated-{acme,certbot,apache,cloudflare,digitalocean,dnsimple,dnsmadeeasy,gehirn,google,linode,luadns,nsone,ovh,rfc2136,route53,sakuracloud,nginx}'
         linux-boulder-v2-integration-certbot-oldest:
           PYTHON_VERSION: 3.7
           TOXENV: integration-certbot-oldest
@@ -51,8 +53,6 @@ jobs:
           IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.8
           TOXENV: integration-dns-rfc2136
-        docker-dev:
-          TOXENV: docker_dev
         le-modification:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: modification

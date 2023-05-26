@@ -2,6 +2,7 @@
 import logging
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Optional
 
 from lexicon.providers import luadns
@@ -59,8 +60,8 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_luadns_client(self) -> "_LuaDNSLexiconClient":
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
-        return _LuaDNSLexiconClient(self.credentials.conf('email'),
-                                    self.credentials.conf('token'),
+        return _LuaDNSLexiconClient(cast(str, self.credentials.conf('email')),
+                                    cast(str, self.credentials.conf('token')),
                                     self.ttl)
 
 

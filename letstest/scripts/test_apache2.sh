@@ -15,8 +15,7 @@ elif [ "$OS_TYPE" = "centos" ]
 then
     CONFFILE=/etc/httpd/conf/httpd.conf
     sudo setenforce 0 || true #disable selinux
-    sudo yum -y install httpd
-    sudo yum -y install nghttp2 || echo this is probably ok but see https://bugzilla.redhat.com/show_bug.cgi?id=1358875
+    sudo yum -y install httpd mod_ssl
     sudo service httpd start
     sudo mkdir -p /var/www/$PUBLIC_HOSTNAME/public_html
     sudo chmod -R oug+rwx /var/www

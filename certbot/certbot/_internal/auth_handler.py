@@ -384,7 +384,8 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
             challb=challb, domain=domain, account_key=account_key)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
-    raise errors.Error(f"Received unsupported challenge of type: {chall.typ}")
+    else:
+        return achallenges.Other(challb=challb, domain=domain)
 
 
 def gen_challenge_path(challbs: List[messages.ChallengeBody],

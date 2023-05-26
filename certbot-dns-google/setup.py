@@ -4,14 +4,12 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.6.0.dev0'
+version = '2.7.0.dev0'
 
 install_requires = [
-    'google-api-python-client>=1.5.5',
-    'oauth2client>=4.0',
+    'google-api-python-client>=1.6.5',
+    'google-auth>=2.16.0',
     'setuptools>=41.6.0',
-    # already a dependency of google-api-python-client, but added for consistency
-    'httplib2'
 ]
 
 if not os.environ.get('SNAP_BUILD'):

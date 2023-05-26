@@ -2,6 +2,7 @@
 import logging
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Optional
 
 from lexicon.providers import ovh
@@ -65,10 +66,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         return _OVHLexiconClient(
-            self.credentials.conf('endpoint'),
-            self.credentials.conf('application-key'),
-            self.credentials.conf('application-secret'),
-            self.credentials.conf('consumer-key'),
+            cast(str, self.credentials.conf('endpoint')),
+            cast(str, self.credentials.conf('application-key')),
+            cast(str, self.credentials.conf('application-secret')),
+            cast(str, self.credentials.conf('consumer-key')),
             self.ttl
         )
 

@@ -47,6 +47,7 @@ parts:
       - libffi-dev
       - python3-dev
       - cargo
+      - pkg-config
   certbot-metadata:
     plugin: dump
     source: .
