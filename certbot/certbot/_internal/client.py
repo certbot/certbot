@@ -615,15 +615,16 @@ class Client:
         for path in cert_path, chain_path, fullchain_path:
             util.make_or_verify_dir(os.path.dirname(path), 0o755, self.config.strict_permissions)
 
-        cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
+        cert_file, abs_cert_path = _open_pem_file(self.config, 'cert_path', cert_path)
 
         try:
             cert_file.write(cert_pem)
         finally:
             cert_file.close()
 
-        chain_file, abs_chain_path = _open_pem_file('chain_path', chain_path)
-        fullchain_file, abs_fullchain_path = _open_pem_file('fullchain_path', fullchain_path)
+        chain_file, abs_chain_path = _open_pem_file(self.config, 'chain_path', chain_path)
+        fullchain_file, abs_fullchain_path = _open_pem_file(
+            self.config, 'fullchain_path', fullchain_path)
 
         _save_chain(chain_pem, chain_file)
         _save_chain(cert_pem + chain_pem, fullchain_file)
@@ -847,7 +848,8 @@ def rollback(default_installer: str, checkpoints: int,
         installer.restart()
 
 
-def _open_pem_file(cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
+def _open_pem_file(config: configuration.NamespaceConfig,
+                   cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
     """Open a pem file.
 
     If cli_arg_path was set by the client, open that.
@@ -859,7 +861,7 @@ def _open_pem_file(cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
     :returns: a tuple of file object and its absolute file path
 
     """
-    if cli.set_by_cli(cli_arg_path):
+    if config.set_by_user(cli_arg_path):
         return util.safe_open(pem_path, chmod=0o644, mode="wb"),\
             os.path.abspath(pem_path)
     uniq = util.unique_file(pem_path, 0o644, "wb")

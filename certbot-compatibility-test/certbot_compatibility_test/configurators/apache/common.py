@@ -58,7 +58,7 @@ class Proxy(configurators_common.Proxy):
                     getattr(entrypoint.ENTRYPOINT.OS_DEFAULTS, k))
 
         self._configurator = entrypoint.ENTRYPOINT(
-            config=configuration.NamespaceConfig(self.le_config),
+            config=configuration.NamespaceConfig(self.le_config, {}),
             name="apache")
         self._configurator.prepare()
 

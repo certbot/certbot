@@ -236,7 +236,7 @@ class CertificatesTest(BaseCertManagerTest):
             work_dir=os.path.join(empty_tempdir, "work"),
             logs_dir=os.path.join(empty_tempdir, "logs"),
             quiet=False
-        ))
+        ), {})
 
         filesystem.makedirs(empty_config.renewal_configs_dir)
         self._certificates(empty_config)

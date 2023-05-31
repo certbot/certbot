@@ -44,7 +44,7 @@ class Proxy(configurators_common.Proxy):
         for k in constants.CLI_DEFAULTS:
             setattr(self.le_config, "nginx_" + k, constants.os_constant(k))
 
-        conf = configuration.NamespaceConfig(self.le_config)
+        conf = configuration.NamespaceConfig(self.le_config, {})
         self._configurator = configurator.NginxConfigurator(config=conf, name="nginx")
         self._configurator.prepare()
 
