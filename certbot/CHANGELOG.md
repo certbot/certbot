@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Docker container now adheres to consistency guidelines without forcing
+  `--entrypoint` overrides.
 
 ### Fixed
 

@@ -1,7 +1,8 @@
-#base image 
+#base image
 FROM python:3.10-alpine3.16 as certbot
 
-ENTRYPOINT [ "certbot" ]
+COPY "./container-entrypoint.sh" "/init"
+ENTRYPOINT [ "/init" ]
 EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt
 WORKDIR /opt/certbot
