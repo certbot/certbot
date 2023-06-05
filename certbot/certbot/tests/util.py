@@ -396,8 +396,8 @@ class ConfigTestCase(TempDirTestCase):
         super().setUp()
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(**constants.CLI_DEFAULTS),
-            {},
         )
+        self.config.set_argument_sources({})
         self.config.namespace.verb = "certonly"
         self.config.namespace.config_dir = os.path.join(self.tempdir, 'config')
         self.config.namespace.work_dir = os.path.join(self.tempdir, 'work')

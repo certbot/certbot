@@ -224,7 +224,8 @@ class HelpfulArgumentParser:
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
-        config = NamespaceConfig(parsed_args, self._build_sources_dict())
+        config = NamespaceConfig(parsed_args)
+        config.set_argument_sources(self._build_sources_dict())
 
         self.remove_config_file_domains_for_renewal(config)
 

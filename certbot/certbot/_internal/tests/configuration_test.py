@@ -29,7 +29,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         self.config.https_port = 4321
         from certbot.configuration import NamespaceConfig
         with pytest.raises(errors.Error):
-            NamespaceConfig(self.config.namespace, {})
+            NamespaceConfig(self.config.namespace)
 
     def test_proxy_getattr(self):
         assert self.config.foo == 'bar'
@@ -87,7 +87,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_namespace.work_dir = work_base
         mock_namespace.logs_dir = logs_base
         mock_namespace.server = server
-        config = NamespaceConfig(mock_namespace, {})
+        config = NamespaceConfig(mock_namespace)
 
         assert os.path.isabs(config.config_dir)
         assert config.config_dir == \
@@ -132,7 +132,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_namespace.config_dir = config_base
         mock_namespace.work_dir = work_base
         mock_namespace.logs_dir = logs_base
-        config = NamespaceConfig(mock_namespace, {})
+        config = NamespaceConfig(mock_namespace)
 
         assert os.path.isabs(config.default_archive_dir)
         assert os.path.isabs(config.live_dir)
