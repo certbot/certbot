@@ -5,7 +5,6 @@ from importlib import reload as reload_module
 import io
 import sys
 import tempfile
-from typing import Any, List
 import unittest
 from unittest import mock
 
@@ -13,10 +12,8 @@ import pytest
 
 from acme import challenges
 from certbot import errors
-from certbot.configuration import ArgumentSource, NamespaceConfig
 from certbot._internal import cli
 from certbot._internal import constants
-from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.plugins import disco
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -72,31 +69,25 @@ class FlagDefaultTest(unittest.TestCase):
             assert cli.flag_default('logs_dir') == 'C:\\Certbot\\log'
 
 
-def assert_set_by_user_with_value(namespace, attr: str, value: Any):
-    assert getattr(namespace, attr) == value
-    assert namespace.set_by_user(attr)
-
-
-def assert_value_and_source(namespace, attr: str, value: Any, source: ArgumentSource):
-    assert getattr(namespace, attr) == value
-    assert namespace.argument_sources[attr] == source
-
-
 class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
-    @staticmethod
-    def _unmocked_parse(args: List[str]) -> NamespaceConfig:
-        """Get result of cli.prepare_and_parse_args."""
-        return cli.prepare_and_parse_args(PLUGINS, args)
+
+    def setUp(self):
+        reload_module(cli)
 
     @staticmethod
-    def parse(args: List[str]) -> NamespaceConfig:
+    def _unmocked_parse(*args, **kwargs):
+        """Get result of cli.prepare_and_parse_args."""
+        return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
+
+    @staticmethod
+    def parse(*args, **kwargs):
         """Mocks certbot._internal.display.obj.get_display and calls _unmocked_parse."""
         with test_util.patch_display_util():
-            return ParseTest._unmocked_parse(args)
+            return ParseTest._unmocked_parse(*args, **kwargs)
 
-    def _help_output(self, args: List[str]):
+    def _help_output(self, args):
         "Run a command, and return the output string for scrutiny"
 
         output = io.StringIO()
@@ -109,7 +100,7 @@ class ParseTest(unittest.TestCase):
                 mock_get_utility().notification.side_effect = write_msg
                 with mock.patch('certbot._internal.main.sys.stderr'):
                     with pytest.raises(SystemExit):
-                        self._unmocked_parse(args)
+                        self._unmocked_parse(args, output)
 
         return output.getvalue()
 
@@ -126,19 +117,18 @@ class ParseTest(unittest.TestCase):
             mock_flag_default.side_effect = shim
 
             namespace = self.parse(["certonly"])
-            assert_value_and_source(namespace, 'domains', [], ArgumentSource.DEFAULT)
+            assert namespace.domains == []
             with open(tmp_config.name, 'w') as file_h:
                 file_h.write("domains = example.com")
             namespace = self.parse(["certonly"])
-            assert_value_and_source(namespace, 'domains', ["example.com"], ArgumentSource.CONFIG_FILE)
+            assert namespace.domains == ["example.com"]
             namespace = self.parse(["renew"])
-            assert_value_and_source(namespace, 'domains', [], ArgumentSource.RUNTIME)
+            assert namespace.domains == []
 
     def test_no_args(self):
         namespace = self.parse([])
         for d in ('config_dir', 'logs_dir', 'work_dir'):
             assert getattr(namespace, d) == cli.flag_default(d)
-            assert not namespace.set_by_user(d)
 
     def test_install_abspath(self):
         cert = 'cert'
@@ -236,35 +226,35 @@ class ParseTest(unittest.TestCase):
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
         namespace = self.parse(short_args)
-        assert_set_by_user_with_value(namespace, 'domains', ['example.com'])
+        assert namespace.domains == ['example.com']
 
         short_args = ['-d', 'trailing.period.com.']
         namespace = self.parse(short_args)
-        assert_set_by_user_with_value(namespace, 'domains', ['trailing.period.com'])
+        assert namespace.domains == ['trailing.period.com']
 
         short_args = ['-d', 'example.com,another.net,third.org,example.com']
         namespace = self.parse(short_args)
-        assert_set_by_user_with_value(namespace, 'domains',
-            ['example.com', 'another.net', 'third.org'])
+        assert namespace.domains == ['example.com', 'another.net',
+                                             'third.org']
 
         long_args = ['--domains', 'example.com']
         namespace = self.parse(long_args)
-        assert_set_by_user_with_value(namespace, 'domains', ['example.com'])
+        assert namespace.domains == ['example.com']
 
         long_args = ['--domains', 'trailing.period.com.']
         namespace = self.parse(long_args)
-        assert_set_by_user_with_value(namespace, 'domains', ['trailing.period.com'])
+        assert namespace.domains == ['trailing.period.com']
 
         long_args = ['--domains', 'example.com,another.net,example.com']
         namespace = self.parse(long_args)
-        assert_set_by_user_with_value(namespace, 'domains', ['example.com', 'another.net'])
+        assert namespace.domains == ['example.com', 'another.net']
 
     def test_preferred_challenges(self):
         short_args = ['--preferred-challenges', 'http, dns']
         namespace = self.parse(short_args)
 
         expected = [challenges.HTTP01.typ, challenges.DNS01.typ]
-        assert_set_by_user_with_value(namespace, 'pref_challs', expected)
+        assert namespace.pref_challs == expected
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         # argparse.ArgumentError makes argparse print more information
@@ -275,17 +265,13 @@ class ParseTest(unittest.TestCase):
 
     def test_server_flag(self):
         namespace = self.parse('--server example.com'.split())
-        assert_set_by_user_with_value(namespace, 'server', 'example.com')
+        assert namespace.server == 'example.com'
 
     def test_must_staple_flag(self):
-        namespace = self.parse(['--must-staple'])
-        assert_set_by_user_with_value(namespace, 'must_staple', True)
-        assert_value_and_source(namespace, 'staple', True, ArgumentSource.RUNTIME)
-
-    def test_must_staple_and_staple_ocsp_flags(self):
-        namespace = self.parse(['--must-staple', '--staple-ocsp'])
-        assert_set_by_user_with_value(namespace, 'must_staple', True)
-        assert_set_by_user_with_value(namespace, 'staple', True)
+        short_args = ['--must-staple']
+        namespace = self.parse(short_args)
+        assert namespace.must_staple is True
+        assert namespace.staple is True
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:
@@ -301,24 +287,24 @@ class ParseTest(unittest.TestCase):
     def test_staging_flag(self):
         short_args = ['--staging']
         namespace = self.parse(short_args)
-        assert_set_by_user_with_value(namespace, 'staging', True)
-        assert_set_by_user_with_value(namespace, 'server', constants.STAGING_URI)
+        assert namespace.staging is True
+        assert namespace.server == constants.STAGING_URI
 
         short_args += '--server example.com'.split()
         self._check_server_conflict_message(short_args, '--staging')
 
     def _assert_dry_run_flag_worked(self, namespace, existing_account):
-        assert_set_by_user_with_value(namespace, 'dry_run', True)
-        assert_value_and_source(namespace, 'break_my_certs', True, ArgumentSource.RUNTIME)
-        assert_value_and_source(namespace, 'staging', True, ArgumentSource.RUNTIME)
-        assert_value_and_source(namespace, 'server', constants.STAGING_URI, ArgumentSource.RUNTIME)
+        assert namespace.dry_run is True
+        assert namespace.break_my_certs is True
+        assert namespace.staging is True
+        assert namespace.server == constants.STAGING_URI
 
         if existing_account:
-            assert_value_and_source(namespace, 'tos', True, ArgumentSource.RUNTIME)
-            assert_value_and_source(namespace, 'register_unsafely_without_email', True, ArgumentSource.RUNTIME)
+            assert namespace.tos is True
+            assert namespace.register_unsafely_without_email is True
         else:
-            assert_value_and_source(namespace, 'tos', False, ArgumentSource.DEFAULT)
-            assert_value_and_source(namespace, 'register_unsafely_without_email', False, ArgumentSource.DEFAULT)
+            assert namespace.tos is False
+            assert namespace.register_unsafely_without_email is False
 
     def test_dry_run_flag(self):
         config_dir = tempfile.mkdtemp()
@@ -344,72 +330,50 @@ class ParseTest(unittest.TestCase):
         short_args += ['certonly']
 
         # `--dry-run --server example.com` should emit example.com
-        config = self.parse(short_args + ['--server', 'example.com'])
-        assert_set_by_user_with_value(config, 'server', 'example.com')
+        assert self.parse(short_args + ['--server', 'example.com']).server == \
+                         'example.com'
 
         # `--dry-run --server STAGING_URI` should emit STAGING_URI
-        config = self.parse(short_args + ['--server', constants.STAGING_URI])
-        assert_set_by_user_with_value(config, 'server', constants.STAGING_URI)
+        assert self.parse(short_args + ['--server', constants.STAGING_URI]).server == \
+                         constants.STAGING_URI
 
         # `--dry-run --server LIVE` should emit STAGING_URI
-        config = self.parse(short_args + ['--server', cli.flag_default("server")])
-        assert_value_and_source(config, 'server', constants.STAGING_URI, ArgumentSource.RUNTIME)
+        assert self.parse(short_args + ['--server', cli.flag_default("server")]).server == \
+                         constants.STAGING_URI
 
         # `--dry-run --server example.com --staging` should emit an error
         conflicts = ['--staging']
         self._check_server_conflict_message(short_args + ['--server', 'example.com', '--staging'],
                                             conflicts)
 
-    def test_user_set_rsa_key_size(self):
+    def test_option_was_set(self):
         key_size_option = 'rsa_key_size'
         key_size_value = cli.flag_default(key_size_option)
-        config = self.parse('--rsa-key-size {0}'.format(key_size_value).split())
+        self.parse('--rsa-key-size {0}'.format(key_size_value).split())
 
-        assert config.set_by_user(key_size_option)
+        assert cli.option_was_set(key_size_option, key_size_value) is True
+        assert cli.option_was_set('no_verify_ssl', True) is True
 
         config_dir_option = 'config_dir'
-        assert not config.set_by_user(
-            config_dir_option)
-        assert not config.set_by_user('authenticator')
+        assert not cli.option_was_set(
+            config_dir_option, cli.flag_default(config_dir_option))
+        assert not cli.option_was_set(
+            'authenticator', cli.flag_default('authenticator'))
 
-    def test_user_set_installer_and_authenticator(self):
-        config = self.parse('--apache')
-        assert config.set_by_user('installer')
-        assert config.set_by_user('authenticator')
-
-        config = self.parse('--installer webroot')
-        assert config.set_by_user('installer')
-        assert not config.set_by_user('authenticator')
-
-    def test_user_set_ecdsa_key_option(self):
+    def test_ecdsa_key_option(self):
         elliptic_curve_option = 'elliptic_curve'
         elliptic_curve_option_value = cli.flag_default(elliptic_curve_option)
-        config = self.parse('--elliptic-curve {0}'.format(elliptic_curve_option_value).split())
-        assert config.set_by_user(elliptic_curve_option)
+        self.parse('--elliptic-curve {0}'.format(elliptic_curve_option_value).split())
+        assert cli.option_was_set(elliptic_curve_option, elliptic_curve_option_value) is True
 
-    def test_user_set_invalid_key_type(self):
+    def test_invalid_key_type(self):
         key_type_option = 'key_type'
         key_type_value = cli.flag_default(key_type_option)
-        config = self.parse('--key-type {0}'.format(key_type_value).split())
-        assert config.set_by_user(key_type_option)
+        self.parse('--key-type {0}'.format(key_type_value).split())
+        assert cli.option_was_set(key_type_option, key_type_value) is True
 
         with pytest.raises(SystemExit):
             self.parse("--key-type foo")
-
-    @mock.patch('certbot._internal.hooks.validate_hooks')
-    def test_user_set_deploy_hook(self, unused_mock_validate_hooks):
-        args = 'renew --deploy-hook foo'.split()
-        plugins = disco.PluginsRegistry.find_all()
-        config = cli.prepare_and_parse_args(plugins, args)
-        assert config.set_by_user('renew_hook')
-
-    @mock.patch('certbot._internal.plugins.webroot._validate_webroot')
-    def test_user_set_webroot_map(self, mock_validate_webroot):
-        args = 'renew -w /var/www/html -d example.com'.split()
-        mock_validate_webroot.return_value = '/var/www/html'
-        plugins = disco.PluginsRegistry.find_all()
-        config = cli.prepare_and_parse_args(plugins, args)
-        assert config.set_by_user('webroot_map')
 
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
@@ -435,15 +399,15 @@ class ParseTest(unittest.TestCase):
         namespace = self.parse(["--renew-hook", value,
                                 "--deploy-hook", value,
                                 "--disable-hook-validation"])
-        assert_set_by_user_with_value(namespace, 'deploy_hook', value)
-        assert_set_by_user_with_value(namespace, 'renew_hook', value)
+        assert namespace.deploy_hook == value
+        assert namespace.renew_hook == value
 
     def test_deploy_hook_sets_renew_hook(self):
         value = "foo"
         namespace = self.parse(
             ["--deploy-hook", value, "--disable-hook-validation"])
-        assert_set_by_user_with_value(namespace, 'deploy_hook', value)
-        assert_set_by_user_with_value(namespace, 'renew_hook', value)
+        assert namespace.deploy_hook == value
+        assert namespace.renew_hook == value
 
     def test_renew_hook_conflict(self):
         with mock.patch("certbot._internal.cli.sys.stderr"):
@@ -455,15 +419,15 @@ class ParseTest(unittest.TestCase):
         namespace = self.parse(["--deploy-hook", value,
                                 "--renew-hook", value,
                                 "--disable-hook-validation"])
-        assert_set_by_user_with_value(namespace, 'deploy_hook', value)
-        assert_set_by_user_with_value(namespace, 'renew_hook', value)
+        assert namespace.deploy_hook == value
+        assert namespace.renew_hook == value
 
     def test_renew_hook_does_not_set_renew_hook(self):
         value = "foo"
         namespace = self.parse(
             ["--renew-hook", value, "--disable-hook-validation"])
         assert namespace.deploy_hook is None
-        assert_set_by_user_with_value(namespace, 'renew_hook', value)
+        assert namespace.renew_hook == value
 
     def test_max_log_backups_error(self):
         with mock.patch('certbot._internal.cli.sys.stderr'):
@@ -475,40 +439,37 @@ class ParseTest(unittest.TestCase):
     def test_max_log_backups_success(self):
         value = "42"
         namespace = self.parse(["--max-log-backups", value])
-        assert_set_by_user_with_value(namespace, 'max_log_backups', int(value))
+        assert namespace.max_log_backups == int(value)
 
     def test_unchanging_defaults(self):
         namespace = self.parse([])
-        assert_value_and_source(namespace, 'domains', [], ArgumentSource.DEFAULT)
-        assert_value_and_source(namespace, 'pref_challs', [], ArgumentSource.DEFAULT)
+        assert namespace.domains == []
+        assert namespace.pref_challs == []
 
         namespace.pref_challs = [challenges.HTTP01.typ]
         namespace.domains = ['example.com']
 
         namespace = self.parse([])
-        assert_value_and_source(namespace, 'domains', [], ArgumentSource.DEFAULT)
-        assert_value_and_source(namespace, 'pref_challs', [], ArgumentSource.DEFAULT)
+        assert namespace.domains == []
+        assert namespace.pref_challs == []
 
     def test_no_directory_hooks_set(self):
-        namespace = self.parse(["--no-directory-hooks"])
-        assert_set_by_user_with_value(namespace, 'directory_hooks', False)
+        assert not self.parse(["--no-directory-hooks"]).directory_hooks
 
     def test_no_directory_hooks_unset(self):
-        namespace = self.parse([])
-        assert_value_and_source(namespace, 'directory_hooks', True, ArgumentSource.DEFAULT)
+        assert self.parse([]).directory_hooks is True
 
     def test_delete_after_revoke(self):
         namespace = self.parse(["--delete-after-revoke"])
-        assert_set_by_user_with_value(namespace, 'delete_after_revoke', True)
+        assert namespace.delete_after_revoke is True
 
     def test_delete_after_revoke_default(self):
         namespace = self.parse([])
         assert namespace.delete_after_revoke is None
-        assert not namespace.set_by_user('delete_after_revoke')
 
     def test_no_delete_after_revoke(self):
         namespace = self.parse(["--no-delete-after-revoke"])
-        assert_set_by_user_with_value(namespace, 'delete_after_revoke', False)
+        assert namespace.delete_after_revoke is False
 
     def test_allow_subset_with_wildcard(self):
         with pytest.raises(errors.Error):
@@ -519,38 +480,50 @@ class ParseTest(unittest.TestCase):
             for topic in ['all', 'plugins', 'dns-route53']:
                 assert 'certbot-route53:auth' not in self._help_output([help_flag, topic])
 
-    def test_parse_args_hosts_and_auto_hosts(self):
-        with pytest.raises(errors.Error):
-            self.parse(['--hsts', '--auto-hsts'])
 
-    def test_parse_with_multiple_argument_sources(self):
-        DEFAULT_VALUE = flag_default('server')
-        CONFIG_FILE_VALUE = 'configfile.biz'
-        COMMAND_LINE_VALUE = 'commandline.edu'
+class DefaultTest(unittest.TestCase):
+    """Tests for certbot._internal.cli._Default."""
 
-        # check that the default is set
-        namespace = self.parse(['certonly'])
-        assert_value_and_source(namespace, 'server', DEFAULT_VALUE, ArgumentSource.DEFAULT)
 
-        with tempfile.NamedTemporaryFile() as tmp_config:
-            tmp_config.close()  # close now because of compatibility issues on Windows
-            with open(tmp_config.name, 'w') as file_h:
-                file_h.write(f'server = {CONFIG_FILE_VALUE}')
+    def setUp(self):
+        # pylint: disable=protected-access
+        self.default1 = cli._Default()
+        self.default2 = cli._Default()
 
-            # first, just provide a value from a config file
-            namespace = self.parse([
-                'certonly',
-                '-c', tmp_config.name,
-            ])
-            assert_value_and_source(namespace, 'server', CONFIG_FILE_VALUE, ArgumentSource.CONFIG_FILE)
+    def test_boolean(self):
+        assert bool(self.default1) is False
+        assert bool(self.default2) is False
 
-            # now provide config file + command line values
-            namespace = self.parse([
-                'certonly',
-                '-c', tmp_config.name,
-                '--server', COMMAND_LINE_VALUE,
-            ])
-            assert_value_and_source(namespace, 'server', COMMAND_LINE_VALUE, ArgumentSource.COMMAND_LINE)
+    def test_equality(self):
+        assert self.default1 == self.default2
+
+    def test_hash(self):
+        assert hash(self.default1) == hash(self.default2)
+
+
+class SetByCliTest(unittest.TestCase):
+    """Tests for certbot.set_by_cli and related functions."""
+
+
+    def setUp(self):
+        reload_module(cli)
+
+    def test_deploy_hook(self):
+        assert _call_set_by_cli(
+            'renew_hook', '--deploy-hook foo'.split(), 'renew')
+
+    def test_webroot_map(self):
+        args = '-w /var/www/html -d example.com'.split()
+        verb = 'renew'
+        assert _call_set_by_cli('webroot_map', args, verb) is True
+
+
+def _call_set_by_cli(var, args, verb):
+    with mock.patch('certbot._internal.cli.helpful_parser') as mock_parser:
+        with test_util.patch_display_util():
+            mock_parser.args = args
+            mock_parser.verb = verb
+            return cli.set_by_cli(var)
 
 
 if __name__ == '__main__':

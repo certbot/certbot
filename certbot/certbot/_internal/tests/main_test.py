@@ -21,6 +21,7 @@ import pytest
 import pytz
 
 from acme.messages import Error as acme_error
+from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -85,10 +86,9 @@ class TestHandleCerts(unittest.TestCase):
         assert mock_handle_migration.called
 
     @mock.patch("certbot._internal.main.display_util.yesno")
-    def test_handle_unexpected_key_type_migration(self, mock_yesno):
+    @mock.patch("certbot._internal.main.cli.set_by_cli")
+    def test_handle_unexpected_key_type_migration(self, mock_set, mock_yesno):
         config = mock.Mock()
-        mock_set = mock.Mock()
-        config.set_by_user = mock_set
         cert = mock.Mock()
 
         # If the key types do not differ, it should be a no-op.
@@ -163,7 +163,8 @@ class RunTest(test_util.ConfigTestCase):
     def _call(self):
         args = '-a webroot -i null -d {0}'.format(self.domain).split()
         plugins = disco.PluginsRegistry.find_all()
-        config = cli.prepare_and_parse_args(plugins, args)
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
 
         from certbot._internal.main import run
         run(config, plugins)
@@ -230,7 +231,8 @@ class CertonlyTest(unittest.TestCase):
 
     def _call(self, args):
         plugins = disco.PluginsRegistry.find_all()
-        config = cli.prepare_and_parse_args(plugins, args)
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
 
         with mock.patch('certbot._internal.main._init_le_client') as mock_init:
             with mock.patch('certbot._internal.main._suggest_donation_if_appropriate'):
@@ -431,10 +433,18 @@ class RevokeTest(test_util.TempDirTestCase):
             args = 'revoke --cert-path={0} '
             args = args.format(self.tmp_cert_path).split()
         plugins = disco.PluginsRegistry.find_all()
-        config = cli.prepare_and_parse_args(plugins, args)
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
 
         from certbot._internal.main import revoke
         revoke(config, plugins)
+
+    def _mock_set_by_cli(self, mocked: mock.MagicMock, key: str, value: bool) -> None:
+        def set_by_cli(k: str) -> bool:
+            if key == k:
+                return value
+            return mock.DEFAULT
+        mocked.side_effect = set_by_cli
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.main.client.acme_client')
@@ -457,9 +467,11 @@ class RevokeTest(test_util.TempDirTestCase):
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.client.acme_from_config_key')
-    def test_revoke_by_certname(self, mock_acme_from_config,
+    @mock.patch('certbot._internal.cli.set_by_cli')
+    def test_revoke_by_certname(self, mock_set_by_cli, mock_acme_from_config,
                                 unused_mock_renewal_file_for_certname, mock_cert,
                                 mock_delete_if_appropriate):
+        self._mock_set_by_cli(mock_set_by_cli, "server", False)
         mock_acme_from_config.return_value = self.mock_acme_client
         mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
                                                 server="https://acme.example")
@@ -474,10 +486,12 @@ class RevokeTest(test_util.TempDirTestCase):
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.client.acme_from_config_key')
-    def test_revoke_by_certname_and_server(self, mock_acme_from_config,
+    @mock.patch('certbot._internal.cli.set_by_cli')
+    def test_revoke_by_certname_and_server(self, mock_set_by_cli, mock_acme_from_config,
                                            unused_mock_renewal_file_for_certname, mock_cert,
                                            mock_delete_if_appropriate):
         """Revoking with --server should use the server from the CLI"""
+        self._mock_set_by_cli(mock_set_by_cli, "server", True)
         mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
                                                 server="https://acme.example")
         args = 'revoke --cert-name=example.com --server https://other.example'.split()
@@ -491,7 +505,8 @@ class RevokeTest(test_util.TempDirTestCase):
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
     @mock.patch('certbot._internal.client.acme_from_config_key')
-    def test_revoke_by_certname_empty_server(self, mock_acme_from_config,
+    @mock.patch('certbot._internal.cli.set_by_cli')
+    def test_revoke_by_certname_empty_server(self, mock_set_by_cli, mock_acme_from_config,
                                              unused_mock_renewal_file_for_certname,
                                              mock_cert, mock_delete_if_appropriate):
         """Revoking with --cert-name where the lineage server is empty shouldn't crash """
@@ -584,7 +599,8 @@ class ReconfigureTest(test_util.TempDirTestCase):
     def _call(self, passed_args):
         full_args = passed_args + ['--config-dir', self.config_dir]
         plugins = disco.PluginsRegistry.find_all()
-        config = cli.prepare_and_parse_args(plugins, full_args)
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, full_args))
 
         from certbot._internal.main import reconfigure
         reconfigure(config, plugins)
@@ -600,12 +616,6 @@ class ReconfigureTest(test_util.TempDirTestCase):
 
     @mock.patch('certbot._internal.cert_manager.get_certnames')
     def test_asks_for_certname(self, mock_cert_manager):
-        named_mock = mock.Mock()
-        named_mock.name = 'nginx'
-
-        self.mocks['pick_installer'].return_value = named_mock
-        self.mocks['pick_auth'].return_value = named_mock
-        self.mocks['find_init'].return_value = named_mock
         mock_cert_manager.return_value = ['example.com']
         self._call('--nginx'.split())
         assert mock_cert_manager.call_count == 1
@@ -764,7 +774,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
             mock_match_and_check_overlaps, mock_renewal_file_for_certname):
         # pylint: disable = unused-argument
         config = self.config
-        config.noninteractive_mode = True
+        config.namespace.noninteractive_mode = True
         config.cert_path = "/some/reasonable/path"
         config.certname = ""
         mock_cert_path_to_lineage.return_value = "example.com"
@@ -783,7 +793,7 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
             mock_cert_path_to_lineage, mock_full_archive_dir,
             mock_match_and_check_overlaps, mock_renewal_file_for_certname):
         config = self.config
-        config.delete_after_revoke = True
+        config.namespace.delete_after_revoke = True
         config.cert_path = "/some/reasonable/path"
         config.certname = ""
         mock_cert_path_to_lineage.return_value = "example.com"
@@ -1922,7 +1932,8 @@ class EnhanceTest(test_util.ConfigTestCase):
 
     def _call(self, args):
         plugins = disco.PluginsRegistry.find_all()
-        config = cli.prepare_and_parse_args(plugins, args)
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
 
         with mock.patch('certbot._internal.cert_manager.get_certnames') as mock_certs:
             mock_certs.return_value = ['example.com']

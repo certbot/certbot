@@ -7,9 +7,7 @@ import warnings
 import pytest
 
 from certbot import errors
-from certbot._internal import cli
 from certbot._internal import constants
-from certbot._internal.plugins import disco
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.tests import util as test_util
@@ -26,10 +24,10 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         self.config.http01_port = 4321
 
     def test_init_same_ports(self):
-        self.config.https_port = 4321
+        self.config.namespace.https_port = 4321
         from certbot.configuration import NamespaceConfig
         with pytest.raises(errors.Error):
-            NamespaceConfig(self.config.namespace, {})
+            NamespaceConfig(self.config.namespace)
 
     def test_proxy_getattr(self):
         assert self.config.foo == 'bar'
@@ -39,7 +37,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         assert ['acme-server.org:443', 'new'] == \
                          self.config.server_path.split(os.path.sep)
 
-        self.config.server = ('http://user:pass@acme.server:443'
+        self.config.namespace.server = ('http://user:pass@acme.server:443'
                                  '/p/a/t/h;parameters?query#fragment')
         assert ['user:pass@acme.server:443', 'p', 'a', 't', 'h'] == \
                          self.config.server_path.split(os.path.sep)
@@ -87,7 +85,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_namespace.work_dir = work_base
         mock_namespace.logs_dir = logs_base
         mock_namespace.server = server
-        config = NamespaceConfig(mock_namespace, {})
+        config = NamespaceConfig(mock_namespace)
 
         assert os.path.isabs(config.config_dir)
         assert config.config_dir == \
@@ -132,7 +130,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_namespace.config_dir = config_base
         mock_namespace.work_dir = work_base
         mock_namespace.logs_dir = logs_base
-        config = NamespaceConfig(mock_namespace, {})
+        config = NamespaceConfig(mock_namespace)
 
         assert os.path.isabs(config.default_archive_dir)
         assert os.path.isabs(config.live_dir)

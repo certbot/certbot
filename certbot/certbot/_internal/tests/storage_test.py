@@ -12,7 +12,6 @@ import pytest
 import pytz
 
 import certbot
-from certbot import configuration
 from certbot import errors
 from certbot._internal.storage import ALL_FOUR
 from certbot.compat import filesystem
@@ -40,24 +39,23 @@ class RelevantValuesTest(unittest.TestCase):
 
     def setUp(self):
         self.values = {"server": "example.org", "key_type": "rsa"}
-        self.mock_config = mock.MagicMock()
-        self.mock_config.set_by_user = mock.MagicMock()
 
-    def _call(self, values):
+    def _call(self, *args, **kwargs):
         from certbot._internal.storage import relevant_values
-        self.mock_config.to_dict.return_value = values
-        return relevant_values(self.mock_config)
+        return relevant_values(*args, **kwargs)
 
+    @mock.patch("certbot._internal.cli.option_was_set")
     @mock.patch("certbot._internal.plugins.disco.PluginsRegistry.find_all")
-    def test_namespace(self, mock_find_all):
+    def test_namespace(self, mock_find_all, mock_option_was_set):
         mock_find_all.return_value = ["certbot-foo:bar"]
-        self.mock_config.set_by_user.return_value = True
+        mock_option_was_set.return_value = True
 
         self.values["certbot_foo:bar_baz"] = 42
         assert self._call(self.values.copy()) == self.values
 
-    def test_option_set(self):
-        self.mock_config.set_by_user.return_value = True
+    @mock.patch("certbot._internal.cli.option_was_set")
+    def test_option_set(self, mock_option_was_set):
+        mock_option_was_set.return_value = True
 
         self.values["allow_subset_of_names"] = True
         self.values["authenticator"] = "apache"
@@ -67,45 +65,25 @@ class RelevantValuesTest(unittest.TestCase):
 
         assert self._call(self.values) == expected_relevant_values
 
-    def test_option_unset(self):
-        self.mock_config.set_by_user.return_value = False
+    @mock.patch("certbot._internal.cli.option_was_set")
+    def test_option_unset(self, mock_option_was_set):
+        mock_option_was_set.return_value = False
 
         expected_relevant_values = self.values.copy()
         self.values["rsa_key_size"] = 2048
 
         assert self._call(self.values) == expected_relevant_values
 
-    def test_deprecated_item(self):
-        deprected_option = 'manual_public_ip_logging_ok'
-        self.mock_config.set_by_user = lambda v: False if v == deprected_option else True
+    @mock.patch("certbot._internal.cli.set_by_cli")
+    def test_deprecated_item(self, unused_mock_set_by_cli):
         # deprecated items should never be relevant to store
         expected_relevant_values = self.values.copy()
-        self.values[deprected_option] = None
+        self.values["manual_public_ip_logging_ok"] = None
         assert self._call(self.values) == expected_relevant_values
-        self.values[deprected_option] = True
+        self.values["manual_public_ip_logging_ok"] = True
         assert self._call(self.values) == expected_relevant_values
-        self.values[deprected_option] = False
+        self.values["manual_public_ip_logging_ok"] = False
         assert self._call(self.values) == expected_relevant_values
-
-    def test_with_real_parser(self):
-        from certbot._internal.storage import relevant_values
-        from certbot._internal.plugins import disco
-        from certbot._internal import cli
-        from certbot._internal import constants
-
-        PLUGINS = disco.PluginsRegistry.find_all()
-        namespace = cli.prepare_and_parse_args(PLUGINS, [
-            '--allow-subset-of-names',
-            '--authenticator', 'apache',
-        ])
-        expected_relevant_values = {
-            'server': constants.CLI_DEFAULTS['server'],
-            'key_type': 'ecdsa',
-            'allow_subset_of_names': True,
-            'authenticator': 'apache',
-        }
-
-        assert relevant_values(namespace) == expected_relevant_values
 
 
 class BaseRenewableCertTest(test_util.ConfigTestCase):
@@ -441,9 +419,9 @@ class RenewableCertTests(BaseRenewableCertTest):
         with pytest.raises(errors.CertStorageError):
             self.test_rc.names()
 
-    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    @mock.patch("certbot._internal.storage.cli")
     @mock.patch("certbot._internal.storage.datetime")
-    def test_time_interval_judgments(self, mock_datetime, mock_set_by_user):
+    def test_time_interval_judgments(self, mock_datetime, mock_cli):
         """Test should_autorenew() on the basis of expiry time windows."""
         test_cert = test_util.load_vector("cert_512.pem")
 
@@ -457,7 +435,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             f.write(test_cert)
 
         mock_datetime.timedelta = datetime.timedelta
-        mock_set_by_user.return_value = False
+        mock_cli.set_by_cli.return_value = False
         self.test_rc.configuration["renewalparams"] = {}
 
         for (current_time, interval, result) in [
@@ -495,12 +473,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configuration["renewalparams"]["autorenew"] = "False"
         assert not self.test_rc.autorenewal_is_enabled()
 
-    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    @mock.patch("certbot._internal.storage.cli")
     @mock.patch("certbot._internal.storage.RenewableCert.ocsp_revoked")
-    def test_should_autorenew(self, mock_ocsp, mock_set_by_user):
+    def test_should_autorenew(self, mock_ocsp, mock_cli):
         """Test should_autorenew on the basis of reasons other than
         expiry time window."""
-        mock_set_by_user.return_value = False
+        mock_cli.set_by_cli.return_value = False
         # Autorenewal turned off
         self.test_rc.configuration["renewalparams"] = {"autorenew": "False"}
         assert not self.test_rc.should_autorenew()
@@ -516,7 +494,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_save_successor(self, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
         # (to avoid instantiating parser)
-        mock_rv.side_effect = lambda x: x.to_dict()
+        mock_rv.side_effect = lambda x: x
 
         for ver in range(1, 6):
             for kind in ALL_FOUR:
@@ -575,7 +553,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_save_successor_maintains_group_mode(self, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
         # (to avoid instantiating parser)
-        mock_rv.side_effect = lambda x: x.to_dict()
+        mock_rv.side_effect = lambda x: x
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
@@ -597,7 +575,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_save_successor_maintains_gid(self, mock_ownership, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
         # (to avoid instantiating parser)
-        mock_rv.side_effect = lambda x: x.to_dict()
+        mock_rv.side_effect = lambda x: x
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
@@ -611,7 +589,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         """Test for new_lineage() class method."""
         # Mock relevant_values to say everything is relevant here (so we
         # don't have to mock the parser to help it decide!)
-        mock_rv.side_effect = lambda x: x.to_dict()
+        mock_rv.side_effect = lambda x: x
 
         from certbot._internal import storage
         result = storage.RenewableCert.new_lineage(
@@ -665,7 +643,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         """Test that directories can be created if they don't exist."""
         # Mock relevant_values to say everything is relevant here (so we
         # don't have to mock the parser to help it decide!)
-        mock_rv.side_effect = lambda x: x.to_dict()
+        mock_rv.side_effect = lambda x: x
 
         from certbot._internal import storage
         shutil.rmtree(self.config.renewal_configs_dir)

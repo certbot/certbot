@@ -22,6 +22,22 @@ if TYPE_CHECKING:
     from certbot._internal.cli import helpful
 
 
+class _Default:
+    """A class to use as a default to detect if a value is set by a user"""
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, _Default)
+
+    def __hash__(self) -> int:
+        return id(_Default)
+
+    def __nonzero__(self) -> bool:
+        return self.__bool__()
+
+
 def read_file(filename: str, mode: str = "rb") -> Tuple[str, Any]:
     """Returns the given file's contents.
 

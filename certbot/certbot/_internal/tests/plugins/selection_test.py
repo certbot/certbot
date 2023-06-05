@@ -222,7 +222,8 @@ class TestChooseConfiguratorPlugins(unittest.TestCase):
     def _parseArgs(self, args):
         from certbot import configuration
         from certbot._internal import cli
-        return cli.prepare_and_parse_args(self.plugins, args.split())
+        return configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(self.plugins, args.split()))
 
     def setUp(self):
         self.plugins = PluginsRegistry({

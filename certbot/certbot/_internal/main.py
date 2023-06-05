@@ -168,7 +168,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
 
     # If both --key-type and --cert-name are provided, we consider the user's intent to
     # be unambiguous: to change the key type of this lineage.
-    is_confirmed_via_cli = config.set_by_user("key_type") and config.set_by_user("certname")
+    is_confirmed_via_cli = cli.set_by_cli("key_type") and cli.set_by_cli("certname")
 
     # Failing that, we interactively prompt the user to confirm the change.
     if is_confirmed_via_cli or display_util.yesno(
@@ -181,7 +181,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
 
     # If --key-type was set on the CLI but the user did not confirm the key type change using
     # one of the two above methods, their intent is ambiguous. Error out.
-    if config.set_by_user("key_type"):
+    if cli.set_by_cli("key_type"):
         raise errors.Error(
             'Are you trying to change the key type of the certificate named '
             f'{cert.lineagename} from {cur_key_type} to {new_key_type}? Please provide '
@@ -1126,13 +1126,13 @@ def _populate_from_certname(config: configuration.NamespaceConfig) -> configurat
     if not lineage:
         return config
     if not config.key_path:
-        config.key_path = lineage.key_path
+        config.namespace.key_path = lineage.key_path
     if not config.cert_path:
-        config.cert_path = lineage.cert_path
+        config.namespace.cert_path = lineage.cert_path
     if not config.chain_path:
-        config.chain_path = lineage.chain_path
+        config.namespace.chain_path = lineage.chain_path
     if not config.fullchain_path:
-        config.fullchain_path = lineage.fullchain_path
+        config.namespace.fullchain_path = lineage.fullchain_path
     return config
 
 
@@ -1364,7 +1364,7 @@ def revoke(config: configuration.NamespaceConfig,
             storage.renewal_file_for_certname(config, config.certname), config)
         config.cert_path = lineage.cert_path
         # --server takes priority over lineage.server
-        if lineage.server and not config.set_by_user("server"):
+        if lineage.server and not cli.set_by_cli("server"):
             config.server = lineage.server
     elif not config.cert_path or (config.cert_path and config.certname):
         # intentionally not supporting --cert-path & --cert-name together,
@@ -1843,7 +1843,8 @@ def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
     misc.prepare_virtual_console()
 
     # note: arg parser internally handles --help (and exits afterwards)
-    config = cli.prepare_and_parse_args(plugins, cli_args)
+    args = cli.prepare_and_parse_args(plugins, cli_args)
+    config = configuration.NamespaceConfig(args)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
