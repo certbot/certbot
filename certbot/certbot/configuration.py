@@ -102,9 +102,9 @@ class NamespaceConfig:
         from certbot._internal.cli.cli_constants import VAR_MODIFIERS
         from certbot._internal.plugins import selection
 
-        if self.argument_sources == None:
+        if self.argument_sources is None:
             raise RuntimeError(
-                f"NamespaceConfig.set_by_user called without an ArgumentSources dict. "
+                "NamespaceConfig.set_by_user called without an ArgumentSources dict. "
                 "See NamespaceConfig.set_argument_sources().")
 
         # We should probably never actually hit this code. But if we do,
