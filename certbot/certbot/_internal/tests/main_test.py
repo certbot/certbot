@@ -1110,7 +1110,7 @@ class MainTest(test_util.ConfigTestCase):
 
         # This needed two calls to find_all(), which we're avoiding for now
         # because of possible side effects:
-        # https://github.com/letsencrypt/letsencrypt/commit/51ed2b681f87b1eb29088dd48718a54f401e4855
+        # https://github.com/certbot/certbot/commit/51ed2b681f87b1eb29088dd48718a54f401e4855
         # with mock.patch('certbot._internal.cli.plugins_testable') as plugins:
         #    plugins.return_value = {"apache": True, "nginx": True}
         #    ret, _, _, _ = self._call(args)

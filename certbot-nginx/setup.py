@@ -23,7 +23,7 @@ setup(
     name='certbot-nginx',
     version=version,
     description="Nginx plugin for Certbot",
-    url='https://github.com/letsencrypt/letsencrypt',
+    url='https://github.com/certbot/certbot',
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',

@@ -2794,7 +2794,7 @@ by default, these files can be used to control what parameters are
 used when renewing a specific certificate.
 
 More details about these changes can be found on our GitHub repo:
-https://github.com/letsencrypt/letsencrypt/issues?q=milestone%3A0.5.0+is%3Aissue
+https://github.com/certbot/certbot/issues?q=milestone%3A0.5.0+is%3Aissue
 
 ## 0.4.2 - 2016-03-03
 
@@ -2806,7 +2806,7 @@ against the new OpenSSL release.
 from the private beta.
 
 More details about these changes can be found on our GitHub repo:
-https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.4.2
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.4.2
 
 ## 0.4.1 - 2016-02-29
 
@@ -2818,7 +2818,7 @@ https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.4.2
 * Fixed problems with parsing renewal config files from private beta.
 
 More details about these changes can be found on our GitHub repo:
-https://github.com/letsencrypt/letsencrypt/issues?q=is:issue+milestone:0.4.1
+https://github.com/certbot/certbot/issues?q=is:issue+milestone:0.4.1
 
 ## 0.4.0 - 2016-02-10
 
@@ -2843,7 +2843,7 @@ stability, security, and performance of the script.
 * Added support for Apache 2.2 to the Apache plugin.
 
 More details about these changes can be found on our GitHub repo:
-https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.4.0
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.4.0
 
 ## 0.3.0 - 2016-01-27
 
@@ -2858,7 +2858,7 @@ security of letsencrypt-auto. A number of changes landed in this
 release to prepare for the new version of this script.
 
 More details about these changes can be found on our GitHub repo:
-https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.3.0
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.3.0
 
 ## 0.2.0 - 2016-01-14
 
@@ -2878,7 +2878,7 @@ with PyOpenSSL versions 0.13 or 0.14.
 redirect on some systems.
 
 More details about these changes can be found on our GitHub repo:
-https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.2.0
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.2.0
 
 ## 0.1.1 - 2015-12-15
 
@@ -2896,4 +2896,4 @@ issuance rate limits.
 * Fixed --webroot permission handling for non-root users
 
 More details about these changes can be found on our GitHub repo:
-https://github.com/letsencrypt/letsencrypt/issues?q=milestone%3A0.1.1
+https://github.com/certbot/certbot/issues?q=milestone%3A0.1.1

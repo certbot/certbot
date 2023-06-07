@@ -399,7 +399,6 @@ class NamespaceConfig:
 
     def __deepcopy__(self, _memo: Any) -> 'NamespaceConfig':
         # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
-        # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
         new_ns = copy.deepcopy(self.namespace)
         new_sources = copy.deepcopy(self.argument_sources)
         return type(self)(new_ns, new_sources)
