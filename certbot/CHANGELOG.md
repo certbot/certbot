@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* `NamespaceConfig` now tracks how its arguments were set via a dictionary, allowing us to remove a bunch
+  of global state previously needed to inspect whether a user set an argument or not.
 
 ### Fixed
 

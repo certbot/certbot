@@ -59,17 +59,14 @@ class NamespaceConfig:
     :ivar namespace: Namespace typically produced by
         :meth:`argparse.ArgumentParser.parse_args`.
     :type namespace: :class:`argparse.Namespace`
-    :ivar argument_sources: dictionary of argument names to their :class:`ArgumentSource`
-    :type argument_sources: :class:`Dict[str, ArgumentSource]`
 
     """
 
-    def __init__(self, namespace: argparse.Namespace,
-                 argument_sources: Dict[str, ArgumentSource]) -> None:
+    def __init__(self, namespace: argparse.Namespace) -> None:
         self.namespace: argparse.Namespace
         # Avoid recursion loop because of the delegation defined in __setattr__
         object.__setattr__(self, 'namespace', namespace)
-        object.__setattr__(self, 'argument_sources', argument_sources)
+        object.__setattr__(self, 'argument_sources', None)
 
         self.namespace.config_dir = os.path.abspath(self.namespace.config_dir)
         self.namespace.work_dir = os.path.abspath(self.namespace.work_dir)
@@ -78,16 +75,41 @@ class NamespaceConfig:
         # Check command line parameters sanity, and error out in case of problem.
         _check_config_sanity(self)
 
+    def set_argument_sources(self, argument_sources: Dict[str, ArgumentSource]) -> None:
+        """
+        Associate the NamespaceConfig with a dictionary describing where each of
+        its arguments came from, e.g. `{ 'email': ArgumentSource.CONFIG_FILE }`.
+        This is necessary for making runtime evaluations on whether an argument
+        was specified by the user or not (see `set_by_user`).
+
+        For an example of how to build such a dictionary, see
+        `certbot._internal.cli.helpful.HelpfulArgumentParser._build_sources_dict`
+
+        :ivar argument_sources: dictionary of argument names to their :class:`ArgumentSource`
+        :type argument_sources: :class:`Dict[str, ArgumentSource]`
+        """
+
+        # Avoid recursion loop because of the delegation defined in __setattr__
+        object.__setattr__(self, 'argument_sources', argument_sources)
+
+
     def set_by_user(self, var: str) -> bool:
         """
         Return True if a particular config variable has been set by the user
         (via CLI or config file) including if the user explicitly set it to the
         default, or if it was dynamically set at runtime.  Returns False if the
         variable was assigned a default value.
+
+        Raises an exception if `argument_sources` is not set.
         """
         from certbot._internal.cli.cli_constants import DEPRECATED_OPTIONS
         from certbot._internal.cli.cli_constants import VAR_MODIFIERS
         from certbot._internal.plugins import selection
+
+        if self.argument_sources is None:
+            raise RuntimeError(
+                "NamespaceConfig.set_by_user called without an ArgumentSources dict. "
+                "See NamespaceConfig.set_argument_sources().")
 
         # We should probably never actually hit this code. But if we do,
         # a deprecated option has logically never been set by the CLI.
@@ -121,10 +143,12 @@ class NamespaceConfig:
 
     def _mark_runtime_override(self, name: str) -> None:
         """
-        Overwrites an argument's source to be ArgumentSource.RUNTIME. Used when certbot sets an
-        argument's values at runtime.
+        If an argument_sources dict was set, overwrites an argument's source to
+        be ArgumentSource.RUNTIME. Used when certbot sets an argument's values
+        at runtime.
         """
-        self.argument_sources[name] = ArgumentSource.RUNTIME
+        if self.argument_sources is not None:
+            self.argument_sources[name] = ArgumentSource.RUNTIME
 
     # Delegate any attribute not explicitly defined to the underlying namespace object.
 
@@ -401,8 +425,11 @@ class NamespaceConfig:
         # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
         # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
         new_ns = copy.deepcopy(self.namespace)
-        new_sources = copy.deepcopy(self.argument_sources)
-        return type(self)(new_ns, new_sources)
+        new_config = type(self)(new_ns)
+        if self.set_argument_sources is not None:
+            new_sources = copy.deepcopy(self.argument_sources)
+            new_config.set_argument_sources(new_sources)
+        return new_config
 
 
 def _check_config_sanity(config: NamespaceConfig) -> None:
