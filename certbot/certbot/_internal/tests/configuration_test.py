@@ -158,6 +158,24 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
                          os.path.join(self.config.renewal_hooks_dir,
                                       constants.RENEWAL_POST_HOOKS_DIR)
 
+    def test_set_by_user_runtime_overrides(self):
+        assert not self.config.set_by_user('something')
+        self.config.something = 'a value'
+        assert self.config.set_by_user('something')
+
+    def test_set_by_user_exception(self):
+        from certbot.configuration import NamespaceConfig
+        
+        # a newly created NamespaceConfig has no argument sources dict, so an
+        # exception is raised
+        config = NamespaceConfig(self.config.namespace)
+        with pytest.raises(RuntimeError):
+            config.set_by_user('whatever')
+        
+        # now set an argument sources dict
+        config.set_argument_sources({})
+        assert not config.set_by_user('whatever')
+
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

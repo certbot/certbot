@@ -77,9 +77,13 @@ class NamespaceConfig:
 
     def set_argument_sources(self, argument_sources: Dict[str, ArgumentSource]) -> None:
         """
-        Associate the NamespaceConfig with a dictionary describing where each of its arguments
-        came from. This is necessary for making runtime evaluations on whether an argument was
-        specified by the user or not (see `set_by_user`).
+        Associate the NamespaceConfig with a dictionary describing where each of
+        its arguments came from, e.g. `{ 'email': ArgumentSource.CONFIG_FILE }`.
+        This is necessary for making runtime evaluations on whether an argument
+        was specified by the user or not (see `set_by_user`).
+
+        For an example of how to build such a dictionary, see
+        `certbot._internal.cli.helpful.HelpfulArgumentParser._build_sources_dict`
 
         :ivar argument_sources: dictionary of argument names to their :class:`ArgumentSource`
         :type argument_sources: :class:`Dict[str, ArgumentSource]`
