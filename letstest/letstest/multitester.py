@@ -58,17 +58,17 @@ parser.add_argument('test_script',
                     default='test_apache2.sh',
                     help='path of bash script in to deploy and run')
 parser.add_argument('--repo',
-                    default='https://github.com/letsencrypt/letsencrypt.git',
+                    default='https://github.com/certbot/certbot.git',
                     help='certbot git repo to use')
 parser.add_argument('--branch',
                     default='~',
                     help='certbot git branch to trial')
 parser.add_argument('--pull_request',
                     default='~',
-                    help='letsencrypt/letsencrypt pull request to trial')
+                    help='certbot/certbot pull request to trial')
 parser.add_argument('--merge_master',
                     action='store_true',
-                    help="if set merges PR into master branch of letsencrypt/letsencrypt")
+                    help="if set merges PR into master branch of certbot/certbot")
 parser.add_argument('--saveinstances',
                     action='store_true',
                     help="don't kill EC2 instances after run, useful for debugging")
