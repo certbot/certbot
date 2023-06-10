@@ -14,14 +14,6 @@ min_setuptools_version='41.6.0'
 if parse_version(setuptools_version) < parse_version(min_setuptools_version):
     raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
 
-# Workaround for https://bugs.python.org/issue8876, see
-# https://bugs.python.org/issue8876#msg208792
-# This can be removed when using Python 2.7.9 or later:
-# https://hg.python.org/cpython/raw-file/v2.7.9/Misc/NEWS
-if os.path.abspath(__file__).split(os.path.sep)[1] == 'vagrant':
-    del os.link
-
-
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
     with codecs.open(filename, encoding=encoding) as fd:
