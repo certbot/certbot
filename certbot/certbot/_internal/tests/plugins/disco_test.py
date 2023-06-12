@@ -194,6 +194,17 @@ class PluginsRegistryTest(unittest.TestCase):
         assert plugins["ep1"].entry_point is self.ep1
         assert "p1:ep1" not in plugins
 
+    def test_find_all_error_message(self):
+        from certbot._internal.plugins.disco import PluginsRegistry
+        with mock.patch("certbot._internal.plugins.disco.pkg_resources") as mock_pkg:
+            EP_SA.load = None # This triggers a TypeError when the entrypoint loads
+            mock_pkg.iter_entry_points.side_effect = [
+                iter([EP_SA]), iter([EP_WR, self.ep1])
+            ]
+            with self.assertRaises(errors.PluginError) as cm:
+                PluginsRegistry.find_all()
+            assert "standalone' plugin errored" in str(cm.exception)
+
     def test_getitem(self):
         assert self.plugin_ep == self.reg["mock"]
 
