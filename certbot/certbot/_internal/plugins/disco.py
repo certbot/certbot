@@ -189,8 +189,14 @@ class PluginsRegistry(Mapping):
             pkg_resources.iter_entry_points(
                 constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
         for entry_point in entry_points:
-            cls._load_entry_point(entry_point, plugins)
-
+            try:
+                cls._load_entry_point(entry_point, plugins)
+            except Exception as e:
+                raise errors.PluginError(
+                    f"The '{entry_point.module_name}' plugin errored while loading: {e}. "
+                     "You may need to remove or update this plugin. The Certbot log will "
+                     "contain the full error details and this should be reported to the "
+                     "plugin developer.") from e
         return cls(plugins)
 
     @classmethod
