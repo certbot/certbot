@@ -79,7 +79,7 @@ class LooseVersion:
 
         self.version_components = components
 
-    def try_risky_comparison(self, other: Any) -> int:
+    def try_risky_comparison(self, other: 'LooseVersion') -> int:
         """Compares the LooseVersion to another value.
 
         If the other value is another LooseVersion, the version components are compared. Otherwise,
@@ -106,9 +106,6 @@ class LooseVersion:
         Incomparability:
         - LooseVersion('1a').try_risky_comparison(LooseVersion('1.0')) -> ValueError
         """
-        if not isinstance(other, type(self)):
-            raise TypeError(f'Comparison not supported between LooseVersion and {type(other)}')
-
         try:
             for self_vc, other_vc in itertools.zip_longest(self.version_components,
                                                            other.version_components,

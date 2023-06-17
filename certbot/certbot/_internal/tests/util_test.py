@@ -6,7 +6,6 @@ import io
 import sys
 import unittest
 from unittest import mock
-import warnings
 
 import pytest
 
@@ -694,22 +693,16 @@ class ParseLooseVersionTest(unittest.TestCase):
             ('0.960923', '2.2beta29'),
             ('1.13++', '5.5.kw'))
         for v1, v2 in comparisons:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", DeprecationWarning)
-                assert self._call(v1) < self._call(v2)
+            assert self._call(v1) < self._call(v2)
 
     def test_equal(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            assert self._call('8.02') == self._call('8.02')
+        assert self._call('8.02') == self._call('8.02')
 
     def test_greater_than(self):
         comparisons = (('161', '3.10a'),
             ('3.2.pl0', '3.1.1.6'))
         for v1, v2 in comparisons:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", DeprecationWarning)
-                assert self._call(v1) > self._call(v2)
+            assert self._call(v1) > self._call(v2)
 
 
 if __name__ == "__main__":
