@@ -14,9 +14,9 @@ import certbot.tests.util as test_util
 
 
 class RenewalTest(test_util.ConfigTestCase):
-    @mock.patch('certbot._internal.cli.set_by_cli')
-    def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_ancient_webroot_renewal_conf(self, mock_set_by_user):
+        mock_set_by_user.return_value = False
         rc_path = test_util.make_lineage(
             self.config.config_dir, 'sample-renewal-ancient.conf')
         self.config.account = None
@@ -30,13 +30,13 @@ class RenewalTest(test_util.ConfigTestCase):
         renewal._restore_webroot_config(config, renewalparams)
         assert config.webroot_path == ['/var/www/']
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_webroot_params_conservation(self, mock_set_by_cli):
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_webroot_params_conservation(self, mock_set_by_user):
         # For more details about why this test is important, see:
         # certbot._internal.plugins.webroot_test::
         #   WebrootActionTest::test_webroot_map_partial_without_perform
         from certbot._internal import renewal
-        mock_set_by_cli.return_value = False
+        mock_set_by_user.return_value = False
 
         renewalparams = {
             'webroot_map': {'test.example.com': '/var/www/test'},
@@ -100,9 +100,9 @@ class RenewalTest(test_util.ConfigTestCase):
 
         assert self.config.elliptic_curve == 'secp256r1'
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_new_key(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_new_key(self, mock_set_by_user):
+        mock_set_by_user.return_value = False
         # When renewing with both reuse_key and new_key, the key should be regenerated,
         # the key type, key parameters and reuse_key should be kept.
         self.config.reuse_key = True
@@ -129,9 +129,9 @@ class RenewalTest(test_util.ConfigTestCase):
         le_client.obtain_certificate.assert_called_with(mock.ANY, None)
 
     @mock.patch('certbot._internal.renewal.hooks.renew_hook')
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_reuse_key_conflicts(self, mock_set_by_cli, unused_mock_renew_hook):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_reuse_key_conflicts(self, mock_set_by_user, unused_mock_renew_hook):
+        mock_set_by_user.return_value = False
 
         # When renewing with reuse_key and a conflicting key parameter (size, curve)
         # an error should be raised ...
@@ -156,14 +156,14 @@ class RenewalTest(test_util.ConfigTestCase):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
         # ... unless --no-reuse-key is set
-        mock_set_by_cli.side_effect = lambda var: var == "reuse_key"
+        mock_set_by_user.side_effect = lambda var: var == "reuse_key"
         self.config.reuse_key = False
         renewal.renew_cert(self.config, None, le_client, lineage)
 
     @test_util.patch_display_util()
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_remove_deprecated_config_elements(self, mock_set_by_cli, unused_mock_get_utility):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_remove_deprecated_config_elements(self, mock_set_by_user, unused_mock_get_utility):
+        mock_set_by_user.return_value = False
         config = configuration.NamespaceConfig(self.config)
         config.certname = "sample-renewal-deprecated-option"
 
@@ -177,9 +177,9 @@ class RenewalTest(test_util.ConfigTestCase):
         # value in the renewal conf file
         assert isinstance(lineage_config.manual_public_ip_logging_ok, mock.MagicMock)
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_absent_key_type_restored(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_absent_key_type_restored(self, mock_set_by_user):
+        mock_set_by_user.return_value = False
 
         rc_path = test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
 
@@ -196,60 +196,60 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         from certbot._internal.renewal import restore_required_config_elements
         return restore_required_config_elements(*args, **kwargs)
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_allow_subset_of_names_success(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_allow_subset_of_names_success(self, mock_set_by_user):
+        mock_set_by_user.return_value = False
         self._call(self.config, {'allow_subset_of_names': 'True'})
         assert self.config.allow_subset_of_names is True
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_allow_subset_of_names_failure(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_allow_subset_of_names_failure(self, mock_set_by_user):
+        mock_set_by_user.return_value = False
         renewalparams = {'allow_subset_of_names': 'maybe'}
         with pytest.raises(errors.Error):
             self._call(self.config, renewalparams)
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_pref_challs_list(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_pref_challs_list(self, mock_set_by_user):
+        mock_set_by_user.return_value = False
         renewalparams = {'pref_challs': 'http-01, dns'.split(',')}
         self._call(self.config, renewalparams)
         expected = [challenges.HTTP01.typ, challenges.DNS01.typ]
         assert self.config.pref_challs == expected
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_pref_challs_str(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_pref_challs_str(self, mock_set_by_user):
+        mock_set_by_user.return_value = False
         renewalparams = {'pref_challs': 'dns'}
         self._call(self.config, renewalparams)
         expected = [challenges.DNS01.typ]
         assert self.config.pref_challs == expected
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_pref_challs_failure(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_pref_challs_failure(self, mock_set_by_user):
+        mock_set_by_user.return_value = False
         renewalparams = {'pref_challs': 'finding-a-shrubbery'}
         with pytest.raises(errors.Error):
             self._call(self.config, renewalparams)
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_must_staple_success(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_must_staple_success(self, mock_set_by_user):
+        mock_set_by_user.return_value = False
         self._call(self.config, {'must_staple': 'True'})
         assert self.config.must_staple is True
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_must_staple_failure(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_must_staple_failure(self, mock_set_by_user):
+        mock_set_by_user.return_value = False
         renewalparams = {'must_staple': 'maybe'}
         with pytest.raises(errors.Error):
             self._call(self.config, renewalparams)
 
-    @mock.patch('certbot._internal.renewal.cli.set_by_cli')
-    def test_ancient_server_renewal_conf(self, mock_set_by_cli):
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_ancient_server_renewal_conf(self, mock_set_by_user):
         from certbot._internal import constants
         self.config.server = None
-        mock_set_by_cli.return_value = False
+        mock_set_by_user.return_value = False
         self._call(self.config, {'server': constants.V1_URI})
         assert self.config.server == constants.CLI_DEFAULTS['server']
 

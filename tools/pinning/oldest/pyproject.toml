@@ -43,7 +43,7 @@ acme = {path = "../../../acme", extras = ["test"]}
 # dependency should be updated in our setup.py files as well to communicate
 # this information to our users.
 
-ConfigArgParse = "0.10.0"
+ConfigArgParse = "1.5.3"
 apacheconfig = "0.3.2"
 asn1crypto = "0.24.0"
 boto3 = "1.15.15"
