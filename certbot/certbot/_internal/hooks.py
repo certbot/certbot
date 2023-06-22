@@ -1,6 +1,7 @@
 """Facilities for implementing hooks that call shell commands."""
 
 import logging
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
@@ -236,12 +237,14 @@ def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_ru
     _run_hook("deploy-hook", command)
 
 
-def _run_hook(cmd_name: str, shell_cmd: str, extra_env: Optional[dict[str, str]] = None) -> str:
+def _run_hook(cmd_name: str, shell_cmd: str, extra_env: Optional[Dict[str, str]] = None) -> str:
     """Run a hook command.
 
     :param str cmd_name: the user facing name of the hook being run
     :param shell_cmd: shell command to execute
     :type shell_cmd: `list` of `str` or `str`
+    :param dict extra_env: extra environment variables to set
+    :type extra_env: `dict` of `str` to `str`
 
     :returns: stderr if there was any"""
     env = util.env_no_snap_for_external_calls()
