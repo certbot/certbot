@@ -149,10 +149,17 @@ def _run_eventually(command: str) -> None:
         post_hooks.append(command)
 
 
-def run_saved_post_hooks() -> None:
+def run_saved_post_hooks(renewed_domains: List, failed_domains: List) -> None:
     """Run any post hooks that were saved up in the course of the 'renew' verb"""
     for cmd in post_hooks:
-        _run_hook("post-hook", cmd)
+        _run_hook(
+            "post-hook",
+            cmd,
+            {
+                'RENEWED_DOMAINS': ' '.join(renewed_domains),
+                'FAILED_DOMAINS': ' '.join(failed_domains)
+            }
+        )
 
 
 def deploy_hook(config: configuration.NamespaceConfig, domains: List[str],
@@ -229,7 +236,7 @@ def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_ru
     _run_hook("deploy-hook", command)
 
 
-def _run_hook(cmd_name: str, shell_cmd: str) -> str:
+def _run_hook(cmd_name: str, shell_cmd: str, extra_env: Optional[dict[str, str]] = None) -> str:
     """Run a hook command.
 
     :param str cmd_name: the user facing name of the hook being run
@@ -237,8 +244,10 @@ def _run_hook(cmd_name: str, shell_cmd: str) -> str:
     :type shell_cmd: `list` of `str` or `str`
 
     :returns: stderr if there was any"""
+    env = util.env_no_snap_for_external_calls()
+    env.update(extra_env or {})
     returncode, err, out = misc.execute_command_status(
-        cmd_name, shell_cmd, env=util.env_no_snap_for_external_calls())
+        cmd_name, shell_cmd, env=env)
     display_ops.report_executed_command(f"Hook '{cmd_name}'", returncode, out, err)
     return err
 

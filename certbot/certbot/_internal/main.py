@@ -1632,10 +1632,12 @@ def renew(config: configuration.NamespaceConfig,
     :rtype: None
 
     """
+
+    renewed_domains, failed_domains = (list(), list())
     try:
-        renewal.handle_renewal_request(config)
+        renewed_domains, failed_domains = renewal.handle_renewal_request(config)
     finally:
-        hooks.run_saved_post_hooks()
+        hooks.run_saved_post_hooks(renewed_domains, failed_domains)
 
 
 def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
