@@ -10,6 +10,7 @@ from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
+from typing import List
 
 
 class ValidateHooksTest(unittest.TestCase):
@@ -252,7 +253,9 @@ class RunSavedPostHooksTest(HookTest):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot._internal.hooks import run_saved_post_hooks
-        return run_saved_post_hooks()
+        # run_saved_post_hooks() requires a renewed_domains list and a failed_domains list
+        # but we're not using these for tests. Instead the lists are empty.
+        return run_saved_post_hooks(list(), list())
 
     def _call_with_mock_execute_and_eventually(self, *args, **kwargs):
         """Call run_saved_post_hooks but mock out execute and eventually
