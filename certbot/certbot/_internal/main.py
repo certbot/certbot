@@ -1633,7 +1633,8 @@ def renew(config: configuration.NamespaceConfig,
 
     """
 
-    renewed_domains, failed_domains = (list(), list())
+    renewed_domains: List[str] = []
+    failed_domains: List[str] = []
     try:
         renewed_domains, failed_domains = renewal.handle_renewal_request(config)
     finally:

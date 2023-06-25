@@ -150,7 +150,7 @@ def _run_eventually(command: str) -> None:
         post_hooks.append(command)
 
 
-def run_saved_post_hooks(renewed_domains: List, failed_domains: List) -> None:
+def run_saved_post_hooks(renewed_domains: List[str], failed_domains: List[str]) -> None:
     """Run any post hooks that were saved up in the course of the 'renew' verb"""
     for cmd in post_hooks:
         _run_hook(

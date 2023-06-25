@@ -255,7 +255,7 @@ class RunSavedPostHooksTest(HookTest):
         from certbot._internal.hooks import run_saved_post_hooks
         # run_saved_post_hooks() requires a renewed_domains list and a failed_domains list
         # but we're not using these for tests. Instead the lists are empty.
-        return run_saved_post_hooks(list(), list())
+        return run_saved_post_hooks([], [])
 
     def _call_with_mock_execute_and_eventually(self, *args, **kwargs):
         """Call run_saved_post_hooks but mock out execute and eventually
