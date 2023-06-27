@@ -1,6 +1,7 @@
 """Tests for certbot._internal.hooks."""
 import sys
 import unittest
+from platform import python_version_tuple
 from unittest import mock
 
 import pytest
@@ -11,6 +12,17 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
 from typing import List
+
+
+def pyver_lt(major: int, minor: int):
+    pymajor = int(python_version_tuple()[0])
+    pyminor = int(python_version_tuple()[1])
+    if pymajor < major:
+        return True
+    elif pymajor > major:
+        return False
+    else:
+        return pyminor < minor
 
 
 class ValidateHooksTest(unittest.TestCase):
@@ -206,6 +218,7 @@ class PostHookTest(HookTest):
             assert not self._call_with_mock_execute(self.config, []).called
             assert not self._get_eventually()
 
+    @unittest.skipIf(pyver_lt(3, 8), "Python 3.8+ required for this test.")
     def test_renew_env(self):
         self.config.verb = "certonly"
         args = self._call_with_mock_execute(self.config, ["success.org"]).call_args
@@ -298,6 +311,7 @@ class RunSavedPostHooksTest(HookTest):
         mock_execute = self._call_with_mock_execute_and_eventually([], [])
         mock_execute.assert_called_once_with("post-hook", self.eventually[0], env=mock.ANY)
 
+    @unittest.skipIf(pyver_lt(3, 8), "Python 3.8+ required for this test.")
     def test_env(self):
         self.eventually = ["foo"]
         mock_execute = self._call_with_mock_execute_and_eventually(["success.org"], ["failed.org"])
