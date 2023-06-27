@@ -224,9 +224,6 @@ class PostHookTest(HookTest):
         args = self._call_with_mock_execute(self.config, ["success.org"]).call_args
         assert args.kwargs['env']["RENEWED_DOMAINS"] == "success.org"
 
-        self.config.verb = "renew"
-        args = self._call_with_mock_execute(self.config, ["success.org"]).call_args
-
     def test_renew_disabled_dir_hooks(self):
         self.config.directory_hooks = False
         self._test_renew_common([self.config.post_hook])
