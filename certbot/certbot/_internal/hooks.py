@@ -103,7 +103,11 @@ def _run_pre_hook_if_necessary(command: str) -> None:
         executed_pre_hooks.add(command)
 
 
-def post_hook(config: configuration.NamespaceConfig) -> None:
+def post_hook(
+    config: configuration.NamespaceConfig,
+    renewed_domains: List[str]
+) -> None:
+
     """Run post-hooks if defined.
 
     This function also registers any executables found in
@@ -131,7 +135,16 @@ def post_hook(config: configuration.NamespaceConfig) -> None:
             _run_eventually(cmd)
     # certonly / run
     elif cmd:
-        _run_hook("post-hook", cmd)
+        _run_hook(
+            "post-hook",
+            cmd,
+            {
+                'RENEWED_DOMAINS': ' '.join(renewed_domains),
+                # Since other commands stop certbot execution on failure,
+                # it doesn't make sense to have a FAILED_DOMAINS variable
+                'FAILED_DOMAINS': ""
+            }
+        )
 
 
 post_hooks: List[str] = []
