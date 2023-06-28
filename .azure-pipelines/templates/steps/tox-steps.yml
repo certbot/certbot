@@ -27,8 +27,6 @@ steps:
   - bash: |
       set -e
       python3 tools/pip_install.py tox
-    env:
-      SYSTEM_VERSION_COMPAT: 0
     displayName: Install runtime dependencies
   - task: DownloadSecureFile@1
     name: testFarmPem
@@ -42,7 +40,6 @@ steps:
       env
       python3 -m tox
     env:
-      SYSTEM_VERSION_COMPAT: 0
       AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
       AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
       AWS_EC2_PEM_FILE: $(testFarmPem.secureFilePath)
