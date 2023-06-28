@@ -26,8 +26,7 @@ steps:
       addToPath: true
   - bash: |
       set -e
-      python3 -m venv venv
-      venv/bin/python tools/pip_install.py tox
+      python3 tools/pip_install.py tox
     displayName: Install runtime dependencies
   - task: DownloadSecureFile@1
     name: testFarmPem
@@ -39,7 +38,7 @@ steps:
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
       [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
       env
-      venv/bin/python -m tox
+      python3 -m tox
     env:
       AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
       AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
@@ -49,7 +48,7 @@ steps:
     # status code to prevent problems here from causing build failures.  If
     # this turns out to work well, we can change this.
   - bash: |
-      venv/bin/python tools/pip_install.py -I coverage
+      python3 tools/pip_install.py -I coverage
       case "$AGENT_OS" in
         Darwin)
           CODECOV_URL="https://uploader.codecov.io/latest/macos/codecov"
