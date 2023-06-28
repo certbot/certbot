@@ -71,10 +71,6 @@ poetry = "<1.3.0"
 # https://github.com/certbot/certbot/issues/9606.
 setuptools = "<67.5.0"
 
-# Temporary pin to try isolate why python-augeas is suddenly failing to build
-# in the macos-cover CI job.
-pip = "23.0.1"
-
 [tool.poetry.dev-dependencies]
 
 [build-system]
