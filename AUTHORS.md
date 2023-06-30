@@ -154,6 +154,7 @@ Authors
 * [LeCoyote](https://github.com/LeCoyote)
 * [Lee Watson](https://github.com/TheReverend403)
 * [Leo Famulari](https://github.com/lfam)
+* [Leon G](https://github.com/LeonGr)
 * [lf](https://github.com/lf-)
 * [Liam Marshall](https://github.com/liamim)
 * [Lior Sabag](https://github.com/liorsbg)
