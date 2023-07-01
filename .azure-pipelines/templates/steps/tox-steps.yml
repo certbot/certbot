@@ -41,11 +41,11 @@ steps:
       python3 -m tox
     env:
       AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACqCESS_KEY)
       AWS_EC2_PEM_FILE: $(testFarmPem.secureFilePath)
       # Enable --use-pep517 for pip.
       # As of pip 23.1.0, builds started failing on macOS unless this flag is set.
-      PIP_USE_PEP517: "true"
+      # PIP_USE_PEP517: "true"
     displayName: Run tox
     # For now, let's omit `set -e` and avoid the script exiting with a nonzero
     # status code to prevent problems here from causing build failures.  If
