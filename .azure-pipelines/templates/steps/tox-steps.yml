@@ -26,7 +26,12 @@ steps:
       addToPath: true
   - bash: |
       set -e
-      python3 tools/pip_install.py tox
+      curl https://pyenv.run | bash
+      eval "$(pyenv init -)"
+      pyenv install ${PYTHON_VERSION}
+      pyenv shell ${PYTHON_VERSION}
+      python3 -m venv venv
+      venv/bin/python3 tools/pip_install.py tox
     displayName: Install runtime dependencies
   - task: DownloadSecureFile@1
     name: testFarmPem
@@ -38,7 +43,7 @@ steps:
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
       [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
       env
-      python3 -m tox
+      venv/bin/python3 -m tox
     env:
       AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
       AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACqCESS_KEY)
@@ -51,7 +56,7 @@ steps:
     # status code to prevent problems here from causing build failures.  If
     # this turns out to work well, we can change this.
   - bash: |
-      python3 tools/pip_install.py -I coverage
+      venv/bin/python3 tools/pip_install.py -I coverage
       case "$AGENT_OS" in
         Darwin)
           CODECOV_URL="https://uploader.codecov.io/latest/macos/codecov"
@@ -68,7 +73,7 @@ steps:
       esac
       curl --retry 3 -o codecov "$CODECOV_URL"
       chmod +x codecov
-      coverage xml
+      venv/bin/coverage xml
       ./codecov || echo "Uploading coverage data failed"
     condition: and(eq(variables['uploadCoverage'], true), or(startsWith(variables['TOXENV'], 'cover'), startsWith(variables['TOXENV'], 'integration')))
     displayName: Upload coverage data
