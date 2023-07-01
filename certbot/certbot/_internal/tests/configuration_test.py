@@ -7,7 +7,9 @@ import warnings
 import pytest
 
 from certbot import errors
+from certbot._internal import cli
 from certbot._internal import constants
+from certbot._internal.plugins import disco
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.tests import util as test_util
@@ -24,7 +26,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         self.config.http01_port = 4321
 
     def test_init_same_ports(self):
-        self.config.namespace.https_port = 4321
+        self.config.https_port = 4321
         from certbot.configuration import NamespaceConfig
         with pytest.raises(errors.Error):
             NamespaceConfig(self.config.namespace)
@@ -37,7 +39,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         assert ['acme-server.org:443', 'new'] == \
                          self.config.server_path.split(os.path.sep)
 
-        self.config.namespace.server = ('http://user:pass@acme.server:443'
+        self.config.server = ('http://user:pass@acme.server:443'
                                  '/p/a/t/h;parameters?query#fragment')
         assert ['user:pass@acme.server:443', 'p', 'a', 't', 'h'] == \
                          self.config.server_path.split(os.path.sep)
@@ -155,6 +157,24 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         assert self.config.renewal_post_hooks_dir == \
                          os.path.join(self.config.renewal_hooks_dir,
                                       constants.RENEWAL_POST_HOOKS_DIR)
+
+    def test_set_by_user_runtime_overrides(self):
+        assert not self.config.set_by_user('something')
+        self.config.something = 'a value'
+        assert self.config.set_by_user('something')
+
+    def test_set_by_user_exception(self):
+        from certbot.configuration import NamespaceConfig
+        
+        # a newly created NamespaceConfig has no argument sources dict, so an
+        # exception is raised
+        config = NamespaceConfig(self.config.namespace)
+        with pytest.raises(RuntimeError):
+            config.set_by_user('whatever')
+        
+        # now set an argument sources dict
+        config.set_argument_sources({})
+        assert not config.set_by_user('whatever')
 
 
 if __name__ == '__main__':

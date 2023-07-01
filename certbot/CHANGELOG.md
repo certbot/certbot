@@ -6,13 +6,15 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* Add `certbot.util.LooseVersion` class. See [GH #9489](https://github.com/certbot/certbot/issues/9489).
 * The webroot plugin now also supports the `--webroot-propagation-seconds`
   option. Note that this is usually not required, but for some systems
   with distributed webroots requiring syncing this might be useful.
 
 ### Changed
 
-*
+* `NamespaceConfig` now tracks how its arguments were set via a dictionary, allowing us to remove a bunch
+  of global state previously needed to inspect whether a user set an argument or not.
 
 ### Fixed
 

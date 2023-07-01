@@ -625,6 +625,53 @@ class AtexitRegisterTest(unittest.TestCase):
             atexit_func(*args[1:], **kwargs)
 
 
+class LooseVersionTest(unittest.TestCase):
+    """Test for certbot.util.LooseVersion.
+
+    These tests are based on the original tests for
+    distutils.version.LooseVersion at
+    https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/tests/test_version.py#L58-L81.
+
+    """
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.util import LooseVersion
+        return LooseVersion(*args, **kwargs)
+
+    def test_less_than(self):
+        comparisons = (('1.5.1', '1.5.2b2'),
+            ('3.4j', '1996.07.12'),
+            ('2g6', '11g'),
+            ('0.960923', '2.2beta29'),
+            ('1.13++', '5.5.kw'),
+            ('2.0', '2.0.1'),
+            ('a', 'b'))
+        for v1, v2 in comparisons:
+            assert self._call(v1).try_risky_comparison(self._call(v2)) == -1
+
+    def test_equal(self):
+        comparisons = (('8.02', '8.02'),
+            ('1a', '1a'),
+            ('2', '2.0.0'),
+            ('2.0', '2.0.0'))
+        for v1, v2 in comparisons:
+            assert self._call(v1).try_risky_comparison(self._call(v2)) == 0
+
+    def test_greater_than(self):
+        comparisons = (('161', '3.10a'),
+            ('3.2.pl0', '3.1.1.6'))
+        for v1, v2 in comparisons:
+            assert self._call(v1).try_risky_comparison(self._call(v2)) == 1
+
+    def test_incomparible(self):
+        comparisons = (('bookworm/sid', '9'),
+            ('1a', '1.0'))
+        for v1, v2 in comparisons:
+            with pytest.raises(ValueError):
+                assert self._call(v1).try_risky_comparison(self._call(v2))
+
+
 class ParseLooseVersionTest(unittest.TestCase):
     """Test for certbot.util.parse_loose_version.
 
