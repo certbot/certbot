@@ -135,11 +135,17 @@ def post_hook(
             _run_eventually(cmd)
     # certonly / run
     elif cmd:
+        renewed_domains_str = ' '.join(renewed_domains)
+        # 32k is reasonable on Windows and likely quite conservative on other platforms
+        if len(renewed_domains_str) > 32_000:
+            logger.warning("Limiting RENEWED_DOMAINS environment variable to 32k characters")
+            renewed_domains_str = renewed_domains_str[:32_000]
+
         _run_hook(
             "post-hook",
             cmd,
             {
-                'RENEWED_DOMAINS': ' '.join(renewed_domains),
+                'RENEWED_DOMAINS': ' '.join(renewed_domains_str),
                 # Since other commands stop certbot execution on failure,
                 # it doesn't make sense to have a FAILED_DOMAINS variable
                 'FAILED_DOMAINS': ""
@@ -165,13 +171,26 @@ def _run_eventually(command: str) -> None:
 
 def run_saved_post_hooks(renewed_domains: List[str], failed_domains: List[str]) -> None:
     """Run any post hooks that were saved up in the course of the 'renew' verb"""
+
+    renewed_domains_str = ' '.join(renewed_domains)
+    failed_domains_str = ' '.join(failed_domains)
+
+    # 32k combined is reasonable on Windows and likely quite conservative on other platforms
+    if len(renewed_domains_str) > 16_000:
+        logger.warning("Limiting RENEWED_DOMAINS environment variable to 16k characters")
+        renewed_domains_str = renewed_domains_str[:16_000]
+
+    if len(failed_domains_str) > 16_000:
+        logger.warning("Limiting FAILED_DOMAINS environment variable to 16k characters")
+        renewed_domains_str = failed_domains_str[:16_000]
+
     for cmd in post_hooks:
         _run_hook(
             "post-hook",
             cmd,
             {
-                'RENEWED_DOMAINS': ' '.join(renewed_domains),
-                'FAILED_DOMAINS': ' '.join(failed_domains)
+                'RENEWED_DOMAINS': renewed_domains_str,
+                'FAILED_DOMAINS': failed_domains_str
             }
         )
 
