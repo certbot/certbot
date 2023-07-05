@@ -4,12 +4,12 @@ steps:
   # We run brew update because we've seen attempts to install an older version
   # of a package fail. See
   # https://github.com/actions/virtual-environments/issues/3165.
-  # We untap homebrew/core and homebrew/cask and unset HOMEBREW_NO_INSTALL_FROM_API
-  # because GitHub has been having issues, making these jobs fail on git clones.
+  #
+  # We untap homebrew/core and homebrew/cask and unset HOMEBREW_NO_INSTALL_FROM_API (which
+  # is set by the CI macOS env) because GitHub has been having issues, making these jobs
+  # fail on git clones: https://github.com/orgs/Homebrew/discussions/4612.
   - bash: |
       set -e
-      brew config
-      env
       unset HOMEBREW_NO_INSTALL_FROM_API
       brew untap homebrew/core homebrew/cask
       brew update
