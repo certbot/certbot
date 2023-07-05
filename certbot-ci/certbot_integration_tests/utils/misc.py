@@ -232,7 +232,7 @@ def generate_csr(domains: Iterable[str], key_path: str, csr_path: str,
     req.add_extensions([san_constraint])
 
     req.set_pubkey(key)
-    req.set_version(2)
+    req.set_version(0)
     req.sign(key, 'sha256')
 
     with open(csr_path, 'wb') as file_h:
