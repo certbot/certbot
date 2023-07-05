@@ -8,9 +8,11 @@ jobs:
           IMAGE_NAME: macOS-12
           PYTHON_VERSION: 3.7
           TOXENV: cover
+          PIP_USE_PEP517: "true"
         macos-cover:
           IMAGE_NAME: macOS-12
           TOXENV: cover
+          PIP_USE_PEP517: "true"
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
