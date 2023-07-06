@@ -1,6 +1,7 @@
 """Facilities for implementing hooks that call shell commands."""
 
 import logging
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
@@ -102,7 +103,11 @@ def _run_pre_hook_if_necessary(command: str) -> None:
         executed_pre_hooks.add(command)
 
 
-def post_hook(config: configuration.NamespaceConfig) -> None:
+def post_hook(
+    config: configuration.NamespaceConfig,
+    renewed_domains: List[str]
+) -> None:
+
     """Run post-hooks if defined.
 
     This function also registers any executables found in
@@ -130,7 +135,22 @@ def post_hook(config: configuration.NamespaceConfig) -> None:
             _run_eventually(cmd)
     # certonly / run
     elif cmd:
-        _run_hook("post-hook", cmd)
+        renewed_domains_str = ' '.join(renewed_domains)
+        # 32k is reasonable on Windows and likely quite conservative on other platforms
+        if len(renewed_domains_str) > 32_000:
+            logger.warning("Limiting RENEWED_DOMAINS environment variable to 32k characters")
+            renewed_domains_str = renewed_domains_str[:32_000]
+
+        _run_hook(
+            "post-hook",
+            cmd,
+            {
+                'RENEWED_DOMAINS': renewed_domains_str,
+                # Since other commands stop certbot execution on failure,
+                # it doesn't make sense to have a FAILED_DOMAINS variable
+                'FAILED_DOMAINS': ""
+            }
+        )
 
 
 post_hooks: List[str] = []
@@ -149,10 +169,30 @@ def _run_eventually(command: str) -> None:
         post_hooks.append(command)
 
 
-def run_saved_post_hooks() -> None:
+def run_saved_post_hooks(renewed_domains: List[str], failed_domains: List[str]) -> None:
     """Run any post hooks that were saved up in the course of the 'renew' verb"""
+
+    renewed_domains_str = ' '.join(renewed_domains)
+    failed_domains_str = ' '.join(failed_domains)
+
+    # 32k combined is reasonable on Windows and likely quite conservative on other platforms
+    if len(renewed_domains_str) > 16_000:
+        logger.warning("Limiting RENEWED_DOMAINS environment variable to 16k characters")
+        renewed_domains_str = renewed_domains_str[:16_000]
+
+    if len(failed_domains_str) > 16_000:
+        logger.warning("Limiting FAILED_DOMAINS environment variable to 16k characters")
+        renewed_domains_str = failed_domains_str[:16_000]
+
     for cmd in post_hooks:
-        _run_hook("post-hook", cmd)
+        _run_hook(
+            "post-hook",
+            cmd,
+            {
+                'RENEWED_DOMAINS': renewed_domains_str,
+                'FAILED_DOMAINS': failed_domains_str
+            }
+        )
 
 
 def deploy_hook(config: configuration.NamespaceConfig, domains: List[str],
@@ -229,16 +269,20 @@ def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_ru
     _run_hook("deploy-hook", command)
 
 
-def _run_hook(cmd_name: str, shell_cmd: str) -> str:
+def _run_hook(cmd_name: str, shell_cmd: str, extra_env: Optional[Dict[str, str]] = None) -> str:
     """Run a hook command.
 
     :param str cmd_name: the user facing name of the hook being run
     :param shell_cmd: shell command to execute
     :type shell_cmd: `list` of `str` or `str`
+    :param dict extra_env: extra environment variables to set
+    :type extra_env: `dict` of `str` to `str`
 
     :returns: stderr if there was any"""
+    env = util.env_no_snap_for_external_calls()
+    env.update(extra_env or {})
     returncode, err, out = misc.execute_command_status(
-        cmd_name, shell_cmd, env=util.env_no_snap_for_external_calls())
+        cmd_name, shell_cmd, env=env)
     display_ops.report_executed_command(f"Hook '{cmd_name}'", returncode, out, err)
     return err
 

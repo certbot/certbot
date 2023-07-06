@@ -115,6 +115,8 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
 
     """
     hooks.pre_hook(config)
+    renewed_domains: List[str] = []
+
     try:
         if lineage is not None:
             # Renewal, where we already know the specific lineage we're
@@ -143,8 +145,9 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
                 raise errors.Error("Certificate could not be obtained")
             if lineage is not None:
                 hooks.deploy_hook(config, lineage.names(), lineage.live_dir)
+                renewed_domains.extend(domains)
     finally:
-        hooks.post_hook(config)
+        hooks.post_hook(config, renewed_domains)
 
     return lineage
 
@@ -1632,10 +1635,13 @@ def renew(config: configuration.NamespaceConfig,
     :rtype: None
 
     """
+
+    renewed_domains: List[str] = []
+    failed_domains: List[str] = []
     try:
-        renewal.handle_renewal_request(config)
+        renewed_domains, failed_domains = renewal.handle_renewal_request(config)
     finally:
-        hooks.run_saved_post_hooks()
+        hooks.run_saved_post_hooks(renewed_domains, failed_domains)
 
 
 def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
