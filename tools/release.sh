@@ -31,6 +31,15 @@ if ! command -v script >/dev/null 2>&1; then
     exit 1
 fi
 
+if [ -n "${SNAP_BUILD+x}" ]; then
+    echo "Running the release script with the environment variable SNAP_BUILD"
+    echo "set will cause plugins' wheels to be built without dependencies"
+    echo "on Certbot. See https://github.com/certbot/certbot/pull/8091 for more"
+    echo "info. Please unset this environment variable and run this script"
+    echo "again."
+    exit 1
+fi
+
 export RELEASE_DIR="./releases"
 mv "$RELEASE_DIR" "$RELEASE_DIR.$(date +%s).bak" || true
 LOG_PATH="log"
