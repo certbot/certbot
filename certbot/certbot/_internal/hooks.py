@@ -145,7 +145,7 @@ def post_hook(
             "post-hook",
             cmd,
             {
-                'RENEWED_DOMAINS': ' '.join(renewed_domains_str),
+                'RENEWED_DOMAINS': renewed_domains_str,
                 # Since other commands stop certbot execution on failure,
                 # it doesn't make sense to have a FAILED_DOMAINS variable
                 'FAILED_DOMAINS': ""
