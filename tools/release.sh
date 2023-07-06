@@ -31,7 +31,7 @@ if ! command -v script >/dev/null 2>&1; then
     exit 1
 fi
 
-if [ -n "${SNAP_BUILD+x}" ]; then
+if [ -n "$SNAP_BUILD" ]; then
     echo "Running the release script with the environment variable SNAP_BUILD"
     echo "set will cause plugins' wheels to be built without dependencies"
     echo "on Certbot. See https://github.com/certbot/certbot/pull/8091 for more"
