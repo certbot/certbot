@@ -12,6 +12,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * `NamespaceConfig` now tracks how its arguments were set via a dictionary, allowing us to remove a bunch
   of global state previously needed to inspect whether a user set an argument or not.
+* Support for Python 3.7 was deprecated and will be removed in our next planned release.
 * Added `RENEWED_DOMAINS` and `FAILED_DOMAINS` environment variables for consumption by post renewal hooks.
 
 ### Fixed
