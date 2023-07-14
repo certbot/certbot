@@ -7,21 +7,21 @@ Releases
 
 We release packages and upload them to PyPI (wheels and source tarballs).
 
-- https://pypi.python.org/pypi/acme
-- https://pypi.python.org/pypi/certbot
-- https://pypi.python.org/pypi/certbot-apache
-- https://pypi.python.org/pypi/certbot-nginx
-- https://pypi.python.org/pypi/certbot-dns-cloudflare
-- https://pypi.python.org/pypi/certbot-dns-digitalocean
-- https://pypi.python.org/pypi/certbot-dns-dnsimple
-- https://pypi.python.org/pypi/certbot-dns-dnsmadeeasy
-- https://pypi.python.org/pypi/certbot-dns-google
-- https://pypi.python.org/pypi/certbot-dns-linode
-- https://pypi.python.org/pypi/certbot-dns-luadns
-- https://pypi.python.org/pypi/certbot-dns-nsone
-- https://pypi.python.org/pypi/certbot-dns-ovh
-- https://pypi.python.org/pypi/certbot-dns-rfc2136
-- https://pypi.python.org/pypi/certbot-dns-route53
+- https://pypi.org/project/acme/
+- https://pypi.org/project/certbot/
+- https://pypi.org/project/certbot-apache/
+- https://pypi.org/project/certbot-nginx/
+- https://pypi.org/project/certbot-dns-cloudflare/
+- https://pypi.org/project/certbot-dns-digitalocean/
+- https://pypi.org/project/certbot-dns-dnsimple/
+- https://pypi.org/project/certbot-dns-dnsmadeeasy/
+- https://pypi.org/project/certbot-dns-google/
+- https://pypi.org/project/certbot-dns-linode/
+- https://pypi.org/project/certbot-dns-luadns/
+- https://pypi.org/project/certbot-dns-nsone/
+- https://pypi.org/project/certbot-dns-ovh/
+- https://pypi.org/project/certbot-dns-rfc2136/
+- https://pypi.org/project/certbot-dns-route53/
 
 The following scripts are used in the process:
 
