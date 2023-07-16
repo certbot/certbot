@@ -1023,7 +1023,7 @@ class RenewableCert(interfaces.RenewableCert):
             interval = self.configuration.get("renew_before_expiry", default_interval)
             expiry = crypto_util.notAfter(self.version(
                 "cert", self.latest_common_version()))
-            now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+            now = datetime.datetime.now(pytz.UTC)
             if expiry < add_time_interval(now, interval):
                 logger.debug("Should renew, less than %s before certificate "
                              "expiry %s.", interval,

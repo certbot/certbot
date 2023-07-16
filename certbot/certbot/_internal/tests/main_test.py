@@ -2081,13 +2081,12 @@ class ReportNewCertTest(unittest.TestCase):
     """
 
     def setUp(self):
-        from datetime import datetime
         self.notify_patch = mock.patch('certbot._internal.main.display_util.notify')
         self.mock_notify = self.notify_patch.start()
 
         self.notafter_patch = mock.patch('certbot._internal.main.crypto_util.notAfter')
         self.mock_notafter = self.notafter_patch.start()
-        self.mock_notafter.return_value = datetime.utcfromtimestamp(0)
+        self.mock_notafter.return_value = datetime.datetime(1970, 1, 1, 0, 0)
 
     def tearDown(self):
         self.notify_patch.stop()
