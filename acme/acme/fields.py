@@ -34,7 +34,7 @@ class RFC3339Field(jose.Field):
 
     Handles decoding/encoding between RFC3339 strings and aware (not
     naive) `datetime.datetime` objects
-    (e.g. ``datetime.datetime.now(pytz.utc)``).
+    (e.g. ``datetime.datetime.now(pytz.UTC)``).
 
     """
 
