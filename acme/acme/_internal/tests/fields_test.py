@@ -34,7 +34,7 @@ class RFC3339FieldTest(unittest.TestCase):
     """Tests for acme.fields.RFC3339Field."""
 
     def setUp(self):
-        self.decoded = datetime.datetime(2015, 3, 27, tzinfo=pytz.utc)
+        self.decoded = datetime.datetime(2015, 3, 27, tzinfo=pytz.UTC)
         self.encoded = '2015-03-27T00:00:00Z'
 
     def test_default_encoder(self):
