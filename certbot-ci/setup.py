@@ -26,6 +26,7 @@ install_requires = [
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
     'pyyaml',
+    'pytz>=2019.3',
     'requests',
     'setuptools',
     'types-python-dateutil'
