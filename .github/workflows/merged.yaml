@@ -7,7 +7,8 @@ on:
 
 jobs:
   if_merged:
-    if: github.event.pull_request.merged == true
+    # Forked repos can not access Mattermost secret.
+    if: github.event.pull_request.merged == true && !github.event.pull_request.head.repo.fork 
     runs-on: ubuntu-latest
     steps:
     - name: Create Mattermost Message
