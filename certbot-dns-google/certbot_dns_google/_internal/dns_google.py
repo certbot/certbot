@@ -306,7 +306,7 @@ class _GoogleClient:
 
             for zone in zones:
                 zone_id = zone['id']
-                if zone.get('privateVisibilityConfig') is not None or zone['visibility'] != "private":
+                if zone.get('privateVisibilityConfig') is not None or zone['visibility'] != "private": # pylint: disable=line-too-long
                     logger.debug('Found id of %s for %s using name %s', zone_id, domain, zone_name)
                     return zone_id
 
