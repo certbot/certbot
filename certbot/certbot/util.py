@@ -116,14 +116,15 @@ def run_script(params: List[str], log: Callable[[str], None]=logger.error) -> Tu
         msg = "Unable to run the command: %s" % " ".join(params)
         log(msg)
         raise errors.SubprocessError(msg)
-
+    logger.debug('subprocess return code %s', proc.returncode )
     if proc.returncode != 0:
         msg = "Error while running %s.\n%s\n%s" % (
             " ".join(params), proc.stdout, proc.stderr)
         # Enter recovery routine...
         log(msg)
         raise errors.SubprocessError(msg)
-
+    logger.debug('subprocess std out %s', proc.stdout )
+    logger.debug('subprocess std err %s', proc.stderr )
     return proc.stdout, proc.stderr
 
 
@@ -280,8 +281,12 @@ def unique_lineage_name(path: str, filename: str, chmod: int = 0o644,
         specified location.
 
     """
+    logger.debug("path:%s, filename:%s ", path,filename)
+    if (filename.startswith("*.")):
+        filename=filename.replace("*", "_")
     preferred_path = os.path.join(path, "%s.conf" % (filename))
     try:
+        logger.debug("preferred_path  %s ", preferred_path)
         return safe_open(preferred_path, chmod=chmod), preferred_path
     except OSError as err:
         if err.errno != errno.EEXIST:
