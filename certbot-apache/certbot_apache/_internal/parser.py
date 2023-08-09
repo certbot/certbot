@@ -71,7 +71,13 @@ class ApacheParser:
 
         # Find configuration root and make sure augeas can parse it.
         self.root: str = os.path.abspath(root)
-        self.loc: Dict[str, str] = {"root": self._find_config_root()}
+        # additional logic added to use userinput conf file if provided
+        logger.debug("vhostroot from init :-%s",vhostroot)
+        if vhostroot is not None and vhostroot.endswith(".conf") and os.path.isfile(vhostroot):
+            self.loc: Dict[str, str] = {"root": vhostroot}
+        else:
+            logger.debug("invoking _find_config_root from init with self.root:-%s",self.root)
+            self.loc: Dict[str, str] = {"root": self._find_config_root()}
         self.parse_file(self.loc["root"])
 
         # Look up variables from httpd and add to DOM if not already parsed
@@ -89,10 +95,20 @@ class ApacheParser:
         # list of the active include paths, before modifications
         self.existing_paths = copy.deepcopy(self.parser_paths)
 
-        # Must also attempt to parse additional virtual host root
+        # Must also attempt to parse additional virtual host root        
+        logger.debug("vhostroot: %s",vhostroot)
         if vhostroot:
-            self.parse_file(os.path.abspath(vhostroot) + "/" +
-                            self.configurator.options.vhost_files)
+            # additional logic added to support apache with custom config path & multi instance apache with separate config file
+            if vhostroot is not None and vhostroot.endswith(".conf") and os.path.isfile(vhostroot):
+                self.parse_file(os.path.abspath(vhostroot))                
+            else:
+                logger.debug("Listing all conf files inside VHosh root folder:-%s",vhostroot)
+                pattern = "*.conf"
+                for path, subdirs, files in os.walk(vhostroot):
+                    for name in files:
+                        if name.endswith(pattern) and os.path.isfile(os.path.join(path, name)):
+                            self.parse_file(os.path.abspath(os.path.join(path, name)))
+
 
     def check_parsing_errors(self, lens: str) -> None:
         """Verify Augeas can parse all of the lens files.
@@ -743,6 +759,7 @@ class ApacheParser:
         :param str filepath: Apache config file path
 
         """
+        logger.debug("filepath:-%s",filepath)
         use_new, remove_old = self._check_path_actions(filepath)
         # Ensure that we have the latest Augeas DOM state on disk before
         # calling aug.load() which reloads the state from disk
@@ -920,6 +937,7 @@ class ApacheParser:
     def _find_config_root(self) -> str:
         """Find the Apache Configuration Root file."""
         location = ["apache2.conf", "httpd.conf", "conf/httpd.conf"]
+        logger.debug('checking config file at self.root: %s',self.root)
         for name in location:
             if os.path.isfile(os.path.join(self.root, name)):
                 return os.path.join(self.root, name)

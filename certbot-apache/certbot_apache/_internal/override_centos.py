@@ -50,6 +50,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
     def _rhel9_or_newer(self) -> bool:
         os_name, os_version = util.get_os_info()
+        logger.debug('OS details %s %s',os_name,os_version)
         rhel_derived = os_name in [
             "centos", "centos linux",
             "cloudlinux",

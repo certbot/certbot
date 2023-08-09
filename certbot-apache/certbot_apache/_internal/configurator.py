@@ -748,6 +748,7 @@ class ApacheConfigurator(common.Configurator):
 
     def _choose_vhost_from_list(self, target_name: str,
                                 temp: bool = False) -> obj.VirtualHost:
+        logger.debug("self.vhosts list :-%s",self.vhosts)
         # Select a vhost from a list
         vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is None:
@@ -1386,7 +1387,7 @@ class ApacheConfigurator(common.Configurator):
         """
         avail_fp = nonssl_vhost.filep
         ssl_fp = self._get_ssl_vhost_path(avail_fp)
-
+        logger.info("ssl_vhost_path %s", ssl_fp)
         orig_matches = self.parser.aug.match("/files%s//* [label()=~regexp('%s')]" %
                                              (self._escape(ssl_fp),
                                               parser.case_i("VirtualHost")))
@@ -1465,14 +1466,18 @@ class ApacheConfigurator(common.Configurator):
         :returns: Filepath for SSL vhost
         :rtype: str
         """
-
+        logger.info("ssl_vhost_path incoming %s", non_ssl_vh_fp)
         if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
-            fp = os.path.join(filesystem.realpath(self.options.vhost_root),
+            if os.path.isfile(self.options.vhost_root) and self.options.vhost_root.endswith(".conf"):
+                fp =filesystem.realpath(self.options.vhost_root)
+            else:
+                logger.info("appending %s with %s", filesystem.realpath(self.options.vhost_root), os.path.basename(non_ssl_vh_fp))
+                fp = os.path.join(filesystem.realpath(self.options.vhost_root),
                               os.path.basename(non_ssl_vh_fp))
         else:
             # Use non-ssl filepath
             fp = filesystem.realpath(non_ssl_vh_fp)
-
+        logger.info("ssl_vhost_path processing %s", fp)
         if fp.endswith(".conf"):
             return fp[:-(len(".conf"))] + self.options.le_vhost_ext
         return fp + self.options.le_vhost_ext
@@ -2346,6 +2351,8 @@ class ApacheConfigurator(common.Configurator):
             logger.info("Enabling site %s by adding Include to root configuration",
                         vhost.filep)
             self.save_notes += "Enabled site %s\n" % vhost.filep
+            logger.info("default file location:  %s ",self.parser.loc["default"])
+            logger.info("user vhost file location:  %s ",self.options.vhost_root)
             self.parser.add_include(self.parser.loc["default"], vhost.filep)
             vhost.enabled = True
         return
@@ -2390,6 +2397,7 @@ class ApacheConfigurator(common.Configurator):
         :raises .errors.MisconfigurationError: If reload fails
 
         """
+        logger.debug('reloading apache with %s', self.options.restart_cmd)
         try:
             util.run_script(self.options.restart_cmd)
         except errors.SubprocessError as err:
@@ -2432,6 +2440,7 @@ class ApacheConfigurator(common.Configurator):
 
         """
         try:
+            logger.debug("getting apache version with command: %s", self.options.version_cmd)
             stdout, _ = util.run_script(self.options.version_cmd)
         except errors.SubprocessError:
             raise errors.PluginError(
