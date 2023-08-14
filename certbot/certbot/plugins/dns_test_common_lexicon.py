@@ -17,7 +17,7 @@ from certbot.plugins.dns_common_lexicon import LexiconClient
 from certbot.plugins.dns_test_common import _AuthenticatorCallableTestCase
 from certbot.tests import util as test_util
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing_extensions import Protocol
 else:
     Protocol = object
@@ -68,7 +68,7 @@ class _LexiconAwareTestCase(Protocol):
 
 class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:
+    def __init_subclass__(cls, **kwargs: Any) -> None:  # pragma: no cover
         super().__init_subclass__(**kwargs)
         warnings.warn("BaseLexiconAuthenticatorTest class is deprecated and will be "
                       "removed in the next Certbot major release. Please use "
@@ -101,7 +101,7 @@ class BaseLexiconClientTest:
     record_name = record_prefix + "." + DOMAIN
     record_content = "bar"
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:
+    def __init_subclass__(cls, **kwargs: Any) -> None:  # pragma: no cover
         super().__init_subclass__(**kwargs)
         warnings.warn("BaseLexiconClientTest class is deprecated and will be removed in "
                       "the next Certbot major release. Please use LexiconDNSAuthenticator instead.",
