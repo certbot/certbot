@@ -1,7 +1,5 @@
 """Tests for certbot_dns_nsone._internal.dns_nsone."""
-
 import sys
-import unittest
 from unittest import mock
 
 import pytest
@@ -17,7 +15,10 @@ API_KEY = 'foo'
 
 
 class AuthenticatorTest(test_util.TempDirTestCase,
-                        dns_test_common_lexicon.BaseLexiconAuthenticatorTest):
+                        dns_test_common_lexicon.BaseLexiconDNSAuthenticatorTest):
+
+    DOMAIN_NOT_FOUND = HTTPError(f'404 Client Error: Not Found for url: {DOMAIN}.')
+    LOGIN_ERROR = HTTPError(f'401 Client Error: Unauthorized for url: {DOMAIN}.')
 
     def setUp(self):
         super().setUp()
@@ -31,23 +32,6 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                                      nsone_propagation_seconds=0)  # don't wait during tests
 
         self.auth = Authenticator(self.config, "nsone")
-
-        self.mock_client = mock.MagicMock()
-        # _get_nsone_client | pylint: disable=protected-access
-        self.auth._get_nsone_client = mock.MagicMock(return_value=self.mock_client)
-
-
-class NS1LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
-    DOMAIN_NOT_FOUND = HTTPError('404 Client Error: Not Found for url: {0}.'.format(DOMAIN))
-    LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: {0}.'.format(DOMAIN))
-
-    def setUp(self):
-        from certbot_dns_nsone._internal.dns_nsone import _NS1LexiconClient
-
-        self.client = _NS1LexiconClient(API_KEY, 0)
-
-        self.provider_mock = mock.MagicMock()
-        self.client.provider = self.provider_mock
 
 
 if __name__ == "__main__":

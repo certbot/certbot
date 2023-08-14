@@ -19,7 +19,9 @@ TOKEN_V4 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 
 
 class AuthenticatorTest(test_util.TempDirTestCase,
-                        dns_test_common_lexicon.BaseLexiconAuthenticatorTest):
+                        dns_test_common_lexicon.BaseLexiconDNSAuthenticatorTest):
+
+    DOMAIN_NOT_FOUND = Exception('Domain not found')
 
     def setUp(self):
         super().setUp()
@@ -32,10 +34,6 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
         self.auth = Authenticator(self.config, "linode")
 
-        self.mock_client = mock.MagicMock()
-        # _get_linode_client | pylint: disable=protected-access
-        self.auth._get_linode_client = mock.MagicMock(return_value=self.mock_client)
-
     # pylint: disable=protected-access
     def test_api_version_3_detection(self):
         path = os.path.join(self.tempdir, 'file_3_auto.ini')
@@ -44,9 +42,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         config = mock.MagicMock(linode_credentials=path,
                                 linode_propagation_seconds=0)
         auth = Authenticator(config, "linode")
-        auth._setup_credentials()
-        client = auth._get_linode_client()
-        assert 3 == client.api_version
+
+        assert auth._provider_name == "linode"
 
     # pylint: disable=protected-access
     def test_api_version_4_detection(self):
@@ -56,9 +53,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         config = mock.MagicMock(linode_credentials=path,
                                 linode_propagation_seconds=0)
         auth = Authenticator(config, "linode")
-        auth._setup_credentials()
-        client = auth._get_linode_client()
-        assert 4 == client.api_version
+
+        assert auth._provider_name == "linode4"
 
     # pylint: disable=protected-access
     def test_api_version_3_detection_empty_version(self):
@@ -68,9 +64,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         config = mock.MagicMock(linode_credentials=path,
                                 linode_propagation_seconds=0)
         auth = Authenticator(config, "linode")
-        auth._setup_credentials()
-        client = auth._get_linode_client()
-        assert 3 == client.api_version
+
+        assert auth._provider_name == "linode"
 
     # pylint: disable=protected-access
     def test_api_version_4_detection_empty_version(self):
@@ -80,9 +75,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         config = mock.MagicMock(linode_credentials=path,
                                 linode_propagation_seconds=0)
         auth = Authenticator(config, "linode")
-        auth._setup_credentials()
-        client = auth._get_linode_client()
-        assert 4 == client.api_version
+
+        assert auth._provider_name == "linode4"
 
     # pylint: disable=protected-access
     def test_api_version_3_manual(self):
@@ -92,9 +86,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         config = mock.MagicMock(linode_credentials=path,
                                 linode_propagation_seconds=0)
         auth = Authenticator(config, "linode")
-        auth._setup_credentials()
-        client = auth._get_linode_client()
-        assert 3 == client.api_version
+
+        assert auth._provider_name == "linode"
 
     # pylint: disable=protected-access
     def test_api_version_4_manual(self):
@@ -104,9 +97,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         config = mock.MagicMock(linode_credentials=path,
                                 linode_propagation_seconds=0)
         auth = Authenticator(config, "linode")
-        auth._setup_credentials()
-        client = auth._get_linode_client()
-        assert 4 == client.api_version
+
+        assert auth._provider_name == "linode4"
 
     # pylint: disable=protected-access
     def test_api_version_error(self):
@@ -116,35 +108,9 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         config = mock.MagicMock(linode_credentials=path,
                                 linode_propagation_seconds=0)
         auth = Authenticator(config, "linode")
-        auth._setup_credentials()
+
         with pytest.raises(errors.PluginError):
-            auth._get_linode_client()
-
-
-class LinodeLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
-
-    DOMAIN_NOT_FOUND = Exception('Domain not found')
-
-    def setUp(self):
-        from certbot_dns_linode._internal.dns_linode import _LinodeLexiconClient
-
-        self.client = _LinodeLexiconClient(TOKEN, 3)
-
-        self.provider_mock = mock.MagicMock()
-        self.client.provider = self.provider_mock
-
-
-class Linode4LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
-
-    DOMAIN_NOT_FOUND = Exception('Domain not found')
-
-    def setUp(self):
-        from certbot_dns_linode._internal.dns_linode import _LinodeLexiconClient
-
-        self.client = _LinodeLexiconClient(TOKEN, 4)
-
-        self.provider_mock = mock.MagicMock()
-        self.client.provider = self.provider_mock
+            assert auth._provider_name == "linode4"
 
 
 if __name__ == "__main__":

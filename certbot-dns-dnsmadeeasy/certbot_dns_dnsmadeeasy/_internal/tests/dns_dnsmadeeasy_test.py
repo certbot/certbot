@@ -1,7 +1,6 @@
 """Tests for certbot_dns_dnsmadeeasy._internal.dns_dnsmadeeasy."""
 
 import sys
-import unittest
 from unittest import mock
 
 import pytest
@@ -18,7 +17,10 @@ SECRET_KEY = 'bar'
 
 
 class AuthenticatorTest(test_util.TempDirTestCase,
-                        dns_test_common_lexicon.BaseLexiconAuthenticatorTest):
+                        dns_test_common_lexicon.BaseLexiconDNSAuthenticatorTest):
+
+    DOMAIN_NOT_FOUND = HTTPError(f'404 Client Error: Not Found for url: {DOMAIN}.')
+    LOGIN_ERROR = HTTPError(f'403 Client Error: Forbidden for url: {DOMAIN}.')
 
     def setUp(self):
         super().setUp()
@@ -34,24 +36,6 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                                      dnsmadeeasy_propagation_seconds=0)  # don't wait during tests
 
         self.auth = Authenticator(self.config, "dnsmadeeasy")
-
-        self.mock_client = mock.MagicMock()
-        # _get_dnsmadeeasy_client | pylint: disable=protected-access
-        self.auth._get_dnsmadeeasy_client = mock.MagicMock(return_value=self.mock_client)
-
-
-class DNSMadeEasyLexiconClientTest(unittest.TestCase,
-                                   dns_test_common_lexicon.BaseLexiconClientTest):
-    DOMAIN_NOT_FOUND = HTTPError('404 Client Error: Not Found for url: {0}.'.format(DOMAIN))
-    LOGIN_ERROR = HTTPError('403 Client Error: Forbidden for url: {0}.'.format(DOMAIN))
-
-    def setUp(self):
-        from certbot_dns_dnsmadeeasy._internal.dns_dnsmadeeasy import _DNSMadeEasyLexiconClient
-
-        self.client = _DNSMadeEasyLexiconClient(API_KEY, SECRET_KEY, 0)
-
-        self.provider_mock = mock.MagicMock()
-        self.client.provider = self.provider_mock
 
 
 if __name__ == "__main__":

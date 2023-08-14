@@ -19,7 +19,7 @@ cython==0.29.35 ; python_full_version >= "3.7.0" and python_full_version < "3.8.
 dill==0.3.6 ; python_full_version >= "3.7.2" and python_full_version < "3.8.0"
 distlib==0.3.6 ; python_version >= "3.7" and python_full_version < "3.8.0"
 distro==1.0.1 ; python_full_version < "3.8.0" and python_version >= "3.7"
-dns-lexicon==3.2.1 ; python_full_version < "3.8.0" and python_version >= "3.7"
+dns-lexicon==3.14.1 ; python_full_version < "3.8.0" and python_version >= "3.7"
 dnspython==1.15.0 ; python_full_version < "3.8.0" and python_version >= "3.7"
 exceptiongroup==1.1.1 ; python_version >= "3.7" and python_full_version < "3.8.0"
 execnet==1.9.0 ; python_version >= "3.7" and python_full_version < "3.8.0"

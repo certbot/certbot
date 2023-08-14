@@ -1,15 +1,17 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
+import abc
 import logging
-from typing import Any
+from typing import Any, List, Tuple
 from typing import Dict
 from typing import Mapping
 from typing import Optional
 from typing import Union
+import warnings
 
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
-from certbot import errors
+from certbot import errors, configuration
 from certbot.plugins import dns_common
 
 # Lexicon is not declared as a dependency in Certbot itself,
@@ -18,19 +20,27 @@ from certbot.plugins import dns_common
 # always importable, even if it does not make sense to use it
 # if Lexicon is not available, obviously.
 try:
+    from lexicon.client import Client
     from lexicon.config import ConfigResolver
-    from lexicon.providers.base import Provider
-except ImportError:
+    from lexicon.interfaces import Provider
+except ImportError:  # pragma: no cover
+    Client = None
     ConfigResolver = None
     Provider = None
 
 logger = logging.getLogger(__name__)
 
 
-class LexiconClient:
+class LexiconClient:  # pragma: no cover
     """
     Encapsulates all communication with a DNS provider via Lexicon.
     """
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        warnings.warn("LexiconClient class is deprecated and will be removed in the next "
+                      "Certbot major release. Please use LexiconDNSAuthenticator instead.",
+                      DeprecationWarning)
 
     def __init__(self) -> None:
         self.provider: Provider
@@ -120,7 +130,7 @@ class LexiconClient:
         return None
 
 
-def build_lexicon_config(lexicon_provider_name: str,
+def build_lexicon_config(lexicon_provider_name: str,  # pragma: no cover
                          lexicon_options: Mapping[str, Any], provider_options: Mapping[str, Any]
                          ) -> Union[ConfigResolver, Dict[str, Any]]:
     """
@@ -131,6 +141,10 @@ def build_lexicon_config(lexicon_provider_name: str,
     :return: configuration to apply to the provider
     :rtype: ConfigurationResolver or dict
     """
+    warnings.warn("build_lexicon_config method is deprecated and will be removed "
+                  "in the next Certbot major release.",
+                  DeprecationWarning)
+
     config: Union[ConfigResolver, Dict[str, Any]] = {'provider_name': lexicon_provider_name}
     config.update(lexicon_options)
     if not ConfigResolver:
@@ -144,3 +158,109 @@ def build_lexicon_config(lexicon_provider_name: str,
         config = ConfigResolver().with_dict(config).with_env()
 
     return config
+
+
+class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
+    """
+    Base class for a DNS authenticator that uses Lexicon client
+    as backend to execute DNS record updates
+    """
+
+    def __init__(self, config: configuration.NamespaceConfig, name: str):
+        super().__init__(config, name)
+        self._provider_options: List[Tuple[str, str, str]] = []
+        self._credentials: dns_common.CredentialsConfiguration
+
+    @property
+    @abc.abstractmethod
+    def _provider_name(self) -> str:
+        """
+        The name of the Lexicon provider to use
+        """
+
+    @property
+    def _ttl(self) -> int:
+        """
+        Time to live to apply to the DNS records created by this Authenticator
+        """
+        return 60
+
+    def _add_provider_option(self, creds_var_name: str, creds_var_label: str,
+                             lexicon_provider_option_name: str) -> None:
+        self._provider_options.append(
+            (creds_var_name, creds_var_label, lexicon_provider_option_name))
+
+    def _build_lexicon_config(self, domain: str) -> ConfigResolver:
+        if not hasattr(self, '_credentials'):  # pragma: no cover
+            self._setup_credentials()
+
+        dict_config = {
+            'domain': domain,
+            'provider_name': self._provider_name,
+            'ttl': self._ttl,
+            self._provider_name: {item[2]: self._credentials.conf(item[0])
+                                  for item in self._provider_options}
+        }
+        return ConfigResolver().with_dict(dict_config).with_env()
+
+    def _setup_credentials(self) -> None:
+        self._credentials = self._configure_credentials(
+            key='credentials',
+            label=f'Credentials INI file for {self._provider_name} DNS authenticator',
+            required_variables={item[0]: item[1] for item in self._provider_options},
+        )
+
+    def _perform(self, domain: str, validation_name: str, validation: str) -> None:
+        resolved_domain = self._resolve_domain(domain)
+
+        try:
+            with Client(self._build_lexicon_config(resolved_domain)) as operations:
+                operations.create_record(rtype='TXT', name=validation_name, content=validation)
+        except RequestException as e:
+            logger.debug('Encountered error adding TXT record: %s', e, exc_info=True)
+            raise errors.PluginError('Error adding TXT record: {0}'.format(e))
+
+    def _cleanup(self, domain: str, validation_name: str, validation: str) -> None:
+        try:
+            resolved_domain = self._resolve_domain(domain)
+        except errors.PluginError as e:
+            logger.debug('Encountered error finding domain_id during deletion: %s', e,
+                         exc_info=True)
+            return
+
+        try:
+            with Client(self._build_lexicon_config(resolved_domain)) as operations:
+                operations.delete_record(rtype='TXT', name=validation_name, content=validation)
+        except RequestException as e:
+            logger.debug('Encountered error deleting TXT record: %s', e, exc_info=True)
+
+    def _resolve_domain(self, domain: str) -> str:
+        domain_name_guesses = dns_common.base_domain_name_guesses(domain)
+
+        for domain_name in domain_name_guesses:
+            try:
+                with Client(self._build_lexicon_config(domain_name)):
+                    return domain_name
+            except HTTPError as e:
+                result1 = self._handle_http_error(e, domain_name)
+
+                if result1:
+                    raise result1
+            except Exception as e:  # pylint: disable=broad-except
+                result2 = self._handle_general_error(e, domain_name)
+
+                if result2:
+                    raise result2  # pylint: disable=raising-bad-type
+
+        raise errors.PluginError('Unable to determine zone identifier for {0} using zone names: {1}'
+                                 .format(domain, domain_name_guesses))
+
+    def _handle_http_error(self, e: HTTPError, domain_name: str) -> Optional[errors.PluginError]:
+        return errors.PluginError('Error determining zone identifier for {0}: {1}.'
+                                  .format(domain_name, e))
+
+    def _handle_general_error(self, e: Exception, domain_name: str) -> Optional[errors.PluginError]:
+        if not str(e).startswith('No domain found'):
+            return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
+                                      .format(domain_name, e))
+        return None
