@@ -66,9 +66,9 @@ class _LexiconAwareTestCase(Protocol):
 # These classes are intended to be subclassed/mixed in, so not all members are defined.
 # pylint: disable=no-member
 
-class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
+class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):  # pragma: no cover
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:  # pragma: no cover
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         warnings.warn("BaseLexiconAuthenticatorTest class is deprecated and will be "
                       "removed in the next Certbot major release. Please use "
@@ -91,7 +91,7 @@ class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
         self.assertEqual(expected, self.mock_client.mock_calls)
 
 
-class BaseLexiconClientTest:
+class BaseLexiconClientTest:  # pragma: no cover
     DOMAIN_NOT_FOUND = DOMAIN_NOT_FOUND
     GENERIC_ERROR = GENERIC_ERROR
     LOGIN_ERROR = LOGIN_ERROR
@@ -101,7 +101,7 @@ class BaseLexiconClientTest:
     record_name = record_prefix + "." + DOMAIN
     record_content = "bar"
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:  # pragma: no cover
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         warnings.warn("BaseLexiconClientTest class is deprecated and will be removed in "
                       "the next Certbot major release. Please use LexiconDNSAuthenticator instead.",

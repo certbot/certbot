@@ -130,9 +130,9 @@ class LexiconClient:  # pragma: no cover
         return None
 
 
-def build_lexicon_config(lexicon_provider_name: str,  # pragma: no cover
+def build_lexicon_config(lexicon_provider_name: str,
                          lexicon_options: Mapping[str, Any], provider_options: Mapping[str, Any]
-                         ) -> Union[ConfigResolver, Dict[str, Any]]:
+                         ) -> Union[ConfigResolver, Dict[str, Any]]:  # pragma: no cover
     """
     Convenient function to build a Lexicon 2.x/3.x config object.
     :param str lexicon_provider_name: the name of the lexicon provider to use
