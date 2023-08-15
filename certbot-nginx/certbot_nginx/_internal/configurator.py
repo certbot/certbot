@@ -1,14 +1,14 @@
 # pylint: disable=too-many-lines
 """Nginx Configuration"""
 import atexit
+from contextlib import ExitStack
 import logging
 import re
 import socket
 import subprocess
+import sys
 import tempfile
 import time
-import sys
-from contextlib import ExitStack
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -24,10 +24,6 @@ from typing import Type
 from typing import Union
 
 import OpenSSL
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:
-    import importlib_resources
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
@@ -44,6 +40,11 @@ from certbot_nginx._internal import http_01
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
 from certbot_nginx._internal import parser
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1

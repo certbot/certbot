@@ -1074,7 +1074,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
         file has been manually edited by the user, and will refuse to update it.
         This test ensures that all necessary hashes are present.
         """
-        if sys.version_info >= (3, 9):
+        if sys.version_info >= (3, 9):  # pragma: no cover
             import importlib.resources as importlib_resources
         else:
             import importlib_resources

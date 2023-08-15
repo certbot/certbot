@@ -15,12 +15,12 @@ from typing import List
 from typing import Optional
 from typing import Type
 
+from certbot_integration_tests.utils import constants
+
 if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
 else:
     import importlib_resources
-
-from certbot_integration_tests.utils import constants
 
 BIND_DOCKER_IMAGE = "internetsystemsconsortium/bind9:9.16"
 BIND_BIND_ADDRESS = ("127.0.0.1", 45953)

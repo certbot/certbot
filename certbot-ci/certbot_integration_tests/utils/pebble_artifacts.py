@@ -7,14 +7,15 @@ import sys
 from contextlib import ExitStack
 from typing import Tuple
 
-if sys.version_info >= (3, 9):
-    import importlib.resources as importlib_resources
-else:
-    import importlib_resources
 import requests
 
 from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 
 PEBBLE_VERSION = 'v2.3.1'
 
@@ -29,7 +30,7 @@ def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str
     assets_path = str(file_manager.enter_context(importlib_resources.as_file(pebble_path_ref)))
 
     pebble_path = _fetch_asset('pebble', suffix, assets_path)
-    challtestsrv_path = _fetch_asset('pebble-challtestsrv', suffix)
+    challtestsrv_path = _fetch_asset('pebble-challtestsrv', suffix, assets_path)
     pebble_config_path = _build_pebble_config(workspace, http_01_port, assets_path)
 
     return pebble_path, challtestsrv_path, pebble_config_path

@@ -10,8 +10,6 @@ if sys.version_info >= (3, 9):  # pragma: no cover
 else:
     import importlib_resources
 
-from certbot.compat import os
-
 MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
 """Name of the mod_ssl config file as saved
 in `certbot.configuration.NamespaceConfig.config_dir`."""

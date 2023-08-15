@@ -31,15 +31,16 @@ from cryptography.hazmat.primitives.serialization import PrivateFormat
 from cryptography.x509 import Certificate
 from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
-if sys.version_info >= (3, 9):
-    import importlib.resources as importlib_resources
-else:
-    import importlib_resources
 import requests
 
 from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
 from certbot_integration_tests.utils.constants import PEBBLE_ALTERNATE_ROOTS
 from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'

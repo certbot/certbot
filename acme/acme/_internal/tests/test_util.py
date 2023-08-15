@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives import serialization
 import josepy as jose
 from josepy.util import ComparableECKey
 from OpenSSL import crypto
+
 if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
 else:

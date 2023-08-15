@@ -6,14 +6,14 @@ from contextlib import ExitStack
 from typing import Any
 from typing import Dict
 
+from acme import challenges
+from certbot.compat import misc
+from certbot.compat import os
+
 if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
 else:
     import importlib_resources
-
-from acme import challenges
-from certbot.compat import misc
-from certbot.compat import os
 
 SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 """Setuptools entry point group name for plugins."""

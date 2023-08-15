@@ -13,15 +13,15 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-import OpenSSL
+from certbot import errors
+from certbot import util
+from certbot.compat import os
+
 if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
 else:
     import importlib_resources
 
-from certbot import errors
-from certbot import util
-from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 

@@ -7,10 +7,6 @@ from contextlib import contextmanager
 from unittest import mock
 
 import josepy as jose
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:
-    import importlib_resources
 
 from certbot import util
 from certbot.compat import os
@@ -19,6 +15,10 @@ from certbot.tests import util as test_util
 from certbot_nginx._internal import configurator
 from certbot_nginx._internal import nginxparser
 
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 
 class NginxTest(test_util.ConfigTestCase):
 

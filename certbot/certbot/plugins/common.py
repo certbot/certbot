@@ -17,11 +17,6 @@ from typing import Tuple
 from typing import Type
 from typing import TypeVar
 
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:
-    import importlib_resources
-
 from acme import challenges
 from certbot import achallenges
 from certbot import configuration
@@ -35,6 +30,11 @@ from certbot.compat import os
 from certbot.interfaces import Installer as AbstractInstaller
 from certbot.interfaces import Plugin as AbstractPlugin
 from certbot.plugins.storage import PluginStorage
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 
 logger = logging.getLogger(__name__)
 
