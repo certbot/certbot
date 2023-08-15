@@ -14,7 +14,7 @@ from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
 if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
-else:
+else:  # pragma: no cover
     import importlib_resources
 
 PEBBLE_VERSION = 'v2.3.1'

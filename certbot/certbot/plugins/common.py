@@ -33,7 +33,7 @@ from certbot.plugins.storage import PluginStorage
 
 if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
-else:
+else:  # pragma: no cover
     import importlib_resources
 
 logger = logging.getLogger(__name__)

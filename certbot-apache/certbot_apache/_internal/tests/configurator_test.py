@@ -1660,7 +1660,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         """
         if sys.version_info >= (3, 9):  # pragma: no cover
             import importlib.resources as importlib_resources
-        else:
+        else:  # pragma: no cover
             import importlib_resources
 
         from certbot_apache._internal.constants import ALL_SSL_OPTIONS_HASHES

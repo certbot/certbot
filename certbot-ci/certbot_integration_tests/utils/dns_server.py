@@ -19,7 +19,7 @@ from certbot_integration_tests.utils import constants
 
 if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
-else:
+else:  # pragma: no cover
     import importlib_resources
 
 BIND_DOCKER_IMAGE = "internetsystemsconsortium/bind9:9.16"

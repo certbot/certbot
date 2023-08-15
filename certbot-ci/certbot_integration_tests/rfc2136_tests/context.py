@@ -11,9 +11,9 @@ import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import certbot_call
 
-if sys.version_info >= (3, 9):
+if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
-else:
+else:  # pragma: no cover
     import importlib_resources
 
 

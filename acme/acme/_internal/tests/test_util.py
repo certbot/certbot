@@ -14,14 +14,14 @@ from OpenSSL import crypto
 
 if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
-else:
+else:  # pragma: no cover
     import importlib_resources
 
 
 def load_vector(*names):
     """Load contents of a test vector."""
     # luckily, resource_string opens file in binary mode
-    vector_ref = importlib_resources.files(__name__).joinpath('testdata', *names)
+    vector_ref = importlib_resources.files(__package__).joinpath('testdata', *names)
     return vector_ref.read_bytes()
 
 

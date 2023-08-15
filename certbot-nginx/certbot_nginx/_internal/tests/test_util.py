@@ -17,7 +17,7 @@ from certbot_nginx._internal import nginxparser
 
 if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
-else:
+else:  # pragma: no cover
     import importlib_resources
 
 class NginxTest(test_util.ConfigTestCase):
@@ -29,7 +29,7 @@ class NginxTest(test_util.ConfigTestCase):
         self.config = None
 
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
-            "etc_nginx", __name__)
+            "etc_nginx", __package__)
         self.logs_dir = tempfile.mkdtemp('logs')
 
         self.config_path = os.path.join(self.temp_dir, "etc_nginx")
@@ -86,7 +86,7 @@ class NginxTest(test_util.ConfigTestCase):
 @contextmanager
 def get_data_filename(filename):
     """Gets the filename of a test data file."""
-    ref = importlib_resources.files(__name__) / "testdata" / "etc_nginx"/ filename
+    ref = importlib_resources.files(__package__) / "testdata" / "etc_nginx"/ filename
     with importlib_resources.as_file(ref) as path:
         yield path
 

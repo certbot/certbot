@@ -39,7 +39,7 @@ from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
 
 if sys.version_info >= (3, 9):  # pragma: no cover
     import importlib.resources as importlib_resources
-else:
+else:  # pragma: no cover
     import importlib_resources
 
 RSA_KEY_TYPE = 'rsa'
