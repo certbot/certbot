@@ -1,16 +1,23 @@
 """ Utility functions for certbot-apache plugin """
+import atexit
 import binascii
 import fnmatch
 import logging
 import re
 import subprocess
+import sys
+from contextlib import ExitStack
 from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
 
-import pkg_resources
+import OpenSSL
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 
 from certbot import errors
 from certbot import util
@@ -248,6 +255,8 @@ def find_ssl_apache_conf(prefix: str) -> str:
     :return: the path the TLS Apache config file
     :rtype: str
     """
-    return pkg_resources.resource_filename(
-        "certbot_apache",
-        os.path.join("_internal", "tls_configs", "{0}-options-ssl-apache.conf".format(prefix)))
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    ref = importlib_resources.files("certbot_apache").joinpath(
+        "_internal", "tls_configs", "{0}-options-ssl-apache.conf".format(prefix))
+    return str(file_manager.enter_context(importlib_resources.as_file(ref)))

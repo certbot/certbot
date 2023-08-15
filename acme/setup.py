@@ -22,6 +22,7 @@ docs_extras = [
 ]
 
 test_extras = [
+    'importlib_resources>=1.3.1; python_version < "3.9"',
     'pytest',
     'pytest-xdist',
     'typing-extensions',

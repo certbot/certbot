@@ -2,6 +2,7 @@
 Misc module contains stateless functions that could be used during pytest execution,
 or outside during setup/teardown of the integration tests environment.
 """
+import atexit
 import contextlib
 import errno
 import functools
@@ -30,7 +31,10 @@ from cryptography.hazmat.primitives.serialization import PrivateFormat
 from cryptography.x509 import Certificate
 from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
-import pkg_resources
+if sys.version_info >= (3, 9):
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 import requests
 
 from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
@@ -125,7 +129,11 @@ def generate_test_file_hooks(config_dir: str, hook_probe: str) -> None:
     :param str config_dir: current certbot config directory
     :param str hook_probe: path to the hook probe to test hook scripts execution
     """
-    hook_path = pkg_resources.resource_filename('certbot_integration_tests', 'assets/hook.py')
+    file_manager = contextlib.ExitStack()
+    atexit.register(file_manager.close)
+    hook_path_ref = importlib_resources.files('certbot_integration_tests').joinpath(
+        'assets', 'hook.py')
+    hook_path = str(file_manager.enter_context(importlib_resources.as_file(hook_path_ref)))
 
     for hook_dir in list_renewal_hooks_dirs(config_dir):
         # We want an equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
@@ -260,9 +268,12 @@ def load_sample_data_path(workspace: str) -> str:
     :returns: the path to the loaded sample data directory
     :rtype: str
     """
-    original = pkg_resources.resource_filename('certbot_integration_tests', 'assets/sample-config')
-    copied = os.path.join(workspace, 'sample-config')
-    shutil.copytree(original, copied, symlinks=True)
+    original_ref = importlib_resources.files('certbot_integration_tests').joinpath(
+        'assets', 'sample-config'
+    )
+    with importlib_resources.as_file(original_ref) as original:
+        copied = os.path.join(workspace, 'sample-config')
+        shutil.copytree(original, copied, symlinks=True)
 
     if os.name == 'nt':
         # Fix the symlinks on Windows if GIT is not configured to create them upon checkout

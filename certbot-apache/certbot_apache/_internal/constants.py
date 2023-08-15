@@ -1,8 +1,14 @@
 """Apache plugin constants."""
+import atexit
+import sys
+from contextlib import ExitStack
 from typing import Dict
 from typing import List
 
-import pkg_resources
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 
 from certbot.compat import os
 
@@ -37,8 +43,11 @@ ALL_SSL_OPTIONS_HASHES: List[str] = [
 ]
 """SHA256 hashes of the contents of previous versions of all versions of MOD_SSL_CONF_SRC"""
 
-AUGEAS_LENS_DIR = pkg_resources.resource_filename(
-    "certbot_apache", os.path.join("_internal", "augeas_lens"))
+_file_manager = ExitStack()
+atexit.register(_file_manager.close)
+_AUGEAS_LENS_DIR_REF = importlib_resources.files("certbot_apache") / "_internal" / "augeas_lens"
+AUGEAS_LENS_DIR = str(_file_manager.enter_context(
+    importlib_resources.as_file(_AUGEAS_LENS_DIR_REF)))
 """Path to the Augeas lens directory"""
 
 REWRITE_HTTPS_ARGS: List[str] = [

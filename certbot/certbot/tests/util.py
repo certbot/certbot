@@ -1,4 +1,5 @@
 """Test utilities."""
+import atexit
 from importlib import reload as reload_module
 import io
 import logging
@@ -7,6 +8,7 @@ from multiprocessing import synchronize
 import shutil
 import sys
 import tempfile
+from contextlib import ExitStack
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -23,7 +25,10 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 import josepy as jose
 from OpenSSL import crypto
-import pkg_resources
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 
 from certbot import configuration
 from certbot import util
@@ -75,15 +80,17 @@ class DummyInstaller(common.Installer):
 
 def vector_path(*names: str) -> str:
     """Path to a test vector."""
-    return pkg_resources.resource_filename(
-        __name__, os.path.join('testdata', *names))
+    _file_manager = ExitStack()
+    atexit.register(_file_manager.close)
+    vector_ref = importlib_resources.files(__name__).joinpath('testdata', *names)
+    vector_path = _file_manager.enter_context(importlib_resources.as_file(ref))
+    return str(vector_path)
 
 
 def load_vector(*names: str) -> bytes:
     """Load contents of a test vector."""
-    # luckily, resource_string opens file in binary mode
-    data = pkg_resources.resource_string(
-        __name__, os.path.join('testdata', *names))
+    vector_ref = importlib_resources.files(__name__).joinpath('testdata', *names)
+    data = vector_ref.read_bytes()
     # Try at most to convert CRLF to LF when data is text
     try:
         return data.decode().replace('\r\n', '\n').encode()

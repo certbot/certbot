@@ -1,13 +1,16 @@
 """Module to handle the context of RFC2136 integration tests."""
-
-from contextlib import contextmanager
 import tempfile
+import sys
+from contextlib import contextmanager
 from typing import Generator
 from typing import Iterable
 from typing import Tuple
 
-from pkg_resources import resource_filename
 import pytest
+if sys.version_info >= (3, 9):
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import certbot_call
@@ -44,15 +47,15 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         :yields: Path to credentials file
         :rtype: str
         """
-        src_file = resource_filename('certbot_integration_tests',
-                                     'assets/bind-config/rfc2136-credentials-{}.ini.tpl'
-                                     .format(label))
-
-        with open(src_file, 'r') as f:
-            contents = f.read().format(
-                server_address=self._dns_xdist['address'],
-                server_port=self._dns_xdist['port']
-            )
+        src_ref_file = importlib_resources.file('certbot_integration_tests').joinpath(
+            'assets', 'bind-config', f'rfc2136-credentials-{label}.ini.tpl'
+        )
+        with importlib_resources.as_file(src_ref_file) as src_file:
+            with open(src_file, 'r') as f:
+                contents = f.read().format(
+                    server_address=self._dns_xdist['address'],
+                    server_port=self._dns_xdist['port']
+                )
 
         with tempfile.NamedTemporaryFile('w+', prefix='rfc2136-creds-{}'.format(label),
                                          suffix='.ini', dir=self.workspace) as fp:

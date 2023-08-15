@@ -1,11 +1,14 @@
 # pylint: disable=too-many-lines
 """Nginx Configuration"""
+import atexit
 import logging
 import re
 import socket
 import subprocess
 import tempfile
 import time
+import sys
+from contextlib import ExitStack
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -21,7 +24,10 @@ from typing import Type
 from typing import Union
 
 import OpenSSL
-import pkg_resources
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:
+    import importlib_resources
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
@@ -163,8 +169,12 @@ class NginxConfigurator(common.Configurator):
             else:
                 config_filename = "options-ssl-nginx-old.conf"
 
-        return pkg_resources.resource_filename(
-            "certbot_nginx", os.path.join("_internal", "tls_configs", config_filename))
+        file_manager = ExitStack()
+        atexit.register(file_manager.close)
+        ref = importlib_resources.files("certbot_nginx").joinpath(
+            "_internal", "tls_configs", config_filename)
+
+        return str(file_manager.enter_context(importlib_resources.as_file(ref)))
 
     @property
     def mod_ssl_conf(self) -> str:
