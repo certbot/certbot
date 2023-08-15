@@ -71,6 +71,11 @@ poetry = "<1.3.0"
 # https://github.com/certbot/certbot/issues/9606.
 setuptools = "<67.5.0"
 
+# Lexicon 3.14+ deprecates several private APIs and create stubs packages, leading
+# to several warnings and lint/mypy errors. Let's pin it to 3.13 until this is fixed
+# with https://github.com/certbot/certbot/pull/9746.
+dns-lexicon = "<3.14"
+
 [tool.poetry.dev-dependencies]
 
 [build-system]
