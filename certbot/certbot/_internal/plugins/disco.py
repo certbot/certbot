@@ -19,7 +19,7 @@ from certbot._internal import constants
 from certbot.compat import os
 from certbot.errors import Error
 
-if sys.version_info >= (3, 8):  # pragma: no cover
+if sys.version_info >= (3, 10):  # pragma: no cover
     import importlib.metadata as importlib_metadata
 else:
     import importlib_metadata

@@ -14,7 +14,7 @@ from certbot._internal.plugins import null
 from certbot._internal.plugins import standalone
 from certbot._internal.plugins import webroot
 
-if sys.version_info >= (3, 8):  # pragma: no cover
+if sys.version_info >= (3, 10):  # pragma: no cover
     import importlib.metadata as importlib_metadata
 else:
     import importlib_metadata
