@@ -75,10 +75,6 @@ poetry = "<1.3.0"
 # https://github.com/certbot/certbot/issues/9606.
 setuptools = "<67.5.0"
 
-# dns-lexicon 3.14.0 deprecated some of the APIs we were using. This should be
-# fixed by https://github.com/certbot/certbot/pull/9746.
-dns-lexicon = "<3.14.0"
-
 [tool.poetry.dev-dependencies]
 
 [build-system]
