@@ -45,6 +45,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
+    'sphinx_rtd_theme',
 ]
 
 if sphinx.version_info >= (1, 6):
