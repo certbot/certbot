@@ -229,6 +229,26 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('google.auth.load_credentials_from_file')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
+    def test_add_txt_record_and_poll_split_horizon(self, credential_mock):
+        credential_mock.return_value = (mock.MagicMock(), PROJECT_ID)
+
+        client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': '{zone}-private'.format(zone=self.zone), 'visibility': 'private'},{'id': '{zone}-public'.format(zone=self.zone), 'visibility': self.visibility}]}])
+        changes.create.return_value.execute.return_value = {'status': 'pending', 'id': self.change}
+        changes.get.return_value.execute.return_value = {'status': 'done'}
+
+        client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
+        changes.create.assert_called_with(body=mock.ANY,
+                                               managedZone='{zone}-public'.format(zone=self.zone),
+                                               project=PROJECT_ID)
+
+        changes.get.assert_called_with(changeId=self.change,
+                                            managedZone='{zone}-public'.format(zone=self.zone),
+                                            project=PROJECT_ID)
+
+    @mock.patch('google.auth.load_credentials_from_file')
+    @mock.patch('certbot_dns_google._internal.dns_google.open',
+                mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
     def test_add_txt_record_delete_old(self, credential_mock):
         credential_mock.return_value = (mock.MagicMock(), PROJECT_ID)
 

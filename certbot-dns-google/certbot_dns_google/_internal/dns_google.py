@@ -306,7 +306,7 @@ class _GoogleClient:
 
             for zone in zones:
                 zone_id = zone['id']
-                if zone['visibility'] != "private":
+                if zone['visibility'] == "public":
                     logger.debug('Found id of %s for %s using name %s', zone_id, domain, zone_name)
                     return zone_id
 
