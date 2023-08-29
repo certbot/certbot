@@ -226,14 +226,15 @@ SSL_DHPARAMS_DEST = "ssl-dhparams.pem"
 """Name of the ssl_dhparams file as saved
 in `certbot.configuration.NamespaceConfig.config_dir`."""
 
-# This code ensures that the resource is accessible as file for the lifetime of current
-# Python process, and will be automatically cleaned up on exit.
-_file_manager = ExitStack()
-atexit.register(_file_manager.close)
-_SSL_DHPARAMS_SRC_REF = importlib_resources.files("certbot") / "ssl-dhparams.pem"
+def _generate_ssl_dhparams_src_static() -> str:
+    # This code ensures that the resource is accessible as file for the lifetime of current
+    # Python process, and will be automatically cleaned up on exit.
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    ssl_dhparams_src_ref = importlib_resources.files("certbot") / "ssl-dhparams.pem"
+    return str(file_manager.enter_context(importlib_resources.as_file(ssl_dhparams_src_ref)))
 
-SSL_DHPARAMS_SRC = str(_file_manager.enter_context(
-    importlib_resources.as_file(_SSL_DHPARAMS_SRC_REF)))
+SSL_DHPARAMS_SRC = _generate_ssl_dhparams_src_static()
 """Path to the nginx ssl_dhparams file found in the Certbot distribution."""
 
 UPDATED_SSL_DHPARAMS_DIGEST = ".updated-ssl-dhparams-pem-digest.txt"

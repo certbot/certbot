@@ -41,11 +41,15 @@ ALL_SSL_OPTIONS_HASHES: List[str] = [
 ]
 """SHA256 hashes of the contents of previous versions of all versions of MOD_SSL_CONF_SRC"""
 
-_file_manager = ExitStack()
-atexit.register(_file_manager.close)
-_AUGEAS_LENS_DIR_REF = importlib_resources.files("certbot_apache") / "_internal" / "augeas_lens"
-AUGEAS_LENS_DIR = str(_file_manager.enter_context(
-    importlib_resources.as_file(_AUGEAS_LENS_DIR_REF)))
+def _generate_augeas_lens_dir_static() -> str:
+    # This code ensures that the resource is accessible as file for the lifetime of current
+    # Python process, and will be automatically cleaned up on exit.
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    augeas_lens_dir_ref = importlib_resources.files("certbot_apache") / "_internal" / "augeas_lens"
+    return str(file_manager.enter_context(importlib_resources.as_file(augeas_lens_dir_ref)))
+
+AUGEAS_LENS_DIR = _generate_augeas_lens_dir_static()
 """Path to the Augeas lens directory"""
 
 REWRITE_HTTPS_ARGS: List[str] = [
