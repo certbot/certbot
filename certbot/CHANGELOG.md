@@ -8,7 +8,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Add `certbot.util.LooseVersion` class. See [GH #9489](https://github.com/certbot/certbot/issues/9489).
 * Display suggested CAA records based on the `meta.caaIdentities` property from the ACME server's
-  `/directory` response.
+  `/directory` response. See [GH #4836](https://github.com/certbot/certbot/issues/4836).
 
 ### Changed
 
