@@ -238,6 +238,7 @@ Authors
 * [Robert Xiao](https://github.com/nneonneo)
 * [Roland Shoemaker](https://github.com/rolandshoemaker)
 * [Roy Wellington Ⅳ](https://github.com/thanatos)
+* [Ryan De Villa](https://github.com/ryandv)
 * [rugk](https://github.com/rugk)
 * [Sachi King](https://github.com/nakato)
 * [Sagi Kedmi](https://github.com/sagi)
