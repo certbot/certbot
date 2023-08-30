@@ -45,6 +45,20 @@ class AuthHandler:
         type strings with the most preferred challenge listed first
 
     """
+
+    _CAA_ISSUE_RECORD_FORMAT = '0 issue "{issuer}"'
+
+    _CAA_ISSUE_INSTRUCTIONS = """\
+
+If you would like to restrict certificate issuance to the current issuer,
+please deploy DNS CAA records for the names:
+
+{domains}
+
+with the following value:
+
+{caa_issue_records}"""
+
     def __init__(self, auth: interfaces.Authenticator, acme_client: Optional[client.ClientV2],
                  account: Optional[Account], pref_challs: List[str]) -> None:
         self.auth = auth
@@ -110,8 +124,17 @@ class AuthHandler:
             # Keep validated authorizations only. If there is none, no certificate can be issued.
             authzrs_validated = [authzr for authzr in authzrs
                                  if authzr.body.status == messages.STATUS_VALID]
+
             if not authzrs_validated:
                 raise errors.AuthorizationError('All challenges have failed.')
+
+            if self.acme.directory.meta.caa_identities:
+                validated_domains = [authzr.body.identifier.value for authzr in authzrs_validated]
+                caa_issue_records = [self._CAA_ISSUE_RECORD_FORMAT.format(issuer=issuer) for issuer
+                                     in self.acme.directory.meta.caa_identities]
+                display_util.notify(self._CAA_ISSUE_INSTRUCTIONS.format(
+                    domains=", ".join(validated_domains),
+                    caa_issue_records="\n".join(caa_issue_records)))
 
             return authzrs_validated
 

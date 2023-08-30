@@ -77,6 +77,9 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_account = mock.MagicMock()
         self.mock_net = mock.MagicMock(spec=acme_client.ClientV2)
         self.mock_net.retry_after.side_effect = acme_client.ClientV2.retry_after
+        self.mock_net.directory = mock.MagicMock(spec=messages.Directory)
+        self.mock_net.directory.meta = mock.MagicMock(spec=messages.Directory.Meta)
+        self.mock_net.directory.meta.caa_identities = None
 
         self.handler = AuthHandler(
             self.mock_auth, self.mock_net, self.mock_account, [])
@@ -408,6 +411,22 @@ class HandleAuthorizationsTest(unittest.TestCase):
         assert authzrs[0].body.status == messages.STATUS_DEACTIVATED
         assert failed[0].body.identifier.value == "is_valid_but_will_fail"
         assert failed[0].body.status == messages.STATUS_VALID
+
+    @mock.patch('certbot._internal.auth_handler.display_util.notify')
+    def test_notify_caa_issue_records(self, mock_notify):
+        self.mock_net.poll.side_effect = _gen_mock_on_poll()
+        self.mock_auth.get_chall_pref.return_value.append(challenges.DNS01)
+        self.mock_net.directory.meta.caa_identities = ["ca.example.com"]
+
+        authzrs = [gen_dom_authzr(domain="zero.example.com", challs=acme_util.CHALLENGES),
+                   gen_dom_authzr(domain="one.example.com", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+
+        self.handler.handle_authorizations(mock_order, self.mock_config)
+
+        assert mock_notify.call_count == 1
+        assert "zero.example.com, one.example.com" in mock_notify.call_args[0][0]
+        assert '0 issue "ca.example.com"' in mock_notify.call_args[0][0]
 
 
 def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0, wait_value=1):
