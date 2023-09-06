@@ -59,7 +59,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
     def test_perform(self, unused_mock_get_utility):
         self.auth.perform([self.achall])
 
-        expected = [mock.call.add_txt_records('_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
+        expected = [mock.call.add_txt_records(TXTRecord(name='_acme-challenge.'+DOMAIN, content=mock.ANY, ttl=mock.ANY))]
         assert expected == self.mock_client.mock_calls
 
     def test_cleanup(self):
@@ -67,7 +67,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth._attempt_cleanup = True
         self.auth.cleanup([self.achall])
 
-        expected = [mock.call.del_txt_record('_acme-challenge.'+DOMAIN, mock.ANY)]
+        expected = [mock.call.del_txt_records(TXTRecord(name='_acme-challenge.'+DOMAIN, content=mock.ANY))]
         assert expected == self.mock_client.mock_calls
 
     def test_invalid_algorithm_raises(self):
@@ -174,6 +174,9 @@ class RFC2136ClientTest(unittest.TestCase):
             self.rfc2136_client.del_txt_records([TXTRecord(name="bar", content="baz")])
 
     def test_find_domain(self):
+        import certbot_dns_rfc2136._internal.dns_rfc2136
+        certbot_dns_rfc2136._internal.dns_rfc2136.SOA_CACHE = {}
+
         # _query_soa | pylint: disable=protected-access
         self.rfc2136_client._query_soa = mock.MagicMock(side_effect=[False, False, True])
 
@@ -183,6 +186,9 @@ class RFC2136ClientTest(unittest.TestCase):
         assert domain == DOMAIN
 
     def test_find_domain_wraps_errors(self):
+        import certbot_dns_rfc2136._internal.dns_rfc2136
+        certbot_dns_rfc2136._internal.dns_rfc2136.SOA_CACHE = {}
+
         # _query_soa | pylint: disable=protected-access
         self.rfc2136_client._query_soa = mock.MagicMock(return_value=False)
 

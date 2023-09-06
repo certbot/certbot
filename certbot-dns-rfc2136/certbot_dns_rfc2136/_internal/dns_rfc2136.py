@@ -137,6 +137,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                               (self.credentials.conf('sign_query') or '').upper() == "TRUE")
 
 
+SOA_CACHE: Dict[str, bool] = {}
 class _RFC2136Client:
     """
     Encapsulates all communication with the target DNS server.
@@ -257,8 +258,14 @@ class _RFC2136Client:
 
         # Loop through until we find an authoritative SOA record
         for guess in domain_name_guesses:
-            if self._query_soa(guess):
-                return guess
+            try:
+                if SOA_CACHE[guess]:
+                    return guess
+            except KeyError:
+                if self._query_soa(guess):
+                    SOA_CACHE[guess] = True
+                    return guess
+                SOA_CACHE[guess] = False
 
         raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
                                  .format(record_name, domain_name_guesses))
