@@ -22,7 +22,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
-import pkg_resources
 import pytz
 
 import certbot
@@ -38,12 +37,13 @@ from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common as plugins_common
+from certbot.util import parse_loose_version
 
 logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 README = "README"
-CURRENT_VERSION = pkg_resources.parse_version(certbot.__version__)
+CURRENT_VERSION = parse_loose_version(certbot.__version__)
 BASE_PRIVKEY_MODE = 0o600
 
 # pylint: disable=too-many-lines
@@ -492,7 +492,7 @@ class RenewableCert(interfaces.RenewableCert):
 
         conf_version = self.configuration.get("version")
         if (conf_version is not None and
-                pkg_resources.parse_version(conf_version) > CURRENT_VERSION):
+                parse_loose_version(conf_version) > CURRENT_VERSION):
             logger.info(
                 "Attempting to parse the version %s renewal configuration "
                 "file found at %s with version %s of Certbot. This might not "

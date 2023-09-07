@@ -1,10 +1,14 @@
 """Apache plugin constants."""
+import atexit
+import sys
+from contextlib import ExitStack
 from typing import Dict
 from typing import List
 
-import pkg_resources
-
-from certbot.compat import os
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
 
 MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
 """Name of the mod_ssl config file as saved
@@ -37,8 +41,15 @@ ALL_SSL_OPTIONS_HASHES: List[str] = [
 ]
 """SHA256 hashes of the contents of previous versions of all versions of MOD_SSL_CONF_SRC"""
 
-AUGEAS_LENS_DIR = pkg_resources.resource_filename(
-    "certbot_apache", os.path.join("_internal", "augeas_lens"))
+def _generate_augeas_lens_dir_static() -> str:
+    # This code ensures that the resource is accessible as file for the lifetime of current
+    # Python process, and will be automatically cleaned up on exit.
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    augeas_lens_dir_ref = importlib_resources.files("certbot_apache") / "_internal" / "augeas_lens"
+    return str(file_manager.enter_context(importlib_resources.as_file(augeas_lens_dir_ref)))
+
+AUGEAS_LENS_DIR = _generate_augeas_lens_dir_static()
 """Path to the Augeas lens directory"""
 
 REWRITE_HTTPS_ARGS: List[str] = [

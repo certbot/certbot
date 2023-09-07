@@ -2,10 +2,11 @@
 import copy
 import shutil
 import tempfile
+import sys
+from contextlib import contextmanager
 from unittest import mock
 
 import josepy as jose
-import pkg_resources
 
 from certbot import util
 from certbot.compat import os
@@ -14,6 +15,10 @@ from certbot.tests import util as test_util
 from certbot_nginx._internal import configurator
 from certbot_nginx._internal import nginxparser
 
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
 
 class NginxTest(test_util.ConfigTestCase):
 
@@ -24,7 +29,7 @@ class NginxTest(test_util.ConfigTestCase):
         self.config = None
 
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
-            "etc_nginx", __name__)
+            "etc_nginx", __package__)
         self.logs_dir = tempfile.mkdtemp('logs')
 
         self.config_path = os.path.join(self.temp_dir, "etc_nginx")
@@ -78,11 +83,12 @@ class NginxTest(test_util.ConfigTestCase):
         return config
 
 
+@contextmanager
 def get_data_filename(filename):
     """Gets the filename of a test data file."""
-    return pkg_resources.resource_filename(
-        __name__, os.path.join(
-            "testdata", "etc_nginx", filename))
+    ref = importlib_resources.files(__package__) / "testdata" / "etc_nginx"/ filename
+    with importlib_resources.as_file(ref) as path:
+        yield path
 
 
 def filter_comments(tree):
