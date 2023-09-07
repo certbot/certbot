@@ -53,7 +53,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     PORT = 53
 
-    description = 'Obtain certificates using a DNS TXT record (if you are using BIND for DNS).'
+    description = 'Obtain certificates using a DNS TXT record with RFC2136 UPDATE.'
     ttl = 120
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
