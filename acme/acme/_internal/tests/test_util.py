@@ -4,20 +4,25 @@
 
 """
 import os
+import sys
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
 from josepy.util import ComparableECKey
 from OpenSSL import crypto
-import pkg_resources
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
 
 
 def load_vector(*names):
     """Load contents of a test vector."""
     # luckily, resource_string opens file in binary mode
-    return pkg_resources.resource_string(
-        __name__, os.path.join('testdata', *names))
+    vector_ref = importlib_resources.files(__package__).joinpath('testdata', *names)
+    return vector_ref.read_bytes()
 
 
 def _guess_loader(filename, loader_pem, loader_der):
