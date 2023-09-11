@@ -13,7 +13,9 @@ from requests.exceptions import RequestException
 from certbot import errors
 from certbot.achallenges import AnnotatedChallenge
 from certbot.plugins import dns_test_common
-from certbot.plugins.dns_common_lexicon import LexiconClient
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from certbot.plugins.dns_common_lexicon import LexiconClient
 from certbot.plugins.dns_test_common import _AuthenticatorCallableTestCase
 from certbot.tests import util as test_util
 
