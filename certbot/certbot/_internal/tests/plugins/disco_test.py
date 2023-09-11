@@ -6,7 +6,6 @@ from typing import List
 import unittest
 from unittest import mock
 
-import pkg_resources
 import pytest
 
 from certbot import errors
@@ -15,30 +14,55 @@ from certbot._internal.plugins import null
 from certbot._internal.plugins import standalone
 from certbot._internal.plugins import webroot
 
-EP_SA = pkg_resources.EntryPoint(
-    "sa", "certbot._internal.plugins.standalone",
-    attrs=("Authenticator",),
-    dist=mock.MagicMock(key="certbot"))
-EP_WR = pkg_resources.EntryPoint(
-    "wr", "certbot._internal.plugins.webroot",
-    attrs=("Authenticator",),
-    dist=mock.MagicMock(key="certbot"))
+if sys.version_info >= (3, 10):  # pragma: no cover
+    import importlib.metadata as importlib_metadata
+else:
+    import importlib_metadata
+
+
+class _EntryPointLoadFail(importlib_metadata.EntryPoint):
+    def load(self):
+        raise RuntimeError("Loading failure")
+
+
+EP_SA = importlib_metadata.EntryPoint(
+    name="sa",
+    value="certbot._internal.plugins.standalone:Authenticator",
+    group="certbot.plugins")
+
+EP_WR = importlib_metadata.EntryPoint(
+    name="wr",
+    value="certbot._internal.plugins.webroot:Authenticator",
+    group="certbot.plugins")
+
+EP_SA_LOADFAIL = _EntryPointLoadFail(
+    name="sa",
+    value="certbot._internal.plugins.standalone:Authenticator",
+    group="certbot.plugins")
 
 
 class PluginEntryPointTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.disco.PluginEntryPoint."""
 
     def setUp(self):
-        self.ep1 = pkg_resources.EntryPoint(
-            "ep1", "p1.ep1", dist=mock.MagicMock(key="p1"))
-        self.ep1prim = pkg_resources.EntryPoint(
-            "ep1", "p2.ep2", dist=mock.MagicMock(key="p2"))
+        self.ep1 = importlib_metadata.EntryPoint(
+            name="ep1",
+            value="p1.ep1:Authenticator",
+            group="certbot.plugins")
+        self.ep1prim = importlib_metadata.EntryPoint(
+            name="ep1",
+            value="p2.pe2:Authenticator",
+            group="certbot.plugins")
         # nested
-        self.ep2 = pkg_resources.EntryPoint(
-            "ep2", "p2.foo.ep2", dist=mock.MagicMock(key="p2"))
+        self.ep2 = importlib_metadata.EntryPoint(
+            name="ep2",
+            value="p2.foo.ep2:Authenticator",
+            group="certbot.plugins")
         # project name != top-level package name
-        self.ep3 = pkg_resources.EntryPoint(
-            "ep3", "a.ep3", dist=mock.MagicMock(key="p3"))
+        self.ep3 = importlib_metadata.EntryPoint(
+            name="ep3",
+            value="a.ep3:Authenticator",
+            group="certbot.plugins")
 
         from certbot._internal.plugins.disco import PluginEntryPoint
         self.plugin_ep = PluginEntryPoint(EP_SA)
@@ -172,16 +196,18 @@ class PluginsRegistryTest(unittest.TestCase):
         self.plugin_ep.__hash__.side_effect = TypeError
         self.plugins = {self.plugin_ep.name: self.plugin_ep}
         self.reg = self._create_new_registry(self.plugins)
-        self.ep1 = pkg_resources.EntryPoint(
-            "ep1", "p1.ep1", dist=mock.MagicMock(key="p1"))
+        self.ep1 = importlib_metadata.EntryPoint(
+            name="ep1",
+            value="p1.ep1",
+            group="certbot.plugins")
 
     def test_find_all(self):
         from certbot._internal.plugins.disco import PluginsRegistry
-        with mock.patch("certbot._internal.plugins.disco.pkg_resources") as mock_pkg:
-            mock_pkg.iter_entry_points.side_effect = [
-                iter([EP_SA]), iter([EP_WR, self.ep1])
+        with mock.patch("certbot._internal.plugins.disco.importlib_metadata") as mock_meta:
+            mock_meta.entry_points.side_effect = [
+                [EP_SA], [EP_WR, self.ep1],
             ]
-            with mock.patch.object(pkg_resources.EntryPoint, 'load') as mock_load:
+            with mock.patch.object(importlib_metadata.EntryPoint, 'load') as mock_load:
                 mock_load.side_effect = [
                     standalone.Authenticator, webroot.Authenticator,
                     null.Installer, null.Installer]
@@ -196,10 +222,10 @@ class PluginsRegistryTest(unittest.TestCase):
 
     def test_find_all_error_message(self):
         from certbot._internal.plugins.disco import PluginsRegistry
-        with mock.patch("certbot._internal.plugins.disco.pkg_resources") as mock_pkg:
-            EP_SA.load = None # This triggers a TypeError when the entrypoint loads
-            mock_pkg.iter_entry_points.side_effect = [
-                iter([EP_SA]), iter([EP_WR, self.ep1])
+        with mock.patch("certbot._internal.plugins.disco.importlib_metadata") as mock_meta:
+            #EP_SA.load = None  # This triggers a TypeError when the entrypoint loads
+            mock_meta.entry_points.side_effect = [
+                [EP_SA_LOADFAIL], [EP_WR, self.ep1],
             ]
             with self.assertRaises(errors.PluginError) as cm:
                 PluginsRegistry.find_all()
