@@ -1,6 +1,12 @@
 """Base test class for DNS authenticators built on Lexicon."""
 import contextlib
-from typing import Any, Tuple, Generator
+import sys
+from types import ModuleType
+from typing import Any
+from typing import cast
+from typing import Generator
+from typing import List
+from typing import Tuple
 from typing import TYPE_CHECKING
 from unittest import mock
 from unittest.mock import MagicMock
@@ -13,9 +19,11 @@ from requests.exceptions import RequestException
 from certbot import errors
 from certbot.achallenges import AnnotatedChallenge
 from certbot.plugins import dns_test_common
+
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     from certbot.plugins.dns_common_lexicon import LexiconClient
+
 from certbot.plugins.dns_test_common import _AuthenticatorCallableTestCase
 from certbot.tests import util as test_util
 
@@ -69,14 +77,7 @@ class _LexiconAwareTestCase(Protocol):
 # pylint: disable=no-member
 
 class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):  # pragma: no cover
-
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        warnings.warn("BaseLexiconAuthenticatorTest class is deprecated and will be "
-                      "removed in the next Certbot major release. Please use "
-                      "LexiconDNSAuthenticator instead.",
-                      DeprecationWarning)
-
+    
     @test_util.patch_display_util()
     def test_perform(self: _AuthenticatorCallableLexiconTestCase,
                      unused_mock_get_utility: Any) -> None:
@@ -102,12 +103,6 @@ class BaseLexiconClientTest:  # pragma: no cover
     record_prefix = "_acme-challenge"
     record_name = record_prefix + "." + DOMAIN
     record_content = "bar"
-
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        warnings.warn("BaseLexiconClientTest class is deprecated and will be removed in "
-                      "the next Certbot major release. Please use LexiconDNSAuthenticator instead.",
-                      DeprecationWarning)
 
     def test_add_txt_record(self: _LexiconAwareTestCase) -> None:
         self.client.add_txt_record(DOMAIN, self.record_name, self.record_content)
@@ -331,3 +326,35 @@ def _patch_lexicon_client() -> Generator[Tuple[MagicMock, MagicMock], None, None
         mock_operations = MagicMock()
         mock_client.return_value.__enter__.return_value = mock_operations
         yield mock_client, mock_operations
+
+
+# This class takes a similar approach to the cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
+class _DeprecationModule:
+    """
+    Internal class delegating to a module, and displaying warnings when attributes
+    related to deprecated attributes in the current module.
+    """
+    def __init__(self, module: ModuleType):
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr: str) -> Any:
+        if attr in ('BaseLexiconAuthenticatorTest', 'BaseLexiconClientTest'):
+            warnings.warn(f'{attr} attribute in {__name__} module is deprecated '
+                          'and will be removed soon.',
+                          DeprecationWarning, stacklevel=2)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr: str) -> Any:  # pragma: no cover
+        delattr(self._module, attr)
+
+    def __dir__(self) -> List[str]:  # pragma: no cover
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about deprecation and planned removal of some elements in the module.
+sys.modules[__name__] = cast(ModuleType, _DeprecationModule(sys.modules[__name__]))
