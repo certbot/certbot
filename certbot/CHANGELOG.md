@@ -18,6 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Do not call deprecated datetime.utcnow() and datetime.utcfromtimestamp()
+* Filter zones in `certbot-dns-google` to avoid usage of private DNS zones to create records
 
 More details about these changes can be found on our GitHub repo.
 

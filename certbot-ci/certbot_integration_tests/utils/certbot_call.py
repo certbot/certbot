@@ -6,10 +6,7 @@ import subprocess
 import sys
 from typing import Dict
 from typing import List
-from typing import Mapping
 from typing import Tuple
-
-import pkg_resources
 
 import certbot_integration_tests
 # pylint: disable=wildcard-import,unused-wildcard-import
@@ -84,29 +81,14 @@ def _prepare_environ(workspace: str) -> Dict[str, str]:
     return new_environ
 
 
-def _compute_additional_args(workspace: str, environ: Mapping[str, str],
-                             force_renew: bool) -> List[str]:
-    additional_args = []
-    output = subprocess.check_output(['certbot', '--version'],
-                                     universal_newlines=True, stderr=subprocess.STDOUT,
-                                     cwd=workspace, env=environ)
-    # Typical response is: output = 'certbot 0.31.0.dev0'
-    version_str = output.split(' ')[1].strip()
-    if pkg_resources.parse_version(version_str) >= pkg_resources.parse_version('0.30.0'):
-        additional_args.append('--no-random-sleep-on-renew')
-
-    if force_renew:
-        additional_args.append('--renew-by-default')
-
-    return additional_args
-
-
 def _prepare_args_env(certbot_args: List[str], directory_url: str, http_01_port: int,
                       tls_alpn_01_port: int, config_dir: str, workspace: str,
                       force_renew: bool) -> Tuple[List[str], Dict[str, str]]:
 
     new_environ = _prepare_environ(workspace)
-    additional_args = _compute_additional_args(workspace, new_environ, force_renew)
+    additional_args = ['--no-random-sleep-on-renew']
+    if force_renew:
+        additional_args.append('--renew-by-default')
 
     command = [
         'certbot',
