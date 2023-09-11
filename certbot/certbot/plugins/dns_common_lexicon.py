@@ -1,17 +1,23 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
 import abc
 import logging
-from typing import Any, List, Tuple
+import sys
+from types import ModuleType
+from typing import Any
+from typing import cast
 from typing import Dict
+from typing import List
 from typing import Mapping
 from typing import Optional
+from typing import Tuple
 from typing import Union
 import warnings
 
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
-from certbot import errors, configuration
+from certbot import configuration
+from certbot import errors
 from certbot.plugins import dns_common
 
 # Lexicon is not declared as a dependency in Certbot itself,
@@ -34,13 +40,10 @@ logger = logging.getLogger(__name__)
 class LexiconClient:  # pragma: no cover
     """
     Encapsulates all communication with a DNS provider via Lexicon.
-    """
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        warnings.warn("LexiconClient class is deprecated and will be removed in the next "
-                      "Certbot major release. Please use LexiconDNSAuthenticator instead.",
-                      DeprecationWarning)
+    .. deprecated:: 2.7.0
+       Please use certbot.dns_common_lexicon.LexiconDNSAuthenticator instead.
+    """
 
     def __init__(self) -> None:
         self.provider: Provider
@@ -135,16 +138,16 @@ def build_lexicon_config(lexicon_provider_name: str,
                          ) -> Union[ConfigResolver, Dict[str, Any]]:  # pragma: no cover
     """
     Convenient function to build a Lexicon 2.x/3.x config object.
+
     :param str lexicon_provider_name: the name of the lexicon provider to use
     :param dict lexicon_options: options specific to lexicon
     :param dict provider_options: options specific to provider
     :return: configuration to apply to the provider
     :rtype: ConfigurationResolver or dict
-    """
-    warnings.warn("build_lexicon_config method is deprecated and will be removed "
-                  "in the next Certbot major release.",
-                  DeprecationWarning)
 
+    .. deprecated:: 2.7.0
+       Please use certbot.dns_common_lexicon.LexiconDNSAuthenticator instead.
+    """
     config: Union[ConfigResolver, Dict[str, Any]] = {'provider_name': lexicon_provider_name}
     config.update(lexicon_options)
     if not ConfigResolver:
@@ -264,3 +267,35 @@ class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
             return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
                                       .format(domain_name, e))
         return None
+
+
+# This class takes a similar approach to the cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
+class _DeprecationModule:
+    """
+    Internal class delegating to a module, and displaying warnings when attributes
+    related to deprecated attributes in the current module.
+    """
+    def __init__(self, module):
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr):
+        if attr in ('LexiconClient', 'build_lexicon_config'):
+            warnings.warn(f'{attr} attribute in {__name__} module is deprecated '
+                          'and will be removed soon.',
+                          DeprecationWarning, stacklevel=2)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr, value):  # pragma: no cover
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr):  # pragma: no cover
+        delattr(self._module, attr)
+
+    def __dir__(self):  # pragma: no cover
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about deprecation and planned removal of some elements in the module.
+sys.modules[__name__] = cast(ModuleType, _DeprecationModule(sys.modules[__name__]))
