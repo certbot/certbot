@@ -277,23 +277,23 @@ class _DeprecationModule:
     Internal class delegating to a module, and displaying warnings when attributes
     related to deprecated attributes in the current module.
     """
-    def __init__(self, module):
+    def __init__(self, module: ModuleType):
         self.__dict__['_module'] = module
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> Any:
         if attr in ('LexiconClient', 'build_lexicon_config'):
             warnings.warn(f'{attr} attribute in {__name__} module is deprecated '
                           'and will be removed soon.',
                           DeprecationWarning, stacklevel=2)
         return getattr(self._module, attr)
 
-    def __setattr__(self, attr, value):  # pragma: no cover
+    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
         setattr(self._module, attr, value)
 
-    def __delattr__(self, attr):  # pragma: no cover
+    def __delattr__(self, attr: str) -> Any:  # pragma: no cover
         delattr(self._module, attr)
 
-    def __dir__(self):  # pragma: no cover
+    def __dir__(self) -> List[str]:  # pragma: no cover
         return ['_module'] + dir(self._module)
 
 
