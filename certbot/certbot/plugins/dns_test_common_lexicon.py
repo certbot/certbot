@@ -77,7 +77,7 @@ class _LexiconAwareTestCase(Protocol):
 # pylint: disable=no-member
 
 class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):  # pragma: no cover
-    
+
     @test_util.patch_display_util()
     def test_perform(self: _AuthenticatorCallableLexiconTestCase,
                      unused_mock_get_utility: Any) -> None:
