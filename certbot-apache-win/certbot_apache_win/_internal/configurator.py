@@ -459,7 +459,7 @@ class ApacheConfigurator(common.Installer):
             # Returned objects are guaranteed to be ssl vhosts
             return self._choose_vhosts_wildcard(domain, create_if_no_ssl)
         else:
-            logger.info("Non-wildcard flow: %s ", domain)
+            logger.info("Non-wildcard flow: %s with create_if_no_ssl:%s", domain,create_if_no_ssl)
             return [self.choose_vhost(domain, create_if_no_ssl)]
 
     def _vhosts_for_wildcard(self, domain):
@@ -587,6 +587,7 @@ class ApacheConfigurator(common.Installer):
         if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
             # install SSLCertificateFile, SSLCertificateKeyFile,
             # and SSLCertificateChainFile directives
+            logger.info("Cert update opt1")
             set_cert_path = cert_path
             self.parser.update_directive(vhost,"SSLCertificateFile",set_cert_path)
             self.parser.update_directive(vhost,"SSLCertificateKeyFile",key_path)
@@ -597,6 +598,7 @@ class ApacheConfigurator(common.Installer):
                 raise errors.PluginError("--chain-path is required for your "
                                          "version of Apache")
         else:
+            logger.info("Cert update opt2")
             if not fullchain_path:
                 raise errors.PluginError("Please provide the --fullchain-path "
                                          "option pointing to your full chain file")
@@ -647,7 +649,9 @@ class ApacheConfigurator(common.Installer):
         self.parser.findNestedNodes(self.nodes,self.filePath)
         self.vhosts = self.get_virtual_hosts()
         print("Finding vhost for:{0}".format(target_name))
+        logger.info("Finding vhost for:-%s", target_name)
         vhost = self._find_best_vhost(target_name,vhosts=self.vhosts)
+        #logger.info("best_vhost selected by _find_best_vhost-%s", vhost.get_names())
         
         if vhost is not None:
             if not create_if_no_ssl:
@@ -706,13 +710,15 @@ class ApacheConfigurator(common.Installer):
         :rtype: bool
 
         """
+        logger.info("domain_in_names") 
         # use lowercase strings because fnmatch can be case sensitive
         target_name = target_name.lower()
         for name in names:
             name = name.lower()
             # fnmatch treats "[seq]" specially and [ or ] characters aren't
             # valid in Apache but Apache doesn't error out if they are present
-            if "[" not in name and fnmatch.fnmatch(target_name, name):
+            #if "[" not in name and fnmatch.fnmatch(target_name, name):
+            if "[" not in name and target_name == name:
                 return True
         return False
 
@@ -731,7 +737,9 @@ class ApacheConfigurator(common.Installer):
         for vhost in self.vhosts:
             if any(a.is_wildcard() or a.get_port() == port for a in vhost.addrs) and not vhost.ssl:
                 filtered_vhosts.append(vhost)
-        return self._find_best_vhost(target, filtered_vhosts, filter_defaults)
+        selected_vhost = self._find_best_vhost(target, filtered_vhosts, filter_defaults)
+        #logger.info("best_http_vhost selected by _find_best_vhost:-%s", selected_vhost.get_names())
+        return selected_vhost
 
     def _find_best_vhost(self, target_name, vhosts=None, filter_defaults=True):
         """Finds the best vhost for a target_name.
@@ -765,19 +773,25 @@ class ApacheConfigurator(common.Installer):
             if vhost.modmacro is True:
                 continue
             names = vhost.get_names()
+            logger.info("vhost.get_names : %s ", names) 
+            logger.info("vhost.addrs.get_addr() : %s ", vhost.addrs.get_addr()) 
             if target_name in names:
+                logger.info("target_name in names ") 
                 points = 3
             elif self.domain_in_names(names, target_name):
+                logger.info("self.domain_in_names ") 
                 points = 2
             elif vhost.addrs.get_addr() == target_name:
+                logger.info("vhost.addrs.get_addr = target_name") 
                 points = 1
             else:
                 # No points given if names can't be found.
                 # This gets hit but doesn't register
+                logger.info("continue ") 
                 continue  # pragma: no cover
 
             
-            print("Points:{0} Best Points:{1}".format(points,best_points))
+            logger.info("Points:{0} Best Points:{1}".format(points,best_points))
                         
             if points > best_points:
                 best_points = points
@@ -793,6 +807,7 @@ class ApacheConfigurator(common.Installer):
             if len(reasonable_vhosts) == 1:
                 best_candidate = reasonable_vhosts[0]
 
+        #logger.info("best matching vhost:%s",(best_candidate.get_names()))
         return best_candidate
 
     def _non_default_vhosts(self, vhosts):
@@ -1622,9 +1637,11 @@ class ApacheConfigurator(common.Installer):
 
     def _add_dummy_ssl_directives(self, virtualHost):
         # Only include the TLS configuration if not already included
+        logger.info("Adding dummy ssl detictives to vhost: ")
         existing_inc = None
         add_certificate = True
         add_certificate_key = True
+        logger.info("vhost start line-%s endline-%s",virtualHost.node.startLine, virtualHost.node.endLine)
         for child in virtualHost.node.children:
             name = child.name.strip().casefold()
             if name == "SSLCertificateFile".casefold():
@@ -1638,6 +1655,7 @@ class ApacheConfigurator(common.Installer):
             self.parser.add_dir(virtualHost, "SSLCertificateKeyFile","insert_key_file_path")
     
     def _add_servername_alias(self, target_name, vhost):
+        logger.info("Add or update servername alias to vhost: %s", vhost.get_names())
         sname, saliases = self._get_vhost_names(vhost)
         if target_name == sname or target_name in saliases:
             return

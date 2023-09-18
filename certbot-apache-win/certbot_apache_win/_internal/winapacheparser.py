@@ -177,20 +177,26 @@ class WinApacheParser(object):
 			print("Inserting at line:{0}".format(startline[0]))
 			with open(vhost.node.filePath,'w') as fp:
 				if " " in data:
-					contents.insert(startline[0]+1,"{0} \"{1}\"\n".format(typeToAdd,data.replace("\\","/")))
+					contents.insert(vhost.node.startLine,"{0} \"{1}\"\n".format(typeToAdd,data.replace("\\","/")))
 				else:
-					contents.insert(startline[0]+1,"{0} {1}\n".format(typeToAdd,data.replace("\\","/")))
+					contents.insert(vhost.node.startLine,"{0} {1}\n".format(typeToAdd,data.replace("\\","/")))
 				fp.write( "".join(contents));
 	
 	def add_dir(self,vhost,typeToAdd,data):
-		print("add_dir Opening file:{0} vhost:{1}".format(vhost.node.filePath,vhost.node.content))
+		#print("add_dir Opening file:{0} vhost:{1}".format(vhost.node.filePath,vhost.node.content))
+		logger.info("add_dir Opening file %s to update vhost :%s with startLine-%s and endLine-%s with typeToAdd-%s of data-%s",
+			  vhost.node.filePath,vhost.node.content,vhost.node.startLine,vhost.node.endLine,typeToAdd,data )
+
+		
 		contents = []
 		with open(vhost.node.filePath,'r') as fp:
 			contents = fp.readlines()
-			startline = [i for i, s in enumerate(contents) if s.find(vhost.node.content.strip())>-1 and s.casefold().find("virtualhost")>-1]
-			print("Start line:{0}".format(startline[0]))
-			endLine = [i for i, s in enumerate(contents) if s.casefold().find("/virtualhost")>-1 and i > startline[0] ]
-			print("end line:{0}".format(endLine[0]))
+			startline = [i for i, s in enumerate(contents) if s.find(vhost.node.content.strip())>-1 and s.casefold().find("virtualhost")>-1 and i >= (vhost.node.startLine-1)]
+			logger.info("startline-%s",startline[0])
+			#print("Start line:{0}".format(startline[0]))
+			endLine = [i for i, s in enumerate(contents) if s.casefold().find("/virtualhost")>-1 and i > startline[0] and i <= vhost.node.endLine]
+			logger.info("endLine-%s", endLine)
+			#print("end line:{0}".format(endLine[0]))
 		if len(contents)>0:
 			with open(vhost.node.filePath,'w') as fp:
 				if " " in data:
@@ -245,23 +251,38 @@ class WinApacheParser(object):
 		return sanitizedPath
 	
 	def update_directive(self,vhost,directive,data):
-		print("Opening file:{0} updating vhost at line:{1}".format(vhost.node.filePath,vhost.node.startLine))
+		#print("Opening file:{0} updating vhost at line:{1}".format(vhost.node.filePath,vhost.node.startLine))
+		logger.info("Opening file:%s updating vhost at line:%s updating directive- %s with data- %s", 
+			  vhost.node.filePath,vhost.node.startLine, directive, data)
 		contents = []
 		with open(vhost.node.filePath,'r') as fp:
 			contents = fp.readlines()
 		if len(contents)>0:
 			with open(vhost.node.filePath,'w') as fp:
-				print("replacing cert and key for vhost {0}-{1}".format(vhost.node.startLine,vhost.node.endLine))
-				startline = [i for i, s in enumerate(contents) if s.find(vhost.node.content.strip())>-1 and s.casefold().find("virtualhost")>-1]
-				endLine = [i for i, s in enumerate(contents) if s.casefold().find("/virtualhost")>-1 and i > startline[0] ]
-				indices = [i for i, s in enumerate(contents) if i>=startline[0] and i<=endLine[0] and directive in s]
-				print(indices)
+				startline= []
+				endLine= []
+				#print("replacing cert and key for vhost {0}-{1}".format(vhost.node.startLine,vhost.node.endLine))
+				logger.info("replacing cert and key for vhost %s - %s", vhost.node.startLine,vhost.node.endLine)
+				startline = [i for i, s in enumerate(contents) if s.find(vhost.node.content.strip())>-1 and s.casefold().find("virtualhost")>-1 and i >= (vhost.node.startLine-1)]
+				logger.info("startline-%s",startline)
+				for i, linedata in enumerate(contents):
+					if linedata.casefold().find("/virtualhost")>-1 and i >= vhost.node.startLine and 1 <= vhost.node.endLine :
+						logger.info("EndlineNo-%s, lineData: %s",i, linedata)
+						endLine.append(i)
+				logger.info("endLine-%s", endLine)
+
+				startline=startline[0]
+				endLine=endLine[0]
+				indices = [i for i, s in enumerate(contents) if i>=startline and i<=endLine and directive in s]				
+				logger.info("indices- %s,startline- %s,endLine- %s, directive- %s, data- %s",  indices,startline,endLine,directive, data)
 				if len(indices)>0:
-					print("Popping line:{0}".format(indices[0]))
+					#print("Popping line:{0}".format(indices[0]))
+					logger.info("Popping line: %s", indices[0])
 					contents.pop(indices[0])
 					contents.insert(indices[0],"{0} \"{1}\"\n".format(directive,data.replace("\\","/")))
 				else:
-					contents.insert(endLine[0]-1,"{0} \"{1}\"\n".format(directive,data.replace("\\","/")))
+					logger.info("Adding cert derictive based on vhost endline")
+					contents.insert(endLine-1,"{0} \"{1}\"\n".format(directive,data.replace("\\","/")))
 				
 				fp.write( "".join(contents))
 	
