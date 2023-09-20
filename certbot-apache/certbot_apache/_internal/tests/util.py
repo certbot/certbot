@@ -22,7 +22,7 @@ class ApacheTest(unittest.TestCase):
         # pylint: disable=arguments-differ
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
             test_dir=test_dir,
-            pkg=__name__)
+            pkg=__package__)
 
         self.config_path = os.path.join(self.temp_dir, config_root)
         self.vhost_path = os.path.join(self.temp_dir, vhost_root)

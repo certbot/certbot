@@ -70,50 +70,53 @@ class TestRawNginxParser(unittest.TestCase):
                          '            image/jpeg jpg;}}}'.split('\n')
 
     def test_parse_from_file(self):
-        with open(util.get_data_filename('foo.conf')) as handle:
-            parsed = util.filter_comments(load(handle))
+        with util.get_data_filename('foo.conf') as path:
+            with open(path) as handle:
+                parsed = util.filter_comments(load(handle))
         assert parsed == \
             [['user', 'www-data'],
-             [['http'],
-              [[['server'], [
-                  ['listen', '*:80', 'default_server', 'ssl'],
-                  ['server_name', '*.www.foo.com', '*.www.example.com'],
-                  ['root', '/home/ubuntu/sites/foo/'],
-                  [['location', '/status'], [
-                      [['types'], [['image/jpeg', 'jpg']]],
-                  ]],
-                  [['location', '~', r'case_sensitive\.php$'], [
-                      ['index', 'index.php'],
-                      ['root', '/var/root'],
-                  ]],
-                  [['location', '~*', r'case_insensitive\.php$'], []],
-                  [['location', '=', r'exact_match\.php$'], []],
-                  [['location', '^~', r'ignore_regex\.php$'], []]
-              ]]]]]
+            [['http'],
+            [[['server'], [
+                ['listen', '*:80', 'default_server', 'ssl'],
+                ['server_name', '*.www.foo.com', '*.www.example.com'],
+                ['root', '/home/ubuntu/sites/foo/'],
+                [['location', '/status'], [
+                    [['types'], [['image/jpeg', 'jpg']]],
+                ]],
+                [['location', '~', r'case_sensitive\.php$'], [
+                    ['index', 'index.php'],
+                    ['root', '/var/root'],
+                ]],
+                [['location', '~*', r'case_insensitive\.php$'], []],
+                [['location', '=', r'exact_match\.php$'], []],
+                [['location', '^~', r'ignore_regex\.php$'], []]
+            ]]]]]
 
     def test_parse_from_file2(self):
-        with open(util.get_data_filename('edge_cases.conf')) as handle:
-            parsed = util.filter_comments(load(handle))
+        with util.get_data_filename('edge_cases.conf') as path:
+            with open(path) as handle:
+                parsed = util.filter_comments(load(handle))
         assert parsed == \
             [[['server'], [['server_name', 'simple']]],
-             [['server'],
-              [['server_name', 'with.if'],
-               [['location', '~', '^/services/.+$'],
+            [['server'],
+            [['server_name', 'with.if'],
+            [['location', '~', '^/services/.+$'],
                 [[['if', '($request_filename', '~*', '\\.(ttf|woff)$)'],
-                  [['add_header', 'Access-Control-Allow-Origin', '"*"']]]]]]],
-             [['server'],
-              [['server_name', 'with.complicated.headers'],
-               [['location', '~*', '\\.(?:gif|jpe?g|png)$'],
+                [['add_header', 'Access-Control-Allow-Origin', '"*"']]]]]]],
+            [['server'],
+            [['server_name', 'with.complicated.headers'],
+            [['location', '~*', '\\.(?:gif|jpe?g|png)$'],
                 [['add_header', 'Pragma', 'public'],
-                 ['add_header',
-                  'Cache-Control', '\'public, must-revalidate, proxy-revalidate\'',
-                  '"test,;{}"', 'foo'],
-                 ['blah', '"hello;world"'],
-                 ['try_files', '$uri', '@rewrites']]]]]]
+                ['add_header',
+                'Cache-Control', '\'public, must-revalidate, proxy-revalidate\'',
+                '"test,;{}"', 'foo'],
+                ['blah', '"hello;world"'],
+                ['try_files', '$uri', '@rewrites']]]]]]
 
     def test_parse_from_file3(self):
-        with open(util.get_data_filename('multiline_quotes.conf')) as handle:
-            parsed = util.filter_comments(load(handle))
+        with util.get_data_filename('multiline_quotes.conf') as path:
+            with open(path) as handle:
+                parsed = util.filter_comments(load(handle))
         assert parsed == \
             [[['http'],
                 [[['server'],
@@ -129,13 +132,15 @@ class TestRawNginxParser(unittest.TestCase):
                           '                            end\'']]]]]]]]
 
     def test_abort_on_parse_failure(self):
-        with open(util.get_data_filename('broken.conf')) as handle:
-            with pytest.raises(ParseException):
-                load(handle)
+        with util.get_data_filename('broken.conf') as path:
+            with open(path) as handle:
+                with pytest.raises(ParseException):
+                    load(handle)
 
     def test_dump_as_file(self):
-        with open(util.get_data_filename('nginx.conf')) as handle:
-            parsed = load(handle)
+        with util.get_data_filename('nginx.conf') as path:
+            with open(path) as handle:
+                parsed = load(handle)
         parsed[-1][-1].append(UnspacedList([['server'],
                                [['listen', ' ', '443', ' ', 'ssl'],
                                 ['server_name', ' ', 'localhost'],
@@ -155,8 +160,9 @@ class TestRawNginxParser(unittest.TestCase):
         assert parsed == parsed_new
 
     def test_comments(self):
-        with open(util.get_data_filename('minimalistic_comments.conf')) as handle:
-            parsed = load(handle)
+        with util.get_data_filename('minimalistic_comments.conf') as path:
+            with open(path) as handle:
+                parsed = load(handle)
 
         with tempfile.TemporaryFile(mode='w+t') as f:
             dump(parsed, f)

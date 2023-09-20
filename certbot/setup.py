@@ -1,18 +1,9 @@
 import codecs
 import os
 import re
-import sys
 
-from pkg_resources import parse_version
-from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
-
-min_setuptools_version='41.6.0'
-# This conditional isn't necessary, but it provides better error messages to
-# people who try to install this package with older versions of setuptools.
-if parse_version(setuptools_version) < parse_version(min_setuptools_version):
-    raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
 
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
@@ -44,6 +35,8 @@ install_requires = [
     'configobj>=5.0.6',
     'cryptography>=3.2.1',
     'distro>=1.0.1',
+    'importlib_resources>=1.3.1; python_version < "3.9"',
+    'importlib_metadata>=4.6; python_version < "3.10"',
     'josepy>=1.13.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
@@ -51,7 +44,7 @@ install_requires = [
     # This dependency needs to be added using environment markers to avoid its
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
-    f'setuptools>={min_setuptools_version}',
+    'setuptools>=41.6.0',
 ]
 
 dev_extras = [
