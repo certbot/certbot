@@ -5,40 +5,38 @@
 
 targets:
   #-----------------------------------------------------------------------------
-  # Ubuntu
-  # These AMI were found onhttps://cloud-images.ubuntu.com/locator/ec2/.
-  - ami: ami-0fc5d935ebf8bc3bc
+  #Ubuntu
+  - ami: ami-051dcca84f1edfff1
     name: ubuntu22.04
     type: ubuntu
     virt: hvm
     user: ubuntu
-  - ami: ami-0fe0238291c8e3f07
+  - ami: ami-0758470213bdd23b1
     name: ubuntu20.04
     type: ubuntu
     virt: hvm
     user: ubuntu
   #-----------------------------------------------------------------------------
   # Debian
-  # These AMI were found on https://wiki.debian.org/Cloud/AmazonEC2Image.
-  - ami: ami-0c20d96b50ac700e3
+  - ami: ami-0fec2c2e2017f4e7b
     name: debian11
     type: ubuntu
     virt: hvm
     user: admin
-  - ami: ami-0f238cd7c96d866ad
+  - ami: ami-02ff60b9d37a0a0be
     name: debian12
     type: ubuntu
     virt: hvm
     user: admin
   #-----------------------------------------------------------------------------
   # CentOS
-  # These AMI were found on https://centos.org/download/aws-images/.
-  - ami: ami-0aedf6b1cb669b4c7
+  # These AMI were found on https://wiki.centos.org/Cloud/AWS.
+  - ami: ami-00e87074e52e6c9f9
     name: centos7
     type: centos
     virt: hvm
     user: centos
-  - ami: ami-0d5144f02e4eb6f05
+  - ami: ami-0c0e36522a91d66e1
     name: centos9stream
     type: centos
     virt: hvm
