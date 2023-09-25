@@ -7,6 +7,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * Add `certbot.util.LooseVersion` class. See [GH #9489](https://github.com/certbot/certbot/issues/9489).
+* Add a new base class `certbot.plugins.dns_common_lexicon.LexiconDNSAuthenticator` to implement a DNS
+  authenticator plugin backed by Lexicon to communicate with the provider DNS API. This approach relies
+  heavily on conventions to reduce the implementation complexity of a new plugin.
+* Add a new test base class `certbot.plugins.dns_test_common_lexicon.BaseLexiconDNSAuthenticatorTest` to
+  help testing DNS plugins implemented on top of `LexiconDNSAuthenticator`.
 
 ### Changed
 
@@ -14,6 +19,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   of global state previously needed to inspect whether a user set an argument or not.
 * Support for Python 3.7 was deprecated and will be removed in our next planned release.
 * Added `RENEWED_DOMAINS` and `FAILED_DOMAINS` environment variables for consumption by post renewal hooks.
+* Deprecates `LexiconClient` base class and `build_lexicon_config` function in
+  `certbot.plugins.dns_common_lexicon` module in favor of `LexiconDNSAuthenticator`.
+* Deprecates `BaseLexiconAuthenticatorTest` and `BaseLexiconClientTest` test base classes of
+  `certbot.plugins.dns_test_common_lexicon` module in favor of `BaseLexiconDNSAuthenticatorTest`.
 
 ### Fixed
 
