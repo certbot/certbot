@@ -146,7 +146,7 @@ def build_lexicon_config(lexicon_provider_name: str,
     :rtype: ConfigurationResolver or dict
 
     .. deprecated:: 2.7.0
-       Please use certbot.dns_common_lexicon.LexiconDNSAuthenticator instead.
+       Please use certbot.plugins.dns_common_lexicon.LexiconDNSAuthenticator instead.
     """
     config: Union[ConfigResolver, Dict[str, Any]] = {'provider_name': lexicon_provider_name}
     config.update(lexicon_options)
