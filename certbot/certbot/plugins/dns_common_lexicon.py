@@ -42,7 +42,7 @@ class LexiconClient:  # pragma: no cover
     Encapsulates all communication with a DNS provider via Lexicon.
 
     .. deprecated:: 2.7.0
-       Please use certbot.dns_common_lexicon.LexiconDNSAuthenticator instead.
+       Please use certbot.plugins.dns_common_lexicon.LexiconDNSAuthenticator instead.
     """
 
     def __init__(self) -> None:
