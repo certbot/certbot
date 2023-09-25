@@ -242,6 +242,8 @@ class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
 
         for domain_name in domain_name_guesses:
             try:
+                # Using client as a context manager requires `dns-lexicon>=3.14` and we may want to
+                # provide better checks and error handling around this in the future.
                 with Client(self._build_lexicon_config(domain_name)):
                     return domain_name
             except HTTPError as e:
