@@ -28,10 +28,7 @@ install_requires = [
     # simplicity. See https://github.com/certbot/certbot/issues/8761 for more
     # info.
     f'acme>={version}',
-    # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
-    # saying so here causes a runtime error against our temporary fork of 0.9.3
-    # in which we added 2.6 support (see #2243), so we relax the requirement.
-    'ConfigArgParse>=0.9.3',
+    'ConfigArgParse>=1.5.3',
     'configobj>=5.0.6',
     'cryptography>=3.2.1',
     'distro>=1.0.1',
