@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-* Fixed a bug that broke the DNS plugin for DNSimple.
+* Fixed a bug that broke the DNS plugin for DNSimple that was introduced in
+  version 2.7.0 of the plugin.
 
 More details about these changes can be found on our GitHub repo.
 
