@@ -39,7 +39,7 @@ class Authenticator(dns_common_lexicon.LexiconDNSAuthenticator):
 
     @property
     def _provider_name(self) -> str:
-        return 'dnssimple'
+        return 'dnsimple'
 
     def _handle_http_error(self, e: HTTPError, domain_name: str) -> errors.PluginError:
         hint = None
