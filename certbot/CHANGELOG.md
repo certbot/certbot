@@ -16,6 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Fixed a bug that broke the DNS plugin for DNSimple that was introduced in
   version 2.7.0 of the plugin.
+* Correctly specified the new minimum version of the ConfigArgParse package
+  that Certbot requires which is 1.5.3.
 
 More details about these changes can be found on our GitHub repo.
 
