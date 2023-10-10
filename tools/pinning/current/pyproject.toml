@@ -75,6 +75,11 @@ poetry = "<1.3.0"
 # https://github.com/certbot/certbot/issues/9606.
 setuptools = "<67.5.0"
 
+# Branch 4.x of tox generates some errors while setting up the venv for a given
+# test target (fail to resolve pending installation of certbot when testing
+# certbot-apache for instance). Let's pin to 3.x branch.
+tox = "<4"
+
 [tool.poetry.dev-dependencies]
 
 [build-system]
