@@ -328,8 +328,8 @@ Writing your own plugin
     for one example of that.
 
 Certbot client supports dynamic discovery of plugins through the
-`setuptools entry points`_ using the `certbot.plugins` group. This
-way you can, for example, create a custom implementation of
+`importlib.metadata entry points`_ using the `certbot.plugins` group.
+This way you can, for example, create a custom implementation of
 `~certbot.interfaces.Authenticator` or the
 `~certbot.interfaces.Installer` without having to merge it
 with the core upstream source code. An example is provided in
