@@ -252,7 +252,6 @@ class HelpfulArgumentParser:
                 if normalize_arg(option_string).startswith(normalize_arg(arg)):
                     return action
 
-        logger.debug("Failed to find an associated action for argument %s", arg)
         return None
 
     def parse_args(self) -> NamespaceConfig:
