@@ -3,6 +3,7 @@ from unittest import mock
 import sys
 
 import pytest
+from requests import Response
 from requests.exceptions import HTTPError
 
 from certbot.compat import os
@@ -20,7 +21,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                         dns_test_common_lexicon.BaseLexiconDNSAuthenticatorTest):
 
     DOMAIN_NOT_FOUND = Exception('Domain example.com not found')
-    LOGIN_ERROR = HTTPError('403 Client Error: Forbidden for url: https://eu.api.ovh.com/1.0/...')
+    LOGIN_ERROR = HTTPError('403 Client Error: Forbidden for url: https://eu.api.ovh.com/1.0/...', response=Response())
 
     def setUp(self):
         super().setUp()

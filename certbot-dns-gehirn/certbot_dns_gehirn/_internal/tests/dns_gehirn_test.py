@@ -1,10 +1,10 @@
 """Tests for certbot_dns_gehirn._internal.dns_gehirn."""
 
 import sys
-import unittest
 from unittest import mock
 
 import pytest
+from requests import Response
 from requests.exceptions import HTTPError
 
 from certbot.compat import os
@@ -20,8 +20,8 @@ API_SECRET = 'MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw'
 class AuthenticatorTest(test_util.TempDirTestCase,
                         dns_test_common_lexicon.BaseLexiconDNSAuthenticatorTest):
 
-    DOMAIN_NOT_FOUND = HTTPError(f'404 Client Error: Not Found for url: {DOMAIN}.')
-    LOGIN_ERROR = HTTPError(f'401 Client Error: Unauthorized for url: {DOMAIN}.')
+    DOMAIN_NOT_FOUND = HTTPError(f'404 Client Error: Not Found for url: {DOMAIN}.', response=Response())
+    LOGIN_ERROR = HTTPError(f'401 Client Error: Unauthorized for url: {DOMAIN}.', response=Response())
 
     def setUp(self):
         super().setUp()

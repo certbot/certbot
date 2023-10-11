@@ -13,6 +13,7 @@ from unittest.mock import MagicMock
 import warnings
 
 import josepy as jose
+from requests import Response
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
@@ -37,8 +38,8 @@ KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 DOMAIN_NOT_FOUND = Exception('No domain found')
 GENERIC_ERROR = RequestException
-LOGIN_ERROR = HTTPError('400 Client Error: ...')
-UNKNOWN_LOGIN_ERROR = HTTPError('500 Surprise! Error: ...')
+LOGIN_ERROR = HTTPError('400 Client Error: ...', response=Response())
+UNKNOWN_LOGIN_ERROR = HTTPError('500 Surprise! Error: ...', response=Response())
 
 
 class _AuthenticatorCallableLexiconTestCase(_AuthenticatorCallableTestCase, Protocol):

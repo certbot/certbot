@@ -352,8 +352,8 @@ users install it system-wide with `pip install`. Note that this will
 only work for users who have Certbot installed from OS packages or via
 pip.
 
-.. _`setuptools entry points`:
-    https://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
+.. _`importlib.metadata entry points`:
+    https://importlib-metadata.readthedocs.io/en/latest/using.html#entry-points
 
 Writing your own plugin snap
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
