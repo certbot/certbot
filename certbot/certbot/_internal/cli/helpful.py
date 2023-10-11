@@ -3,6 +3,7 @@
 import argparse
 import functools
 import glob
+import logging
 import sys
 from typing import Any
 from typing import Dict
@@ -33,6 +34,9 @@ from certbot._internal.plugins import disco
 from certbot.compat import os
 from certbot.configuration import ArgumentSource
 from certbot.configuration import NamespaceConfig
+
+
+logger = logging.getLogger(__name__)
 
 
 class HelpfulArgumentParser:
@@ -187,9 +191,23 @@ class HelpfulArgumentParser:
         #   2. config files
         #   3. env vars (shouldn't be any)
         #   4. command line
+
         def update_result(settings_dict: Dict[str, Tuple[configargparse.Action, str]],
                           source: ArgumentSource) -> None:
-            actions = [action for _, (action, _) in settings_dict.items()]
+            actions = []
+            for arg, (action, _) in settings_dict.items():
+                if action is None:
+                    # ConfigArgparse won't associate an action with an arg if
+                    # it's an "abbreviation" (e.g. "--no-dir" is an abbreviation
+                    # of "--no-directory-hooks"), so we'll need to find one
+                    # manually
+                    action = self._find_action_for_arg(arg)
+                if action is not None:
+                    actions.append(action)
+                else:
+                    logger.debug(
+                        "Failed to find an action corresponding with %s argument %s",
+                        source.name, arg)
             result.update({ action.dest: source for action in actions})
 
         # config file sources look like "config_file|<name of file>"
@@ -207,12 +225,35 @@ class HelpfulArgumentParser:
             args = [arg for arg in args if arg.startswith('-')]
             for arg in args:
                 # find the action corresponding to this arg
-                for action in self.actions:
-                    if arg in action.option_strings:
-                        result[action.dest] = ArgumentSource.COMMAND_LINE
-                        continue
+                action = self._find_action_for_arg(arg)
+                if action is not None:
+                    result[action.dest] = ArgumentSource.COMMAND_LINE
+                else:
+                    logger.debug("Failed to find an action corresponding with CLI argument %s", arg)
 
         return result
+
+    def _find_action_for_arg(self, arg: str) -> Optional[configargparse.Action]:
+        # first, check for exact matches
+        for action in self.actions:
+            if arg in action.option_strings:
+                return action
+
+        def normalize_arg(s: str) -> str:
+            if s.startswith('--'):
+                s = s[2:]
+            elif s.startswith('-'):
+                s = s[1:]
+            return s.replace('-', '_')
+
+        # now check for abbreviated (i.e. prefix) matches
+        for action in self.actions:
+            for option_string in action.option_strings:
+                if normalize_arg(option_string).startswith(normalize_arg(arg)):
+                    return action
+
+        logger.debug("Failed to find an associated action for argument %s", arg)
+        return None
 
     def parse_args(self) -> NamespaceConfig:
         """Parses command line arguments and returns the result.

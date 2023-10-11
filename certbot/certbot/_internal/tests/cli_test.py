@@ -552,6 +552,25 @@ class ParseTest(unittest.TestCase):
             ])
             assert_value_and_source(namespace, 'server', COMMAND_LINE_VALUE, ArgumentSource.COMMAND_LINE)
 
+    def test_abbreviated_command_line_argument(self):
+        # Argparse's "allow_abbrev" option (which is True by default) allows
+        # for unambiguous partial arguments (e.g. "--preferred-chal dns" will be
+        # interepreted the same as "--preferred-challenges dns")
+        namespace = self.parse('--preferred-chal dns --no-dir')
+        assert_set_by_user_with_value(namespace, 'pref_challs', ['dns-01'])
+        assert_set_by_user_with_value(namespace, 'directory_hooks', False)
+
+        with tempfile.NamedTemporaryFile() as tmp_config:
+            tmp_config.close()  # close now because of compatibility issues on Windows
+            with open(tmp_config.name, 'w') as file_h:
+                file_h.write('preferred-chal = dns')
+
+            namespace = self.parse([
+                'certonly',
+                '--config', tmp_config.name,
+            ])
+            assert_set_by_user_with_value(namespace, 'pref_challs', ['dns-01'])
+
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
