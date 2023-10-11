@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.7.0'
+version = '2.7.1'
 
 install_requires = [
     'google-api-python-client>=1.6.5',
