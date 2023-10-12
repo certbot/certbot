@@ -190,8 +190,8 @@ def fetch_version_number(major_version=None):
 
     # Find the build artifacts
     build_client = connection.clients.get_build_client()
-    get_builds_response = build_client.get_builds('certbot', definitions='3')
-    for build in get_builds_response:
+    builds = build_client.get_builds('certbot', definitions='3')
+    for build in builds:
         version = build_client.get_build('certbot', build.id).source_branch.split('v')[1]
         if major_version is None or version.split('.')[0] == major_version:
             return version
