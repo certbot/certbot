@@ -205,10 +205,9 @@ class HelpfulArgumentParser:
                 if action is not None:
                     actions.append(action)
                 else:
-                    logger.debug(
-                        "Failed to find an action corresponding with %s argument %s",
-                        source.name, arg)
-            result.update({ action.dest: source for action in actions})
+                    raise AssertionError(
+                        f"Action corresponding with {source.name} argument {arg} is None")
+            result.update({ action.dest: source for action in actions })
 
         # config file sources look like "config_file|<name of file>"
         for source_key in source_to_settings_dict:
@@ -229,7 +228,7 @@ class HelpfulArgumentParser:
                 if action is not None:
                     result[action.dest] = ArgumentSource.COMMAND_LINE
                 else:
-                    logger.debug("Failed to find an action corresponding with CLI argument %s", arg)
+                    raise AssertionError(f"Action corresponding with CLI argument {arg} is None")
 
         return result
 
