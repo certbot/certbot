@@ -194,19 +194,8 @@ class HelpfulArgumentParser:
 
         def update_result(settings_dict: Dict[str, Tuple[configargparse.Action, str]],
                           source: ArgumentSource) -> None:
-            actions = []
-            for arg, (action, _) in settings_dict.items():
-                if action is None:
-                    # ConfigArgparse won't associate an action with an arg if
-                    # it's an "abbreviation" (e.g. "--no-dir" is an abbreviation
-                    # of "--no-directory-hooks"), so we'll need to find one
-                    # manually
-                    action = self._find_action_for_arg(arg)
-                if action is not None:
-                    actions.append(action)
-                else:
-                    raise AssertionError(
-                        f"Action corresponding with {source.name} argument {arg} is None")
+            actions = [self._find_action_for_arg(arg) if action is None else action
+                       for arg, (action, _) in settings_dict.items()]
             result.update({ action.dest: source for action in actions })
 
         # config file sources look like "config_file|<name of file>"
@@ -220,38 +209,58 @@ class HelpfulArgumentParser:
         if 'command_line' in source_to_settings_dict:
             settings_dict: Dict[str, Tuple[None, List[str]]]
             settings_dict = source_to_settings_dict['command_line'] # type: ignore
-            (_, args) = settings_dict['']
-            args = [arg for arg in args if arg.startswith('-')]
+            (_, unprocessed_args) = settings_dict['']
+            args = []
+            for arg in unprocessed_args:
+                # ignore non-arguments
+                if not arg.startswith('-'):
+                    continue
+
+                # special case for config file argument, which we don't have an action for
+                if arg in ['-c', '--config']:
+                    result['config_dir'] = ArgumentSource.COMMAND_LINE
+                    continue
+
+                if '=' in arg:
+                    arg = arg.split('=')[0]
+
+                if arg.startswith('--'):
+                    args.append(arg)
+                # for short args (ones that start with a single hyphen), handle
+                # the case of multiple short args together, e.g. "-tvm"
+                else:
+                    for short_arg in arg[1:]:
+                        args.append(f"-{short_arg}")
+
             for arg in args:
                 # find the action corresponding to this arg
                 action = self._find_action_for_arg(arg)
-                if action is not None:
-                    result[action.dest] = ArgumentSource.COMMAND_LINE
-                else:
-                    raise AssertionError(f"Action corresponding with CLI argument {arg} is None")
+                result[action.dest] = ArgumentSource.COMMAND_LINE
 
         return result
 
-    def _find_action_for_arg(self, arg: str) -> Optional[configargparse.Action]:
+    def _find_action_for_arg(self, arg: str) -> configargparse.Action:
+        # Finds a configargparse Action which matches the given arg, where arg
+        # can either be preceded by hyphens (as on the command line) or not (as
+        # in config files)
+
+        # if the argument doesn't have leading hypens, prefix it so it can be
+        # compared directly w/ action option strings
+        if arg[0] != '-':
+            arg = '--' + arg
+
         # first, check for exact matches
         for action in self.actions:
             if arg in action.option_strings:
                 return action
 
-        def normalize_arg(s: str) -> str:
-            if s.startswith('--'):
-                s = s[2:]
-            elif s.startswith('-'):
-                s = s[1:]
-            return s.replace('-', '_')
-
         # now check for abbreviated (i.e. prefix) matches
         for action in self.actions:
             for option_string in action.option_strings:
-                if normalize_arg(option_string).startswith(normalize_arg(arg)):
+                if option_string.startswith(arg):
                     return action
 
-        return None
+        raise AssertionError(f"Action corresponding to argument {arg} is None")
 
     def parse_args(self) -> NamespaceConfig:
         """Parses command line arguments and returns the result.
