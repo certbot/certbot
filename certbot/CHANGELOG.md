@@ -26,6 +26,8 @@ More details about these changes can be found on our GitHub repo.
   version 2.7.0 of the plugin.
 * Correctly specified the new minimum version of the ConfigArgParse package
   that Certbot requires which is 1.5.3.
+* Fixed a bug where argument sources weren't correctly detected in abbreviated
+  arguments
 
 More details about these changes can be found on our GitHub repo.
 
