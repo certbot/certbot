@@ -73,7 +73,7 @@ def parse_args(args):
     parser.add_argument('--css', type=str, required=True, help='hostname of code signing server')
     return parser.parse_args(args)
 
-    
+
 def publish_windows(css):
     """SSH into CSS and trigger downloading Azure Pipeline assets, sign, and upload to Github
 
@@ -83,7 +83,7 @@ def publish_windows(css):
     username = input("CSS username (usually EFF username): ")
     host = css
     command = "ssh -t {}@{} bash /opt/certbot-misc/css/venv.sh".format(username,host)
-    
+
     print("SSH into CSS to trigger signing and uploading of Windows installer...")
     subprocess.run(command, check=True, universal_newlines=True, shell=True)
 
@@ -182,16 +182,16 @@ def fetch_version_number(major_version=None):
     :type major_version: str or None
 
     :returns: version number
-    
+
     """
     # Create a connection to the azure org
     organization_url = 'https://dev.azure.com/certbot'
     connection = Connection(base_url=organization_url)
-    
+
     # Find the build artifacts
     build_client = connection.clients.get_build_client()
     get_builds_response = build_client.get_builds('certbot', definitions='3')
-    for build in get_builds_response.value:
+    for build in get_builds_response:
         version = build_client.get_build('certbot', build.id).source_branch.split('v')[1]
         if major_version is None or version.split('.')[0] == major_version:
             return version
@@ -206,7 +206,7 @@ def main(args):
     # Once the GitHub release has been published, trying to publish it
     # again fails. Publishing the snaps can be done multiple times though
     # so we do that first to make it easier to run the script again later
-    # if something goes wrong.        
+    # if something goes wrong.
     promote_snaps(ALL_SNAPS, 'beta', version)
     publish_windows(css)
 
