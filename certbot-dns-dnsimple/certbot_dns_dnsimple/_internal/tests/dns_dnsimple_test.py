@@ -3,6 +3,7 @@ from unittest import mock
 import sys
 
 import pytest
+from requests import Response
 from requests.exceptions import HTTPError
 
 from certbot.compat import os
@@ -16,7 +17,7 @@ TOKEN = 'foo'
 class AuthenticatorTest(test_util.TempDirTestCase,
                         dns_test_common_lexicon.BaseLexiconDNSAuthenticatorTest):
 
-    LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: ...')
+    LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: ...', response=Response())
 
     def setUp(self):
         super().setUp()
