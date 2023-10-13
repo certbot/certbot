@@ -22,7 +22,6 @@ install_requires = [
     'requests',
     'setuptools',
     'types-python-dateutil',
-    'types-requests',
 ]
 
 setup(
