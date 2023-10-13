@@ -53,7 +53,7 @@ def _suppress_x509_verification_warnings() -> None:
     except ImportError:
         # Handle old versions of request with vendorized urllib3
         # pylint: disable=no-member
-        from requests.packages.urllib3.exceptions import InsecureRequestWarning
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore[import-untyped]
         requests.packages.urllib3.disable_warnings(  # type: ignore[attr-defined]
             InsecureRequestWarning)
 
