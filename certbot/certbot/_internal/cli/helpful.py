@@ -3,7 +3,6 @@
 import argparse
 import functools
 import glob
-import logging
 import sys
 from typing import Any
 from typing import Dict
@@ -34,9 +33,6 @@ from certbot._internal.plugins import disco
 from certbot.compat import os
 from certbot.configuration import ArgumentSource
 from certbot.configuration import NamespaceConfig
-
-
-logger = logging.getLogger(__name__)
 
 
 class HelpfulArgumentParser:
