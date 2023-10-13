@@ -182,9 +182,9 @@ class PluginsRegistry(Mapping):
         plugin_paths = plugin_paths_string.split(':') if plugin_paths_string else []
         # XXX should ensure this only happens once
         sys.path.extend(plugin_paths)
-        entry_points = list(importlib_metadata.entry_points(
+        entry_points = list(importlib_metadata.entry_points(  # pylint: disable=unexpected-keyword-arg
             group=constants.SETUPTOOLS_PLUGINS_ENTRY_POINT))
-        old_entry_points = list(importlib_metadata.entry_points(
+        old_entry_points = list(importlib_metadata.entry_points(  # pylint: disable=unexpected-keyword-arg
             group=constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT))
         for entry_point in entry_points + old_entry_points:
             try:
