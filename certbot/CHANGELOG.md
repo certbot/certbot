@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* `certbot-dns-ovh` plugin now requires `lexicon>=3.15.1` to ensure a consistent behavior with OVH APIs.
 
 ### Fixed
 
