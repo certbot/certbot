@@ -6,13 +6,14 @@ from typing import Any
 from typing import cast
 from typing import Generator
 from typing import List
+from typing import Protocol
 from typing import Tuple
-from typing import TYPE_CHECKING
 from unittest import mock
 from unittest.mock import MagicMock
 import warnings
 
 import josepy as jose
+from requests import Response
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
@@ -27,18 +28,13 @@ with warnings.catch_warnings():
 from certbot.plugins.dns_test_common import _AuthenticatorCallableTestCase
 from certbot.tests import util as test_util
 
-if TYPE_CHECKING:  # pragma: no cover
-    from typing_extensions import Protocol
-else:
-    Protocol = object
-
 DOMAIN = 'example.com'
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 DOMAIN_NOT_FOUND = Exception('No domain found')
 GENERIC_ERROR = RequestException
-LOGIN_ERROR = HTTPError('400 Client Error: ...')
-UNKNOWN_LOGIN_ERROR = HTTPError('500 Surprise! Error: ...')
+LOGIN_ERROR = HTTPError('400 Client Error: ...', response=Response())
+UNKNOWN_LOGIN_ERROR = HTTPError('500 Surprise! Error: ...', response=Response())
 
 
 class _AuthenticatorCallableLexiconTestCase(_AuthenticatorCallableTestCase, Protocol):

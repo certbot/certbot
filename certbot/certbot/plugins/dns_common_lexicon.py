@@ -30,9 +30,9 @@ try:
     from lexicon.config import ConfigResolver
     from lexicon.interfaces import Provider
 except ImportError:  # pragma: no cover
-    Client = None
-    ConfigResolver = None
-    Provider = None
+    Client = None  # type: ignore
+    ConfigResolver = None  # type: ignore
+    Provider = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -148,19 +148,18 @@ def build_lexicon_config(lexicon_provider_name: str,
     .. deprecated:: 2.7.0
        Please use certbot.plugins.dns_common_lexicon.LexiconDNSAuthenticator instead.
     """
-    config: Union[ConfigResolver, Dict[str, Any]] = {'provider_name': lexicon_provider_name}
-    config.update(lexicon_options)
-    if not ConfigResolver:
+    config_dict: Dict[str, Any] = {'provider_name': lexicon_provider_name}
+    config_dict.update(lexicon_options)
+    if ConfigResolver is None:
         # Lexicon 2.x
-        config.update(provider_options)
+        config_dict.update(provider_options)
+        return config_dict
     else:
         # Lexicon 3.x
         provider_config: Dict[str, Any] = {}
         provider_config.update(provider_options)
-        config[lexicon_provider_name] = provider_config
-        config = ConfigResolver().with_dict(config).with_env()
-
-    return config
+        config_dict[lexicon_provider_name] = provider_config
+        return ConfigResolver().with_dict(config_dict).with_env()
 
 
 class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
