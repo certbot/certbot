@@ -6,7 +6,7 @@ authors = ["Certbot Project"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -58,7 +58,7 @@ setuptools-rust = "*"
 #
 # If this pinning is removed, we may still need to add a lower bound for the
 # pylint version. See https://github.com/certbot/certbot/pull/9229.
-pylint = { version="2.15.5", python = ">=3.7.2" }
+pylint = "2.15.5"
 
 # Bug in poetry, where still installes yanked versions from pypi (source: https://github.com/python-poetry/poetry/issues/2453)
 # this version of cryptography introduced a security vulnrability.
@@ -69,6 +69,12 @@ cryptography = "!= 37.0.3"
 # causing problems when exporting dependencies so let's pin poetry back until
 # https://github.com/python-poetry/poetry-plugin-export/issues/168 is resolved.
 poetry = "<1.3.0"
+
+# Branch 4.x of tox introduces backward incompatibility changes. The tox.ini
+# file in the project must be adapted accordingly before moving out of the 3.x
+# branch. Once done, the following constraint should become tox >= 4 to keep
+# deterministic builds.
+tox = "<4"
 
 [tool.poetry.dev-dependencies]
 
