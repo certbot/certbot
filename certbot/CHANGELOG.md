@@ -16,6 +16,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Fixed a bug where argument sources weren't correctly detected in abbreviated
   arguments, short arguments, and some other circumstances
+* Fixed a bug where issuance error details where not printed
 
 More details about these changes can be found on our GitHub repo.
 
