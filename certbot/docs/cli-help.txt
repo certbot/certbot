@@ -36,7 +36,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -122,7 +122,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/2.6.0 (certbot;
+                        "". (default: CertbotACMEClient/2.7.1 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,

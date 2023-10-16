@@ -5,6 +5,7 @@ import argparse
 import logging
 import re
 import shutil
+import sys
 import tempfile
 from typing import Any
 from typing import Callable
@@ -15,8 +16,6 @@ from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
-
-import pkg_resources
 
 from acme import challenges
 from certbot import achallenges
@@ -31,6 +30,11 @@ from certbot.compat import os
 from certbot.interfaces import Installer as AbstractInstaller
 from certbot.interfaces import Plugin as AbstractPlugin
 from certbot.plugins.storage import PluginStorage
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
 
 logger = logging.getLogger(__name__)
 
@@ -461,10 +465,9 @@ def dir_setup(test_dir: str, pkg: str) -> Tuple[str, str, str]:  # pragma: no co
     filesystem.chmod(config_dir, constants.CONFIG_DIRS_MODE)
     filesystem.chmod(work_dir, constants.CONFIG_DIRS_MODE)
 
-    test_configs = pkg_resources.resource_filename(
-        pkg, os.path.join("testdata", test_dir))
-
-    shutil.copytree(
-        test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
+    test_dir_ref = importlib_resources.files(pkg).joinpath("testdata", test_dir)
+    with importlib_resources.as_file(test_dir_ref) as path:
+        shutil.copytree(
+            path, os.path.join(temp_dir, test_dir), symlinks=True)
 
     return temp_dir, config_dir, work_dir

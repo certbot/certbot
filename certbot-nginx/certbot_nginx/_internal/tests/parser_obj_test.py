@@ -64,20 +64,23 @@ class ParsingHooksTest(unittest.TestCase):
         assert Block.should_parse([['block_name'], [['many'], ['statements'], 'here']])
         assert Block.should_parse([['if', ' ', '(whatever)'], ['hi']])
 
-    def test_parse_raw(self):
+    @mock.patch("certbot_nginx._internal.parser_obj.Parsable.parsing_hooks")
+    def test_parse_raw(self, parsing_hooks):
         fake_parser1 = mock.Mock()
         fake_parser1.should_parse = lambda x: True
         fake_parser2 = mock.Mock()
-        fake_parser2.should_parse = lambda x: False
+        fake_parser2.should_parse = lambda x: True
+        parsing_hooks.return_value = (fake_parser1, fake_parser2,)
         # First encountered "match" should parse.
         parse_raw([])
-        fake_parser1.called_once()
-        fake_parser2.not_called()
+        fake_parser1().parse.assert_called_once()
+        fake_parser2().parse.assert_not_called()
         fake_parser1.reset_mock()
         # "match" that returns False shouldn't parse.
+        fake_parser1.should_parse = lambda x: False
         parse_raw([])
-        fake_parser1.not_called()
-        fake_parser2.called_once()
+        fake_parser1().parse.assert_not_called()
+        fake_parser2().parse.assert_called_once()
 
     @mock.patch("certbot_nginx._internal.parser_obj.Parsable.parsing_hooks")
     def test_parse_raw_no_match(self, parsing_hooks):
@@ -91,13 +94,15 @@ class ParsingHooksTest(unittest.TestCase):
         with pytest.raises(errors.MisconfigurationError):
             parse_raw([])
 
-    def test_parse_raw_passes_add_spaces(self):
+    @mock.patch("certbot_nginx._internal.parser_obj.Parsable.parsing_hooks")
+    def test_parse_raw_passes_add_spaces(self, parsing_hooks):
         fake_parser1 = mock.Mock()
         fake_parser1.should_parse = lambda x: True
+        parsing_hooks.return_value = (fake_parser1,)
         parse_raw([])
-        fake_parser1.parse.called_with([None])
+        fake_parser1().parse.assert_called_with([], False)
         parse_raw([], add_spaces=True)
-        fake_parser1.parse.called_with([None, True])
+        fake_parser1().parse.assert_called_with([], True)
 
 
 class SentenceTest(unittest.TestCase):

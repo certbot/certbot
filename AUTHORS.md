@@ -209,6 +209,7 @@ Authors
 * [Patrick Heppler](https://github.com/PatrickHeppler)
 * [Paul Buonopane](https://github.com/Zenexer)
 * [Paul Feitzinger](https://github.com/pfeyz)
+* [Paulo Dias](https://github.com/paulojmdias)
 * [Pavan Gupta](https://github.com/pavgup)
 * [Pavel Pavlov](https://github.com/ghost355)
 * [Peter Conrad](https://github.com/pconrad-fb)

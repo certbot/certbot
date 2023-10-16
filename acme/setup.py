@@ -3,7 +3,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.7.0.dev0'
+version = '2.8.0.dev0'
 
 install_requires = [
     'cryptography>=3.2.1',
@@ -22,6 +22,15 @@ docs_extras = [
 ]
 
 test_extras = [
+    # In theory we could scope importlib_resources to env marker 'python_version<"3.9"'. But this
+    # makes the pinning mechanism emit warnings when running `poetry lock` because in the corner
+    # case of an extra dependency with env marker coming from a setup.py file, it generate the
+    # invalid requirement 'importlib_resource>=1.3.1;python<=3.9;extra=="test"'.
+    # To fix the issue, we do not pass the env marker. This is fine because:
+    # - importlib_resources can be applied to any Python version,
+    # - this is a "test" extra dependency for limited audience,
+    # - it does not change anything at the end for the generated requirement files.
+    'importlib_resources>=1.3.1',
     'pytest',
     'pytest-xdist',
     'typing-extensions',
@@ -35,14 +44,13 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',

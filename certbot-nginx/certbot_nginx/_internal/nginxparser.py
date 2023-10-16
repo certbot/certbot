@@ -10,8 +10,8 @@ from typing import Iterable
 from typing import Iterator
 from typing import List
 from typing import overload
+from typing import SupportsIndex
 from typing import Tuple
-from typing import TYPE_CHECKING
 from typing import Union
 
 from pyparsing import Combine
@@ -26,9 +26,6 @@ from pyparsing import restOfLine
 from pyparsing import stringEnd
 from pyparsing import White
 from pyparsing import ZeroOrMore
-
-if TYPE_CHECKING:
-    from typing_extensions import SupportsIndex  # typing.SupportsIndex not supported on Python 3.7
 
 logger = logging.getLogger(__name__)
 

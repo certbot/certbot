@@ -552,6 +552,48 @@ class ParseTest(unittest.TestCase):
             ])
             assert_value_and_source(namespace, 'server', COMMAND_LINE_VALUE, ArgumentSource.COMMAND_LINE)
 
+    def test_abbreviated_arguments(self):
+        # Argparse's "allow_abbrev" option (which is True by default) allows
+        # for unambiguous partial arguments (e.g. "--preferred-chal dns" will be
+        # interepreted the same as "--preferred-challenges dns")
+        namespace = self.parse('--preferred-chal dns --no-dir')
+        assert_set_by_user_with_value(namespace, 'pref_challs', ['dns-01'])
+        assert_set_by_user_with_value(namespace, 'directory_hooks', False)
+
+        with tempfile.NamedTemporaryFile() as tmp_config:
+            tmp_config.close()  # close now because of compatibility issues on Windows
+            with open(tmp_config.name, 'w') as file_h:
+                file_h.write('preferred-chal = dns')
+
+            namespace = self.parse([
+                'certonly',
+                '--config', tmp_config.name,
+            ])
+            assert_set_by_user_with_value(namespace, 'pref_challs', ['dns-01'])
+
+    @mock.patch('certbot._internal.hooks.validate_hooks')
+    def test_argument_with_equals(self, unsused_mock_validate_hooks):
+        namespace = self.parse('-d=example.com')
+        assert_set_by_user_with_value(namespace, 'domains', ['example.com'])
+
+        # make sure it doesn't choke on equals signs being present in the argument value
+        plugins = disco.PluginsRegistry.find_all()
+        namespace = cli.prepare_and_parse_args(plugins, ['run', '--pre-hook="foo=bar"'])
+        assert_set_by_user_with_value(namespace, 'pre_hook', '"foo=bar"')
+
+    def test_adjacent_short_args(self):
+        namespace = self.parse('-tv')
+        assert_set_by_user_with_value(namespace, 'text_mode', True)
+        assert_set_by_user_with_value(namespace, 'verbose_count', 1)
+
+        namespace = self.parse('-tvvv')
+        assert_set_by_user_with_value(namespace, 'text_mode', True)
+        assert_set_by_user_with_value(namespace, 'verbose_count', 3)
+
+        namespace = self.parse('-tvm foo@example.com')
+        assert_set_by_user_with_value(namespace, 'text_mode', True)
+        assert_set_by_user_with_value(namespace, 'verbose_count', 1)
+        assert_set_by_user_with_value(namespace, 'email', 'foo@example.com')
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

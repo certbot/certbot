@@ -5,7 +5,6 @@ import shutil
 import socket
 import sys
 import tempfile
-import unittest
 from unittest import mock
 
 import pytest
@@ -1659,20 +1658,23 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         file has been manually edited by the user, and will refuse to update it.
         This test ensures that all necessary hashes are present.
         """
-        import pkg_resources
+        if sys.version_info >= (3, 9):  # pragma: no cover
+            import importlib.resources as importlib_resources
+        else:  # pragma: no cover
+            import importlib_resources
 
         from certbot_apache._internal.constants import ALL_SSL_OPTIONS_HASHES
 
-        tls_configs_dir = pkg_resources.resource_filename(
-            "certbot_apache", os.path.join("_internal", "tls_configs"))
-        all_files = [os.path.join(tls_configs_dir, name) for name in os.listdir(tls_configs_dir)
-                     if name.endswith('options-ssl-apache.conf')]
-        assert len(all_files) >= 1
-        for one_file in all_files:
-            file_hash = crypto_util.sha256sum(one_file)
-            assert file_hash in ALL_SSL_OPTIONS_HASHES, \
-                f"Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 " \
-                f"hash of {one_file} when it is updated."
+        ref = importlib_resources.files("certbot_apache") / "_internal" / "tls_configs"
+        with importlib_resources.as_file(ref) as tls_configs_dir:
+            all_files = [os.path.join(tls_configs_dir, name) for name in os.listdir(tls_configs_dir)
+                        if name.endswith('options-ssl-apache.conf')]
+            assert len(all_files) >= 1
+            for one_file in all_files:
+                file_hash = crypto_util.sha256sum(one_file)
+                assert file_hash in ALL_SSL_OPTIONS_HASHES, \
+                    f"Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 " \
+                    f"hash of {one_file} when it is updated."
 
     def test_openssl_version(self):
         self.config._openssl_version = None

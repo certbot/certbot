@@ -1,7 +1,7 @@
 """Base test class for DNS authenticators."""
 from typing import Any
 from typing import Mapping
-from typing import TYPE_CHECKING
+from typing import Protocol
 from unittest import mock
 
 import configobj
@@ -13,12 +13,6 @@ from certbot.compat import filesystem
 from certbot.plugins.dns_common import DNSAuthenticator
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
-
-if TYPE_CHECKING:
-    from typing_extensions import Protocol
-else:
-    Protocol = object
-
 
 DOMAIN = 'example.com'
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
@@ -38,6 +32,12 @@ class _AuthenticatorCallableTestCase(Protocol):
         """
         See
         https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertEqual
+        """
+
+    def assertRaises(self, *unused_args: Any) -> None:
+        """
+        See
+        https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertRaises
         """
 
 

@@ -2,11 +2,44 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 2.7.0 - master
+## 2.8.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* Support for Python 3.7 was removed.
+
+### Fixed
+
+* Fixed a bug where argument sources weren't correctly detected in abbreviated
+  arguments, short arguments, and some other circumstances
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.7.1 - 2023-10-10
+
+### Fixed
+
+* Fixed a bug that broke the DNS plugin for DNSimple that was introduced in
+  version 2.7.0 of the plugin.
+* Correctly specified the new minimum version of the ConfigArgParse package
+  that Certbot requires which is 1.5.3.
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.7.0 - 2023-10-03
 
 ### Added
 
 * Add `certbot.util.LooseVersion` class. See [GH #9489](https://github.com/certbot/certbot/issues/9489).
+* Add a new base class `certbot.plugins.dns_common_lexicon.LexiconDNSAuthenticator` to implement a DNS
+  authenticator plugin backed by Lexicon to communicate with the provider DNS API. This approach relies
+  heavily on conventions to reduce the implementation complexity of a new plugin.
+* Add a new test base class `certbot.plugins.dns_test_common_lexicon.BaseLexiconDNSAuthenticatorTest` to
+  help testing DNS plugins implemented on top of `LexiconDNSAuthenticator`.
 
 ### Changed
 
@@ -14,10 +47,15 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   of global state previously needed to inspect whether a user set an argument or not.
 * Support for Python 3.7 was deprecated and will be removed in our next planned release.
 * Added `RENEWED_DOMAINS` and `FAILED_DOMAINS` environment variables for consumption by post renewal hooks.
+* Deprecates `LexiconClient` base class and `build_lexicon_config` function in
+  `certbot.plugins.dns_common_lexicon` module in favor of `LexiconDNSAuthenticator`.
+* Deprecates `BaseLexiconAuthenticatorTest` and `BaseLexiconClientTest` test base classes of
+  `certbot.plugins.dns_test_common_lexicon` module in favor of `BaseLexiconDNSAuthenticatorTest`.
 
 ### Fixed
 
-*
+* Do not call deprecated datetime.utcnow() and datetime.utcfromtimestamp()
+* Filter zones in `certbot-dns-google` to avoid usage of private DNS zones to create records
 
 More details about these changes can be found on our GitHub repo.
 

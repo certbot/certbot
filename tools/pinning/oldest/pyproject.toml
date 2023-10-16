@@ -10,7 +10,7 @@ license = "Apache License 2.0"
 [tool.poetry.dependencies]
 # The Python version here should be kept in sync with the one used in our
 # oldest tests in tox.ini.
-python = "3.7.*"
+python = "<3.9 >= 3.8"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -48,19 +48,20 @@ apacheconfig = "0.3.2"
 asn1crypto = "0.24.0"
 boto3 = "1.15.15"
 botocore = "1.18.15"
-cffi = "1.11.5"
+cffi = "1.12.3"
 chardet = "3.0.4"
 cloudflare = "1.5.1"
 configobj = "5.0.6"
 cryptography = "3.2.1"
 distro = "1.0.1"
-dns-lexicon = "3.2.1"
+dns-lexicon = "3.14.1"
 dnspython = "1.15.0"
 funcsigs = "0.4"
 google-api-python-client = "1.6.5"
 google-auth = "2.16.0"
 httplib2 = "0.9.2"
 idna = "2.6"
+importlib-metadata = "4.6.4"
 ipaddress = "1.0.16"
 ndg-httpsclient = "0.3.2"
 parsedatetime = "2.4"
@@ -87,7 +88,11 @@ urllib3 = "1.24.2"
 # build dependencies here to ensure they're pinned for extra stability.
 
 # cython is a build dependency of pyyaml
-cython = "*"
+#
+# We also pin back cython as is currently required by pyyaml. See
+# https://github.com/yaml/pyyaml/pull/702 and
+# https://github.com/yaml/pyyaml/issues/601.
+cython = "<3.0"
 
 # Other dependencies
 # We add any dependencies that must be specified in this file for any another

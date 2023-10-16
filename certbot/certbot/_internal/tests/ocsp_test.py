@@ -65,7 +65,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
     @mock.patch('certbot.ocsp.crypto_util.notAfter')
     @mock.patch('certbot.util.run_script')
     def test_ocsp_revoked(self, mock_run, mock_na, mock_determine):
-        now = pytz.UTC.fromutc(datetime.utcnow())
+        now = datetime.now(pytz.UTC)
         cert_obj = mock.MagicMock()
         cert_obj.cert_path = "x"
         cert_obj.chain_path = "y"
@@ -138,7 +138,7 @@ class OSCPTestCryptography(unittest.TestCase):
         self.cert_obj = mock.MagicMock()
         self.cert_obj.cert_path = self.cert_path
         self.cert_obj.chain_path = self.chain_path
-        now = pytz.UTC.fromutc(datetime.utcnow())
+        now = datetime.now(pytz.UTC)
         self.mock_notAfter = mock.patch('certbot.ocsp.crypto_util.notAfter',
                                         return_value=now + timedelta(hours=2))
         self.mock_notAfter.start()
@@ -324,8 +324,8 @@ def _construct_mock_ocsp_response(certificate_status, response_status):
         responder_name=responder.subject,
         certificates=[responder],
         hash_algorithm=hashes.SHA1(),
-        next_update=datetime.now() + timedelta(days=1),
-        this_update=datetime.now() - timedelta(days=1),
+        next_update=datetime.now(pytz.UTC).replace(tzinfo=None) + timedelta(days=1),
+        this_update=datetime.now(pytz.UTC).replace(tzinfo=None) - timedelta(days=1),
         signature_algorithm_oid=x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA1,
     )
 

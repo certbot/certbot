@@ -1,5 +1,4 @@
 """Utilities for plugins discovery and selection."""
-import itertools
 import logging
 import sys
 from typing import Callable
@@ -13,14 +12,17 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
-import pkg_resources
-
 from certbot import configuration
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import constants
 from certbot.compat import os
 from certbot.errors import Error
+
+if sys.version_info >= (3, 10):  # pragma: no cover
+    import importlib.metadata as importlib_metadata
+else:
+    import importlib_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +37,7 @@ class PluginEntryPoint:
     # this object is mutable, don't allow it to be hashed!
     __hash__ = None  # type: ignore
 
-    def __init__(self, entry_point: pkg_resources.EntryPoint) -> None:
+    def __init__(self, entry_point: importlib_metadata.EntryPoint) -> None:
         self.name = self.entry_point_to_plugin_name(entry_point)
         self.plugin_cls: Type[interfaces.Plugin] = entry_point.load()
         self.entry_point = entry_point
@@ -50,7 +52,7 @@ class PluginEntryPoint:
         return False
 
     @classmethod
-    def entry_point_to_plugin_name(cls, entry_point: pkg_resources.EntryPoint) -> str:
+    def entry_point_to_plugin_name(cls, entry_point: importlib_metadata.EntryPoint) -> str:
         """Unique plugin name for an ``entry_point``"""
         return entry_point.name
 
@@ -75,7 +77,7 @@ class PluginEntryPoint:
         return getattr(self.plugin_cls, "hidden", False)
 
     def ifaces(self, *ifaces_groups: Iterable[Type]) -> bool:
-        """Does plugin implements specified interface groups?"""
+        """Does plugin implement specified interface groups?"""
         return not ifaces_groups or any(
             all(issubclass(self.plugin_cls, iface)
                 for iface in ifaces)
@@ -89,7 +91,6 @@ class PluginEntryPoint:
     def init(self, config: Optional[configuration.NamespaceConfig] = None) -> interfaces.Plugin:
         """Memoized plugin initialization."""
         if not self._initialized:
-            self.entry_point.require()  # fetch extras!
             # For plugins implementing ABCs Plugin, Authenticator or Installer, the following
             # line will raise an exception if some implementations of abstract methods are missing.
             self._initialized = self.plugin_cls(config, self.name)
@@ -181,32 +182,31 @@ class PluginsRegistry(Mapping):
         plugin_paths = plugin_paths_string.split(':') if plugin_paths_string else []
         # XXX should ensure this only happens once
         sys.path.extend(plugin_paths)
-        for plugin_path in plugin_paths:
-            pkg_resources.working_set.add_entry(plugin_path)
-        entry_points = itertools.chain(
-            pkg_resources.iter_entry_points(
-                constants.SETUPTOOLS_PLUGINS_ENTRY_POINT),
-            pkg_resources.iter_entry_points(
-                constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
-        for entry_point in entry_points:
+        entry_points = list(importlib_metadata.entry_points(  # pylint: disable=unexpected-keyword-arg
+            group=constants.SETUPTOOLS_PLUGINS_ENTRY_POINT))
+        old_entry_points = list(importlib_metadata.entry_points(  # pylint: disable=unexpected-keyword-arg
+            group=constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT))
+        for entry_point in entry_points + old_entry_points:
             try:
                 cls._load_entry_point(entry_point, plugins)
             except Exception as e:
                 raise errors.PluginError(
-                    f"The '{entry_point.module_name}' plugin errored while loading: {e}. "
-                     "You may need to remove or update this plugin. The Certbot log will "
-                     "contain the full error details and this should be reported to the "
-                     "plugin developer.") from e
+                    f"The '{entry_point.module}' plugin errored while loading: {e}. "
+                    "You may need to remove or update this plugin. The Certbot log will "
+                    "contain the full error details and this should be reported to the "
+                    "plugin developer.") from e
         return cls(plugins)
 
     @classmethod
-    def _load_entry_point(cls, entry_point: pkg_resources.EntryPoint,
+    def _load_entry_point(cls, entry_point: importlib_metadata.EntryPoint,
                           plugins: Dict[str, PluginEntryPoint]) -> None:
         plugin_ep = PluginEntryPoint(entry_point)
         if plugin_ep.name in plugins:
             other_ep = plugins[plugin_ep.name]
-            plugin1 = plugin_ep.entry_point.dist.key if plugin_ep.entry_point.dist else "unknown"
-            plugin2 = other_ep.entry_point.dist.key if other_ep.entry_point.dist else "unknown"
+            plugin1_dist = plugin_ep.entry_point.dist
+            plugin2_dist = other_ep.entry_point.dist
+            plugin1 = plugin1_dist.name.lower() if plugin1_dist else "unknown"
+            plugin2 = plugin2_dist.name.lower() if plugin2_dist else "unknown"
             raise Exception("Duplicate plugin name {0} from {1} and {2}.".format(
                 plugin_ep.name, plugin1, plugin2))
         if issubclass(plugin_ep.plugin_cls, interfaces.Plugin):
