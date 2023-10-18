@@ -21,7 +21,7 @@ install_requires = [
     'pytz>=2019.3',
     'requests',
     'setuptools',
-    'types-python-dateutil'
+    'types-python-dateutil',
 ]
 
 setup(
