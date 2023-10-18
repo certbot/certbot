@@ -16,6 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Fixed a bug where argument sources weren't correctly detected in abbreviated
   arguments, short arguments, and some other circumstances
+* Bumped lexicon's version to 3.15.1 to address errors in the OVH DNS plugin
+  (see #9799)
 
 More details about these changes can be found on our GitHub repo.
 
