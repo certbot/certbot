@@ -19,7 +19,9 @@ install_requires = [
     'pywin32>=300 ; sys_platform == "win32"',
     'pyyaml',
     'pytz>=2019.3',
-    'requests',
+    # requests unvendored its dependencies in version 2.16.0 and this code relies on that for
+    # calling `urllib3.disable_warnings`.
+    'requests>=2.16.0',
     'setuptools',
     'types-python-dateutil',
 ]
