@@ -47,15 +47,8 @@ ECDSA_KEY_TYPE = 'ecdsa'
 
 
 def _suppress_x509_verification_warnings() -> None:
-    try:
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    except ImportError:
-        # Handle old versions of request with vendorized urllib3
-        # pylint: disable=no-member
-        from requests.packages.urllib3.exceptions import InsecureRequestWarning
-        requests.packages.urllib3.disable_warnings(  # type: ignore[attr-defined]
-            InsecureRequestWarning)
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def check_until_timeout(url: str, attempts: int = 30) -> None:
