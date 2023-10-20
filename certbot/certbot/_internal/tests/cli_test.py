@@ -594,6 +594,13 @@ class ParseTest(unittest.TestCase):
         assert_set_by_user_with_value(namespace, 'text_mode', True)
         assert_set_by_user_with_value(namespace, 'verbose_count', 1)
         assert_set_by_user_with_value(namespace, 'email', 'foo@example.com')
+    
+    def test_arg_with_contained_spaces(self):
+        # This can happen if a user specifies an arg like "-d foo.com" enclosed
+        # in double quotes, or as its own line in a docker-compose.yml file (as
+        # in #9811)
+        namespace = self.parse(['certonly', '-d foo.com'])
+        assert_set_by_user_with_value(namespace, 'domains', ['foo.com'])
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
