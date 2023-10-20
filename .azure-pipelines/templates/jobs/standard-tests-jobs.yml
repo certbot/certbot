@@ -4,9 +4,9 @@ jobs:
       PYTHON_VERSION: 3.11
     strategy:
       matrix:
-        macos-py37-cover:
+        macos-py38-cover:
           IMAGE_NAME: macOS-12
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.8
           TOXENV: cover
           # As of pip 23.1.0, builds started failing on macOS unless this flag was set.
           # See https://github.com/certbot/certbot/pull/9717#issuecomment-1610861794.
@@ -14,11 +14,11 @@ jobs:
         macos-cover:
           IMAGE_NAME: macOS-12
           TOXENV: cover
-          # See explanation under macos-py37-cover.
+          # See explanation under macos-py38-cover.
           PIP_USE_PEP517: "true"
-        windows-py37:
+        windows-py38:
           IMAGE_NAME: windows-2019
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.8
           TOXENV: py-win
         windows-py39-cover:
           IMAGE_NAME: windows-2019
@@ -30,12 +30,12 @@ jobs:
           TOXENV: integration-certbot
         linux-oldest:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.8
           TOXENV: oldest
-        linux-py37:
+        linux-py38:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.7
-          TOXENV: py37
+          PYTHON_VERSION: 3.8
+          TOXENV: py38
         linux-cover:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: cover
