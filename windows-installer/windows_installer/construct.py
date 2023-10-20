@@ -7,9 +7,9 @@ import subprocess
 import sys
 import time
 
-PYTHON_VERSION = (3, 11, 3)
+PYTHON_VERSION = (3, 11, 5)
 PYTHON_BITNESS = 32
-NSIS_VERSION = '3.06.1'
+NSIS_VERSION = '3.9.0'
 
 
 def main():
@@ -52,7 +52,7 @@ def _compile_wheels(repo_path, build_path, venv_python):
     wheels_path = os.path.join(build_path, 'wheels')
     os.makedirs(wheels_path)
 
-    certbot_packages = ['acme', 'certbot','certbot-nginx','certbot-apache-win','certbot-tomcat']
+    certbot_packages = ['acme', 'certbot','certbot-nginx','certbot-apache-win','certbot-tomcat','certbot-iis']
     #certbot_packages = ['acme', 'certbot','certbot-nginx','certbot-apache','certbot-apache-win','certbot-tomcat']
     # Uncomment following line to include all DNS plugins in the installer
     # certbot_packages.extend([name for name in os.listdir(repo_path) if name.startswith('certbot-dns-')])
@@ -90,7 +90,7 @@ def _generate_pynsist_config(repo_path, build_path):
     print('Generate pynsist configuration')
 
     installer_cfg_path = os.path.join(build_path, 'installer.cfg')
-
+    print(installer_cfg_path)
     certbot_pkg_path = os.path.join(repo_path, 'certbot')
     certbot_version = subprocess.check_output([sys.executable, '-c', 'import certbot; print(certbot.__version__)'],
                                               universal_newlines=True, cwd=certbot_pkg_path).strip()

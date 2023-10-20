@@ -1708,9 +1708,14 @@ class ApacheConfigurator(common.Configurator):
         self.parser.add_dir(vh_path, "SSLCertificateKeyFile",
                             "insert_key_file_path")
         # Only include the TLS configuration if not already included
-        existing_inc = self.parser.find_dir("Include", self.mod_ssl_conf, vh_path)
-        if not existing_inc:
-            self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
+        # DTAM-5180
+        sslVhost = self.parser.find_dir("SSLEngine", "on", vh_path)
+        logger.info("Vhost with SSLEngine on : %s", sslVhost)
+        if not sslVhost:
+            existing_inc = self.parser.find_dir("Include", self.mod_ssl_conf, vh_path)
+            logger.info("existing_inc: %s", existing_inc)
+            if not existing_inc:
+                self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_servername_alias(self, target_name: str, vhost: obj.VirtualHost) -> None:
         vh_path = vhost.path

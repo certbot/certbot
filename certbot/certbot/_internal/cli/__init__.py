@@ -466,7 +466,10 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         [None,"automation", "certonly", "run","renew"], "--retry-interval",type=int,
         dest="retry_interval",
         default=flag_default("retry_interval"), help=config_help("retry_interval"))
-    
+    helpful.add(
+        None, "--iis-cert-name", dest="iis_cert_name",
+        help="Certificate name for PFX file."
+    )
 
     # Deprecated arguments
     helpful.add_deprecated_argument("--os-packages-only", 0)
