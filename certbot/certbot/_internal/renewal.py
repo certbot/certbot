@@ -194,6 +194,7 @@ def restore_required_config_elements(config: configuration.NamespaceConfig,
 
     """
 
+    updated_values = {}
     required_items = itertools.chain(
         (("pref_challs", _restore_pref_challs),),
         zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
@@ -202,7 +203,9 @@ def restore_required_config_elements(config: configuration.NamespaceConfig,
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not config.set_by_user(item_name):
             value = restore_func(item_name, renewalparams[item_name])
-            setattr(config, item_name, value)
+            updated_values[item_name] = value
+    for key, value in updated_values.items():
+        setattr(config, key, value)
 
 
 def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> Dict[str, Any]:
