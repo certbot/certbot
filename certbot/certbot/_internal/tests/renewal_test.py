@@ -253,6 +253,18 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         self._call(self.config, {'server': constants.V1_URI})
         assert self.config.server == constants.CLI_DEFAULTS['server']
 
+    def test_related_values(self):
+        # certbot.configuration.NamespaceConfig.set_by_user considers some values as related to each
+        # other and considers both set by the user if either is. This test ensures all renewal
+        # parameters are restored regardless of their restoration order or relation between values.
+        # See https://github.com/certbot/certbot/issues/9805 for more info.
+        renewalparams = {
+            'server': 'https://example.org',
+            'account': 'somehash',
+        }
+        self._call(self.config, renewalparams)
+        self.assertEqual(self.config.account, renewalparams['account'])
+
 
 class DescribeResultsTest(unittest.TestCase):
     """Tests for certbot._internal.renewal._renew_describe_results."""
