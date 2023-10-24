@@ -7,6 +7,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Fixed a bug where arguments with contained spaces weren't being handled correctly
+* Fixed a bug that caused the ACME account to not be properly restored on
+  renewal causing problems in setups where the user had multiple accounts with
+  the same ACME server.
 
 More details about these changes can be found on our GitHub repo.
 
