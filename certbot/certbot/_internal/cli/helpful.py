@@ -219,6 +219,8 @@ class HelpfulArgumentParser:
 
                 if '=' in arg:
                     arg = arg.split('=')[0]
+                elif ' ' in arg:
+                    arg = arg.split(' ')[0]
 
                 if arg.startswith('--'):
                     args.append(arg)

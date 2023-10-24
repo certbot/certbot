@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.7.1'
+version = '2.7.2'
 
 install_requires = [
     'certbot',
