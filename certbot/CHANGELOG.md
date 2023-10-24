@@ -2,6 +2,14 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.7.3 - master
+
+### Fixed
+
+* Fixed a bug where arguments with contained spaces weren't being handled correctly
+
+More details about these changes can be found on our GitHub repo.
+
 ## 2.7.2 - 2023-10-19
 
 ### Fixed
