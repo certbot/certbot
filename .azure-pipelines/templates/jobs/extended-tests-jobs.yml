@@ -8,9 +8,6 @@ jobs:
       - group: certbot-common
     strategy:
       matrix:
-        linux-py38:
-          PYTHON_VERSION: 3.8
-          TOXENV: py38
         linux-py39:
           PYTHON_VERSION: 3.9
           TOXENV: py39
@@ -20,16 +17,12 @@ jobs:
         linux-isolated:
           TOXENV: 'isolated-{acme,certbot,apache,cloudflare,digitalocean,dnsimple,dnsmadeeasy,gehirn,google,linode,luadns,nsone,ovh,rfc2136,route53,sakuracloud,nginx}'
         linux-boulder-v2-integration-certbot-oldest:
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.8
           TOXENV: integration-certbot-oldest
           ACME_SERVER: boulder-v2
         linux-boulder-v2-integration-nginx-oldest:
-          PYTHON_VERSION: 3.7
+          PYTHON_VERSION: 3.8
           TOXENV: integration-nginx-oldest
-          ACME_SERVER: boulder-v2
-        linux-boulder-v2-py37-integration:
-          PYTHON_VERSION: 3.7
-          TOXENV: integration
           ACME_SERVER: boulder-v2
         linux-boulder-v2-py38-integration:
           PYTHON_VERSION: 3.8
