@@ -187,10 +187,12 @@ class HelpfulArgumentParser:
         #   2. config files
         #   3. env vars (shouldn't be any)
         #   4. command line
+
         def update_result(settings_dict: Dict[str, Tuple[configargparse.Action, str]],
                           source: ArgumentSource) -> None:
-            actions = [action for _, (action, _) in settings_dict.items()]
-            result.update({ action.dest: source for action in actions})
+            actions = [self._find_action_for_arg(arg) if action is None else action
+                       for arg, (action, _) in settings_dict.items()]
+            result.update({ action.dest: source for action in actions })
 
         # config file sources look like "config_file|<name of file>"
         for source_key in source_to_settings_dict:
@@ -203,16 +205,60 @@ class HelpfulArgumentParser:
         if 'command_line' in source_to_settings_dict:
             settings_dict: Dict[str, Tuple[None, List[str]]]
             settings_dict = source_to_settings_dict['command_line'] # type: ignore
-            (_, args) = settings_dict['']
-            args = [arg for arg in args if arg.startswith('-')]
+            (_, unprocessed_args) = settings_dict['']
+            args = []
+            for arg in unprocessed_args:
+                # ignore non-arguments
+                if not arg.startswith('-'):
+                    continue
+
+                # special case for config file argument, which we don't have an action for
+                if arg in ['-c', '--config']:
+                    result['config_dir'] = ArgumentSource.COMMAND_LINE
+                    continue
+
+                if '=' in arg:
+                    arg = arg.split('=')[0]
+                elif ' ' in arg:
+                    arg = arg.split(' ')[0]
+
+                if arg.startswith('--'):
+                    args.append(arg)
+                # for short args (ones that start with a single hyphen), handle
+                # the case of multiple short args together, e.g. "-tvm"
+                else:
+                    for short_arg in arg[1:]:
+                        args.append(f"-{short_arg}")
+
             for arg in args:
                 # find the action corresponding to this arg
-                for action in self.actions:
-                    if arg in action.option_strings:
-                        result[action.dest] = ArgumentSource.COMMAND_LINE
-                        continue
+                action = self._find_action_for_arg(arg)
+                result[action.dest] = ArgumentSource.COMMAND_LINE
 
         return result
+
+    def _find_action_for_arg(self, arg: str) -> configargparse.Action:
+        # Finds a configargparse Action which matches the given arg, where arg
+        # can either be preceded by hyphens (as on the command line) or not (as
+        # in config files)
+
+        # if the argument doesn't have leading hypens, prefix it so it can be
+        # compared directly w/ action option strings
+        if arg[0] != '-':
+            arg = '--' + arg
+
+        # first, check for exact matches
+        for action in self.actions:
+            if arg in action.option_strings:
+                return action
+
+        # now check for abbreviated (i.e. prefix) matches
+        for action in self.actions:
+            for option_string in action.option_strings:
+                if option_string.startswith(arg):
+                    return action
+
+        raise AssertionError(f"Action corresponding to argument {arg} is None")
 
     def parse_args(self) -> NamespaceConfig:
         """Parses command line arguments and returns the result.

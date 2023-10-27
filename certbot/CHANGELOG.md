@@ -18,6 +18,27 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 More details about these changes can be found on our GitHub repo.
 
+## 2.7.3 - 2023-10-24
+
+### Fixed
+
+* Fixed a bug where arguments with contained spaces weren't being handled correctly
+* Fixed a bug that caused the ACME account to not be properly restored on
+  renewal causing problems in setups where the user had multiple accounts with
+  the same ACME server.
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.7.2 - 2023-10-19
+
+### Fixed
+
+* `certbot-dns-ovh` plugin now requires `lexicon>=3.15.1` to ensure a consistent behavior with OVH APIs.
+* Fixed a bug where argument sources weren't correctly detected in abbreviated
+  arguments, short arguments, and some other circumstances
+
+More details about these changes can be found on our GitHub repo.
+
 ## 2.7.1 - 2023-10-10
 
 ### Fixed
