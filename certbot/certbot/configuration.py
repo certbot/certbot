@@ -490,10 +490,10 @@ def _check_config_sanity(config: NamespaceConfig) -> None:
 def _is_immutable(value: Any) -> bool:
     """Is value of an immutable type?"""
     if isinstance(value, tuple):
-        # tuples are only immutable if all contained values are immutable
+        # tuples are only immutable if all contained values are immutable.
         return all(_is_immutable(subvalue) for subvalue in value)
     for immutable_type in (int, float, complex, str, bytes, bool, frozenset,):
         if isinstance(value, immutable_type):
             return True
-    # the last case we consider here is None which is also immutable
+    # The last case we consider here is None which is also immutable.
     return value is None
