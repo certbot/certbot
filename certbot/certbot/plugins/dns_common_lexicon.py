@@ -198,6 +198,10 @@ class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
 
         dict_config = {
             'domain': domain,
+            # We bypass Lexicon subdomain resolution by setting the 'delegated' field in the config
+            # to the value of the 'domain' field itself. Here we consider that the domain passed to
+            # _build_lexicon_config() is already the exact subdomain of the actual DNS zone to use.
+            'delegated': domain,
             'provider_name': self._provider_name,
             'ttl': self._ttl,
             self._provider_name: {item[2]: self._credentials.conf(item[0])

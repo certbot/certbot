@@ -2,6 +2,16 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.7.4 - master
+
+### Fixed
+
+* Fixed a bug introduced in version 2.7.0 of our Lexicon based DNS plugins that
+  caused them to fail to find the DNS zone that needs to be modified in some
+  cases.
+
+More details about these changes can be found on our GitHub repo.
+
 ## 2.7.3 - 2023-10-24
 
 ### Fixed
