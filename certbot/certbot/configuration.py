@@ -165,7 +165,7 @@ class NamespaceConfig:
 
     def __getattr__(self, name: str) -> Any:
         value = getattr(self.namespace, name)
-        if not _is_immutable(value):
+        if name not in self._previous_mutable_values and not _is_immutable(value):
             self._previous_mutable_values[name] = copy.deepcopy(value)
         return value
 
