@@ -165,6 +165,7 @@ class HelpfulArgumentParser:
     def remove_config_file_domains_for_renewal(self, config: NamespaceConfig) -> None:
         """Make "certbot renew" safe if domains are set in cli.ini."""
         # Works around https://github.com/certbot/certbot/issues/4096
+        assert config.argument_sources is not None
         if (config.argument_sources['domains'] == ArgumentSource.CONFIG_FILE and
                 self.verb == "renew"):
             config.domains = []

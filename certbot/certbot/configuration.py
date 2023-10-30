@@ -66,7 +66,8 @@ class NamespaceConfig:
         self.namespace: argparse.Namespace
         # Avoid recursion loop because of the delegation defined in __setattr__
         object.__setattr__(self, 'namespace', namespace)
-        object.__setattr__(self, 'argument_sources', None)
+        object.__setattr__(self, '_argument_sources', None)
+        object.__setattr__(self, '_previous_mutable_values', {})
 
         self.namespace.config_dir = os.path.abspath(self.namespace.config_dir)
         self.namespace.work_dir = os.path.abspath(self.namespace.work_dir)
@@ -90,7 +91,7 @@ class NamespaceConfig:
         """
 
         # Avoid recursion loop because of the delegation defined in __setattr__
-        object.__setattr__(self, 'argument_sources', argument_sources)
+        object.__setattr__(self, '_argument_sources', argument_sources)
 
 
     def set_by_user(self, var: str) -> bool:
@@ -147,13 +148,26 @@ class NamespaceConfig:
         be ArgumentSource.RUNTIME. Used when certbot sets an argument's values
         at runtime.
         """
-        if self.argument_sources is not None:
-            self.argument_sources[name] = ArgumentSource.RUNTIME
+        if self._argument_sources is not None:
+            self._argument_sources[name] = ArgumentSource.RUNTIME
+
+    @property
+    def argument_sources(self) -> Optional[Dict[str, ArgumentSource]]:
+        """Returns _argument_sources after handling any changes to accessed mutable values."""
+        for name, prev_value in self._previous_mutable_values.items():
+            current_value = getattr(self.namespace, name)
+            if current_value != prev_value:
+                self._mark_runtime_override(name)
+        self._previous_mutable_values.clear()
+        return self._argument_sources
 
     # Delegate any attribute not explicitly defined to the underlying namespace object.
 
     def __getattr__(self, name: str) -> Any:
-        return getattr(self.namespace, name)
+        value = getattr(self.namespace, name)
+        if not _is_immutable(value):
+            self._previous_mutable_values[name] = copy.deepcopy(value)
+        return value
 
     def __setattr__(self, name: str, value: Any) -> None:
         self._mark_runtime_override(name)
@@ -425,8 +439,9 @@ class NamespaceConfig:
         # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
         new_ns = copy.deepcopy(self.namespace)
         new_config = type(self)(new_ns)
-        if self.set_argument_sources is not None:
-            new_sources = copy.deepcopy(self.argument_sources)
+        argument_sources = self.argument_sources
+        if argument_sources is not None:
+            new_sources = copy.deepcopy(argument_sources)
             new_config.set_argument_sources(new_sources)
         return new_config
 
@@ -450,3 +465,15 @@ def _check_config_sanity(config: NamespaceConfig) -> None:
         for domain in config.namespace.domains:
             # This may be redundant, but let's be paranoid
             util.enforce_domain_sanity(domain)
+
+
+def _is_immutable(value: Any) -> bool:
+    """Is value of an immutable type?"""
+    if isinstance(value, tuple):
+        # tuples are only immutable if all contained values are immutable
+        return all(_is_immutable(subvalue) for subvalue in value)
+    for immutable_type in (int, float, complex, str, bytes, bool, frozenset,):
+        if isinstance(value, immutable_type):
+            return True
+    # the last case we consider here is None which is also immutable
+    return value is None
