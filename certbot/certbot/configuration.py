@@ -171,8 +171,8 @@ class NamespaceConfig:
 
     # Delegate any attribute not explicitly defined to the underlying namespace object.
     #
-    # If any mutuable namespace attributes are explicitly defined in the future, you'll probably
-    # want to take an approach like the one used in __getattr__ and the argument_sources property.
+    # If any mutable namespace attributes are explicitly defined in the future, you'll probably want
+    # to take an approach like the one used in __getattr__ and the argument_sources property.
 
     def __getattr__(self, name: str) -> Any:
         arg_sources = self.argument_sources
