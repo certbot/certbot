@@ -3,7 +3,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.7.4'
+version = '2.8.0.dev0'
 
 install_requires = [
     'cryptography>=3.2.1',
