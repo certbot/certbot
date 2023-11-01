@@ -14,6 +14,14 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.7.4 - 2023-11-01
+
+### Fixed
+
 * Fixed a bug introduced in version 2.7.0 that caused interactively entered
   webroot plugin values to not be saved for renewal.
 * Fixed a bug introduced in version 2.7.0 of our Lexicon based DNS plugins that
