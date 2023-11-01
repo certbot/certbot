@@ -1,6 +1,7 @@
 """Test utilities."""
 import atexit
 from contextlib import ExitStack
+import copy
 from importlib import reload as reload_module
 import io
 import logging
@@ -403,7 +404,8 @@ class ConfigTestCase(TempDirTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.config = configuration.NamespaceConfig(
-            mock.MagicMock(**constants.CLI_DEFAULTS),
+            # We make a copy here so any mutable values from CLI_DEFAULTS do not get modified.
+            mock.MagicMock(**copy.deepcopy(constants.CLI_DEFAULTS)),
         )
         self.config.set_argument_sources({})
         self.config.namespace.verb = "certonly"
