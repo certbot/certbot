@@ -4,6 +4,7 @@ from typing import Type
 
 from certbot import util
 from certbot_apache._internal import configurator
+from certbot_apache._internal import override_alpine
 from certbot_apache._internal import override_arch
 from certbot_apache._internal import override_centos
 from certbot_apache._internal import override_darwin
@@ -14,6 +15,7 @@ from certbot_apache._internal import override_suse
 from certbot_apache._internal import override_void
 
 OVERRIDE_CLASSES: Dict[str, Type[configurator.ApacheConfigurator]] = {
+    "alpine": override_alpine.AlpineConfigurator,
     "arch": override_arch.ArchConfigurator,
     "cloudlinux": override_centos.CentOSConfigurator,
     "darwin": override_darwin.DarwinConfigurator,
