@@ -7,7 +7,7 @@ from setuptools import setup
 version = '2.8.0.dev0'
 
 install_requires = [
-    'dns-lexicon>=3.14.1',
+    'dns-lexicon>=3.17.0',
     'setuptools>=41.6.0',
 ]
 
