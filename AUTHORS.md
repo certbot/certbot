@@ -121,6 +121,7 @@ Authors
 * [Jairo Llopis](https://github.com/Yajo)
 * [Jakub Warmuz](https://github.com/kuba)
 * [James Balazs](https://github.com/jamesbalazs)
+* [James Garay](https://github.com/jmg0)
 * [James Kasten](https://github.com/jdkasten)
 * [Jason Grinblat](https://github.com/ptychomancer)
 * [Jawshua](https://github.com/jawshua)
