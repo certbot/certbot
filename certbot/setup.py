@@ -61,7 +61,7 @@ docs_extras = [
     # If you have Sphinx<1.5.1, you need docutils<0.13.1
     # https://github.com/sphinx-doc/sphinx/issues/3212
     'Sphinx>=1.2',  # Annotation support
-    'sphinx_rtd_theme',
+    'sphinx_rtd_theme>=1.3.0',
 ]
 
 # Tools like pip, wheel, and tox are listed here to ensure they are properly
