@@ -2,11 +2,7 @@
 import logging
 from typing import Any
 from typing import Callable
-from typing import Optional
 
-from requests import HTTPError
-
-from certbot import errors
 from certbot.plugins import dns_common_lexicon
 
 logger = logging.getLogger(__name__)
@@ -50,21 +46,3 @@ class Authenticator(dns_common_lexicon.LexiconDNSAuthenticator):
     @property
     def _provider_name(self) -> str:
         return 'ovh'
-
-    def _handle_http_error(self, e: HTTPError, domain_name: str) -> errors.PluginError:
-        hint = None
-        if str(e).startswith('400 Client Error:'):
-            hint = 'Is your Application Secret value correct?'
-        if str(e).startswith('403 Client Error:'):
-            hint = 'Are your Application Key and Consumer Key values correct?'
-
-        hint_disp = f' ({hint})' if hint else ''
-
-        return errors.PluginError(f'Error determining zone identifier for {domain_name}: '
-                                  f'{e}.{hint_disp}')
-
-    def _handle_general_error(self, e: Exception, domain_name: str) -> Optional[errors.PluginError]:
-        if domain_name in str(e) and str(e).endswith('not found'):
-            return None
-
-        return super()._handle_general_error(e, domain_name)

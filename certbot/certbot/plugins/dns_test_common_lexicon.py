@@ -192,20 +192,10 @@ class BaseLexiconClientTest:  # pragma: no cover
 
 class _BaseLexiconDNSAuthenticatorTestProto(_AuthenticatorCallableTestCase, Protocol):
     """Protocol for BaseLexiconDNSAuthenticatorTest instances"""
-    DOMAIN_NOT_FOUND: Exception
-    GENERIC_ERROR: Exception
-    LOGIN_ERROR: Exception
-    UNKNOWN_LOGIN_ERROR: Exception
-
     achall: AnnotatedChallenge
 
 
 class BaseLexiconDNSAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
-
-    DOMAIN_NOT_FOUND = DOMAIN_NOT_FOUND
-    GENERIC_ERROR = GENERIC_ERROR
-    LOGIN_ERROR = LOGIN_ERROR
-    UNKNOWN_LOGIN_ERROR = UNKNOWN_LOGIN_ERROR
 
     def test_perform_succeed(self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
         with test_util.patch_display_util():
@@ -219,48 +209,10 @@ class BaseLexiconDNSAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
         mock_operations.create_record.assert_called_with(
             rtype='TXT', name=f'_acme-challenge.{DOMAIN}', content=mock.ANY)
 
-    def test_perform_with_one_domain_resolution_failure_succeed(
-            self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
-        with test_util.patch_display_util():
-            with _patch_lexicon_client() as (mock_client, mock_operations):
-                mock_client.return_value.__enter__.side_effect = [
-                    self.DOMAIN_NOT_FOUND,  # First resolution domain attempt
-                    mock_operations,  # Second resolution domain attempt
-                    mock_operations,  # Create record operation
-                ]
-                self.auth.perform([self.achall])
-
-    def test_perform_with_two_domain_resolution_failures_raise(
-            self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
-        with test_util.patch_display_util():
-            with _patch_lexicon_client() as (mock_client, _):
-                mock_client.return_value.__enter__.side_effect = self.DOMAIN_NOT_FOUND
-                self.assertRaises(errors.PluginError,
-                                  self.auth.perform,
-                                  [self.achall])
-
-    def test_perform_with_domain_resolution_general_failure_raise(
-            self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
-        with test_util.patch_display_util():
-            with _patch_lexicon_client() as (mock_client, _):
-                mock_client.return_value.__enter__.side_effect = self.GENERIC_ERROR
-                self.assertRaises(errors.PluginError,
-                                  self.auth.perform,
-                                  [self.achall])
-
     def test_perform_with_auth_failure_raise(self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
         with test_util.patch_display_util():
             with _patch_lexicon_client() as (mock_client, _):
-                mock_client.side_effect = self.LOGIN_ERROR
-                self.assertRaises(errors.PluginError,
-                                  self.auth.perform,
-                                  [self.achall])
-
-    def test_perform_with_unknown_auth_failure_raise(
-            self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
-        with test_util.patch_display_util():
-            with _patch_lexicon_client() as (mock_client, _):
-                mock_client.side_effect = self.UNKNOWN_LOGIN_ERROR
+                mock_client.side_effect = RequestException()
                 self.assertRaises(errors.PluginError,
                                   self.auth.perform,
                                   [self.achall])
@@ -269,7 +221,7 @@ class BaseLexiconDNSAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
             self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
         with test_util.patch_display_util():
             with _patch_lexicon_client() as (_, mock_operations):
-                mock_operations.create_record.side_effect = self.GENERIC_ERROR
+                mock_operations.create_record.side_effect = RequestException()
                 self.assertRaises(errors.PluginError,
                                   self.auth.perform,
                                   [self.achall])
@@ -288,31 +240,13 @@ class BaseLexiconDNSAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
 
     def test_cleanup_with_auth_failure_ignore(self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
         with _patch_lexicon_client() as (mock_client, _):
-            mock_client.side_effect = self.LOGIN_ERROR
-            self.auth.cleanup([self.achall])
-
-    def test_cleanup_with_unknown_auth_failure_ignore(
-            self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
-        with _patch_lexicon_client() as (mock_client, _):
-            mock_client.side_effect = self.LOGIN_ERROR
-            self.auth.cleanup([self.achall])
-
-    def test_cleanup_with_domain_resolution_failure_ignore(
-            self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
-        with _patch_lexicon_client() as (mock_client, _):
-            mock_client.return_value.__enter__.side_effect = self.DOMAIN_NOT_FOUND
-            self.auth.cleanup([self.achall])
-
-    def test_cleanup_with_domain_resolution_general_failure_ignore(
-            self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
-        with _patch_lexicon_client() as (mock_client, _):
-            mock_client.return_value.__enter__.side_effect = self.GENERIC_ERROR
+            mock_client.side_effect = RequestException()
             self.auth.cleanup([self.achall])
 
     def test_cleanup_with_delete_record_failure_ignore(
             self: _BaseLexiconDNSAuthenticatorTestProto) -> None:
         with _patch_lexicon_client() as (_, mock_operations):
-            mock_operations.create_record.side_effect = self.GENERIC_ERROR
+            mock_operations.create_record.side_effect = RequestException()
             self.auth.cleanup([self.achall])
 
 

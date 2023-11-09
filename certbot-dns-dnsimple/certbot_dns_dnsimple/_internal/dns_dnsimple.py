@@ -3,9 +3,6 @@ import logging
 from typing import Any
 from typing import Callable
 
-from requests import HTTPError
-
-from certbot import errors
 from certbot.plugins import dns_common_lexicon
 
 logger = logging.getLogger(__name__)
@@ -40,13 +37,3 @@ class Authenticator(dns_common_lexicon.LexiconDNSAuthenticator):
     @property
     def _provider_name(self) -> str:
         return 'dnsimple'
-
-    def _handle_http_error(self, e: HTTPError, domain_name: str) -> errors.PluginError:
-        hint = None
-        if str(e).startswith('401 Client Error: Unauthorized for url:'):
-            hint = 'Is your API token value correct?'
-
-        hint_disp = f' ({hint})' if hint else ''
-
-        return errors.PluginError(f'Error determining zone identifier for {domain_name}: '
-                                  f'{e}.{hint_disp}')
