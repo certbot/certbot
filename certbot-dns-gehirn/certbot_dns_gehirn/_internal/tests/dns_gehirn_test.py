@@ -1,7 +1,6 @@
 """Tests for certbot_dns_gehirn._internal.dns_gehirn."""
 
 import sys
-import unittest
 from unittest import mock
 
 import pytest

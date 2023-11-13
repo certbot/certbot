@@ -524,7 +524,7 @@ ignored-classes=optparse.Values,thread._local,_thread._local,argparse.Namespace,
 # List of module names for which member attributes should not be checked
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis
-ignored-modules=pkg_resources,confargparse,argparse
+ignored-modules=confargparse,argparse
 
 # Show a hint with possible names when a member name was not found. The aspect
 # of finding the hint is based on edit distance.

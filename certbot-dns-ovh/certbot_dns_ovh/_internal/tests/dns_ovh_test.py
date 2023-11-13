@@ -22,6 +22,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
     DOMAIN_NOT_FOUND = Exception('Domain example.com not found')
     LOGIN_ERROR = HTTPError('403 Client Error: Forbidden for url: https://eu.api.ovh.com/1.0/...', response=Response())
+    
     def setUp(self):
         super().setUp()
 
