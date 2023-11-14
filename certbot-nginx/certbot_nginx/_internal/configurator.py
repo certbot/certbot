@@ -18,7 +18,6 @@ from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from typing import Set
-from typing import Text
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -1275,7 +1274,7 @@ def nginx_restart(nginx_ctl: str, nginx_conf: str, sleep_duration: int) -> None:
 
     """
     try:
-        reload_output: Text = ""
+        reload_output: str = ""
         with tempfile.TemporaryFile() as out:
             proc = subprocess.run([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
                                   env=util.env_no_snap_for_external_calls(),
