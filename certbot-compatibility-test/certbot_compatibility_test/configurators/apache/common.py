@@ -75,7 +75,7 @@ def _get_server_root(config: str) -> str:
         if os.path.isdir(os.path.join(config, name))]
 
     if len(subdirs) != 1:
-        errors.Error("Malformed configuration directory {0}".format(config))
+        raise errors.Error("Malformed configuration directory {0}".format(config))
 
     return os.path.join(config, subdirs[0].rstrip())
 

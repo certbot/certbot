@@ -69,7 +69,7 @@ ignored-modules=
 # CERTBOT COMMENT
 # This is needed for pylint to import linter_plugin.py since
 # https://github.com/PyCQA/pylint/pull/3396.
-init-hook="import pylint.config, os, sys; sys.path.append(os.path.dirname(pylint.config.PYLINTRC))"
+init-hook="import pylint.config, os, sys; sys.path.append(os.path.dirname(next(pylint.config.find_default_config_files())))"
 
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use, and will cap the count on Windows to
@@ -266,8 +266,8 @@ valid-metaclass-classmethod-first-arg=cls
 [EXCEPTIONS]
 
 # Exceptions that will emit a warning when caught.
-overgeneral-exceptions=BaseException,
-                       Exception
+overgeneral-exceptions=builtins.BaseException,
+                       builtins.Exception
 
 
 [FORMAT]
