@@ -12,7 +12,6 @@ from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Set
-from typing import Text
 from typing import Tuple
 from typing import Union
 
@@ -517,7 +516,7 @@ class ClientNetwork:
         self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
-        self._nonces: Set[Text] = set()
+        self._nonces: Set[str] = set()
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
