@@ -29,7 +29,7 @@ class Header(jose.Header):
 
 class Signature(jose.Signature):
     """ACME-specific Signature. Uses ACME-specific Header for customer fields."""
-    __slots__ = jose.Signature._orig_slots  # type: ignore[attr-defined]  # pylint: disable=protected-access,no-member
+    __slots__ = jose.Signature._orig_slots  # pylint: disable=protected-access,no-member
 
     # TODO: decoder/encoder should accept cls? Otherwise, subclassing
     # JSONObjectWithFields is tricky...
@@ -44,7 +44,7 @@ class Signature(jose.Signature):
 class JWS(jose.JWS):
     """ACME-specific JWS. Includes none, url, and kid in protected header."""
     signature_cls = Signature
-    __slots__ = jose.JWS._orig_slots  # type: ignore[attr-defined]  # pylint: disable=protected-access
+    __slots__ = jose.JWS._orig_slots  # pylint: disable=protected-access
 
     @classmethod
     # type: ignore[override]  # pylint: disable=arguments-differ
