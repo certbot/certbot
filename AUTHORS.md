@@ -94,6 +94,7 @@ Authors
 * [Felix Yan](https://github.com/felixonmars)
 * [Filip Ochnik](https://github.com/filipochnik)
 * [Florian Klink](https://github.com/flokli)
+* [Francesco Colista](https://github.com/fcolista)
 * [Francois Marier](https://github.com/fmarier)
 * [Frank](https://github.com/Frankkkkk)
 * [Frederic BLANC](https://github.com/fblanc)
