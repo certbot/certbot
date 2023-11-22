@@ -198,10 +198,7 @@ class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
 
         dict_config = {
             'domain': domain,
-            # We bypass Lexicon subdomain resolution by setting the 'delegated' field in the config
-            # to the value of the 'domain' field itself. Here we consider that the domain passed to
-            # _build_lexicon_config() is already the exact subdomain of the actual DNS zone to use.
-            'delegated': domain,
+            'resolve_zone_name': 'true',
             'provider_name': self._provider_name,
             'ttl': self._ttl,
             self._provider_name: {item[2]: self._credentials.conf(item[0])
@@ -217,10 +214,8 @@ class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain: str, validation_name: str, validation: str) -> None:
-        resolved_domain = self._resolve_domain(domain)
-
         try:
-            with Client(self._build_lexicon_config(resolved_domain)) as operations:
+            with Client(self._build_lexicon_config(domain)) as operations:
                 operations.create_record(rtype='TXT', name=validation_name, content=validation)
         except RequestException as e:
             logger.debug('Encountered error adding TXT record: %s', e, exc_info=True)
@@ -228,50 +223,10 @@ class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
 
     def _cleanup(self, domain: str, validation_name: str, validation: str) -> None:
         try:
-            resolved_domain = self._resolve_domain(domain)
-        except errors.PluginError as e:
-            logger.debug('Encountered error finding domain_id during deletion: %s', e,
-                         exc_info=True)
-            return
-
-        try:
-            with Client(self._build_lexicon_config(resolved_domain)) as operations:
+            with Client(self._build_lexicon_config(domain)) as operations:
                 operations.delete_record(rtype='TXT', name=validation_name, content=validation)
         except RequestException as e:
             logger.debug('Encountered error deleting TXT record: %s', e, exc_info=True)
-
-    def _resolve_domain(self, domain: str) -> str:
-        domain_name_guesses = dns_common.base_domain_name_guesses(domain)
-
-        for domain_name in domain_name_guesses:
-            try:
-                # Using client as a context manager requires `dns-lexicon>=3.14` and we may want to
-                # provide better checks and error handling around this in the future.
-                with Client(self._build_lexicon_config(domain_name)):
-                    return domain_name
-            except HTTPError as e:
-                result1 = self._handle_http_error(e, domain_name)
-
-                if result1:
-                    raise result1
-            except Exception as e:  # pylint: disable=broad-except
-                result2 = self._handle_general_error(e, domain_name)
-
-                if result2:
-                    raise result2  # pylint: disable=raising-bad-type
-
-        raise errors.PluginError('Unable to determine zone identifier for {0} using zone names: {1}'
-                                 .format(domain, domain_name_guesses))
-
-    def _handle_http_error(self, e: HTTPError, domain_name: str) -> Optional[errors.PluginError]:
-        return errors.PluginError('Error determining zone identifier for {0}: {1}.'
-                                  .format(domain_name, e))
-
-    def _handle_general_error(self, e: Exception, domain_name: str) -> Optional[errors.PluginError]:
-        if not str(e).startswith('No domain found'):
-            return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
-                                      .format(domain_name, e))
-        return None
 
 
 # This class takes a similar approach to the cryptography project to deprecate attributes

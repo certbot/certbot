@@ -7,7 +7,7 @@ from setuptools import setup
 version = '2.8.0.dev0'
 
 install_requires = [
-    'dns-lexicon>=3.14.1',
+    'dns-lexicon>=3.17.0',
     'setuptools>=41.6.0',
 ]
 
@@ -24,7 +24,7 @@ else:
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
-    'sphinx_rtd_theme',
+    'sphinx_rtd_theme>=1.3.0',
 ]
 
 test_extras = [

@@ -73,9 +73,3 @@ class Authenticator(dns_common_lexicon.LexiconDNSAuthenticator):
             label='Credentials INI file for linode DNS authenticator',
             required_variables={item[0]: item[1] for item in self._provider_options},
         )
-
-    def _handle_general_error(self, e: Exception, domain_name: str) -> Optional[errors.PluginError]:
-        if not str(e).startswith('Domain not found'):
-            return errors.PluginError('Unexpected error determining zone identifier '
-                                      f'for {domain_name}: {e}')
-        return None

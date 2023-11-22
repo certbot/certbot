@@ -2,11 +2,7 @@
 import logging
 from typing import Any
 from typing import Callable
-from typing import Optional
 
-from requests import HTTPError
-
-from certbot import errors
 from certbot.plugins import dns_common_lexicon
 
 logger = logging.getLogger(__name__)
@@ -41,15 +37,3 @@ class Authenticator(dns_common_lexicon.LexiconDNSAuthenticator):
     @property
     def _provider_name(self) -> str:
         return 'nsone'
-
-    def _handle_http_error(self, e: HTTPError, domain_name: str) -> Optional[errors.PluginError]:
-        if domain_name in str(e) and (str(e).startswith('404 Client Error: Not Found for url:') or
-                                      str(e).startswith("400 Client Error: Bad Request for url:")):
-            return None  # Expected errors when zone name guess is wrong
-        hint = None
-        if str(e).startswith('401 Client Error: Unauthorized for url:'):
-            hint = 'Is your API key correct?'
-
-        hint_disp = f' ({hint})' if hint else ''
-
-        return errors.PluginError(f'Error determining zone identifier: {e}.{hint_disp}')
