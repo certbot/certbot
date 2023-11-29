@@ -1,10 +1,9 @@
 """Tests for certbot_dns_dnsimple._internal.dns_dnsimple."""
-
-import sys
-import unittest
 from unittest import mock
+import sys
 
 import pytest
+from requests import Response
 from requests.exceptions import HTTPError
 
 from certbot.compat import os
@@ -16,7 +15,9 @@ TOKEN = 'foo'
 
 
 class AuthenticatorTest(test_util.TempDirTestCase,
-                        dns_test_common_lexicon.BaseLexiconAuthenticatorTest):
+                        dns_test_common_lexicon.BaseLexiconDNSAuthenticatorTest):
+
+    LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: ...', response=Response())
 
     def setUp(self):
         super().setUp()
@@ -30,23 +31,6 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                                      dnsimple_propagation_seconds=0)  # don't wait during tests
 
         self.auth = Authenticator(self.config, "dnsimple")
-
-        self.mock_client = mock.MagicMock()
-        # _get_dnsimple_client | pylint: disable=protected-access
-        self.auth._get_dnsimple_client = mock.MagicMock(return_value=self.mock_client)
-
-
-class DNSimpleLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
-
-    LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: ...')
-
-    def setUp(self):
-        from certbot_dns_dnsimple._internal.dns_dnsimple import _DNSimpleLexiconClient
-
-        self.client = _DNSimpleLexiconClient(TOKEN, 0)
-
-        self.provider_mock = mock.MagicMock()
-        self.client.provider = self.provider_mock
 
 
 if __name__ == "__main__":

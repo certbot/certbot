@@ -707,6 +707,12 @@ form is not appropriate to run daily because each certificate will be
 renewed every day, which will quickly run into the certificate authority
 rate limit.)
 
+Starting with Certbot 2.7.0, certbot provides the environment variables
+`RENEWED_DOMAINS` and `FAILED_DOMAINS` to all post renewal hooks. These
+variables contain a space separated list of domains. These variables can be used
+to determine if a renewal has succeeded or failed as part of your post renewal
+hook.
+
 Note that options provided to ``certbot renew`` will apply to
 *every* certificate for which renewal is attempted; for example,
 ``certbot renew --rsa-key-size 4096`` would try to replace every

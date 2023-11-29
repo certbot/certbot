@@ -5,6 +5,7 @@ to serve a mock OCSP responder during integration tests against Pebble.
 """
 import datetime
 import http.server as BaseHTTPServer
+import pytz
 import re
 from typing import cast
 from typing import Union
@@ -54,7 +55,7 @@ class _ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         else:
             data = response.json()
 
-            now = datetime.datetime.utcnow()
+            now = datetime.datetime.now(pytz.UTC)
             cert = x509.load_pem_x509_certificate(data['Certificate'].encode(), default_backend())
             if data['Status'] != 'Revoked':
                 ocsp_status = ocsp.OCSPCertStatus.GOOD

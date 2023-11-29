@@ -47,7 +47,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         lineage = mock.MagicMock()
         mock_deployer = self.renew_deployer
         updater.run_renewal_deployer(self.config, lineage, mock_deployer)
-        assert mock_deployer.renew_deploy.called_with(lineage)
+        mock_deployer.renew_deploy.assert_called_with(lineage)
 
     @mock.patch("certbot._internal.updater.logger.debug")
     def test_updater_skip_dry_run(self, mock_log):

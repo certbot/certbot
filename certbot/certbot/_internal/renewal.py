@@ -13,6 +13,7 @@ from typing import Iterable
 from typing import List
 from typing import Mapping
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 from cryptography.hazmat.backends import default_backend
@@ -193,6 +194,7 @@ def restore_required_config_elements(config: configuration.NamespaceConfig,
 
     """
 
+    updated_values = {}
     required_items = itertools.chain(
         (("pref_challs", _restore_pref_challs),),
         zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
@@ -201,7 +203,9 @@ def restore_required_config_elements(config: configuration.NamespaceConfig,
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not config.set_by_user(item_name):
             value = restore_func(item_name, renewalparams[item_name])
-            setattr(config, item_name, value)
+            updated_values[item_name] = value
+    for key, value in updated_values.items():
+        setattr(config, key, value)
 
 
 def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> Dict[str, Any]:
@@ -459,7 +463,7 @@ def _renew_describe_results(config: configuration.NamespaceConfig, renew_success
     notify(display_obj.SIDE_FRAME)
 
 
-def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
+def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list, list]:
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -483,6 +487,9 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
     renew_failures = []
     renew_skipped = []
     parse_failures = []
+
+    renewed_domains = []
+    failed_domains = []
 
     # Noninteractive renewals include a random delay in order to spread
     # out the load on the certificate authority servers, even if many
@@ -532,6 +539,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
                     # and we have a lineage in renewal_candidate
                     main.renew_cert(lineage_config, plugins, renewal_candidate)
                     renew_successes.append(renewal_candidate.fullchain)
+                    renewed_domains.extend(renewal_candidate.names())
                 else:
                     expiry = crypto_util.notAfter(renewal_candidate.version(
                         "cert", renewal_candidate.latest_common_version()))
@@ -550,6 +558,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             if renewal_candidate:
                 renew_failures.append(renewal_candidate.fullchain)
+                failed_domains.extend(renewal_candidate.names())
 
     # Describe all the results
     _renew_describe_results(config, renew_successes, renew_failures,
@@ -562,6 +571,8 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
     # Windows installer integration tests rely on handle_renewal_request behavior here.
     # If the text below changes, these tests will need to be updated accordingly.
     logger.debug("no renewal failures")
+
+    return (renewed_domains, failed_domains)
 
 
 def _update_renewal_params_from_key(key_path: str, config: configuration.NamespaceConfig) -> None:

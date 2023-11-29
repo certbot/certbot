@@ -301,7 +301,7 @@ def human_readable_cert_info(config: configuration.NamespaceConfig, cert: storag
         return None
     if config.domains and not set(config.domains).issubset(cert.names()):
         return None
-    now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+    now = datetime.datetime.now(pytz.UTC)
 
     reasons = []
     if cert.is_test_cert:

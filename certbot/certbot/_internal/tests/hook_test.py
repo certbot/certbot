@@ -1,6 +1,7 @@
 """Tests for certbot._internal.hooks."""
 import sys
 import unittest
+from platform import python_version_tuple
 from unittest import mock
 
 import pytest
@@ -10,6 +11,18 @@ from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
+from typing import List
+
+
+def pyver_lt(major: int, minor: int):
+    pymajor = int(python_version_tuple()[0])
+    pyminor = int(python_version_tuple()[1])
+    if pymajor < major:
+        return True
+    elif pymajor > major:
+        return False
+    else:
+        return pyminor < minor
 
 
 class ValidateHooksTest(unittest.TestCase):
@@ -194,7 +207,7 @@ class PostHookTest(HookTest):
     def test_certonly_and_run_with_hook(self):
         for verb in ("certonly", "run",):
             self.config.verb = verb
-            mock_execute = self._call_with_mock_execute(self.config)
+            mock_execute = self._call_with_mock_execute(self.config, [])
             mock_execute.assert_called_once_with("post-hook", self.config.post_hook, env=mock.ANY)
             assert not self._get_eventually()
 
@@ -202,8 +215,14 @@ class PostHookTest(HookTest):
         self.config.post_hook = None
         for verb in ("certonly", "run",):
             self.config.verb = verb
-            assert not self._call_with_mock_execute(self.config).called
+            assert not self._call_with_mock_execute(self.config, []).called
             assert not self._get_eventually()
+
+    @unittest.skipIf(pyver_lt(3, 8), "Python 3.8+ required for this test.")
+    def test_renew_env(self):
+        self.config.verb = "certonly"
+        args = self._call_with_mock_execute(self.config, ["success.org"]).call_args
+        assert args.kwargs['env']["RENEWED_DOMAINS"] == "success.org"
 
     def test_renew_disabled_dir_hooks(self):
         self.config.directory_hooks = False
@@ -238,7 +257,7 @@ class PostHookTest(HookTest):
         self.config.verb = "renew"
 
         for _ in range(2):
-            self._call(self.config)
+            self._call(self.config, [])
             assert self._get_eventually() == expected
 
     def _get_eventually(self):
@@ -252,7 +271,10 @@ class RunSavedPostHooksTest(HookTest):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot._internal.hooks import run_saved_post_hooks
-        return run_saved_post_hooks()
+        renewed_domains = kwargs["renewed_domains"] if "renewed_domains" in kwargs else args[0]
+        failed_domains = kwargs["failed_domains"] if "failed_domains" in kwargs else args[1]
+
+        return run_saved_post_hooks(renewed_domains, failed_domains)
 
     def _call_with_mock_execute_and_eventually(self, *args, **kwargs):
         """Call run_saved_post_hooks but mock out execute and eventually
@@ -271,11 +293,11 @@ class RunSavedPostHooksTest(HookTest):
         self.eventually: List[str] = []
 
     def test_empty(self):
-        assert not self._call_with_mock_execute_and_eventually().called
+        assert not self._call_with_mock_execute_and_eventually([], []).called
 
     def test_multiple(self):
         self.eventually = ["foo", "bar", "baz", "qux"]
-        mock_execute = self._call_with_mock_execute_and_eventually()
+        mock_execute = self._call_with_mock_execute_and_eventually([], [])
 
         calls = mock_execute.call_args_list
         for actual_call, expected_arg in zip(calls, self.eventually):
@@ -283,8 +305,15 @@ class RunSavedPostHooksTest(HookTest):
 
     def test_single(self):
         self.eventually = ["foo"]
-        mock_execute = self._call_with_mock_execute_and_eventually()
+        mock_execute = self._call_with_mock_execute_and_eventually([], [])
         mock_execute.assert_called_once_with("post-hook", self.eventually[0], env=mock.ANY)
+
+    @unittest.skipIf(pyver_lt(3, 8), "Python 3.8+ required for this test.")
+    def test_env(self):
+        self.eventually = ["foo"]
+        mock_execute = self._call_with_mock_execute_and_eventually(["success.org"], ["failed.org"])
+        assert mock_execute.call_args.kwargs['env']["RENEWED_DOMAINS"] == "success.org"
+        assert mock_execute.call_args.kwargs['env']["FAILED_DOMAINS"] == "failed.org"
 
 
 class RenewalHookTest(HookTest):

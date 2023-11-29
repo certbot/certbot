@@ -481,8 +481,8 @@ class RenewableCertTests(BaseRenewableCertTest):
                 (1420070400, "10 weeks", True), (1420070400, "10 months", True),
                 (1420070400, "10 years", True), (1420070400, "99 months", True),
         ]:
-            sometime = datetime.datetime.utcfromtimestamp(current_time)
-            mock_datetime.datetime.utcnow.return_value = sometime
+            sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
+            mock_datetime.datetime.now.return_value = sometime
             self.test_rc.configuration["renew_before_expiry"] = interval
             assert self.test_rc.should_autorenew() == result
 
@@ -739,10 +739,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         from certbot._internal import storage
 
         # this month has 30 days, and the next year is a leap year
-        time_1 = pytz.UTC.fromutc(datetime.datetime(2003, 11, 20, 11, 59, 21))
+        time_1 = datetime.datetime(2003, 11, 20, 11, 59, 21, tzinfo=pytz.UTC)
 
         # this month has 31 days, and the next year is not a leap year
-        time_2 = pytz.UTC.fromutc(datetime.datetime(2012, 10, 18, 21, 31, 16))
+        time_2 = datetime.datetime(2012, 10, 18, 21, 31, 16, tzinfo=pytz.UTC)
 
         # in different time zone (GMT+8)
         time_3 = pytz.timezone('Asia/Shanghai').fromutc(
