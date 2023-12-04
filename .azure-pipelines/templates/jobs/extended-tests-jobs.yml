@@ -4,7 +4,7 @@ jobs:
       - name: IMAGE_NAME
         value: ubuntu-22.04
       - name: PYTHON_VERSION
-        value: 3.11
+        value: 3.12
       - group: certbot-common
     strategy:
       matrix:
@@ -14,6 +14,9 @@ jobs:
         linux-py310:
           PYTHON_VERSION: 3.10
           TOXENV: py310
+        linux-py311:
+          PYTHON_VERSION: 3.11
+          TOXENV: py311
         linux-isolated:
           TOXENV: 'isolated-{acme,certbot,apache,cloudflare,digitalocean,dnsimple,dnsmadeeasy,gehirn,google,linode,luadns,nsone,ovh,rfc2136,route53,sakuracloud,nginx}'
         linux-boulder-v2-integration-certbot-oldest:
@@ -34,6 +37,10 @@ jobs:
           ACME_SERVER: boulder-v2
         linux-boulder-v2-py310-integration:
           PYTHON_VERSION: 3.10
+          TOXENV: integration
+          ACME_SERVER: boulder-v2
+        linux-boulder-v2-py311-integration:
+          PYTHON_VERSION: 3.11
           TOXENV: integration
           ACME_SERVER: boulder-v2
         linux-boulder-v2-py311-integration:

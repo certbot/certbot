@@ -1,7 +1,7 @@
 jobs:
   - job: test
     variables:
-      PYTHON_VERSION: 3.11
+      PYTHON_VERSION: 3.12
     strategy:
       matrix:
         macos-py38-cover:
