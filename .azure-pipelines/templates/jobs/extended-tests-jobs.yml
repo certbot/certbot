@@ -43,8 +43,8 @@ jobs:
           PYTHON_VERSION: 3.11
           TOXENV: integration
           ACME_SERVER: boulder-v2
-        linux-boulder-v2-py311-integration:
-          PYTHON_VERSION: 3.11
+        linux-boulder-v2-py312-integration:
+          PYTHON_VERSION: 3.12
           TOXENV: integration
           ACME_SERVER: boulder-v2
         nginx-compat:
