@@ -15,7 +15,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Stop using the deprecated `pkg_resources` API included in `setuptools`.
 
 More details about these changes can be found on our GitHub repo.
 
