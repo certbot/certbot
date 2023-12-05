@@ -185,7 +185,7 @@ class MakeKeyTest(unittest.TestCase):
         from certbot.crypto_util import make_key
 
         # Try a bad key size for RSA and ECDSA
-        with pytest.raises(errors.Error, match='Unsupported RSA key length: 512'):
+        with pytest.raises(errors.Error, match='Unsupported RSA key length: 1024'):
             make_key(bits=1024, key_type='rsa')
 
     def test_bad_elliptic_curve_name(self):
