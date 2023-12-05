@@ -200,7 +200,7 @@ class MakeKeyTest(unittest.TestCase):
         with pytest.raises(errors.Error,
                            match=re.escape('Invalid key_type specified: unf.  Use [rsa|ecdsa]')):
             OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, make_key(key_type='unf'))
+                OpenSSL.crypto.FILETYPE_PEM, make_key(2048, key_type='unf'))
 
 
 class VerifyCertSetup(unittest.TestCase):
