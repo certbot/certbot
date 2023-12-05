@@ -186,7 +186,7 @@ class MakeKeyTest(unittest.TestCase):
 
         # Try a bad key size for RSA and ECDSA
         with pytest.raises(errors.Error, match='Unsupported RSA key length: 512'):
-            make_key(bits=512, key_type='rsa')
+            make_key(bits=1024, key_type='rsa')
 
     def test_bad_elliptic_curve_name(self):
         from certbot.crypto_util import make_key
@@ -200,7 +200,7 @@ class MakeKeyTest(unittest.TestCase):
         with pytest.raises(errors.Error,
                            match=re.escape('Invalid key_type specified: unf.  Use [rsa|ecdsa]')):
             OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, make_key(1024, key_type='unf'))
+                OpenSSL.crypto.FILETYPE_PEM, make_key(key_type='unf'))
 
 
 class VerifyCertSetup(unittest.TestCase):
