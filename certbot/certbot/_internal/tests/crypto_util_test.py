@@ -168,7 +168,7 @@ class MakeKeyTest(unittest.TestCase):
         from certbot.crypto_util import make_key
 
         # Do not test larger keys as it takes too long.
-        OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
+        OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, make_key(2048))
 
     def test_ec(self):  # pylint: disable=no-self-use
         # ECDSA Key Type Tests
