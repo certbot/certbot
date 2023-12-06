@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Support for Python 3.12 was added.
 
 ### Changed
 
@@ -22,7 +22,6 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* Support for Python 3.12 was added.
 * Added support for [Alpine Linux](https://www.alpinelinux.org) distribution when is used the apache plugin
 
 ### Changed
