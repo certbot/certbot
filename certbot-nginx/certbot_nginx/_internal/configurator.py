@@ -701,8 +701,8 @@ class NginxConfigurator(common.Configurator):
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
         le_key = crypto_util.generate_key(
-            key_size=1024, key_dir=tmp_dir, keyname="key.pem",
-            strict_permissions=self.config.strict_permissions)
+            key_size=2048, key_dir=tmp_dir, keyname="key.pem",
+            strict_permissions=self.config.strict_permissions)S
         assert le_key.file is not None
         key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
