@@ -208,11 +208,11 @@ def import_csr_file(csrfile: str, data: bytes) -> Tuple[int, util.CSR, List[str]
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
-def make_key(bits: int = 1024, key_type: str = "rsa",
+def make_key(bits: int = 2048, key_type: str = "rsa",
              elliptic_curve: Optional[str] = None) -> bytes:
     """Generate PEM encoded RSA|EC key.
 
-    :param int bits: Number of bits if key_type=rsa. At least 1024 for RSA.
+    :param int bits: Number of bits if key_type=rsa. At least 2048 for RSA.
     :param str key_type: The type of key to generate, but be rsa or ecdsa
     :param str elliptic_curve: The elliptic curve to use.
 
@@ -221,7 +221,7 @@ def make_key(bits: int = 1024, key_type: str = "rsa",
     :rtype: str
     """
     if key_type == 'rsa':
-        if bits < 1024:
+        if bits < 2048:
             raise errors.Error("Unsupported RSA key length: {}".format(bits))
 
         key = crypto.PKey()
