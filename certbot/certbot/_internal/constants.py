@@ -84,6 +84,8 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # noqa
     issuance_timeout=90,
     run_deploy_hooks=False,
 
+    restart="true",
+
     # Subparsers
     num=None,
     user_agent=None,

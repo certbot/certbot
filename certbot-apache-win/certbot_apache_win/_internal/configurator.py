@@ -214,6 +214,8 @@ class ApacheConfigurator(common.Installer):
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
+        self.server_restart = args[0].restart
+        logger.info("Server restart:%s", self.server_restart)
 
     @property
     def mod_ssl_conf(self):
@@ -2389,7 +2391,10 @@ class ApacheConfigurator(common.Installer):
 
         """
         self.config_test()
-        self._reload()
+        if self.server_restart == "true":            
+            self._reload()
+        else:
+            logger.info("Not restarting server")
 
     def _reload(self):
         """Reloads the Apache server.

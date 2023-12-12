@@ -470,6 +470,11 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         None, "--iis-cert-name", dest="iis_cert_name",
         help="Certificate name for PFX file."
     )
+    helpful.add(
+        None, "--restart", dest="restart",
+        default=flag_default("restart"), type=str,
+        help="Flag to determine whether to restart the server or not"
+    )
 
     # Deprecated arguments
     helpful.add_deprecated_argument("--os-packages-only", 0)

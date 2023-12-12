@@ -62,6 +62,9 @@ class TomcatConfigurator(common.Installer):
         # Add number of outstanding challenges
         self._chall_out = 0
         self.parser = None
+        self.server_restart = args[0].restart
+        logger.info("Server restart:%s", self.server_restart)
+
     def get_chall_pref(self, unused_domain):
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
@@ -272,58 +275,61 @@ class TomcatConfigurator(common.Installer):
         :raises .PluginError: when server cannot be restarted
 
         """
-        print("*********** ReStart Initiated ********* ")
-        try:
-            if self.conf("service-name"):
-                logger.debug("Restarting tomcat as a service..")
-                if platform.system() in ('Windows'):
-                    service_name = self.conf("service-name")
-                    logger.debug("Service Name: "+service_name)
-                    logger.debug("Checking initial Service status ")
-                    status = self._get_service_status(service_name)
-                    if "RUNNING" in status:
-                        logger.debug("Stopping tomcat service ")
-                        value = subprocess.call('''sc stop ''' + service_name, shell=True)
-                    service_status=self._check_and_wait_service(service_name, "STOPPED")
-                    logger.debug("Service Stop completes with status:- "+service_status)
-                    status = self._get_service_status(service_name)
-                    if "STOPPED" in status:
-                        logger.debug("Starting tomcat service ")
-                        value = subprocess.call('''sc start ''' + service_name, shell=True)
-                    service_status=self._check_and_wait_service(service_name, "RUNNING")
-                    logger.debug("Service Start completes with status:- "+service_status)
-                else:
-                    value = subprocess.call('''service ''' + self.conf("service-name")+''' stop ''', shell=True)
-                    time.sleep(20)
-                    value = subprocess.call('''service ''' + self.conf("service-name")+''' start ''', shell=True)
+        if self.server_restart == "true":
+            print("*********** ReStart Initiated ********* ")
+            try:
+                if self.conf("service-name"):
+                    logger.debug("Restarting tomcat as a service..")
+                    if platform.system() in ('Windows'):
+                        service_name = self.conf("service-name")
+                        logger.debug("Service Name: "+service_name)
+                        logger.debug("Checking initial Service status ")
+                        status = self._get_service_status(service_name)
+                        if "RUNNING" in status:
+                            logger.debug("Stopping tomcat service ")
+                            value = subprocess.call('''sc stop ''' + service_name, shell=True)
+                        service_status=self._check_and_wait_service(service_name, "STOPPED")
+                        logger.debug("Service Stop completes with status:- "+service_status)
+                        status = self._get_service_status(service_name)
+                        if "STOPPED" in status:
+                            logger.debug("Starting tomcat service ")
+                            value = subprocess.call('''sc start ''' + service_name, shell=True)
+                        service_status=self._check_and_wait_service(service_name, "RUNNING")
+                        logger.debug("Service Start completes with status:- "+service_status)
+                    else:
+                        value = subprocess.call('''service ''' + self.conf("service-name")+''' stop ''', shell=True)
+                        time.sleep(20)
+                        value = subprocess.call('''service ''' + self.conf("service-name")+''' start ''', shell=True)
 
-            else:
-                os.environ["CATALINA_HOME"] = (os.path.dirname(os.path.dirname(filesystem.realpath(self.conf("ctl")))))
-                os.environ["CATALINA_BASE"] = (os.path.dirname(filesystem.realpath(self.conf("server-root"))))
-                logger.debug("Restarting tomcat as a process")
-                if platform.system() in ('Windows'):
-                    command = self.conf("ctl")
-                    logger.debug("tomcat process shutdown command: "+command)
-                    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,universal_newlines=True, env=None,shell = True)
-                    out, err = p.communicate() 
-                    logger.debug("tomcat process shutdown returncode:"+str(p.returncode))     
-                    if p.returncode != 0:
-                        logger.debug("command returncode:"+str(p.returncode))
-                        logger.debug(err)
-                        logger.debug(out)
-                        raise Exception("Fail to stop tomcat")                    
-                    time.sleep(20)
-                    command = command.replace("shutdown.bat", "startup.bat")
-                    logger.debug("tomcat process startup command: "+command)
-                    with open(os.devnull, 'w')  as FNULL:
-                        value = subprocess.call(command,stdout=FNULL, stderr=FNULL, shell=True)
-                        logger.debug("tomcat process startup returncode:"+str(value))     
                 else:
-                    value = subprocess.call(self.conf("ctl"), shell=True)
-                    time.sleep(20)
-                    value = subprocess.call(self.conf("ctl").replace("shutdown.sh", "startup.sh"), shell=True)
-        except (OSError, ValueError):
-            raise errors.MisconfigurationError("Tomcat restart failed")
+                    os.environ["CATALINA_HOME"] = (os.path.dirname(os.path.dirname(filesystem.realpath(self.conf("ctl")))))
+                    os.environ["CATALINA_BASE"] = (os.path.dirname(filesystem.realpath(self.conf("server-root"))))
+                    logger.debug("Restarting tomcat as a process")
+                    if platform.system() in ('Windows'):
+                        command = self.conf("ctl")
+                        logger.debug("tomcat process shutdown command: "+command)
+                        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,universal_newlines=True, env=None,shell = True)
+                        out, err = p.communicate() 
+                        logger.debug("tomcat process shutdown returncode:"+str(p.returncode))     
+                        if p.returncode != 0:
+                            logger.debug("command returncode:"+str(p.returncode))
+                            logger.debug(err)
+                            logger.debug(out)
+                            raise Exception("Fail to stop tomcat")                    
+                        time.sleep(20)
+                        command = command.replace("shutdown.bat", "startup.bat")
+                        logger.debug("tomcat process startup command: "+command)
+                        with open(os.devnull, 'w')  as FNULL:
+                            value = subprocess.call(command,stdout=FNULL, stderr=FNULL, shell=True)
+                            logger.debug("tomcat process startup returncode:"+str(value))     
+                    else:
+                        value = subprocess.call(self.conf("ctl"), shell=True)
+                        time.sleep(20)
+                        value = subprocess.call(self.conf("ctl").replace("shutdown.sh", "startup.sh"), shell=True)
+            except (OSError, ValueError):
+                raise errors.MisconfigurationError("Tomcat restart failed")
+        else:
+            logger.info("Not restarting server")
 
     def more_info(self):
         """Human-readable string to help understand the module"""

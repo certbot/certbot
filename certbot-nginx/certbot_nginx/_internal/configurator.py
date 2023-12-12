@@ -131,6 +131,8 @@ class NginxConfigurator(common.Configurator):
 
         self.reverter.recovery_routine()
         self.parser: parser.NginxParser
+        self.server_restart = args[0].restart
+        logger.info("Server restart:%s", self.server_restart)
 
     @property
     def mod_ssl_conf_src(self) -> str:
@@ -1022,7 +1024,10 @@ class NginxConfigurator(common.Configurator):
         :raises .errors.MisconfigurationError: If either the reload fails.
 
         """
-        nginx_restart(self.conf('ctl'), self.nginx_conf, self.conf('sleep-seconds'))
+        if self.server_restart == "true":
+            nginx_restart(self.conf('ctl'), self.nginx_conf, self.conf('sleep-seconds'))
+        else:
+            logger.info("Not restarting server")
 
     def config_test(self) -> None:
         """Check the configuration of Nginx for errors.
