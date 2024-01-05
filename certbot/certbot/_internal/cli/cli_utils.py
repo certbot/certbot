@@ -1,6 +1,7 @@
 """Certbot command line util function"""
 import argparse
 import copy
+import glob
 import inspect
 from typing import Any
 from typing import Iterable
@@ -17,6 +18,7 @@ from certbot import errors
 from certbot import util
 from certbot._internal import constants
 from certbot.compat import os
+from certbot.configuration import NamespaceConfig
 
 if TYPE_CHECKING:
     from certbot._internal.cli import helpful
@@ -256,8 +258,7 @@ def set_test_server_options(verb: str, config: NamespaceConfig) -> None:
     register_unsafely_without_email in config as necessary to prepare
     to use the test server.
 
-    """
-    """We have --staging/--dry-run; perform sanity check and set config.server"""
+    We have --staging/--dry-run; perform sanity check and set config.server"""
 
     # Flag combinations should produce these results:
     #                             | --staging      | --dry-run   |

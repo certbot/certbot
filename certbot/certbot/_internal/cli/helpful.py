@@ -2,7 +2,6 @@
 
 import argparse
 import functools
-import glob
 import sys
 from typing import Any
 from typing import Dict
@@ -31,7 +30,6 @@ from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
 from certbot._internal.display import obj as display_obj
 from certbot._internal.plugins import disco
-from certbot.compat import os
 from certbot.configuration import ArgumentSource
 from certbot.configuration import NamespaceConfig
 
@@ -319,6 +317,9 @@ class HelpfulArgumentParser:
         return config
 
     def set_test_server(self, config: NamespaceConfig) -> None:
+        """Updates server, break_my_certs, staging, tos, and
+        register_unsafely_without_email in config as necessary to prepare
+        to use the test server."""
         return set_test_server_options(self.verb, config)
 
     def handle_csr(self, config: NamespaceConfig) -> None:
