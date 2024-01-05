@@ -250,3 +250,37 @@ def nonnegative_int(value: str) -> int:
     if int_value < 0:
         raise argparse.ArgumentTypeError("value must be non-negative")
     return int_value
+
+def set_test_server_options(verb: str, config: NamespaceConfig) -> None:
+    """Updates server, break_my_certs, staging, tos, and
+    register_unsafely_without_email in config as necessary to prepare
+    to use the test server.
+
+    """
+    """We have --staging/--dry-run; perform sanity check and set config.server"""
+
+    # Flag combinations should produce these results:
+    #                             | --staging      | --dry-run   |
+    # ------------------------------------------------------------
+    # | --server acme-v02         | Use staging    | Use staging |
+    # | --server acme-staging-v02 | Use staging    | Use staging |
+    # | --server <other>          | Conflict error | Use <other> |
+
+    default_servers = (flag_default("server"), constants.STAGING_URI)
+
+    if config.staging and config.server not in default_servers:
+        raise errors.Error("--server value conflicts with --staging")
+
+    if config.server == flag_default("server"):
+        config.server = constants.STAGING_URI
+
+    if config.dry_run:
+        if verb not in ["certonly", "renew", "reconfigure"]:
+            raise errors.Error("--dry-run currently only works with the "
+                               "'certonly' or 'renew' subcommands (%r)" % verb)
+        config.break_my_certs = config.staging = True
+        if glob.glob(os.path.join(config.config_dir, constants.ACCOUNTS_DIR, "*")):
+            # The user has a prod account, but might not have a staging
+            # one; we don't want to start trying to perform interactive registration
+            config.tos = True
+            config.register_unsafely_without_email = True

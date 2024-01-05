@@ -1727,10 +1727,8 @@ def reconfigure(config: configuration.NamespaceConfig,
     # to say nothing of the difficulty in explaining what exactly this subcommand can modify
 
 
-    # To make sure that the requested changes work, do a dry run. While setting up the dry run,
-    # we will set all the needed fields in config, which will then be saved upon success.
-    config.dry_run = True
-
+    # To make sure that the requested changes work, we're going to do a dry run, and only save
+    # upon success. First, modify the config as the user requested.
     if not config.certname:
         certname_question = "Which certificate would you like to reconfigure?"
         config.certname = cert_manager.get_certnames(
@@ -1774,15 +1772,23 @@ def reconfigure(config: configuration.NamespaceConfig,
 
     # this is where lineage_config gets fully filled out (e.g. --apache will set auth and installer)
     installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
-    le_client = _init_le_client(lineage_config, auth, installer)
+
+    # make a deep copy of lineage_config because we're about to modify it for a test dry run
+    dry_run_lineage_config = copy.deepcopy(lineage_config)
+
+    dry_run_lineage_config.dry_run = True
+    cli.set_test_server_options("reconfigure", dry_run_lineage_config)
+
+    le_client = _init_le_client(dry_run_lineage_config, auth, installer)
 
     # renews cert as dry run to test that the new values are ok
     # at this point, renewal_candidate.configuration has the old values, but will use
     # the values from lineage_config when doing the dry run
-    _get_and_save_cert(le_client, lineage_config, certname=certname,
+    _get_and_save_cert(le_client, dry_run_lineage_config, certname=certname,
         lineage=renewal_candidate)
 
     # this function will update lineage.configuration with the new values, and save it to disk
+    # use the pre-dry-run version
     renewal_candidate.save_new_config_values(lineage_config)
 
     _report_reconfigure_results(renewal_file, orig_renewal_conf)

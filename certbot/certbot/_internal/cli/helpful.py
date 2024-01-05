@@ -26,6 +26,7 @@ from certbot._internal.cli.cli_utils import add_domains
 from certbot._internal.cli.cli_utils import CustomHelpFormatter
 from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
+from certbot._internal.cli.cli_utils import set_test_server_options
 from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
 from certbot._internal.display import obj as display_obj
@@ -318,33 +319,7 @@ class HelpfulArgumentParser:
         return config
 
     def set_test_server(self, config: NamespaceConfig) -> None:
-        """We have --staging/--dry-run; perform sanity check and set config.server"""
-
-        # Flag combinations should produce these results:
-        #                             | --staging      | --dry-run   |
-        # ------------------------------------------------------------
-        # | --server acme-v02         | Use staging    | Use staging |
-        # | --server acme-staging-v02 | Use staging    | Use staging |
-        # | --server <other>          | Conflict error | Use <other> |
-
-        default_servers = (flag_default("server"), constants.STAGING_URI)
-
-        if config.staging and config.server not in default_servers:
-            raise errors.Error("--server value conflicts with --staging")
-
-        if config.server == flag_default("server"):
-            config.server = constants.STAGING_URI
-
-        if config.dry_run:
-            if self.verb not in ["certonly", "renew"]:
-                raise errors.Error("--dry-run currently only works with the "
-                                   "'certonly' or 'renew' subcommands (%r)" % self.verb)
-            config.break_my_certs = config.staging = True
-            if glob.glob(os.path.join(config.config_dir, constants.ACCOUNTS_DIR, "*")):
-                # The user has a prod account, but might not have a staging
-                # one; we don't want to start trying to perform interactive registration
-                config.tos = True
-                config.register_unsafely_without_email = True
+        return set_test_server_options(self.verb, config)
 
     def handle_csr(self, config: NamespaceConfig) -> None:
         """Process a --csr flag."""
