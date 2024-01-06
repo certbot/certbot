@@ -32,13 +32,15 @@ def construct_nginx_config(nginx_root: str, nginx_webroot: str, http_port: int, 
     if not key_path:
         file_manager = ExitStack()
         atexit.register(file_manager.close)
-        ref = importlib_resources.files('certbot_integration_tests').joinpath('assets', 'key.pem')
+        ref = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+               .joinpath('key.pem'))
         key_path = str(file_manager.enter_context(importlib_resources.as_file(ref)))
 
     if not cert_path:
         file_manager = ExitStack()
         atexit.register(file_manager.close)
-        ref = importlib_resources.files('certbot_integration_tests').joinpath('assets', 'cert.pem')
+        ref = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+               .joinpath('cert.pem'))
         cert_path = str(file_manager.enter_context(importlib_resources.as_file(ref)))
 
     return '''\
