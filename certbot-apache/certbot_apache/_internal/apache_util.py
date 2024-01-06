@@ -257,6 +257,6 @@ def find_ssl_apache_conf(prefix: str) -> str:
     """
     file_manager = ExitStack()
     atexit.register(file_manager.close)
-    ref = importlib_resources.files("certbot_apache").joinpath(
-        "_internal", "tls_configs", "{0}-options-ssl-apache.conf".format(prefix))
+    ref = (importlib_resources.files("certbot_apache").joinpath("_internal")
+           .joinpath("tls_configs").joinpath("{0}-options-ssl-apache.conf".format(prefix)))
     return str(file_manager.enter_context(importlib_resources.as_file(ref)))

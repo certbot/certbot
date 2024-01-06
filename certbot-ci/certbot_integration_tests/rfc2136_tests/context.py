@@ -48,9 +48,8 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         :yields: Path to credentials file
         :rtype: str
         """
-        src_ref_file = importlib_resources.files('certbot_integration_tests').joinpath(
-            'assets', 'bind-config', f'rfc2136-credentials-{label}.ini.tpl'
-        )
+        src_ref_file = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+                        .joinpath('bind-config').joinpath(f'rfc2136-credentials-{label}.ini.tpl'))
         with importlib_resources.as_file(src_ref_file) as src_file:
             with open(src_file, 'r') as f:
                 contents = f.read().format(
