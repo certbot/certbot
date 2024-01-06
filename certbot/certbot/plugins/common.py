@@ -465,7 +465,7 @@ def dir_setup(test_dir: str, pkg: str) -> Tuple[str, str, str]:  # pragma: no co
     filesystem.chmod(config_dir, constants.CONFIG_DIRS_MODE)
     filesystem.chmod(work_dir, constants.CONFIG_DIRS_MODE)
 
-    test_dir_ref = importlib_resources.files(pkg).joinpath("testdata", test_dir)
+    test_dir_ref = importlib_resources.files(pkg).joinpath("testdata").joinpath(test_dir)
     with importlib_resources.as_file(test_dir_ref) as path:
         shutil.copytree(
             path, os.path.join(temp_dir, test_dir), symlinks=True)
