@@ -18,7 +18,6 @@ from certbot import errors
 from certbot import util
 from certbot._internal import constants
 from certbot.compat import os
-from certbot.configuration import NamespaceConfig
 
 if TYPE_CHECKING:
     from certbot._internal.cli import helpful
@@ -253,12 +252,21 @@ def nonnegative_int(value: str) -> int:
         raise argparse.ArgumentTypeError("value must be non-negative")
     return int_value
 
-def set_test_server_options(verb: str, config: NamespaceConfig) -> None:
+def set_test_server_options(verb: str, config: configuration.NamespaceConfig) -> None:
     """Updates server, break_my_certs, staging, tos, and
     register_unsafely_without_email in config as necessary to prepare
     to use the test server.
 
-    We have --staging/--dry-run; perform sanity check and set config.server"""
+    We have --staging/--dry-run; perform sanity check and set config.server
+
+    :param str verb: subcommand called
+
+    :param config: parsed command line arguments
+    :type config: configuration.NamespaceConfig
+
+    :raises errors.Error: if non-default server is used and --staging is set
+    :raises errors.Error: if inapplicable verb is used and --dry-run is set
+    """
 
     # Flag combinations should produce these results:
     #                             | --staging      | --dry-run   |
