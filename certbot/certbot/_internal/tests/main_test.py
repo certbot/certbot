@@ -563,7 +563,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
             # Options used in the renewal process
             [renewalparams]
             account = ee43634db0aa4e6804f152be39990e6a
-            server = https://acme-staging-v02.api.letsencrypt.org/directory
+            server = https://acme-v02.api.letsencrypt.org/directory
             authenticator = nginx
             installer = nginx
             key_type = rsa
@@ -620,6 +620,35 @@ class ReconfigureTest(test_util.TempDirTestCase):
 
         new_config = self._call('--cert-name example.com --apache'.split())
         assert new_config['renewalparams']['authenticator'] == 'apache'
+
+    def test_only_intended_changes(self):
+        # Check that we don't accidentally modify anything that we didn't mean to
+        named_mock = mock.Mock()
+        named_mock.name = 'apache'
+
+        self.mocks['pick_installer'].return_value = named_mock
+        self.mocks['pick_auth'].return_value = named_mock
+        self.mocks['find_init'].return_value = named_mock
+
+        new_config = self._call('--cert-name example.com --apache'.split())
+        # Undo the changes we made in calling and in testing
+        new_config['renewalparams']['authenticator'] = 'nginx'
+        new_config['renewalparams']['installer'] = 'nginx'
+        del new_config['renewalparams']['config_dir']
+        new_config['version'] = self.original_config['version']
+
+        assert new_config == self.original_config
+
+    @mock.patch('certbot._internal.hooks.validate_hooks')
+    def test_staging_used(self, unused_validate_hooks):
+        """ Check that we use the staging server for the dry run"""
+        assert self.original_config['renewalparams']['server'] == \
+            'https://acme-v02.api.letsencrypt.org/directory'
+
+        new_config = self._call('--cert-name example.com --pre-hook'.split() + ['echo pre'])
+
+        assert 'staging' in self.mocks['_init_le_client'].call_args.args[0].server
+        assert 'staging' in self.mocks['_get_and_save_cert'].call_args.args[1].server
 
     @mock.patch('certbot._internal.hooks.validate_hooks')
     def test_update_hooks(self, unused_validate_hooks):
