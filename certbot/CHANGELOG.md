@@ -16,6 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Updates `joinpath` syntax to only use one addition per call, because the multiple inputs
   version was causing mypy errors on Python 3.10.
+* Makes the `reconfigure` verb actually use the staging server for the dry run to check the new
+  configuration.
 
 More details about these changes can be found on our GitHub repo.
 
