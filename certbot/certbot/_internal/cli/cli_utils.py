@@ -274,6 +274,9 @@ def set_test_server_options(verb: str, config: NamespaceConfig) -> None:
 
     if config.server == flag_default("server"):
         config.server = constants.STAGING_URI
+        # If the account has already been loaded (such as by calling reconstitute before this),
+        # clear it so that we don't try to use the prod account on the staging server.
+        config.account = None
 
     if config.dry_run:
         if verb not in ["certonly", "renew", "reconfigure"]:
