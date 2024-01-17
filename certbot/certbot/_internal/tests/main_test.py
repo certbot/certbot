@@ -622,7 +622,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
         assert new_config['renewalparams']['authenticator'] == 'apache'
 
     def test_only_intended_changes(self):
-        # Check that we don't accidentally modify anything that we didn't mean to
+        """ Check that we don't accidentally modify anything that we didn't mean to """
         named_mock = mock.Mock()
         named_mock.name = 'apache'
 
@@ -641,14 +641,25 @@ class ReconfigureTest(test_util.TempDirTestCase):
 
     @mock.patch('certbot._internal.hooks.validate_hooks')
     def test_staging_used(self, unused_validate_hooks):
-        """ Check that we use the staging server for the dry run"""
+        """ Check that we use the staging server for the dry run """
         assert self.original_config['renewalparams']['server'] == \
             'https://acme-v02.api.letsencrypt.org/directory'
 
-        new_config = self._call('--cert-name example.com --pre-hook'.split() + ['echo pre'])
+        self._call('--cert-name example.com --pre-hook'.split() + ['echo pre'])
 
         assert 'staging' in self.mocks['_init_le_client'].call_args.args[0].server
         assert 'staging' in self.mocks['_get_and_save_cert'].call_args.args[1].server
+
+    def test_account_updates(self):
+        """ Even though we can't run the dry run with the new account id, it should still
+            update in the renewal conf file.
+        """
+        assert self.original_config['renewalparams']['server'] == \
+            'https://acme-v02.api.letsencrypt.org/directory'
+
+        newaccountid = 'newaccountid'
+        new_config = self._call(f'--cert-name example.com --account {newaccountid}'.split())
+        assert new_config['renewalparams']['account'] == newaccountid
 
     @mock.patch('certbot._internal.hooks.validate_hooks')
     def test_update_hooks(self, unused_validate_hooks):
