@@ -1776,6 +1776,10 @@ def reconfigure(config: configuration.NamespaceConfig,
     # make a deep copy of lineage_config because we're about to modify it for a test dry run
     dry_run_lineage_config = copy.deepcopy(lineage_config)
 
+    # we also set noninteractive_mode to more accurately simulate renewal (since `certbot renew`
+    # implies noninteractive mode) and to avoid prompting the user as changes made to
+    # dry_run_lineage_config beyond this point will not be applied to the original lineage_config
+    dry_run_lineage_config.noninteractive_mode = True
     dry_run_lineage_config.dry_run = True
     cli.set_test_server_options("reconfigure", dry_run_lineage_config)
 
