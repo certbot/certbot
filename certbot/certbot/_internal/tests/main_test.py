@@ -650,16 +650,35 @@ class ReconfigureTest(test_util.TempDirTestCase):
         assert 'staging' in self.mocks['_init_le_client'].call_args.args[0].server
         assert 'staging' in self.mocks['_get_and_save_cert'].call_args.args[1].server
 
-    def test_account_updates(self):
-        """ Even though we can't run the dry run with the new account id, it should still
-            update in the renewal conf file.
+    def test_account_or_server_errors(self):
+        """ Check that we error when the account id or server is specified
         """
-        assert self.original_config['renewalparams']['server'] == \
-            'https://acme-v02.api.letsencrypt.org/directory'
+        orig_account_id = self.original_config['renewalparams']['account']
+        orig_server = self.original_config['renewalparams']['server']
 
-        newaccountid = 'newaccountid'
-        new_config = self._call(f'--cert-name example.com --account {newaccountid}'.split())
-        assert new_config['renewalparams']['account'] == newaccountid
+        # new account
+        for account_id in orig_account_id, 'new_account_id':
+            try:
+                self._call(f'--cert-name example.com --account {account_id}'.split())
+            except errors.ConfigurationError as err:
+                assert "Using reconfigure to change the ACME account" in str(err)
+
+            # check that config isn't modified
+            with open(self.renewal_file, 'r') as f:
+                new_config = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
+            assert new_config['renewalparams']['account'] == orig_account_id
+
+        # new server
+        for server in orig_server, 'new_server.com':
+            try:
+                self._call(f'--cert-name example.com --server {server}'.split())
+            except errors.ConfigurationError as err:
+                assert "Using reconfigure to change the ACME account" in str(err)
+
+            # check that config isn't modified
+            with open(self.renewal_file, 'r') as f:
+                new_config = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
+            assert new_config['renewalparams']['server'] == orig_server
 
     @mock.patch('certbot._internal.hooks.validate_hooks')
     def test_update_hooks(self, unused_validate_hooks):
