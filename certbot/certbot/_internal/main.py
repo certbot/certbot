@@ -1726,14 +1726,6 @@ def reconfigure(config: configuration.NamespaceConfig,
     # --cert-name, there's enough complexity with matching certs to domains that it's not worth it,
     # to say nothing of the difficulty in explaining what exactly this subcommand can modify
 
-    for param in ('account', 'server',):
-        if config.set_by_user(param):
-            msg = ("Using reconfigure to change the ACME account or server is not supported. "
-                   "If you would like to do so, use certonly with the --force-renewal flag instead "
-                   "of reconfigure. Note that doing so will count against any rate limits. For "
-                   "more information on this method, see "
-                   "https://certbot.org/certonly-reconfiguration")
-            raise errors.ConfigurationError(msg)
 
     # To make sure that the requested changes work, we're going to do a dry run, and only save
     # upon success. First, modify the config as the user requested.
@@ -1777,6 +1769,21 @@ def reconfigure(config: configuration.NamespaceConfig,
             f"(cert: {certname}) produced an unexpected error: {e}.")
     if not renewal_candidate:
         raise errors.ConfigurationError("Could not load certificate. See logs for errors.")
+
+    renewalparams = orig_renewal_conf['renewalparams']
+    # If server was set but hasn't changed and no account is loaded,
+    # load the old account because reconstitute won't have
+    if lineage_config.set_by_user('server') and lineage_config.server == renewalparams['server']\
+        and lineage_config.account is None:
+        lineage_config.account = renewalparams['account']
+    for param in ('account', 'server',):
+        if getattr(lineage_config, param) != renewalparams.get(param):
+            msg = ("Using reconfigure to change the ACME account or server is not supported. "
+                   "If you would like to do so, use certonly with the --force-renewal flag instead "
+                   "of reconfigure. Note that doing so will count against any rate limits. For "
+                   "more information on this method, see "
+                   "https://certbot.org/certonly-reconfiguration")
+            raise errors.ConfigurationError(msg)
 
     # this is where lineage_config gets fully filled out (e.g. --apache will set auth and installer)
     installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
