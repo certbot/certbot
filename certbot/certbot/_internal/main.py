@@ -1779,7 +1779,7 @@ def reconfigure(config: configuration.NamespaceConfig,
     for param in ('account', 'server',):
         if getattr(lineage_config, param) != renewalparams.get(param):
             msg = ("Using reconfigure to change the ACME account or server is not supported. "
-                   "If you would like to do so, use certonly with the --force-renewal flag instead "
+                   "If you would like to do so, use renew with the --force-renewal flag instead "
                    "of reconfigure. Note that doing so will count against any rate limits. For "
                    "more information on this method, see "
                    "https://certbot.org/certonly-reconfiguration")
