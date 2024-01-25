@@ -1782,7 +1782,7 @@ def reconfigure(config: configuration.NamespaceConfig,
                    "If you would like to do so, use renew with the --force-renewal flag instead "
                    "of reconfigure. Note that doing so will count against any rate limits. For "
                    "more information on this method, see "
-                   "https://certbot.org/certonly-reconfiguration")
+                   "https://certbot.org/renew-reconfiguration")
             raise errors.ConfigurationError(msg)
 
     # this is where lineage_config gets fully filled out (e.g. --apache will set auth and installer)
