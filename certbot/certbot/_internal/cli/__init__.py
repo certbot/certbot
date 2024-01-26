@@ -36,6 +36,7 @@ from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
 from certbot._internal.cli.cli_utils import nonnegative_int
 from certbot._internal.cli.cli_utils import parse_preferred_challenges
 from certbot._internal.cli.cli_utils import read_file
+from certbot._internal.cli.cli_utils import set_test_server_options
 from certbot._internal.cli.group_adder import _add_all_groups
 from certbot._internal.cli.helpful import HelpfulArgumentParser
 from certbot._internal.cli.paths_parser import _paths_parser
