@@ -7,6 +7,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * Support for Python 3.12 was added.
+* Enable http/2 in nginx configuration files
 
 ### Changed
 
