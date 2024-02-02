@@ -325,6 +325,7 @@ dns-multi_         Y    N    DNS authentication of 100+ providers using go-acme/
 dns-dnsmanager_    Y    N    DNS Authentication for dnsmanager.io
 standalone-nfq_    Y    N    HTTP Authentication that works with any webserver (Linux only)
 dns-solidserver_   Y    N    DNS Authentication using SOLIDserver (EfficientIP)
+dns-stackit_       Y    N    DNS Authentication using STACKIT DNS
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -351,6 +352,7 @@ dns-solidserver_   Y    N    DNS Authentication using SOLIDserver (EfficientIP)
 .. _dns-dnsmanager: https://github.com/stayallive/certbot-dns-dnsmanager
 .. _standalone-nfq: https://github.com/alexzorin/certbot-standalone-nfq
 .. _dns-solidserver: https://gitlab.com/charlyhong/certbot-dns-solidserver
+.. _dns-stackit: https://github.com/stackitcloud/certbot-dns-stackit
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
