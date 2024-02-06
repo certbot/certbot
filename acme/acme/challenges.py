@@ -252,7 +252,8 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         """
         verified = self.verify(chall, account_public_key)
         if not verified:
-            logger.debug("Verification of key authorization in response failed")
+            logger.debug(
+                "Verification of key authorization in response failed")
         return verified
 
 
@@ -290,7 +291,11 @@ class DNSACCOUNT01Response(KeyAuthorizationChallengeResponse):
     """ACME dns-account-01 challenge response."""
     typ = "dns-account-01"
 
-    def simple_verify(self, chall: 'DNSACCOUNT01', domain: str, account_public_key: jose.JWK) -> bool:  # pylint: disable=unused-argument
+    def simple_verify(self,
+                      chall: 'DNSACCOUNT01',
+                      domain: str,  # pylint: disable=unused-argument
+                      account_public_key: jose.JWK
+                      ) -> bool:
         """Simple verify.
 
         This method no longer checks DNS records and is a simple wrapper
@@ -308,7 +313,8 @@ class DNSACCOUNT01Response(KeyAuthorizationChallengeResponse):
         """
         verified = self.verify(chall, account_public_key)
         if not verified:
-            logger.debug("Verification of key authorization in response failed")
+            logger.debug(
+                "Verification of key authorization in response failed")
         return verified
 
 
@@ -339,7 +345,8 @@ class DNSACCOUNT01(KeyAuthorizationChallenge):
         :rtype: str
 
         """
-        acctLabel = base64.b32encode(hashlib.sha256(acctURI.encode()).digest()[:10]).decode().lower()
+        acctLabel = base64.b32encode(hashlib.sha256(
+            acctURI.encode()).digest()[:10]).decode().lower()
         return f"_{acctLabel}.{self.LABEL}.{name}"
 
 
@@ -376,7 +383,8 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
 
         """
         if not self.verify(chall, account_public_key):
-            logger.debug("Verification of key authorization in response failed")
+            logger.debug(
+                "Verification of key authorization in response failed")
             return False
 
         # TODO: ACME specification defines URI template that doesn't
@@ -572,7 +580,8 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
 
         """
         if not self.verify(chall, account_public_key):
-            logger.debug("Verification of key authorization in response failed")
+            logger.debug(
+                "Verification of key authorization in response failed")
             return False
 
         if cert is None:
