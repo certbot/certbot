@@ -1,5 +1,6 @@
 """ACME Identifier Validation Challenges."""
 import abc
+import base64
 import codecs
 import functools
 import hashlib
@@ -282,6 +283,64 @@ class DNS01(KeyAuthorizationChallenge):
 
         """
         return f"{self.LABEL}.{name}"
+
+
+@ChallengeResponse.register
+class DNSACCOUNT01Response(KeyAuthorizationChallengeResponse):
+    """ACME dns-account-01 challenge response."""
+    typ = "dns-account-01"
+
+    def simple_verify(self, chall: 'DNSACCOUNT01', domain: str, account_public_key: jose.JWK) -> bool:  # pylint: disable=unused-argument
+        """Simple verify.
+
+        This method no longer checks DNS records and is a simple wrapper
+        around `KeyAuthorizationChallengeResponse.verify`.
+
+        :param challenges.DNSACCOUNT01 chall: Corresponding challenge.
+        :param str domain: Domain name being verified.
+        :param JWK account_public_key: Public key for the key pair
+            being authorized.
+
+        :return: ``True`` iff verification of the key authorization was
+            successful.
+        :rtype: bool
+
+        """
+        verified = self.verify(chall, account_public_key)
+        if not verified:
+            logger.debug("Verification of key authorization in response failed")
+        return verified
+
+
+@Challenge.register
+class DNSACCOUNT01(KeyAuthorizationChallenge):
+    """ACME dns-account-01 challenge."""
+    response_cls = DNSACCOUNT01Response
+    typ = response_cls.typ
+
+    LABEL = "_acme-challenge"
+    """Label clients prepend to the domain name being validated."""
+
+    def validation(self, account_key: jose.JWK, **unused_kwargs: Any) -> str:
+        """Generate validation.
+
+        :param JWK account_key:
+        :rtype: str
+
+        """
+        return jose.b64encode(hashlib.sha256(self.key_authorization(
+            account_key).encode("utf-8")).digest()).decode()
+
+    def validation_domain_name(self, acctURI: str, name: str) -> str:
+        """Domain name for TXT validation record.
+
+        :param str acctURI: Account Resource URI.
+        :param str name: Domain name being validated.
+        :rtype: str
+
+        """
+        acctLabel = base64.b32encode(hashlib.sha256(acctURI.encode()).digest()[:10]).decode().lower()
+        return f"_{acctLabel}.{self.LABEL}.{name}"
 
 
 @ChallengeResponse.register
