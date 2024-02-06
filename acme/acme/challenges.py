@@ -1,6 +1,6 @@
 """ACME Identifier Validation Challenges."""
 import abc
-import base64
+from base64 import b32encode
 import codecs
 import functools
 import hashlib
@@ -345,7 +345,7 @@ class DNSACCOUNT01(KeyAuthorizationChallenge):
         :rtype: str
 
         """
-        acctLabel = base64.b32encode(hashlib.sha256(
+        acctLabel = b32encode(hashlib.sha256(
             acctURI.encode()).digest()[:10]).decode().lower()
         return f"_{acctLabel}.{self.LABEL}.{name}"
 
