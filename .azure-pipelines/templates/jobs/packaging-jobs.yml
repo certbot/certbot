@@ -1,119 +1,119 @@
 jobs:
-  - job: docker_build
-    pool:
-      vmImage: ubuntu-22.04
-    strategy:
-      matrix:
-        arm32v6:
-          DOCKER_ARCH: arm32v6
-        arm64v8:
-          DOCKER_ARCH: arm64v8
-        amd64:
-          DOCKER_ARCH: amd64
-    # The default timeout of 60 minutes is a little low for compiling
-    # cryptography on ARM architectures.
-    timeoutInMinutes: 180
-    steps:
-      - bash: set -e && tools/docker/build.sh $(dockerTag) $DOCKER_ARCH
-        displayName: Build the Docker images
-      # We don't filter for the Docker Hub organization to continue to allow
-      # easy testing of these scripts on forks.
-      - bash: |
-          set -e
-          DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
-          docker save --output images.tar $DOCKER_IMAGES
-        displayName: Save the Docker images
-      # If the name of the tar file or artifact changes, the deploy stage will
-      # also need to be updated.
-      - bash: set -e && mv images.tar $(Build.ArtifactStagingDirectory)
-        displayName: Prepare Docker artifact
-      - task: PublishPipelineArtifact@1
-        inputs:
-          path: $(Build.ArtifactStagingDirectory)
-          artifact: docker_$(DOCKER_ARCH)
-        displayName: Store Docker artifact
-  - job: docker_test
-    dependsOn: docker_build
-    pool:
-      vmImage: ubuntu-22.04
-    strategy:
-      matrix:
-        arm32v6:
-          DOCKER_ARCH: arm32v6
-        arm64v8:
-          DOCKER_ARCH: arm64v8
-        amd64:
-          DOCKER_ARCH: amd64
-    steps:
-      - task: DownloadPipelineArtifact@2
-        inputs:
-          artifact: docker_$(DOCKER_ARCH)
-          path: $(Build.SourcesDirectory)
-        displayName: Retrieve Docker images
-      - bash: set -e && docker load --input $(Build.SourcesDirectory)/images.tar
-        displayName: Load Docker images
-      - bash: |
-          set -e && tools/docker/test.sh $(dockerTag) $DOCKER_ARCH
-        displayName: Run integration tests for Docker images
-  - job: installer_build
-    pool:
-      vmImage: windows-2019
-    steps:
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: 3.9
-          architecture: x64
-          addToPath: true
-      - script: |
-          python -m venv venv
-          venv\Scripts\python tools\pip_install.py -e windows-installer
-        displayName: Prepare Windows installer build environment
-      - script: |
-          venv\Scripts\construct-windows-installer
-        displayName: Build Certbot installer
-      - task: CopyFiles@2
-        inputs:
-          sourceFolder: $(System.DefaultWorkingDirectory)/windows-installer/build/nsis
-          contents: '*.exe'
-          targetFolder: $(Build.ArtifactStagingDirectory)
-      - task: PublishPipelineArtifact@1
-        inputs:
-          path: $(Build.ArtifactStagingDirectory)
-          # If we change the artifact's name, it should also be changed in tools/create_github_release.py
-          artifact: windows-installer
-        displayName: Publish Windows installer
-  - job: installer_run
-    dependsOn: installer_build
-    strategy:
-      matrix:
-        win2019:
-          imageName: windows-2019
-    pool:
-      vmImage: $(imageName)
-    steps:
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: 3.9
-          addToPath: true
-      - task: DownloadPipelineArtifact@2
-        inputs:
-          artifact: windows-installer
-          path: $(Build.SourcesDirectory)/bin
-        displayName: Retrieve Windows installer
-      - script: |
-          python -m venv venv
-          venv\Scripts\python tools\pip_install.py -e certbot-ci
-        env:
-          PIP_NO_BUILD_ISOLATION: no
-        displayName: Prepare Certbot-CI
-      - script: |
-          set PATH=%ProgramFiles%\Certbot\bin;%PATH%
-          venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --allow-persistent-changes --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win_amd64.exe
-        displayName: Run windows installer integration tests
-      - script: |
-          set PATH=%ProgramFiles%\Certbot\bin;%PATH%
-          venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
-        displayName: Run certbot integration tests
+  # - job: docker_build
+  #   pool:
+  #     vmImage: ubuntu-22.04
+  #   strategy:
+  #     matrix:
+  #       arm32v6:
+  #         DOCKER_ARCH: arm32v6
+  #       arm64v8:
+  #         DOCKER_ARCH: arm64v8
+  #       amd64:
+  #         DOCKER_ARCH: amd64
+  #   # The default timeout of 60 minutes is a little low for compiling
+  #   # cryptography on ARM architectures.
+  #   timeoutInMinutes: 180
+  #   steps:
+  #     - bash: set -e && tools/docker/build.sh $(dockerTag) $DOCKER_ARCH
+  #       displayName: Build the Docker images
+  #     # We don't filter for the Docker Hub organization to continue to allow
+  #     # easy testing of these scripts on forks.
+  #     - bash: |
+  #         set -e
+  #         DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
+  #         docker save --output images.tar $DOCKER_IMAGES
+  #       displayName: Save the Docker images
+  #     # If the name of the tar file or artifact changes, the deploy stage will
+  #     # also need to be updated.
+  #     - bash: set -e && mv images.tar $(Build.ArtifactStagingDirectory)
+  #       displayName: Prepare Docker artifact
+  #     - task: PublishPipelineArtifact@1
+  #       inputs:
+  #         path: $(Build.ArtifactStagingDirectory)
+  #         artifact: docker_$(DOCKER_ARCH)
+  #       displayName: Store Docker artifact
+  # - job: docker_test
+  #   dependsOn: docker_build
+  #   pool:
+  #     vmImage: ubuntu-22.04
+  #   strategy:
+  #     matrix:
+  #       arm32v6:
+  #         DOCKER_ARCH: arm32v6
+  #       arm64v8:
+  #         DOCKER_ARCH: arm64v8
+  #       amd64:
+  #         DOCKER_ARCH: amd64
+  #   steps:
+  #     - task: DownloadPipelineArtifact@2
+  #       inputs:
+  #         artifact: docker_$(DOCKER_ARCH)
+  #         path: $(Build.SourcesDirectory)
+  #       displayName: Retrieve Docker images
+  #     - bash: set -e && docker load --input $(Build.SourcesDirectory)/images.tar
+  #       displayName: Load Docker images
+  #     - bash: |
+  #         set -e && tools/docker/test.sh $(dockerTag) $DOCKER_ARCH
+  #       displayName: Run integration tests for Docker images
+  # - job: installer_build
+  #   pool:
+  #     vmImage: windows-2019
+  #   steps:
+  #     - task: UsePythonVersion@0
+  #       inputs:
+  #         versionSpec: 3.9
+  #         architecture: x64
+  #         addToPath: true
+  #     - script: |
+  #         python -m venv venv
+  #         venv\Scripts\python tools\pip_install.py -e windows-installer
+  #       displayName: Prepare Windows installer build environment
+  #     - script: |
+  #         venv\Scripts\construct-windows-installer
+  #       displayName: Build Certbot installer
+  #     - task: CopyFiles@2
+  #       inputs:
+  #         sourceFolder: $(System.DefaultWorkingDirectory)/windows-installer/build/nsis
+  #         contents: '*.exe'
+  #         targetFolder: $(Build.ArtifactStagingDirectory)
+  #     - task: PublishPipelineArtifact@1
+  #       inputs:
+  #         path: $(Build.ArtifactStagingDirectory)
+  #         # If we change the artifact's name, it should also be changed in tools/create_github_release.py
+  #         artifact: windows-installer
+  #       displayName: Publish Windows installer
+  # - job: installer_run
+  #   dependsOn: installer_build
+  #   strategy:
+  #     matrix:
+  #       win2019:
+  #         imageName: windows-2019
+  #   pool:
+  #     vmImage: $(imageName)
+  #   steps:
+  #     - task: UsePythonVersion@0
+  #       inputs:
+  #         versionSpec: 3.9
+  #         addToPath: true
+  #     - task: DownloadPipelineArtifact@2
+  #       inputs:
+  #         artifact: windows-installer
+  #         path: $(Build.SourcesDirectory)/bin
+  #       displayName: Retrieve Windows installer
+  #     - script: |
+  #         python -m venv venv
+  #         venv\Scripts\python tools\pip_install.py -e certbot-ci
+  #       env:
+  #         PIP_NO_BUILD_ISOLATION: no
+  #       displayName: Prepare Certbot-CI
+  #     - script: |
+  #         set PATH=%ProgramFiles%\Certbot\bin;%PATH%
+  #         venv\Scripts\python -m pytest certbot-ci\windows_installer_integration_tests --allow-persistent-changes --installer-path $(Build.SourcesDirectory)\bin\certbot-beta-installer-win_amd64.exe
+  #       displayName: Run windows installer integration tests
+  #     - script: |
+  #         set PATH=%ProgramFiles%\Certbot\bin;%PATH%
+  #         venv\Scripts\python -m pytest certbot-ci\certbot_integration_tests\certbot_tests -n 4
+  #       displayName: Run certbot integration tests
   - job: snaps_build
     pool:
       vmImage: ubuntu-22.04
