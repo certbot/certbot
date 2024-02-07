@@ -181,7 +181,8 @@ class ACMEServer:
 
         # Load Boulder from git, that includes a docker-compose.yml ready for production.
         process = self._launch_process(['git', 'clone', 'https://github.com/letsencrypt/boulder',
-                                        '--single-branch', '--depth=1', instance_path])
+                                        '--single-branch', '--depth=1',
+                                        '--branch=release-2024-01-22', instance_path])
         process.wait(MAX_SUBPROCESS_WAIT)
 
         # Allow Boulder to ignore usual limit rate policies, useful for tests.
