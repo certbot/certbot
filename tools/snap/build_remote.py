@@ -240,6 +240,10 @@ def main():
         subprocess.run(['tools/snap/generate_dnsplugins_all.sh'],
                        check=True, cwd=CERTBOT_DIR)
 
+    # Use the legacy remote launchpad build until
+    # https://github.com/certbot/certbot/issues/9890 is fixed
+    os.environ['SNAPCRAFT_REMOTE_BUILD_STRATEGY'] = 'force-fallback'
+
     print('Start remote snap builds...')
     print(f' - archs: {", ".join(archs)}')
     print(f' - projects: {", ".join(sorted(targets))}')
