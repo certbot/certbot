@@ -184,10 +184,6 @@ class ACMEServer:
                                         '--single-branch', '--depth=1', instance_path])
         process.wait(MAX_SUBPROCESS_WAIT)
 
-        # Allow Boulder to ignore usual limit rate policies, useful for tests.
-        os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
-                  join(instance_path, 'test/rate-limit-policies.yml'))
-
         if self._dns_server:
             # Change Boulder config to use the provided DNS server
             for suffix in ["", "-remote-a", "-remote-b"]:
