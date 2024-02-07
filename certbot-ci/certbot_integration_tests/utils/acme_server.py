@@ -211,7 +211,7 @@ class ACMEServer:
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
             misc.check_until_timeout(
-                self.acme_xdist['directory_url'], attempts=300)
+                self.acme_xdist['directory_url'], attempts=600)
 
             if not self._dns_server:
                 # Configure challtestsrv to answer any A record request with ip of the docker host.
