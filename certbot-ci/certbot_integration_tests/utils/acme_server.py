@@ -29,6 +29,11 @@ from certbot_integration_tests.utils import pebble_artifacts
 from certbot_integration_tests.utils import proxy
 from certbot_integration_tests.utils.constants import *
 
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
+
 
 class ACMEServer:
     """
@@ -185,8 +190,10 @@ class ACMEServer:
         process.wait(MAX_SUBPROCESS_WAIT)
 
         # Allow Boulder to ignore usual limit rate policies, useful for tests.
-        os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
-                  join(instance_path, 'test/rate-limit-policies.yml'))
+        ref = importlib_resources.files("certbot_integration_tests")
+        ref = ref / "assets" / "boulder-rate-limit-policies.yml"
+        with importlib_resources.as_file(ref) as path:
+            shutil.copyfile(path, join(instance_path, 'test/rate-limit-policies.yml'))
 
         if self._dns_server:
             # Change Boulder config to use the provided DNS server
@@ -215,7 +222,7 @@ class ACMEServer:
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
             misc.check_until_timeout(
-                self.acme_xdist['directory_url'], attempts=300)
+                self.acme_xdist['directory_url'], attempts=480)
 
             if not self._dns_server:
                 # Configure challtestsrv to answer any A record request with ip of the docker host.

@@ -1,0 +1,54 @@
+# See cmd/shell.go for definitions of these rate limits.
+certificatesPerName:
+  window: 2160h
+  threshold: 99
+  overrides:
+    ratelimit.me: 1
+    lim.it: 0
+    # Hostnames used by the letsencrypt client integration test.
+    le.wtf: 9999
+    le1.wtf: 9999
+    le2.wtf: 9999
+    le3.wtf: 9999
+    le4.wtf: 9999
+    nginx.wtf: 9999
+    good-caa-reserved.com: 9999
+    bad-caa-reserved.com: 9999
+    ecdsa.le.wtf: 9999
+    must-staple.le.wtf: 9999
+  registrationOverrides:
+    101: 1000
+registrationsPerIP:
+  window: 168h # 1 week
+  threshold: 9999
+  overrides:
+    127.0.0.1: 999990
+registrationsPerIPRange:
+  window: 168h # 1 week
+  threshold: 99999
+  overrides:
+    127.0.0.1: 1000000
+pendingAuthorizationsPerAccount:
+  window: 168h # 1 week, should match pending authorization lifetime.
+  threshold: 999
+newOrdersPerAccount:
+  window: 3h
+  threshold: 9999
+certificatesPerFQDNSet:
+  window: 168h
+  threshold: 99999
+  overrides:
+    le.wtf: 9999
+    le1.wtf: 9999
+    le2.wtf: 9999
+    le3.wtf: 9999
+    le.wtf,le1.wtf: 9999
+    good-caa-reserved.com: 9999
+    nginx.wtf: 9999
+    ecdsa.le.wtf: 9999
+    must-staple.le.wtf: 9999
+certificatesPerFQDNSetFast:
+  window: 2h
+  threshold: 20
+  overrides:
+    le.wtf: 9
