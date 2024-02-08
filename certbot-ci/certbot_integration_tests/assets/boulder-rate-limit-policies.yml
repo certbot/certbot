@@ -1,4 +1,5 @@
-# See cmd/shell.go for definitions of these rate limits.
+# See https://github.com/letsencrypt/boulder/blob/main/cmd/shell.go for
+# definitions of these rate limits.
 certificatesPerName:
   window: 2160h
   threshold: 99
