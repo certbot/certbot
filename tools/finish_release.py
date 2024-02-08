@@ -102,7 +102,8 @@ def assert_logged_into_snapcraft():
     except (subprocess.CalledProcessError, OSError):
         print("Please make sure that the command line tool snapcraft is")
         print("installed and that you have logged in to an account by running")
-        print("'snapcraft login'.")
+        print("'snapcraft login'. If that fails, your credentials may have expired")
+        print("and you should run `snapcraft logout` followed by 'snapcraft login'.")
         sys.exit(1)
 
 
