@@ -283,10 +283,6 @@ def main() -> None:
     # pylint: disable=missing-function-docstring
     parser = argparse.ArgumentParser(
         description='CLI tool to start a local instance of Pebble or Boulder CA server.')
-    parser.add_argument('--server-type', '-s',
-                        choices=['pebble', 'boulder-v2'], default='pebble',
-                        help='type of CA server to start: can be Pebble or Boulder. '
-                             'Pebble is used if not set.')
     parser.add_argument('--dns-server', '-d',
                         help='specify the DNS server as `IP:PORT` to use by '
                              'Pebble; if not specified, a local mock DNS server will be used to '
@@ -297,7 +293,7 @@ def main() -> None:
     args = parser.parse_args()
 
     acme_server = ACMEServer(
-        args.server_type, [], http_proxy=False, stdout=True,
+        'pebble', [], http_proxy=False, stdout=True,
         dns_server=args.dns_server, http_01_port=args.http_01_port,
     )
 
