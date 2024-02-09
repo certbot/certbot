@@ -18,6 +18,7 @@ from certbot import errors
 from certbot.achallenges import AnnotatedChallenge
 from certbot.plugins import dns_common
 from certbot.util import add_deprecated_argument
+import dns.resolver
 
 logger = logging.getLogger(__name__)
 
@@ -88,12 +89,32 @@ class Authenticator(dns_common.DNSAuthenticator):
         except (NoCredentialsError, ClientError) as e:
             logger.debug('Encountered error during cleanup: %s', e, exc_info=True)
 
+    def _resolve_CNAME_challenge(self, lookup_domain: str) -> str:
+        """
+           In case this request is being forwarded using a CNAME, resolve that first.
+        """
+        try:
+            cname_result = dns.resolver.resolve(lookup_domain, 'CNAME')
+            # cname_result = dns.resolver.resolve('_acme-challenge.{}'.format(lookup_domain), 'CNAME')
+            if len(cname_result) == 1:
+                for cname_data in cname_result:
+                    logger.debug("Recursing into {}".format(cname_data.target))
+                    return self._resolve_CNAME_challenge(str(cname_data.target))
+            else:
+                logger.debug("Empty CNAME resultset, returning {}".format(lookup_domain))
+                return lookup_domain
+        except dns.resolver.NXDOMAIN:
+            logger.debug("Exception - No CNAME found, returning {}".format(lookup_domain))
+            return lookup_domain
+
+
     def _find_zone_id_for_domain(self, domain: str) -> str:
         """Find the zone id responsible a given FQDN.
 
            That is, the id for the zone whose name is the longest parent of the
            domain.
         """
+        domain = self._resolve_CNAME_challenge(domain)
         paginator = self.r53.get_paginator("list_hosted_zones")
         zones = []
         target_labels = domain.rstrip(".").split(".")
@@ -119,6 +140,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         return zones[0][1]
 
     def _change_txt_record(self, action: str, validation_domain_name: str, validation: str) -> str:
+        validation_domain_name = self._resolve_CNAME_challenge(validation_domain_name)
         zone_id = self._find_zone_id_for_domain(validation_domain_name)
 
         rrecords = self._resource_records[validation_domain_name]
