@@ -288,10 +288,10 @@ Qualys offers the best-known TLS security scanner, maintained by Ivan Ristić.
 
 https://www.ssllabs.com/
 
-Dutch NCSC
-~~~~~~~~~~
+Dutch National Cyber Security Centre
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Dutch NCSC, mentioned above, has also made available its own site security scanner which indicates how well sites comply with the recommendations.
+The Dutch National Cyber Security Centre, mentioned above, has also made available its own site security scanner which indicates how well sites comply with the recommendations.
 
 https://en.internet.nl/
 
