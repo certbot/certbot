@@ -210,11 +210,9 @@ Mozilla has also produced a configuration generator: https://ssl-config.mozilla.
 Dutch National Cyber Security Centre
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Dutch National Cyber Security Centre has published guidance on "ICT-beveiligingsrichtlijnen voor Transport Layer Security (TLS)" ("IT Security Guidelines for Transport Layer Security (TLS)").  These are available only in Dutch at
+The Dutch National Cyber Security Centre has published guidance on "IT Security Guidelines for Transport Layer Security (TLS)". These are available in English at
 
-https://web.archive.org/web/20190516085116/https://www.ncsc.nl/actueel/whitepapers/ict-beveiligingsrichtlijnen-voor-transport-layer-security-tls.html
-
-I have access to an English-language summary of the recommendations.
+https://english.ncsc.nl/publications/publications/2021/january/19/it-security-guidelines-for-transport-layer-security-2.1 (a mirror is available at `archive.org <https://web.archive.org/web/https://english.ncsc.nl/publications/publications/2021/january/19/it-security-guidelines-for-transport-layer-security-2.1>`_)
 
 Keylength.com
 ~~~~~~~~~~~~~
@@ -290,10 +288,10 @@ Qualys offers the best-known TLS security scanner, maintained by Ivan Ristić.
 
 https://www.ssllabs.com/
 
-Dutch NCSC
-~~~~~~~~~~
+Dutch National Cyber Security Centre
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Dutch NCSC, mentioned above, has also made available its own site security scanner which indicates how well sites comply with the recommendations.
+The Dutch National Cyber Security Centre, mentioned above, has also made available its own site security scanner which indicates how well sites comply with the recommendations.
 
 https://en.internet.nl/
 
