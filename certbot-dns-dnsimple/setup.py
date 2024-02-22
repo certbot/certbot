@@ -1,37 +1,19 @@
 import os
-import sys
-
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 version = '2.10.0.dev0'
 
 install_requires = [
-    # This version of lexicon is required to address the problem described in
-    # https://github.com/AnalogJ/lexicon/issues/387.
     'dns-lexicon>=3.14.1',
     'setuptools>=41.6.0',
 ]
 
-if os.environ.get('SNAP_BUILD'):
-    install_requires.append('packaging')
-else:
-    install_requires.extend([
-        # We specify the minimum acme and certbot version as the current plugin
-        # version for simplicity. See
-        # https://github.com/certbot/certbot/issues/8761 for more info.
-        f'acme>={version}',
-        f'certbot>={version}',
-    ])
+# Condition simplified to reduce nesting
+if not os.environ.get('SNAP_BUILD'):
+    install_requires.extend([f'acme>={version}', f'certbot>={version}'])
 
-docs_extras = [
-    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
-    'sphinx_rtd_theme',
-]
-
-test_extras = [
-    'pytest',
-]
+docs_extras = ['Sphinx>=1.0', 'sphinx_rtd_theme']
+test_extras = ['pytest']
 
 setup(
     name='certbot-dns-dnsimple',
@@ -62,17 +44,11 @@ setup(
         'Topic :: System :: Systems Administration',
         'Topic :: Utilities',
     ],
-
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    extras_require={
-        'docs': docs_extras,
-        'test': test_extras,
-    },
+    extras_require={'docs': docs_extras, 'test': test_extras},
     entry_points={
-        'certbot.plugins': [
-            'dns-dnsimple = certbot_dns_dnsimple._internal.dns_dnsimple:Authenticator',
-        ],
+        'certbot.plugins': ['dns-dnsimple = certbot_dns_dnsimple._internal.dns_dnsimple:Authenticator'],
     },
 )
