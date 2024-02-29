@@ -49,7 +49,6 @@ jobs:
           IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.8
           TOXENV: integration
-          ACME_SERVER: pebble
         apache-compat:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: apache_compat
