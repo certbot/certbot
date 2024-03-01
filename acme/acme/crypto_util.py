@@ -1,6 +1,7 @@
 """Crypto utilities."""
 import binascii
 import contextlib
+from datetime import datetime
 import ipaddress
 import logging
 import os
@@ -15,7 +16,14 @@ from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
+import warnings
 
+from cryptography import x509
+from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.hazmat.primitives.asymmetric.dsa import DSAPrivateKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
@@ -237,10 +245,11 @@ def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]
     params ordered this way for backward competablity when called by positional argument.
     :returns: buffer PEM-encoded Certificate Signing Request.
     """
-    private_key = crypto.load_privatekey(
-        crypto.FILETYPE_PEM, private_key_pem)
-    csr = crypto.X509Req()
-    sanlist = []
+    private_key = load_pem_private_key(private_key_pem, None)
+    builder = x509.CertificateSigningRequestBuilder()
+    # set an empty subject name
+    builder = builder.subject_name(x509.Name([]))
+    sanlist: List[x509.GeneralName] = []
     # if domain or ip list not supplied make it empty list so it's easier to iterate
     if domains is None:
         domains = []
@@ -249,32 +258,18 @@ def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]
     if len(domains)+len(ipaddrs) == 0:
         raise ValueError("At least one of domains or ipaddrs parameter need to be not empty")
     for address in domains:
-        sanlist.append('DNS:' + address)
+        sanlist.append(x509.DNSName(address))
     for ips in ipaddrs:
-        sanlist.append('IP:' + ips.exploded)
-    # make sure its ascii encoded
-    san_string = ', '.join(sanlist).encode('ascii')
-    # for IP san it's actually need to be octet-string,
-    # but somewhere downsteam thankfully handle it for us
-    extensions = [
-        crypto.X509Extension(
-            b'subjectAltName',
-            critical=False,
-            value=san_string
-        ),
-    ]
+        sanlist.append(x509.IPAddress(ips))
+    builder = builder.add_extension(x509.SubjectAlternativeName(sanlist), critical=False)
+
     if must_staple:
-        extensions.append(crypto.X509Extension(
-            b"1.3.6.1.5.5.7.1.24",
-            critical=False,
-            value=b"DER:30:03:02:01:05"))
-    csr.add_extensions(extensions)
-    csr.set_pubkey(private_key)
-    # RFC 2986 Section 4.1 only defines version 0
-    csr.set_version(0)
-    csr.sign(private_key, 'sha256')
-    return crypto.dump_certificate_request(
-        crypto.FILETYPE_PEM, csr)
+        builder = builder.add_extension(
+            x509.TLSFeature([x509.TLSFeatureType.status_request]),
+            critical=False
+        )
+    csr = builder.sign(private_key, SHA256())
+    return csr.public_bytes(Encoding.PEM)
 
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req: Union[crypto.X509, crypto.X509Req]
@@ -366,6 +361,78 @@ def _pyopenssl_extract_san_list_raw(cert_or_req: Union[crypto.X509, crypto.X509R
     return sans_parts
 
 
+def make_self_signed_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
+                          not_before: Optional[int] = None,
+                          validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
+                          extensions: Optional[List[x509.Extension[x509.ExtensionType]]] = None,
+                          ips: Optional[List[Union[ipaddress.IPv4Address,
+                                                   ipaddress.IPv6Address]]] = None
+                          ) -> crypto.X509:
+    """Generate new self-signed certificate.
+
+    :type domains: `list` of `str`
+    :param OpenSSL.crypto.PKey key:
+    :param bool force_san:
+    :param extensions: List of additional extensions to include in the cert.
+    :type extensions: `list` of `x509.Extension[x509.ExtensionType]`
+    :type ips: `list` of (`ipaddress.IPv4Address` or `ipaddress.IPv6Address`)
+
+    If more than one domain is provided, all of the domains are put into
+    ``subjectAltName`` X.509 extension and first domain is set as the
+    subject CN. If only one domain is provided no ``subjectAltName``
+    extension is used, unless `force_san` is ``True``.
+
+    """
+    assert domains or ips, "Must provide one or more hostnames or IPs for the cert."
+
+    builder = x509.CertificateBuilder()
+    builder = builder.serial_number(int(binascii.hexlify(os.urandom(16)), 16))
+
+    if extensions is not None:
+        for ext in extensions:
+            builder = builder.add_extension(ext.value, ext.critical)
+    if domains is None:
+        domains = []
+    if ips is None:
+        ips = []
+    builder = builder.add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
+
+    name_attrs = []
+    if len(domains) > 0:
+        name_attrs.append(x509.NameAttribute(
+            x509.OID_COMMON_NAME,
+            domains[0]
+        ))
+
+    builder = builder.subject_name(x509.Name(name_attrs))
+    builder = builder.issuer_name(x509.Name(name_attrs))
+
+    sanlist: List[x509.GeneralName] = []
+    for address in domains:
+        sanlist.append(x509.DNSName(address))
+    for ip in ips:
+        sanlist.append(x509.IPAddress(ip))
+    if force_san or len(domains) > 1 or len(ips) > 0:
+        builder = builder.add_extension(
+            x509.SubjectAlternativeName(sanlist),
+            critical=False
+        )
+
+    builder = builder.not_valid_before(datetime.fromtimestamp(
+        0 if not_before is None else not_before
+    ))
+    builder = builder.not_valid_after(datetime.fromtimestamp(validity))
+
+    cryptography_priv = key.to_cryptography_key()
+    if not isinstance(cryptography_priv, (DSAPrivateKey, RSAPrivateKey)):
+        raise errors.Error("key must be a private key")
+    cryptography_pub = cryptography_priv.public_key()
+    builder = builder.public_key(cryptography_pub)
+    cryptography_cert = builder.sign(cryptography_priv, SHA256())
+
+    return crypto.X509.from_cryptography(cryptography_cert)
+
+
 def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
                 not_before: Optional[int] = None,
                 validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
@@ -386,7 +453,14 @@ def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
     subject CN. If only one domain is provided no ``subjectAltName``
     extension is used, unless `force_san` is ``True``.
 
+    .. deprecated: 2.10.0
     """
+    warnings.warn(
+        "acme.crypto_util.gen_ss_cert is deprecated and will be removed in the "
+        "next major release of Certbot. Please use "
+        "acme.crypto_util.make_self_signed_cert instead.", DeprecationWarning,
+        stacklevel=2
+    )
     assert domains or ips, "Must provide one or more hostnames or IPs for the cert."
 
     cert = crypto.X509()

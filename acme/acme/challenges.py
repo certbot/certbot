@@ -479,13 +479,15 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         if len(names) != 1 or names[0].lower() != domain.lower():
             return False
 
-        for i in range(cert.get_extension_count()):
-            ext = cert.get_extension(i)
-            # FIXME: assume this is the ACME extension. Currently there is no
-            # way to get full OID of an unknown extension from pyopenssl.
-            if ext.get_short_name() == b'UNDEF':
-                data = ext.get_data()
-                return data == self.h
+        crypto_cert = cert.to_cryptography()
+        oid = x509.ObjectIdentifier(self.ID_PE_ACME_IDENTIFIER_V1)
+        der_value = b"DER:" + codecs.encode(self.h, 'hex')
+        try:
+            ext = crypto_cert.extensions.get_extension_for_oid(oid)
+            if ext is not None:
+                return ext.value.value == der_value
+        except x509.ExtensionNotFound:
+            pass
 
         return False
 

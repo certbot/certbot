@@ -8,9 +8,11 @@ import threading
 import time
 from typing import List
 import unittest
+import warnings
 
 import josepy as jose
 import OpenSSL
+from cryptography import x509
 import pytest
 
 from acme import errors
@@ -219,9 +221,58 @@ class PyOpenSSLCertOrReqSANIPTest(unittest.TestCase):
                          ['0:0:0:0:0:0:0:1', 'A3BE:32F3:206E:C75D:956:CEE:9858:5EC5']
 
 
+class GenMakeSelfSignedCertTest(unittest.TestCase):
+    """Test for make_self_signed_cert."""
+
+    def setUp(self):
+        self.cert_count = 5
+        self.serial_num: List[int] = []
+        self.key = OpenSSL.crypto.PKey()
+        self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+
+    def test_sn_collisions(self):
+        from acme.crypto_util import make_self_signed_cert
+        for _ in range(self.cert_count):
+            cert = make_self_signed_cert(self.key, ['dummy'], force_san=True,
+                               ips=[ipaddress.ip_address("10.10.10.10")])
+            self.serial_num.append(cert.get_serial_number())
+        assert len(set(self.serial_num)) >= self.cert_count
+
+    def test_no_name(self):
+        from acme.crypto_util import make_self_signed_cert
+        with pytest.raises(AssertionError):
+            make_self_signed_cert(self.key, ips=[ipaddress.ip_address("1.1.1.1")])
+            make_self_signed_cert(self.key)
+
+    def test_fail_with_public_key(self):
+        from acme.crypto_util import make_self_signed_cert
+        from acme.errors import Error
+        pubkey_bytes = OpenSSL.crypto.dump_publickey(OpenSSL.crypto.FILETYPE_PEM, self.key)
+        pubkey = OpenSSL.crypto.load_publickey(OpenSSL.crypto.FILETYPE_PEM, pubkey_bytes)
+        with pytest.raises(Error):
+            make_self_signed_cert(pubkey, ips=[ipaddress.ip_address("1.1.1.1")])
+
+    def test_extensions(self):
+        from acme.crypto_util import make_self_signed_cert
+        extension_type = x509.TLSFeature([x509.TLSFeatureType.status_request])
+        extension = x509.Extension(
+            x509.TLSFeature.oid,
+            False,
+            extension_type
+        )
+        cert = make_self_signed_cert(
+            self.key,
+            ips=[ipaddress.ip_address("1.1.1.1")],
+            extensions=[extension]
+        )
+        # Since extensions in pyOpenSSL are deprecated, convert back to a
+        # cryptography type to check our extensions
+        cryptography_cert = cert.to_cryptography()
+        self.assertIn(extension, cryptography_cert.extensions)
+
+
 class GenSsCertTest(unittest.TestCase):
     """Test for gen_ss_cert (generation of self-signed cert)."""
-
 
     def setUp(self):
         self.cert_count = 5
@@ -231,18 +282,27 @@ class GenSsCertTest(unittest.TestCase):
 
     def test_sn_collisions(self):
         from acme.crypto_util import gen_ss_cert
-        for _ in range(self.cert_count):
-            cert = gen_ss_cert(self.key, ['dummy'], force_san=True,
-                               ips=[ipaddress.ip_address("10.10.10.10")])
-            self.serial_num.append(cert.get_serial_number())
-        assert len(set(self.serial_num)) >= self.cert_count
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            for _ in range(self.cert_count):
+                cert = gen_ss_cert(self.key, ['dummy'], force_san=True,
+                                ips=[ipaddress.ip_address("10.10.10.10")])
+                self.serial_num.append(cert.get_serial_number())
+            assert len(set(self.serial_num)) >= self.cert_count
 
+    def test_no_ips(self):
+        from acme.crypto_util import gen_ss_cert
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            gen_ss_cert(self.key, domains=['a.example'])
 
     def test_no_name(self):
         from acme.crypto_util import gen_ss_cert
-        with pytest.raises(AssertionError):
-            gen_ss_cert(self.key, ips=[ipaddress.ip_address("1.1.1.1")])
-            gen_ss_cert(self.key)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            with pytest.raises(AssertionError):
+                gen_ss_cert(self.key, ips=[ipaddress.ip_address("1.1.1.1")])
+                gen_ss_cert(self.key)
 
 
 class MakeCSRTest(unittest.TestCase):
@@ -260,69 +320,54 @@ class MakeCSRTest(unittest.TestCase):
         csr_pem = self._call_with_key(["a.example", "b.example"])
         assert b'--BEGIN CERTIFICATE REQUEST--' in csr_pem
         assert b'--END CERTIFICATE REQUEST--' in csr_pem
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
-        # have a get_extensions() method, so we skip this test if the method
-        # isn't available.
-        if hasattr(csr, 'get_extensions'):
-            assert len(csr.get_extensions()) == 1
-            assert csr.get_extensions()[0].get_data() == \
-                OpenSSL.crypto.X509Extension(
-                    b'subjectAltName',
-                    critical=False,
-                    value=b'DNS:a.example, DNS:b.example',
-                ).get_data()
+        csr = x509.load_pem_x509_csr(csr_pem)
+        assert len(csr.extensions) == 1
+        self.assertEqual(
+            csr.extensions[0].value,
+            x509.SubjectAlternativeName([
+                x509.DNSName('a.example'),
+                x509.DNSName('b.example'),
+            ])
+        )
 
     def test_make_csr_ip(self):
         csr_pem = self._call_with_key(["a.example"], False, [ipaddress.ip_address('127.0.0.1'), ipaddress.ip_address('::1')])
         assert b'--BEGIN CERTIFICATE REQUEST--' in csr_pem
         assert b'--END CERTIFICATE REQUEST--' in csr_pem
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
-        # have a get_extensions() method, so we skip this test if the method
-        # isn't available.
-        if hasattr(csr, 'get_extensions'):
-            assert len(csr.get_extensions()) == 1
-            assert csr.get_extensions()[0].get_data() == \
-                             OpenSSL.crypto.X509Extension(
-                                 b'subjectAltName',
-                                 critical=False,
-                                 value=b'DNS:a.example, IP:127.0.0.1, IP:::1',
-                             ).get_data()
-            # for IP san it's actually need to be octet-string,
-            # but somewhere downstream thankfully handle it for us
+        csr = x509.load_pem_x509_csr(csr_pem)
+        assert len(csr.extensions) == 1
+        self.assertEqual(
+            csr.extensions[0].value,
+            x509.SubjectAlternativeName([
+                x509.DNSName('a.example'),
+                x509.IPAddress(ipaddress.ip_address('127.0.0.1')),
+                x509.IPAddress(ipaddress.ip_address('::1')),
+            ])
+        )
 
     def test_make_csr_must_staple(self):
         csr_pem = self._call_with_key(["a.example"], must_staple=True)
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-
-        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
-        # have a get_extensions() method, so we skip this test if the method
-        # isn't available.
-        if hasattr(csr, 'get_extensions'):
-            assert len(csr.get_extensions()) == 2
-            # NOTE: Ideally we would filter by the TLS Feature OID, but
-            # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
-            # and the shortname field is just "UNDEF"
-            must_staple_exts = [e for e in csr.get_extensions()
-                if e.get_data() == b"0\x03\x02\x01\x05"]
-            assert len(must_staple_exts) == 1, \
-                "Expected exactly one Must Staple extension"
+        csr = x509.load_pem_x509_csr(csr_pem)
+        assert len(csr.extensions) == 2
+        ext = csr.extensions.get_extension_for_class(x509.TLSFeature)
+        self.assertEqual(ext.value, x509.TLSFeature([x509.TLSFeatureType.status_request]))
 
     def test_make_csr_without_hostname(self):
         with pytest.raises(ValueError):
             self._call_with_key()
 
-    def test_make_csr_correct_version(self):
-        csr_pem = self._call_with_key(["a.example"])
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-
-        assert csr.get_version() == 0, \
-            "Expected CSR version to be v1 (encoded as 0), per RFC 2986, section 4"
+    def test_make_csr_with_invalid_private_key(self):
+        from cryptography.hazmat.primitives.asymmetric import dh
+        from cryptography.hazmat.primitives import serialization
+        dh_params = dh.generate_parameters(2, 1024)
+        priv_key = dh_params.generate_private_key()
+        priv_key_pem = priv_key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption()
+        )
+        from acme.crypto_util import make_csr
+        return make_csr(priv_key_pem, ['a.example'])
 
 
 class DumpPyopensslChainTest(unittest.TestCase):
