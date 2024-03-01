@@ -706,7 +706,7 @@ class NginxConfigurator(common.Configurator):
         assert le_key.file is not None
         key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
-        cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
+        cert = acme_crypto_util.make_self_signed_cert(key, domains=[socket.gethostname()])
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, cert)
         cert_file, cert_path = util.unique_file(

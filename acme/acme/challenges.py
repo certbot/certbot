@@ -16,6 +16,7 @@ from typing import TypeVar
 from typing import Union
 
 from cryptography.hazmat.primitives import hashes
+from cryptography import x509
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
@@ -410,7 +411,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
 
     """
 
-    ID_PE_ACME_IDENTIFIER_V1 = b"1.3.6.1.5.5.7.1.30.1"
+    ID_PE_ACME_IDENTIFIER_V1 = "1.3.6.1.5.5.7.1.30.1"
     ACME_TLS_1_PROTOCOL = b"acme-tls/1"
 
     @property
@@ -436,10 +437,14 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
             key.generate_key(crypto.TYPE_RSA, bits)
 
         der_value = b"DER:" + codecs.encode(self.h, 'hex')
-        acme_extension = crypto.X509Extension(self.ID_PE_ACME_IDENTIFIER_V1,
-                                              critical=True, value=der_value)
+        oid = x509.ObjectIdentifier(self.ID_PE_ACME_IDENTIFIER_V1)
+        acme_extension = x509.Extension(
+            oid,
+            critical=True,
+            value=x509.UnrecognizedExtension(oid, der_value)
+        )
 
-        return crypto_util.gen_ss_cert(key, [domain], force_san=True,
+        return crypto_util.make_self_signed_cert(key, [domain], force_san=True,
                                        extensions=[acme_extension]), key
 
     def probe_cert(self, domain: str, host: Optional[str] = None,
