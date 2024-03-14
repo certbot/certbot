@@ -202,8 +202,8 @@ while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
 done
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
 
-git rm -r "$built_package_dir"
-git commit -m "Remove built packages"
+git rm --cached -r "$built_package_dir"
+git commit -m "Remove built packages from git"
 
 # Add master section to CHANGELOG.md
 header=$(head -n 4 certbot/CHANGELOG.md)
