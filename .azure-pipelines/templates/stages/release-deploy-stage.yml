@@ -13,8 +13,7 @@ stages:
           inputs:
             gitHubConnection: github-releases
             releaseNotesFilePath: '$(Pipeline.Workspace)/release_notes.md'
-            assets:
-              'packages/*.tar.gz'
-              'packages/SHA256SUM*'
+            assets: 'packages/*.tar.gz
+                     packages/SHA256SUM*'
             addChangeLog: false
             isDraft: true  # this is just for testing
