@@ -12,7 +12,7 @@ stages:
         - task: GitHubRelease@1
           inputs:
             gitHubConnection: github-releases
-            title: ${{ format('Certbot {0}', replace(variables['Build.SourceBranchName'], 'v', '') }}
+            title: ${{ format('Certbot {0}', replace(variables['Build.SourceBranchName'], 'v', '')) }}
             releaseNotesFilePath: '$(Pipeline.Workspace)/release_notes.md'
             assets: '$(Build.SourcesDirectory)/packages/{*.tar.gz,SHA256SUMS*}'
             addChangeLog: false
