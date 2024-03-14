@@ -158,7 +158,7 @@ cd "$built_package_dir"
 echo "Generating checksum file and signing it"
 sha256sum *.tar.gz > SHA256SUMS
 gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 SHA256SUMS
-git add .
+git add *.tar.gz SHA256SUMS*
 
 echo "Installing packages to generate documentation"
 # cd .. is NOT done on purpose: we make sure that all subpackages are
