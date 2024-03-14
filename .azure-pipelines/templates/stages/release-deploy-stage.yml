@@ -1,6 +1,9 @@
 stages:
   - stage: Deploy
     jobs:
+      - template: ../jobs/common-deploy-jobs.yml
+        parameters:
+          snapReleaseChannel: beta
       - job: create_github_release
         pool:
           vmImage: ubuntu-22.04
@@ -16,4 +19,3 @@ stages:
             releaseNotesFilePath: '$(Pipeline.Workspace)/release_notes.md'
             assets: '$(Build.SourcesDirectory)/packages/{*.tar.gz,SHA256SUMS*}'
             addChangeLog: false
-            isDraft: true  # this is just for testing
