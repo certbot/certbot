@@ -1,0 +1,20 @@
+stages:
+  - stage: Deploy
+    jobs:
+      - template: ../jobs/common-deploy-jobs.yml
+        parameters:
+          snapReleaseChannel: beta
+      - job: create_github_release
+        - task: DownloadPipelineArtifact@2
+          inputs:
+            artifact: changelog
+            path: '$(Pipeline.Workspace)'
+        - task: GitHubRelease@1
+          inputs:
+            gitHubConnection: github-releases
+            releaseNotesFilePath: '$(Pipeline.Workspace)/release_notes.md'
+            assets:
+              'packages/*.tar.gz'
+              'packages/SHA256SUM*'
+            addChangeLog: false
+            isDraft: true  # this is just for testing
