@@ -12,8 +12,9 @@ stages:
         - task: GitHubRelease@1
           inputs:
             gitHubConnection: github-releases
+            title: 'Certbot $(Build.SourceBranchName)'
             releaseNotesFilePath: '$(Pipeline.Workspace)/release_notes.md'
-            assets: 'packages/*.tar.gz
-                     packages/SHA256SUM*'
+            assets: '$(Build.SourcesDirectory)/packages/*.tar.gz
+                     $(Build.SourcesDirectory)/packages/SHA256SUM*'
             addChangeLog: false
             isDraft: true  # this is just for testing
