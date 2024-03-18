@@ -15,8 +15,6 @@ import dns.tsig
 import dns.tsigkeyring
 import dns.update
 
-from acme.magic_typing import Dict, Tuple, List  # pylint: disable=unused-import, no-name-in-module
-
 from certbot import errors
 from certbot.plugins import dns_common
 from certbot.plugins.dns_common import CredentialsConfiguration

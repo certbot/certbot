@@ -19,8 +19,6 @@ import dns.rdtypes.ANY.SOA
 import dns.tsig
 import pytest
 
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
-
 from certbot import errors
 from certbot.compat import os
 from certbot.plugins import dns_test_common
