@@ -126,12 +126,12 @@ class _RFC2136Client:
         :raises certbot.errors.PluginError: if an error occurs communicating with the DNS server
         """
 
-        logger.debug('Adding TXT record: %s %d "%s"', record_name, record_ttl, record_content)
+        (rel, domain) = self._find_domain(record_name)
 
-        (rel, domain_name) = self._find_domain(record_name)
+        logger.debug('Adding TXT record: %s %d "%s" %s %s', record_name, record_ttl, record_content, rel, domain)
 
         update = dns.update.Update(
-            domain_name,
+            domain,
             keyring=self.keyring,
             keyalgorithm=self.algorithm)
         update.add(rel, record_ttl, dns.rdatatype.TXT, record_content)
@@ -159,10 +159,10 @@ class _RFC2136Client:
         :raises certbot.errors.PluginError: if an error occurs communicating with the DNS server
         """
 
-        (rel, domain_name) = self._find_domain(record_name)
+        (rel, domain) = self._find_domain(record_name)
 
         update = dns.update.Update(
-            domain_name,
+            domain,
             keyring=self.keyring,
             keyalgorithm=self.algorithm)
         update.delete(rel, dns.rdatatype.TXT, record_content)
@@ -202,11 +202,11 @@ class _RFC2136Client:
         #
         # This code relies on these properties.
 
-        domain_name = dns.name.from_text(record_name)
-        prefix = domain_name
+        domain = dns.name.from_text(record_name)
+        prefix = domain
         suffix = dns.name.empty
         found = None
-        domstr = str(domain_name)    # For messages, may have a DNAME/CNAME added
+        domstr = str(domain)    # For messages, may have a DNAME/CNAME added
 
         # The domains already queried and the corresponding results
         domain_names_searched = dict()  # type: Dict[str, Tuple[bool, dns.rdata.Rdata]]
@@ -247,7 +247,7 @@ class _RFC2136Client:
                 prefix = prefix + target
                 suffix = dns.name.empty
                 found = None
-                domstr = str(domain_name)+' ('+str(prefix)+')'  # For messages
+                domstr = str(domain)+' ('+str(prefix)+')'  # For messages
 
         if not found:
             raise errors.PluginError('No SOA of any kind found for {0}'.format(domstr))
@@ -257,7 +257,7 @@ class _RFC2136Client:
             raise errors.PluginError('SOA {0} for {1} not authoritative'.format(suffix, domstr))
         return prefix, suffix
 
-    def _query_soa(self, domain_name: str) -> bool:
+    def _query_soa(self, domain: str) -> bool:
         """
         Query a domain name for an authoritative SOA record.
 
@@ -296,7 +296,7 @@ class _RFC2136Client:
         # are all singleton RRs), but try to make the best of the
         # situation.
 
-        request = dns.message.make_query(domain_name, dns.rdatatype.SOA, dns.rdataclass.IN)
+        request = dns.message.make_query(domain, dns.rdatatype.SOA, dns.rdataclass.IN)
         # Turn off Recursion Desired bit in query
         request.flags ^= dns.flags.RD
         # Use our TSIG keyring if configured
@@ -304,7 +304,7 @@ class _RFC2136Client:
             request.use_tsig(self.keyring, algorithm=self.algorithm)
 
         try:
-            logmsg = 'Query '+str(domain_name)
+            logmsg = 'Query '+str(domain)
             try:
                 response = dns.query.tcp(request, self.server, self._default_timeout, self.port)
             except (OSError, dns.exception.Timeout) as e:
@@ -321,7 +321,7 @@ class _RFC2136Client:
 
             found = dict()  # type: Dict[int, List[dns.rdataset.Rdata]]
             for rrset in response.answer:
-                if rrset.name != domain_name:
+                if rrset.name != domain:
                     continue
                 if rrset.rdclass != dns.rdataclass.IN:
                     continue
