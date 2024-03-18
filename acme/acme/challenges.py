@@ -324,9 +324,6 @@ class DNSACCOUNT01(KeyAuthorizationChallenge):
     response_cls = DNSACCOUNT01Response
     typ = response_cls.typ
 
-    LABEL = "_acme-challenge"
-    """Label clients prepend to the domain name being validated."""
-
     def validation(self, account_key: jose.JWK, **unused_kwargs: Any) -> str:
         """Generate validation.
 
@@ -337,17 +334,18 @@ class DNSACCOUNT01(KeyAuthorizationChallenge):
         return jose.b64encode(hashlib.sha256(self.key_authorization(
             account_key).encode("utf-8")).digest()).decode()
 
-    def validation_domain_name(self, acctURI: str, name: str) -> str:
+    def validation_domain_name(self, acctURI: str, scope: str, name: str) -> str:
         """Domain name for TXT validation record.
 
         :param str acctURI: Account Resource URI.
+        :param str scope: Scope of the challenge.
         :param str name: Domain name being validated.
         :rtype: str
 
         """
         acctLabel = b32encode(hashlib.sha256(
             acctURI.encode()).digest()[:10]).decode().lower()
-        return f"_{acctLabel}.{self.LABEL}.{name}"
+        return f"_{acctLabel}._acme-{scope}-challenge.{name}"
 
 
 @ChallengeResponse.register

@@ -198,14 +198,16 @@ class DNSACCOUNT01Test(unittest.TestCase):
 
         from acme.challenges import DNSACCOUNT01
         self.accountURI = "https://example.com/acme/acct/1234"
-        # "_" || base32(SHA-256(Account Resource URL)[0:9])
+        self.scope = "wildcard"
+        # "_" || base32(SHA-256(<ACCOUNT_RESOURCE_URL>)[0:10]) || "._acme-" || <SCOPE> || "-challenge"
         self.accountLabel = '_' + b32encode(
             sha256(self.accountURI.encode()).digest()[:10]
-        ).decode().lower()
+        ).decode().lower() + '._acme-' + self.scope + '-challenge'
 
     def test_validation_domain_name(self):
-        assert self.accountLabel + '._acme-challenge.www.example.com' == \
-            self.msg.validation_domain_name(self.accountURI, 'www.example.com')
+        assert self.accountLabel + '.www.example.com' == \
+            self.msg.validation_domain_name(
+                self.accountURI, self.scope, 'www.example.com')
 
     def test_validation(self):
         assert "rAa7iIg4K2y63fvUhCfy8dP1Xl7wEhmQq0oChTcE3Zk" == \
