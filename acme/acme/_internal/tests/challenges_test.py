@@ -4,6 +4,8 @@ import unittest
 from unittest import mock
 import urllib.parse as urllib_parse
 
+from base64 import b32encode
+from hashlib import sha256
 import josepy as jose
 from josepy.jwk import JWKEC
 import OpenSSL
@@ -127,7 +129,7 @@ class DNS01Test(unittest.TestCase):
 
     def test_validation_domain_name(self):
         assert '_acme-challenge.www.example.com' == \
-                         self.msg.validation_domain_name('www.example.com')
+            self.msg.validation_domain_name('www.example.com')
 
     def test_validation(self):
         assert "rAa7iIg4K2y63fvUhCfy8dP1Xl7wEhmQq0oChTcE3Zk" == \
@@ -143,6 +145,84 @@ class DNS01Test(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.challenges import DNS01
         hash(DNS01.from_json(self.jmsg))
+
+
+class DNSACCOUNT01ResponseTest(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNSACCOUNT01Response
+        self.msg = DNSACCOUNT01Response(key_authorization=u'foo')
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'dns-account-01',
+            'keyAuthorization': u'foo',
+        }
+
+        from acme.challenges import DNSACCOUNT01
+        self.chall = DNSACCOUNT01(token=(b'x' * 16))
+        self.response = self.chall.response(KEY)
+
+    def test_to_partial_json(self):
+        assert {} == self.msg.to_partial_json()
+
+    def test_from_json(self):
+        from acme.challenges import DNSACCOUNT01Response
+        assert self.msg == DNSACCOUNT01Response.from_json(self.jmsg)
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNSACCOUNT01Response
+        hash(DNSACCOUNT01Response.from_json(self.jmsg))
+
+    def test_simple_verify_failure(self):
+        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
+        public_key = key2.public_key()
+        verified = self.response.simple_verify(self.chall, "local", public_key)
+        assert not verified
+
+    def test_simple_verify_success(self):
+        public_key = KEY.public_key()
+        verified = self.response.simple_verify(self.chall, "local", public_key)
+        assert verified
+
+
+class DNSACCOUNT01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNSACCOUNT01
+        self.msg = DNSACCOUNT01(token=jose.decode_b64jose(
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
+        self.jmsg = {
+            'type': 'dns-account-01',
+            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
+        }
+
+        from acme.challenges import DNSACCOUNT01
+        self.accountURI = "https://example.com/acme/acct/1234"
+        self.scope = "wildcard"
+        # "_" || base32(SHA-256(<ACCOUNT_RESOURCE_URL>)[0:10]) || "._acme-" || <SCOPE> || "-challenge"
+        self.accountLabel = '_' + b32encode(
+            sha256(self.accountURI.encode()).digest()[:10]
+        ).decode().lower() + '._acme-' + self.scope + '-challenge'
+
+    def test_validation_domain_name(self):
+        assert self.accountLabel + '.www.example.com' == \
+            self.msg.validation_domain_name(
+                self.accountURI, self.scope, 'www.example.com')
+
+    def test_validation(self):
+        assert "rAa7iIg4K2y63fvUhCfy8dP1Xl7wEhmQq0oChTcE3Zk" == \
+            self.msg.validation(KEY)
+
+    def test_to_partial_json(self):
+        assert self.jmsg == self.msg.to_partial_json()
+
+    def test_from_json(self):
+        from acme.challenges import DNSACCOUNT01
+        assert self.msg == DNSACCOUNT01.from_json(self.jmsg)
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNSACCOUNT01
+        hash(DNSACCOUNT01.from_json(self.jmsg))
 
 
 class HTTP01ResponseTest(unittest.TestCase):
@@ -221,7 +301,8 @@ class HTTP01ResponseTest(unittest.TestCase):
         mock_get.assert_called_once_with(self.chall.uri("local"), verify=False,
                                          timeout=30)
         mock_get.reset_mock()
-        self.response.simple_verify(self.chall, "local", KEY.public_key(), timeout=1234)
+        self.response.simple_verify(
+            self.chall, "local", KEY.public_key(), timeout=1234)
         mock_get.assert_called_once_with(self.chall.uri("local"), verify=False,
                                          timeout=1234)
 
@@ -240,7 +321,7 @@ class HTTP01Test(unittest.TestCase):
 
     def test_path(self):
         assert self.msg.path == '/.well-known/acme-challenge/' \
-                         'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'
 
     def test_uri(self):
         assert 'http://example.com/.well-known/acme-challenge/' \
@@ -303,7 +384,7 @@ class TLSALPN01ResponseTest(unittest.TestCase):
 
     def test_verify_bad_cert(self):
         assert not self.response.verify_cert(self.domain,
-            test_util.load_cert('cert.pem'))
+                                             test_util.load_cert('cert.pem'))
 
     def test_verify_bad_domain(self):
         key1 = test_util.load_pyopenssl_private_key('rsa512_key.pem')
@@ -319,8 +400,8 @@ class TLSALPN01ResponseTest(unittest.TestCase):
     def test_simple_verify(self, mock_verify_cert):
         mock_verify_cert.return_value = mock.sentinel.verification
         assert mock.sentinel.verification == self.response.simple_verify(
-                self.chall, self.domain, KEY.public_key(),
-                cert=mock.sentinel.cert)
+            self.chall, self.domain, KEY.public_key(),
+            cert=mock.sentinel.cert)
         mock_verify_cert.assert_called_once_with(
             self.response, self.domain, mock.sentinel.cert)
 
@@ -406,7 +487,8 @@ class DNSTest(unittest.TestCase):
         hash(DNS.from_json(self.jmsg))
 
     def test_gen_check_validation(self):
-        ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
+        ec_key_secp384r1 = JWKEC(
+            key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
         for key, alg in [(KEY, jose.RS256), (ec_key_secp384r1, jose.ES384)]:
             with self.subTest(key=key, alg=alg):
                 assert self.msg.check_validation(
@@ -442,10 +524,12 @@ class DNSTest(unittest.TestCase):
         assert response.validation == mock.sentinel.validation
 
     def test_validation_domain_name(self):
-        assert '_acme-challenge.le.wtf' == self.msg.validation_domain_name('le.wtf')
+        assert '_acme-challenge.le.wtf' == self.msg.validation_domain_name(
+            'le.wtf')
 
     def test_validation_domain_name_ecdsa(self):
-        ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
+        ec_key_secp384r1 = JWKEC(
+            key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
         assert self.msg.check_validation(
             self.msg.gen_validation(ec_key_secp384r1, alg=jose.ES384),
             ec_key_secp384r1.public_key()) is True
@@ -489,6 +573,7 @@ class DNSResponseTest(unittest.TestCase):
 
 class JWSPayloadRFC8555Compliant(unittest.TestCase):
     """Test for RFC8555 compliance of JWS generated from resources/challenges"""
+
     def test_challenge_payload(self):
         from acme.challenges import HTTP01Response
 
