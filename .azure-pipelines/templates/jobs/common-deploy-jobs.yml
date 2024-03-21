@@ -72,3 +72,57 @@ jobs:
             tools/retry.sh eval snapcraft upload --release=${{ parameters.snapReleaseChannel }} "${SNAP_FILE}"
           done
         displayName: Publish to Snap store
+  # The credentials used in the following jobs are for the shared
+  # certbotbot account on Docker Hub. The credentials are stored
+  # in a service account which was created by following the
+  # instructions at
+  # https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#sep-docreg.
+  # The name given to this service account must match the value
+  # given to containerRegistry below. The authentication used when
+  # creating this service account was a personal access token
+  # rather than a password to bypass 2FA. When Brad set this up,
+  # Azure Pipelines failed to verify the credentials with an error
+  # like "access is forbidden with a JWT issued from a personal
+  # access token", but after saving them without verification, the
+  # access token worked when the pipeline actually ran. "Grant
+  # access to all pipelines" should also be checked on the service
+  # account. The access token can be deleted on Docker Hub if
+  # these credentials need to be revoked.
+  - job: publish_docker_by_arch
+    pool:
+      vmImage: ubuntu-22.04
+    strategy:
+      matrix:
+        arm32v6:
+          DOCKER_ARCH: arm32v6
+        arm64v8:
+          DOCKER_ARCH: arm64v8
+        amd64:
+          DOCKER_ARCH: amd64
+    steps:
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          artifact: docker_$(DOCKER_ARCH)
+          path: $(Build.SourcesDirectory)
+        displayName: Retrieve Docker images
+      - bash: set -e && docker load --input $(Build.SourcesDirectory)/images.tar
+        displayName: Load Docker images
+      - task: Docker@2
+        inputs:
+          command: login
+          containerRegistry: docker-hub
+        displayName: Login to Docker Hub
+      - bash: set -e && tools/docker/deploy_images.sh $(dockerTag) $DOCKER_ARCH
+        displayName: Deploy the Docker images by architecture
+  - job: publish_docker_multiarch
+    dependsOn: publish_docker_by_arch
+    pool:
+      vmImage: ubuntu-22.04
+    steps:
+      - task: Docker@2
+        inputs:
+          command: login
+          containerRegistry: docker-hub
+        displayName: Login to Docker Hub
+      - bash: set -e && tools/docker/deploy_manifests.sh $(dockerTag) all
+        displayName: Deploy the Docker multiarch manifests
