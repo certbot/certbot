@@ -102,7 +102,6 @@ class ApacheConfigurator(common.Installer):
         logs_root="/var/log/apache2",
         ctl="apache2ctl",
         version_cmd=['httpd', '-v'],
-        restart_cmd=['httpd', '-k','restart'],
         conftest_cmd=['httpd', '-t'],
         enmod=None,
         dismod=None,
@@ -110,9 +109,12 @@ class ApacheConfigurator(common.Installer):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2",
+        service_name="Apache2.4",
+        restart_cmd=['httpd', '-k','restart', '-n', ''],
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
             "certbot_apache_win", os.path.join("_internal", "options-ssl-apache.conf"))
     )
+    OS_DEFAULTS["restart_cmd"][4] = OS_DEFAULTS["service_name"]
 
     def option(self, key):
         """Get a value from options"""
@@ -125,7 +127,7 @@ class ApacheConfigurator(common.Installer):
         """
         opts = ["enmod", "dismod", "le_vhost_ext", "server_root", "vhost_root",
                 "logs_root", "challenge_location", "handle_modules", "handle_sites",
-                "ctl"]
+                "ctl", "service_name"]
         for o in opts:
             # Config options use dashes instead of underscores
             if self.conf(o.replace("_", "-")) is not None:
@@ -137,6 +139,7 @@ class ApacheConfigurator(common.Installer):
         self.options["version_cmd"][0] = self.option("ctl")
         self.options["restart_cmd"][0] = self.option("ctl")
         self.options["conftest_cmd"][0] = self.option("ctl")
+        self.options["restart_cmd"][4] = self.option("service_name")
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -174,6 +177,8 @@ class ApacheConfigurator(common.Installer):
                  "(Only Ubuntu/Debian currently)")
         add("ctl", default=DEFAULTS["ctl"],
             help="Full path to Apache control script")
+        add("service-name", default=cls.OS_DEFAULTS["service_name"],
+            help="Name of Apache service")
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
@@ -1639,7 +1644,7 @@ class ApacheConfigurator(common.Installer):
 
     def _add_dummy_ssl_directives(self, virtualHost):
         # Only include the TLS configuration if not already included
-        logger.info("Adding dummy ssl detictives to vhost: ")
+        logger.info("Adding dummy ssl derictives to vhost: ")
         existing_inc = None
         add_certificate = True
         add_certificate_key = True
