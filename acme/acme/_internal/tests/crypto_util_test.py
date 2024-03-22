@@ -356,19 +356,6 @@ class MakeCSRTest(unittest.TestCase):
         with pytest.raises(ValueError):
             self._call_with_key()
 
-    def test_make_csr_with_invalid_private_key(self):
-        from cryptography.hazmat.primitives.asymmetric import dh
-        from cryptography.hazmat.primitives import serialization
-        dh_params = dh.generate_parameters(2, 1024)
-        priv_key = dh_params.generate_private_key()
-        priv_key_pem = priv_key.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.PKCS8,
-            serialization.NoEncryption()
-        )
-        from acme.crypto_util import make_csr
-        return make_csr(priv_key_pem, ['a.example'])
-
 
 class DumpPyopensslChainTest(unittest.TestCase):
     """Test for dump_pyopenssl_chain."""

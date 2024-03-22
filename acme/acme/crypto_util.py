@@ -364,7 +364,7 @@ def _pyopenssl_extract_san_list_raw(cert_or_req: Union[crypto.X509, crypto.X509R
 def make_self_signed_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
                           not_before: Optional[int] = None,
                           validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
-                          extensions: Optional[List[x509.Extension[x509.ExtensionType]]] = None,
+                          extensions: Optional[List[x509.Extension]] = None,
                           ips: Optional[List[Union[ipaddress.IPv4Address,
                                                    ipaddress.IPv6Address]]] = None
                           ) -> crypto.X509:
