@@ -6,11 +6,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added `acme.crypto_util.make_self_signed_cert` to replace `acme.crypto_util.gen_ss_cert`, which
+  has the same behavior but accepts `cryptography`'s `x509.Extension` types.
 
 ### Changed
 
-*
+* Deprecated `acme.crypto_util.gen_ss_cert` due to its use of deprecated types from `pyOpenSSL` and
+  will be removed in the next major release.
 
 ### Fixed
 
