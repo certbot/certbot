@@ -22,9 +22,7 @@ import warnings
 from cryptography import x509
 from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.primitives.asymmetric.dsa import DSAPrivateKey
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from cryptography.hazmat.primitives.asymmetric.ed448 import Ed448PrivateKey
-from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.types import CertificateIssuerPrivateKeyTypes 
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
@@ -232,15 +230,6 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
     cert = client_ssl.get_peer_certificate()
     assert cert # Appease mypy. We would have crashed out by now if there was no certificate.
     return cert
-
-
-CertificateIssuerPrivateKeyTypes = Union[
-    Ed25519PrivateKey,
-    Ed448PrivateKey,
-    RSAPrivateKey,
-    DSAPrivateKey,
-    EllipticCurvePrivateKey,
-]
 
 
 def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]]] = None,
