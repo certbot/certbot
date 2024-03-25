@@ -21,6 +21,7 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 import warnings
 
 from cryptography import x509
@@ -211,7 +212,7 @@ def generate_csr(domains: Iterable[str], key_path: str, csr_path: str,
     :param str csr_path: path to the CSR that will be generated
     :param str key_type: type of the key (misc.RSA_KEY_TYPE or misc.ECDSA_KEY_TYPE)
     """
-    key: ec.EllipticCurvePrivateKey | rsa.RSAPrivateKey
+    key: Union[ec.EllipticCurvePrivateKey, rsa.RSAPrivateKey]
     if key_type == RSA_KEY_TYPE:
         # using public exponent 65537 as per
         # https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
