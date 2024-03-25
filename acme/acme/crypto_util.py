@@ -9,6 +9,7 @@ import re
 import socket
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import List
 from typing import Mapping
 from typing import Optional
@@ -24,6 +25,7 @@ from cryptography.hazmat.primitives.asymmetric.dsa import DSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives.asymmetric.types import CertificateIssuerPrivateKeyTypes
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
@@ -245,7 +247,11 @@ def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]
     params ordered this way for backward competablity when called by positional argument.
     :returns: buffer PEM-encoded Certificate Signing Request.
     """
-    private_key = load_pem_private_key(private_key_pem, None)
+    # builder.sign(...) below will error out if this isn't the correct private key type
+    private_key: CertificateIssuerPrivateKeyTypes = cast(
+        CertificateIssuerPrivateKeyTypes,
+        load_pem_private_key(private_key_pem, None)
+    )
     builder = x509.CertificateSigningRequestBuilder()
     # set an empty subject name
     builder = builder.subject_name(x509.Name([]))

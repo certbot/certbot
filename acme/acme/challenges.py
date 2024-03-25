@@ -490,7 +490,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         try:
             ext = crypto_cert.extensions.get_extension_for_oid(oid)
             if ext is not None:
-                return ext.value.value == der_value
+                return ext.value.public_bytes() == der_value
         except x509.ExtensionNotFound:
             pass
 
