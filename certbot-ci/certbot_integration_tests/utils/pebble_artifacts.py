@@ -39,7 +39,7 @@ def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str
 def _fetch_asset(asset: str, suffix: str, assets_path: str) -> str:
     asset_path = os.path.join(assets_path, '{0}_{1}_{2}'.format(asset, PEBBLE_VERSION, suffix))
     if not os.path.exists(asset_path):
-        asset_url = ('https://github.com/letsencrypt/pebble/releases/download/{0}/{1}_{2}'
+        asset_url = ('https://github.com/letsencrypt/pebble/releases/download/{0}/{1}-{2}'
                      .format(PEBBLE_VERSION, asset, suffix))
         response = requests.get(asset_url, timeout=30)
         response.raise_for_status()
