@@ -33,7 +33,6 @@ from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
 import requests
 
-from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
 from certbot_integration_tests.utils.constants import PEBBLE_ALTERNATE_ROOTS
 from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
 
@@ -303,16 +302,12 @@ def echo(keyword: str, path: Optional[str] = None) -> str:
         os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
 
 
-def get_acme_issuers(context: IntegrationTestsContext) -> List[Certificate]:
+def get_acme_issuers() -> List[Certificate]:
     """Gets the list of one or more issuer certificates from the ACME server used by the
     context.
     :param context: the testing context.
     :return: the `list of x509.Certificate` representing the list of issuers.
     """
-    # TODO: in fact, Boulder has alternate chains in config-next/, just not yet in config/.
-    if context.acme_server != "pebble":
-        raise NotImplementedError()
-
     _suppress_x509_verification_warnings()
 
     issuers = []
