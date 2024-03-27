@@ -186,7 +186,7 @@ jobs:
         displayName: Install Certbot snap
       - script: |
           set -e
-          venv/bin/python -m tox -e integration-external,apacheconftest-external-with-pebble
+          venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
         displayName: Run tox
   - job: snap_dns_run
     dependsOn: snaps_build
