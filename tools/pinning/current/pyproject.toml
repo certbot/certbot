@@ -68,15 +68,8 @@ pylint = "3.0.2"
 # Making sure that it would not get installed (Fixing https://github.com/certbot/certbot/issues/9336)
 cryptography = "!= 37.0.3"
 
-# If poetry>=1.3.0 is selected, multiple versions of virtualenv are selected
-# causing problems when exporting dependencies so let's pin poetry back until
-# https://github.com/python-poetry/poetry-plugin-export/issues/168 is resolved.
-poetry = ">=1.3.0"
-
-# Branch 4.x of tox introduces backward incompatibility changes. The tox.ini
-# file in the project must be adapted accordingly before moving out of the 3.x
-# branch. Once done, the following constraint should become tox >= 4 to keep
-# deterministic builds.
+# Branch 4.x of tox introduces backward incompatibility changes, so require a newer
+# version of tox to keep deterministic builds.
 tox = ">=4"
 
 
