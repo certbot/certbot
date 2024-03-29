@@ -18,7 +18,7 @@ jobs:
           PYTHON_VERSION: 3.11
           TOXENV: py311
         linux-isolated:
-          TOXENV: 'isolated-{acme,certbot,apache,cloudflare,digitalocean,dnsimple,dnsmadeeasy,gehirn,google,linode,luadns,nsone,ovh,rfc2136,route53,sakuracloud,nginx}'
+          TOXENV: 'isolated-acme,isolated-certbot,isolated-apache,isolated-cloudflare,isolated-digitalocean,isolated-dnsimple,isolated-dnsmadeeasy,isolated-gehirn,isolated-google,isolated-linode,isolated-luadns,isolated-nsone,isolated-ovh,isolated-rfc2136,isolated-route53,isolated-sakuracloud,isolated-nginx'
         linux-boulder-v2-integration-certbot-oldest:
           PYTHON_VERSION: 3.8
           TOXENV: integration-certbot-oldest
