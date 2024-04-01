@@ -1,0 +1,21 @@
+stages:
+  - stage: Deploy
+    jobs:
+      - template: ../jobs/common-deploy-jobs.yml
+        parameters:
+          snapReleaseChannel: beta
+      - job: create_github_release
+        pool:
+          vmImage: ubuntu-22.04
+        steps:
+        - task: DownloadPipelineArtifact@2
+          inputs:
+            artifact: changelog
+            path: '$(Pipeline.Workspace)'
+        - task: GitHubRelease@1
+          inputs:
+            gitHubConnection: github-releases
+            title: ${{ format('Certbot {0}', replace(variables['Build.SourceBranchName'], 'v', '')) }}
+            releaseNotesFilePath: '$(Pipeline.Workspace)/release_notes.md'
+            assets: '$(Build.SourcesDirectory)/packages/{*.tar.gz,SHA256SUMS*}'
+            addChangeLog: false
