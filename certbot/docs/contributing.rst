@@ -154,7 +154,7 @@ Running automated integration tests
 
 Generally it is sufficient to open a pull request and let Github and Azure Pipelines run
 integration tests for you. However, you may want to run them locally before submitting
-your pull request. You need Docker and docker-compose (v1 or v2) installed and working.
+your pull request. You need Docker installed and working.
 
 The tox environment `integration` will setup `Pebble`_, the Let's Encrypt ACME CA server
 for integration testing, then launch the Certbot integration tests.
