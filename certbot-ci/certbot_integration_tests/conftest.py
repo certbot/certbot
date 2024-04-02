@@ -89,7 +89,7 @@ def _setup_primary_node(config):
                              'boulder, but is not installed or not available for current user.')
 
         try:
-            subprocess.check_output(['docker', 'compose', 'ps'], stderr=subprocess.STDOUT)
+            subprocess.check_output(['docker', 'compose', 'ls'], stderr=subprocess.STDOUT)
         except (subprocess.CalledProcessError, OSError):
             raise ValueError(
                 'Error: A version of Docker with the "compose" subcommand '
