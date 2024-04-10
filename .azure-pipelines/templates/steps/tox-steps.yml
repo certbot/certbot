@@ -44,7 +44,7 @@ steps:
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
       [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
       env
-      python3 -m tox
+      python3 -m tox run
     env:
       AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
       AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
