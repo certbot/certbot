@@ -69,7 +69,7 @@ def _setup_primary_node(config):
     Setup the environment for integration tests.
 
     This function will:
-        - check runtime compatibility (Docker, docker-compose, Nginx)
+        - check runtime compatibility (Docker, docker compose, Nginx)
         - create a temporary workspace and the persistent GIT repositories space
         - configure and start a DNS server using Docker, if configured
         - configure and start paralleled ACME CA servers using Docker
@@ -89,10 +89,11 @@ def _setup_primary_node(config):
                              'boulder, but is not installed or not available for current user.')
 
         try:
-            subprocess.check_output(['docker-compose', '-v'], stderr=subprocess.STDOUT)
+            subprocess.check_output(['docker', 'compose', 'ls'], stderr=subprocess.STDOUT)
         except (subprocess.CalledProcessError, OSError):
             raise ValueError(
-                'Error: docker-compose is required in PATH to launch the integration tests, '
+                'Error: A version of Docker with the "compose" subcommand '
+                'is required in PATH to launch the integration tests, '
                 'but is not installed or not available for current user.'
             )
 

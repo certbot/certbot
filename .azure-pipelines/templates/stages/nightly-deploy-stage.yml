@@ -1,0 +1,6 @@
+stages:
+  - stage: Deploy
+    jobs:
+      - template: ../jobs/common-deploy-jobs.yml
+        parameters:
+          snapReleaseChannel: edge

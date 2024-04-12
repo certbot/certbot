@@ -29,6 +29,11 @@ from certbot_integration_tests.utils import pebble_artifacts
 from certbot_integration_tests.utils import proxy
 from certbot_integration_tests.utils.constants import *
 
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
+
 
 class ACMEServer:
     """
@@ -185,8 +190,10 @@ class ACMEServer:
         process.wait(MAX_SUBPROCESS_WAIT)
 
         # Allow Boulder to ignore usual limit rate policies, useful for tests.
-        os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
-                  join(instance_path, 'test/rate-limit-policies.yml'))
+        ref = importlib_resources.files("certbot_integration_tests")
+        ref = ref / "assets" / "boulder-rate-limit-policies.yml"
+        with importlib_resources.as_file(ref) as path:
+            shutil.copyfile(path, join(instance_path, 'test/rate-limit-policies.yml'))
 
         if self._dns_server:
             # Change Boulder config to use the provided DNS server
@@ -198,9 +205,9 @@ class ACMEServer:
                     f.write(json.dumps(config, indent=2, separators=(',', ': ')))
 
         # This command needs to be run before we try and terminate running processes because
-        # docker-compose up doesn't always respond to SIGTERM. See
+        # docker compose up doesn't always respond to SIGTERM. See
         # https://github.com/certbot/certbot/pull/9435.
-        self._register_preterminate_cmd(['docker-compose', 'down'], cwd=instance_path)
+        self._register_preterminate_cmd(['docker', 'compose', 'down'], cwd=instance_path)
         # Boulder docker generates build artifacts owned by root with 0o744 permissions.
         # If we started the acme server from a normal user that has access to the Docker
         # daemon, this user will not be able to delete these artifacts from the host.
@@ -210,12 +217,12 @@ class ACMEServer:
                                          '-rf', '/workspace/boulder'])
         try:
             # Launch the Boulder server
-            self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
+            self._launch_process(['docker', 'compose', 'up', '--force-recreate'], cwd=instance_path)
 
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
             misc.check_until_timeout(
-                self.acme_xdist['directory_url'], attempts=300)
+                self.acme_xdist['directory_url'], attempts=480)
 
             if not self._dns_server:
                 # Configure challtestsrv to answer any A record request with ip of the docker host.
@@ -229,7 +236,7 @@ class ACMEServer:
             # If we failed to set up boulder, print its logs.
             print('=> Boulder setup failed. Boulder logs are:')
             process = self._launch_process([
-                'docker-compose', 'logs'], cwd=instance_path, force_stderr=True
+                'docker', 'compose', 'logs'], cwd=instance_path, force_stderr=True
             )
             process.wait(MAX_SUBPROCESS_WAIT)
             raise

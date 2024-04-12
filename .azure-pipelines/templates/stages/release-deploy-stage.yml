@@ -1,0 +1,38 @@
+stages:
+  - stage: Deploy
+    jobs:
+      - template: ../jobs/common-deploy-jobs.yml
+        parameters:
+          snapReleaseChannel: beta
+      - job: create_github_release
+        pool:
+          vmImage: ubuntu-22.04
+        steps:
+        - task: DownloadPipelineArtifact@2
+          inputs:
+            artifact: changelog
+            path: '$(Pipeline.Workspace)'
+        - task: GitHubRelease@1
+          inputs:
+            # this "github-releases" credential is what azure pipelines calls a
+            # "service connection". it was created using the instructions at
+            # https://learn.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#github-service-connection
+            # with a fine-grained personal access token from github to limit
+            # the permissions given to azure pipelines. the connection on azure
+            # needs permissions for the "release" pipeline (and maybe the
+            # "full-test-suite" pipeline to simplify testing it). information
+            # on how to set up these permissions can be found at
+            # https://learn.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#secure-a-service-connection.
+            # the github token that is used needs "contents:write" and
+            # "workflows:write" permissions for the certbot repo
+            #
+            # as of writing this, the current token will expire on 3/15/2025.
+            # when recreating it, you may also want to create it using the
+            # shared "certbotbot" github account so the credentials aren't tied
+            # to any one dev's github account and their access to the certbot
+            # repo
+            gitHubConnection: github-releases
+            title: ${{ format('Certbot {0}', replace(variables['Build.SourceBranchName'], 'v', '')) }}
+            releaseNotesFilePath: '$(Pipeline.Workspace)/release_notes.md'
+            assets: '$(Build.SourcesDirectory)/packages/{*.tar.gz,SHA256SUMS*}'
+            addChangeLog: false
