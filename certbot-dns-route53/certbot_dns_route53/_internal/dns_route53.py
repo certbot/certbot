@@ -95,7 +95,6 @@ class Authenticator(dns_common.DNSAuthenticator):
         """
         try:
             cname_result = dns.resolver.resolve(lookup_domain, 'CNAME')
-            # cname_result = dns.resolver.resolve('_acme-challenge.{}'.format(lookup_domain), 'CNAME')
             if len(cname_result) == 1:
                 for cname_data in cname_result:
                     logger.debug("Recursing into {}".format(cname_data.target))
@@ -103,10 +102,28 @@ class Authenticator(dns_common.DNSAuthenticator):
             else:
                 logger.debug("Empty CNAME resultset, returning {}".format(lookup_domain))
                 return lookup_domain
-        except dns.resolver.NXDOMAIN:
-            logger.debug("Exception - No CNAME found, returning {}".format(lookup_domain))
+        except AttributeError:
+            return self._resolve_CNAME_challenge_python_2(lookup_domain)
+        except:
+            logger.debug("Unable to resolve {} to a CNAME".format(lookup_domain))
             return lookup_domain
 
+    def _resolve_CNAME_challenge_python_2(self, lookup_domain: str) -> str:
+        """
+           In case this request is being forwarded using a CNAME, and we're running on an obsolete Python, resolve that first.
+        """
+        try:
+            cname_result = dns.resolver.query(lookup_domain, 'CNAME')
+            if len(cname_result) == 1:
+                for cname_data in cname_result:
+                    logger.debug("Recursing into {}".format(cname_data.target))
+                    return self._resolve_CNAME_challenge(str(cname_data.target))
+            else:
+                logger.debug("Empty CNAME resultset, returning {}".format(lookup_domain))
+                return lookup_domain
+        except:
+            logger.debug("Unable to resolve {} to a CNAME".format(lookup_domain))
+            return lookup_domain
 
     def _find_zone_id_for_domain(self, domain: str) -> str:
         """Find the zone id responsible a given FQDN.
