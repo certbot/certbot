@@ -205,9 +205,9 @@ class ACMEServer:
                     f.write(json.dumps(config, indent=2, separators=(',', ': ')))
 
         # This command needs to be run before we try and terminate running processes because
-        # docker-compose up doesn't always respond to SIGTERM. See
+        # docker compose up doesn't always respond to SIGTERM. See
         # https://github.com/certbot/certbot/pull/9435.
-        self._register_preterminate_cmd(['docker-compose', 'down'], cwd=instance_path)
+        self._register_preterminate_cmd(['docker', 'compose', 'down'], cwd=instance_path)
         # Boulder docker generates build artifacts owned by root with 0o744 permissions.
         # If we started the acme server from a normal user that has access to the Docker
         # daemon, this user will not be able to delete these artifacts from the host.
@@ -217,7 +217,7 @@ class ACMEServer:
                                          '-rf', '/workspace/boulder'])
         try:
             # Launch the Boulder server
-            self._launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
+            self._launch_process(['docker', 'compose', 'up', '--force-recreate'], cwd=instance_path)
 
             # Wait for the ACME CA server to be up.
             print('=> Waiting for boulder instance to respond...')
@@ -236,7 +236,7 @@ class ACMEServer:
             # If we failed to set up boulder, print its logs.
             print('=> Boulder setup failed. Boulder logs are:')
             process = self._launch_process([
-                'docker-compose', 'logs'], cwd=instance_path, force_stderr=True
+                'docker', 'compose', 'logs'], cwd=instance_path, force_stderr=True
             )
             process.wait(MAX_SUBPROCESS_WAIT)
             raise

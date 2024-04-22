@@ -134,7 +134,7 @@ For debugging, we recommend putting
 
 Once you are done with your code changes, and the tests in ``foo_test.py``
 pass, run all of the unit tests for Certbot and check for coverage with ``tox
--e cover``. You should then check for code style with ``tox -e lint`` (all
+-e cover``. You should then check for code style with ``tox run -e lint`` (all
 files) or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a
 time).
 
@@ -154,7 +154,7 @@ Running automated integration tests
 
 Generally it is sufficient to open a pull request and let Github and Azure Pipelines run
 integration tests for you. However, you may want to run them locally before submitting
-your pull request. You need Docker and docker-compose installed and working.
+your pull request. You need Docker installed and working.
 
 The tox environment `integration` will setup `Pebble`_, the Let's Encrypt ACME CA server
 for integration testing, then launch the Certbot integration tests.
@@ -163,7 +163,7 @@ With a user allowed to access your local Docker daemon, run:
 
 .. code-block:: shell
 
-  tox -e integration
+  tox run -e integration
 
 Tests will be run using pytest. A test report and a code coverage report will be
 displayed at the end of the integration tests execution.
@@ -485,7 +485,7 @@ annotations; we can find bugs in Certbot even without a fully annotated codebase
 Zulip wrote a `great guide`_ to using mypy. It’s useful, but you don’t have to read the whole thing
 to start contributing to Certbot.
 
-To run mypy on Certbot, use ``tox -e mypy`` on a machine that has Python 3 installed.
+To run mypy on Certbot, use ``tox run -e mypy`` on a machine that has Python 3 installed.
 
 Also note that OpenSSL, which we rely on, has type definitions for crypto but not SSL. We use both.
 Those imports should look like this:
@@ -509,12 +509,12 @@ Steps:
    something we have the time and interest to review.
 1. Write your code! When doing this, you should add :ref:`mypy type annotations
    <type annotations>` for any functions you add or modify. You can check that
-   you've done this correctly by running ``tox -e mypy`` on a machine that has
+   you've done this correctly by running ``tox run -e mypy`` on a machine that has
    Python 3 installed.
 2. Make sure your environment is set up properly and that you're in your
    virtualenv. You can do this by following the instructions in the
    :ref:`Getting Started <getting_started>` section.
-3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
+3. Run ``tox run -e lint`` to check for pylint errors. Fix any errors.
 4. Run ``tox --skip-missing-interpreters`` to run all the tests we recommend
    developers run locally. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.

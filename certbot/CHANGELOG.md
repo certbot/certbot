@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 2.10.0 - master
+## 2.11.0 - master
 
 ### Added
 
@@ -11,6 +11,27 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 *
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 2.10.0 - 2024-04-02
+
+### Added
+
+* The Python source packages which we upload to [PyPI](https://pypi.org/) are
+  now also being uploaded to
+  [our releases on GitHub](https://github.com/certbot/certbot/releases) where
+  we now also include a SHA256SUMS checksum file and a PGP signature for that
+  file.
+
+### Changed
+
+* We no longer publish our beta Windows installer as was originally announced
+  [here](https://community.letsencrypt.org/t/certbot-discontinuing-windows-beta-support-in-2024/208101).
 
 ### Fixed
 
