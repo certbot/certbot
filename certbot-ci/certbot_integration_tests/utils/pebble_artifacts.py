@@ -37,10 +37,11 @@ def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str
 
 
 def _fetch_asset(asset: str, assets_path: str) -> str:
-    asset_path = os.path.join(assets_path, '{0}_{1}_linux-amd64'.format(asset, PEBBLE_VERSION))
+    platform = 'linux-amd64'
+    base_url = 'https://github.com/letsencrypt/pebble/releases/download'
+    asset_path = os.path.join(assets_path, f'{asset}_{PEBBLE_VERSION}_{platform}')
     if not os.path.exists(asset_path):
-        asset_url = ('https://github.com/letsencrypt/pebble/releases/download/{0}/{1}-linux-amd64.zip'
-                     .format(PEBBLE_VERSION, asset))
+        asset_url = f'{base_url}/{PEBBLE_VERSION}/{asset}-{platform}.zip'
         response = requests.get(asset_url, timeout=30)
         response.raise_for_status()
         asset_data = _unzip_asset(response.content, asset)
