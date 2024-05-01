@@ -55,10 +55,10 @@ def _fetch_asset(asset: str, assets_path: str) -> str:
 
 
 def _unzip_asset(zipped_data: bytes, asset_name: str) -> Optional[bytes]:
-    zip_file = zipfile.ZipFile(io.BytesIO(zipped_data))
-    for entry in zip_file.filelist:
-        if not entry.is_dir() and entry.filename.endswith(asset_name):
-            return zip_file.read(entry)
+    with zipfile.ZipFile(io.BytesIO(zipped_data)) as zip_file:
+        for entry in zip_file.filelist:
+            if not entry.is_dir() and entry.filename.endswith(asset_name):
+                return zip_file.read(entry)
     return None
 
 
