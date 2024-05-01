@@ -16,18 +16,6 @@ jobs:
           TOXENV: cover
           # See explanation under macos-py38-cover.
           PIP_USE_PEP517: "true"
-        windows-py38:
-          IMAGE_NAME: windows-2019
-          PYTHON_VERSION: 3.8
-          TOXENV: py-win
-        windows-py39-cover:
-          IMAGE_NAME: windows-2019
-          PYTHON_VERSION: 3.9
-          TOXENV: cover-win
-        windows-integration-certbot:
-          IMAGE_NAME: windows-2019
-          PYTHON_VERSION: 3.9
-          TOXENV: integration-certbot
         linux-oldest:
           IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.8
