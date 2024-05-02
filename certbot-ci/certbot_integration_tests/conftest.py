@@ -8,7 +8,6 @@ for a directory a specific configuration using built-in pytest hooks.
 See https://docs.pytest.org/en/latest/reference.html#hook-reference
 """
 import contextlib
-import subprocess
 import sys
 
 from certbot_integration_tests.utils import acme_server as acme_lib
@@ -20,10 +19,6 @@ def pytest_addoption(parser):
     Standard pytest hook to add options to the pytest parser.
     :param parser: current pytest parser that will be used on the CLI
     """
-    parser.addoption('--acme-server', default='pebble',
-                     choices=['boulder-v2', 'pebble'],
-                     help='select the ACME server to use (boulder-v2, pebble), '
-                          'defaulting to pebble')
     parser.addoption('--dns-server', default='challtestsrv',
                      choices=['bind', 'challtestsrv'],
                      help='select the DNS server to use (bind, challtestsrv), '
@@ -80,23 +75,6 @@ def _setup_primary_node(config):
 
     :param config: Configuration of the pytest primary node. Is modified by this function.
     """
-    # Check for runtime compatibility: some tools are required to be available in PATH
-    if 'boulder' in config.option.acme_server:
-        try:
-            subprocess.check_output(['docker', '-v'], stderr=subprocess.STDOUT)
-        except (subprocess.CalledProcessError, OSError):
-            raise ValueError('Error: docker is required in PATH to launch the integration tests on'
-                             'boulder, but is not installed or not available for current user.')
-
-        try:
-            subprocess.check_output(['docker', 'compose', 'ls'], stderr=subprocess.STDOUT)
-        except (subprocess.CalledProcessError, OSError):
-            raise ValueError(
-                'Error: A version of Docker with the "compose" subcommand '
-                'is required in PATH to launch the integration tests, '
-                'but is not installed or not available for current user.'
-            )
-
     # Parameter numprocesses is added to option by pytest-xdist
     workers = ['primary'] if not config.option.numprocesses\
         else ['gw{0}'.format(i) for i in range(config.option.numprocesses)]
@@ -116,8 +94,7 @@ def _setup_primary_node(config):
 
     # By calling setup_acme_server we ensure that all necessary acme server instances will be
     # fully started. This runtime is reflected by the acme_xdist returned.
-    acme_server = acme_lib.ACMEServer(config.option.acme_server, workers,
-                                      dns_server=acme_dns_server)
+    acme_server = acme_lib.ACMEServer(workers, dns_server=acme_dns_server)
     config.add_cleanup(acme_server.stop)
     print('ACME xdist config:\n{0}'.format(acme_server.acme_xdist))
     acme_server.start()

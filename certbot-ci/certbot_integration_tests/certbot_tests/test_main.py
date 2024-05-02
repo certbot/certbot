@@ -7,7 +7,6 @@ import shutil
 import subprocess
 import time
 from typing import Generator
-from typing import Iterable
 from typing import Tuple
 from typing import Type
 
@@ -82,11 +81,9 @@ def test_registration_override(context: IntegrationTestsContext) -> None:
     context.certbot(['update_account', '--email', 'ex1@domain.org,ex2@domain.org'])
     stdout2, _ = context.certbot(['show_account'])
 
-    # https://github.com/letsencrypt/boulder/issues/6144
-    if context.acme_server != 'boulder-v2':
-        assert 'example@domain.org' in stdout1, "New email should be present"
-        assert 'example@domain.org' not in stdout2, "Old email should not be present"
-        assert 'ex1@domain.org, ex2@domain.org' in stdout2, "New emails should be present"
+    assert 'example@domain.org' in stdout1, "New email should be present"
+    assert 'example@domain.org' not in stdout2, "Old email should not be present"
+    assert 'ex1@domain.org, ex2@domain.org' in stdout2, "New emails should be present"
 
 
 def test_prepare_plugins(context: IntegrationTestsContext) -> None:
@@ -566,19 +563,15 @@ def test_default_rsa_size(context: IntegrationTestsContext) -> None:
     assert_rsa_key(key1, 2048)
 
 
-@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
+@pytest.mark.parametrize('curve,curve_cls', [
     # Curve name, Curve class, ACME servers to skip
-    ('secp256r1', SECP256R1, []),
-    ('secp384r1', SECP384R1, []),
-    ('secp521r1', SECP521R1, ['boulder-v2'])]
+    ('secp256r1', SECP256R1),
+    ('secp384r1', SECP384R1),
+    ('secp521r1', SECP521R1)]
 )
-def test_ecdsa_curves(context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve],
-                      skip_servers: Iterable[str]) -> None:
+def test_ecdsa_curves(context: IntegrationTestsContext, curve: str,
+                      curve_cls: Type[EllipticCurve]) -> None:
     """Test issuance for each supported ECDSA curve"""
-    if context.acme_server in skip_servers:
-        pytest.skip('ACME server {} does not support ECDSA curve {}'
-                    .format(context.acme_server, curve))
-
     domain = context.get_domain('curve')
     context.certbot([
         'certonly',
@@ -640,9 +633,6 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
 
 def test_ocsp_must_staple(context: IntegrationTestsContext) -> None:
     """Test that OCSP Must-Staple is correctly set in the generated certificate."""
-    if context.acme_server == 'pebble':
-        pytest.skip('Pebble does not support OCSP Must-Staple.')
-
     certname = context.get_domain('must-staple')
     context.certbot(['auth', '--must-staple', '--domains', certname])
 
@@ -710,17 +700,14 @@ def test_revoke_and_unregister(context: IntegrationTestsContext) -> None:
     assert cert3 in stdout
 
 
-@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
-    ('secp256r1', SECP256R1, []),
-    ('secp384r1', SECP384R1, []),
-    ('secp521r1', SECP521R1, ['boulder-v2'])]
+@pytest.mark.parametrize('curve,curve_cls', [
+    ('secp256r1', SECP256R1),
+    ('secp384r1', SECP384R1),
+    ('secp521r1', SECP521R1)]
 )
 def test_revoke_ecdsa_cert_key(
-    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve],
-    skip_servers: Iterable[str]) -> None:
+    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve]) -> None:
     """Test revoking a certificate """
-    if context.acme_server in skip_servers:
-        pytest.skip(f'ACME server {context.acme_server} does not support ECDSA curve {curve}')
     cert: str = context.get_domain('curve')
     context.certbot([
         'certonly',
@@ -738,17 +725,14 @@ def test_revoke_ecdsa_cert_key(
     assert stdout.count('INVALID: REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
 
 
-@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
-    ('secp256r1', SECP256R1, []),
-    ('secp384r1', SECP384R1, []),
-    ('secp521r1', SECP521R1, ['boulder-v2'])]
+@pytest.mark.parametrize('curve,curve_cls', [
+    ('secp256r1', SECP256R1),
+    ('secp384r1', SECP384R1),
+    ('secp521r1', SECP521R1)]
 )
 def test_revoke_ecdsa_cert_key_delete(
-    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve],
-    skip_servers: Iterable[str]) -> None:
+    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve]) -> None:
     """Test revoke and deletion for each supported curve type"""
-    if context.acme_server in skip_servers:
-        pytest.skip(f'ACME server {context.acme_server} does not support ECDSA curve {curve}')
     cert: str = context.get_domain('curve')
     context.certbot([
         'certonly',
@@ -913,7 +897,7 @@ def test_dry_run_deactivate_authzs(context: IntegrationTestsContext) -> None:
 def test_preferred_chain(context: IntegrationTestsContext) -> None:
     """Test that --preferred-chain results in the correct chain.pem being produced"""
     try:
-        issuers = misc.get_acme_issuers(context)
+        issuers = misc.get_acme_issuers()
     except NotImplementedError:
         pytest.skip('This ACME server does not support alternative issuers.')
 
