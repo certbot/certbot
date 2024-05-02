@@ -47,6 +47,7 @@ jobs:
           SNAP_ARCH: amd64
         arm32v6:
           SNAP_ARCH: armhf
+          CRYPTOGRAPHY_OPENSSL_NO_LEGACY: 1
         arm64v8:
           SNAP_ARCH: arm64
     steps:
