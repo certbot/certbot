@@ -62,6 +62,9 @@ class ACMEServer:
         self._preterminate_cmds_args: List[Tuple[Tuple[Any, ...], Dict[str, Any]]] = []
         self._http_01_port = DEFAULT_HTTP_01_PORT
         if http_01_port:
+            if self._proxy:
+                raise ValueError('Setting http_01_port is not currently supported when '
+                                 'using the HTTP proxy')
             self._http_01_port = http_01_port
 
     def start(self) -> None:
