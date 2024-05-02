@@ -25,9 +25,8 @@ jobs:
         linux-integration-nginx-oldest:
           PYTHON_VERSION: 3.8
           TOXENV: integration-nginx-oldest
-        linux-py38-integration:
-          PYTHON_VERSION: 3.8
-          TOXENV: integration
+        # python 3.8 integration tests are not run here because they're run as    
+        # part of the standard test suite 
         linux-py39-integration:
           PYTHON_VERSION: 3.9
           TOXENV: integration
