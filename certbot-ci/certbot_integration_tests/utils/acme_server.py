@@ -59,7 +59,6 @@ class ACMEServer:
         self._processes: List[subprocess.Popen] = []
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
         self._dns_server = dns_server
-        self._preterminate_cmds_args: List[Tuple[Tuple[Any, ...], Dict[str, Any]]] = []
         self._http_01_port = DEFAULT_HTTP_01_PORT
         if http_01_port:
             if self._proxy:
@@ -81,7 +80,6 @@ class ACMEServer:
         """Stop the test stack, and clean its resources"""
         print('=> Tear down the test infrastructure...')
         try:
-            self._run_preterminate_cmds()
             for process in self._processes:
                 try:
                     process.terminate()
@@ -179,17 +177,6 @@ class ACMEServer:
         )
         self._processes.append(process)
         return process
-
-    def _register_preterminate_cmd(self, *args: Any, **kwargs: Any) -> None:
-        self._preterminate_cmds_args.append((args, kwargs))
-
-    def _run_preterminate_cmds(self) -> None:
-        for args, kwargs in self._preterminate_cmds_args:
-            process = self._launch_process(*args, **kwargs)
-            process.wait(MAX_SUBPROCESS_WAIT)
-        # It's unlikely to matter, but let's clear the list of cleanup commands
-        # once they've been run.
-        self._preterminate_cmds_args.clear()
 
 
 def main() -> None:
