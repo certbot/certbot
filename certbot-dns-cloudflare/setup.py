@@ -7,7 +7,9 @@ from setuptools import setup
 version = '2.11.0.dev0'
 
 install_requires = [
-    'cloudflare>=1.5.1',
+    # for now, do not upgrade to cloudflare>=2.20 to avoid deprecation warnings and the breaking
+    # changes in version 3.0. see https://github.com/certbot/certbot/issues/9938
+    'cloudflare>=1.5.1, <2.20',
     'setuptools>=41.6.0',
 ]
 

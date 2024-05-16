@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* In anticipation of backwards incompatible changes, certbot-dns-cloudflare now
+  requires less than version 2.20 of Cloudflare's python library.
 
 ### Fixed
 
