@@ -15,7 +15,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed a bug in Certbot where a CSR's SANs did not always follow the order of
+  the domain names that the user requested interactively. In some cases, the
+  resulting cert's common name might seem picked up randomly from the SANs
+  when it should be the first item the user had in mind.
 
 More details about these changes can be found on our GitHub repo.
 
