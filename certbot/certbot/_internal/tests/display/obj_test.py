@@ -194,6 +194,25 @@ class FileOutputDisplayTest(unittest.TestCase):
                 self.displayer._scrub_checklist_input(list_, TAGS))
             assert set_tags == exp[i]
 
+    def test_scrub_checklist_maintain_indices_order(self):
+        # pylint: disable=protected-access
+        source_tags = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9"]
+        indices = [
+            ["4", "9"],
+            ["9", "4"],
+            ["4", "9", "4"],
+            ["9", "4", "9"],
+        ]
+        exp = [
+            ["T4", "T9"],
+            ["T9", "T4"],
+            ["T4", "T9"],
+            ["T9", "T4"],
+        ]
+        for i, list_ in enumerate(indices):
+            tags = self.displayer._scrub_checklist_input(list_, source_tags)
+            assert tags == exp[i]
+
     @mock.patch("certbot._internal.display.util.input_with_timeout")
     def test_directory_select(self, mock_input):
         args = ["msg", "/var/www/html", "--flag", True]
