@@ -62,6 +62,10 @@ setuptools-rust = "*"
 # If this pinning is removed, we may still need to add a lower bound for the
 # pylint version. See https://github.com/certbot/certbot/pull/9229.
 pylint = "3.0.2"
+# mypy often adds new checks that we need to conform our code to when updating
+# dependencies. To help control when this needs to be done, we pin mypy to a
+# compatible version here.
+mypy = "1.9.0"
 
 # Bug in poetry, where still installes yanked versions from pypi (source: https://github.com/python-poetry/poetry/issues/2453)
 # this version of cryptography introduced a security vulnrability.
