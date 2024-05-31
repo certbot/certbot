@@ -156,7 +156,7 @@ Nginx
 
 The Nginx plugin should work for most configurations. We recommend backing up
 Nginx configurations before using it (though you can also revert changes to
-configurations with ``certbot --nginx rollback``). You can use it by providing
+configurations with ``certbot --nginx rollback -tv``). You can use it by providing
 the ``--nginx`` flag on the commandline.
 
 ::
