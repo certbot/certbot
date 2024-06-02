@@ -113,10 +113,13 @@ class ClientV2:
         self.net.account = new_regr
         return new_regr
 
-    def new_order(self, csr_pem: bytes) -> messages.OrderResource:
+    def new_order(self, csr_pem: bytes, ari_hint: str = '') -> messages.OrderResource:
         """Request a new Order object from the server.
+            with ari_hint give it will try but if it failes will try without one
 
         :param bytes csr_pem: A CSR in PEM format.
+        :param str ari_hint:  draft-ieft-ari-03 format certificate identifier 
+                    of old cert to be replaced by this.
 
         :returns: The newly created order.
         :rtype: OrderResource
@@ -133,8 +136,17 @@ class ClientV2:
         for ips in ipNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=ips))
-        order = messages.NewOrder(identifiers=identifiers)
-        response = self._post(self.directory['newOrder'], order)
+        if hasattr(self.directory,"renewalInfo"): # pragma: no cover
+            try: #coverage doesn't have server to ask ari
+                order = messages.NewOrder(identifiers=identifiers, replaces = ari_hint)
+                response = self._post(self.directory['newOrder'], order)
+            except messages.Error:
+                #if neworder with ARI failed try without one
+                order = messages.NewOrder(identifiers=identifiers)
+                response = self._post(self.directory['newOrder'], order)
+        else:
+            order = messages.NewOrder(identifiers=identifiers)
+            response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
         # pylint has trouble understanding our josepy based objects which use

@@ -1483,9 +1483,10 @@ class MainTest(test_util.ConfigTestCase):
                     # to obtain_certificate
                     mock_client.obtain_certificate.assert_called_once_with([mock.ANY],
                         os.path.normpath(os.path.join(
-                            self.config.config_dir, "live/sample-renewal/privkey.pem")))
+                            self.config.config_dir, "live/sample-renewal/privkey.pem")),
+                            ari_hint=mock.ANY)
                 else:
-                    mock_client.obtain_certificate.assert_called_once_with([mock.ANY], None)
+                    mock_client.obtain_certificate.assert_called_once_with([mock.ANY], None, ari_hint=mock.ANY)
             else:
                 assert mock_client.obtain_certificate.call_count == 0
         except:
@@ -1574,6 +1575,7 @@ class MainTest(test_util.ConfigTestCase):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
+        print(self.mock_sleep.call_args)
         assert self.mock_sleep.call_count == 0
 
     @mock.patch('certbot._internal.renewal.should_renew')
@@ -1650,6 +1652,7 @@ class MainTest(test_util.ConfigTestCase):
             if names is not None:
                 mock_lineage.names.return_value = names
             mock_rc.return_value = mock_lineage
+            mock_lineage.get_renewalinfo.return_value = False, mock.MagicMock(), mock.MagicMock()
             with mock.patch('certbot._internal.main.renew_cert') as mock_renew_cert:
                 kwargs.setdefault('args', ['renew'])
                 self._test_renewal_common(True, None, should_renew=False, **kwargs)
