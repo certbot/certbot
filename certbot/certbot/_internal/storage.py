@@ -1069,35 +1069,29 @@ class RenewableCert(interfaces.RenewableCert):
             expiry = crypto_util.notAfter(self.version(
                 "cert", self.latest_common_version()))
             now = datetime.datetime.now(pytz.UTC)
+
             # Try draft-ietf-acme-ari-03 endpoint if server has it
             hasari, start, end = self.get_renewalinfo(self.latest_common_version(),
                                                        verify_ssl, useragent)
             if hasari:
-                # Server have air endpoint
+                # Server have ari endpoint
                 rtime = start + random()*(end-start)
                 # If random time is before next wakeup we'll do renewal this time
                 if rtime < now + datetime.timedelta(hours=12):
                     logger.debug("Should renew, inside ARI renwal window")
                     return True
-                # Failsafe if ARI given broken date and dangerously close to expire,
-                # but make sense for short life certificate
-                if expiry < now + datetime.timedelta(days = 3):
-                    logger.debug("Should renew, less than %s before certificate "
-                                "expiry %s.(ARI failsafe)", "3 days",
-                                expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
-                    return True
             else:
                 # Renewal info for this cert not exsit or not supported version
                 # server not support ari or asking on wrong server
-                # Renews some period before expiry time
                 logger.debug("ARI infomation is not avabliable for this cert")
-                default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
-                interval = self.configuration.get("renew_before_expiry", default_interval)
-                if expiry < add_time_interval(now, interval):
-                    logger.debug("Should renew, less than %s before certificate "
-                                "expiry %s.", interval,
-                                expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
-                    return True
+            # Renews some period before expiry time
+            default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
+            interval = self.configuration.get("renew_before_expiry", default_interval)
+            if expiry < add_time_interval(now, interval):
+                logger.debug("Should renew, less than %s before certificate "
+                            "expiry %s.", interval,
+                            expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
+                return True
 
 
         return False
