@@ -5,7 +5,7 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 
-from requests import Session
+from requests import PreparedRequest, Session
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
@@ -100,6 +100,11 @@ class _SnapdConnectionPool(HTTPConnectionPool):
 
 
 class _SnapdAdapter(HTTPAdapter):
-    def get_connection(self, url: str,
-                       proxies: Optional[Iterable[str]] = None) -> _SnapdConnectionPool:
+    def get_connection_with_tls_context(self, request: PreparedRequest,
+                                        verify: bool,
+                                        proxies: Optional[Iterable[str]] = None,
+                                        cert: Optional[bytes] = None
+                                        ) -> _SnapdConnectionPool:
+        """Required method for creating a new connection pool. Simply return our
+        shim that forces a UNIX socket connection to snapd."""
         return _SnapdConnectionPool()
