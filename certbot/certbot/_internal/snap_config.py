@@ -100,10 +100,10 @@ class _SnapdConnectionPool(HTTPConnectionPool):
 
 
 class _SnapdAdapter(HTTPAdapter):
-    def get_connection_with_tls_context(self, _request: PreparedRequest,
-                                        _verify: bool,
-                                        _proxies: Optional[Iterable[str]] = None,
-                                        _cert: Optional[bytes] = None
+    def get_connection_with_tls_context(self, request: PreparedRequest,
+                                        verify: bool,
+                                        proxies: Optional[Iterable[str]] = None,
+                                        cert: Optional[bytes] = None
                                         ) -> _SnapdConnectionPool:
         """Required method for creating a new connection pool. Simply return our
         shim that forces a UNIX socket connection to snapd."""
