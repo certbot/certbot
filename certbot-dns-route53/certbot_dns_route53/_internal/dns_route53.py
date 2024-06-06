@@ -99,9 +99,6 @@ class Authenticator(dns_common.DNSAuthenticator):
         target_labels = domain.rstrip(".").split(".")
         for page in paginator.paginate():
             for zone in page["HostedZones"]:
-                if zone["Config"]["PrivateZone"]:
-                    continue
-
                 candidate_labels = zone["Name"].rstrip(".").split(".")
                 if candidate_labels == target_labels[-len(candidate_labels):]:
                     zones.append((zone["Name"], zone["Id"]))
