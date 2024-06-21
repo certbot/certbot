@@ -16,7 +16,7 @@ summary: ${DESCRIPTION}
 description: ${DESCRIPTION}
 confinement: strict
 grade: stable
-base: core20
+base: core24
 adopt-info: ${PLUGIN}
 
 parts:
@@ -24,8 +24,8 @@ parts:
     plugin: python
     source: .
     override-pull: |
-        snapcraftctl pull
-        snapcraftctl set-version \`grep ^version \$SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"\`
+        craftctl default
+        craftctl set version=\$(grep ^version \$SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]")
     build-environment:
       # We set this environment variable while building to try and increase the
       # stability of fetching the rust crates needed to build the cryptography
@@ -53,7 +53,7 @@ parts:
     source: .
     stage: [setup.py, certbot-shared]
     override-pull: |
-        snapcraftctl pull
+        craftctl default
         mkdir -p \$SNAPCRAFT_PART_SRC/certbot-shared
 
 slots:
@@ -61,7 +61,7 @@ slots:
     interface: content
     content: certbot-1
     read:
-      - \$SNAP/lib/python3.8/site-packages
+      - \$SNAP/lib/python3.12/site-packages
 
 plugs:
   certbot-metadata:

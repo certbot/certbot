@@ -12,7 +12,7 @@ These steps need to be done once to set up your VM and do not need to be run aga
  1. Start with a Focal VM. You need a full virtual machine using something like DigitalOcean, EC2, or VirtualBox. Docker won't work. Another version of Ubuntu can probably be used, but Focal was used when writing these instructions.
  2. Set up a user other than root with sudo privileges for use with snapcraft and run all of the following commands with it. A command to do this for a user named certbot looks like `adduser certbot && usermod -aG sudo certbot && su - certbot`.
  3. Install git and python with `sudo apt update && sudo apt install -y git python`.
- 4. Set up lxd for use with snapcraft by running `sudo snap install lxd && sudo /snap/bin/lxd.migrate -yes; sudo /snap/bin/lxd waitready && sudo /snap/bin/lxd init --auto` (errors here are ok; it may already
+ 4. Set up lxd for use with snapcraft by running `sudo snap install lxd; sudo /snap/bin/lxd waitready && sudo /snap/bin/lxd init --auto` (errors here are ok; it may already
  have been installed on your system).
  5. Add your current user to the lxd group and update your shell to have the new assignment by running `sudo usermod -a -G lxd ${USER} && newgrp lxd`.
  6. Install snapcraft with `sudo snap install --classic snapcraft`.
