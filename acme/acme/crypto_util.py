@@ -1,4 +1,5 @@
 """Crypto utilities."""
+from base64 import urlsafe_b64encode
 import binascii
 import contextlib
 import ipaddress
@@ -456,3 +457,34 @@ def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X50
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
     return b"".join(_dump_cert(cert) for cert in chain)
+
+def ariCertIdent(cert: crypto.X509) -> str:
+    """Make draft-ietf-acme-ari-03 identifier of a certificate
+    :param cert: Certificate.
+    :type cert: `OpenSSL.crypto.X509`.
+
+    :returns: unique identifier of the cert at cert_path to be used for ari related uses
+    :rtype: str
+    """
+
+    akid = None
+    for i in range(0,cert.get_extension_count()):
+        ext = cert.get_extension(i)
+        if ext.get_short_name() == b'authorityKeyIdentifier':
+            #by nature of asn1 encoding single member sequence
+            #we can strip first 4 bytes to get akid
+            #seq/len/octetstring/len
+            akid = ext.get_data()[4:]
+            break
+    if akid is None: # all public trusted certs must have one
+        return '' # pragma: no cover
+    p1 = urlsafe_b64encode(akid).decode('ascii').replace("=", "")
+
+    #p2 after period : base64url of serial
+    serial = cert.get_serial_number()
+    # we need one more byte when aligend due to sign padding
+    p2b = urlsafe_b64encode(serial.to_bytes((serial.bit_length() +8) // 8, 'big'))
+    p2 = p2b.decode('ascii').replace("=", "")
+
+    #build certificate
+    return f"{p1}.{p2}"
