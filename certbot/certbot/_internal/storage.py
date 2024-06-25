@@ -41,7 +41,7 @@ from certbot.util import parse_loose_version
 
 logger = logging.getLogger(__name__)
 
-ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
+ALL_FIVE = ("cert", "privkey", "chain", "fullchain", "everything")
 README = "README"
 CURRENT_VERSION = parse_loose_version(certbot.__version__)
 BASE_PRIVKEY_MODE = 0o600
@@ -128,7 +128,7 @@ def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
     :param str o_filename: Absolute path to the previous version of config file
     :param str n_filename: Absolute path to the new destination of config file
     :param str archive_dir: Absolute path to the archive directory
-    :param dict target: Maps ALL_FOUR to their symlink paths
+    :param dict target: Maps ALL_FIVE to their symlink paths
     :param dict relevant_data: Renewal configuration options to save
 
     :returns: Configuration object for the new config file
@@ -138,7 +138,7 @@ def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
     config = configobj.ConfigObj(o_filename, encoding='utf-8', default_encoding='utf-8')
     config["version"] = certbot.__version__
     config["archive_dir"] = archive_dir
-    for kind in ALL_FOUR:
+    for kind in ALL_FIVE:
         config[kind] = target[kind]
 
     if "renewalparams" not in config:
@@ -200,7 +200,7 @@ def update_configuration(lineagename: str, archive_dir: str, target: Mapping[str
 
     :param str lineagename: Name of the lineage being modified
     :param str archive_dir: Absolute path to the archive directory
-    :param dict target: Maps ALL_FOUR to their symlink paths
+    :param dict target: Maps ALL_FIVE to their symlink paths
     :param .NamespaceConfig cli_config: parsed command line
         arguments
 
@@ -254,6 +254,7 @@ def _write_live_readme_to(readme_path: str, is_base_dir: bool = False) -> None:
         f.write("This directory contains your keys and certificates.\n\n"
                 "`{prefix}privkey.pem`  : the private key for your certificate.\n"
                 "`{prefix}fullchain.pem`: the certificate file used in most server software.\n"
+                "`{prefix}everything.pem`: the private key, certificate and chain combined in a single file used in some server software.\n"
                 "`{prefix}chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
                 "`{prefix}cert.pem`     : will break many server configurations, and "
                                     "should not be used\n"
@@ -382,7 +383,7 @@ def delete_files(config: configuration.NamespaceConfig, certname: str) -> None:
     # it's not guaranteed that the files are in our default storage
     # structure. so, first delete the cert files.
     directory_names = set()
-    for kind in ALL_FOUR:
+    for kind in ALL_FIVE:
         link = renewal_config.get(kind)
         try:
             os.remove(link)
@@ -450,6 +451,9 @@ class RenewableCert(interfaces.RenewableCert):
     :ivar str fullchain: The path to the symlink representing the
         current version of the fullchain (combined chain and cert)
         managed by this lineage.
+    :ivar str everything: The path to the symlink representing the
+        current version of everything (combined private key, cert and chain)
+        managed by this lineage.
     :ivar configobj.ConfigObj configuration: The renewal configuration
         options associated with this lineage, obtained from parsing the
         renewal configuration file and/or systemwide defaults.
@@ -485,7 +489,7 @@ class RenewableCert(interfaces.RenewableCert):
         #       file at this stage?
         self.configuration = config_with_defaults(self.configfile)
 
-        if not all(x in self.configuration for x in ALL_FOUR):
+        if not all(x in self.configuration for x in ALL_FIVE):
             raise errors.CertStorageError(
                 "renewal config file {0} is missing a required "
                 "file reference".format(self.configfile))
@@ -502,6 +506,7 @@ class RenewableCert(interfaces.RenewableCert):
         self.privkey = self.configuration["privkey"]
         self.chain = self.configuration["chain"]
         self.fullchain = self.configuration["fullchain"]
+        self.everything = self.configuration["everything"]
         self.live_dir = os.path.dirname(self.cert)
 
         self._fix_symlinks()
@@ -528,6 +533,11 @@ class RenewableCert(interfaces.RenewableCert):
     def fullchain_path(self) -> str:
         """Duck type for self.fullchain"""
         return self.fullchain
+
+    @property
+    def fullchain_path(self) -> str:
+        """Duck type for self.everything"""
+        return self.everything
 
     @property
     def lineagename(self) -> str:
@@ -583,7 +593,7 @@ class RenewableCert(interfaces.RenewableCert):
 
     def _check_symlinks(self) -> None:
         """Raises an exception if a symlink doesn't exist"""
-        for kind in ALL_FOUR:
+        for kind in ALL_FIVE:
             link = getattr(self, kind)
             if not os.path.islink(link):
                 raise errors.CertStorageError(
@@ -595,7 +605,7 @@ class RenewableCert(interfaces.RenewableCert):
 
     def _update_symlinks(self) -> None:
         """Updates symlinks to use archive_dir"""
-        for kind in ALL_FOUR:
+        for kind in ALL_FIVE:
             link = getattr(self, kind)
             previous_link = get_link_target(link)
             new_link = os.path.join(self.relative_archive_dir(link),
@@ -614,18 +624,18 @@ class RenewableCert(interfaces.RenewableCert):
 
         """
         # Each element must be referenced with an absolute path
-        for x in (self.cert, self.privkey, self.chain, self.fullchain):
+        for x in (self.cert, self.privkey, self.chain, self.fullchain, self.everything):
             if not os.path.isabs(x):
                 logger.debug("Element %s is not referenced with an "
                              "absolute path.", x)
                 return False
 
         # Each element must exist and be a symbolic link
-        for x in (self.cert, self.privkey, self.chain, self.fullchain):
+        for x in (self.cert, self.privkey, self.chain, self.fullchain, self.everything):
             if not os.path.islink(x):
                 logger.debug("Element %s is not a symbolic link.", x)
                 return False
-        for kind in ALL_FOUR:
+        for kind in ALL_FIVE:
             link = getattr(self, kind)
             target = get_link_target(link)
 
@@ -669,7 +679,7 @@ class RenewableCert(interfaces.RenewableCert):
         #      (This check is redundant with the check that they
         #      are all in the desired directory!)
         #      len(set(os.path.basename(self.current_target(x)
-        #      for x in ALL_FOUR))) == 1
+        #      for x in ALL_FIVE))) == 1
         return True
 
     def _fix(self) -> None:
@@ -698,7 +708,7 @@ class RenewableCert(interfaces.RenewableCert):
 
         """
         previous_symlinks = []
-        for kind in ALL_FOUR:
+        for kind in ALL_FIVE:
             link_dir = os.path.dirname(getattr(self, kind))
             link_base = "previous_{0}.pem".format(kind)
             previous_symlinks.append((kind, os.path.join(link_dir, link_base)))
@@ -728,14 +738,14 @@ class RenewableCert(interfaces.RenewableCert):
         """Returns full path to which the specified item currently points.
 
         :param str kind: the lineage member item ("cert", "privkey",
-            "chain", or "fullchain")
+            "chain", "fullchain", or "everything")
 
         :returns: The path to the current version of the specified
             member.
         :rtype: str or None
 
         """
-        if kind not in ALL_FOUR:
+        if kind not in ALL_FIVE:
             raise errors.CertStorageError("unknown kind of item")
         link = getattr(self, kind)
         if not os.path.exists(link):
@@ -751,13 +761,13 @@ class RenewableCert(interfaces.RenewableCert):
         points to a file named "chain7.pem", returns the integer 7.
 
         :param str kind: the lineage member item ("cert", "privkey",
-            "chain", or "fullchain")
+            "chain", "fullchain", or "everything")
 
         :returns: the current version of the specified member.
         :rtype: int
 
         """
-        if kind not in ALL_FOUR:
+        if kind not in ALL_FIVE:
             raise errors.CertStorageError("unknown kind of item")
         pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
         target = self.current_target(kind)
@@ -779,14 +789,14 @@ class RenewableCert(interfaces.RenewableCert):
            by this method actually exists.
 
         :param str kind: the lineage member item ("cert", "privkey",
-            "chain", or "fullchain")
+            "chain", "fullchain", or "everything")
         :param int version: the desired version
 
         :returns: The path to the specified version of the specified member.
         :rtype: str
 
         """
-        if kind not in ALL_FOUR:
+        if kind not in ALL_FIVE:
             raise errors.CertStorageError("unknown kind of item")
         link = self.current_target(kind)
         if not link:
@@ -801,13 +811,13 @@ class RenewableCert(interfaces.RenewableCert):
         consulted to obtain the list of alternatives.
 
         :param str kind: the lineage member item (
-            ``cert``, ``privkey``, ``chain``, or ``fullchain``)
+            ``cert``, ``privkey``, ``chain``, ``fullchain``, or ``everything``)
 
         :returns: all of the version numbers that currently exist
         :rtype: `list` of `int`
 
         """
-        if kind not in ALL_FOUR:
+        if kind not in ALL_FIVE:
             raise errors.CertStorageError("unknown kind of item")
         link = self.current_target(kind)
         if not link:
@@ -822,7 +832,7 @@ class RenewableCert(interfaces.RenewableCert):
         """Newest available version of the specified kind of item?
 
         :param str kind: the lineage member item (``cert``,
-            ``privkey``, ``chain``, or ``fullchain``)
+            ``privkey``, ``chain``, ``fullchain``, or ``everything``)
 
         :returns: the newest available version of this member
         :rtype: int
@@ -834,7 +844,7 @@ class RenewableCert(interfaces.RenewableCert):
         """Newest version for which all items are available?
 
         :returns: the newest available version for which all members
-            (``cert, ``privkey``, ``chain``, and ``fullchain``) exist
+            (``cert, ``privkey``, ``chain``, ``fullchain``, and ``everything``) exist
         :rtype: int
 
         """
@@ -842,7 +852,7 @@ class RenewableCert(interfaces.RenewableCert):
         #       (it should probably return None instead)
         # TODO: this can raise a spurious AttributeError if the current
         #       link for any kind is missing (it should probably return None)
-        versions = [self.available_versions(x) for x in ALL_FOUR]
+        versions = [self.available_versions(x) for x in ALL_FIVE]
         return max(n for n in versions[0] if all(n in v for v in versions[1:]))
 
     def next_free_version(self) -> int:
@@ -857,7 +867,7 @@ class RenewableCert(interfaces.RenewableCert):
         # This isn't self.latest_common_version() + 1 because we don't want
         # collide with a version that might exist for one file type but not
         # for the others.
-        return max(self.newest_available_version(x) for x in ALL_FOUR) + 1
+        return max(self.newest_available_version(x) for x in ALL_FIVE) + 1
 
     def ensure_deployed(self) -> bool:
         """Make sure we've deployed the latest version.
@@ -884,7 +894,7 @@ class RenewableCert(interfaces.RenewableCert):
 
         """
         all_versions: List[int] = []
-        for item in ALL_FOUR:
+        for item in ALL_FIVE:
             version = self.current_version(item)
             if version is None:
                 raise errors.Error(f"{item} is required but missing for this certificate.")
@@ -901,11 +911,11 @@ class RenewableCert(interfaces.RenewableCert):
         exists.)
 
         :param str kind: the lineage member item ("cert", "privkey",
-            "chain", or "fullchain")
+            "chain", "fullchain", or "everything")
         :param int version: the desired version
 
         """
-        if kind not in ALL_FOUR:
+        if kind not in ALL_FIVE:
             raise errors.CertStorageError("unknown kind of item")
         link = getattr(self, kind)
         filename = "{0}{1}.pem".format(kind, version)
@@ -934,7 +944,7 @@ class RenewableCert(interfaces.RenewableCert):
                     raise errors.Error(f"Target {kind} does not exist!")
                 os.symlink(target, link)
 
-            for kind in ALL_FOUR:
+            for kind in ALL_FIVE:
                 self._update_link_to(kind, version)
 
             for _, link in previous_links:
@@ -1039,10 +1049,11 @@ class RenewableCert(interfaces.RenewableCert):
         Attempts to create a certificate lineage -- enrolled for
         potential future renewal -- with the (suggested) lineage name
         lineagename, and the associated cert, privkey, and chain (the
-        associated fullchain will be created automatically). Optional
-        configurator and renewalparams record the configuration that was
-        originally used to obtain this cert, so that it can be reused
-        later during automated renewal.
+        associated fullchain and the combination of everything will
+        be created automatically). Optional configurator and
+        renewalparams record the configuration that was originally
+        used to obtain this cert, so that it can be reused later
+        during automated renewal.
 
         Returns a new RenewableCert object referring to the created
         lineage. (The actual lineage name, as well as all the relevant
@@ -1093,9 +1104,9 @@ class RenewableCert(interfaces.RenewableCert):
                 logger.debug("Creating directory %s.", i)
 
         # Put the data into the appropriate files on disk
-        target = {kind: os.path.join(live_dir, kind + ".pem") for kind in ALL_FOUR}
-        archive_target = {kind: os.path.join(archive, kind + "1.pem") for kind in ALL_FOUR}
-        for kind in ALL_FOUR:
+        target = {kind: os.path.join(live_dir, kind + ".pem") for kind in ALL_FIVE}
+        archive_target = {kind: os.path.join(archive, kind + "1.pem") for kind in ALL_FIVE}
+        for kind in ALL_FIVE:
             os.symlink(_relpath_from_file(archive_target[kind], target[kind]), target[kind])
         with open(target["cert"], "wb") as f_b:
             logger.debug("Writing certificate to %s.", target["cert"])
@@ -1112,6 +1123,9 @@ class RenewableCert(interfaces.RenewableCert):
             # ending newline character
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f_b.write(cert + chain)
+        with util.safe_open(archive_target["everything"], "wb", chmod=BASE_PRIVKEY_MODE) as f_a:
+            logger.debug("Writing everything to %s.", target["everything"])
+            f_a.write(privkey + cert + chain)
 
         # Write a README file to the live directory
         readme_path = os.path.join(live_dir, README)
@@ -1202,7 +1216,7 @@ class RenewableCert(interfaces.RenewableCert):
         self.cli_config = cli_config
         target_version = self.next_free_version()
         target = {kind: os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version))
-                  for kind in ALL_FOUR}
+                  for kind in ALL_FIVE}
 
         old_privkey = os.path.join(
             self.archive_dir, "privkey{0}.pem".format(prior_version))
@@ -1219,6 +1233,10 @@ class RenewableCert(interfaces.RenewableCert):
                 old_privkey = f"privkey{prior_version}.pem"
             logger.debug("Writing symlink to old private key, %s.", old_privkey)
             os.symlink(old_privkey, target["privkey"])
+            with open(old_privkey, "rb") as f:
+                # Read the old private key into new_privkey as we need the
+                # private key to create the combined file with everything
+                new_privkey = f.read()
         else:
             with util.safe_open(target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
@@ -1239,8 +1257,11 @@ class RenewableCert(interfaces.RenewableCert):
         with open(target["fullchain"], "wb") as f:
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
+        with util.safe_open(target["everything"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
+            logger.debug("Writing everything to %s.", target["everything"])
+            f.write(new_privkey + new_cert + new_chain)
 
-        symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
+        symlinks = {kind: self.configuration[kind] for kind in ALL_FIVE}
         # Update renewal config file
         self.configfile = update_configuration(
             self.lineagename, self.archive_dir, symlinks, cli_config)
@@ -1255,7 +1276,7 @@ class RenewableCert(interfaces.RenewableCert):
             arguments
         """
         self.cli_config = cli_config
-        symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
+        symlinks = {kind: self.configuration[kind] for kind in ALL_FIVE}
         # Update renewal config file
         self.configfile = update_configuration(
             self.lineagename, self.archive_dir, symlinks, cli_config)
@@ -1282,7 +1303,7 @@ class RenewableCert(interfaces.RenewableCert):
         for ver in versions_to_delete:
             logger.debug("Deleting %s/cert%d.pem and related items during clean up",
                          archive, ver)
-            for kind in ALL_FOUR:
+            for kind in ALL_FIVE:
                 item_path = os.path.join(archive, f"{kind}{ver}.pem")
                 try:
                     if os.path.exists(item_path):
