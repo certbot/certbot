@@ -39,6 +39,11 @@ from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
 from certbot_nginx._internal import parser
 
+from cryptography.hazmat.primitives import serialization
+
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.x509 import load_pem_x509_certificate
+
 NAME_RANK = 0
 START_WILDCARD_RANK = 1
 END_WILDCARD_RANK = 2
@@ -238,8 +243,27 @@ class NginxConfigurator(common.Configurator):
             raise errors.PluginError(
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a certificate.")
+        logger.debug("Checking private key & cert matching")
+        pem_cert = load_pem_x509_certificate(open(cert_path,"rb").read())
+        priv_key = load_pem_private_key(open(key_path, "rb").read(), None)
+        try:
+            public_key = pem_cert.public_key().public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            )
+            private_key_bytes = priv_key.public_key().public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            )
 
-        vhosts = self.choose_vhosts(domain, create_if_no_match=True)
+            if public_key == private_key_bytes:
+                logger.debug("Private key matches the certificate.")
+            else:
+                logger.error("Private key does not match the certificate.")
+        except Exception as e:
+            logger.debug("Error:", e)
+
+        vhosts = self.choose_vhosts(domain, create_if_no_match=False)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
             display_util.notify("Successfully deployed certificate for {} to {}"
@@ -361,7 +385,7 @@ class NginxConfigurator(common.Configurator):
         if not vhosts:
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
-                vhosts = [self._vhost_from_duplicated_default(target_name, True,
+                vhosts = [self._vhost_from_duplicated_default(target_name, False,
                     str(self.config.https_port))]
             else:
                 # No matches. Raise a misconfiguration error.
