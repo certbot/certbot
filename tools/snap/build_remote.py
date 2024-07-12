@@ -103,6 +103,10 @@ def _build_snap(
         workspace = CERTBOT_DIR
     else:
         workspace = join(CERTBOT_DIR, target)
+        # init and commit git repo in workspace
+        subprocess.run(['git', 'init'], capture_output=True, check=True, cwd=workspace)
+        subprocess.run(['git', 'add', '-A'], capture_output=True, check=True, cwd=workspace)
+        subprocess.run(['git', 'commit', '-m', 'init'], capture_output=True, check=True, cwd=workspace)
 
     build_success = False
     retry = 3
