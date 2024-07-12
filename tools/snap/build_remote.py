@@ -61,14 +61,14 @@ def _execute_build(
     # length but from a larger character set just because we can.
     random_string = ''.join(random.choice(string.ascii_lowercase + string.digits)
                             for _ in range(32))
-    build_id = f'snapcraft-{target}-{random_string}'
+    unused_build_id = f'snapcraft-{target}-{random_string}'
 
     with tempfile.TemporaryDirectory() as tempdir:
         environ = os.environ.copy()
         environ['XDG_CACHE_HOME'] = tempdir
         process = subprocess.Popen([
             'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
-            '--build-for', ','.join(archs), '--build-id', build_id],
+            '--build-for', ','.join(archs)],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             universal_newlines=True, env=environ, cwd=workspace)
 
@@ -115,7 +115,7 @@ def _build_snap(
             print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
                   f'exit code {exit_code}.')
 
-            failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
+            failed_archs = [arch for arch in archs if status[target][arch] != 'Succeeded']
             # If the command failed or any architecture wasn't built
             # successfully, let's try to print all the output about the problem
             # that we can.
@@ -147,17 +147,17 @@ def _build_snap(
 def _extract_state(project: str, output: str, status: Dict[str, Dict[str, str]]) -> None:
     state = status[project]
 
-    if "Sending build data to Launchpad..." in output:
+    if "Starting new build" in output:
         for arch in state.keys():
-            state[arch] = "Sending build data"
+            state[arch] = "Starting new build"
 
-    match = re.match(r'^.*arch=(\w+)\s+state=([\w ]+).*$', output)
+    match = re.match(r'^(\w+): (\w+)$', output)
     if match:
-        arch = match.group(1)
-        state[arch] = match.group(2)
+        arch = match.group(2)
+        state[arch] = match.group(1)
 
     # You need to reassign the value of status[project] here (rather than doing
-    # something like status[project][arch] = match.group(2)) for the state change
+    # something like status[project][arch] = match.group(1)) for the state change
     # to propagate to other processes. See
     # https://docs.python.org/3.8/library/multiprocessing.html#proxy-objects for
     # more info.
@@ -187,18 +187,18 @@ def _dump_status(
 def _dump_failed_build_logs(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         workspace: str) -> None:
+    logs_list = glob.glob(join(workspace, f'snapcraft-{target}-*.txt'))
     for arch in archs:
         result = status[target][arch]
 
-        if result != 'Successfully built':
+        if result != 'Succeeded':
             failures = True
 
-            build_output_name = _snap_log_name(target, arch)
-            build_output_path = join(workspace, build_output_name)
-            if not exists(build_output_path):
+            build_output_path = [log_name for log_name in logs_list if arch in log_name]
+            if not build_output_path:
                 build_output = f'No output has been dumped by snapcraft remote-build.'
             else:
-                with open(build_output_path) as file_h:
+                with open(build_output_path[0]) as file_h:
                     build_output = file_h.read()
 
             print(f'Output for failed build target={target} arch={arch}')
@@ -239,10 +239,6 @@ def main():
     if targets != {'certbot'}:
         subprocess.run(['tools/snap/generate_dnsplugins_all.sh'],
                        check=True, cwd=CERTBOT_DIR)
-
-    # Use the legacy remote launchpad build until
-    # https://github.com/certbot/certbot/issues/9890 is fixed
-    os.environ['SNAPCRAFT_REMOTE_BUILD_STRATEGY'] = 'force-fallback'
 
     print('Start remote snap builds...')
     print(f' - archs: {", ".join(archs)}')
