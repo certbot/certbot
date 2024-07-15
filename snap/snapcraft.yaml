@@ -68,6 +68,7 @@ parts:
       - python3-minimal
       - python3-pkg-resources
       - python3.12-minimal
+      - python3.12-venv
     # To build cryptography and cffi if needed
     build-packages:
       - gcc
