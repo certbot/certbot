@@ -26,7 +26,7 @@ apps:
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
       CERTBOT_SNAPPED: "True"
       PYTHONHOME: "$SNAP"
-      PYTHONPATH: "${SNAP}/lib/python3.12/site-packages:${SNAP}/usr/lib/python3/dist-packages:${PYTHONPATH}"
+      PYTHONPATH: "$SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.12:${PYTHONPATH}"
   renew:
     command: bin/python3 -s $SNAP/bin/certbot -q renew
     daemon: oneshot
