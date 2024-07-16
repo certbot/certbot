@@ -14,7 +14,7 @@ description: |
    - Keep track of when your certificate is going to expire, and renew it
    - Help you revoke the certificate if that ever becomes necessary.
 confinement: classic
-base: core24
+base: core22
 grade: stable
 adopt-info: certbot
 
@@ -25,8 +25,8 @@ apps:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
       CERTBOT_SNAPPED: "True"
-      PYTHONHOME: "$SNAP"
-      PYTHONPATH: "$SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.12:${PYTHONPATH}"
+      #PYTHONHOME: "$SNAP"
+      #PYTHONPATH: "$SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.12:${PYTHONPATH}"
   renew:
     command: bin/python3 -s $SNAP/bin/certbot -q renew
     daemon: oneshot
