@@ -102,6 +102,8 @@ parts:
       # dependencies. See https://github.com/certbot/certbot/pull/8443 for more info.
       - PIP_CONSTRAINT: $CRAFT_PART_SRC/snap-constraints.txt
     override-build: |
+      echo "which python3"
+      which python3
       python3 -m venv "${CRAFT_PART_INSTALL}"
       "${CRAFT_PART_INSTALL}/bin/python3" "${CRAFT_PART_SRC}/tools/pipstrap.py"
       craftctl default
