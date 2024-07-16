@@ -14,6 +14,10 @@ description: |
    - Keep track of when your certificate is going to expire, and renew it
    - Help you revoke the certificate if that ever becomes necessary.
 confinement: classic
+# this was removed for classic snaps in snapcraft 7
+environment:
+  LD_LIBRARY_PATH: ${SNAP_LIBRARY_PATH}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}:$SNAP/lib:$SNAP/usr/lib
+  PATH: $SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$PATH
 base: core24
 grade: stable
 adopt-info: certbot
