@@ -26,7 +26,7 @@ apps:
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
       CERTBOT_SNAPPED: "True"
       #PYTHONHOME: "$SNAP"
-      #PYTHONPATH: "$SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.12:${PYTHONPATH}"
+      #PYTHONPATH: "$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.10:${PYTHONPATH}"
   renew:
     command: bin/python3 -s $SNAP/bin/certbot -q renew
     daemon: oneshot
@@ -49,7 +49,7 @@ parts:
       - ./certbot-apache
       - ./certbot-nginx
     stage:
-      - -usr/lib/python3.12/sitecustomize.py # maybe unnecessary
+      - -usr/lib/python3.10/sitecustomize.py # maybe unnecessary
       # Old versions of this file used to unstage
       # lib/python3.8/site-packages/augeas.py to avoid conflicts between
       # python-augeas 0.5.0 which was pinned in snap-constraints.txt and
@@ -59,18 +59,18 @@ parts:
       # effect so we now stage the file to keep the auto-generated cffi file.
     stage-packages:
       - libaugeas0
-      - libpython3.12-dev
+      - libpython3.10-dev
       # added to stage python:
       - libpython3-stdlib
-      - libpython3.12-stdlib
-      - libpython3.12-minimal
+      - libpython3.10-stdlib
+      - libpython3.10-minimal
       - python3-pip
       - python3-wheel
       - python3-venv
       - python3-minimal
       - python3-pkg-resources
-      - python3.12-minimal
-      - python3.12-venv
+      - python3.10-minimal
+      - python3.10-venv
     # To build cryptography and cffi if needed
     build-packages:
       - gcc
