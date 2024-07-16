@@ -71,7 +71,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
             raise e
 
     data = response.json()
-    connections = ['/snap/{0}/current/lib/python3.8/site-packages/'.format(item['slot']['snap'])
+    connections = ['/snap/{0}/current/lib/python3.10/site-packages/'.format(item['slot']['snap'])
                    for item in data.get('result', {}).get('established', [])
                    if item.get('plug', {}).get('plug') == 'plugin'
                    and item.get('plug-attrs', {}).get('content') == 'certbot-1']

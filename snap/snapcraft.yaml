@@ -14,7 +14,7 @@ description: |
    - Keep track of when your certificate is going to expire, and renew it
    - Help you revoke the certificate if that ever becomes necessary.
 confinement: classic
-base: core20
+base: core22
 grade: stable
 adopt-info: certbot
 
@@ -47,9 +47,9 @@ parts:
       - ./certbot-apache
       - ./certbot-nginx
     stage:
-      - -usr/lib/python3.8/sitecustomize.py # maybe unnecessary
+      - -usr/lib/python3.10/sitecustomize.py # maybe unnecessary
       # Old versions of this file used to unstage
-      # lib/python3.8/site-packages/augeas.py to avoid conflicts between
+      # lib/python3.10/site-packages/augeas.py to avoid conflicts between
       # python-augeas 0.5.0 which was pinned in snap-constraints.txt and
       # our python-augeas fork which creates an auto-generated cffi file at
       # the same path. Since we've combined things in one part and removed the
@@ -57,18 +57,18 @@ parts:
       # effect so we now stage the file to keep the auto-generated cffi file.
     stage-packages:
       - libaugeas0
-      - libpython3.8-dev
+      - libpython3.10-dev
       # added to stage python:
       - libpython3-stdlib
-      - libpython3.8-stdlib
-      - libpython3.8-minimal
+      - libpython3.10-stdlib
+      - libpython3.10-minimal
       - python3-pip
       - python3-wheel
       - python3-venv
       - python3-minimal
       - python3-distutils
       - python3-pkg-resources
-      - python3.8-minimal
+      - python3.10-minimal
     # To build cryptography and cffi if needed
     build-packages:
       - gcc
