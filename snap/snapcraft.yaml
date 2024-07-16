@@ -58,18 +58,6 @@ parts:
       # the same path. Since we've combined things in one part and removed the
       # python-augeas pinning, unstaging this file had a different, unintended
       # effect so we now stage the file to keep the auto-generated cffi file.
-      # WORKAROUND: Skip venv from python plugin
-      - -bin/activate
-      - -bin/activate.csh
-      - -bin/activate.fish
-      - -bin/Activate.ps1
-      - -bin/python
-      - -bin/python3
-      - -bin/python3.10
-      - -bin/pip
-      - -bin/pip3
-      - -bin/pip3.10
-      - -pyvenv.cfg
     stage-packages:
       - libaugeas0
       - libpython3.12-dev
@@ -93,6 +81,7 @@ parts:
       - libssl-dev
       - libffi-dev
       - python3-dev
+      - python3
       - python3-venv
       - cargo
       - pkg-config
@@ -108,10 +97,6 @@ parts:
       # build, but also on any isolated build that pip could trigger when building wheels for
       # dependencies. See https://github.com/certbot/certbot/pull/8443 for more info.
       - PIP_CONSTRAINT: $CRAFT_PART_SRC/snap-constraints.txt
-      # WORKAROUND: The python plugin is broken with gnome extension
-      # from https://github.com/Unrud/video-downloader/blob/master/snap/snapcraft.yaml
-      - PATH: ${CRAFT_PART_INSTALL}/bin:${PATH}
-      - PYTHONPATH: ""
     override-build: |
       python3 -m venv "${CRAFT_PART_INSTALL}"
       "${CRAFT_PART_INSTALL}/bin/python3" "${CRAFT_PART_SRC}/tools/pipstrap.py"
