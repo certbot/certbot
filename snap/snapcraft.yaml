@@ -21,6 +21,7 @@ adopt-info: certbot
 environment:
   PATH: "$SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$SNAP/usr/local/bin:$SNAP/usr/local/sbin:$PATH"
   PYTHONPATH: "$SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.12:${PYTHONPATH}"
+  PYTHONHOME: "$SNAP"
 
 apps:
   certbot:
@@ -31,7 +32,7 @@ apps:
       CERTBOT_SNAPPED: "True"
       #PYTHONPATH: "$SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages:$PYTHONPATH"
       #PYTHONHOME: "$SNAP"
-      PYTHONPATH: "$SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.12:${PYTHONPATH}"
+      #PYTHONPATH: "$SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.12:${PYTHONPATH}"
   renew:
     command: bin/python3 -s $SNAP/bin/certbot -q renew
     daemon: oneshot
@@ -69,13 +70,9 @@ parts:
       - libpython3-stdlib
       - libpython3.12-stdlib
       - libpython3.12-minimal
-      - python3-pip
-      - python3-wheel
-      - python3-venv
       - python3-minimal
       - python3-pkg-resources
       - python3.12-minimal
-      - python3.12-venv
     # To build cryptography and cffi if needed
     build-packages:
       - gcc
