@@ -21,7 +21,7 @@ adopt-info: certbot
 environment:
   PATH: "$SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$SNAP/usr/local/bin:$SNAP/usr/local/sbin:$PATH"
   PYTHONPATH: "$SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.12:${PYTHONPATH}"
-  PYTHONHOME: "$SNAP"
+  #PYTHONHOME: "$SNAP"
 
 apps:
   certbot:
