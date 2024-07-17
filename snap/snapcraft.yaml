@@ -86,6 +86,7 @@ parts:
       - python3-venv
       - cargo
       - pkg-config
+      - python3.12-venv
     build-environment:
       # We set this environment variable while building to try and increase the
       # stability of fetching the rust crates needed to build the cryptography
