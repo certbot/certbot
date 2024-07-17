@@ -18,18 +18,24 @@ base: core22
 grade: stable
 adopt-info: certbot
 
+environment:
+  # Need this PATH declaration so that the Python-based
+  # snap hooks can find the embedded Python interpreter with
+  # the necessary dependencies packaged in `site-packages`.
+  PATH: $SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$SNAP/usr/local/bin:$SNAP/usr/local/sbin:$PATH
+
 apps:
   certbot:
     command: bin/python3 -s $SNAP/bin/certbot
     environment:
-      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:$PATH"
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
       CERTBOT_SNAPPED: "True"
   renew:
     command: bin/python3 -s $SNAP/bin/certbot -q renew
     daemon: oneshot
     environment:
-      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:$PATH"
       AUGEAS_LENS_LIB: $SNAP/usr/share/augeas/lenses/dist
       CERTBOT_SNAPPED: "True"
     # Run approximately twice a day with randomization
