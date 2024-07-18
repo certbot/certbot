@@ -62,10 +62,6 @@ jobs:
       matrix:
         amd64:
           SNAP_ARCH: amd64
-        armhf:
-          SNAP_ARCH: armhf
-        arm64:
-          SNAP_ARCH: arm64
     timeoutInMinutes: 0
     steps:
       - script: |
