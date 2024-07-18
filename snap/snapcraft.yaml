@@ -53,6 +53,7 @@ parts:
       - ./certbot-nginx
     stage:
       - -usr/lib/python3.12/sitecustomize.py # maybe unnecessary
+      - -pyvenv.cfg
       # Old versions of this file used to unstage
       # lib/python3.8/site-packages/augeas.py to avoid conflicts between
       # python-augeas 0.5.0 which was pinned in snap-constraints.txt and
