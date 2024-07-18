@@ -67,8 +67,8 @@ parts:
       - libpython3-stdlib
       - libpython3.12-stdlib
       - libpython3.12-minimal
-      - python3-minimal
       - python3-venv
+      - python3-minimal
       - python3-pkg-resources
       - python3.12-minimal
     # To build cryptography and cffi if needed
