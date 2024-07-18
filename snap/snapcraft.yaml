@@ -67,6 +67,8 @@ parts:
       - libpython3-stdlib
       - libpython3.12-stdlib
       - libpython3.12-minimal
+      - python3-pip
+      - python3-wheel
       - python3-venv
       - python3-minimal
       - python3-pkg-resources
