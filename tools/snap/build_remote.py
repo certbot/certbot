@@ -61,7 +61,6 @@ def _execute_build(
     # length but from a larger character set just because we can.
     random_string = ''.join(random.choice(string.ascii_lowercase + string.digits)
                             for _ in range(32))
-    unused_build_id = f'snapcraft-{target}-{random_string}'
 
     with tempfile.TemporaryDirectory() as tempdir:
         environ = os.environ.copy()
