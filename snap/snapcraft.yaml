@@ -19,9 +19,7 @@ grade: stable
 adopt-info: certbot
 
 environment:
-  PYTHONHOME: "$SNAP"
-  PYTHONPATH: "$SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/usr/lib/python3.12:$SNAP/usr/lib/python3.12/lib-dynload:${PYTHONPATH}"
-
+  PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
 
 apps:
   certbot:
