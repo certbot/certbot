@@ -324,8 +324,8 @@ def _construct_mock_ocsp_response(certificate_status, response_status):
         responder_name=responder.subject,
         certificates=[responder],
         hash_algorithm=hashes.SHA1(),
-        next_update=datetime.now(pytz.UTC).replace(tzinfo=None) + timedelta(days=1),
-        this_update=datetime.now(pytz.UTC).replace(tzinfo=None) - timedelta(days=1),
+        next_update_utc=datetime.now(pytz.UTC).replace(tzinfo=None) + timedelta(days=1),
+        this_update_utc=datetime.now(pytz.UTC).replace(tzinfo=None) - timedelta(days=1),
         signature_algorithm_oid=x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA1,
     )
 
