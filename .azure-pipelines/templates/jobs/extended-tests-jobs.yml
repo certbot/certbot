@@ -19,34 +19,26 @@ jobs:
           TOXENV: py311
         linux-isolated:
           TOXENV: 'isolated-acme,isolated-certbot,isolated-apache,isolated-cloudflare,isolated-digitalocean,isolated-dnsimple,isolated-dnsmadeeasy,isolated-gehirn,isolated-google,isolated-linode,isolated-luadns,isolated-nsone,isolated-ovh,isolated-rfc2136,isolated-route53,isolated-sakuracloud,isolated-nginx'
-        linux-boulder-v2-integration-certbot-oldest:
+        linux-integration-certbot-oldest:
           PYTHON_VERSION: 3.8
           TOXENV: integration-certbot-oldest
-          ACME_SERVER: boulder-v2
-        linux-boulder-v2-integration-nginx-oldest:
+        linux-integration-nginx-oldest:
           PYTHON_VERSION: 3.8
           TOXENV: integration-nginx-oldest
-          ACME_SERVER: boulder-v2
-        linux-boulder-v2-py38-integration:
-          PYTHON_VERSION: 3.8
-          TOXENV: integration
-          ACME_SERVER: boulder-v2
-        linux-boulder-v2-py39-integration:
+        # python 3.8 integration tests are not run here because they're run as    
+        # part of the standard test suite 
+        linux-py39-integration:
           PYTHON_VERSION: 3.9
           TOXENV: integration
-          ACME_SERVER: boulder-v2
-        linux-boulder-v2-py310-integration:
+        linux-py310-integration:
           PYTHON_VERSION: 3.10
           TOXENV: integration
-          ACME_SERVER: boulder-v2
-        linux-boulder-v2-py311-integration:
+        linux-py311-integration:
           PYTHON_VERSION: 3.11
           TOXENV: integration
-          ACME_SERVER: boulder-v2
-        linux-boulder-v2-py312-integration:
+        linux-py312-integration:
           PYTHON_VERSION: 3.12
           TOXENV: integration
-          ACME_SERVER: boulder-v2
         nginx-compat:
           TOXENV: nginx_compat
         linux-integration-rfc2136:

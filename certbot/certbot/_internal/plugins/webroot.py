@@ -58,7 +58,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
 
     description = """\
 Saves the necessary validation files to a .well-known/acme-challenge/ directory within the \
-nominated webroot path. A seperate HTTP server must be running and serving files from the \
+nominated webroot path. A separate HTTP server must be running and serving files from the \
 webroot path. HTTP challenge only (wildcards not supported)."""
 
     MORE_INFO = """\
