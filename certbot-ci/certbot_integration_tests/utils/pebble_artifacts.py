@@ -19,7 +19,7 @@ if sys.version_info >= (3, 9):  # pragma: no cover
 else:  # pragma: no cover
     import importlib_resources
 
-PEBBLE_VERSION = 'v2.5.1'
+PEBBLE_VERSION = 'v2.6.0'
 
 
 def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str, str, str]:
