@@ -403,6 +403,10 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str
         prior_version = lineage.latest_common_version()
         # TODO: Check return value of save_successor
         lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, config)
+        # NOTE: Saving the successor first and then updating the symlinks in that order
+        # is important to keep the update "atomic".
+        # Only when the new files have been completely written, the symlink may be
+        # reassigned.
         lineage.update_all_links_to(lineage.latest_common_version())
         lineage.truncate()
 

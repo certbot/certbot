@@ -13,7 +13,7 @@ import pytest
 
 from certbot import configuration
 from certbot import errors
-from certbot._internal.storage import ALL_FOUR
+from certbot._internal.storage import ALL_FIVE
 from certbot._internal.tests import storage_test
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -55,7 +55,7 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
         else:
             filesystem.makedirs(os.path.join(self.config.default_archive_dir, domain))
 
-        for kind in ALL_FOUR:
+        for kind in ALL_FIVE:
             config_file[kind] = os.path.join(self.config.live_dir, domain,
                                         kind + ".pem")
 
@@ -80,8 +80,8 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
             else:
                 archive_dir_path = os.path.join(self.config.default_archive_dir, domain)
             archive_paths[domain] = {kind:
-                os.path.join(archive_dir_path, kind + "1.pem") for kind in ALL_FOUR}
-            for kind in ALL_FOUR:
+                os.path.join(archive_dir_path, kind + "1.pem") for kind in ALL_FIVE}
+            for kind in ALL_FIVE:
                 live_path = self.config_files[domain][kind]
                 archive_path = archive_paths[domain][kind]
                 open(archive_path, 'a').close()
@@ -95,7 +95,7 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
         prev_dir = os.getcwd()
         try:
             for domain in self.domains:
-                for kind in ALL_FOUR:
+                for kind in ALL_FIVE:
                     os.chdir(os.path.dirname(self.config_files[domain][kind]))
                     assert filesystem.realpath(filesystem.readlink(self.config_files[domain][kind])) == \
                         filesystem.realpath(archive_paths[domain][kind])
