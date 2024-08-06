@@ -49,18 +49,25 @@ def _snap_log_name(target: str, arch: str):
 def _execute_build(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         workspace: str, output_lock: Lock) -> Tuple[int, List[str]]:
-
-    # snapcraft remote-build accepts a --build-id flag with snapcraft version
-    # 5.0+. We make use of this feature to set a unique build ID so a fresh
-    # build is started for each run instead of potentially reusing an old
-    # build. See https://github.com/certbot/certbot/pull/8719 and
-    # https://github.com/snapcore/snapcraft/pull/3554 for more info.
+    # The implementation of remote-build recovery has changed over time.
+    # Currently, you cannot set a build-id, and the build-id is instead derived
+    # from a hash of the contents of the files in the directory:
+    # https://github.com/canonical/craft-application/blob/5b09ab3d9152a2b61ffcdf57691289023ed6ba26/craft_application/remote/utils.py#L64
     #
-    # This random string was chosen because snapcraft uses a MD5 hash
-    # represented as a 32 character hex string by default, so we use the same
-    # length but from a larger character set just because we can.
+    # We want a unique build ID so a fresh build is started for each run instead
+    # of potentially reusing an old build. See https://github.com/certbot/certbot/pull/8719
+    # and https://github.com/snapcore/snapcraft/pull/3554 for more info.
+    #
+    # In the hope that one day you can again set a build ID, we will modify
+    # the directory by creating a file containing a build ID that conforms
+    # to the shape of snapcraft's build ID: using a MD5 hash represented as a
+    # 32 character hex string (we use a larger character set).
+
     random_string = ''.join(random.choice(string.ascii_lowercase + string.digits)
                             for _ in range(32))
+    # place random string in build_id file inside `workspace` directory
+    with open(join(workspace, 'build_id'), 'w') as build_id_file:
+        build_id_file.write(random_string)
 
     with tempfile.TemporaryDirectory() as tempdir:
         environ = os.environ.copy()
