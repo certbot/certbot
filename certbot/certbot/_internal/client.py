@@ -460,6 +460,142 @@ class Client:
                         return self._retry_obtain_certificate(domains, successful_domains)
                 raise
 
+    def obtain_authorizations(self, domains : List[str], old_keypath: Optional[str] = None):
+
+        # We need to determine the key path, key PEM data, CSR path,
+        # and CSR PEM data.  For a dry run, the paths are None because
+        # they aren't permanently saved to disk.  For a lineage with
+        # --reuse-key, the key path and PEM data are derived from an
+        # existing file.
+
+        if old_keypath is not None:
+            # We've been asked to reuse a specific existing private key.
+            # Therefore, we'll read it now and not generate a new one in
+            # either case below.
+            #
+            # We read in bytes here because the type of `key.pem`
+            # created below is also bytes.
+            with open(old_keypath, "rb") as f:
+                keypath = old_keypath
+                keypem = f.read()
+            key: Optional[util.Key] = util.Key(file=keypath, pem=keypem)
+            logger.info("Reusing existing private key from %s.", old_keypath)
+        else:
+            # The key is set to None here but will be created below.
+            key = None
+
+        key_size = self.config.rsa_key_size
+        elliptic_curve = "secp256r1"
+
+        # key-type defaults to a list, but we are only handling 1 currently
+        if isinstance(self.config.key_type, list):
+            self.config.key_type = self.config.key_type[0]
+        if self.config.elliptic_curve and self.config.key_type == 'ecdsa':
+            elliptic_curve = self.config.elliptic_curve
+            self.config.auth_chain_path = "./chain-ecdsa.pem"
+            self.config.auth_cert_path = "./cert-ecdsa.pem"
+            self.config.key_path = "./key-ecdsa.pem"
+        elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':
+            key_size = self.config.rsa_key_size
+
+        # Create CSR from names
+        if self.config.dry_run:
+            key = key or util.Key(
+                file=None,
+                pem=crypto_util.make_key(
+                    bits=key_size,
+                    elliptic_curve=elliptic_curve,
+                    key_type=self.config.key_type,
+
+                ),
+            )
+            csr = util.CSR(file=None, form="pem",
+                           data=acme_crypto_util.make_csr(
+                               key.pem, domains, self.config.must_staple))
+        else:
+            key = key or crypto_util.generate_key(
+                key_size=key_size,
+                key_dir=None,
+                key_type=self.config.key_type,
+                elliptic_curve=elliptic_curve,
+                strict_permissions=self.config.strict_permissions,
+            )
+            csr = crypto_util.generate_csr(
+                key, domains, None, self.config.must_staple, self.config.strict_permissions)
+
+        try:
+            authzr = self._get_single_authorization(csr.data, self.config.allow_subset_of_names)
+        except messages.Error as error:
+            # # Some domains may be rejected during order creation.
+            # # Certbot can retry the operation without the rejected
+            # # domains contained within subproblems.
+            # if self.config.allow_subset_of_names:
+            #     successful_domains = self._successful_domains_from_error(error, domains)
+            #     if successful_domains != domains and len(successful_domains) != 0:
+            #         return self._retry_obtain_certificate(domains, successful_domains)
+            raise
+
+        return authzr.body.status
+        # auth_domains = {a.body.identifier.value for a in authzr}
+        # successful_domains = [d for d in domains if d in auth_domains]
+
+        # # allow_subset_of_names is currently disabled for wildcard
+        # # certificates. The reason for this and checking allow_subset_of_names
+        # # below is because successful_domains == domains is never true if
+        # # domains contains a wildcard because the ACME spec forbids identifiers
+        # # in authzs from containing a wildcard character.
+        # if self.config.allow_subset_of_names and successful_domains != domains:
+        #     return self._retry_obtain_certificate(domains, successful_domains)
+        # else:
+        #     try:
+        #         cert, chain = self.obtain_certificate_from_csr(csr, orderr)
+        #         return cert, chain, key, csr
+        #     except messages.Error as error:
+        #         # Some domains may be rejected during the very late stage of
+        #         # order finalization. Certbot can retry the operation without
+        #         # the rejected domains contained within subproblems.
+        #         if self.config.allow_subset_of_names:
+        #             successful_domains = self._successful_domains_from_error(error, domains)
+        #             if successful_domains != domains and len(successful_domains) != 0:
+        #                 return self._retry_obtain_certificate(domains, successful_domains)
+        #         raise
+
+    def _get_single_authorization(self, csr_pem: bytes,
+                                    best_effort: bool) -> messages.AuthorizationResource:
+        """Request a new authorization and complete it.
+
+        :param bytes csr_pem: A CSR in PEM format.
+        :param bool best_effort: True if failing to complete all
+            authorizations should not raise an exception
+
+        :returns: completed authorization resource
+        :rtype: acme.messages.AuthorizationResource
+
+        """
+        if not self.acme:
+            raise errors.Error("ACME client is not set.")
+        try:
+            authzr = self.acme.new_authz(csr_pem)
+        except acme_errors.WildcardUnsupportedError:
+            raise errors.Error("The currently selected ACME CA endpoint does"
+                                " not support issuing wildcard certificates.")
+
+        if not self.auth_handler:
+            raise errors.Error("No authorization handler has been set.")
+
+        # # For a dry run, ensure we have an order with fresh authorizations
+        # if orderr and self.config.dry_run:
+        #     deactivated, failed = self.auth_handler.deactivate_valid_authorizations(orderr)
+        #     if deactivated:
+        #         logger.debug("Recreating order after authz deactivations")
+        #         orderr = self.acme.new_order(csr_pem)
+        #     if failed:
+        #         logger.warning("Certbot was unable to obtain fresh authorizations for every domain"
+        #                        ". The dry run will continue, but results may not be accurate.")
+
+        handled_authzr = self.auth_handler.handle_single_authorization(authzr, self.config, best_effort)
+        return authzr.update(body=handled_authzr[0].body)
+
     def _get_order_and_authorizations(self, csr_pem: bytes,
                                       best_effort: bool) -> messages.OrderResource:
         """Request a new order and complete its authorizations.
@@ -495,7 +631,7 @@ class Client:
 
         authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
-
+    
     def obtain_and_enroll_certificate(self, domains: List[str], certname: Optional[str]
                                       ) -> Optional[storage.RenewableCert]:
         """Obtain and enroll certificate.

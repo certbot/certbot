@@ -116,6 +116,70 @@ class AuthHandler:
             return authzrs_validated
 
         raise errors.Error("An unexpected error occurred while handling the authorizations.")
+    
+    def handle_single_authorization(self, authzr: messages.AuthorizationResource,
+                              config: configuration.NamespaceConfig, best_effort: bool = False,
+                              max_retries: int = 30,
+                              max_time_mins: float = 30) -> List[messages.AuthorizationResource]:
+        """
+        Perform all challenges required to validate an authorization, then poll and wait for the authorization to be checked.
+        :param acme.messages.AuthorizationResource authzr: 
+        :param certbot.configuration.NamespaceConfig config: current Certbot configuration
+        :param bool best_effort: if True, not all authorizations need to be validated (eg. renew)
+        :param int max_retries: maximum number of retries to poll authorizations
+        :param float max_time_mins: maximum time (in minutes) to poll authorizations
+        :returns: list of all validated authorizations
+        :rtype: List
+
+        :raises .AuthorizationError: If unable to retrieve all authorizations
+        """
+        authzrs = []
+        authzrs.append(authzr)
+        if not authzrs:
+            raise errors.AuthorizationError('No authorization to handle.')
+        if not self.acme:
+            raise errors.Error("No ACME client defined, authorizations cannot be handled.")
+
+        # Retrieve challenges that need to be performed to validate authorizations.
+        achalls = self._choose_challenges(authzrs)
+        if not achalls:
+            return authzrs
+
+        # Starting now, challenges will be cleaned at the end no matter what.
+        with error_handler.ExitHandler(self._cleanup_challenges, achalls):
+            # To begin, let's ask the authenticator plugin to perform all challenges.
+            try:
+                resps = self.auth.perform(achalls)
+
+                # If debug is on, wait for user input before starting the verification process.
+                if config.debug_challenges:
+                    display_util.notification(
+                        'Challenges loaded. Press continue to submit to CA.\n' +
+                        self._debug_challenges_msg(achalls, config), pause=True)
+            except errors.AuthorizationError as error:
+                logger.critical('Failure in setting up challenges.')
+                logger.info('Attempting to clean up outstanding challenges...')
+                raise error
+            # All challenges should have been processed by the authenticator.
+            assert len(resps) == len(achalls), 'Some challenges have not been performed.'
+
+            # Inform the ACME CA server that challenges are available for validation.
+            for achall, resp in zip(achalls, resps):
+                self.acme.answer_challenge(achall.challb, resp)
+
+            # Wait for authorizations to be checked.
+            logger.info('Waiting for verification...')
+            self._poll_authorizations(authzrs, max_retries, max_time_mins, best_effort)
+
+            # Keep validated authorizations only. If there is none, no certificate can be issued.
+            authzrs_validated = [authzr for authzr in authzrs
+                                 if authzr.body.status == messages.STATUS_VALID]
+            if not authzrs_validated:
+                raise errors.AuthorizationError('All challenges have failed.')
+
+            return authzrs_validated
+
+        raise errors.Error("An unexpected error occurred while handling the authorizations.")
 
     def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> Tuple[List, List]:
         """
@@ -211,9 +275,9 @@ class AuthHandler:
                 # Without best effort, having failed authzrs is critical and fail the process.
                 raise errors.AuthorizationError('Some challenges have failed.')
 
-        if authzrs_to_check:
-            # Here authzrs_to_check is still not empty, meaning we exceeded the max polling attempt.
-            raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
+        # if authzrs_to_check:
+        #     # Here authzrs_to_check is still not empty, meaning we exceeded the max polling attempt.
+        #     raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
 
     def _choose_challenges(self, authzrs: Iterable[messages.AuthorizationResource]
                            ) -> List[achallenges.AnnotatedChallenge]:

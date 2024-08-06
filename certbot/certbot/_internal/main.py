@@ -1620,6 +1620,40 @@ def certonly(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
 
+def pre_auth(config: configuration.NamespaceConfig, plugins: plugins_disco.PluginsRegistry) -> None:
+    """Authenticate & obtain authorization, but do not request a certificate.
+
+    This implements the 'preauth' subcommand.
+
+    :param config: Configuration object
+    :type config: configuration.NamespaceConfig
+
+    :param plugins: List of plugins
+    :type plugins: plugins_disco.PluginsRegistry
+
+    :returns: `None`
+    :rtype: None
+
+    :raises errors.Error: If specified plugin could not be used
+
+    """
+    # SETUP: Select plugins and construct a client instance
+    # installers are used in auth mode to determine domain names
+    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+    le_client = _init_le_client(config, auth, installer)
+
+    domains, certname = _find_domains_or_certname(config, installer)
+
+    authz_status = le_client.obtain_authorizations(domains)
+
+    print(authz_status)
+
+    print("your identifiers have been authorized")
+    #_report_new_authz()
+    #_report_next_steps()
+
+    _suggest_donation_if_appropriate(config)
+    eff.handle_subscription(config, le_client.account)
 
 def renew(config: configuration.NamespaceConfig,
           unused_plugins: plugins_disco.PluginsRegistry) -> None:
