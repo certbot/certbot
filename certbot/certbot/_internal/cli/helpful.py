@@ -62,6 +62,7 @@ class HelpfulArgumentParser:
             "delete": main.delete,
             "enhance": main.enhance,
             "reconfigure": main.reconfigure,
+            "preauth":main.pre_auth
         }
 
         # Get notification function for printing

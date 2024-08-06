@@ -148,6 +148,36 @@ class ClientV2:
             authorizations=authorizations,
             csr_pem=csr_pem)
 
+    def new_authz(self, csr_pem: bytes) -> messages.AuthorizationResource:
+        """Request a new Authorization object from the server.
+
+        :param bytes csr_pem: A CSR in PEM format.
+
+        :returns: The newly created authorization.
+        :rtype: AuthorizationResource
+        """
+        csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        # pylint: disable=protected-access
+        dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
+        ipNames = crypto_util._pyopenssl_cert_or_req_san_ip(csr)
+        # ipNames is now []string
+        identifiers = []
+        for name in dnsNames:
+            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
+                value=name))
+        for ips in ipNames:
+            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
+                value=ips))
+            
+        # Currently only the first indentifier entered by the user will be authorized
+        authz = messages.NewAuthorization(identifier=identifiers[0])
+        response = self._post(self.directory['newAuthz'], authz)
+        body = messages.Authorization.from_json(response.json())
+        
+        return messages.AuthorizationResource(
+            uri=response.headers.get('Location'),
+            body=body)
+
     def poll(self, authzr: messages.AuthorizationResource
              ) -> Tuple[messages.AuthorizationResource, requests.Response]:
         """Poll Authorization Resource for status.
