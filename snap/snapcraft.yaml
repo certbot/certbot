@@ -106,6 +106,7 @@ parts:
       grep -v python-augeas "${CRAFT_PART_SRC}/tools/requirements.txt" >> "${CRAFT_PART_SRC}/snap-constraints.txt"
       craftctl set version=$(grep -oP "__version__ = '\K.*(?=')" "${CRAFT_PART_SRC}/certbot/certbot/__init__.py")
     build-attributes:
+      # https://snapcraft.io/docs/how-to-classic#fix-linter-warnings-by-patching-elf-binaries
       - enable-patchelf
   shared-metadata:
     plugin: dump
