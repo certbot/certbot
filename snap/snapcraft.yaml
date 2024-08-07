@@ -18,6 +18,8 @@ base: core24
 grade: stable
 adopt-info: certbot
 
+# Workaround for misconfigured pyvenv.cfg; see discussion on snapcraft forum for more info
+# https://forum.snapcraft.io/t/upgrading-classic-snap-to-core24-using-snapcraft-8-3-causes-python-3-12-errors-at-runtime/
 environment:
   PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
 
@@ -51,7 +53,7 @@ parts:
       - ./certbot-nginx
     stage:
       - -usr/lib/python3.12/sitecustomize.py # maybe unnecessary
-      - -pyvenv.cfg
+      - -pyvenv.cfg # Workaround for misconfiguration, as noted above
       # Old versions of this file used to unstage
       # lib/python3.8/site-packages/augeas.py to avoid conflicts between
       # python-augeas 0.5.0 which was pinned in snap-constraints.txt and
