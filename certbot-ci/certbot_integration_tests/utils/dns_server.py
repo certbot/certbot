@@ -22,7 +22,7 @@ if sys.version_info >= (3, 9):  # pragma: no cover
 else:  # pragma: no cover
     import importlib_resources
 
-BIND_DOCKER_IMAGE = "internetsystemsconsortium/bind9:9.16"
+BIND_DOCKER_IMAGE = "internetsystemsconsortium/bind9:9.20"
 BIND_BIND_ADDRESS = ("127.0.0.1", 45953)
 
 # A TCP DNS message which is a query for '. CH A' transaction ID 0xcb37. This is used
