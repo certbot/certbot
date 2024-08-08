@@ -48,9 +48,10 @@ Install and configure the OS system dependencies required to run Certbot.
    sudo dnf install python3 augeas-libs
    # For macOS installations with Homebrew already installed and configured
    # NB: If you also run `brew install python` you don't need the ~/lib
-   #     directory created below, however, Certbot's Apache plugin won't work
-   #     if you use Python installed from other sources such as pyenv or the
-   #     version provided by Apple.
+   #     directory created below, however, without this directory and symlinks
+   #     to augeas, Certbot's Apache plugin won't work if you use Python
+   #     installed from other sources such as pyenv or the version provided by
+   #     Apple.
    brew install augeas
    mkdir ~/lib
    ln -s $(brew --prefix)/lib/libaugeas* ~/lib
