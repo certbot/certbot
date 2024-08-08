@@ -76,7 +76,7 @@ jobs:
         displayName: Install dependencies
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.8
+          versionSpec: 3.12
           addToPath: true
       - task: DownloadSecureFile@1
         name: credentials
@@ -107,7 +107,7 @@ jobs:
     steps:
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.8
+          versionSpec: 3.12
           addToPath: true
       - script: |
           set -e
@@ -141,7 +141,7 @@ jobs:
         displayName: Install dependencies
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.8
+          versionSpec: 3.12
           addToPath: true
       - task: DownloadPipelineArtifact@2
         inputs:
