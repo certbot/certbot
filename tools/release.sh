@@ -19,7 +19,7 @@ CheckVersion() {
 CheckVersion "$1"
 CheckVersion "$2"
 
-if [ "$RELEASE_GPG_KEY" = "" ] && ! gpg2 --card-status >/dev/null 2>&1; then
+if [ "$RELEASE_GPG_KEY" = "" ] && ! gpg --card-status >/dev/null 2>&1; then
     echo OpenPGP card not found!
     echo Please insert your PGP card and run this script again.
     exit 1
