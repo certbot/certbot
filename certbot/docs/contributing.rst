@@ -376,8 +376,8 @@ Certbot plugin snaps expose their Python modules to the Certbot snap via a
 `snap content interface`_ where ``certbot-1`` is the value for the ``content``
 attribute. The Certbot snap only uses this to find the names of connected
 plugin snaps and it expects to find the Python modules to be loaded under
-``lib/python3.8/site-packages/`` in the plugin snap. This location is the
-default when using the ``core20`` `base snap`_ and the `python snapcraft
+``lib/python3.12/site-packages/`` in the plugin snap. This location is the
+default when using the ``core24`` `base snap`_ and the `python snapcraft
 plugin`_.
 
 The Certbot snap also provides a separate content interface which
