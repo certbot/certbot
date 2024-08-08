@@ -734,7 +734,7 @@ class NginxConfigurator(common.Configurator):
         if not vhost.addrs:
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block)
-
+        nginx_version = self.version
         if vhost.ipv6_enabled():
             ipv6_block = ['\n    ',
                           'listen',
@@ -742,6 +742,10 @@ class NginxConfigurator(common.Configurator):
                           '[::]:{0}'.format(https_port),
                           ' ',
                           'ssl']
+
+            if (1,9,5) <= nginx_version < (1,25,1):
+                ipv6_block.append(' ')
+                ipv6_block.append('http2')
             if not ipv6info[1]:
                 # ipv6only=on is absent in global config
                 ipv6_block.append(' ')
@@ -754,6 +758,9 @@ class NginxConfigurator(common.Configurator):
                           '{0}'.format(https_port),
                           ' ',
                           'ssl']
+            if (1,9,5) <= nginx_version < (1,25,1):
+                ipv4_block.append(' ')
+                ipv4_block.append('http2')
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
@@ -765,6 +772,8 @@ class NginxConfigurator(common.Configurator):
             ['\n    ', 'include', ' ', self.mod_ssl_conf],
             ['\n    ', 'ssl_dhparam', ' ', self.ssl_dhparams],
         ])
+        if nginx_version >= (1,25,1):
+            ssl_block.insert(2, ['\n    ', 'http2', ' ', 'on'])
 
         self.parser.add_server_directives(
             vhost, ssl_block)
