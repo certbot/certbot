@@ -20,7 +20,8 @@ VERB_HELP = [
                   "This command obtains a TLS/SSL certificate without installing it anywhere.")
     }),
     ("preauth", {
-        "short": "Validate (pre-authorize) one or more domains, but do not obtains certificates for them",
+        "short": ("Validate (pre-authorize) one or more domains," 
+                  "but do not obtains certificates for them"),
         "opts": "Options for modifying how a domain is validated",
         "usage": ("\n\n  certbot preauth [options] [-d DOMAIN] [-d DOMAIN] ...\n\n"
                   "This command validates a domain without requesting a certificate for it.")

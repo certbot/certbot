@@ -234,9 +234,6 @@ def choose_configurator_plugins(config: configuration.NamespaceConfig,
         if config.authenticator:
             logger.warning("Specifying an authenticator doesn't make sense when "
                            "running Certbot with verb \"%s\"", verb)      
-    elif verb == "preauth":
-        need_auth = True
-        need_inst = False
     
     # Try to meet the user's request and/or ask them to pick plugins
     authenticator: Optional[interfaces.Authenticator] = None

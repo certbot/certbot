@@ -2,10 +2,7 @@
 from typing import List
 from typing import Optional
 from typing import Union
-
 import debugpy
-import ipdb
-
 from certbot._internal import main as internal_main
 
 
@@ -23,6 +20,4 @@ def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
     debugpy.listen(('127.0.0.1', 5009))
     print("waiting for client")
     debugpy.wait_for_client()
-    
     return internal_main.main(cli_args)
-

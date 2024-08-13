@@ -595,6 +595,13 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
     if installer_err:
         print()
 
+def _report_next_steps_pre_authz() -> None:
+    """Reports next steps to the user after a domain pre-authorization has be done
+    """
+
+    display_util.notify(("If your identifiers are succesfully validated," 
+                         "you can run the cert issuance processes from the same http server to acquire the certificates without" "further domain validation"))
+
 
 def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[str],
                      fullchain_path: Optional[str], key_path: Optional[str] = None) -> None:
@@ -639,6 +646,23 @@ def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[
             nl="\n" if config.verb == "run" else "" # Normalize spacing across verbs
         )
     )
+
+def _report_new_authz(preauthz_results : dict[str, str]) -> None:
+    """Reports the validation status of domains to the user.
+
+    :param preauthz_results: The results of the pre-authorization process
+    :type preauthz_results: `dict` of `Identifier` and `Status`
+
+    :returns: `None`
+    :rtype: None
+
+    """
+
+
+    display_util.notify("The authorization status of your identifiers are:\n")
+
+    for key, value in preauthz_results.items():
+        display_util.notify(f"{key} : {value}\n")
 
 
 def _is_interactive_only_auth(config: configuration.NamespaceConfig) -> bool:
@@ -1620,15 +1644,12 @@ def pre_auth(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
     installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     le_client = _init_le_client(config, auth, installer)
 
-    domains, certname = _find_domains_or_certname(config, installer)
+    domains, _ = _find_domains_or_certname(config, installer)
 
-    authz_status = le_client.obtain_authorizations(domains)
+    authz_statuses = le_client.obtain_authorizations(domains)
 
-    print(authz_status)
-
-    print("your identifiers have been authorized")
-    #_report_new_authz()
-    #_report_next_steps()
+    _report_new_authz(authz_statuses)
+    _report_next_steps_pre_authz()
 
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)

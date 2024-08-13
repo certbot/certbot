@@ -121,18 +121,8 @@ class ClientV2:
         :returns: The newly created order.
         :rtype: OrderResource
         """
-        csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        # pylint: disable=protected-access
-        dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
-        ipNames = crypto_util._pyopenssl_cert_or_req_san_ip(csr)
-        # ipNames is now []string
-        identifiers = []
-        for name in dnsNames:
-            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
-                value=name))
-        for ips in ipNames:
-            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
-                value=ips))
+        identifiers = self._get_identifiers_from_csr(csr_pem)
+
         order = messages.NewOrder(identifiers=identifiers)
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
@@ -148,13 +138,32 @@ class ClientV2:
             authorizations=authorizations,
             csr_pem=csr_pem)
 
-    def new_authz(self, csr_pem: bytes) -> messages.AuthorizationResource:
-        """Request a new Authorization object from the server.
+    def new_authz(self, csr_pem: bytes) -> List[messages.AuthorizationResource]:
+        """Request new Authorization objects from the server for one or more identifiers.
 
         :param bytes csr_pem: A CSR in PEM format.
 
-        :returns: The newly created authorization.
-        :rtype: AuthorizationResource
+        :returns: The newly created authorizations.
+        :rtype: `List` of `AuthorizationResource`
+        """
+        identifiers = self._get_identifiers_from_csr(csr_pem)            
+        authzrs = []
+        for iden in identifiers:
+            authz = messages.NewAuthorization(identifier=iden)
+            response = self._post(self.directory['newAuthz'], authz)
+            body = messages.Authorization.from_json(response.json())
+
+            authzr = messages.AuthorizationResource(uri=response.headers.get('Location'), body=body)
+            authzrs.append(authzr)
+        return authzrs
+
+    def _get_identifiers_from_csr(self, csr_pem: bytes) -> List[messages.Identifier]:
+        """Get identifiers (e.g. domain names) from csr.
+        
+        :param bytes csr_pem: A CSR in PEM format.
+
+        :returns: The extracted identifiers.
+        :rtype: `List` of `Identifier`
         """
         csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
         # pylint: disable=protected-access
@@ -168,15 +177,8 @@ class ClientV2:
         for ips in ipNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=ips))
-            
-        # Currently only the first indentifier entered by the user will be authorized
-        authz = messages.NewAuthorization(identifier=identifiers[0])
-        response = self._post(self.directory['newAuthz'], authz)
-        body = messages.Authorization.from_json(response.json())
-        
-        return messages.AuthorizationResource(
-            uri=response.headers.get('Location'),
-            body=body)
+                
+        return identifiers
 
     def poll(self, authzr: messages.AuthorizationResource
              ) -> Tuple[messages.AuthorizationResource, requests.Response]:
