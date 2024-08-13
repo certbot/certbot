@@ -600,8 +600,9 @@ def _report_next_steps_pre_authz() -> None:
     """Reports next steps to the user after a domain pre-authorization has be done
     """
 
-    display_util.notify(("If your identifiers are succesfully validated," 
-                         "you can run the cert issuance processes from the same http server to acquire the certificates without" "further domain validation"))
+    display_util.notify(("If your identifiers are succesfully validated,\n" 
+                         "you can run the cert issuance processes from the same http\n"
+                         "server to acquire the certificates without further domain validation"))
 
 
 def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[str],

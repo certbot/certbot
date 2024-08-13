@@ -157,7 +157,7 @@ class AuthHandler:
 
         for auth in authzrs:
             if auth.body.status == messages.STATUS_VALID:
-                display_util.notify((f"The authorization for identifier {auth.body.identifier.value} is valid." 
+                display_util.notify((f"The authorization for identifier {auth.body.identifier.value} is valid.\n" 
                                     "No challenges are requested.\n"))
                 valid_authzrs.append(auth)
                 authzrs.remove(auth)

@@ -16,8 +16,8 @@ def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
     :rtype: `str` or `int` or `None`
 
     """
-    print("running in debug mode")
-    debugpy.listen(('127.0.0.1', 5009))
-    print("waiting for client")
-    debugpy.wait_for_client()
+    # print("running in debug mode")
+    # debugpy.listen(('127.0.0.1', 5009))
+    # print("waiting for client")
+    # debugpy.wait_for_client()
     return internal_main.main(cli_args)
