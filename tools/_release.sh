@@ -97,7 +97,7 @@ fi
 git checkout "$RELEASE_BRANCH"
 
 # Update changelog
-sed -i "s/master/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
+sed -i "s/main/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
 git commit -m "Update changelog for $version release"
 
@@ -205,7 +205,7 @@ git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$ta
 git rm --cached -r "$built_package_dir"
 git commit -m "Remove built packages from git"
 
-# Add master section to CHANGELOG.md
+# Add main section to CHANGELOG.md
 header=$(head -n 4 certbot/CHANGELOG.md)
 body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
 footer=$(tail -n +5 certbot/CHANGELOG.md)
