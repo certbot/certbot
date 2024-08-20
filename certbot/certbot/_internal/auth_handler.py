@@ -97,10 +97,12 @@ class AuthHandler:
         if not self.acme:
             raise errors.Error("No ACME client defined, authorizations cannot be handled.")
         
-        valid_authzrs, authzrs = self.check_for_valid_authorizations(authzrs)
+        valid_authzrs, non_valid_authzrs = self.check_for_valid_authorizations(authzrs)
 
-        if not authzrs:
+        if not non_valid_authzrs:
             return valid_authzrs
+        else:
+            authzrs = non_valid_authzrs
 
         # Retrieve challenges that need to be performed to validate authorizations.
         achalls = self._choose_challenges(authzrs)
@@ -154,15 +156,21 @@ class AuthHandler:
         :rtype: `Tuple` 
         """
         valid_authzrs : List[messages.AuthorizationResource] = []
+        non_valid_authrz: List[messages.AuthorizationResource] = []
+        vali_identifiers_to_print: List[str] = []
 
         for auth in authzrs:
             if auth.body.status == messages.STATUS_VALID:
-                display_util.notify((f"The authorization for identifier {auth.body.identifier.value} is valid.\n" 
-                                    "No challenges are requested.\n"))
                 valid_authzrs.append(auth)
-                authzrs.remove(auth)
+                non_valid_authrz.append(auth)
+                vali_identifiers_to_print.append(auth.body.identifier.value)
 
-        return valid_authzrs, authzrs
+        if valid_authzrs:
+            vali_identifiers_to_print = ' and '.join(vali_identifiers_to_print)
+            display_util.notify((f"The authorization for identifier(s) {vali_identifiers_to_print} is valid.\n" 
+                                    "No challenges are requested.\n"))
+
+        return non_valid_authrz, authzrs
 
 
     def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> Tuple[List, List]:
