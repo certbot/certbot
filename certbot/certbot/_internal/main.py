@@ -596,7 +596,7 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
     if installer_err:
         print()
 
-def _report_next_steps_pre_authz() -> None:
+def _report_next_steps_after_pre_authz() -> None:
     """Reports next steps to the user after a domain pre-authorization has be done
     """
 
@@ -1672,7 +1672,7 @@ def pre_auth(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
     authz_statuses = le_client.obtain_authorizations(domains)
 
     _report_new_authz(authz_statuses)
-    _report_next_steps_pre_authz()
+    _report_next_steps_after_pre_authz()
 
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
