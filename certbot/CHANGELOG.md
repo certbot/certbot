@@ -67,7 +67,8 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
-*
+* Support for following DNS-01 CNAME records added to AWS Route53 component `certbot-dns-route53`,
+  to allow multiple outside DNS domains be managed from an AWS-hosted zone.
 
 ### Fixed
 
