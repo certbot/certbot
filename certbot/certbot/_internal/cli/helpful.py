@@ -527,8 +527,7 @@ class HelpfulArgumentParser:
         if chosen_topic == "everything":
             chosen_topic = "run"
         if chosen_topic == "all":
-            # Addition of condition closes #6209 (removal of duplicate route53 option).
-            return {t: t != 'certbot-route53:auth' for t in self.help_topics}
+            return {t: True for t in self.help_topics}
         elif not chosen_topic:
             return {t: False for t in self.help_topics}
         return {t: t == chosen_topic for t in self.help_topics}

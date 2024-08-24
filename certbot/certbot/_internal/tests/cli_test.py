@@ -514,11 +514,6 @@ class ParseTest(unittest.TestCase):
         with pytest.raises(errors.Error):
             self.parse("--allow-subset-of-names -d *.example.org".split())
 
-    def test_route53_no_revert(self):
-        for help_flag in ['-h', '--help']:
-            for topic in ['all', 'plugins', 'dns-route53']:
-                assert 'certbot-route53:auth' not in self._help_output([help_flag, topic])
-
     def test_parse_args_hosts_and_auto_hosts(self):
         with pytest.raises(errors.Error):
             self.parse(['--hsts', '--auto-hsts'])
@@ -594,7 +589,7 @@ class ParseTest(unittest.TestCase):
         assert_set_by_user_with_value(namespace, 'text_mode', True)
         assert_set_by_user_with_value(namespace, 'verbose_count', 1)
         assert_set_by_user_with_value(namespace, 'email', 'foo@example.com')
-    
+
     def test_arg_with_contained_spaces(self):
         # This can happen if a user specifies an arg like "-d foo.com" enclosed
         # in double quotes, or as its own line in a docker-compose.yml file (as
