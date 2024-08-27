@@ -9,7 +9,7 @@ license = "Apache License 2.0"
 python = "^3.8"
 
 # workaround for: https://github.com/python-poetry/poetry-plugin-export/issues/183
-urllib3 = "1.26.19"
+urllib3 = ">=1.25.4,<1.27"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -75,7 +75,6 @@ cryptography = "!= 37.0.3"
 # Branch 4.x of tox introduces backward incompatibility changes, so require a newer
 # version of tox to keep deterministic builds.
 tox = ">=4"
-certifi = "2024.07.04"
 
 
 [tool.poetry.dev-dependencies]
