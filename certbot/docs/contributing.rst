@@ -48,9 +48,10 @@ Install and configure the OS system dependencies required to run Certbot.
    sudo dnf install python3 augeas-libs
    # For macOS installations with Homebrew already installed and configured
    # NB: If you also run `brew install python` you don't need the ~/lib
-   #     directory created below, however, Certbot's Apache plugin won't work
-   #     if you use Python installed from other sources such as pyenv or the
-   #     version provided by Apple.
+   #     directory created below, however, without this directory and symlinks
+   #     to augeas, Certbot's Apache plugin won't work if you use Python
+   #     installed from other sources such as pyenv or the version provided by
+   #     Apple.
    brew install augeas
    mkdir ~/lib
    ln -s $(brew --prefix)/lib/libaugeas* ~/lib
@@ -375,8 +376,8 @@ Certbot plugin snaps expose their Python modules to the Certbot snap via a
 `snap content interface`_ where ``certbot-1`` is the value for the ``content``
 attribute. The Certbot snap only uses this to find the names of connected
 plugin snaps and it expects to find the Python modules to be loaded under
-``lib/python3.8/site-packages/`` in the plugin snap. This location is the
-default when using the ``core20`` `base snap`_ and the `python snapcraft
+``lib/python3.12/site-packages/`` in the plugin snap. This location is the
+default when using the ``core24`` `base snap`_ and the `python snapcraft
 plugin`_.
 
 The Certbot snap also provides a separate content interface which
