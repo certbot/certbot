@@ -34,7 +34,7 @@ install_requires = [
     'distro>=1.0.1',
     'importlib_resources>=1.3.1; python_version < "3.9"',
     'importlib_metadata>=4.6; python_version < "3.10"',
-    # Josepy 2+ introduce backward incompatible changes by droping usage of
+    # Josepy 2+ may introduce backward incompatible changes by droping usage of
     # deprecated PyOpenSSL APIs.
     'josepy>=1.13.0, <2',
     'parsedatetime>=2.4',
