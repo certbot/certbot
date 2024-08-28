@@ -17,8 +17,11 @@ its dependencies, Certbot needs to be run on a UNIX-like OS so if you're using
 Windows, you'll need to set up a (virtual) machine running an OS such as Linux
 and continue with these instructions on that UNIX-like OS.
 
+If you're using macOS, it is recommended to first check out the `macOS
+suggestions`_ section before continuing with the installation instructions
+below.
+
 .. _local copy:
-.. _prerequisites:
 
 Running a local copy of the client
 ----------------------------------
@@ -648,3 +651,28 @@ If a dependency is already packaged in these distros and is acceptable for use i
 the oldest packaged version of that dependency should be chosen and set as the minimum
 version in ``setup.py``.
 
+macOS suggestions
+=================
+
+If you're developing on macOS, before :ref:`setting up your Certbot development
+environment <local copy>`, it is recommended you perform the following steps.
+None of this is required, but it is the approach used by all/most of the
+current Certbot developers on macOS as of writing this:
+
+0. Install `Homebrew <https://brew.sh/>`_. It is the most popular package
+   manager on macOS by a wide margin and works well enough.
+1. Install `pyenv <https://github.com/pyenv/pyenv>`_, ideally through Homebrew
+   by running ``brew install pyenv``. Using Homebrew's Python for Certbot
+   development is annoying because it regularly updates and every time it does
+   it breaks your virtual environments. Using Python from ``pyenv`` avoids this
+   problem and gives you easy access to all versions of Python.
+2. If you're using ``pyenv``, make sure you've set up your shell for it by
+   following instructions like
+   https://github.com/pyenv/pyenv?tab=readme-ov-file#set-up-your-shell-environment-for-pyenv.
+3. Configure ``git`` to ignore the ``.DS_Store`` files that are created by
+   macOS's file manager Finder by running something like:
+
+.. code-block:: shell
+
+   mkdir -p ~/.config/git
+   echo '.DS_Store' >> ~/.config/git/ignore
