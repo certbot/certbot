@@ -85,7 +85,6 @@ test_extras = [
     'types-pywin32',
     'types-requests',
     'types-setuptools',
-    'types-six',
     'wheel',
 ]
 
