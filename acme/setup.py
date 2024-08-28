@@ -7,7 +7,9 @@ version = '2.12.0.dev0'
 
 install_requires = [
     'cryptography>=3.2.1',
-    'josepy>=1.13.0',
+    # Josepy 2+ may introduce backward incompatible changes by droping usage of
+    # deprecated PyOpenSSL APIs.
+    'josepy>=1.13.0, <2',
     # pyOpenSSL 23.1.0 is a bad release: https://github.com/pyca/pyopenssl/issues/1199
     'PyOpenSSL>=17.5.0,!=23.1.0',
     'pyrfc3339',
