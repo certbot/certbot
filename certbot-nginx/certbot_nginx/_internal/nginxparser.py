@@ -294,7 +294,7 @@ def dumps(blocks: UnspacedList) -> str:
     """Dump to a Unicode string.
 
     :param UnspacedList blocks: The parsed tree
-    :rtype: six.text_type
+    :rtype: str
 
     """
     return str(RawNginxDumper(blocks.spaced))
