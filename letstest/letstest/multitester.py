@@ -286,15 +286,15 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id, sel
         # 32 bit systems
         machine_type = 'c1.medium'
     name = 'le-%s'%target['name']
-    print(name, end=" ")
-    return make_instance(ec2_client,
-                         name,
-                         target['ami'],
-                         KEYNAME,
-                         machine_type=machine_type,
-                         security_group_id=security_group_id,
-                         subnet_id=subnet_id,
-                         self_destruct=self_destruct)
+    try:
+        instance = make_instance(ec2_client, name, target['ami'], KEYNAME,
+                                 machine_type=machine_type, security_group_id=security_group_id,
+                                 subnet_id=subnet_id, self_destruct=self_destruct)
+    except Exception:
+        print(f'FAIL: Unable to create instance {name}')
+        raise
+    print(f'Created instance {name}')
+    return instance
 
 
 def test_client_process(fab_config, inqueue, outqueue, log_dir):
@@ -435,7 +435,6 @@ def main():
 
     instances = []
     try:
-        print("Creating instances: ", end="")
         # If we want to preserve instances, do not have them self-destruct.
         self_destruct = not cl_args.saveinstances
         for target in targetlist:
@@ -444,7 +443,6 @@ def main():
                                        security_group_id, subnet_id,
                                        self_destruct)
             )
-        print()
 
         # Install and launch client scripts in parallel
         #-------------------------------------------------------------------------------
