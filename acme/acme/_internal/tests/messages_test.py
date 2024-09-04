@@ -59,7 +59,7 @@ class ErrorTest(unittest.TestCase):
 
     def test_from_json_with_null_subproblems(self):
         from acme.messages import Error
-        parsed_error = Error.from_json(self.error.to_json() | {'subproblems': None})
+        parsed_error = Error.from_json({**self.error.to_json(), 'subproblems': None})
         assert parsed_error.subproblems is None
 
     def test_description(self):
