@@ -598,11 +598,9 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
 def _report_next_steps_after_pre_authz() -> None:
     """Reports next steps to the user after a domain pre-authorization has be done
     """
-
-    display_util.notify(("If your identifiers are succesfully validated,\n" 
+    display_util.notify(("If your identifiers are succesfully validated,\n"
                          "you can run the cert issuance processes (e.g. certonly subcommand)\n"
                          "to acquire the certificates without any challenges requested."))
-
 
 def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[str],
                      fullchain_path: Optional[str], key_path: Optional[str] = None) -> None:

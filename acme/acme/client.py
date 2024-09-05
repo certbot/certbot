@@ -146,7 +146,7 @@ class ClientV2:
         :returns: The newly created authorizations.
         :rtype: `List` of `AuthorizationResource`
         """
-        identifiers = self._get_identifiers_from_csr(csr_pem)            
+        identifiers = self._get_identifiers_from_csr(csr_pem)
         authzrs = []
         for iden in identifiers:
             authz = messages.NewAuthorization(identifier=iden)
@@ -177,7 +177,6 @@ class ClientV2:
         for ips in ipNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=ips))
-                
         return identifiers
 
     def poll(self, authzr: messages.AuthorizationResource
