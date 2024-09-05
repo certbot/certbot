@@ -91,7 +91,6 @@ class AuthHandler:
 
         :raises .AuthorizationError: If unable to retrieve all authorizations
         """
-
         if not authzrs:
             raise errors.AuthorizationError('No authorization to handle.')
         if not self.acme:

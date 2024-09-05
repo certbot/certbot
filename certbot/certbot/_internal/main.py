@@ -657,8 +657,6 @@ def _report_new_authz(preauthz_results : dict[str, str]) -> None:
     :rtype: None
 
     """
-
-
     display_util.notify("\nThe authorization status of your identifiers are:\n")
 
     for key, value in preauthz_results.items():
