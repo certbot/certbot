@@ -38,7 +38,7 @@ targets:
     type: centos
     virt: hvm
     user: centos
-  - ami: ami-08f2fe20b72b2ffa7
+  - ami: ami-00d53d23711185071
     name: centos9stream
     type: centos
     virt: hvm
