@@ -1,8 +1,8 @@
 # Configuring Azure Pipelines with Certbot
 
 Let's begin. All pipelines are defined in `.azure-pipelines`. Currently there are two:
-* `.azure-pipelines/main.yml` is the main one, executed on PRs for master, and pushes to master,
-* `.azure-pipelines/advanced.yml` add installer testing on top of the main pipeline, and is executed for `test-*` branches, release branches, and nightly run for master.
+* `.azure-pipelines/main.yml` is the main one, executed on PRs for main, and pushes to main,
+* `.azure-pipelines/advanced.yml` add installer testing on top of the main pipeline, and is executed for `test-*` branches, release branches, and nightly run for main.
 
 Several templates are defined in `.azure-pipelines/templates`. These YAML files aggregate common jobs configuration that can be reused in several pipelines.
 
@@ -64,7 +64,7 @@ Azure Pipeline needs RW on code, RO on metadata, RW on checks, commit statuses, 
 RW access here is required to allow update of the pipelines YAML files from Azure DevOps interface, and to
 update the status of builds and PRs on GitHub side when Azure Pipelines are triggered.
 Note however that no admin access is defined here: this means that Azure Pipelines cannot do anything with
-protected branches, like master, and cannot modify the security context around this on GitHub.
+protected branches, like main, and cannot modify the security context around this on GitHub.
 Access can be defined for all or only selected repositories, which is nice.
 ```
 
@@ -91,11 +91,11 @@ grant permissions from Azure Pipelines to GitHub in order to setup a GitHub OAut
 then are way too large (admin level on almost everything), while the classic approach does not add any more
 permissions, and works perfectly well.__
 
-- Select GitHub in "Select your repository section", choose certbot/certbot in Repository, master in default branch.
+- Select GitHub in "Select your repository section", choose certbot/certbot in Repository, main in default branch.
 - Click on YAML option for "Select a template"
 - Choose a name for the pipeline (eg. test-pipeline), and browse to the actual pipeline YAML definition in the
   "YAML file path" input (eg. `.azure-pipelines/test-pipeline.yml`)
-- Click "Save & queue", choose the master branch to build the first pipeline, and click "Save and run" button.
+- Click "Save & queue", choose the main branch to build the first pipeline, and click "Save and run" button.
 
 _Done. Pipeline is operational. Repeat to add more pipelines from existing YAML files in `.azure-pipelines`._
 

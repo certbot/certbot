@@ -25,7 +25,7 @@ We release packages and upload them to PyPI (wheels and source tarballs).
 
 The following scripts are used in the process:
 
-- https://github.com/certbot/certbot/blob/master/tools/release.sh
+- https://github.com/certbot/certbot/blob/main/tools/release.sh
 
 We use git tags to identify releases, using `Semantic Versioning`_. For
 example: `v0.11.1`.
@@ -50,7 +50,7 @@ key servers.
 Notes for package maintainers
 =============================
 
-0. Please use our tagged releases, not ``master``!
+0. Please use our tagged releases, not ``main``!
 
 1. Do not package ``certbot-compatibility-test`` as it's only used internally.
 

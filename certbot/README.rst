@@ -2,11 +2,11 @@
 
 |build-status|
 
-.. |build-status| image:: https://img.shields.io/azure-devops/build/certbot/ba534f81-a483-4b9b-9b4e-a60bec8fee72/5/master
+.. |build-status| image:: https://img.shields.io/azure-devops/build/certbot/ba534f81-a483-4b9b-9b4e-a60bec8fee72/5/main
    :target: https://dev.azure.com/certbot/certbot/_build?definitionId=5
    :alt: Azure Pipelines CI status
  
-.. image:: https://raw.githubusercontent.com/EFForg/design/master/logos/eff-certbot-lockup.png
+.. image:: https://raw.githubusercontent.com/EFForg/design/main/logos/eff-certbot-lockup.png
   :width: 200
   :alt: EFF Certbot Logo
 
@@ -39,7 +39,7 @@ Documentation: https://certbot.eff.org/docs
 
 Software project: https://github.com/certbot/certbot
 
-Changelog: https://github.com/certbot/certbot/blob/master/certbot/CHANGELOG.md
+Changelog: https://github.com/certbot/certbot/blob/main/certbot/CHANGELOG.md
 
 For Contributors: https://certbot.eff.org/docs/contributing.html
 

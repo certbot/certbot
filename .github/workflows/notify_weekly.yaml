@@ -20,6 +20,6 @@ jobs:
         - Want to Discuss something today? Place it [here](https://docs.google.com/document/d/17YMUbtC1yg6MfiTMwT8zVm9LmO-cuGVBom0qFn8XJBM/edit?usp=sharing) and we can meet today on Zoom.\n\n 
         - The key words SHOULD and MAY in this message are to be interpreted as described in [RFC 8147](https://www.rfc-editor.org/rfc/rfc8174). \"
         }" > mattermost.json
-    - uses: mattermost/action-mattermost-notify@master
+    - uses: mattermost/action-mattermost-notify@main
       env:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
