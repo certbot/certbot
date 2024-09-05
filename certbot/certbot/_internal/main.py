@@ -602,7 +602,7 @@ def _report_next_steps_after_pre_authz() -> None:
 
     display_util.notify(("If your identifiers are succesfully validated,\n" 
                          "you can run the cert issuance processes (e.g. certonly subcommand)\n"
-                         "to acquire the certificates without further domain validation"))
+                         "to acquire the certificates without any challenges requested."))
 
 
 def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[str],
@@ -661,7 +661,7 @@ def _report_new_authz(preauthz_results : dict[str, str]) -> None:
     """
 
 
-    display_util.notify("The authorization status of your identifiers are:\n")
+    display_util.notify("\nThe authorization status of your identifiers are:\n")
 
     for key, value in preauthz_results.items():
         display_util.notify(f"{key} : {value}\n")

@@ -96,13 +96,6 @@ class AuthHandler:
             raise errors.AuthorizationError('No authorization to handle.')
         if not self.acme:
             raise errors.Error("No ACME client defined, authorizations cannot be handled.")
-        
-        valid_authzrs, non_valid_authzrs = self.check_for_valid_authorizations(authzrs)
-
-        if not non_valid_authzrs:
-            return valid_authzrs
-        else:
-            authzrs = non_valid_authzrs
 
         # Retrieve challenges that need to be performed to validate authorizations.
         achalls = self._choose_challenges(authzrs)
@@ -138,9 +131,6 @@ class AuthHandler:
             # Keep validated authorizations only. If there is none, no certificate can be issued.
             authzrs_validated = [authzr for authzr in authzrs
                                  if authzr.body.status == messages.STATUS_VALID]
-            
-            # Add authzrs that are already valid due to pre-authz
-            authzrs_validated.extend(valid_authzrs)
 
             if not authzrs_validated:
                 raise errors.AuthorizationError('All challenges have failed.')
@@ -148,30 +138,6 @@ class AuthHandler:
             return authzrs_validated
 
         raise errors.Error("An unexpected error occurred while handling the authorizations.")
-    
-    def check_for_valid_authorizations(self, authzrs: List[messages.AuthorizationResource]) -> Tuple[List[messages.AuthorizationResource], List[messages.AuthorizationResource]]:
-        """Checks all the authorization resources and separates them into valid (due to pre-authz for example) and non-valid based on their statuses
-        :param List[messages.AuthorizationResource] authzrs: All the authorization resources with different statuses
-        :returns: A tuple of valid authorizations and all the other authorizations
-        :rtype: `Tuple` 
-        """
-        valid_authzrs : List[messages.AuthorizationResource] = []
-        non_valid_authrz: List[messages.AuthorizationResource] = []
-        vali_identifiers_to_print: List[str] = []
-
-        for auth in authzrs:
-            if auth.body.status == messages.STATUS_VALID:
-                valid_authzrs.append(auth)
-                non_valid_authrz.append(auth)
-                vali_identifiers_to_print.append(auth.body.identifier.value)
-
-        if valid_authzrs:
-            vali_identifiers_to_print = ' and '.join(vali_identifiers_to_print)
-            display_util.notify((f"The authorization for identifier(s) {vali_identifiers_to_print} is valid.\n" 
-                                    "No challenges are requested.\n"))
-
-        return non_valid_authrz, authzrs
-
 
     def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> Tuple[List, List]:
         """
@@ -267,9 +233,9 @@ class AuthHandler:
                 # Without best effort, having failed authzrs is critical and fail the process.
                 raise errors.AuthorizationError('Some challenges have failed.')
 
-        # if authzrs_to_check:
-        #     # Here authzrs_to_check is still not empty, meaning we exceeded the max polling attempt.
-        #     raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
+        if authzrs_to_check:
+            # Here authzrs_to_check is still not empty, meaning we exceeded the max polling attempt.
+            raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
 
     def _choose_challenges(self, authzrs: Iterable[messages.AuthorizationResource]
                            ) -> List[achallenges.AnnotatedChallenge]:
