@@ -401,7 +401,8 @@ class Client:
                         return self._retry_obtain_certificate(domains, successful_domains)
                 raise
 
-    def obtain_authorizations(self, domains : List[str], old_keypath: Optional[str] = None) -> Dict[str, str]:
+    def obtain_authorizations(self, domains : List[str],
+                               old_keypath: Optional[str] = None) -> Dict[str, str]:
         """Obtains all the authorizations from the ACME server.
 
         `.register` must be called before `.obtain_authorizations`
@@ -412,7 +413,6 @@ class Client:
         :rtype: `Dict` of `str` and `str`
 
         """
-
         _, csr = self._generate_key_and_csr(domains, old_keypath)
 
         try:
@@ -442,9 +442,10 @@ class Client:
                 authz_statuses[authzr.body.identifier.value] = authzr.body.status.name
 
             return authz_statuses
-        
 
-    def _generate_key_and_csr(self, domains : List[str], old_keypath: Optional[str] = None) -> Tuple[util.Key, util.CSR]:
+    def _generate_key_and_csr(self,
+                              domains : List[str], 
+                              old_keypath: Optional[str] = None) -> Tuple[util.Key, util.CSR]:
         """Generate a CSR and private key to be used for certificate or authorization requests.
         :param list domains: domains to get a certificate or authorization for
         :returns:
@@ -513,7 +514,6 @@ class Client:
             )
             csr = crypto_util.generate_csr(
                 key, domains, None, self.config.must_staple, self.config.strict_permissions)
-            
         return key, csr
 
     def _get_authorizations_from_csr(self, csr_pem: bytes,
@@ -536,7 +536,8 @@ class Client:
         if not self.auth_handler:
             raise errors.Error("No authorization handler has been set.")
 
-        handled_authzrs = self.auth_handler.handle_authorizations_from_authzrs(authzrs, self.config, best_effort)
+        handled_authzrs = self.auth_handler.handle_authorizations_from_authzrs(
+            authzrs, self.config, best_effort)
         return handled_authzrs
 
     def _get_order_and_authorizations(self, csr_pem: bytes,

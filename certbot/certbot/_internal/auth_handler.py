@@ -71,7 +71,7 @@ class AuthHandler:
         :raises .AuthorizationError: If unable to retrieve all authorizations
         """
         authzrs = orderr.authorizations[:]
-        return self.handle_authorizations_from_authzrs(authzrs, config, 
+        return self.handle_authorizations_from_authzrs(authzrs, config,
                                                        best_effort, max_retries, max_time_mins)
     
     def handle_authorizations_from_authzrs(self, authzrs: List[messages.AuthorizationResource],
