@@ -48,7 +48,6 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
     def test_dynamic_dirs(self, mock_constants):
         mock_constants.ACCOUNTS_DIR = 'acc'
         mock_constants.BACKUP_DIR = 'backups'
-        mock_constants.CSR_DIR = 'csr'
 
         mock_constants.IN_PROGRESS_DIR = '../p'
         mock_constants.KEY_DIR = 'keys'
@@ -60,12 +59,6 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
             os.path.normpath(os.path.join(self.config.config_dir, ref_path))
         assert os.path.normpath(self.config.backup_dir) == \
             os.path.normpath(os.path.join(self.config.work_dir, 'backups'))
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            assert os.path.normpath(self.config.csr_dir) == \
-                os.path.normpath(os.path.join(self.config.config_dir, 'csr'))
-            assert os.path.normpath(self.config.key_dir) == \
-                os.path.normpath(os.path.join(self.config.config_dir, 'keys'))
         assert os.path.normpath(self.config.in_progress_dir) == \
             os.path.normpath(os.path.join(self.config.work_dir, '../p'))
         assert os.path.normpath(self.config.temp_checkpoint_dir) == \
@@ -100,10 +93,6 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
                          os.path.join(os.getcwd(), logs_base)
         assert os.path.isabs(config.accounts_dir)
         assert os.path.isabs(config.backup_dir)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            assert os.path.isabs(config.csr_dir)
-            assert os.path.isabs(config.key_dir)
         assert os.path.isabs(config.in_progress_dir)
         assert os.path.isabs(config.temp_checkpoint_dir)
 

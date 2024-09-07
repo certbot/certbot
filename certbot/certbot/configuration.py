@@ -8,7 +8,6 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from urllib import parse
-import warnings
 
 from certbot import errors
 from certbot import util
@@ -43,9 +42,7 @@ class NamespaceConfig:
     paths defined in :py:mod:`certbot._internal.constants`:
 
       - `accounts_dir`
-      - `csr_dir`
       - `in_progress_dir`
-      - `key_dir`
       - `temp_checkpoint_dir`
 
     And the following paths are dynamically resolved using
@@ -286,23 +283,9 @@ class NamespaceConfig:
         return os.path.join(self.namespace.work_dir, constants.BACKUP_DIR)
 
     @property
-    def csr_dir(self) -> str:
-        """Directory where new Certificate Signing Requests (CSRs) are saved."""
-        warnings.warn("NamespaceConfig.csr_dir is deprecated and will be removed in an upcoming "
-                      "release of Certbot", DeprecationWarning)
-        return os.path.join(self.namespace.config_dir, constants.CSR_DIR)
-
-    @property
     def in_progress_dir(self) -> str:
         """Directory used before a permanent checkpoint is finalized."""
         return os.path.join(self.namespace.work_dir, constants.IN_PROGRESS_DIR)
-
-    @property
-    def key_dir(self) -> str:
-        """Keys storage."""
-        warnings.warn("NamespaceConfig.key_dir is deprecated and will be removed in an upcoming "
-                      "release of Certbot", DeprecationWarning)
-        return os.path.join(self.namespace.config_dir, constants.KEY_DIR)
 
     @property
     def temp_checkpoint_dir(self) -> str:
