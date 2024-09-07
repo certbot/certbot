@@ -70,7 +70,8 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'dns-route53 = certbot_dns_route53._internal.dns_route53:Authenticator'
+            'dns-route53 = certbot_dns_route53._internal.dns_route53:Authenticator',
+            'certbot-route53:auth = certbot_dns_route53.authenticator:Authenticator'
         ],
     },
 )
