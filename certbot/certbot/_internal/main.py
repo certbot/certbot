@@ -15,7 +15,6 @@ from typing import Optional
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
-import warnings
 
 import configobj
 import josepy as jose
@@ -1264,27 +1263,6 @@ def rollback(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
 
     """
     client.rollback(config.installer, config.checkpoints, config, plugins)
-
-
-def update_symlinks(config: configuration.NamespaceConfig,
-                    unused_plugins: plugins_disco.PluginsRegistry) -> None:
-    """Update the certificate file family symlinks
-
-    Use the information in the config file to make symlinks point to
-    the correct archive directory.
-
-    :param config: Configuration object
-    :type config: configuration.NamespaceConfig
-
-    :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: plugins_disco.PluginsRegistry
-
-    :returns: `None`
-    :rtype: None
-
-    """
-    warnings.warn("update_symlinks is deprecated and will be removed", PendingDeprecationWarning)
-    cert_manager.update_live_symlinks(config)
 
 
 def rename(config: configuration.NamespaceConfig,
