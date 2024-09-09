@@ -1215,11 +1215,6 @@ class MainTest(test_util.ConfigTestCase):
         client.rollback.assert_called_once_with(
             mock.ANY, 123, mock.ANY, mock.ANY)
 
-    @mock.patch('certbot._internal.cert_manager.update_live_symlinks')
-    def test_update_symlinks(self, mock_cert_manager):
-        self._call_no_clientmock(['update_symlinks'])
-        assert 1 == mock_cert_manager.call_count
-
     @mock.patch('certbot._internal.cert_manager.certificates')
     def test_certificates(self, mock_cert_manager):
         self._call_no_clientmock(['certificates'])

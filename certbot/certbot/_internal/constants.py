@@ -182,9 +182,6 @@ BACKUP_DIR = "backups"
 """Directory (relative to `certbot.configuration.NamespaceConfig.work_dir`)
 where backups are kept."""
 
-CSR_DIR = "csr"
-"""See `certbot.configuration.NamespaceConfig.csr_dir`."""
-
 IN_PROGRESS_DIR = "IN_PROGRESS"
 """Directory used before a permanent checkpoint is finalized (relative to
 `certbot.configuration.NamespaceConfig.work_dir`)."""

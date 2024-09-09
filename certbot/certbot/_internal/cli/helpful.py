@@ -58,7 +58,6 @@ class HelpfulArgumentParser:
             "revoke": main.revoke,
             "rollback": main.rollback,
             "everything": main.run,
-            "update_symlinks": main.update_symlinks,
             "certificates": main.certificates,
             "delete": main.delete,
             "enhance": main.enhance,

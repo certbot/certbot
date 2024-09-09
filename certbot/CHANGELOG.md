@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 2.12.0 - master
+## 3.0.0 - master
 
 ### Added
 
@@ -10,7 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* The update_symlinks command was removed.
+* The `csr_dir` and `key_dir` attributes on
+  `certbot.configuration.NamespaceConfig` were removed.
 
 ### Fixed
 
