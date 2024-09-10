@@ -28,5 +28,5 @@ jobs:
                 --arg title "$TITLE" \
         '{ "text": "[\($repo)] | [\($title) #\($number)](\($pr_url)) was merged into master by \($user)" }' > mattermost.json
     - uses: mattermost/action-mattermost-notify@master
-      env:
+      with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_MERGE_WEBHOOK }}
