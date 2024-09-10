@@ -101,13 +101,4 @@ Examples
      --dns-route53 \\
      -d example.com \\
      -d www.example.com
-
-.. code-block:: bash
-   :caption: To acquire a certificate for ``example.com``, waiting 30 seconds
-             for DNS propagation
-
-   certbot certonly \\
-     --dns-route53 \\
-     --dns-route53-propagation-seconds 30 \\
-     -d example.com
 """
