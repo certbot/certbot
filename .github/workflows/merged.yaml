@@ -17,5 +17,5 @@ jobs:
         TEXT: >
           [${{ github.repository }}] |
           [${{ github.event.pull_request.title }}
-          #${{ github.event.number }}](https://github.com/${{ github.repository }}/pull/${{ github.event.number }}
+          #${{ github.event.number }}](https://github.com/${{ github.repository }}/pull/${{ github.event.number }})
           was merged into master by ${{ github.actor }}
