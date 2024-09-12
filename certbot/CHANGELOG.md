@@ -13,6 +13,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The update_symlinks command was removed.
 * The `csr_dir` and `key_dir` attributes on
   `certbot.configuration.NamespaceConfig` were removed.
+* The `--manual-public-ip-logging-ok` command line flag was removed.
 
 ### Fixed
 

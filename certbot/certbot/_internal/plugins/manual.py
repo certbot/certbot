@@ -108,7 +108,6 @@ permitted by DNS standards.)
             help='Path or command to execute for the authentication script')
         add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
-        util.add_deprecated_argument(add, 'public-ip-logging-ok', 0)
 
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
         if self.config.noninteractive_mode and not self.conf('auth-hook'):
