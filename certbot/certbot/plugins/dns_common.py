@@ -25,6 +25,10 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
+# As of writing this, the only one of our plugins that does not inherit from this class (either
+# directly or indirectly through certbot.plugins.dns_common_lexicon.LexiconDNSAuthenticator) is
+# certbot-dns-route53. If you are attempting to make changes to all of our DNS plugins, please keep
+# this difference in mind.
 class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.ABCMeta):
     """Base class for DNS Authenticators"""
 
