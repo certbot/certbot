@@ -178,3 +178,13 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         raise errors.PluginError(
             "Timed out waiting for Route53 change. Current status: %s" %
             response["ChangeInfo"]["Status"])
+
+
+# Our route53 plugin was initially a 3rd party plugin named `certbot-route53:auth` as described at
+# https://github.com/certbot/certbot/issues/4688. This shim exists to allow installations using the
+# old plugin name of `certbot-route53:auth` to continue to work without cluttering things like
+# Certbot's help output with two route53 plugins.
+class HiddenAuthenticator(Authenticator):
+    """A hidden shim around certbot-dns-route53 for backwards compatibility."""
+
+    hidden = True
