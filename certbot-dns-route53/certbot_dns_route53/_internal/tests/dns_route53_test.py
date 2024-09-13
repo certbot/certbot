@@ -6,16 +6,26 @@ from unittest import mock
 
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
+import josepy as jose
 import pytest
 
+from acme import challenges
+from certbot import achallenges
 from certbot import errors
 from certbot.compat import os
-from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
+from certbot.tests import acme_util
+from certbot.tests import util as test_util
+
+DOMAIN = 'example.com'
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
-class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest):
+class AuthenticatorTest(unittest.TestCase):
     # pylint: disable=protected-access
+
+    achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+        challb=acme_util.DNS01, domain=DOMAIN, account_key=KEY)
 
     def setUp(self):
         from certbot_dns_route53._internal.dns_route53 import Authenticator
@@ -34,6 +44,12 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         # Remove the dummy credentials from env vars
         del os.environ["AWS_ACCESS_KEY_ID"]
         del os.environ["AWS_SECRET_ACCESS_KEY"]
+
+    def test_more_info(self) -> None:
+        self.assertTrue(isinstance(self.auth.more_info(), str))
+
+    def test_get_chall_pref(self) -> None:
+        self.assertEqual(self.auth.get_chall_pref("example.org"), [challenges.DNS01])
 
     def test_perform(self):
         self.auth._change_txt_record = mock.MagicMock()
@@ -84,13 +100,6 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
             side_effect=ClientError({"Error": {"Code": "foo"}}, "bar"))
 
         self.auth.cleanup([self.achall])
-
-    def test_parser_arguments(self) -> None:
-        from certbot.util import DeprecatedArgumentAction
-        m = mock.MagicMock()
-        self.auth.add_parser_arguments(m)  # pylint: disable=no-member
-        m.assert_any_call('propagation-seconds', action=DeprecatedArgumentAction,
-                          help=mock.ANY, nargs=1)
 
 
 class ClientTest(unittest.TestCase):
