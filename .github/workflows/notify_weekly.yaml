@@ -18,6 +18,7 @@ jobs:
     - uses: mattermost/action-mattermost-notify@master
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
+        MATTERMOST_CHANNEL: private-certbot
         TEXT: |
           ## Updates Across Certbot Repos
           - Certbot team members SHOULD look at: [link](${{ env.MERGED_URL }})
