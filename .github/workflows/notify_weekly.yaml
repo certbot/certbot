@@ -4,6 +4,7 @@ on:
   schedule:
     # Every week on Thursday @ 13:00
     - cron: "0 13 * * 4"
+  workflow_dispatch:
 jobs:
   send-mattermost-message:
     runs-on: ubuntu-latest
