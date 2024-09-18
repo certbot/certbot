@@ -15,6 +15,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `certbot.configuration.NamespaceConfig` were removed.
 * The `--manual-public-ip-logging-ok` command line flag was removed.
 * The `--dns-route53-propagation-seconds` command line flag was removed.
+* The `certbot_dns_route53.authenticator` module has been removed. This should
+  not affect any users of the plugin and instead would only affect developers
+  trying to develop on top of the old code.
 
 ### Fixed
 
