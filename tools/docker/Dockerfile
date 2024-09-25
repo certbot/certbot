@@ -35,7 +35,7 @@ RUN apk add --no-cache --virtual .build-deps \
         cargo \
         git \
         pkgconfig \
-    && CARGO_LOG=trace CARGO_TERM_VERBOSE=1 python tools/pip_install.py --no-cache-dir \
+    && CARGO_LOG=trace CARGO_TERM_VERBOSE=true python tools/pip_install.py --no-cache-dir \
             --editable src/acme \
             --editable src/certbot \
     && apk del .build-deps \
