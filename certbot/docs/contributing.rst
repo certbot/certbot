@@ -256,8 +256,8 @@ certificate once it is issued. Some plugins, like the built-in Apache and Nginx
 plugins, implement both interfaces and perform both tasks. Others, like the
 built-in Standalone authenticator, implement just one interface.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/plugins/common.py#L45
+.. _interfaces.py: https://github.com/certbot/certbot/blob/main/certbot/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/main/certbot/certbot/plugins/common.py#L45
 
 
 Authenticators
@@ -387,7 +387,7 @@ identifier ``metadata-1``.
 
 The script used to generate the snapcraft.yaml files for our own externally
 snapped plugins can be found at
-https://github.com/certbot/certbot/blob/master/tools/snap/generate_dnsplugins_snapcraft.sh.
+https://github.com/certbot/certbot/blob/main/tools/snap/generate_dnsplugins_snapcraft.sh.
 
 For more information on building externally snapped plugins, see the section on
 :ref:`Building snaps`.
@@ -560,7 +560,7 @@ Building the Certbot and DNS plugin snaps
 
 Instructions for how to manually build and run the Certbot snap and the externally
 snapped DNS plugins that the Certbot project supplies are located in the README
-file at https://github.com/certbot/certbot/tree/master/tools/snap.
+file at https://github.com/certbot/certbot/tree/main/tools/snap.
 
 Updating the documentation
 ==========================
