@@ -5,8 +5,8 @@
 .. |build-status| image:: https://img.shields.io/azure-devops/build/certbot/ba534f81-a483-4b9b-9b4e-a60bec8fee72/5/main
    :target: https://dev.azure.com/certbot/certbot/_build?definitionId=5
    :alt: Azure Pipelines CI status
- 
-.. image:: https://raw.githubusercontent.com/EFForg/design/main/logos/eff-certbot-lockup.png
+
+.. image:: https://raw.githubusercontent.com/EFForg/design/master/logos/eff-certbot-lockup.png
   :width: 200
   :alt: EFF Certbot Logo
 
