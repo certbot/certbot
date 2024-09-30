@@ -1,7 +1,7 @@
 jobs:
   - job: docker_build
     pool:
-      vmImage: ubuntu-22.04
+      vmImage: ubuntu-24.04
     strategy:
       matrix:
         arm32v6:
