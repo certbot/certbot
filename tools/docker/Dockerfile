@@ -1,5 +1,5 @@
 #base image
-FROM python:3.12-alpine3.18 AS certbot
+FROM python:3.12-alpine3.18 as certbot
 
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
@@ -35,7 +35,7 @@ RUN apk add --no-cache --virtual .build-deps \
         cargo \
         git \
         pkgconfig \
-    && CARGO_LOG=trace CARGO_TERM_VERBOSE=true python tools/pip_install.py --no-cache-dir \
+    && python tools/pip_install.py --no-cache-dir \
             --editable src/acme \
             --editable src/certbot \
     && apk del .build-deps \
@@ -44,6 +44,6 @@ RUN apk add --no-cache --virtual .build-deps \
 #static definition for making a plugin, but beware that
 #using this layer definition will cause collisions if you make
 #extensive use of the cache.
-FROM certbot AS certbot-plugin
+FROM certbot as certbot-plugin
 COPY --from=plugin-src . /opt/certbot/src/plugin
 RUN python tools/pip_install.py --no-cache-dir --editable /opt/certbot/src/plugin
