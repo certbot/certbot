@@ -126,11 +126,9 @@ class _RFC2136Client:
         :raises certbot.errors.PluginError: if an error occurs communicating with the DNS server
         """
 
-        domain = self._find_domain(record_name)
+        (rel, domain) = self._find_domain(record_name)
 
-        n = dns.name.from_text(record_name)
-        o = dns.name.from_text(domain)
-        rel = n.relativize(o)
+        logger.debug('Adding TXT record: %s %d "%s" %s %s', record_name, record_ttl, record_content, rel, domain)
 
         update = dns.update.Update(
             domain,
@@ -161,11 +159,7 @@ class _RFC2136Client:
         :raises certbot.errors.PluginError: if an error occurs communicating with the DNS server
         """
 
-        domain = self._find_domain(record_name)
-
-        n = dns.name.from_text(record_name)
-        o = dns.name.from_text(domain)
-        rel = n.relativize(o)
+        (rel, domain) = self._find_domain(record_name)
 
         update = dns.update.Update(
             domain,
@@ -186,37 +180,121 @@ class _RFC2136Client:
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))
 
-    def _find_domain(self, record_name: str) -> str:
+    def _find_domain(self, record_name: str) :
         """
         Find the closest domain with an SOA record for a given domain name.
 
         :param str record_name: The record name for which to find the closest SOA record.
-        :returns: The domain, if found.
-        :rtype: str
-        :raises certbot.errors.PluginError: if no SOA record can be found.
+        :returns: tuple of (`entry`, `zone`) where
+                `entry` - canonical relative entry into the target zone;
+                `zone` - canonical absolute name of the zone to be modified.
+        :rtype: (`dns.name.Name`, `dns.name.Name`)
+        :raises certbot.errors.PluginError: if the search failed for any reason.
         """
 
-        domain_name_guesses = dns_common.base_domain_name_guesses(record_name)
+        # Note: an absolute dns.name.Name ends in dns.name.root, which
+        # is non-empty. Therefore the first prefix.split(1) splits off
+        # dns.name.root, i.e. example.com. -> (example.com, .), not
+        # example.com. -> (example, com.).  dns.name.empty, however,
+        # is an actual empty name, has a truth value of False, and is
+        # an identity element for the append operation; thus
+        # dns.name.root + dns.name.empty == dns.name.root.
+        #
+        # This code relies on these properties.
 
-        # Loop through until we find an authoritative SOA record
-        for guess in domain_name_guesses:
-            if self._query_soa(guess):
-                return guess
+        domain = dns.name.from_text(record_name)
+        prefix = domain
+        suffix = dns.name.empty
+        found = None
+        domstr = str(domain)    # For messages, may have a DNAME/CNAME added
 
-        raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
-                                 .format(record_name, domain_name_guesses))
+        # The domains already queried and the corresponding results
+        domain_names_searched = dict()  # type: Dict[str, Tuple[bool, dns.rdata.Rdata]]
 
-    def _query_soa(self, domain_name: str) -> bool:
+        while prefix:
+            (prefix, next_label) = prefix.split(1)
+            suffix = next_label + suffix
+
+            # Don't re-query if we have already been here (normal
+            # during DNAME/CNAME re-walk)
+            if suffix in domain_names_searched:
+                result = domain_names_searched[suffix]
+            else:
+                result = self._query_soa(suffix)
+                domain_names_searched[suffix] = result
+
+            (auth, rr) = result
+            if rr is None:
+                # Nothing to do, just descend the DNS hierarchy
+                pass
+            elif rr.rdtype == dns.rdatatype.SOA:
+                # We found an SOA, authoritative or not
+                found = (auth, prefix, suffix)
+            elif rr.rdtype == dns.rdatatype.CNAME and prefix:
+                # We found a CNAME which isn't the full domain
+                pass
+            else:
+                # We found a DNAME or the full domain is a CNAME.
+                # We need to start the walk over
+                # from the common point of departure.
+                target = rr.target
+                if target in domain_names_searched:
+                    # DNAME/CNAME loop!
+                    raise errors.PluginError('{0} {1} loops seeking SOA for {2}'
+                                             .format(suffix, repr(rr), domstr))
+
+                # Restart from the root, replacing the current suffix
+                prefix = prefix + target
+                suffix = dns.name.empty
+                found = None
+                domstr = str(domain)+' ('+str(prefix)+')'  # For messages
+
+        if not found:
+            raise errors.PluginError('No SOA of any kind found for {0}'.format(domstr))
+
+        (auth, prefix, suffix) = found
+        if not auth:
+            raise errors.PluginError('SOA {0} for {1} not authoritative'.format(suffix, domstr))
+        return prefix, suffix
+
+    def _query_soa(self, domain: str) -> bool:
         """
         Query a domain name for an authoritative SOA record.
 
-        :param str domain_name: The domain name to query for an SOA record.
-        :returns: True if found, False otherwise.
-        :rtype: bool
+        :param dns.name.Name domain: The domain name to query for an SOA record.
+        :returns: (`authoritative`, `rdata`) if found
+                autoritative bool if response was authoritative
+                rdata dns.rdata.Rdata or None the returned record
+        :rtype: (`bool`, `dns.rdata.Rdata` or `None`)
         :raises certbot.errors.PluginError: if no response is received.
         """
 
-        domain = dns.name.from_text(domain_name)
+        # In order to capture any possible CNAMEs, we have to do the
+        # search upward from the root. On the way, any time we find a
+        # SOA record, save it; the final SOA record captured is the
+        # target. If that SOA record is not authoritative, then
+        # we have a fatal error.
+        #
+        # As we want to know about either type, we request recursion
+        # from the target name server. If the target nameserver does
+        # not provide recursion services, it will still work for
+        # finding an authoritative SOA, DNAME or CNAME record
+        # in a zone for which the nameserver is authoritarive; this is
+        # expected to be the common case, although it is not 100%
+        # guaranteed. The only ways to avoid that, ultimately, is to use
+        # a trusted recursive nameserver instead if we get a !RA response
+        # (e.g. using dns.resolver?) or actually query the authoritative name
+        # servers all the way from the top.
+        #
+        # We intentionally only look in the answer section, not in
+        # the authority or additional sections, and only for records
+        # which match the requested domain name exactly.
+        #
+        # If we get more than one SOA, DNAME, or CNAME record of the
+        # same type and exactly matching the requested domain in the
+        # *answer* section we are really in an error situation (these
+        # are all singleton RRs), but try to make the best of the
+        # situation.
 
         request = dns.message.make_query(domain, dns.rdatatype.SOA, dns.rdataclass.IN)
         # Turn off Recursion Desired bit in query
@@ -226,23 +304,46 @@ class _RFC2136Client:
             request.use_tsig(self.keyring, algorithm=self.algorithm)
 
         try:
+            logmsg = 'Query '+str(domain)
             try:
                 response = dns.query.tcp(request, self.server, self._default_timeout, self.port)
             except (OSError, dns.exception.Timeout) as e:
                 logger.debug('TCP query failed, fallback to UDP: %s', e)
                 response = dns.query.udp(request, self.server, self._default_timeout, self.port)
             rcode = response.rcode()
+            logmsg += ': '+dns.rcode.to_text(rcode)
 
-            # Authoritative Answer bit should be set
-            if (rcode == dns.rcode.NOERROR
-                    and response.get_rrset(response.answer,
-                                           domain, dns.rdataclass.IN, dns.rdatatype.SOA)
-                    and response.flags & dns.flags.AA):
-                logger.debug('Received authoritative SOA response for %s', domain_name)
-                return True
+            auth = (response.flags & dns.flags.AA) != 0
+            if auth:
+                logmsg += ', authoritative'
+            else:
+                logmsg += ', non-authoritative'
 
-            logger.debug('No authoritative SOA record found for %s', domain_name)
-            return False
+            found = dict()  # type: Dict[int, List[dns.rdataset.Rdata]]
+            for rrset in response.answer:
+                if rrset.name != domain:
+                    continue
+                if rrset.rdclass != dns.rdataclass.IN:
+                    continue
+                for rr in rrset:
+                    if not rr.rdtype in found:
+                        found[rr.rdtype] = [rr]
+                    elif not rr in found[rr.rdtype]:
+                        # Explicitly ignore exact duplicate RRs
+                        found[rr.rdtype].append(rr)
+
+            for rdtype in found:
+                logmsg += ' %s %d' % (dns.rdatatype.to_text(rdtype), len(found[rdtype]))
+
+            retrr = None
+            for rdtype in dns.rdatatype.SOA, dns.rdatatype.DNAME, dns.rdatatype.CNAME:
+                if rdtype in found:
+                    retrr = found[rdtype][0]    # Use the first one returned
+                    break
+
+            logmsg += ', returning '+repr(retrr)
+            logger.debug(logmsg)
+            return auth, retrr
+
         except Exception as e:
-            raise errors.PluginError('Encountered error when making query: {0}'
-                                     .format(e))
+            raise errors.PluginError('Encountered error when making query: {0}'.format(e))
