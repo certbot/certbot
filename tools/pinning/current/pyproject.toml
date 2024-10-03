@@ -76,6 +76,8 @@ cryptography = "!= 37.0.3"
 # version of tox to keep deterministic builds.
 tox = ">=4"
 
+maturin = "1.7.1"
+
 
 [tool.poetry.dev-dependencies]
 
