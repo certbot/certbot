@@ -15,7 +15,7 @@ jobs:
         DATE=$(date --date="7 days ago" +"%Y-%m-%d")
         echo "MERGED_URL=https://github.com/pulls?q=merged%3A%3E${DATE}+org%3Acertbot" >> $GITHUB_ENV
         echo "UPDATED_URL=https://github.com/pulls?q=updated%3A%3E${DATE}+org%3Acertbot" >> $GITHUB_ENV
-    - uses: mattermost/action-mattermost-notify@main
+    - uses: mattermost/action-mattermost-notify@master
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
         MATTERMOST_CHANNEL: private-certbot

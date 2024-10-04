@@ -11,7 +11,7 @@ jobs:
     if: github.event.pull_request.merged == true && !github.event.pull_request.head.repo.fork
     runs-on: ubuntu-latest
     steps:
-    - uses: mattermost/action-mattermost-notify@main
+    - uses: mattermost/action-mattermost-notify@master
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_MERGE_WEBHOOK }}
         TEXT: >
