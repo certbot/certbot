@@ -96,17 +96,15 @@ found in the `virtualenv docs`_.
 Find issues to work on
 ----------------------
 
-You can find the open issues in the `github issue tracker`_.  Comparatively
-easy ones are marked `good first issue`_.  If you're starting work on
-something, post a comment to let others know and seek feedback on your plan
-where appropriate.
+You can find the open issues in the `github issue tracker`_. If you're starting
+work on something, post a comment to let others know and seek feedback on your
+plan where appropriate.
 
 Once you've got a working branch, you can open a pull request.  All changes in
 your pull request must have thorough unit test coverage, pass our
 tests, and be compliant with the :ref:`coding style <coding-style>`.
 
 .. _github issue tracker: https://github.com/certbot/certbot/issues
-.. _good first issue: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 
 .. _testing:
 
