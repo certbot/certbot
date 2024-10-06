@@ -8,7 +8,6 @@ version = '2.12.0.dev0'
 
 install_requires = [
     'python-digitalocean>=1.11', # 1.15.0 or newer is recommended for TTL support
-    'setuptools>=41.6.0',
 ]
 
 if os.environ.get('SNAP_BUILD'):

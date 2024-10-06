@@ -15,7 +15,6 @@ install_requires = [
     'pyrfc3339',
     'pytz>=2019.3',
     'requests>=2.20.0',
-    'setuptools>=41.6.0',
 ]
 
 docs_extras = [
