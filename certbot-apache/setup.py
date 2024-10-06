@@ -11,7 +11,6 @@ install_requires = [
     f'certbot>={version}',
     'importlib_resources>=1.3.1; python_version < "3.9"',
     'python-augeas',
-    'setuptools>=41.6.0',
 ]
 
 dev_extras = [

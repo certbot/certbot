@@ -8,7 +8,6 @@ version = '3.1.0.dev0'
 
 install_requires = [
     'boto3>=1.15.15',
-    'setuptools>=41.6.0',
 ]
 
 if os.environ.get('SNAP_BUILD'):
