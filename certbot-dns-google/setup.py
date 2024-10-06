@@ -9,7 +9,6 @@ version = '2.12.0.dev0'
 install_requires = [
     'google-api-python-client>=1.6.5',
     'google-auth>=2.16.0',
-    'setuptools>=41.6.0',
 ]
 
 if os.environ.get('SNAP_BUILD'):

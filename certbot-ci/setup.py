@@ -22,7 +22,6 @@ install_requires = [
     # requests unvendored its dependencies in version 2.16.0 and this code relies on that for
     # calling `urllib3.disable_warnings`.
     'requests>=2.16.0',
-    'setuptools',
     'types-python-dateutil',
 ]
 

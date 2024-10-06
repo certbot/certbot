@@ -8,7 +8,6 @@ version = '2.12.0.dev0'
 
 install_requires = [
     'dns-lexicon>=3.14.1',
-    'setuptools>=41.6.0',
 ]
 
 if os.environ.get('SNAP_BUILD'):
