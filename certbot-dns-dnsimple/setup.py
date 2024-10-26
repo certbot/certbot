@@ -10,7 +10,6 @@ install_requires = [
     # This version of lexicon is required to address the problem described in
     # https://github.com/AnalogJ/lexicon/issues/387.
     'dns-lexicon>=3.14.1',
-    'setuptools>=41.6.0',
 ]
 
 if os.environ.get('SNAP_BUILD'):
