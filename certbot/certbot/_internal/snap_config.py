@@ -12,6 +12,7 @@ from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 
+import certbot
 from certbot.compat import os
 from certbot.errors import Error
 
@@ -33,6 +34,7 @@ _ARCH_TRIPLET_MAP = {
     'amd64': 'x86_64-linux-gnu',
     's390x': 's390x-linux-gnu',
 }
+CURRENT_PYTHON_VERSION_STRING = 'python3.12'
 
 LOGGER = logging.getLogger(__name__)
 
@@ -71,10 +73,34 @@ def prepare_env(cli_args: List[str]) -> List[str]:
             raise e
 
     data = response.json()
-    connections = ['/snap/{0}/current/lib/python3.12/site-packages/'.format(item['slot']['snap'])
-                   for item in data.get('result', {}).get('established', [])
-                   if item.get('plug', {}).get('plug') == 'plugin'
-                   and item.get('plug-attrs', {}).get('content') == 'certbot-1']
+    connections = []
+    outdated_plugins = []
+    for plugin in data.get('result', {}).get('established', []):
+        plugin_name: str = plugin['slot']['snap']
+        plug: str = plugin.get('plug', {}).get('plug')
+        plug_content: str = plugin.get('plug-attrs', {}).get('content')
+        if plug == 'plugin' and plug_content == 'certbot-1':
+            # First, check that the plugin is using our expected python version,
+            # i.e. its "read" slot is something like
+            # "$SNAP/lib/python3.12/site-packages". If not, skip it and print an
+            # error.
+            slot_read: str = plugin.get('slot-attrs', {}).get('read', [])
+            if len(slot_read) != 0 and not CURRENT_PYTHON_VERSION_STRING in slot_read[0]:
+                outdated_plugins.append(plugin_name)
+                continue
+
+            connections.append('/snap/{0}/current/lib/{1}/site-packages/'.format(
+                plugin_name,
+                CURRENT_PYTHON_VERSION_STRING
+            ))
+
+    if len(outdated_plugins) > 0:
+        LOGGER.error('The following plugins are using an outdated python version and must be '
+                     'updated to be compatible with Certbot 3.0. Please see '
+                     'https://community.letsencrypt.org/t/certbot-3-0-could-have-potential-third-party-snap-breakages/226940 '
+                     'for more information:')
+        plugin_list = '\n'.join('  * {}'.format(plugin) for plugin in outdated_plugins)
+        LOGGER.error(plugin_list)
 
     os.environ['CERTBOT_PLUGIN_PATH'] = ':'.join(connections)
 
