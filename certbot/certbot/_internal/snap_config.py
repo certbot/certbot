@@ -75,10 +75,10 @@ def prepare_env(cli_args: List[str]) -> List[str]:
     connections = []
     outdated_plugins = []
     for plugin in data.get('result', {}).get('established', []):
-        plugin_name: str = plugin['slot']['snap']
         plug: str = plugin.get('plug', {}).get('plug')
         plug_content: str = plugin.get('plug-attrs', {}).get('content')
         if plug == 'plugin' and plug_content == 'certbot-1':
+            plugin_name: str = plugin['slot']['snap']
             # First, check that the plugin is using our expected python version,
             # i.e. its "read" slot is something like
             # "$SNAP/lib/python3.12/site-packages". If not, skip it and print an
@@ -93,7 +93,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
                 CURRENT_PYTHON_VERSION_STRING
             ))
 
-    if len(outdated_plugins) > 0:
+    if len(outdated_plugins):
         LOGGER.error('The following plugins are using an outdated python version and must be '
                      'updated to be compatible with Certbot 3.0. Please see '
                      'https://community.letsencrypt.org/t/'
