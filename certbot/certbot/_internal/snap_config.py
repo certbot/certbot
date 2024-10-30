@@ -93,7 +93,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
                 CURRENT_PYTHON_VERSION_STRING
             ))
 
-    if len(outdated_plugins):
+    if outdated_plugins:
         LOGGER.error('The following plugins are using an outdated python version and must be '
                      'updated to be compatible with Certbot 3.0. Please see '
                      'https://community.letsencrypt.org/t/'
