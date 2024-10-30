@@ -94,13 +94,13 @@ def prepare_env(cli_args: List[str]) -> List[str]:
             ))
 
     if outdated_plugins:
-        LOGGER.error('The following plugins are using an outdated python version and must be '
-                     'updated to be compatible with Certbot 3.0. Please see '
-                     'https://community.letsencrypt.org/t/'
-                     'certbot-3-0-could-have-potential-third-party-snap-breakages/226940 '
-                     'for more information:')
+        LOGGER.warn('The following plugins are using an outdated python version and must be '
+                    'updated to be compatible with Certbot 3.0. Please see '
+                    'https://community.letsencrypt.org/t/'
+                    'certbot-3-0-could-have-potential-third-party-snap-breakages/226940 '
+                    'for more information:')
         plugin_list = '\n'.join('  * {}'.format(plugin) for plugin in outdated_plugins)
-        LOGGER.error(plugin_list)
+        LOGGER.warn(plugin_list)
 
     os.environ['CERTBOT_PLUGIN_PATH'] = ':'.join(connections)
 
