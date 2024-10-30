@@ -84,7 +84,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
             # "$SNAP/lib/python3.12/site-packages". If not, skip it and print an
             # error.
             slot_read: str = plugin.get('slot-attrs', {}).get('read', [])
-            if len(slot_read) != 0 and not CURRENT_PYTHON_VERSION_STRING in slot_read[0]:
+            if len(slot_read) != 0 and CURRENT_PYTHON_VERSION_STRING not in slot_read[0]:
                 outdated_plugins.append(plugin_name)
                 continue
 
