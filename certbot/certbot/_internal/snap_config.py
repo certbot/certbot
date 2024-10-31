@@ -100,7 +100,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
                     'certbot-3-0-could-have-potential-third-party-snap-breakages/226940 '
                     'for more information:')
         plugin_list = '\n'.join('  * {}'.format(plugin) for plugin in outdated_plugins)
-        LOGGER.warn(plugin_list)
+        LOGGER.warning(plugin_list)
 
     os.environ['CERTBOT_PLUGIN_PATH'] = ':'.join(connections)
 
