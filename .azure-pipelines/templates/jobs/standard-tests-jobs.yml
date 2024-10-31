@@ -4,9 +4,8 @@ jobs:
       PYTHON_VERSION: 3.12
     strategy:
       matrix:
-        macos-py38-cover:
+        macos-py312-cover:
           IMAGE_NAME: macOS-15
-          PYTHON_VERSION: 3.8
           TOXENV: cover
           # As of pip 23.1.0, builds started failing on macOS unless this flag was set.
           # See https://github.com/certbot/certbot/pull/9717#issuecomment-1610861794.
@@ -20,10 +19,9 @@ jobs:
           IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.8
           TOXENV: oldest
-        linux-py38:
+        linux-py312:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.8
-          TOXENV: py38
+          TOXENV: py312
         linux-cover:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: cover
@@ -35,7 +33,6 @@ jobs:
           TOXENV: mypy
         linux-integration:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.8
           TOXENV: integration
         apache-compat:
           IMAGE_NAME: ubuntu-22.04
