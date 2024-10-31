@@ -18,6 +18,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The `certbot_dns_route53.authenticator` module has been removed. This should
   not affect any users of the plugin and instead would only affect developers
   trying to develop on top of the old code.
+* Support for Python 3.8 was deprecated and will be removed in our next planned
+  release.
 
 ### Fixed
 
