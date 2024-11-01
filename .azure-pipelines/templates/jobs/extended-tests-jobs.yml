@@ -25,8 +25,9 @@ jobs:
         linux-integration-nginx-oldest:
           PYTHON_VERSION: 3.8
           TOXENV: integration-nginx-oldest
-        # python 3.8 integration tests are not run here because they're run as    
-        # part of the standard test suite 
+        linux-py38-integration:
+          PYTHON_VERSION: 3.8
+          TOXENV: integration
         linux-py39-integration:
           PYTHON_VERSION: 3.9
           TOXENV: integration
@@ -36,20 +37,19 @@ jobs:
         linux-py311-integration:
           PYTHON_VERSION: 3.11
           TOXENV: integration
-        linux-py312-integration:
-          PYTHON_VERSION: 3.12
-          TOXENV: integration
+        # python 3.12 integration tests are not run here because they're run as
+        # part of the standard test suite
         nginx-compat:
           TOXENV: nginx_compat
         linux-integration-rfc2136:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.12
           TOXENV: integration-dns-rfc2136
         le-modification:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: modification
         farmtest-apache2:
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.12
           TOXENV: test-farm-apache2
     pool:
       vmImage: $(IMAGE_NAME)
