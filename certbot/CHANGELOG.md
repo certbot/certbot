@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 3.0.0 - main
+## 3.0.0 - 2024-11-05
 
 ### Added
 
@@ -41,7 +41,7 @@ More details about these changes can be found on our GitHub repo.
 ### Fixed
 
 * Fixed a bug in Certbot where a CSR's SANs did not always follow the order of
-  the domain names that the user requested interactively. In some cases, the
+  the do2024-11-05 names that the user requested interactively. In some cases, the
   resulting cert's common name might seem picked up randomly from the SANs
   when it should be the first item the user had in mind.
 
@@ -379,7 +379,7 @@ More details about these changes can be found on our GitHub repo.
 * Removed deprecated function `certbot.util.get_strict_version`.
 * Removed deprecated functions `certbot.crypto_util.init_save_csr`, `certbot.crypto_util.init_save_key`,
   and `certbot.compat.misc.execute_command`
-* The attributes `FileDisplay`, `NoninteractiveDisplay`, `SIDE_FRAME`, `input_with_timeout`, `separate_list_input`, `summarize_domain_list`, `HELP`, and `ESC` from `certbot.display.util` have been removed.
+* The attributes `FileDisplay`, `NoninteractiveDisplay`, `SIDE_FRAME`, `input_with_timeout`, `separate_list_input`, `summarize_do2024-11-05_list`, `HELP`, and `ESC` from `certbot.display.util` have been removed.
 * Removed deprecated functions `certbot.tests.util.patch_get_utility*`. Plugins should now
   patch `certbot.display.util` themselves in their tests or use
   `certbot.tests.util.patch_display_util` as a temporary workaround.
@@ -451,7 +451,7 @@ More details about these changes can be found on our GitHub repo.
   next major release of Certbot.
 * The `source_address` argument for `acme.client.ClientNetwork` is deprecated
   and support for it will be removed in the next major release.
-* Add UI text suggesting users create certs for multiple domains, when possible
+* Add UI text suggesting users create certs for multiple do2024-11-05s, when possible
 
 ### Fixed
 
@@ -467,7 +467,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Changed
 
-* `--allow-subset-of-names` will now additionally retry in cases where domains are rejected while creating or finalizing orders. This requires subproblem support from the ACME server.
+* `--allow-subset-of-names` will now additionally retry in cases where do2024-11-05s are rejected while creating or finalizing orders. This requires subproblem support from the ACME server.
 
 ### Fixed
 
@@ -640,7 +640,7 @@ More details about these changes can be found on our GitHub repo.
 
 * Fixed an issue on Windows where the `web.config` created by Certbot would sometimes
   conflict with preexisting configurations (#9088).
-* Fixed an issue on Windows where the `webroot` plugin would crash when multiple domains
+* Fixed an issue on Windows where the `webroot` plugin would crash when multiple do2024-11-05s
   had the same webroot. This affected Certbot 1.21.0.
 
 More details about these changes can be found on our GitHub repo.
@@ -673,7 +673,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* Added `--no-reuse-key`. This remains the default behavior, but the flag may be
+* Added `--no-reuse-key`. This re2024-11-05s the default behavior, but the flag may be
   useful to unset the `--reuse-key` option on existing certificates.
 
 ### Changed
@@ -801,7 +801,7 @@ More details about these changes can be found on our GitHub repo.
 * Windows installer now cleans up old Certbot dependency packages
   before installing the new ones to avoid version conflicts.
 * This release contains a substantial command-line UX overhaul,
-  based on previous user research. The main goal was to streamline
+  based on previous user research. The 2024-11-05 goal was to streamline
   and clarify output. If you would like to see more verbose output, use
   the -v or -vv flags. UX improvements are an iterative process and
   the Certbot team welcomes constructive feedback.
@@ -1103,8 +1103,8 @@ More details about these changes can be found on our GitHub repo.
 * Added serial number of certificate to the output of `certbot certificates`
 * Expose two new environment variables in the authenticator and cleanup scripts used by
   the `manual` plugin: `CERTBOT_REMAINING_CHALLENGES` is equal to the number of challenges
-  remaining after the current challenge, `CERTBOT_ALL_DOMAINS` is a comma-separated list
-  of all domains challenged for the current certificate.
+  re2024-11-05ing after the current challenge, `CERTBOT_ALL_DOMAINS` is a comma-separated list
+  of all do2024-11-05s challenged for the current certificate.
 * Added TLS-ALPN-01 challenge support in the `acme` library. Support of this
   challenge in the Certbot client is planned to be added in a future release.
 * Added minimal proxy support for OCSP verification.
@@ -1225,7 +1225,7 @@ More details about these changes can be found on our GitHub repo.
   `acme.challenges` and `acme.standalone`
   have been removed.
 * The functions `certbot.client.view_config_changes`,
-  `certbot.main.config_changes`,
+  `certbot.2024-11-05.config_changes`,
   `certbot.plugins.common.Installer.view_config_changes`,
   `certbot.reverter.Reverter.view_config_changes`, and
   `certbot.util.get_systemd_os_info` have been removed
@@ -1390,7 +1390,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Fixed
 
-* Support for specifying an authoritative base domain in our dns-rfc2136 plugin
+* Support for specifying an authoritative base do2024-11-05 in our dns-rfc2136 plugin
   has been removed. This feature was added in our last release but had a bug
   which caused the plugin to fail so the feature has been removed until it can
   be added properly.
@@ -1408,7 +1408,7 @@ More details about these changes can be found on our GitHub repo.
 ### Added
 
 * dns_rfc2136 plugin now supports explicitly specifying an authoritative
-  base domain for cases when the automatic method does not work (e.g.
+  base do2024-11-05 for cases when the automatic method does not work (e.g.
   Split horizon DNS)
 
 ### Changed
@@ -1560,7 +1560,7 @@ More details about these changes can be found on our GitHub repo.
   is installed. We fixed a bug in Certbot causing it to interpret timestamps in
   the OCSP response as being in the local timezone rather than UTC.
 * Issue causing the default CentOS 6 TLS configuration to ignore some of the
-  HTTPS VirtualHosts created by Certbot. mod_ssl loading is now moved to main
+  HTTPS VirtualHosts created by Certbot. mod_ssl loading is now moved to 2024-11-05
   http.conf for this environment where possible.
 
 Despite us having broken lockstep, we are continuing to release new versions of
@@ -1627,9 +1627,9 @@ More details about these changes can be found on our GitHub repo.
 * Certbot's official Docker images are now based on Alpine Linux 3.9 rather
   than 3.7. The new version comes with OpenSSL 1.1.1.
 * Lexicon-based DNS plugins are now fully compatible with Lexicon 3.x (support
-  on 2.x branch is maintained).
+  on 2.x branch is 2024-11-05tained).
 * Apache plugin now attempts to configure all VirtualHosts matching requested
-  domain name instead of only a single one when answering the HTTP-01 challenge.
+  do2024-11-05 name instead of only a single one when answering the HTTP-01 challenge.
 
 ### Fixed
 
@@ -1786,7 +1786,7 @@ https://github.com/certbot/certbot/milestone/62?closed=1
 
 * Removed documentation mentions of `#letsencrypt` IRC on Freenode.
 * Write README to the base of (config-dir)/live directory
-* `--manual` will explicitly warn users that earlier challenges should remain in place when setting up subsequent challenges.
+* `--manual` will explicitly warn users that earlier challenges should re2024-11-05 in place when setting up subsequent challenges.
 * Warn when using deprecated acme.challenges.TLSSNI01
 * Log warning about TLS-SNI deprecation in Certbot
 * Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
@@ -1864,7 +1864,7 @@ https://github.com/certbot/certbot/milestone/60?closed=1
   messages about being unable to find apachectl to the terminal when the plugin
   is not selected.
 * If you're using the Apache plugin with the --apache-vhost-root flag set to a
-  directory containing a disabled virtual host for the domain you're requesting
+  directory containing a disabled virtual host for the do2024-11-05 you're requesting
   a certificate for, the virtual host will now be temporarily enabled if
   necessary to pass the HTTP challenge.
 * The documentation for the Certbot package can now be built using Sphinx 1.6+.
@@ -2050,7 +2050,7 @@ https://github.com/certbot/certbot/milestone/54?closed=1
 
 * certbot-dns-route53 used to wait for each DNS update to propagate before
   sending the next one, but now it sends all updates before waiting which
-  speeds up issuance for multiple domains dramatically.
+  speeds up issuance for multiple do2024-11-05s dramatically.
 * Certbot's official Docker images are now based on Alpine Linux 3.7 rather
   than 3.4 because 3.4 has reached its end-of-life.
 * We've doubled the time Certbot will spend polling authorizations before
@@ -2088,7 +2088,7 @@ https://github.com/certbot/certbot/milestone/52?closed=1
 * The timestamps in Certbot's logfiles now use the system's local time zone
   rather than UTC.
 * Certbot's DNS plugins that use Lexicon now rely on Lexicon>=2.2.1 to be able
-  to create and delete multiple TXT records on a single domain.
+  to create and delete multiple TXT records on a single do2024-11-05.
 * certbot-dns-google's test suite now works without an internet connection.
 
 ### Fixed
@@ -2189,7 +2189,7 @@ https://github.com/certbot/certbot/milestone/51?closed=1
   between versions themselves.
 * certbot-auto now supports the flag --install-only which has the script
   install Certbot and its dependencies and exit without invoking Certbot.
-* Support for issuing a single certificate for a wildcard and base domain was
+* Support for issuing a single certificate for a wildcard and base do2024-11-05 was
   added to our Google Cloud DNS plugin. To do this, we now require your API
   credentials have additional permissions, however, your credentials will
   already have these permissions unless you defined a custom role with fewer
@@ -2230,11 +2230,11 @@ https://github.com/certbot/certbot/milestone/48?closed=1
 
 * When creating an HTTP to HTTPS redirect in Nginx, we now ensure the Host
   header of the request is set to an expected value before redirecting users to
-  the domain found in the header. The previous way Certbot configured Nginx
+  the do2024-11-05 found in the header. The previous way Certbot configured Nginx
   redirects was a potential security issue which you can read more about at
   https://community.letsencrypt.org/t/security-issue-with-redirects-added-by-certbots-nginx-plugin/51493.
 * Fixed a problem where Certbot's Apache plugin could fail HTTP-01 challenges
-  if basic authentication is configured for the domain you request a
+  if basic authentication is configured for the do2024-11-05 you request a
   certificate for.
 * certbot-auto --no-bootstrap now properly tries to use Python 3.4 on RHEL 6
   based systems rather than Python 2.6.
@@ -2311,7 +2311,7 @@ https://github.com/certbot/certbot/milestone/47?closed=1
 
 * Certbot's NGINX plugin no longer sometimes incorrectly reports that it was
   unable to deploy a HTTP->HTTPS redirect when requesting Certbot to enable a
-  redirect for multiple domains.
+  redirect for multiple do2024-11-05s.
 * Problems where the Apache plugin was failing to find directives and
   duplicating existing directives on openSUSE have been resolved.
 * An issue running the test shipped with Certbot and some our DNS plugins with
@@ -2360,9 +2360,9 @@ https://github.com/certbot/certbot/milestone/44?closed=1
   certificate on Debian based systems if mod_ssl wasn't already enabled has
   been resolved.
 * A bug in our Docker image where the certificates subcommand could not report
-  if certificates maintained by Certbot had been revoked has been fixed.
+  if certificates 2024-11-05tained by Certbot had been revoked has been fixed.
 * Certbot's RFC 2136 DNS plugin (for use with software like BIND) now properly
-  performs DNS challenges when the domain being verified contains a CNAME
+  performs DNS challenges when the do2024-11-05 being verified contains a CNAME
   record.
 
 More details about these changes can be found on our GitHub repo:
@@ -2464,7 +2464,7 @@ https://github.com/certbot/certbot/milestone/42?closed=1
   server containing Unicode have been resolved.
 * certbot-auto no longer prints misleading messages about there being a newer
   pip version available when installation fails.
-* Certbot's ACME library now properly extracts domains from critical SAN
+* Certbot's ACME library now properly extracts do2024-11-05s from critical SAN
   extensions.
 
 More details about these changes can be found on our GitHub repo:
@@ -2560,7 +2560,7 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.16.0+is%3Ac
   they are updated.
 * A bug causing Certbot to display strange defaults in its help output when
   using Python <= 2.7.4 has been fixed.
-* Certbot now properly handles mixed case domain names found in custom CSRs.
+* Certbot now properly handles mixed case do2024-11-05 names found in custom CSRs.
 * A number of poorly worded prompts and error messages.
 
 ### Removed
@@ -2727,7 +2727,7 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.10.2+is%3Ac
 ### Fixed
 
 * Resolve problems where when asking Certbot to update a certificate at
-an existing path to include different domain names, the old names would
+an existing path to include different do2024-11-05 names, the old names would
 continue to be used.
 * Fix issues successfully running our unit test suite on some systems.
 
@@ -2739,7 +2739,7 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.10.1+is%3Ac
 ## Added
 
 * Added the ability to customize and automatically complete DNS and HTTP
-domain validation challenges with the manual plugin. The flags
+do2024-11-05 validation challenges with the manual plugin. The flags
 `--manual-auth-hook` and `--manual-cleanup-hook` can now be provided
 when using the manual plugin to execute commands provided by the user to
 perform and clean up challenges provided by the CA. This is best used in
@@ -2748,16 +2748,16 @@ existing plugins cannot be used to perform HTTP challenges. For more
 information on how this works, see `certbot --help manual`.
 * Added a `--cert-name` flag for specifying the name to use for the
 certificate in Certbot's configuration directory. Using this flag in
-combination with `-d/--domains`, a user can easily request a new
-certificate with different domains and save it with the name provided by
+combination with `-d/--do2024-11-05s`, a user can easily request a new
+certificate with different do2024-11-05s and save it with the name provided by
 `--cert-name`. Additionally, `--cert-name` can be used to select a
 certificate with the `certonly` and `run` subcommands so a full list of
-domains in the certificate does not have to be provided.
+do2024-11-05s in the certificate does not have to be provided.
 * Added subcommand `certificates` for listing the certificates managed by
 Certbot and their properties.
 * Added the `delete` subcommand for removing certificates managed by Certbot
 from the configuration directory.
-* Certbot now supports requesting internationalized domain names (IDNs).
+* Certbot now supports requesting internationalized do2024-11-05 names (IDNs).
 * Hooks provided to Certbot are now saved to be reused during renewal.
 If you run Certbot with `--pre-hook`, `--renew-hook`, or `--post-hook`
 flags when obtaining a certificate, the provided commands will
@@ -2819,7 +2819,7 @@ when they are necessary.
 * Certbot now verifies that our optional dependencies version matches what is
 required by Certbot.
 * Certnot now properly copies the `ssl on;` directives as necessary when
-performing domain validation in the Nginx plugin.
+performing do2024-11-05 validation in the Nginx plugin.
 * Fixed problem where symlinks were becoming files when they were
 packaged, causing errors during testing and OS packaging.
 
@@ -2851,7 +2851,7 @@ so we recommend you use it with some caution and make sure you have a
 backup of your Nginx configuration.
 * Added support for the `DNS` challenge in the `acme` library and `DNS` in
 Certbot's `manual` plugin. This allows you to create DNS records to
-prove to Let's Encrypt you control the requested domain name. To use
+prove to Let's Encrypt you control the requested do2024-11-05 name. To use
 this feature, include `--manual --preferred-challenges dns` on the
 command line.
 * Certbot now helps with enabling Extra Packages for Enterprise Linux (EPEL) on
@@ -2900,7 +2900,7 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.8.0+
 * Added `--must-staple` to request certificates from Let's Encrypt
 with the OCSP must staple extension.
 * Certbot now automatically configures OSCP stapling for Apache.
-* Certbot now allows requesting certificates for domains found in the common name
+* Certbot now allows requesting certificates for do2024-11-05s found in the common name
 of a custom CSR.
 
 ### Fixed
@@ -2923,7 +2923,7 @@ https://github.com/certbot/certbot/issues?q=milestone%3A0.7.0+is%3Aissue
 ### Fixed
 
 * Fixed a small json deserialization error.
-* Certbot now preserves domain order in generated CSRs.
+* Certbot now preserves do2024-11-05 order in generated CSRs.
 * Fixed some minor bugs.
 
 More details about these changes can be found on our GitHub repo:
@@ -2941,9 +2941,9 @@ renewed, post-hook commands will be run after any certs are renewed,
 and renew-hook commands will be run after each cert is renewed. If no
 certs are due for renewal, no command is run.
 * Added a -q/--quiet flag which silences all output except errors.
-* Added an --allow-subset-of-domains flag which can be used with the renew
+* Added an --allow-subset-of-do2024-11-05s flag which can be used with the renew
 command to prevent renewal failures for a subset of the requested
-domains from causing the client to exit.
+do2024-11-05s from causing the client to exit.
 
 ### Changed
 
@@ -3042,7 +3042,7 @@ https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.2.0
 
 ### Added
 
-* Added a check that avoids attempting to issue for unqualified domain names like
+* Added a check that avoids attempting to issue for unqualified do2024-11-05 names like
 "localhost".
 
 ### Fixed
