@@ -97,7 +97,7 @@ fi
 git checkout "$RELEASE_BRANCH"
 
 # Update changelog
-sed -i "s/main/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
+sed -i "0,/main/ s/main/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
 git commit -m "Update changelog for $version release"
 
