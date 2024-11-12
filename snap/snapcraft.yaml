@@ -23,7 +23,7 @@ environment:
 
 apps:
   certbot:
-    command: bin/python3 -s $SNAP/bin/certbot
+    command: bin/python3-dbg -s $SNAP/bin/certbot
     environment:
       PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
       AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
@@ -72,7 +72,9 @@ parts:
       - python3-minimal
       - python3-pkg-resources
       - python3.12-minimal
-    # To build cryptography and cffi if needed
+      - libpython3-all-dbg
+      - python3-dbg
+      - python3.12-dbg
     build-packages:
       - gcc
       - git
@@ -80,7 +82,9 @@ parts:
       - build-essential
       - libssl-dev
       - libffi-dev
-      - python3-dev
+      - libpython3-all-dbg
+      - python3-dbg
+      - python3-venv
       - cargo
       - pkg-config
     build-environment:
@@ -95,9 +99,10 @@ parts:
       # build, but also on any isolated build that pip could trigger when building wheels for
       # dependencies. See https://github.com/certbot/certbot/pull/8443 for more info.
       - PIP_CONSTRAINT: $CRAFT_PART_SRC/snap-constraints.txt
+      - PARTS_PYTHON_INTERPRETER: "python3-dbg"
     override-build: |
-      python3 -m venv "${CRAFT_PART_INSTALL}"
-      "${CRAFT_PART_INSTALL}/bin/python3" "${CRAFT_PART_SRC}/tools/pipstrap.py"
+      python3-dbg -m venv "${CRAFT_PART_INSTALL}"
+      "${CRAFT_PART_INSTALL}/bin/python3-dbg" "${CRAFT_PART_SRC}/tools/pipstrap.py"
       craftctl default
     override-pull: |
       craftctl default
