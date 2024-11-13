@@ -6,12 +6,14 @@ from datetime import timedelta
 import sys
 import unittest
 from unittest import mock
+import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from cryptography.utils import CryptographyDeprecationWarning
 from cryptography.x509 import ocsp as ocsp_lib
 import pytest
 import pytz
@@ -282,6 +284,25 @@ class OSCPTestCryptography(unittest.TestCase):
                                 side_effect=x509.ExtensionNotFound(
                                     'Not found', x509.AuthorityInformationAccessOID.OCSP)):
                     revoked = self.checker.ocsp_revoked(self.cert_obj)
+        assert revoked is False
+
+    def test_this_update_warning(self):
+        with _ocsp_mock(ocsp_lib.OCSPCertStatus.GOOD,
+                        ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
+            value = mocks['mock_response'].return_value.this_update
+
+            def warn_first():
+                msg = ('Properties that return a naïve datetime object have been deprecated. Please '
+                       'switch to this_update_utc.')
+                warnings.warn(msg, CryptographyDeprecationWarning)
+                return value
+
+            property_mock = mock.PropertyMock(side_effect=warn_first)
+            # Using type() in this way is recommended in mock's documentation at
+            # https://docs.python.org/3/library/unittest.mock.html#unittest.mock.PropertyMock
+            type(mocks['mock_response'].return_value).this_update = property_mock
+
+            revoked = self.checker.ocsp_revoked(self.cert_obj)
         assert revoked is False
 
 
