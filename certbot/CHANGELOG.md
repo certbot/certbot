@@ -3,6 +3,15 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.0.1 - main
+
+### Fixed
+
+* Removed a CryptographyDeprecationWarning that was being displayed to users
+  when checking OCSP status.
+
+More details about these changes can be found on our GitHub repo.
+
 ## 3.0.0 - 2024-11-05
 
 ### Added
