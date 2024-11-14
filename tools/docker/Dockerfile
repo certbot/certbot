@@ -1,5 +1,5 @@
 #base image
-FROM python:3.12-alpine3.18 AS certbot
+FROM python:3.12-alpine3.20 AS certbot
 
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
@@ -15,7 +15,7 @@ COPY certbot src/certbot
 # Install certbot runtime dependencies
 RUN apk add --no-cache --virtual .certbot-deps \
         libffi \
-        libssl1.1 \
+        libssl3 \
         openssl \
         ca-certificates \
         binutils
