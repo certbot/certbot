@@ -20,6 +20,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Help output now shows `False` as default when it can be set via `cli.ini` instead of `None`
 * Changed terms of service agreement text to have a newline after the TOS link
 * certbot-cloudflare-dns is now pinned to version 2.19 of Cloudflare's python library
+* Removed support for Linode API v3 which was sunset at the end of July 203.
 
 ### Fixed
 
