@@ -1,4 +1,3 @@
-
 # Certbot change log
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
@@ -12,6 +11,14 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Updated our Docker images to be based on Alpine Linux 3.20.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 3.0.1 - 2024-11-14
 
 ### Fixed
 
