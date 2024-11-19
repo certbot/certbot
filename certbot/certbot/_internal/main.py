@@ -15,6 +15,7 @@ from typing import Optional
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
+from typing import Dict
 
 import configobj
 import josepy as jose
@@ -646,7 +647,7 @@ def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[
         )
     )
 
-def _report_new_authz(preauthz_results : dict[str, str]) -> None:
+def _report_new_authz(preauthz_results : Dict[str, str]) -> None:
     """Reports the validation status of domains to the user.
 
     :param preauthz_results: The results of the pre-authorization process
