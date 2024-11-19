@@ -444,7 +444,7 @@ class Client:
             return authz_statuses
 
     def _generate_key_and_csr(self,
-                              domains : List[str], 
+                              domains : List[str],
                               old_keypath: Optional[str] = None) -> Tuple[util.Key, util.CSR]:
         """Generate a CSR and private key to be used for certificate or authorization requests.
         :param list domains: domains to get a certificate or authorization for
@@ -574,7 +574,7 @@ class Client:
 
         authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
-    
+
     def obtain_and_enroll_certificate(self, domains: List[str], certname: Optional[str]
                                       ) -> Optional[storage.RenewableCert]:
         """Obtain and enroll certificate.
@@ -625,7 +625,7 @@ class Client:
         display_util.notify("Unable to obtain a certificate with every requested "
             f"domain. Retrying without: {domains_list}")
         return self.obtain_certificate(successful_domains)
-    
+
     def _retry_obtain_authorizations(self, domains: List[str], successful_domains: List[str]
                                 ) -> Dict[str, str]:
         failed_domains = [d for d in domains if d not in successful_domains]

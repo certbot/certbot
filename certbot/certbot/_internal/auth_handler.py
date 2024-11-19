@@ -73,7 +73,7 @@ class AuthHandler:
         authzrs = orderr.authorizations[:]
         return self.handle_authorizations_from_authzrs(authzrs, config,
                                                        best_effort, max_retries, max_time_mins)
-    
+
     def handle_authorizations_from_authzrs(self, authzrs: List[messages.AuthorizationResource],
                               config: configuration.NamespaceConfig, best_effort: bool = False,
                               max_retries: int = 30,
