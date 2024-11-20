@@ -19,22 +19,21 @@ grade: stable
 adopt-info: certbot
 
 environment:
+  AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
+  CERTBOT_SNAPPED: "True"
+  # This is needed to help openssl find its legacy provider on architectures
+  # where we cannot use cryptography's pre-built wheels. See
+  # https://github.com/certbot/certbot/issues/10055.
+  OPENSSL_MODULES: "$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/ossl-modules"
+  PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
   PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
 
 apps:
   certbot:
     command: bin/python3 -s $SNAP/bin/certbot
-    environment:
-      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
-      AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
-      CERTBOT_SNAPPED: "True"
   renew:
     command: bin/python3 -s $SNAP/bin/certbot -q renew
     daemon: oneshot
-    environment:
-      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
-      AUGEAS_LENS_LIB: $SNAP/usr/share/augeas/lenses/dist
-      CERTBOT_SNAPPED: "True"
     # Run approximately twice a day with randomization
     timer: 00:00~24:00/2
 
@@ -62,6 +61,10 @@ parts:
     stage-packages:
       - libaugeas0
       - libpython3.12-dev
+      # This library included so openssl has a legacy provider available at
+      # runtime when we are unable to use cryptography's pre-built wheels. See
+      # https://github.com/certbot/certbot/issues/10055.
+      - libssl3t64
       # added to stage python:
       - libpython3-stdlib
       - libpython3.12-stdlib
