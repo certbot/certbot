@@ -20,6 +20,18 @@ adopt-info: certbot
 
 environment:
   PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
+  # Disable FIPS mode detection. See
+  # https://git.launchpad.net/ubuntu/+source/openssl/tree/debian/patches/fips/crypto-Add-kernel-FIPS-mode-detection.patch?h=applied/ubuntu/noble
+  # for more on this flag, and https://github.com/certbot/certbot/issues/10044
+  # for more on the issue.
+  #
+  # This is needed because the Python + OpenSSL bundled in core24 don't include
+  # an OpenSSL FIPS provider, which causes crashes on host systems with OpenSSL
+  # 1.1.1f (e.g. Ubuntu Pro 20.04). For some reason, core24's OpenSSL also looks
+  # in a non-standard location for the provider, which also causes crashes on
+  # systems with OpenSSL 3.x (e.g. RHEL 9). If you need FIPS functionality in
+  # certbot, install via pip.
+  OPENSSL_FORCE_FIPS_MODE: "0"
 
 apps:
   certbot:
