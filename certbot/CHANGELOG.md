@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Included an OpenSSL library that was missing in our Certbot snap fixing
+  crashes affecting 32-bit ARM users.
 
 More details about these changes can be found on our GitHub repo.
 
