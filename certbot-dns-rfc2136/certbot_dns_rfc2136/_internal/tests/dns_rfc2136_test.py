@@ -51,7 +51,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth.credentials.conf = lambda key: creds.get(key, None)
         client = self.orig_get_client()
         assert client.algorithm == self.auth.ALGORITHMS["HMAC-MD5"]
-        assert client.sign_query == False
+        assert client.sign_query is False
 
     @test_util.patch_display_util()
     def test_perform(self, unused_mock_get_utility):

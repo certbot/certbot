@@ -174,9 +174,9 @@ class MultipleVhostsTest(util.ApacheTest):
         assert "certbot.demo" in names
 
     def test_get_bad_path(self):
-        assert apache_util.get_file_path(None) == None
-        assert apache_util.get_file_path("nonexistent") == None
-        assert self.config._create_vhost("nonexistent") == None # pylint: disable=protected-access
+        assert apache_util.get_file_path(None) is None
+        assert apache_util.get_file_path("nonexistent") is None
+        assert self.config._create_vhost("nonexistent") is None # pylint: disable=protected-access
 
     def test_get_aug_internal_path(self):
         from certbot_apache._internal.apache_util import get_internal_aug_path
@@ -303,7 +303,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         assert self.vh_truth[3] == self.config._find_best_vhost("certbot.demo")
         assert self.vh_truth[0] == self.config._find_best_vhost("encryption-example.demo")
-        assert self.config._find_best_vhost("does-not-exist.com") == None
+        assert self.config._find_best_vhost("does-not-exist.com") is None
 
     def test_find_best_vhost_variety(self):
         # pylint: disable=protected-access
@@ -1723,14 +1723,14 @@ class InstallSslOptionsConfTest(util.ApacheTest):
 
         self.config._openssl_version = None
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
-            assert self.config.openssl_version() == None
+            assert self.config.openssl_version() is None
             assert "Could not find ssl_module" in mock_log.call_args[0][0]
 
         # When no ssl_module is present at all
         self.config._openssl_version = None
         assert "ssl_module" not in self.config.parser.modules
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
-            assert self.config.openssl_version() == None
+            assert self.config.openssl_version() is None
             assert "Could not find ssl_module" in mock_log.call_args[0][0]
 
         # When ssl_module is statically linked but --apache-bin not provided
@@ -1738,13 +1738,13 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         self.config.options.bin = None
         self.config.parser.modules['ssl_module'] = None
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
-            assert self.config.openssl_version() == None
+            assert self.config.openssl_version() is None
             assert "ssl_module is statically linked but" in mock_log.call_args[0][0]
 
         self.config.parser.modules['ssl_module'] = "/fake/path"
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
             # Check that correct logger.warning was printed
-            assert self.config.openssl_version() == None
+            assert self.config.openssl_version() is None
             assert "Unable to read" in mock_log.call_args[0][0]
 
         contents_missing_openssl = b"these contents won't match the regex"
@@ -1753,7 +1753,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             mock_omf.return_value = contents_missing_openssl
             with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
                 # Check that correct logger.warning was printed
-                assert self.config.openssl_version() == None
+                assert self.config.openssl_version() is None
                 assert "Could not find OpenSSL" in mock_log.call_args[0][0]
 
     def test_open_module_file(self):
