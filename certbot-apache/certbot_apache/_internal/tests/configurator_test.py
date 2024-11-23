@@ -1518,16 +1518,11 @@ class MultiVhostsTest(util.ApacheTest):
         with_index_1 = ["/path[1]/section[1]"]
         without_index = ["/path/section"]
         with_index_2 = ["/path[2]/section[2]"]
-        assert self.config._get_new_vh_path(without_index,
-                                                      with_index_1) == \
-                         None
-        assert self.config._get_new_vh_path(without_index,
-                                                      with_index_2) == \
-                         with_index_2[0]
+        assert self.config._get_new_vh_path(without_index, with_index_1) is None
+        assert self.config._get_new_vh_path(without_index, with_index_2) == with_index_2[0]
 
         both = with_index_1 + with_index_2
-        assert self.config._get_new_vh_path(without_index, both) == \
-                         with_index_2[0]
+        assert self.config._get_new_vh_path(without_index, both) == with_index_2[0]
 
     @mock.patch("certbot_apache._internal.configurator.display_util.notify")
     def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_notify):
