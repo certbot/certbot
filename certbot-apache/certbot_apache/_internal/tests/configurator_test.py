@@ -1417,7 +1417,7 @@ class AugeasVhostsTest(util.ApacheTest):
         self.config.parser.aug.match.side_effect = RuntimeError
         path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old-and-default.conf"
         chosen_vhost = self.config._create_vhost(path)
-        assert None == chosen_vhost
+        assert chosen_vhost is None
 
     def test_choosevhost_works(self):
         path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old-and-default.conf"

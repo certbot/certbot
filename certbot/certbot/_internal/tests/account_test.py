@@ -1,6 +1,5 @@
 """Tests for certbot._internal.account."""
 import datetime
-import json
 import sys
 import unittest
 from unittest import mock

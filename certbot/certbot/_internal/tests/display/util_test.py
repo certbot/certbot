@@ -1,13 +1,8 @@
 """Test :mod:`certbot.display.util`."""
-import io
-import socket
 import sys
-import tempfile
-from unittest import mock
 
 import pytest
 
-from certbot import errors
 import certbot.tests.util as test_util
 
 
