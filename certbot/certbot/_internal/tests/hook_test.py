@@ -218,7 +218,6 @@ class PostHookTest(HookTest):
             assert not self._call_with_mock_execute(self.config, []).called
             assert not self._get_eventually()
 
-    @unittest.skipIf(pyver_lt(3, 8), "Python 3.8+ required for this test.")
     def test_renew_env(self):
         self.config.verb = "certonly"
         args = self._call_with_mock_execute(self.config, ["success.org"]).call_args
@@ -308,7 +307,6 @@ class RunSavedPostHooksTest(HookTest):
         mock_execute = self._call_with_mock_execute_and_eventually([], [])
         mock_execute.assert_called_once_with("post-hook", self.eventually[0], env=mock.ANY)
 
-    @unittest.skipIf(pyver_lt(3, 8), "Python 3.8+ required for this test.")
     def test_env(self):
         self.eventually = ["foo"]
         mock_execute = self._call_with_mock_execute_and_eventually(["success.org"], ["failed.org"])

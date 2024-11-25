@@ -20,14 +20,11 @@ jobs:
         linux-isolated:
           TOXENV: 'isolated-acme,isolated-certbot,isolated-apache,isolated-cloudflare,isolated-digitalocean,isolated-dnsimple,isolated-dnsmadeeasy,isolated-gehirn,isolated-google,isolated-linode,isolated-luadns,isolated-nsone,isolated-ovh,isolated-rfc2136,isolated-route53,isolated-sakuracloud,isolated-nginx'
         linux-integration-certbot-oldest:
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.9
           TOXENV: integration-certbot-oldest
         linux-integration-nginx-oldest:
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.9
           TOXENV: integration-nginx-oldest
-        linux-py38-integration:
-          PYTHON_VERSION: 3.8
-          TOXENV: integration
         linux-py39-integration:
           PYTHON_VERSION: 3.9
           TOXENV: integration
