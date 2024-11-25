@@ -9,7 +9,6 @@ install_requires = [
     # https://github.com/certbot/certbot/issues/8761 for more info.
     f'acme>={version}',
     f'certbot>={version}',
-    'importlib_resources>=1.3.1; python_version < "3.9"',
     'python-augeas',
 ]
 

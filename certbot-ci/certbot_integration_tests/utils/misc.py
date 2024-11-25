@@ -7,6 +7,7 @@ import contextlib
 import errno
 import functools
 import http.server as SimpleHTTPServer
+import importlib.resources
 import os
 import re
 import shutil
@@ -35,11 +36,6 @@ import requests
 
 from certbot_integration_tests.utils.constants import PEBBLE_ALTERNATE_ROOTS
 from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
-
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
 
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
@@ -124,9 +120,9 @@ def generate_test_file_hooks(config_dir: str, hook_probe: str) -> None:
     """
     file_manager = contextlib.ExitStack()
     atexit.register(file_manager.close)
-    hook_path_ref = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+    hook_path_ref = (importlib.resources.files('certbot_integration_tests').joinpath('assets')
                      .joinpath('hook.py'))
-    hook_path = str(file_manager.enter_context(importlib_resources.as_file(hook_path_ref)))
+    hook_path = str(file_manager.enter_context(importlib.resources.as_file(hook_path_ref)))
 
     for hook_dir in list_renewal_hooks_dirs(config_dir):
         # We want an equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
@@ -261,9 +257,9 @@ def load_sample_data_path(workspace: str) -> str:
     :returns: the path to the loaded sample data directory
     :rtype: str
     """
-    original_ref = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+    original_ref = (importlib.resources.files('certbot_integration_tests').joinpath('assets')
                     .joinpath('sample-config'))
-    with importlib_resources.as_file(original_ref) as original:
+    with importlib.resources.as_file(original_ref) as original:
         copied = os.path.join(workspace, 'sample-config')
         shutil.copytree(original, copied, symlinks=True)
 

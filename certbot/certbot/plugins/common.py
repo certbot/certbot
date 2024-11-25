@@ -2,10 +2,10 @@
 from abc import ABCMeta
 from abc import abstractmethod
 import argparse
+import importlib.resources
 import logging
 import re
 import shutil
-import sys
 import tempfile
 from typing import Any
 from typing import Callable
@@ -30,11 +30,6 @@ from certbot.compat import os
 from certbot.interfaces import Installer as AbstractInstaller
 from certbot.interfaces import Plugin as AbstractPlugin
 from certbot.plugins.storage import PluginStorage
-
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
 
 logger = logging.getLogger(__name__)
 
@@ -465,8 +460,8 @@ def dir_setup(test_dir: str, pkg: str) -> Tuple[str, str, str]:  # pragma: no co
     filesystem.chmod(config_dir, constants.CONFIG_DIRS_MODE)
     filesystem.chmod(work_dir, constants.CONFIG_DIRS_MODE)
 
-    test_dir_ref = importlib_resources.files(pkg).joinpath("testdata").joinpath(test_dir)
-    with importlib_resources.as_file(test_dir_ref) as path:
+    test_dir_ref = importlib.resources.files(pkg).joinpath("testdata").joinpath(test_dir)
+    with importlib.resources.as_file(test_dir_ref) as path:
         shutil.copytree(
             path, os.path.join(temp_dir, test_dir), symlinks=True)
 

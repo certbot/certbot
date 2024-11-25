@@ -6,7 +6,6 @@ version = '0.32.0.dev0'
 install_requires = [
     'coverage',
     'cryptography',
-    'importlib_resources>=1.3.1; python_version < "3.9"',
     'pyopenssl',
     'pytest',
     'pytest-cov',
