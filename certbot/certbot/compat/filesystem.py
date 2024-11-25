@@ -5,11 +5,9 @@ from contextlib import contextmanager
 import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
-import sys
 from typing import Any
 from typing import Dict
 from typing import Generator
-from typing import List
 from typing import Optional
 
 try:
@@ -370,27 +368,14 @@ def realpath(file_path: str) -> str:
     """
     original_path = file_path
 
-    # Since Python 3.8, os.path.realpath also resolves symlinks on Windows.
-    if POSIX_MODE or sys.version_info >= (3, 8):
-        path = os.path.realpath(file_path)
-        if os.path.islink(path):
-            # If path returned by realpath is still a link, it means that it failed to
-            # resolve the symlink because of a loop.
-            # See realpath code: https://github.com/python/cpython/blob/master/Lib/posixpath.py
-            raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
-        return path
-
-    inspected_paths: List[str] = []
-    while os.path.islink(file_path):
-        link_path = file_path
-        file_path = os.readlink(file_path)
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(os.path.dirname(link_path), file_path)
-        if file_path in inspected_paths:
-            raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
-        inspected_paths.append(file_path)
-
-    return os.path.abspath(file_path)
+    # os.path.realpath also resolves symlinks
+    path = os.path.realpath(file_path)
+    if os.path.islink(path):
+        # If path returned by realpath is still a link, it means that it failed to
+        # resolve the symlink because of a loop.
+        # See realpath code: https://github.com/python/cpython/blob/master/Lib/posixpath.py
+        raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
+    return path
 
 
 def readlink(link_path: str) -> str:
@@ -404,11 +389,11 @@ def readlink(link_path: str) -> str:
     """
     path = os.readlink(link_path)
 
-    if POSIX_MODE or not path.startswith('\\\\?\\'):
+    if POSIX_MODE:
         return path
 
     # At this point, we know we are on Windows and that the path returned uses
-    # the extended form which is done for all paths in Python 3.8+
+    # the extended form which begins with the prefix \\?\
 
     # Max length of a normal path is 260 characters on Windows, including the non printable
     # termination character "<NUL>". The termination character is not included in Python
