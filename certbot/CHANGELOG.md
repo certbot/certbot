@@ -11,6 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Python 3.8 support was removed.
+* certbot-dns-rfc2136's minimum required version of dnspython is now 2.6.1.
 * Updated our Docker images to be based on Alpine Linux 3.20.
 * Our runtime dependency on setuptools has been dropped from all Certbot
   components.

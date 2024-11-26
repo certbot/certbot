@@ -7,7 +7,10 @@ from setuptools import setup
 version = '3.1.0.dev0'
 
 install_requires = [
-    'dnspython>=1.15.0',
+    # This version was chosen because it is the version packaged in RHEL 9 and Debian unstable. It
+    # is possible this requirement could be relaxed to allow for an even older version of dnspython
+    # if necessary.
+    'dnspython>=2.6.1',
 ]
 
 if os.environ.get('SNAP_BUILD'):
