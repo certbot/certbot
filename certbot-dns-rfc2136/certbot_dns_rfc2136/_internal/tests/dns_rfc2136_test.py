@@ -86,11 +86,40 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
     def test_invalid_server_raises(self):
         config = VALID_CONFIG.copy()
-        config["rfc2136_server"] = "example.com"
+        config["rfc2136_server"] = "non-existing-domain.example.com"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+        with pytest.raises(errors.PluginError):
+            self.orig_get_client()
+
+    def test_invalid_ip_family_raises(self):
+        config = VALID_CONFIG.copy()
+        config["rfc2136_ip_family"] = "ipvX"
         dns_test_common.write(config, self.config.rfc2136_credentials)
 
         with pytest.raises(errors.PluginError):
             self.auth.perform([self.achall])
+
+    def test_force_ipv4(self):
+        config = VALID_CONFIG.copy()
+        config["rfc2136_server"] = "localhost"
+        config["rfc2136_ip_family"] = "ipv4"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+        client = self.orig_get_client()
+        assert client.server == "127.0.0.1"
+
+    def test_force_ipv6(self):
+        config = VALID_CONFIG.copy()
+        config["rfc2136_server"] = "localhost"
+        config["rfc2136_ip_family"] = "ipv6"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+        client = self.orig_get_client()
+        assert client.server == "::1"
 
     @test_util.patch_display_util()
     def test_valid_server_passes(self, unused_mock_get_utility):
