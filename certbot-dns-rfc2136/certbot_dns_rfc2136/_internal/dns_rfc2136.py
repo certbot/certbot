@@ -1,5 +1,6 @@
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
 import logging
+import socket
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -60,10 +61,12 @@ class Authenticator(dns_common.DNSAuthenticator):
                'RFC 2136 Dynamic Updates.'
 
     def _validate_credentials(self, credentials: CredentialsConfiguration) -> None:
-        server = cast(str, credentials.conf('server'))
-        if not is_ipaddress(server):
-            raise errors.PluginError("The configured target DNS server ({0}) is not a valid IPv4 "
-                                     "or IPv6 address. A hostname is not allowed.".format(server))
+        ip_family = cast(str, credentials.conf('ip_family'))
+        if ip_family is not None:
+            ip_family = ip_family.lower()
+            if ip_family not in ('ipv4', 'ipv6'):
+                raise errors.PluginError('The configured ip family "' + ip_family + \
+                                         '" is not valid. It must be ipv4 or ipv6.')
         algorithm = credentials.conf('algorithm')
         if algorithm:
             if not self.ALGORITHMS.get(algorithm.upper()):
@@ -91,8 +94,25 @@ class Authenticator(dns_common.DNSAuthenticator):
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
 
-        return _RFC2136Client(cast(str, self.credentials.conf('server')),
-                              int(cast(str, self.credentials.conf('port')) or self.PORT),
+        server = cast(str, self.credentials.conf('server'))
+        port = int(cast(str, self.credentials.conf('port')) or self.PORT)
+        if not is_ipaddress(server):
+            family = socket.AF_UNSPEC
+            ip_family = cast(str, self.credentials.conf('ip_family'))
+            if ip_family is not None:
+                ip_family = ip_family.lower()
+                if ip_family == 'ipv4':
+                    family = socket.AF_INET
+                elif ip_family == 'ipv6':
+                    family = socket.AF_INET6
+            try:
+                result = socket.getaddrinfo(server, port, proto=socket.IPPROTO_TCP, family=family)
+                server = result[0][4][0]
+            except:
+                raise errors.PluginError('The configured RFC 2136 target DNS server "' + \
+                                         server + '" could not be resolved.')
+
+        return _RFC2136Client(server, port,
                               cast(str, self.credentials.conf('name')),
                               cast(str, self.credentials.conf('secret')),
                               self.ALGORITHMS.get(self.credentials.conf('algorithm') or '',

@@ -33,8 +33,11 @@ different to HMAC-MD5, and optionally whether to sign the initial SOA query.
    :name: credentials.ini
    :caption: Example credentials file:
 
-   # Target DNS server (IPv4 or IPv6 address, not a hostname)
+   # Target DNS server (IPv4 or IPv6 address or a hostname)
    dns_rfc2136_server = 192.0.2.1
+   # optional IP address family to limit lookup up of server hostname: ipv4 or ipv6
+   # (ignored if dns_rfc2136_server is an IP address)
+   dns_rfc2136_ip_family = ipv4
    # Target DNS port
    dns_rfc2136_port = 53
    # TSIG key name

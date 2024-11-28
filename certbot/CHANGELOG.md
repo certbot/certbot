@@ -11,6 +11,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Updated our Docker images to be based on Alpine Linux 3.20.
+* Allow specifying a hostname instead of an IP adress by the `dns_rfc2136_server`
+  option in the credentials .ini file.
+  IP address familiy for DNS lookup of the hostname can be limited by `ipv4`
+  or `ipv6` for the optional `dns_rfc2136_ip_family` option.
+  If an IP adress is specified by `dns_rfc2136_server`, this option is ignored.
 
 ### Fixed
 
