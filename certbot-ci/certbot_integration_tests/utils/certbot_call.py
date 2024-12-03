@@ -51,7 +51,7 @@ def _prepare_environ(workspace: str) -> Dict[str, str]:
 
     # So, pytest is nice, and a little too nice for our usage.
     # In order to help user to call seamlessly any piece of python code without requiring to
-    # install it as a full-fledged setuptools distribution for instance, it may inject the path
+    # install it as a full-fledged Python package for instance, it may inject the path
     # to the test files into the PYTHONPATH. This allows the python interpreter to import
     # as modules any python file available at this path.
     # See https://docs.pytest.org/en/3.2.5/pythonpath.html for the explanation and description.
