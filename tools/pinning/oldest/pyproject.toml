@@ -76,7 +76,6 @@ python-augeas = "0.5.0"
 python-digitalocean = "1.11"
 pytz = "2019.3"
 requests = "2.20.0"
-setuptools = "41.6.0"
 six = "1.11.0"
 urllib3 = "1.24.2"
 
@@ -97,10 +96,6 @@ cython = "<3.0"
 # Other dependencies
 # We add any dependencies that must be specified in this file for any another
 # reason below.
-
-# wheel 0.34.1+ does not support the version of setuptools pinned above (and
-# wheel 0.34.0 is buggy).
-wheel = "<0.34.0"
 
 [tool.poetry.dev-dependencies]
 

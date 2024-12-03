@@ -176,7 +176,12 @@ class PluginsRegistry(Mapping):
 
     @classmethod
     def find_all(cls) -> 'PluginsRegistry':
-        """Find plugins using setuptools entry points."""
+        """Find plugins using Python package entry points.
+
+        See https://packaging.python.org/en/latest/specifications/entry-points/ for more info on
+        entry points.
+
+        """
         plugins: Dict[str, PluginEntryPoint] = {}
         plugin_paths_string = os.getenv('CERTBOT_PLUGIN_PATH')
         plugin_paths = plugin_paths_string.split(':') if plugin_paths_string else []
