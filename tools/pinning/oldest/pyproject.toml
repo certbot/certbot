@@ -10,7 +10,7 @@ license = "Apache License 2.0"
 [tool.poetry.dependencies]
 # The Python version here should be kept in sync with the one used in our
 # oldest tests in tox.ini.
-python = "<3.9 >= 3.8"
+python = "<3.10 >= 3.9"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -55,7 +55,7 @@ configobj = "5.0.6"
 cryptography = "3.2.1"
 distro = "1.0.1"
 dns-lexicon = "3.15.1"
-dnspython = "1.15.0"
+dnspython = "2.6.1"
 funcsigs = "0.4"
 google-api-python-client = "1.6.5"
 google-auth = "2.16.0"

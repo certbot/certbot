@@ -6,7 +6,7 @@ authors = ["Certbot Project"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 
 # workaround for: https://github.com/python-poetry/poetry-plugin-export/issues/183
 urllib3 = ">=1.25.4,<1.27"

@@ -12,13 +12,13 @@ jobs:
           PIP_USE_PEP517: "true"
         linux-oldest:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.9
           TOXENV: oldest
-        linux-py38:
+        linux-py39:
           # linux unit tests with the oldest python we support
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.8
-          TOXENV: py38
+          PYTHON_VERSION: 3.9
+          TOXENV: py39
         linux-cover:
           # linux unit+cover tests with the newest python we support
           IMAGE_NAME: ubuntu-22.04
@@ -47,6 +47,6 @@ jobs:
       - template: ../steps/tox-steps.yml
   - job: test_sphinx_builds
     pool:
-      vmImage: ubuntu-20.04
+      vmImage: ubuntu-22.04
     steps:
       - template: ../steps/sphinx-steps.yml
