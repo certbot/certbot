@@ -1,10 +1,6 @@
 """Tests for certbot.plugins.storage.PluginStorage"""
 import json
 import sys
-from typing import Iterable
-from typing import List
-from typing import Optional
-import unittest
 from unittest import mock
 
 import pytest

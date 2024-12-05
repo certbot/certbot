@@ -245,7 +245,7 @@ class TestChooseConfiguratorPlugins(unittest.TestCase):
         inst, auth = self._runWithArgs("certonly --apache")
         assert inst.name == "apache"
         assert auth.name == "apache"
-    
+
     def test_noninteractive_inst_arg(self):
         # For certonly, if an installer arg is set, it should be returned as expected
         inst, auth = self._runWithArgs("certonly -a nginx -i nginx")
@@ -258,18 +258,19 @@ class TestChooseConfiguratorPlugins(unittest.TestCase):
 
         # if no installer arg is set (or it's set to none), one shouldn't be returned
         inst, auth = self._runWithArgs("certonly -a nginx")
-        assert inst == None
+        assert inst is None
         assert auth.name == "nginx"
         inst, auth = self._runWithArgs("certonly -a nginx -i none")
-        assert inst == None
+        assert inst is None
         assert auth.name == "nginx"
 
         inst, auth = self._runWithArgs("certonly -a apache")
-        assert inst == None
+        assert inst is None
         assert auth.name == "apache"
         inst, auth = self._runWithArgs("certonly -a apache -i none")
-        assert inst == None
+        assert inst is None
         assert auth.name == "apache"
+
 
 if __name__ == "__main__":
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

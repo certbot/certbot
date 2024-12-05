@@ -1,6 +1,5 @@
 """Tests for new style enhancements"""
 import sys
-import unittest
 from unittest import mock
 
 import pytest
@@ -16,7 +15,6 @@ class EnhancementTest(test_util.ConfigTestCase):
     def setUp(self):
         super().setUp()
         self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
-
 
     @test_util.patch_display_util()
     def test_enhancement_enabled_enhancements(self, _):
@@ -57,8 +55,7 @@ class EnhancementTest(test_util.ConfigTestCase):
         lineage = "lineage"
         enhancements.enable(lineage, domains, self.mockinstaller, self.config)
         assert self.mockinstaller.enable_autohsts.called
-        assert self.mockinstaller.enable_autohsts.call_args[0] == \
-                          (lineage, domains)
+        assert self.mockinstaller.enable_autohsts.call_args[0] == (lineage, domains)
 
 
 if __name__ == '__main__':

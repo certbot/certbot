@@ -659,7 +659,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
 
         # new account
         try:
-            self._call(f'--cert-name example.com --account newaccountid'.split())
+            self._call('--cert-name example.com --account newaccountid'.split())
         except errors.ConfigurationError as err:
             assert "Using reconfigure to change the ACME account" in str(err)
 
@@ -674,7 +674,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
 
         # new server
         try:
-            self._call(f'--cert-name example.com --server x.com'.split())
+            self._call('--cert-name example.com --server x.com'.split())
         except errors.ConfigurationError as err:
             assert "Using reconfigure to change the ACME account" in str(err)
 
