@@ -3,10 +3,10 @@
 import atexit
 from contextlib import ExitStack
 import logging
+import importlib.resources
 import re
 import socket
 import subprocess
-import sys
 import tempfile
 import time
 from typing import Any
@@ -39,11 +39,6 @@ from certbot_nginx._internal import http_01
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
 from certbot_nginx._internal import parser
-
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1
@@ -171,10 +166,10 @@ class NginxConfigurator(common.Configurator):
 
         file_manager = ExitStack()
         atexit.register(file_manager.close)
-        ref = (importlib_resources.files("certbot_nginx").joinpath("_internal")
+        ref = (importlib.resources.files("certbot_nginx").joinpath("_internal")
                .joinpath("tls_configs").joinpath(config_filename))
 
-        return str(file_manager.enter_context(importlib_resources.as_file(ref)))
+        return str(file_manager.enter_context(importlib.resources.as_file(ref)))
 
     @property
     def mod_ssl_conf(self) -> str:

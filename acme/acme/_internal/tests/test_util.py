@@ -3,6 +3,7 @@
 .. warning:: This module is not part of the public API.
 
 """
+import importlib.resources
 import os
 import sys
 
@@ -12,16 +13,11 @@ import josepy as jose
 from josepy.util import ComparableECKey
 from OpenSSL import crypto
 
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
-
 
 def load_vector(*names):
     """Load contents of a test vector."""
     # luckily, resource_string opens file in binary mode
-    vector_ref = importlib_resources.files(__package__).joinpath('testdata', *names)
+    vector_ref = importlib.resources.files(__package__).joinpath('testdata', *names)
     return vector_ref.read_bytes()
 
 
