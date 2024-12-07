@@ -2,7 +2,6 @@
 from typing import List
 from typing import Optional
 from typing import Union
-
 from certbot._internal import main as internal_main
 
 

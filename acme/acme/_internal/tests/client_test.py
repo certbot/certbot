@@ -30,6 +30,7 @@ DIRECTORY_V2 = messages.Directory({
     'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
     'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce',
     'newOrder': 'https://www.letsencrypt-demo.org/acme/new-order',
+    'newAuthz': 'https://www.letsencrypt-demo.org/acme/new-authz',
     'revokeCert': 'https://www.letsencrypt-demo.org/acme/revoke-cert',
     'meta': messages.Directory.Meta(),
 })
@@ -157,6 +158,20 @@ class ClientV2Test(unittest.TestCase):
         with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
             mock_post_as_get.side_effect = (authz_response, authz_response2)
             assert self.client.new_order(CSR_MIXED_PEM) == self.orderr
+
+    def test_new_authz(self):
+        authz_response = copy.deepcopy(self.response)
+        authz_response.status_code = http_client.CREATED
+        authz_response.json.return_value = self.authz.to_json()
+        authz_response.headers['Location'] = self.authzr.uri
+        self.net.post.return_value = authz_response
+
+        # CSR_MIXED_PEM contains two identifiers
+        authzrs = []
+        authzrs.append(self.authzr)
+        authzrs.append(self.authzr)
+        
+        assert self.client.new_authz(CSR_MIXED_PEM) == authzrs
 
     def test_answer_challege(self):
         self.response.links['up'] = {'url': self.challr.authzr_uri}

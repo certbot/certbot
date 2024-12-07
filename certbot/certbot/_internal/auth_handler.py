@@ -58,7 +58,7 @@ class AuthHandler:
                               max_retries: int = 30,
                               max_time_mins: float = 30) -> List[messages.AuthorizationResource]:
         """
-        Retrieve all authorizations, perform all challenges required to validate
+        Retrieve all authorizations from OrderResource, perform all challenges required to validate
         these authorizations, then poll and wait for the authorization to be checked.
         :param acme.messages.OrderResource orderr: must have authorizations filled in
         :param certbot.configuration.NamespaceConfig config: current Certbot configuration
@@ -71,6 +71,26 @@ class AuthHandler:
         :raises .AuthorizationError: If unable to retrieve all authorizations
         """
         authzrs = orderr.authorizations[:]
+        return self.handle_authorizations_from_authzrs(authzrs, config,
+                                                       best_effort, max_retries, max_time_mins)
+
+    def handle_authorizations_from_authzrs(self, authzrs: List[messages.AuthorizationResource],
+                              config: configuration.NamespaceConfig, best_effort: bool = False,
+                              max_retries: int = 30,
+                              max_time_mins: float = 30) -> List[messages.AuthorizationResource]:
+        """
+        Perform all challenges required to validate
+        these authorizations, then poll and wait for the authorization to be checked.
+        :param acme.messages.AuthorizationResource authzr: Authorization resources
+        :param certbot.configuration.NamespaceConfig config: current Certbot configuration
+        :param bool best_effort: if True, not all authorizations need to be validated (eg. renew)
+        :param int max_retries: maximum number of retries to poll authorizations
+        :param float max_time_mins: maximum time (in minutes) to poll authorizations
+        :returns: list of all validated authorizations
+        :rtype: `List` of `AuthorizationResource`
+
+        :raises .AuthorizationError: If unable to retrieve all authorizations
+        """
         if not authzrs:
             raise errors.AuthorizationError('No authorization to handle.')
         if not self.acme:
@@ -110,6 +130,7 @@ class AuthHandler:
             # Keep validated authorizations only. If there is none, no certificate can be issued.
             authzrs_validated = [authzr for authzr in authzrs
                                  if authzr.body.status == messages.STATUS_VALID]
+
             if not authzrs_validated:
                 raise errors.AuthorizationError('All challenges have failed.')
 

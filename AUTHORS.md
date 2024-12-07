@@ -302,3 +302,4 @@ Authors
 * [Zach Shepherd](https://github.com/zjs)
 * [陈三](https://github.com/chenxsan)
 * [Shahar Naveh](https://github.com/ShaharNaveh)
+* [Ali Sayedsalehi](https://github.com/Ali-Sayedsalehi)
