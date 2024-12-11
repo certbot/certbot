@@ -47,5 +47,10 @@ extra_args="${*:2}"
 poetry lock --no-cache ${extra_args:+"$extra_args"} >&2
 trap 'rm poetry.lock' EXIT
 
-# We need to remove local packages from the output.
-poetry export --format constraints.txt --without-hashes | sed '/^acme @/d; /certbot/d;'
+# POETRY_WARNINGS_EXPORT is set to remove warning output about
+# poetry-plugin-export no longer being installed with poetry by default in the
+# future which we can ignore because we explicitly depend on the plugin
+# package.
+#
+# sed is then used to remove local packages from the output.
+POETRY_WARNINGS_EXPORT=false poetry export --format constraints.txt --without-hashes | sed '/^acme @/d; /certbot/d;'
