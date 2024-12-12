@@ -238,8 +238,6 @@ certbot-apache and certbot-nginx
   client code to configure specific web servers
 certbot-dns-*
   client code to configure DNS providers
-windows installer
-  Installs Certbot on Windows and is built using the files in windows-installer/
 
 Plugin-architecture
 -------------------
@@ -587,8 +585,7 @@ Certbot's dependencies
 
 We attempt to pin all of Certbot's dependencies whenever we can for reliability
 and consistency. Some of the places we have Certbot's dependencies pinned
-include our snaps, Docker images, Windows installer, CI, and our development
-environments.
+include our snaps, Docker images, CI, and our development environments.
 
 In most cases, the file where dependency versions are specified is
 ``tools/requirements.txt``. The one exception to this is our "oldest" tests

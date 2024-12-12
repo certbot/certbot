@@ -35,7 +35,6 @@ certbot-apache = {path = "../../../certbot-apache", extras = ["dev"]}
 certbot = {path = "../../../certbot", extras = ["all"]}
 acme = {path = "../../../acme", extras = ["docs", "test"]}
 letstest = {path = "../../../letstest"}
-windows-installer = {path = "../../../windows-installer"}
 
 # Extra dependencies
 # As of writing this, cython is a build dependency of pyyaml. Since there

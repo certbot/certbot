@@ -568,8 +568,6 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
         raise errors.Error(
             f"{len(renew_failures)} renew failure(s), {len(parse_failures)} parse failure(s)")
 
-    # Windows installer integration tests rely on handle_renewal_request behavior here.
-    # If the text below changes, these tests will need to be updated accordingly.
     logger.debug("no renewal failures")
 
     return (renewed_domains, failed_domains)
