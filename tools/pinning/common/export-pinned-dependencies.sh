@@ -37,14 +37,16 @@ if [ -f poetry.lock ]; then
     rm poetry.lock
 fi
 
-echo "If this takes more than a few minutes, you can try running this script again" >&2
-echo "with arguments for poetry like -vvv on the command line to help see where" >&2
-echo "poetry is getting stuck." >&2
+echo "If this takes more than a few minutes, you may want to try clearing poetry's" >&2
+echo "caches with a command like the following and running this script again:" >&2
+echo >&2
+echo "    poetry cache list | xargs -L1 poetry cache clear --all" >&2
+echo >&2
+echo "If that doesn't help, you can also try running this script with extra arguments" >&2
+echo 'for "poetry lock" on the command line such as -vvv to help see where poetry is' >&2
+echo "getting stuck." >&2
 extra_args="${*:2}"
-# If you're running this with different Python versions (say to update both our
-# "current" and "oldest" pinnings), poetry's cache can become corrupted causing
-# poetry to hang indefinitely. --no-cache avoids this.
-poetry lock --no-cache ${extra_args:+"$extra_args"} >&2
+poetry lock ${extra_args:+"$extra_args"} >&2
 trap 'rm poetry.lock' EXIT
 
 # POETRY_WARNINGS_EXPORT is set to remove warning output about
