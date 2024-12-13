@@ -1450,35 +1450,37 @@ class MainTest(test_util.ConfigTestCase):
             stdout.write(message)
 
         try:
-            with mock.patch('certbot._internal.cert_manager.find_duplicative_certs') as mock_fdc:
+            with \
+                mock.patch('certbot._internal.cert_manager.find_duplicative_certs') as mock_fdc, \
+                mock.patch('certbot._internal.main._init_le_client') as mock_init, \
+                mock.patch('certbot._internal.display.obj.get_display') as mock_display, \
+                mock.patch('certbot._internal.main.renewal.crypto_util') as mock_crypto_util, \
+                mock.patch('certbot._internal.eff.handle_subscription'), \
+                mock.patch('certbot._internal.storage.RenewableCert.get_renewalinfo') as mock_renewalinfo:
+
                 mock_fdc.return_value = (mock_lineage, None)
-                with mock.patch('certbot._internal.main._init_le_client') as mock_init:
-                    mock_init.return_value = mock_client
-                    with mock.patch('certbot._internal.display.obj.get_display') as mock_display:
-                        if not quiet_mode:
-                            mock_display().notification.side_effect = write_msg
-                        with mock.patch('certbot._internal.main.renewal.crypto_util') \
-                            as mock_crypto_util:
-                            mock_crypto_util.notAfter.return_value = expiry_date
-                            with mock.patch('certbot._internal.storage.RenewableCert.get_renewalinfo') \
-                                as mock_renewalinfo:
-                                mock_renewalinfo.return_value = False, None, None
-                                with mock.patch('certbot._internal.eff.handle_subscription'):
-                                    if not args:
-                                        args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
-                                    if extra_args:
-                                        args += extra_args
-                                    try:
-                                        ret, stdout, _, _ = self._call(args, stdout)
-                                        if ret:
-                                            print("Returned", ret)
-                                            raise AssertionError(ret)
-                                        assert not error_expected, "renewal should have errored"
-                                    except: # pylint: disable=bare-except
-                                        if not error_expected:
-                                            raise AssertionError(
-                                                "Unexpected renewal error:\n" +
-                                                traceback.format_exc())
+                mock_init.return_value = mock_client
+                if not quiet_mode:
+                    mock_display().notification.side_effect = write_msg
+                mock_crypto_util.notAfter.return_value = expiry_date
+                mock_renewalinfo.return_value = False, None, None
+                # Mocking functions needed
+
+                if not args:
+                    args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
+                if extra_args:
+                    args += extra_args
+                try:
+                    ret, stdout, _, _ = self._call(args, stdout)
+                    if ret:
+                        print("Returned", ret)
+                        raise AssertionError(ret)
+                    assert not error_expected, "renewal should have errored"
+                except: # pylint: disable=bare-except
+                    if not error_expected:
+                        raise AssertionError(
+                            "Unexpected renewal error:\n" +
+                            traceback.format_exc())
 
             if should_renew:
                 if reuse_key and not new_key:

@@ -359,6 +359,8 @@ class AriCertIdentTest(unittest.TestCase):
         from acme.crypto_util import ariCertIdent
         assert ariCertIdent(tcert) == \
             "mvMr2s-tT7YvuypISCoStxtCwSQ.b2K_ExoExTaU4F70HuUTJQ"
+        tcert2 = test_util.load_cert("cert-complexakid.pem")
+        assert ariCertIdent(tcert2) == "aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE"
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

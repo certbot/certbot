@@ -463,7 +463,8 @@ def ariCertIdent(cert: crypto.X509) -> str:
     :param cert: Certificate.
     :type cert: `OpenSSL.crypto.X509`.
 
-    :returns: unique identifier of the cert at cert_path to be used for ari related uses
+    :returns: unique identifier of the cert at cert_path to be used
+      for ari related uses, or '' if no akid info exsit
     :rtype: str
     """
 
@@ -471,10 +472,7 @@ def ariCertIdent(cert: crypto.X509) -> str:
     for i in range(0,cert.get_extension_count()):
         ext = cert.get_extension(i)
         if ext.get_short_name() == b'authorityKeyIdentifier':
-            #by nature of asn1 encoding single member sequence
-            #we can strip first 4 bytes to get akid
-            #seq/len/octetstring/len
-            akid = ext.get_data()[4:]
+            akid = parseakid(ext.get_data())
             break
     if akid is None: # all public trusted certs must have one
         return '' # pragma: no cover
@@ -488,3 +486,46 @@ def ariCertIdent(cert: crypto.X509) -> str:
 
     #build certificate
     return f"{p1}.{p2}"
+
+def parseakid(ext:bytes) -> bytes:
+    """tiny parser subset of asn.1 to extract keyIdentifier from akid extinsion,
+      ignore other parts.
+    :param ext: akid certificate extension.
+    :type cert: bytes.
+
+    :returns: akid embeded in extension
+    :rtype: bytes or None if not right one exsit
+    """
+    offset = 0
+    length = 0
+    if ext[0] != 0x30:
+        #invalid extension, exit
+        raise Exception(offset, ext[0])
+        return ''
+    offset += 1
+    
+    if ext[offset] < 0x80:
+        totallen = ext[offset]
+        offset += 1 #short encoding
+    else: #long encoding
+        llen=ext[offset]
+        offset += 1
+        totallen = int.from_bytes(ext[offset:offset+llen],"big")
+        offset = offset +llen
+    #now header is done once and inside sequence
+    if ext[offset] == 0x80:
+        #this is what we find
+        offset += 1
+        if ext[offset] < 0x80:
+            totallen = ext[offset]
+            offset += 1 #short encoding
+            akid = ext[offset:offset+totallen]
+        else: #long encoding
+            llen=ext[offset]
+            offset += 1
+            totallen = int.from_bytes(ext[offset:offset+llen],"big")
+            offset = offset +llen
+            akid = ext[offset:offset+totallen]
+        return akid
+    else: #akid extionsion doesn't have keyidentifier
+        return None
