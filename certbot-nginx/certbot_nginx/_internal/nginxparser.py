@@ -102,8 +102,7 @@ class RawNginxDumper:
             if isinstance(item[0], list): # block
                 yield "".join(item.pop(0)) + '{'
                 for parameter in item.pop(0):
-                    for line in self.__iter__([parameter]): # negate "for b0 in blocks"
-                        yield line
+                    yield from self.__iter__([parameter]) # negate "for b0 in blocks"
                 yield '}'
             else: # not a block - list of strings
                 semicolon = ";"

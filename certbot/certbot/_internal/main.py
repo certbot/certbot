@@ -280,7 +280,8 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
 
     if config.verb == "run":
         keep_opt = "Attempt to reinstall this existing certificate"
-    elif config.verb == "certonly":
+    else:
+        assert config.verb == "certonly", "Unexpected Certbot subcommand"
         keep_opt = "Keep the existing certificate for now"
     choices = [keep_opt,
                "Renew & replace the certificate (may be subject to CA rate limits)"]
