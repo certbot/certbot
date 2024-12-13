@@ -4,8 +4,10 @@ import socket
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Tuple
+from typing import Union
 
-from requests import Session
+from requests import PreparedRequest, Session
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
@@ -69,7 +71,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
             raise e
 
     data = response.json()
-    connections = ['/snap/{0}/current/lib/python3.8/site-packages/'.format(item['slot']['snap'])
+    connections = ['/snap/{0}/current/lib/python3.12/site-packages/'.format(item['slot']['snap'])
                    for item in data.get('result', {}).get('established', [])
                    if item.get('plug', {}).get('plug') == 'plugin'
                    and item.get('plug-attrs', {}).get('content') == 'certbot-1']
@@ -100,6 +102,21 @@ class _SnapdConnectionPool(HTTPConnectionPool):
 
 
 class _SnapdAdapter(HTTPAdapter):
+    # get_connection is used with versions of requests before 2.32.2 and
+    # get_connection_with_tls_context is used instead in versions after that. as of
+    # writing this, Certbot in EPEL 9 is still seeing updates and they have requests 2.25.1 so to
+    # help out those packagers while ensuring this code works reliably, we offer custom versions of
+    # both functions for now. when certbot does declare a dependency on requests>=2.32.2 in its
+    # setup.py files, get_connection can be deleted
     def get_connection(self, url: str,
                        proxies: Optional[Iterable[str]] = None) -> _SnapdConnectionPool:
+        return _SnapdConnectionPool()
+
+    def get_connection_with_tls_context(self, request: PreparedRequest,
+                                        verify: bool,
+                                        proxies: Optional[Iterable[str]] = None,
+                                        cert: Optional[Union[str, Tuple[str,str]]] = None
+                                        ) -> _SnapdConnectionPool:
+        """Required method for creating a new connection pool. Simply return our
+        shim that forces a UNIX socket connection to snapd."""
         return _SnapdConnectionPool()

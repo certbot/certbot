@@ -166,6 +166,7 @@ Authors
 * [Luca Ebach](https://github.com/lucebac)
 * [Luca Olivetti](https://github.com/olivluca)
 * [Luke Rogers](https://github.com/lukeroge)
+* [Lukhnos Liu](https://github.com/lukhnos)
 * [Maarten](https://github.com/mrtndwrd)
 * [Mads Jensen](https://github.com/atombrella)
 * [Maikel Martens](https://github.com/krukas)

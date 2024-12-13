@@ -328,8 +328,9 @@ class FileDisplay:
         except ValueError:
             return []
 
-        # Remove duplicates
-        indices_int = list(set(indices_int))
+        # Remove duplicates. dict is used instead of set, since dict perserves
+        # insertion order as of Python 3.7
+        indices_int = list(dict.fromkeys(indices_int).keys())
 
         # Check all input is within range
         for index in indices_int:

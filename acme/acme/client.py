@@ -140,8 +140,11 @@ class ClientV2:
             try: #coverage doesn't have server to ask ari
                 order = messages.NewOrder(identifiers=identifiers, replaces = ari_hint)
                 response = self._post(self.directory['newOrder'], order)
-            except messages.Error:
-                #if neworder with ARI failed try without one
+            except messages.Error as e:
+                # if neworder with ARI failed try without one
+                # server may not impliment ari-05 draft for alreadyReplaced error
+                if e.code == 'alreadyReplaced':
+                    logger.info('neworder with ARI failed with error %s, Retrying without ARI', e)
                 order = messages.NewOrder(identifiers=identifiers)
                 response = self._post(self.directory['newOrder'], order)
         else:
