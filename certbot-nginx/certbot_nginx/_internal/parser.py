@@ -2,7 +2,6 @@
 import copy
 import functools
 import glob
-import io
 import logging
 import re
 from typing import Any
@@ -211,7 +210,7 @@ class NginxParser:
             if item in self.parsed and not override:
                 continue
             try:
-                with io.open(item, "r", encoding="utf-8") as _file:
+                with open(item, "r", encoding="utf-8") as _file:
                     parsed = nginxparser.load(_file)
                     self.parsed[item] = parsed
                     trees.append(parsed)
@@ -255,7 +254,7 @@ class NginxParser:
                     continue
                 out = nginxparser.dumps(tree)
                 logger.debug('Writing nginx conf tree to %s:\n%s', filename, out)
-                with io.open(filename, 'w', encoding='utf-8') as _file:
+                with open(filename, 'w', encoding='utf-8') as _file:
                     _file.write(out)
 
             except IOError:
@@ -431,7 +430,7 @@ class NginxParser:
 def _parse_ssl_options(ssl_options: Optional[str]) -> List[UnspacedList]:
     if ssl_options is not None:
         try:
-            with io.open(ssl_options, "r", encoding="utf-8") as _file:
+            with open(ssl_options, "r", encoding="utf-8") as _file:
                 return nginxparser.load(_file)
         except IOError:
             logger.warning("Missing NGINX TLS options file: %s", ssl_options)
