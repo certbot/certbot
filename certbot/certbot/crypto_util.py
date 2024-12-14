@@ -8,6 +8,7 @@ import datetime
 import hashlib
 import logging
 import re
+
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -546,6 +547,16 @@ def _notAfterBefore(cert_path: str,
     timestamp_str = timestamp_bytes.decode('ascii')
     return pyrfc3339.parse(timestamp_str)
 
+def ariCertIdent(cert_path: str) -> str:
+    """Make draft-ietf-acme-ari-03 identifier of a certificate
+    :param str cert_path: path to a cert in PEM format
+
+    :returns: unique identifier of the cert at cert_path to be used for ari related uses
+    :rtype: str
+    """
+    with open(cert_path, "rb") as f:
+        cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
+    return acme_crypto_util.ariCertIdent(cert)
 
 def sha256sum(filename: str) -> str:
     """Compute a sha256sum of a file.

@@ -351,6 +351,16 @@ class DumpPyopensslChainTest(unittest.TestCase):
         length = sum(len(dump_func(OpenSSL.crypto.FILETYPE_PEM, cert)) for cert in loaded)
         assert len(self._call(wrapped)) == length
 
+class AriCertIdentTest(unittest.TestCase):
+    """Test for ariCertIdent"""
+
+    def test_ari_cert_ident(self):
+        tcert = test_util.load_cert("cert-nocn.der")
+        from acme.crypto_util import ariCertIdent
+        assert ariCertIdent(tcert) == \
+            "mvMr2s-tT7YvuypISCoStxtCwSQ.b2K_ExoExTaU4F70HuUTJQ"
+        tcert2 = test_util.load_cert("cert-complexakid.pem")
+        assert ariCertIdent(tcert2) == "aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE"
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
