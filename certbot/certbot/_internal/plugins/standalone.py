@@ -2,7 +2,6 @@
 import collections
 import errno
 import logging
-import socket
 from typing import Any
 from typing import Callable
 from typing import DefaultDict
