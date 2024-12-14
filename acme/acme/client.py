@@ -136,7 +136,7 @@ class ClientV2:
         for ips in ipNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=ips))
-        if hasattr(self.directory,"renewalInfo"): # pragma: no cover
+        if hasattr(self.directory,"renewalInfo") and ari_hint != "": # pragma: no cover
             try: #coverage doesn't have server to ask ari
                 order = messages.NewOrder(identifiers=identifiers, replaces = ari_hint)
                 response = self._post(self.directory['newOrder'], order)

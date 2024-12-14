@@ -17,6 +17,7 @@ from typing import Set
 from typing import Tuple
 from typing import Union
 
+from cryptography import x509
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
@@ -468,13 +469,17 @@ def ariCertIdent(cert: crypto.X509) -> str:
     :rtype: str
     """
 
+    crypto_cert = cert.to_cryptography()
     akid = None
-    for i in range(0,cert.get_extension_count()):
-        ext = cert.get_extension(i)
-        if ext.get_short_name() == b'authorityKeyIdentifier':
-            akid = parseakid(ext.get_data())
-            break
-    if akid is None: # all public trusted certs must have one
+    try:
+        ext = crypto_cert.extensions.get_extension_for_oid(
+            x509.oid.ExtensionOID.AUTHORITY_KEY_IDENTIFIER
+        )
+        akid = ext.value.key_identifier
+        if not akid:
+            raise ValueError("AccountKeyIdentifier does not have a KeyId field")
+    except Exception as exc:
+        #raise  # or CustomException
         return '' # pragma: no cover
     p1 = urlsafe_b64encode(akid).decode('ascii').replace("=", "")
 
