@@ -215,7 +215,7 @@ class NginxParser:
                     parsed = nginxparser.load(_file)
                     self.parsed[item] = parsed
                     trees.append(parsed)
-            except IOError:
+            except OSError:
                 logger.warning("Could not open file: %s", item)
             except UnicodeDecodeError:
                 logger.warning("Could not read file: %s due to invalid "
@@ -258,7 +258,7 @@ class NginxParser:
                 with io.open(filename, 'w', encoding='utf-8') as _file:
                     _file.write(out)
 
-            except IOError:
+            except OSError:
                 logger.error("Could not open file for writing: %s", filename)
 
     def parse_server(self, server: UnspacedList) -> Dict[str, Any]:
@@ -433,7 +433,7 @@ def _parse_ssl_options(ssl_options: Optional[str]) -> List[UnspacedList]:
         try:
             with io.open(ssl_options, "r", encoding="utf-8") as _file:
                 return nginxparser.load(_file)
-        except IOError:
+        except OSError:
             logger.warning("Missing NGINX TLS options file: %s", ssl_options)
         except UnicodeDecodeError:
             logger.warning("Could not read file: %s due to invalid character. "

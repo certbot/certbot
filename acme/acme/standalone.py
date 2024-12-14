@@ -98,7 +98,7 @@ class BaseDualNetworkedServers:
                 logger.debug(
                     "Successfully bound to %s:%s using %s", new_address[0],
                     new_address[1], "IPv6" if ip_version else "IPv4")
-            except socket.error as e:
+            except OSError as e:
                 last_socket_err = e
                 if self.servers:
                     # Already bound using IPv6.
@@ -121,7 +121,7 @@ class BaseDualNetworkedServers:
             if last_socket_err:
                 raise last_socket_err
             else: # pragma: no cover
-                raise socket.error("Could not bind to IPv4 or IPv6.")
+                raise OSError("Could not bind to IPv4 or IPv6.")
 
     def serve_forever(self) -> None:
         """Wraps socketserver.TCPServer.serve_forever"""

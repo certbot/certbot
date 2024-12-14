@@ -131,7 +131,7 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
                 # in the standard library. This is useful when this object is
                 # used by code which expects a standard socket such as
                 # socketserver in the standard library.
-                raise socket.error(error)
+                raise OSError(error)
 
     def accept(self) -> Tuple[FakeConnection, Any]:  # pylint: disable=missing-function-docstring
         sock, addr = self.sock.accept()
@@ -155,7 +155,7 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
             except SSL.Error as error:
                 # _pick_certificate_cb might have returned without
                 # creating SSL context (wrong server name)
-                raise socket.error(error)
+                raise OSError(error)
 
             return ssl_sock, addr
         except:
@@ -203,7 +203,7 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
         )
         socket_tuple: Tuple[bytes, int] = (host, port)
         sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore[arg-type]
-    except socket.error as error:
+    except OSError as error:
         raise errors.Error(error)
 
     with contextlib.closing(sock) as client:

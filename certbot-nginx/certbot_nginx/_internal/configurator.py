@@ -686,7 +686,7 @@ class NginxConfigurator(common.Configurator):
                         else:
                             socket.inet_pton(socket.AF_INET, host)
                         all_names.add(socket.gethostbyaddr(host)[0])
-                    except (socket.error, socket.herror, socket.timeout):
+                    except (OSError, socket.herror, socket.timeout):
                         continue
 
         return util.get_filtered_names(all_names)

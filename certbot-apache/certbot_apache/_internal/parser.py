@@ -153,7 +153,7 @@ class ApacheParser:
         try:
             # This is a noop save
             self.aug.save()
-        except (RuntimeError, IOError):
+        except (OSError, RuntimeError):
             self._log_save_errors(ex_errs)
             # Erase Save Notes
             self.configurator.save_notes = ""
@@ -198,7 +198,7 @@ class ApacheParser:
         ex_errs = self.aug.match("/augeas//error")
         try:
             self.aug.save()
-        except IOError:
+        except OSError:
             self._log_save_errors(ex_errs)
             raise
 

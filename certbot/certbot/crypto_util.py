@@ -307,7 +307,7 @@ def verify_renewable_cert_sig(renewable_cert: interfaces.RenewableCert) -> None:
         assert cert.signature_hash_algorithm # always present for RSA and ECDSA
         verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,
                                 cert.signature_hash_algorithm)
-    except (IOError, ValueError, InvalidSignature) as e:
+    except (OSError, ValueError, InvalidSignature) as e:
         error_str = "verifying the signature of the certificate located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert_path, e)
         logger.exception(error_str)
@@ -354,7 +354,7 @@ def verify_cert_matches_priv_key(cert_path: str, key_path: str) -> None:
         context.use_certificate_file(cert_path)
         context.use_privatekey_file(key_path)
         context.check_privatekey()
-    except (IOError, SSL.Error) as e:
+    except (OSError, SSL.Error) as e:
         error_str = "verifying the certificate located at {0} matches the \
                 private key located at {1} has failed. \
                 Details: {2}".format(cert_path,
@@ -382,7 +382,7 @@ def verify_fullchain(renewable_cert: interfaces.RenewableCert) -> None:
             error_str = "fullchain does not match cert + chain for {0}!"
             error_str = error_str.format(renewable_cert.lineagename)
             raise errors.Error(error_str)
-    except IOError as e:
+    except OSError as e:
         error_str = "reading one of cert, chain, or fullchain has failed: {0}".format(e)
         logger.exception(error_str)
         raise errors.Error(error_str)

@@ -115,10 +115,10 @@ class LockFileTest(test_util.TempDirTestCase):
             mocked_function = 'certbot._internal.lock.msvcrt.locking'
         msg = 'hi there'
         with mock.patch(mocked_function) as mock_lock:
-            mock_lock.side_effect = IOError(msg)
+            mock_lock.side_effect = OSError(msg)
             try:
                 self._call(self.lock_path)
-            except IOError as err:
+            except OSError as err:
                 assert msg in str(err)
             else:  # pragma: no cover
                 self.fail('IOError not raised')

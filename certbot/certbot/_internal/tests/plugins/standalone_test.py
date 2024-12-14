@@ -59,7 +59,7 @@ class ServerManagerTest(unittest.TestCase):
         maybe_another_server = socket.socket()
         try:
             maybe_another_server.bind(("", port))
-        except socket.error:
+        except OSError:
             pass
         with pytest.raises(errors.StandaloneBindError):
             self.mgr.run(port,

@@ -167,7 +167,7 @@ def setup_log_file_handler(config: configuration.NamespaceConfig, logfile: str,
         handler = logging.handlers.RotatingFileHandler(
             log_file_path, maxBytes=2 ** 20,
             backupCount=config.max_log_backups)
-    except IOError as error:
+    except OSError as error:
         raise errors.Error(util.PERM_ERR_FMT.format(error))
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big

@@ -185,7 +185,7 @@ def block_until_ssh_open(ipstring, wait_time=10, timeout=120):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((ipstring, 22))
             reached = True
-        except socket.error as err:
+        except OSError as err:
             time.sleep(wait_time)
             t_elapsed += wait_time
     sock.close()
