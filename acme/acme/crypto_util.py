@@ -16,6 +16,9 @@ from typing import Set
 from typing import Tuple
 from typing import Union
 
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
@@ -222,10 +225,12 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
     return cert
 
 
-def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]]] = None,
-             must_staple: bool = False,
-             ipaddrs: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None
-             ) -> bytes:
+def make_csr(
+    private_key_pem: bytes,
+    domains: Optional[Union[Set[str], List[str]]] = None,
+    must_staple: bool = False,
+    ipaddrs: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None,
+) -> bytes:
     """Generate a CSR containing domains or IPs as subjectAltNames.
 
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
@@ -237,44 +242,50 @@ def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]
     params ordered this way for backward competablity when called by positional argument.
     :returns: buffer PEM-encoded Certificate Signing Request.
     """
-    private_key = crypto.load_privatekey(
-        crypto.FILETYPE_PEM, private_key_pem)
-    csr = crypto.X509Req()
-    sanlist = []
-    # if domain or ip list not supplied make it empty list so it's easier to iterate
+    private_key = serialization.load_pem_private_key(private_key_pem, password=None)
+    # There are a few things that aren't valid for x509 signing. mypy
+    # complains if we don't check.
+    if not isinstance(
+        private_key,
+        (
+            dsa.DSAPrivateKey,
+            rsa.RSAPrivateKey,
+            ec.EllipticCurvePrivateKey,
+            ed25519.Ed25519PrivateKey,
+            ed448.Ed448PrivateKey,
+        ),
+    ):
+        raise ValueError(f"Invalid private key type: {type(private_key)}")
     if domains is None:
         domains = []
     if ipaddrs is None:
         ipaddrs = []
-    if len(domains)+len(ipaddrs) == 0:
-        raise ValueError("At least one of domains or ipaddrs parameter need to be not empty")
-    for address in domains:
-        sanlist.append('DNS:' + address)
-    for ips in ipaddrs:
-        sanlist.append('IP:' + ips.exploded)
-    # make sure its ascii encoded
-    san_string = ', '.join(sanlist).encode('ascii')
-    # for IP san it's actually need to be octet-string,
-    # but somewhere downsteam thankfully handle it for us
-    extensions = [
-        crypto.X509Extension(
-            b'subjectAltName',
+    if len(domains) + len(ipaddrs) == 0:
+        raise ValueError(
+            "At least one of domains or ipaddrs parameter need to be not empty"
+        )
+
+    builder = (
+        x509.CertificateSigningRequestBuilder()
+        .subject_name(x509.Name([]))
+        .add_extension(
+            x509.SubjectAlternativeName(
+                [x509.DNSName(d) for d in domains]
+                + [x509.IPAddress(i) for i in ipaddrs]
+            ),
             critical=False,
-            value=san_string
-        ),
-    ]
+        )
+    )
     if must_staple:
-        extensions.append(crypto.X509Extension(
-            b"1.3.6.1.5.5.7.1.24",
+        builder = builder.add_extension(
+            # "status_request" is the feature commonly known as OCSP
+            # Must-Staple
+            x509.TLSFeature([x509.TLSFeatureType.status_request]),
             critical=False,
-            value=b"DER:30:03:02:01:05"))
-    csr.add_extensions(extensions)
-    csr.set_pubkey(private_key)
-    # RFC 2986 Section 4.1 only defines version 0
-    csr.set_version(0)
-    csr.sign(private_key, 'sha256')
-    return crypto.dump_certificate_request(
-        crypto.FILETYPE_PEM, csr)
+        )
+
+    csr = builder.sign(private_key, hashes.SHA256())
+    return csr.public_bytes(serialization.Encoding.PEM)
 
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req: Union[crypto.X509, crypto.X509Req]
