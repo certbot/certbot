@@ -60,7 +60,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
     _DNS_INSTRUCTIONS = """\
 Please deploy a DNS TXT record under the name:
 
-{domain}.
+{domain}
 
 with the following value:
 
