@@ -21,6 +21,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
@@ -142,7 +143,7 @@ def generate_csr(privkey: util.Key, names: Union[List[str], Set[str]], path: Opt
 def valid_csr(csr: bytes) -> bool:
     """Validate CSR.
 
-    Check if `csr` is a valid CSR for the given domains.
+    Check if `csr` is a valid CSR with a correct self-signed signature.
 
     :param bytes csr: CSR in PEM.
 
@@ -151,10 +152,9 @@ def valid_csr(csr: bytes) -> bool:
 
     """
     try:
-        req = crypto.load_certificate_request(
-            crypto.FILETYPE_PEM, csr)
-        return req.verify(req.get_pubkey())
-    except crypto.Error:
+        req = x509.load_pem_x509_csr(csr)
+        return req.is_signature_valid
+    except (ValueError, TypeError):
         logger.debug("", exc_info=True)
         return False
 
@@ -169,14 +169,15 @@ def csr_matches_pubkey(csr: bytes, privkey: bytes) -> bool:
     :rtype: bool
 
     """
-    req = crypto.load_certificate_request(
-        crypto.FILETYPE_PEM, csr)
-    pkey = crypto.load_privatekey(crypto.FILETYPE_PEM, privkey)
-    try:
-        return req.verify(pkey)
-    except crypto.Error:
-        logger.debug("", exc_info=True)
-        return False
+    req = x509.load_pem_x509_csr(csr)
+    pkey = serialization.load_pem_private_key(privkey, password=None)
+    # This would be better written as `req.public_key() == pkey.public_key()`,
+    # but that requires a newer minimum version of cryptography.
+    return req.is_signature_valid and req.public_key().public_bytes(
+        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
+    ) == pkey.public_key().public_bytes(
+        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
+    )
 
 
 def import_csr_file(csrfile: str, data: bytes) -> Tuple[int, util.CSR, List[str]]:
