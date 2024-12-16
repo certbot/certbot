@@ -12,6 +12,9 @@ import unittest
 import josepy as jose
 import OpenSSL
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa, x25519
 
 from acme import errors
 from acme._internal.tests import test_util
@@ -250,79 +253,74 @@ class MakeCSRTest(unittest.TestCase):
 
     @classmethod
     def _call_with_key(cls, *args, **kwargs):
-        privkey = OpenSSL.crypto.PKey()
-        privkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
-        privkey_pem = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey)
+        privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        privkey_pem = privkey.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
         from acme.crypto_util import make_csr
+
         return make_csr(privkey_pem, *args, **kwargs)
 
     def test_make_csr(self):
         csr_pem = self._call_with_key(["a.example", "b.example"])
-        assert b'--BEGIN CERTIFICATE REQUEST--' in csr_pem
-        assert b'--END CERTIFICATE REQUEST--' in csr_pem
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
-        # have a get_extensions() method, so we skip this test if the method
-        # isn't available.
-        if hasattr(csr, 'get_extensions'):
-            assert len(csr.get_extensions()) == 1
-            assert csr.get_extensions()[0].get_data() == \
-                OpenSSL.crypto.X509Extension(
-                    b'subjectAltName',
-                    critical=False,
-                    value=b'DNS:a.example, DNS:b.example',
-                ).get_data()
+        assert b"--BEGIN CERTIFICATE REQUEST--" in csr_pem
+        assert b"--END CERTIFICATE REQUEST--" in csr_pem
+        csr = x509.load_pem_x509_csr(csr_pem)
+
+        assert len(csr.extensions) == 1
+        assert list(
+            csr.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+        ) == [
+            x509.DNSName("a.example"),
+            x509.DNSName("b.example"),
+        ]
 
     def test_make_csr_ip(self):
-        csr_pem = self._call_with_key(["a.example"], False, [ipaddress.ip_address('127.0.0.1'), ipaddress.ip_address('::1')])
-        assert b'--BEGIN CERTIFICATE REQUEST--' in csr_pem
-        assert b'--END CERTIFICATE REQUEST--' in csr_pem
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
-        # have a get_extensions() method, so we skip this test if the method
-        # isn't available.
-        if hasattr(csr, 'get_extensions'):
-            assert len(csr.get_extensions()) == 1
-            assert csr.get_extensions()[0].get_data() == \
-                             OpenSSL.crypto.X509Extension(
-                                 b'subjectAltName',
-                                 critical=False,
-                                 value=b'DNS:a.example, IP:127.0.0.1, IP:::1',
-                             ).get_data()
-            # for IP san it's actually need to be octet-string,
-            # but somewhere downstream thankfully handle it for us
+        csr_pem = self._call_with_key(
+            ["a.example"],
+            False,
+            [ipaddress.ip_address("127.0.0.1"), ipaddress.ip_address("::1")],
+        )
+        assert b"--BEGIN CERTIFICATE REQUEST--" in csr_pem
+        assert b"--END CERTIFICATE REQUEST--" in csr_pem
+
+        csr = x509.load_pem_x509_csr(csr_pem)
+
+        assert len(csr.extensions) == 1
+        assert list(
+            csr.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+        ) == [
+            x509.DNSName("a.example"),
+            x509.IPAddress(ipaddress.ip_address("127.0.0.1")),
+            x509.IPAddress(ipaddress.ip_address("::1")),
+        ]
 
     def test_make_csr_must_staple(self):
         csr_pem = self._call_with_key(["a.example"], must_staple=True)
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        csr = x509.load_pem_x509_csr(csr_pem)
 
-        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
-        # have a get_extensions() method, so we skip this test if the method
-        # isn't available.
-        if hasattr(csr, 'get_extensions'):
-            assert len(csr.get_extensions()) == 2
-            # NOTE: Ideally we would filter by the TLS Feature OID, but
-            # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
-            # and the shortname field is just "UNDEF"
-            must_staple_exts = [e for e in csr.get_extensions()
-                if e.get_data() == b"0\x03\x02\x01\x05"]
-            assert len(must_staple_exts) == 1, \
-                "Expected exactly one Must Staple extension"
+        assert len(csr.extensions) == 2
+        assert list(csr.extensions.get_extension_for_class(x509.TLSFeature).value) == [
+            x509.TLSFeatureType.status_request
+        ]
 
     def test_make_csr_without_hostname(self):
         with pytest.raises(ValueError):
             self._call_with_key()
 
-    def test_make_csr_correct_version(self):
-        csr_pem = self._call_with_key(["a.example"])
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+    def test_make_csr_invalid_key_type(self):
+        privkey = x25519.X25519PrivateKey.generate()
+        privkey_pem = privkey.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        from acme.crypto_util import make_csr
 
-        assert csr.get_version() == 0, \
-            "Expected CSR version to be v1 (encoded as 0), per RFC 2986, section 4"
+        with pytest.raises(ValueError):
+            make_csr(privkey_pem, ["a.example"])
 
 
 class DumpPyopensslChainTest(unittest.TestCase):
