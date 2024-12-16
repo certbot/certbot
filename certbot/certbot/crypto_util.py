@@ -598,7 +598,7 @@ def cert_and_chain_from_fullchain(fullchain_pem: str) -> Tuple[str, str]:
     certs_normalized: List[str] = []
     for cert_pem in certs:
         cert = x509.load_pem_x509_certificate(cert_pem)
-        cert_pem = cert.public_bytes(serialization.Encoding.PEM)
+        cert_pem = cert.public_bytes(Encoding.PEM)
         certs_normalized.append(cert_pem.decode())
 
     # Since each normalized cert has a newline suffix, no extra newlines are required.
