@@ -593,10 +593,13 @@ def cert_and_chain_from_fullchain(fullchain_pem: str) -> Tuple[str, str]:
         raise errors.Error("failed to parse fullchain into cert and chain: " +
                            "less than 2 certificates in chain")
 
-    # Second pass: for each certificate found, parse it using OpenSSL and re-encode it,
+    # Second pass: for each certificate found, parse it using cryptography and re-encode it,
     # with the effect of normalizing any encoding variations (e.g. CRLF, whitespace).
-    certs_normalized = [crypto.dump_certificate(crypto.FILETYPE_PEM,
-        crypto.load_certificate(crypto.FILETYPE_PEM, cert)).decode() for cert in certs]
+    certs_normalized: List[str] = []
+    for cert_pem in certs:
+        cert = x509.load_pem_x509_certificate(cert_pem)
+        cert_pem = cert.public_bytes(serialization.Encoding.PEM)
+        certs_normalized.append(cert_pem.decode())
 
     # Since each normalized cert has a newline suffix, no extra newlines are required.
     return (certs_normalized[0], "".join(certs_normalized[1:]))
