@@ -124,7 +124,7 @@ class _UnixLockMechanism(_BaseLockMechanism):
         """
         try:
             fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except IOError as err:
+        except OSError as err:
             if err.errno in (errno.EACCES, errno.EAGAIN):
                 logger.debug('A lock on %s is held by another process.', self._path)
                 raise errors.LockError('Another instance of Certbot is already running.')
@@ -210,7 +210,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
             # are only defined on Windows. See
             # https://github.com/python/typeshed/blob/16ae4c61201cd8b96b8b22cdfb2ab9e89ba5bcf2/stdlib/msvcrt.pyi.
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)  # type: ignore # pylint: disable=used-before-assignment
-        except (IOError, OSError) as err:
+        except OSError as err:
             if fd:
                 os.close(fd)
             # Anything except EACCES is unexpected. Raise directly the error in that case.

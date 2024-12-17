@@ -74,7 +74,7 @@ def reconstitute(config: configuration.NamespaceConfig,
     """
     try:
         renewal_candidate = storage.RenewableCert(full_path, config)
-    except (errors.CertStorageError, IOError) as error:
+    except (OSError, errors.CertStorageError) as error:
         logger.error("Renewal configuration file %s is broken.", full_path)
         logger.error("The error was: %s\nSkipping.", str(error))
         logger.debug("Traceback was:\n%s", traceback.format_exc())

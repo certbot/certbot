@@ -295,7 +295,7 @@ class ApacheConfigurator(common.Configurator):
         try:
             with open(ssl_module_location, mode="rb") as f:
                 contents = f.read()
-        except IOError as error:
+        except OSError as error:
             logger.debug(str(error), exc_info=True)
             return None
         return contents
@@ -928,7 +928,7 @@ class ApacheConfigurator(common.Configurator):
             try:
                 socket.inet_aton(addr.get_addr())
                 return socket.gethostbyaddr(addr.get_addr())[0]
-            except (socket.error, socket.herror, socket.timeout):
+            except (OSError, socket.herror, socket.timeout):
                 pass
 
         return ""
@@ -1523,7 +1523,7 @@ class ApacheConfigurator(common.Configurator):
             # activation (it's not included as default)
             if not self.parser.parsed_in_current(ssl_fp):
                 self.parser.parse_file(ssl_fp)
-        except IOError:
+        except OSError:
             logger.critical("Error writing/reading to file in make_vhost_ssl", exc_info=True)
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 

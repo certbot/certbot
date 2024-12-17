@@ -2,7 +2,6 @@
 import collections
 import errno
 import logging
-import socket
 from typing import Any
 from typing import Callable
 from typing import DefaultDict
@@ -78,7 +77,7 @@ class ServerManager:
         try:
             servers = acme_standalone.HTTP01DualNetworkedServers(
                 address, self.http_01_resources)
-        except socket.error as error:
+        except OSError as error:
             raise errors.StandaloneBindError(error, port)
 
         servers.serve_forever()

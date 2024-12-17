@@ -193,7 +193,7 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
 
         from acme.standalone import BaseDualNetworkedServers
 
-        mock_bind.side_effect = socket.error(EADDRINUSE, "Fake addr in use error")
+        mock_bind.side_effect = OSError(EADDRINUSE, "Fake addr in use error")
 
         with pytest.raises(socket.error) as exc_info:
             BaseDualNetworkedServers(
