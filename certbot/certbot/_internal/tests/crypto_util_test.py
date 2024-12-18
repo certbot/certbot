@@ -392,6 +392,20 @@ class GetNamesFromReqTest(unittest.TestCase):
 class CertLoaderTest(unittest.TestCase):
     """Tests for certbot.crypto_util.cryptography_load_certificate"""
 
+    def test_load_valid_cert__legacy(self):
+        from certbot.crypto_util import pyopenssl_load_certificate
+
+        cert, file_type = pyopenssl_load_certificate(CERT)
+        assert cert.digest('sha256') == \
+                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha256')
+
+    def test_load_invalid_cert__legacy(self):
+        from certbot.crypto_util import pyopenssl_load_certificate
+        bad_cert_data = CERT.replace(b"BEGIN CERTIFICATE", b"ASDFASDFASDF!!!")
+        with pytest.raises(errors.Error):
+            pyopenssl_load_certificate(bad_cert_data)
+
+
     def test_load_valid_cert(self):
         from certbot.crypto_util import cryptography_load_certificate
         from certbot.crypto_util import FILETYPE
