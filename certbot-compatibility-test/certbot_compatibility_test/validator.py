@@ -34,7 +34,7 @@ class Validator:
         name = name if isinstance(name, bytes) else name.encode()
 
         try:
-            presented_cert = crypto_util.probe_sni(name, host, port)
+            presented_cert = crypto_util.probe_sni(name, host, port).to_cryptography()
         except acme_errors.Error as error:
             logger.exception(str(error))
             return False
