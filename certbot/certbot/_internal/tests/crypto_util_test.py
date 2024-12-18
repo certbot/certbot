@@ -5,6 +5,9 @@ import sys
 import unittest
 from unittest import mock
 
+import cryptography
+import cryptography.hazmat.primitives.hashes
+
 import OpenSSL
 import pytest
 
@@ -387,20 +390,31 @@ class GetNamesFromReqTest(unittest.TestCase):
 
 
 class CertLoaderTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.pyopenssl_load_certificate"""
+    """Tests for certbot.crypto_util.cryptography_load_certificate"""
 
     def test_load_valid_cert(self):
-        from certbot.crypto_util import pyopenssl_load_certificate
+        from certbot.crypto_util import cryptography_load_certificate
+        from certbot.crypto_util import FILETYPE
 
-        cert, file_type = pyopenssl_load_certificate(CERT)
-        assert cert.digest('sha256') == \
-                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha256')
+        cert, file_type = cryptography_load_certificate(CERT)
+        if file_type == FILETYPE.PEM:
+            assert cert.fingerprint(cryptography.hazmat.primitives.hashes.SHA256()) == \
+            cryptography.x509.load_pem_x509_certificate(CERT).digest(
+                cryptography.hazmat.primitives.hashes.SHA256()
+            )
+        elif file_type == FILETYPE.ANS1:
+            assert cert.fingerprint(cryptography.hazmat.primitives.hashes.SHA256()) == \
+            cryptography.x509.load_der_x509_certificate(CERT).digest(
+                cryptography.hazmat.primitives.hashes.SHA256()
+            )
+        else:
+            raise ValueError("unknown certificate filetype")
 
     def test_load_invalid_cert(self):
-        from certbot.crypto_util import pyopenssl_load_certificate
+        from certbot.crypto_util import cryptography_load_certificate
         bad_cert_data = CERT.replace(b"BEGIN CERTIFICATE", b"ASDFASDFASDF!!!")
         with pytest.raises(errors.Error):
-            pyopenssl_load_certificate(bad_cert_data)
+            cryptography_load_certificate(bad_cert_data)
 
 
 class NotBeforeTest(unittest.TestCase):
