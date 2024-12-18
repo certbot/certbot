@@ -69,7 +69,7 @@ def new_csr_comp(domain_name, pkey_pem=None):
     """Create certificate signing request."""
     if pkey_pem is None:
         # Create private key.
-        pkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        pkey = rsa.generate_private_key(public_exponent=65537, key_size=CERT_PKEY_BITS)
         pkey_pem = pkey.public_bytes(serialization.Encoding.PEM)
 
     csr_pem = crypto_util.make_csr(pkey_pem, [domain_name])
