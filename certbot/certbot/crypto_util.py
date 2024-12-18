@@ -23,6 +23,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
@@ -221,12 +222,12 @@ def make_key(bits: int = 2048, key_type: str = "rsa",
               or of type ec_curve when key_type ecdsa is used.
     :rtype: str
     """
+    key: Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
     if key_type == 'rsa':
         if bits < 2048:
             raise errors.Error("Unsupported RSA key length: {}".format(bits))
 
-        key = crypto.PKey()
-        key.generate_key(crypto.TYPE_RSA, bits)
+        key = rsa.generate_private_key(public_exponent=65537, key_size=bits)
     elif key_type == 'ecdsa':
         if not elliptic_curve:
             raise errors.Error("When key_type == ecdsa, elliptic_curve must be set.")
@@ -236,7 +237,7 @@ def make_key(bits: int = 2048, key_type: str = "rsa",
                 curve = getattr(ec, elliptic_curve.upper())
                 if not curve:
                     raise errors.Error(f"Invalid curve type: {elliptic_curve}")
-                _key = ec.generate_private_key(
+                key = ec.generate_private_key(
                     curve=curve(),
                     backend=default_backend()
                 )
@@ -246,15 +247,13 @@ def make_key(bits: int = 2048, key_type: str = "rsa",
             raise errors.Error("Unsupported elliptic curve: {}".format(elliptic_curve))
         except UnsupportedAlgorithm as e:
             raise e from errors.Error(str(e))
-        _key_pem = _key.private_bytes(
-            encoding=Encoding.PEM,
-            format=PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=NoEncryption()
-        )
-        key = crypto.load_privatekey(crypto.FILETYPE_PEM, _key_pem)
     else:
         raise errors.Error("Invalid key_type specified: {}.  Use [rsa|ecdsa]".format(key_type))
-    return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+    return key.private_bytes(
+        encoding=Encoding.PEM,
+        format=PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=NoEncryption()
+    )
 
 
 def valid_privkey(privkey: Union[str, bytes]) -> bool:
