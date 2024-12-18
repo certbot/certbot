@@ -7,7 +7,7 @@ from unittest import mock
 
 import cryptography
 import cryptography.hazmat.primitives.hashes
-
+import josepy as jose
 import OpenSSL
 import pytest
 
@@ -423,6 +423,11 @@ class CertLoaderTest(unittest.TestCase):
             )
         else:
             raise ValueError("unknown certificate filetype")
+
+        # this is only used in certbo's code for certificate revocation
+        # in this context:
+        cert_loaded = jose.ComparableX509(cert)
+
 
     def test_load_invalid_cert(self):
         from certbot.crypto_util import cryptography_load_certificate
