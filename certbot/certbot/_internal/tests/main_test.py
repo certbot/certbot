@@ -1327,7 +1327,7 @@ class MainTest(test_util.ConfigTestCase):
     def test_certonly_bad_args(self):
         try:
             self._call(['-a', 'bad_auth', 'certonly'])
-            assert False, "Exception should have been raised"
+            pytest.fail("Exception should have been raised")
         except errors.PluginSelectionError as e:
             assert 'The requested bad_auth plugin does not appear' in str(e)
 
@@ -1356,7 +1356,7 @@ class MainTest(test_util.ConfigTestCase):
         except errors.Error as e:
             assert "Please try the certonly" in repr(e)
             return
-        assert False, "Expected supplying --csr to fail with default verb"
+        pytest.fail("Expected supplying --csr to fail with default verb")
 
     def test_csr_with_no_domains(self):
         with pytest.raises(errors.Error):
