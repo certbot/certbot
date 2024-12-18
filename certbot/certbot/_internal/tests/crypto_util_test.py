@@ -413,12 +413,12 @@ class CertLoaderTest(unittest.TestCase):
         cert, file_type = cryptography_load_certificate(CERT)
         if file_type == FILETYPE.PEM:
             assert cert.fingerprint(cryptography.hazmat.primitives.hashes.SHA256()) == \
-            cryptography.x509.load_pem_x509_certificate(CERT).digest(
+            cryptography.x509.load_pem_x509_certificate(CERT).fingerprint(
                 cryptography.hazmat.primitives.hashes.SHA256()
             )
         elif file_type == FILETYPE.ANS1:
             assert cert.fingerprint(cryptography.hazmat.primitives.hashes.SHA256()) == \
-            cryptography.x509.load_der_x509_certificate(CERT).digest(
+            cryptography.x509.load_der_x509_certificate(CERT).fingerprint(
                 cryptography.hazmat.primitives.hashes.SHA256()
             )
         else:
