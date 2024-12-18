@@ -139,11 +139,12 @@ def load_rsa_private_key(*names: str) -> jose.ComparableRSAKey:
              loader_fn(load_vector(*names), password=None, backend=default_backend())))
 
 
-def load_pyopenssl_private_key(*names: str) -> crypto.PKey:
+def load_private_key_pem(*names: str) -> bytes:
     """Load pyOpenSSL private key."""
     loader = _guess_loader(
         names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
-    return crypto.load_privatekey(loader, load_vector(*names))
+    key = crypto.load_privatekey(loader, load_vector(*names))
+    return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 
 
 def make_lineage(config_dir: str, testfile: str, ec: bool = True) -> str:

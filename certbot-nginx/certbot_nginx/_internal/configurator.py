@@ -22,7 +22,7 @@ from typing import Tuple
 from typing import Type
 from typing import Union
 
-import OpenSSL
+from cryptography.hazmat.primitives import serialization
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
@@ -699,11 +699,8 @@ class NginxConfigurator(common.Configurator):
             key_size=2048, key_dir=tmp_dir, keyname="key.pem",
             strict_permissions=self.config.strict_permissions)
         assert le_key.file is not None
-        key = OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
-        cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
-        cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, cert)
+        cert = acme_crypto_util.make_self_signed_cert(le_key.pem, domains=[socket.gethostname()])
+        cert_pem = cert.public_bytes(serialization.Encoding.PEM)
         cert_file, cert_path = util.unique_file(
             os.path.join(tmp_dir, "cert.pem"), mode="wb")
         with cert_file:

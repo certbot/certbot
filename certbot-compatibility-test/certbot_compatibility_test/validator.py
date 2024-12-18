@@ -39,7 +39,7 @@ class Validator:
             logger.exception(str(error))
             return False
 
-        return presented_cert.to_cryptography() == cert
+        return presented_cert == cert
 
     def redirect(self, name: str, port: int = 80,
                  headers: Optional[Mapping[str, str]] = None) -> bool:
