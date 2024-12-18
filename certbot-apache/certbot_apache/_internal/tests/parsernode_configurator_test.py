@@ -1,24 +1,23 @@
 """Tests for ApacheConfigurator for AugeasParserNode classes"""
 import sys
+
 import unittest
 from unittest import mock
+
+from importlib.util import find_spec
 
 import pytest
 
 from certbot_apache._internal.tests import util
 
-try:
-    import apacheconfig
-    HAS_APACHECONFIG = True
-except ImportError:  # pragma: no cover
-    HAS_APACHECONFIG = False
+HAS_APACHECONFIG = find_spec(name="apacheconfig", package="apacheconfig")
 
 
 @unittest.skipIf(not HAS_APACHECONFIG, reason='Tests require apacheconfig dependency')
 class ConfiguratorParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-methods
     """Test AugeasParserNode using available test configurations"""
 
-    def setUp(self):  # pylint: disable=arguments-differ
+    def setUp(self, **kwargs):
         super().setUp()
 
         self.config = util.get_apache_configurator(
