@@ -22,10 +22,13 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
-import warnings
+from typing import Union
 
+from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
@@ -195,8 +198,9 @@ shutil.rmtree(well_known)
         shutil.rmtree(tempdir)
 
 
-def generate_csr(domains: Iterable[str], key_path: str, csr_path: str,
-                 key_type: str = RSA_KEY_TYPE) -> None:
+def generate_csr(
+    domains: Iterable[str], key_path: str, csr_path: str, key_type: str = RSA_KEY_TYPE
+) -> None:
     """
     Generate a private key, and a CSR for the given domains using this key.
     :param domains: the domain names to include in the CSR
@@ -205,35 +209,33 @@ def generate_csr(domains: Iterable[str], key_path: str, csr_path: str,
     :param str csr_path: path to the CSR that will be generated
     :param str key_type: type of the key (misc.RSA_KEY_TYPE or misc.ECDSA_KEY_TYPE)
     """
+    key: Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
     if key_type == RSA_KEY_TYPE:
-        key = crypto.PKey()
-        key.generate_key(crypto.TYPE_RSA, 2048)
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     elif key_type == ECDSA_KEY_TYPE:
-        with warnings.catch_warnings():
-            # Ignore a warning on some old versions of cryptography
-            warnings.simplefilter('ignore', category=PendingDeprecationWarning)
-            _key = ec.generate_private_key(ec.SECP384R1(), default_backend())
-        _bytes = _key.private_bytes(encoding=Encoding.PEM,
-                                    format=PrivateFormat.TraditionalOpenSSL,
-                                    encryption_algorithm=NoEncryption())
-        key = crypto.load_privatekey(crypto.FILETYPE_PEM, _bytes)
+        key = ec.generate_private_key(ec.SECP384R1())
     else:
-        raise ValueError('Invalid key type: {0}'.format(key_type))
+        raise ValueError("Invalid key type: {0}".format(key_type))
 
-    with open(key_path, 'wb') as file_h:
-        file_h.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
+    with open(key_path, "wb") as file_h:
+        file_h.write(
+            key.private_bytes(
+                Encoding.PEM, PrivateFormat.TraditionalOpenSSL, NoEncryption()
+            )
+        )
 
-    req = crypto.X509Req()
-    san = ', '.join('DNS:{0}'.format(item) for item in domains)
-    san_constraint = crypto.X509Extension(b'subjectAltName', False, san.encode('utf-8'))
-    req.add_extensions([san_constraint])
+    csr = (
+        x509.CertificateSigningRequestBuilder()
+        .subject_name(x509.Name([]))
+        .add_extension(
+            x509.SubjectAlternativeName([x509.DNSName(d) for d in domains]),
+            critical=False,
+        )
+        .sign(key, hashes.SHA256())
+    )
 
-    req.set_pubkey(key)
-    req.set_version(0)
-    req.sign(key, 'sha256')
-
-    with open(csr_path, 'wb') as file_h:
-        file_h.write(crypto.dump_certificate_request(crypto.FILETYPE_ASN1, req))
+    with open(csr_path, "wb") as file_h:
+        file_h.write(csr.public_bytes(Encoding.DER))
 
 
 def read_certificate(cert_path: str) -> str:
@@ -243,11 +245,13 @@ def read_certificate(cert_path: str) -> str:
     :param str cert_path: the path to the certificate
     :returns: the TEXT version of the certificate, as it would be displayed by openssl binary
     """
-    with open(cert_path, 'rb') as file:
+    with open(cert_path, "rb") as file:
         data = file.read()
 
-    cert = crypto.load_certificate(crypto.FILETYPE_PEM, data)
-    return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
+    cert = x509.load_pem_x509_certificate(data)
+    return crypto.dump_certificate(
+        crypto.FILETYPE_TEXT, crypto.X509.from_cryptography(cert)
+    ).decode("utf-8")
 
 
 def load_sample_data_path(workspace: str) -> str:
