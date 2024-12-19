@@ -126,7 +126,12 @@ def load_comparable_csr(*names: str) -> jose.ComparableX509:
     return jose.ComparableX509(load_csr(*names))
 
 
-def load_rsa_private_key(*names: str) -> jose.ComparableRSAKey:
+def load_jose_rsa_private_key_pem(*names: str) -> jose.ComparableRSAKey:
+    """Load RSA private key wrapped in jose.ComparableRSAKey"""
+    return jose.ComparableRSAKey(load_rsa_private_key_pem(*names))
+
+
+def load_rsa_private_key_pem(*names: str) -> RSAPrivateKey:
     """Load RSA private key."""
     loader = _guess_loader(names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
     loader_fn: Callable[..., Any]
@@ -134,17 +139,9 @@ def load_rsa_private_key(*names: str) -> jose.ComparableRSAKey:
         loader_fn = serialization.load_pem_private_key
     else:
         loader_fn = serialization.load_der_private_key
-    return jose.ComparableRSAKey(
-        cast(RSAPrivateKey,
-             loader_fn(load_vector(*names), password=None, backend=default_backend())))
-
-
-def load_private_key_pem(*names: str) -> bytes:
-    """Load pyOpenSSL private key."""
-    loader = _guess_loader(
-        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
-    key = crypto.load_privatekey(loader, load_vector(*names))
-    return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+    key = loader_fn(load_vector(*names), password=None, backend=default_backend())
+    assert isinstance(key, RSAPrivateKey)
+    return key
 
 
 def make_lineage(config_dir: str, testfile: str, ec: bool = True) -> str:
