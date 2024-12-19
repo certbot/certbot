@@ -195,16 +195,7 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
     def setUp(self):
         self.cert_count = 5
         self.serial_num: List[int] = []
-        privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        self.privkey = privkey.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption()
-        )
-        self.pubkey = privkey.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
+        self.privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     def test_sn_collisions(self):
         from acme.crypto_util import make_self_signed_cert
@@ -245,23 +236,6 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
         with pytest.raises(AssertionError):
             make_self_signed_cert(self.privkey, ips=[ipaddress.ip_address("1.1.1.1")])
             make_self_signed_cert(self.privkey)
-
-    def test_fail_with_public_key(self):
-        from acme.crypto_util import make_self_signed_cert
-        with pytest.raises(ValueError):
-            make_self_signed_cert(self.pubkey, ips=[ipaddress.ip_address("1.1.1.1")])
-
-    def test_fail_with_wrong_key_type(self):
-        from acme.crypto_util import make_self_signed_cert
-        from cryptography.hazmat.primitives.asymmetric import x25519
-        private_key = x25519.X25519PrivateKey.generate()
-        key = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        )
-        with pytest.raises(ValueError):
-            make_self_signed_cert(key, ips=[ipaddress.ip_address("1.1.1.1")])
 
     def test_extensions(self):
         from acme.crypto_util import make_self_signed_cert

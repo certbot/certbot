@@ -443,9 +443,10 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
             value=x509.UnrecognizedExtension(oid, self.h)
         )
 
-        key_bytes = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+        cryptography_key = key.to_cryptography_key()
+        assert isinstance(cryptography_key, crypto_util.CertificateIssuerPrivateKeyTypes)
         cert = crypto_util.make_self_signed_cert(
-            key_bytes,
+            cryptography_key,
             [domain],
             force_san=True,
             extensions=[acme_extension]

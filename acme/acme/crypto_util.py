@@ -20,7 +20,7 @@ from typing import Union
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448
+from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448, types
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
@@ -377,12 +377,17 @@ def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) 
     return san_ext.value.get_values_for_type(x509.DNSName)
 
 
+<<<<<<< HEAD
 # Helper function that can be mocked in unit tests
 def _now() -> datetime:
     return datetime.now()
 
 
 def make_self_signed_cert(private_key_pem: bytes, domains: Optional[List[str]] = None,
+=======
+def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
+                          domains: Optional[List[str]] = None,
+>>>>>>> 6acdd9f47 (make_self_signed_cert uses cryptography key types)
                           not_before: Optional[int] = None,
                           validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
                           extensions: Optional[List[x509.Extension]] = None,
@@ -390,10 +395,16 @@ def make_self_signed_cert(private_key_pem: bytes, domains: Optional[List[str]] =
                                                    ipaddress.IPv6Address]]] = None
                           ) -> x509.Certificate:
     """Generate new self-signed certificate.
+<<<<<<< HEAD
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
     :type domains: `list` of `str`
     :param int not_before: A POSIX timestamp after which the cert is valid
     :param validity: Time (in seconds) for which the cert will be valid
+=======
+    :type domains: `list` of `str`
+    :param buffer private_key_pem: One of
+        `cryptography.hazmat.primitives.asymmetric.types.CertificateIssuerPrivateKeyTypes`
+>>>>>>> 6acdd9f47 (make_self_signed_cert uses cryptography key types)
     :param bool force_san:
     :param extensions: List of additional extensions to include in the cert.
     :type extensions: `list` of `x509.Extension[x509.ExtensionType]`
@@ -406,7 +417,7 @@ def make_self_signed_cert(private_key_pem: bytes, domains: Optional[List[str]] =
     assert domains or ips, "Must provide one or more hostnames or IPs for the cert."
 
     builder = x509.CertificateBuilder()
-    builder = builder.serial_number(int(binascii.hexlify(os.urandom(16)), 16))
+    builder = builder.serial_number(x509.random_serial_number())
 
     if extensions is not None:
         for ext in extensions:
@@ -449,9 +460,6 @@ def make_self_signed_cert(private_key_pem: bytes, domains: Optional[List[str]] =
         not_valid_after = not_before_timestamp + validity_duration
     builder = builder.not_valid_after(not_valid_after)
 
-    private_key = serialization.load_pem_private_key(private_key_pem, None)
-    if not isinstance(private_key, CertificateIssuerPrivateKeyTypes):
-        raise ValueError(f"Invalid private key type: {type(private_key)}")
     public_key = private_key.public_key()
     builder = builder.public_key(public_key)
     return builder.sign(private_key, hashes.SHA256())
