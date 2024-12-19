@@ -15,6 +15,7 @@ from typing import Optional
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
+from typing import Dict
 
 import configobj
 import josepy as jose
@@ -595,6 +596,12 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
     if installer_err:
         print()
 
+def _report_next_steps_after_pre_authz() -> None:
+    """Reports next steps to the user after a domain pre-authorization has be done
+    """
+    display_util.notify(("If your identifiers are succesfully validated,\n"
+                         "you can run the cert issuance processes (e.g. certonly subcommand)\n"
+                         "to acquire the certificates without any challenges requested."))
 
 def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[str],
                      fullchain_path: Optional[str], key_path: Optional[str] = None) -> None:
@@ -639,6 +646,21 @@ def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[
             nl="\n" if config.verb == "run" else "" # Normalize spacing across verbs
         )
     )
+
+def _report_new_authz(preauthz_results : Dict[str, str]) -> None:
+    """Reports the validation status of domains to the user.
+
+    :param preauthz_results: The results of the pre-authorization process
+    :type preauthz_results: `dict` of `Identifier` and `Status`
+
+    :returns: `None`
+    :rtype: None
+
+    """
+    display_util.notify("\nThe authorization status of your identifiers are:\n")
+
+    for key, value in preauthz_results.items():
+        display_util.notify(f"{key} : {value}\n")
 
 
 def _is_interactive_only_auth(config: configuration.NamespaceConfig) -> bool:
@@ -1598,6 +1620,37 @@ def certonly(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
     _suggest_donation_if_appropriate(config)
     eff.handle_subscription(config, le_client.account)
 
+def pre_auth(config: configuration.NamespaceConfig, plugins: plugins_disco.PluginsRegistry) -> None:
+    """Authenticate & obtain authorization, but do not request a certificate.
+
+    This implements the 'preauth' subcommand.
+
+    :param config: Configuration object
+    :type config: configuration.NamespaceConfig
+
+    :param plugins: List of plugins
+    :type plugins: plugins_disco.PluginsRegistry
+
+    :returns: `None`
+    :rtype: None
+
+    :raises errors.Error: If specified plugin could not be used
+
+    """
+    # SETUP: Select plugins and construct a client instance
+    # installers are used in auth mode to determine domain names
+    installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+    le_client = _init_le_client(config, auth, installer)
+
+    domains, _ = _find_domains_or_certname(config, installer)
+
+    authz_statuses = le_client.obtain_authorizations(domains)
+
+    _report_new_authz(authz_statuses)
+    _report_next_steps_after_pre_authz()
+
+    _suggest_donation_if_appropriate(config)
+    eff.handle_subscription(config, le_client.account)
 
 def renew(config: configuration.NamespaceConfig,
           unused_plugins: plugins_disco.PluginsRegistry) -> None:

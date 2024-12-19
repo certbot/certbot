@@ -364,6 +364,97 @@ class Client:
         :rtype: tuple
 
         """
+        key, csr = self._generate_key_and_csr(domains, old_keypath)
+
+        try:
+            orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
+        except messages.Error as error:
+            # Some domains may be rejected during order creation.
+            # Certbot can retry the operation without the rejected
+            # domains contained within subproblems.
+            if self.config.allow_subset_of_names:
+                successful_domains = self._successful_domains_from_error(error, domains)
+                if successful_domains != domains and len(successful_domains) != 0:
+                    return self._retry_obtain_certificate(domains, successful_domains)
+            raise
+        authzr = orderr.authorizations
+        auth_domains = {a.body.identifier.value for a in authzr}
+        successful_domains = [d for d in domains if d in auth_domains]
+
+        # allow_subset_of_names is currently disabled for wildcard
+        # certificates. The reason for this and checking allow_subset_of_names
+        # below is because successful_domains == domains is never true if
+        # domains contains a wildcard because the ACME spec forbids identifiers
+        # in authzs from containing a wildcard character.
+        if self.config.allow_subset_of_names and successful_domains != domains:
+            return self._retry_obtain_certificate(domains, successful_domains)
+        else:
+            try:
+                cert, chain = self.obtain_certificate_from_csr(csr, orderr)
+                return cert, chain, key, csr
+            except messages.Error as error:
+                # Some domains may be rejected during the very late stage of
+                # order finalization. Certbot can retry the operation without
+                # the rejected domains contained within subproblems.
+                if self.config.allow_subset_of_names:
+                    successful_domains = self._successful_domains_from_error(error, domains)
+                    if successful_domains != domains and len(successful_domains) != 0:
+                        return self._retry_obtain_certificate(domains, successful_domains)
+                raise
+
+    def obtain_authorizations(self, domains : List[str],
+                               old_keypath: Optional[str] = None) -> Dict[str, str]:
+        """Obtains all the authorizations from the ACME server.
+
+        `.register` must be called before `.obtain_authorizations`
+
+        :param list domains: domains to get authorizations for
+
+        :returns: List of identifiers and their corresponding authorization status
+        :rtype: `Dict` of `str` and `str`
+
+        """
+        _, csr = self._generate_key_and_csr(domains, old_keypath)
+
+        try:
+            authzrs = self._get_authorizations_from_csr(csr.data, self.config.allow_subset_of_names)
+        except messages.Error as error:
+            # Some domains may be rejected during authorization.
+            # Certbot can retry the operation without the rejected
+            # domains contained within subproblems.
+            if self.config.allow_subset_of_names:
+                successful_domains = self._successful_domains_from_error(error, domains)
+                if successful_domains != domains and len(successful_domains) != 0:
+                    return self._retry_obtain_authorizations(domains, successful_domains)
+            raise
+        auth_domains = {a.body.identifier.value for a in authzrs}
+        successful_domains = [d for d in domains if d in auth_domains]
+
+        # allow_subset_of_names is currently disabled for wildcard
+        # certificates. The reason for this and checking allow_subset_of_names
+        # below is because successful_domains == domains is never true if
+        # domains contains a wildcard because the ACME spec forbids identifiers
+        # in authzs from containing a wildcard character.
+        if self.config.allow_subset_of_names and successful_domains != domains:
+            return self._retry_obtain_authorizations(domains, successful_domains)
+        else:
+            authz_statuses : Dict[str, str] = {}
+            for authzr in authzrs:
+                authz_statuses[authzr.body.identifier.value] = authzr.body.status.name
+
+            return authz_statuses
+
+    def _generate_key_and_csr(self,
+                              domains : List[str],
+                              old_keypath: Optional[str] = None) -> Tuple[util.Key, util.CSR]:
+        """Generate a CSR and private key to be used for certificate or authorization requests.
+        :param list domains: domains to get a certificate or authorization for
+        :returns:
+            newly generated private key (`.util.Key`), 
+            and DER-encoded Certificate Signing Request (`.util.CSR`).
+        :rtype: `tuple` of `Key` and `CSR`
+        """
+
         # We need to determine the key path, key PEM data, CSR path,
         # and CSR PEM data.  For a dry run, the paths are None because
         # they aren't permanently saved to disk.  For a lineage with
@@ -424,42 +515,31 @@ class Client:
             )
             csr = crypto_util.generate_csr(
                 key, domains, None, self.config.must_staple, self.config.strict_permissions)
+        return key, csr
 
+    def _get_authorizations_from_csr(self, csr_pem: bytes,
+                                    best_effort: bool) -> List[messages.AuthorizationResource]:
+        """Request new authorizations using csr and complete them.
+        :param bytes csr_pem: A CSR in PEM format.
+        :param bool best_effort: True if failing to complete all
+            authorizations should not raise an exception
+        :returns: completed authorization resources
+        :rtype: `List` of `AuthorizationResource`
+        """
+        if not self.acme:
+            raise errors.Error("ACME client is not set.")
         try:
-            orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
-        except messages.Error as error:
-            # Some domains may be rejected during order creation.
-            # Certbot can retry the operation without the rejected
-            # domains contained within subproblems.
-            if self.config.allow_subset_of_names:
-                successful_domains = self._successful_domains_from_error(error, domains)
-                if successful_domains != domains and len(successful_domains) != 0:
-                    return self._retry_obtain_certificate(domains, successful_domains)
-            raise
-        authzr = orderr.authorizations
-        auth_domains = {a.body.identifier.value for a in authzr}
-        successful_domains = [d for d in domains if d in auth_domains]
+            authzrs = self.acme.new_authz(csr_pem)
+        except acme_errors.WildcardUnsupportedError:
+            raise errors.Error("The currently selected ACME CA endpoint does"
+                                " not support issuing wildcard certificates.")
 
-        # allow_subset_of_names is currently disabled for wildcard
-        # certificates. The reason for this and checking allow_subset_of_names
-        # below is because successful_domains == domains is never true if
-        # domains contains a wildcard because the ACME spec forbids identifiers
-        # in authzs from containing a wildcard character.
-        if self.config.allow_subset_of_names and successful_domains != domains:
-            return self._retry_obtain_certificate(domains, successful_domains)
-        else:
-            try:
-                cert, chain = self.obtain_certificate_from_csr(csr, orderr)
-                return cert, chain, key, csr
-            except messages.Error as error:
-                # Some domains may be rejected during the very late stage of
-                # order finalization. Certbot can retry the operation without
-                # the rejected domains contained within subproblems.
-                if self.config.allow_subset_of_names:
-                    successful_domains = self._successful_domains_from_error(error, domains)
-                    if successful_domains != domains and len(successful_domains) != 0:
-                        return self._retry_obtain_certificate(domains, successful_domains)
-                raise
+        if not self.auth_handler:
+            raise errors.Error("No authorization handler has been set.")
+
+        handled_authzrs = self.auth_handler.handle_authorizations_from_authzrs(
+            authzrs, self.config, best_effort)
+        return handled_authzrs
 
     def _get_order_and_authorizations(self, csr_pem: bytes,
                                       best_effort: bool) -> messages.OrderResource:
@@ -468,7 +548,6 @@ class Client:
         :param bytes csr_pem: A CSR in PEM format.
         :param bool best_effort: True if failing to complete all
             authorizations should not raise an exception
-
         :returns: order resource containing its completed authorizations
         :rtype: acme.messages.OrderResource
 
@@ -547,6 +626,14 @@ class Client:
         display_util.notify("Unable to obtain a certificate with every requested "
             f"domain. Retrying without: {domains_list}")
         return self.obtain_certificate(successful_domains)
+
+    def _retry_obtain_authorizations(self, domains: List[str], successful_domains: List[str]
+                                ) -> Dict[str, str]:
+        failed_domains = [d for d in domains if d not in successful_domains]
+        domains_list = ", ".join(failed_domains)
+        display_util.notify("Unable to obtain an authorization with every requested "
+            f"domain. Retrying without: {domains_list}")
+        return self.obtain_authorizations(successful_domains)
 
     def _choose_lineagename(self, domains: List[str], certname: Optional[str]) -> str:
         """Chooses a name for the new lineage.
