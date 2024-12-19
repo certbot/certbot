@@ -11,14 +11,15 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 import josepy as jose
 from josepy import ES256
 from josepy import ES384
 from josepy import ES512
 from josepy import RS256
-import OpenSSL
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -804,12 +805,9 @@ def validate_key_csr(privkey: util.Key, csr: Optional[util.CSR] = None) -> None:
 
     if csr:
         if csr.form == "der":
-            csr_obj = OpenSSL.crypto.load_certificate_request(
-                OpenSSL.crypto.FILETYPE_ASN1, csr.data)
-            cert_buffer = OpenSSL.crypto.dump_certificate_request(
-                OpenSSL.crypto.FILETYPE_PEM, csr_obj
-            )
-            csr = util.CSR(csr.file, cert_buffer, "pem")
+            csr_obj = x509.load_der_x509_csr(csr.data)
+            csr_pem = csr_obj.public_bytes(serialization.Encoding.PEM)
+            csr = util.CSR(csr.file, csr_pem, "pem")
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):
