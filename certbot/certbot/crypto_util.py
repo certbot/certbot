@@ -9,7 +9,7 @@ import hashlib
 import logging
 import re
 import typing
-from typing import Callable
+import warnings
 from typing import List
 from typing import Optional
 from typing import Set
@@ -36,7 +36,6 @@ from cryptography.hazmat.primitives.serialization import PrivateFormat
 import josepy
 from OpenSSL import crypto
 from OpenSSL import SSL
-import pyrfc3339
 
 from acme import crypto_util as acme_crypto_util
 from certbot import errors
@@ -531,7 +530,14 @@ def notBefore(cert_path: str) -> datetime.datetime:
     :rtype: :class:`datetime.datetime`
 
     """
-    return _notAfterBefore(cert_path, crypto.X509.get_notBefore)
+    with open(cert_path, "rb") as f:
+        cert = x509.load_pem_x509_certificate(f.read())
+    # TODO: This should be `not_valid_before_utc` once we raise the minimum
+    # cryptography version.
+    # https://github.com/certbot/certbot/issues/10105
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='Properties that return.*datetime object')
+        return cert.not_valid_before.replace(tzinfo=datetime.timezone.utc)
 
 
 def notAfter(cert_path: str) -> datetime.datetime:
@@ -543,35 +549,14 @@ def notAfter(cert_path: str) -> datetime.datetime:
     :rtype: :class:`datetime.datetime`
 
     """
-    return _notAfterBefore(cert_path, crypto.X509.get_notAfter)
-
-
-def _notAfterBefore(cert_path: str,
-                    method: Callable[[crypto.X509], Optional[bytes]]) -> datetime.datetime:
-    """Internal helper function for finding notbefore/notafter.
-
-    :param str cert_path: path to a cert in PEM format
-    :param function method: one of ``crypto.X509.get_notBefore``
-        or ``crypto.X509.get_notAfter``
-
-    :returns: the notBefore or notAfter value from the cert at cert_path
-    :rtype: :class:`datetime.datetime`
-
-    """
-    # pylint: disable=redefined-outer-name
     with open(cert_path, "rb") as f:
-        x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
-    # pyopenssl always returns bytes
-    timestamp = method(x509)
-    if not timestamp:
-        raise errors.Error("Error while invoking timestamp method, None has been returned.")
-    reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
-                             timestamp[6:8], b"T", timestamp[8:10], b":",
-                             timestamp[10:12], b":", timestamp[12:]]
-    # pyrfc3339 always uses the type `str`
-    timestamp_bytes = b"".join(reformatted_timestamp)
-    timestamp_str = timestamp_bytes.decode('ascii')
-    return pyrfc3339.parse(timestamp_str)
+        cert = x509.load_pem_x509_certificate(f.read())
+    # TODO: This should be `not_valid_after_utc` once we raise the minimum
+    # cryptography version.
+    # https://github.com/certbot/certbot/issues/10105
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message='Properties that return.*datetime object')
+        return cert.not_valid_after.replace(tzinfo=datetime.timezone.utc)
 
 
 def sha256sum(filename: str) -> str:
