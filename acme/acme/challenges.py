@@ -444,7 +444,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         )
 
         cryptography_key = key.to_cryptography_key()
-        assert isinstance(cryptography_key, crypto_util.CertificateIssuerPrivateKeyTypes)
+        assert isinstance(cryptography_key, crypto_util.CertificateIssuerPrivateKeyTypesTpl)
         cert = crypto_util.make_self_signed_cert(
             cryptography_key,
             [domain],

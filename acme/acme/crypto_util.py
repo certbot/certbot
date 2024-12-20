@@ -20,7 +20,7 @@ from typing import Union
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448, types
+from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
@@ -242,13 +242,27 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
     return cert
 
 
-# Annoyingly, despite cryptography having an equivalent Union[] type containing
-# these in cryptography.hazmat.primitives.asymmetric.types, we can't use it in
-# an isinstance expression without causing false mypy errors. So recreate the
-# type collection as a tuple here.
+# Annoyingly, we can't directly use cryptography's equivalent Union[] type for
+# our type signatures since they're only public API in 40.0.x+, which is too new
+# for some Certbot # distribution channels. Once we bump our oldest cryptography
+# version past 40.0.x, usage of this type can be replaced with:
+# cryptography.hazmat.primitives.asymmetric.types.CertificateIssuerPrivateKeyTypes
+CertificateIssuerPrivateKeyTypes = Union[
+    dsa.DSAPrivateKey,
+    rsa.RSAPrivateKey,
+    ec.EllipticCurvePrivateKey,
+    ed25519.Ed25519PrivateKey,
+    ed448.Ed448PrivateKey,
+]
+# Even *more* annoyingly, due to a mypy bug, we can't use Union[] types in
+# isinstance expressions without causing false mypy errors. So we have to
+# recreate the type collection as a tuple here. And no, typing.get_args doesn't
+# work due to another mypy bug.
 #
-# mypy issue: https://github.com/python/mypy/issues/17680
-CertificateIssuerPrivateKeyTypes = (
+# mypy issues:
+#  * https://github.com/python/mypy/issues/17680
+#  * https://github.com/python/mypy/issues/15106
+CertificateIssuerPrivateKeyTypesTpl = (
     dsa.DSAPrivateKey,
     rsa.RSAPrivateKey,
     ec.EllipticCurvePrivateKey,
@@ -279,7 +293,7 @@ def make_csr(
 
     """
     private_key = serialization.load_pem_private_key(private_key_pem, password=None)
-    if not isinstance(private_key, CertificateIssuerPrivateKeyTypes):
+    if not isinstance(private_key, CertificateIssuerPrivateKeyTypesTpl):
         raise ValueError(f"Invalid private key type: {type(private_key)}")
     if domains is None:
         domains = []
@@ -377,17 +391,13 @@ def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) 
     return san_ext.value.get_values_for_type(x509.DNSName)
 
 
-<<<<<<< HEAD
 # Helper function that can be mocked in unit tests
 def _now() -> datetime:
     return datetime.now()
 
 
-def make_self_signed_cert(private_key_pem: bytes, domains: Optional[List[str]] = None,
-=======
-def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
+def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
                           domains: Optional[List[str]] = None,
->>>>>>> 6acdd9f47 (make_self_signed_cert uses cryptography key types)
                           not_before: Optional[int] = None,
                           validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
                           extensions: Optional[List[x509.Extension]] = None,
@@ -395,16 +405,11 @@ def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
                                                    ipaddress.IPv6Address]]] = None
                           ) -> x509.Certificate:
     """Generate new self-signed certificate.
-<<<<<<< HEAD
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
     :type domains: `list` of `str`
     :param int not_before: A POSIX timestamp after which the cert is valid
     :param validity: Time (in seconds) for which the cert will be valid
-=======
-    :type domains: `list` of `str`
-    :param buffer private_key_pem: One of
-        `cryptography.hazmat.primitives.asymmetric.types.CertificateIssuerPrivateKeyTypes`
->>>>>>> 6acdd9f47 (make_self_signed_cert uses cryptography key types)
+    :param buffer private_key_pem: One of `CertificateIssuerPrivateKeyTypes`
     :param bool force_san:
     :param extensions: List of additional extensions to include in the cert.
     :type extensions: `list` of `x509.Extension[x509.ExtensionType]`
