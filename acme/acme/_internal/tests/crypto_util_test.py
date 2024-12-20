@@ -8,6 +8,7 @@ import threading
 import time
 from typing import List
 import unittest
+import warnings
 
 import josepy as jose
 import OpenSSL
@@ -222,6 +223,48 @@ class PyOpenSSLCertOrReqSANIPTest(unittest.TestCase):
                          ['0:0:0:0:0:0:0:1', 'A3BE:32F3:206E:C75D:956:CEE:9858:5EC5']
 
 
+class GenMakeSelfSignedCertTest(unittest.TestCase):
+    """Test for make_self_signed_cert."""
+
+    def setUp(self):
+        self.cert_count = 5
+        self.serial_num: List[int] = []
+        self.privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    def test_sn_collisions(self):
+        from acme.crypto_util import make_self_signed_cert
+        for _ in range(self.cert_count):
+            cert = make_self_signed_cert(self.privkey, ['dummy'], force_san=True,
+                               ips=[ipaddress.ip_address("10.10.10.10")])
+            self.serial_num.append(cert.serial_number)
+        assert len(set(self.serial_num)) >= self.cert_count
+
+    def test_no_ips(self):
+        from acme.crypto_util import make_self_signed_cert
+        cert = make_self_signed_cert(self.privkey, ['dummy'])
+
+    def test_no_name(self):
+        from acme.crypto_util import make_self_signed_cert
+        with pytest.raises(AssertionError):
+            make_self_signed_cert(self.privkey, ips=[ipaddress.ip_address("1.1.1.1")])
+            make_self_signed_cert(self.privkey)
+
+    def test_extensions(self):
+        from acme.crypto_util import make_self_signed_cert
+        extension_type = x509.TLSFeature([x509.TLSFeatureType.status_request])
+        extension = x509.Extension(
+            x509.TLSFeature.oid,
+            False,
+            extension_type
+        )
+        cert = make_self_signed_cert(
+            self.privkey,
+            ips=[ipaddress.ip_address("1.1.1.1")],
+            extensions=[extension]
+        )
+        self.assertIn(extension, cert.extensions)
+
+
 class GenSsCertTest(unittest.TestCase):
     """Test for gen_ss_cert (generation of self-signed cert)."""
 
@@ -234,18 +277,27 @@ class GenSsCertTest(unittest.TestCase):
 
     def test_sn_collisions(self):
         from acme.crypto_util import gen_ss_cert
-        for _ in range(self.cert_count):
-            cert = gen_ss_cert(self.key, ['dummy'], force_san=True,
-                               ips=[ipaddress.ip_address("10.10.10.10")])
-            self.serial_num.append(cert.get_serial_number())
-        assert len(set(self.serial_num)) >= self.cert_count
-
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            for _ in range(self.cert_count):
+                cert = gen_ss_cert(self.key, ['dummy'], force_san=True,
+                                ips=[ipaddress.ip_address("10.10.10.10")])
+                self.serial_num.append(cert.get_serial_number())
+            assert len(set(self.serial_num)) >= self.cert_count
 
     def test_no_name(self):
         from acme.crypto_util import gen_ss_cert
-        with pytest.raises(AssertionError):
-            gen_ss_cert(self.key, ips=[ipaddress.ip_address("1.1.1.1")])
-            gen_ss_cert(self.key)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            with pytest.raises(AssertionError):
+                gen_ss_cert(self.key, ips=[ipaddress.ip_address("1.1.1.1")])
+                gen_ss_cert(self.key)
+
+    def test_no_ips(self):
+        from acme.crypto_util import gen_ss_cert
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            gen_ss_cert(self.key, ['dummy'])
 
 
 class MakeCSRTest(unittest.TestCase):

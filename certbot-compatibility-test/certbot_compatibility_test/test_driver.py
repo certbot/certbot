@@ -18,7 +18,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 
-from OpenSSL import crypto
+from cryptography.hazmat.primitives import serialization
 from urllib3.util import connection
 
 from acme import challenges
@@ -147,10 +147,10 @@ def test_installer(args: argparse.Namespace, plugin: common.Proxy, config: str,
 
 def test_deploy_cert(plugin: common.Proxy, temp_dir: str, domains: List[str]) -> bool:
     """Tests deploy_cert returning True if the tests are successful"""
-    cert = crypto_util.gen_ss_cert(util.KEY, domains)
+    cert = crypto_util.make_self_signed_cert(util.KEY, domains)
     cert_path = os.path.join(temp_dir, "cert.pem")
     with open(cert_path, "wb") as f:
-        f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
 
     for domain in domains:
         try:
