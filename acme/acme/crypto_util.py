@@ -1,6 +1,7 @@
 """Crypto utilities."""
 import binascii
 import contextlib
+import enum
 import ipaddress
 import logging
 import os
@@ -35,6 +36,24 @@ logger = logging.getLogger(__name__)
 # should be changed to use "set_options" to disable SSLv2 and SSLv3,
 # in case it's used for things other than probing/serving!
 _DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD
+
+
+class Format(enum.IntEnum):
+    """File format to be used when parsing or serializing X.509 structures.
+
+    Backwards compatible with the `FILETYPE_ASN1` and `FILETYPE_PEM` constants
+    from pyOpenSSL.
+    """
+    DER = crypto.FILETYPE_ASN1
+    PEM = crypto.FILETYPE_PEM
+
+    def to_cryptography_encoding(self) -> serialization.Encoding:
+        """Converts the Format to the corresponding cryptography `Encoding`.
+        """
+        if self == Format.DER:
+            return serialization.Encoding.DER
+        else:
+            return serialization.Encoding.PEM
 
 
 class _DefaultCertSelection:
@@ -444,7 +463,7 @@ def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
 
 
 def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X509]],
-                         filetype: int = crypto.FILETYPE_PEM) -> bytes:
+                         filetype: Union[Format, int] = Format.PEM) -> bytes:
     """Dump certificate chain into a bundle.
 
     :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
@@ -457,12 +476,14 @@ def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X50
     # XXX: returns empty string when no chain is available, which
     # shuts up RenewableCert, but might not be the best solution...
 
+    filetype = Format(filetype)
     def _dump_cert(cert: Union[jose.ComparableX509, crypto.X509]) -> bytes:
         if isinstance(cert, jose.ComparableX509):
             if isinstance(cert.wrapped, crypto.X509Req):
                 raise errors.Error("Unexpected CSR provided.")  # pragma: no cover
             cert = cert.wrapped
-        return crypto.dump_certificate(filetype, cert)
+
+        return cert.to_cryptography().public_bytes(filetype.to_cryptography_encoding())
 
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
