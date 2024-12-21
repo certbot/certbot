@@ -482,8 +482,10 @@ def get_names_from_req(csr: bytes, typ: int = crypto.FILETYPE_PEM) -> List[str]:
     return _get_names_from_cert_or_req(csr, crypto.load_certificate_request, typ)
 
 
-def dump_pyopenssl_chain(chain: Union[List[crypto.X509], List[josepy.ComparableX509]],
-                         filetype: int = crypto.FILETYPE_PEM) -> bytes:
+def dump_pyopenssl_chain(
+    chain: Union[List[crypto.X509], List[josepy.ComparableX509]],
+    filetype: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM,
+) -> bytes:
     """Dump certificate chain into a bundle.
 
     :param list chain: List of `crypto.X509` (or wrapped in

@@ -20,6 +20,13 @@ from acme import errors
 from acme._internal.tests import test_util
 
 
+class FormatTest(unittest.TestCase):
+    def test_to_cryptography_encoding(self):
+        from acme.crypto_util import Format
+        assert Format.DER.to_cryptography_encoding() == serialization.Encoding.DER
+        assert Format.PEM.to_cryptography_encoding() == serialization.Encoding.PEM
+
+
 class SSLSocketAndProbeSNITest(unittest.TestCase):
     """Tests for acme.crypto_util.SSLSocket/probe_sni."""
 
