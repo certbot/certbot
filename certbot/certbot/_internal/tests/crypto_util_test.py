@@ -360,8 +360,8 @@ class GetNamesFromCertTest(unittest.TestCase):
             self._call(test_util.load_vector('cert-5sans_512.pem'))
 
     def test_parse_non_cert(self):
-        with pytest.raises(OpenSSL.crypto.Error):
-            self._call("hello there")
+        with pytest.raises(ValueError):
+            self._call(b"hello there")
 
 
 class GetNamesFromReqTest(unittest.TestCase):
