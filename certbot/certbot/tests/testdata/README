@@ -15,3 +15,24 @@ and for the CSR PEM (Certificate Signing Request):
 and for the certificate:
 
   openssl req -new -out cert_X.pem -key rsaX_key.pem -subj '/CN=example.com' -x509 [-outform DER > cert_X.der]
+
+`csr-mixed.pem` was generated with pyca/cryptography using the following snippet:
+
+	from cryptography import x509
+	from cryptography.hazmat.primitives import hashes, serialization
+	k = serialization.load_pem_private_key(
+	    open("./acme/acme/_internal/tests/testdata/rsa2048_key.pem", "rb").read(), None
+	)
+	csr = (
+	    x509.CertificateSigningRequestBuilder().add_extension(
+	        x509.SubjectAlternativeName([x509.DNSName('a.exemple.com'), x509.IPAddress(ipaddress.ipaddr('192.0.2.111'))]),
+	        critical=False
+	    ).subject_name(
+	        x509.Name([])
+	    ).sign(
+	        k, hashes.SHA256()
+	    )
+	)
+	open("./acme/acme/_internal/tests/testdata/csr-mixed.pem", "wb").write(
+	    csr.public_bytes(serialization.Encoding.PEM)
+	)

@@ -2,8 +2,10 @@
 import sys
 from unittest import mock
 
-import OpenSSL
 import pytest
+
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
 
 from acme import challenges
 from acme import messages
@@ -545,12 +547,10 @@ class NginxConfiguratorTest(util.NginxTest):
         cert, key = self.config._get_snakeoil_paths()
         assert os.path.exists(cert)
         assert os.path.exists(key)
-        with open(cert) as cert_file:
-            OpenSSL.crypto.load_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, cert_file.read())
-        with open(key) as key_file:
-            OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, key_file.read())
+        with open(cert, "rb") as cert_file:
+            x509.load_pem_x509_certificate(cert_file.read())
+        with open(key, "rb") as key_file:
+            serialization.load_pem_private_key(key_file.read(), password=None)
 
     def test_redirect_enhance(self):
         # Test that we successfully add a redirect when there is
