@@ -89,7 +89,7 @@ class _TokenChallenge(Challenge):
     :ivar bytes token:
 
     """
-    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
+    TOKEN_SIZE = 128 // 8  # Based on the entropy value from the spec
     """Minimum size of the :attr:`token` in bytes."""
 
     # TODO: acme-spec doesn't specify token as base64-encoded value
