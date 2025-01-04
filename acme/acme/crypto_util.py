@@ -336,13 +336,10 @@ def get_names_from_subject_and_extensions(
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req: Union[crypto.X509, crypto.X509Req]
                                      ) -> List[str]:
-    # unlike its name this only outputs DNS names, other type of idents will ignored
-    common_name = loaded_cert_or_req.get_subject().CN
-    sans = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
-
-    if common_name is None:
-        return sans
-    return [common_name] + [d for d in sans if d != common_name]
+    cert_or_req = loaded_cert_or_req.to_cryptography()
+    return get_names_from_subject_and_extensions(
+        cert_or_req.subject, cert_or_req.extensions
+    )
 
 
 def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) -> List[str]:
@@ -370,26 +367,6 @@ def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) 
 
     return [part.split(part_separator)[1]
             for part in sans_parts if part.startswith(prefix)]
-
-
-def _pyopenssl_cert_or_req_san_ip(cert_or_req: Union[crypto.X509, crypto.X509Req]) -> List[str]:
-    """Get Subject Alternative Names IPs from certificate or CSR using pyOpenSSL.
-
-    :param cert_or_req: Certificate or CSR.
-    :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
-
-    :returns: A list of Subject Alternative Names that are IP Addresses.
-    :rtype: `list` of `str`. note that this returns as string, not IPaddress object
-
-    """
-
-    # constants based on PyOpenSSL certificate/CSR text dump
-    part_separator = ":"
-    prefix = "IP Address" + part_separator
-
-    sans_parts = _pyopenssl_extract_san_list_raw(cert_or_req)
-
-    return [part[len(prefix):] for part in sans_parts if part.startswith(prefix)]
 
 
 def _pyopenssl_extract_san_list_raw(cert_or_req: Union[crypto.X509, crypto.X509Req]) -> List[str]:

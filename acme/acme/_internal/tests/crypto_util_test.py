@@ -187,48 +187,6 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
                          ['chicago-cubs.venafi.example', 'cubs.venafi.example']
 
 
-class PyOpenSSLCertOrReqSANIPTest(unittest.TestCase):
-    """Test for acme.crypto_util._pyopenssl_cert_or_req_san_ip."""
-
-    @classmethod
-    def _call(cls, loader, name):
-        # pylint: disable=protected-access
-        from acme.crypto_util import _pyopenssl_cert_or_req_san_ip
-        return _pyopenssl_cert_or_req_san_ip(loader(name))
-
-    def _call_cert(self, name):
-        return self._call(test_util.load_cert, name)
-
-    def _call_csr(self, name):
-        return self._call(test_util.load_csr, name)
-
-    def test_cert_no_sans(self):
-        assert self._call_cert('cert.pem') == []
-
-    def test_csr_no_sans(self):
-        assert self._call_csr('csr-nosans.pem') == []
-
-    def test_cert_domain_sans(self):
-        assert self._call_cert('cert-san.pem') == []
-
-    def test_csr_domain_sans(self):
-        assert self._call_csr('csr-san.pem') == []
-
-    def test_cert_ip_two_sans(self):
-        assert self._call_cert('cert-ipsans.pem') == ['192.0.2.145', '203.0.113.1']
-
-    def test_csr_ip_two_sans(self):
-        assert self._call_csr('csr-ipsans.pem') == ['192.0.2.145', '203.0.113.1']
-
-    def test_csr_ipv6_sans(self):
-        assert self._call_csr('csr-ipv6sans.pem') == \
-                         ['0:0:0:0:0:0:0:1', 'A3BE:32F3:206E:C75D:956:CEE:9858:5EC5']
-
-    def test_cert_ipv6_sans(self):
-        assert self._call_cert('cert-ipv6sans.pem') == \
-                         ['0:0:0:0:0:0:0:1', 'A3BE:32F3:206E:C75D:956:CEE:9858:5EC5']
-
-
 class GenSsCertTest(unittest.TestCase):
     """Test for gen_ss_cert (generation of self-signed cert)."""
 
