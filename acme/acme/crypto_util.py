@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import socket
+import typing
 from typing import Any
 from typing import Callable
 from typing import List
@@ -305,6 +306,32 @@ def make_csr(
 
     csr = builder.sign(private_key, hashes.SHA256())
     return csr.public_bytes(serialization.Encoding.PEM)
+
+
+def get_names_from_subject_and_extensions(
+    subject: x509.Name, exts: x509.Extensions
+) -> List[str]:
+    """Gets all DNS SAN names as well as the first Common Name from subject.
+    """
+    # We know these are always `str` because `bytes` is only possible for
+    # other OIDs.
+    cns = [
+        typing.cast(str, c.value)
+        for c in subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+    ]
+    try:
+        san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
+    except x509.ExtensionNotFound:
+        dns_names = []
+    else:
+        dns_names = san_ext.value.get_values_for_type(x509.DNSName)
+
+    if not cns:
+        return dns_names
+    else:
+        # We only include the first CN, if there are multiple. This matches
+        # the behavior of the previously implementation using pyOpenSSL.
+        return [cns[0]] + [d for d in dns_names if d != cns[0]]
 
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req: Union[crypto.X509, crypto.X509Req]

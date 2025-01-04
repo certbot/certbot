@@ -8,7 +8,6 @@ import datetime
 import hashlib
 import logging
 import re
-import typing
 import warnings
 from typing import List
 from typing import Optional
@@ -204,7 +203,7 @@ def import_csr_file(
         except ValueError:
             raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
 
-    domains = _get_names_from_subject_and_extensions(csr.subject, csr.extensions)
+    domains = acme_crypto_util.get_names_from_subject_and_extensions(csr.subject, csr.extensions)
     # Internally we always use PEM, so re-encode as PEM before returning.
     data_pem = csr.public_bytes(serialization.Encoding.PEM)
     return (
@@ -212,30 +211,6 @@ def import_csr_file(
         util.CSR(file=csrfile, data=data_pem, form="pem"),
         domains,
     )
-
-
-def _get_names_from_subject_and_extensions(
-    subject: x509.Name, exts: x509.Extensions
-) -> List[str]:
-    # We know these are always `str` because `bytes` is only possible for
-    # other OIDs.
-    cns = [
-        typing.cast(str, c.value)
-        for c in subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-    ]
-    try:
-        san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
-    except x509.ExtensionNotFound:
-        dns_names = []
-    else:
-        dns_names = san_ext.value.get_values_for_type(x509.DNSName)
-
-    if not cns:
-        return dns_names
-    else:
-        # We only include the first CN, if there are multiple. This matches
-        # the behavior of the previously implementation using pyOpenSSL.
-        return [cns[0]] + [d for d in dns_names if d != cns[0]]
 
 
 def make_key(bits: int = 2048, key_type: str = "rsa",
@@ -483,7 +458,9 @@ def get_names_from_cert(
     else:
         assert typ == acme_crypto_util.Format.DER
         x509_cert = x509.load_der_x509_certificate(cert)
-    return _get_names_from_subject_and_extensions(x509_cert.subject, x509_cert.extensions)
+    return acme_crypto_util.get_names_from_subject_and_extensions(
+        x509_cert.subject, x509_cert.extensions
+    )
 
 
 def get_names_from_req(
@@ -503,7 +480,9 @@ def get_names_from_req(
     else:
         assert typ == acme_crypto_util.Format.DER
         x509_req = x509.load_der_x509_csr(csr)
-    return _get_names_from_subject_and_extensions(x509_req.subject, x509_req.extensions)
+    return acme_crypto_util.get_names_from_subject_and_extensions(
+        x509_req.subject, x509_req.extensions
+    )
 
 
 def dump_pyopenssl_chain(
