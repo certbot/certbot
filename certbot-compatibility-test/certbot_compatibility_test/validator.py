@@ -6,7 +6,7 @@ from typing import Mapping
 from typing import Optional
 from typing import Union
 
-from OpenSSL import crypto
+from cryptography import x509
 import requests
 
 from acme import crypto_util
@@ -21,7 +21,7 @@ _VALIDATION_TIMEOUT = 10
 class Validator:
     """Collection of functions to test a live webserver's configuration"""
 
-    def certificate(self, cert: crypto.X509, name: Union[str, bytes],
+    def certificate(self, cert: x509.Certificate, name: Union[str, bytes],
                     alt_host: Optional[str] = None, port: int = 443) -> bool:
         """Verifies the certificate presented at name is cert"""
         if alt_host is None:
@@ -39,7 +39,7 @@ class Validator:
             logger.exception(str(error))
             return False
 
-        return presented_cert.digest("sha256") == cert.digest("sha256")
+        return presented_cert.to_cryptography() == cert
 
     def redirect(self, name: str, port: int = 80,
                  headers: Optional[Mapping[str, str]] = None) -> bool:
