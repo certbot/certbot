@@ -268,11 +268,14 @@ def valid_privkey(privkey: Union[str, bytes]) -> bool:
     :rtype: bool
 
     """
+    if isinstance(privkey, str):
+        privkey = privkey.encode()
     try:
-        return crypto.load_privatekey(
-            crypto.FILETYPE_PEM, privkey).check()
-    except (TypeError, crypto.Error):
+        serialization.load_pem_private_key(privkey, password=None)
+    except ValueError:
         return False
+    else:
+        return True
 
 
 def verify_renewable_cert(renewable_cert: interfaces.RenewableCert) -> None:
@@ -604,10 +607,9 @@ def get_serial_from_cert(cert_path: str) -> int:
     :returns: serial number of the certificate
     :rtype: int
     """
-    # pylint: disable=redefined-outer-name
     with open(cert_path, "rb") as f:
-        x509 = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
-    return x509.get_serial_number()
+        cert = x509.load_pem_x509_certificate(f.read())
+    return cert.serial_number
 
 
 def find_chain_with_issuer(fullchains: List[str], issuer_cn: str,
