@@ -393,7 +393,7 @@ def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) 
 
 # Helper function that can be mocked in unit tests
 def _now() -> datetime:
-    return datetime.now()
+    return datetime.utcnow()
 
 
 def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
@@ -407,7 +407,7 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
     """Generate new self-signed certificate.
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
     :type domains: `list` of `str`
-    :param int not_before: A POSIX timestamp after which the cert is valid
+    :param int not_before: A POSIX UTC timestamp after which the cert is valid
     :param validity: Time (in seconds) for which the cert will be valid
     :param buffer private_key_pem: One of `CertificateIssuerPrivateKeyTypes`
     :param bool force_san:
@@ -454,15 +454,15 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
             critical=False
         )
 
-    not_before_timestamp = datetime.fromtimestamp(
+    not_before_datetime = datetime.fromtimestamp(
         0 if not_before is None else not_before
     )
-    builder = builder.not_valid_before(not_before_timestamp)
+    builder = builder.not_valid_before(not_before_datetime)
     validity_duration = timedelta(seconds=validity)
     if not_before is None:
         not_valid_after = _now() + validity_duration
     else:
-        not_valid_after = not_before_timestamp + validity_duration
+        not_valid_after = not_before_datetime + validity_duration
     builder = builder.not_valid_after(not_valid_after)
 
     public_key = private_key.public_key()

@@ -210,26 +210,36 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
         cert = make_self_signed_cert(self.privkey, ['dummy'])
 
     @mock.patch("acme.crypto_util._now")
-    def test_not_before(self, mock_now):
+    def test_expiry_times(self, mock_now):
         from acme.crypto_util import make_self_signed_cert
-        from datetime import datetime
+        from datetime import datetime, timezone
         not_before = 1736200830
         validity = 100
+
+        # some ugly timezone hacking to directly compare UTC timestamps
+        not_before_dt = datetime.fromtimestamp(not_before)
+        not_before_dt = not_before_dt.replace(tzinfo=timezone.utc)
+        not_after_dt = datetime.fromtimestamp(not_before + validity).replace(tzinfo=timezone.utc)
+        not_after_dt = not_after_dt.replace(tzinfo=timezone.utc)
         cert = make_self_signed_cert(
             self.privkey,
             ['dummy'],
             not_before=not_before,
             validity=validity,
         )
-        self.assertEqual(cert.not_valid_after, datetime.fromtimestamp(not_before + validity))
+        self.assertEqual(cert.not_valid_before_utc, not_before_dt)
+        self.assertEqual(cert.not_valid_after_utc, not_after_dt)
 
         mock_now.return_value = datetime.fromtimestamp(not_before)
+        zero_dt = datetime.fromtimestamp(0)
+        zero_dt = zero_dt.replace(tzinfo=timezone.utc)
         cert = make_self_signed_cert(
             self.privkey,
             ['dummy'],
             validity=validity,
         )
-        self.assertEqual(cert.not_valid_after, datetime.fromtimestamp(not_before + validity))
+        self.assertEqual(cert.not_valid_before_utc, zero_dt)
+        self.assertEqual(cert.not_valid_after_utc, not_after_dt)
 
     def test_no_name(self):
         from acme.crypto_util import make_self_signed_cert
