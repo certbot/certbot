@@ -95,13 +95,9 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
             raise ValueError("Neither cert_selection or certs specified.")
         if cert_selection and certs:
             raise ValueError("Both cert_selection and certs specified.")
-        actual_cert_selection: Union[_DefaultCertSelection,
-                                     Optional[Callable[[SSL.Connection],
-                                                       Optional[Tuple[crypto.PKey,
-                                                                crypto.X509]]]]] = cert_selection
-        if actual_cert_selection is None:
-            actual_cert_selection = _DefaultCertSelection(certs if certs else {})
-        self.cert_selection = actual_cert_selection
+        if cert_selection is None:
+            cert_selection = _DefaultCertSelection(certs if certs else {})
+        self.cert_selection = cert_selection
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.sock, name)
