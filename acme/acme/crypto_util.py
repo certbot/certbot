@@ -307,6 +307,14 @@ def get_names_from_subject_and_extensions(
     subject: x509.Name, exts: x509.Extensions
 ) -> List[str]:
     """Gets all DNS SAN names as well as the first Common Name from subject.
+
+    :param subject: Name of the x509 object, which may include Common Name
+    :type subject: `cryptography.x509.Name`
+    :param exts: Extensions of the x509 object, which may include SANs
+    :type exts: `cryptography.x509.Extensions`
+
+    :returns: List of DNS Subject Alternative Names and first Common Name
+    :rtype: `list` of `str`
     """
     # We know these are always `str` because `bytes` is only possible for
     # other OIDs.
