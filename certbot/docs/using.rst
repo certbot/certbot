@@ -298,9 +298,9 @@ There are also a number of third-party plugins for the client, provided by
 other developers. Many are beta/experimental, but some are already in
 widespread use:
 
-================== ==== ==== ===============================================================
+================== ==== ==== =================================================================
 Plugin             Auth Inst Notes
-================== ==== ==== ===============================================================
+================== ==== ==== =================================================================
 haproxy_           Y    Y    Integration with the HAProxy load balancer
 s3front_           Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
 gandi_             Y    N    Obtain certificates via the Gandi LiveDNS API
@@ -328,7 +328,8 @@ dns-solidserver_   Y    N    DNS Authentication using SOLIDserver (EfficientIP)
 dns-stackit_       Y    N    DNS Authentication using STACKIT DNS
 dns-ionos_         Y    N    DNS Authentication using IONOS Cloud DNS
 dns-mijn-host_     Y    N    DNS Authentication using mijn.host DNS
-================== ==== ==== ===============================================================
+nginx-unit_        Y    Y    Automates obtaining and installing a certificate with Nginx Unit
+================== ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
@@ -357,6 +358,7 @@ dns-mijn-host_     Y    N    DNS Authentication using mijn.host DNS
 .. _dns-stackit: https://github.com/stackitcloud/certbot-dns-stackit
 .. _dns-ionos: https://github.com/ionos-cloud/certbot-dns-ionos-cloud
 .. _dns-mijn-host: https://github.com/mijnhost/certbot-dns-mijn-host
+.. _nginx-unit: https://github.com/kea/certbot-nginx-unit
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
