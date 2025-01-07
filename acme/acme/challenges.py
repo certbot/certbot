@@ -478,8 +478,6 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         names = crypto_util.get_names_from_subject_and_extensions(
             cert.subject, cert.extensions
         )
-        # Type ignore needed due to
-        # https://github.com/pyca/pyopenssl/issues/730.
         logger.debug(
             "Certificate %s. SANs: %s", cert.fingerprint(hashes.SHA256()), names
         )
