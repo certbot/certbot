@@ -454,15 +454,12 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
             critical=False
         )
 
-    not_before_datetime = datetime.fromtimestamp(
-        0 if not_before is None else not_before
-    )
-    builder = builder.not_valid_before(not_before_datetime)
-    validity_duration = timedelta(seconds=validity)
     if not_before is None:
-        not_valid_after = _now() + validity_duration
+        not_before_datetime = _now()
     else:
-        not_valid_after = not_before_datetime + validity_duration
+        not_before_datetime = datetime.fromtimestamp(not_before)
+    not_valid_after = not_before_datetime + timedelta(seconds=validity)
+    builder = builder.not_valid_before(not_before_datetime)
     builder = builder.not_valid_after(not_valid_after)
 
     public_key = private_key.public_key()
