@@ -248,14 +248,18 @@ def make_csr(
 ) -> bytes:
     """Generate a CSR containing domains or IPs as subjectAltNames.
 
+    Parameters are ordered this way for backwards compatibility when called using positional
+    arguments.
+
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
     :param list domains: List of DNS names to include in subjectAltNames of CSR.
     :param bool must_staple: Whether to include the TLS Feature extension (aka
         OCSP Must Staple: https://tools.ietf.org/html/rfc7633).
     :param list ipaddrs: List of IPaddress(type ipaddress.IPv4Address or ipaddress.IPv6Address)
-    names to include in subbjectAltNames of CSR.
-    params ordered this way for backward competablity when called by positional argument.
+        names to include in subbjectAltNames of CSR.
+
     :returns: buffer PEM-encoded Certificate Signing Request.
+
     """
     private_key = serialization.load_pem_private_key(private_key_pem, password=None)
     # There are a few things that aren't valid for x509 signing. mypy
