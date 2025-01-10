@@ -10,10 +10,12 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* certbot-nginx now requires pyparsing>=2.4.7.
 *
 
 ### Fixed
 
+* Allow nginx plugin to parse non-breaking spaces in nginx configuration files.
 *
 
 More details about these changes can be found on our GitHub repo.

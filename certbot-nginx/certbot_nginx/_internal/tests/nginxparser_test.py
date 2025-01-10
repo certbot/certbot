@@ -362,6 +362,18 @@ class TestRawNginxParser(unittest.TestCase):
         parsed = loads("")
         assert parsed == []
 
+    def test_non_breaking_spaces(self):
+        # non-breaking spaces
+        test = u'\u00a0'
+        loads(test)
+        test = """
+        map $http_upgrade $connection_upgrade {
+            default upgrade;
+            ''      close;
+        }
+        """
+        loads(test)
+
 
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""
