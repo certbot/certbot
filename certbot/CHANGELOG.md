@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* certbot-nginx now requires pyparsing>=2.4.6.
+* certbot-nginx now requires pyparsing>=2.4.7.
 *
 
 ### Fixed
