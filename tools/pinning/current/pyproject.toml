@@ -75,9 +75,6 @@ cryptography = "!= 37.0.3"
 # version of tox to keep deterministic builds.
 tox = ">=4"
 
-
-[tool.poetry.dev-dependencies]
-
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
