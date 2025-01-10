@@ -35,8 +35,8 @@ class RawNginxParser:
     """A class that parses nginx configuration with pyparsing."""
 
     # constants
-    space = Optional(White(ws=u' \t\r\n\u00a0')).leaveWhitespace()
-    required_space = White(ws=u' \t\r\n\u00a0').leaveWhitespace()
+    space = Optional(White(ws=' \t\r\n\u00a0')).leaveWhitespace()
+    required_space = White(ws=' \t\r\n\u00a0').leaveWhitespace()
 
     left_bracket = Literal("{").suppress()
     right_bracket = space + Literal("}").suppress()
