@@ -6,11 +6,11 @@ from setuptools import setup
 version = '3.2.0.dev0'
 
 install_requires = [
-    'cryptography>=41.0.0',
+    'cryptography>=42.0.0',
     # Josepy 2+ may introduce backward incompatible changes by droping usage of
     # deprecated PyOpenSSL APIs.
     'josepy>=1.13.0, <2',
-    'PyOpenSSL>=23.2.0',
+    'PyOpenSSL>=24.0.0',
     'pyrfc3339',
     'pytz>=2019.3',
     'requests>=2.20.0',
