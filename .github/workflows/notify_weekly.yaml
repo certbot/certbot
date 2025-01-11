@@ -22,4 +22,4 @@ jobs:
         TEXT: |
           ## Updates In the Past Week
           - Most commented in the last week: [link](${{ env.UPDATED_URL }})
-          - Updated (assigned) PRs in the Last week: [link](${{ env.ASSIGNED_PRS }}
+          - Updated (assigned) PRs in the last week: [link](${{ env.ASSIGNED_PRS }})
