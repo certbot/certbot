@@ -11,7 +11,7 @@ install_requires = [
     # deprecated PyOpenSSL APIs.
     'josepy>=1.13.0, <2',
     # pyOpenSSL 23.1.0 is a bad release: https://github.com/pyca/pyopenssl/issues/1199
-    'PyOpenSSL>=17.5.0,!=23.1.0',
+    'PyOpenSSL>=22.0.0,!=23.1.0',
     'pyrfc3339',
     'pytz>=2019.3',
     'requests>=2.20.0',
