@@ -171,13 +171,7 @@ def csr_matches_pubkey(csr: bytes, privkey: bytes) -> bool:
     """
     req = x509.load_pem_x509_csr(csr)
     pkey = serialization.load_pem_private_key(privkey, password=None)
-    # This would be better written as `req.public_key() == pkey.public_key()`,
-    # but that requires a newer minimum version of cryptography.
-    return req.is_signature_valid and req.public_key().public_bytes(
-        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
-    ) == pkey.public_key().public_bytes(
-        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
-    )
+    return req.is_signature_valid and req.public_key() == pkey.public_key()
 
 
 def import_csr_file(

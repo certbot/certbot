@@ -11,7 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * certbot-nginx now requires pyparsing>=2.4.7.
-*
+* certbot and its acme library now require cryptography>=41.0.0.
 
 ### Fixed
 
