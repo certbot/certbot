@@ -210,8 +210,10 @@ class MakeKeyTest(unittest.TestCase):
     def test_for_pkcs8_format(self):
         from certbot.crypto_util import make_key
 
-        # PKCS#1 format will instead have the text "BEGIN RSA PRIVATE KEY"
+        # PKCS#1 format will instead have text like "BEGIN RSA PRIVATE KEY" or "BEGIN EC PRIVATE
+        # KEY"
         assert b"BEGIN PRIVATE KEY" in make_key(2048)
+        assert b"BEGIN PRIVATE KEY" in make_key(elliptic_curve='secp256r1', key_type='ecdsa')
 
 
 class VerifyCertSetup(unittest.TestCase):
