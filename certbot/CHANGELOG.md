@@ -16,7 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Allow nginx plugin to parse non-breaking spaces in nginx configuration files.
-*
+* Private keys are now saved in PKCS#8 format instead of PKCS#1. Using PKCS#1
+  was a regression introduced in Certbot 3.1.0.
 
 More details about these changes can be found on our GitHub repo.
 
