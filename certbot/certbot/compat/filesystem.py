@@ -392,7 +392,7 @@ def readlink(link_path: str) -> str:
     if POSIX_MODE:
         return path
 
-    # At this point, we know we are on Windows and that the path returned uses
+    # At this point, we know we are on Windows and that the path returned might use
     # the extended form which begins with the prefix \\?\
 
     # Max length of a normal path is 260 characters on Windows, including the non printable
@@ -400,7 +400,7 @@ def readlink(link_path: str) -> str:
     # strings, giving a max length of 259 characters, + 4 characters for the extended form
     # prefix, to an effective max length 263 characters on a string representing a normal path.
     if len(path) < 264:
-        return path[4:]
+        return path[4:] if path.startswith('\\\\?\\') else path
 
     raise ValueError("Long paths are not supported by Certbot on Windows.")
 
