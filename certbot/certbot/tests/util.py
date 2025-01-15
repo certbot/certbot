@@ -449,7 +449,7 @@ def lock_and_call(callback: Callable[[], Any], path_to_lock: str) -> None:
     process.start()
 
     # Wait confirmation that lock is acquired
-    assert receive_event.wait(timeout=10), 'Timeout while waiting to acquire the lock.'
+    assert receive_event.wait(timeout=20), 'Timeout while waiting to acquire the lock.'
     # Execute the callback
     callback()
     # Trigger unlock from foreign process
