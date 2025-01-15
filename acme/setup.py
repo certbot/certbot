@@ -10,7 +10,9 @@ install_requires = [
     # Josepy 2+ may introduce backward incompatible changes by droping usage of
     # deprecated PyOpenSSL APIs.
     'josepy>=1.13.0, <2',
-    'PyOpenSSL>=24.0.0',
+    # PyOpenSSL>=25.0.0 is just needed to satisfy mypy right now so this dependency can probably be
+    # relaxed to >=24.0.0 if needed.
+    'PyOpenSSL>=25.0.0',
     'pyrfc3339',
     'pytz>=2019.3',
     'requests>=2.20.0',
