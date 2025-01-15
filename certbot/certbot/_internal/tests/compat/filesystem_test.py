@@ -631,6 +631,10 @@ class ReadlinkTest(unittest.TestCase):
     @unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows')
     @mock.patch("certbot.compat.filesystem.os.readlink")
     def test_normal_path_windows(self, mock_readlink):
+        # Python <3.8
+        mock_readlink.return_value = "C:\\short\\path"
+        assert filesystem.readlink("dummy") == "C:\\short\\path"
+
         # Python >=3.8 (os.readlink always returns the extended form)
         mock_readlink.return_value = "\\\\?\\C:\\short\\path"
         assert filesystem.readlink("dummy") == "C:\\short\\path"
