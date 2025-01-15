@@ -468,6 +468,43 @@ def test_reuse_key(context: IntegrationTestsContext) -> None:
     assert len({cert1, cert2, cert3}) == 3
 
 
+def test_reuse_key_allow_subset_of_names(context: IntegrationTestsContext) -> None:
+    """Test that key is reused when allow_subset_of_names is set."""
+    certname = context.get_domain('dns1')
+    domains = ','.join([certname, context.get_domain('fail-dns1')])
+    context.certbot([
+        '-a', 'manual', '-d', domains,
+        '--allow-subset-of-names',
+        '--preferred-challenges', 'dns',
+        '--manual-auth-hook', context.manual_dns_auth_hook_allow_fail,
+        '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
+        '--reuse-key'
+    ])
+
+    stdout, _ = context.certbot(['certificates'])
+    assert context.get_domain('fail-dns1') in stdout
+    certname = context.get_domain('dns1')
+    with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
+        privkey1 = file.read()
+
+    # manual_dns_auth_hook from misc is designed to fail if the domain contains 'fail-*'.
+    context.certbot([
+        'reconfigure',
+        '--cert-name', certname,
+        '--manual-auth-hook', context.manual_dns_auth_hook
+    ])
+
+    context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
+    stdout, _ = context.certbot(['certificates'])
+    assert context.get_domain('fail-dns1') not in stdout
+
+    with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
+        privkey1 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/privkey2.pem').format(certname), 'r') as file:
+        privkey2 = file.read()
+    assert privkey1 == privkey2
+
+
 def test_new_key(context: IntegrationTestsContext) -> None:
     """Tests --new-key and its interactions with --reuse-key"""
     def private_key(generation: int) -> Tuple[str, str]:
