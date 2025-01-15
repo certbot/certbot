@@ -1,5 +1,13 @@
+# The purpose of this file is to help us test Certbot against the oldest
+# versions of our dependencies which we claim to support in our setup.py files.
+#
 # Security alerts about vulnerable packages in this file can be ignored since
 # they are only used during testing.
+#
+# Ideally, generating package pinnings based on our minimum allowed dependency
+# versions would be done automatically by tooling, but as of writing this, both
+# https://github.com/pypa/pip/issues/8085 and
+# https://github.com/python-poetry/poetry/issues/3527 remain unresolved.
 [tool.poetry]
 name = "certbot-pinner"
 version = "0.1.0"

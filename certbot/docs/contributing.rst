@@ -629,6 +629,23 @@ https://python-poetry.org/docs/dependency-specification/.
 If you want to learn more about the design used here, see
 ``tools/pinning/DESIGN.md`` in the Certbot repo.
 
+Choosing dependency versions
+----------------------------
+
+When choosing dependency versions, we should choose whatever minimum versions
+simplify development of Certbot and our own distribution methods such as snaps,
+pip, and docker. Since these approaches have full access to PyPI, it's OK if
+the required packages declared in ``setup.py`` are quite new.
+
+If this approach to development creates significant trouble for some of our users, we
+can revisit this decision and weigh their trouble against the difficulties
+involved in maintaining support for a wider range of package versions. When
+doing this, we should also be sure to consider the feasibility of users getting
+access to these newer packages on their system rather than changing our own
+approach here. Their OS distribution may be able to package it, especially in
+an alternate repository and/or for a different version of Python to help avoid
+conflicts with other packages on their system.
+
 macOS suggestions
 =================
 
