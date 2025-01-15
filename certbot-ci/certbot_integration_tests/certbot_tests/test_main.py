@@ -491,10 +491,11 @@ def test_reuse_key_allow_subset_of_names(context: IntegrationTestsContext) -> No
     context.certbot([
         'reconfigure',
         '--cert-name', certname,
-        '--manual-auth-hook', context.manual_dns_auth_hook
+        '--manual-auth-hook', context.manual_dns_auth_hook,
+        '-a', 'manual' # needed to override --standalone passed automatically
     ])
 
-    context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
+    context.certbot(['renew', '--cert-name', certname, '--force-renewal', '-a', 'manual'])
     stdout, _ = context.certbot(['certificates'])
     assert context.get_domain('fail-dns1') not in stdout
 
