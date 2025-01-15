@@ -632,27 +632,19 @@ If you want to learn more about the design used here, see
 Choosing dependency versions
 ----------------------------
 
-A number of Unix distributions create third-party Certbot packages for their users.
-Where feasible, the Certbot project tries to manage its dependencies in a way that
-does not create avoidable work for packagers.
+When choosing dependency versions, we should choose whatever minimum versions
+simplify development of Certbot and our own distribution methods such as snaps,
+pip, and docker. Since these approaches have full access to PyPI, it's OK if
+the required packages declared in ``setup.py`` are quite new.
 
-Avoiding adding new dependencies is a good way to help with this.
-
-When adding new or upgrading existing Python dependencies, Certbot developers should
-pay attention to which distributions are actively packaging Certbot. In particular:
-
-- EPEL (used by RHEL/CentOS/Fedora) updates Certbot regularly. At the time of writing,
-  EPEL9 is the release of EPEL where Certbot is being updated, but check the `EPEL
-  home page <https://docs.fedoraproject.org/en-US/epel/>`_ and `pkgs.org
-  <https://pkgs.org/search/?q=python3-certbot>`_ for the latest release.
-- Debian and Ubuntu only package Certbot when making new releases of their distros.
-  Checking the available version of dependencies in Debian "sid" and "unstable" can help
-  to identify dependencies that are likely to be available in the next stable release of
-  these distros.
-
-If a dependency is already packaged in these distros and is acceptable for use in Certbot,
-the oldest packaged version of that dependency should be chosen and set as the minimum
-version in ``setup.py``.
+If this approach to development creates significant trouble for some of our users, we
+can revisit this decision and weigh their trouble against the difficulties
+involved in maintaining support for a wider range of package versions. When
+doing this, we should also be sure to consider the feasibility of users getting
+access to these newer packages on their system rather than changing our own
+approach here. Their OS distribution may be able to package it, especially in
+an alternate repository and/or for a different version of Python to help avoid
+conflicts with other packages on their system.
 
 macOS suggestions
 =================
