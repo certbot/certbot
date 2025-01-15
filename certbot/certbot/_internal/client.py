@@ -401,8 +401,9 @@ class Client:
             key_size = self.config.rsa_key_size
 
         # Create CSR from names
+        key: util.Key
         if self.config.dry_run:
-            key: util.Key = optional_key or util.Key(
+            key = optional_key or util.Key(
                 file=None,
                 pem=crypto_util.make_key(
                     bits=key_size,
@@ -415,7 +416,7 @@ class Client:
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key: util.Key = optional_key or crypto_util.generate_key(
+            key = optional_key or crypto_util.generate_key(
                 key_size=key_size,
                 key_dir=None,
                 key_type=self.config.key_type,
