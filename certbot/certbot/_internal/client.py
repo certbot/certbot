@@ -380,11 +380,11 @@ class Client:
             with open(old_keypath, "rb") as f:
                 keypath = old_keypath
                 keypem = f.read()
-            optional_key: Optional[util.Key] = util.Key(file=keypath, pem=keypem)
+            key: Optional[util.Key] = util.Key(file=keypath, pem=keypem)
             logger.info("Reusing existing private key from %s.", old_keypath)
         else:
             # The key is set to None here but will be created below.
-            optional_key = None
+            key = None
 
         key_size = self.config.rsa_key_size
         elliptic_curve = "secp256r1"
@@ -401,9 +401,8 @@ class Client:
             key_size = self.config.rsa_key_size
 
         # Create CSR from names
-        key: util.Key
         if self.config.dry_run:
-            key = optional_key or util.Key(
+            key = key or util.Key(
                 file=None,
                 pem=crypto_util.make_key(
                     bits=key_size,
@@ -416,7 +415,7 @@ class Client:
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key = optional_key or crypto_util.generate_key(
+            key = key or crypto_util.generate_key(
                 key_size=key_size,
                 key_dir=None,
                 key_type=self.config.key_type,
