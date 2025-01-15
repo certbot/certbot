@@ -393,7 +393,7 @@ def readlink(link_path: str) -> str:
         return path
 
     # At this point, we know we are on Windows and that the path returned uses
-    # the extended form which is done for all paths in Python 3.8+
+    # the extended form which begins with the prefix \\?\
 
     # Max length of a normal path is 260 characters on Windows, including the non printable
     # termination character "<NUL>". The termination character is not included in Python

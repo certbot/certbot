@@ -16,7 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Allow nginx plugin to parse non-breaking spaces in nginx configuration files.
-*
+* Fixed regression in symlink parsing on Windows that was introduced in Certbot
+  3.1.0.
 
 More details about these changes can be found on our GitHub repo.
 
