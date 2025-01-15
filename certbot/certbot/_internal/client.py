@@ -380,11 +380,11 @@ class Client:
             with open(old_keypath, "rb") as f:
                 keypath = old_keypath
                 keypem = f.read()
-            optional_key: Optional[util.Key] = util.Key(file=keypath, pem=keypem)
+            key: Optional[util.Key] = util.Key(file=keypath, pem=keypem)
             logger.info("Reusing existing private key from %s.", old_keypath)
         else:
             # The key is set to None here but will be created below.
-            optional_key = None
+            key = None
 
         key_size = self.config.rsa_key_size
         elliptic_curve = "secp256r1"
@@ -401,9 +401,8 @@ class Client:
             key_size = self.config.rsa_key_size
 
         # Create CSR from names
-        key: util.Key
         if self.config.dry_run:
-            key = optional_key or util.Key(
+            key = key or util.Key(
                 file=None,
                 pem=crypto_util.make_key(
                     bits=key_size,
@@ -416,7 +415,7 @@ class Client:
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key = optional_key or crypto_util.generate_key(
+            key = key or crypto_util.generate_key(
                 key_size=key_size,
                 key_dir=None,
                 key_type=self.config.key_type,
@@ -435,7 +434,7 @@ class Client:
             if self.config.allow_subset_of_names:
                 successful_domains = self._successful_domains_from_error(error, domains)
                 if successful_domains != domains and len(successful_domains) != 0:
-                    return self._retry_obtain_certificate(domains, successful_domains, old_keypath)
+                    return self._retry_obtain_certificate(domains, successful_domains)
             raise
         authzr = orderr.authorizations
         auth_domains = {a.body.identifier.value for a in authzr}
@@ -447,7 +446,7 @@ class Client:
         # domains contains a wildcard because the ACME spec forbids identifiers
         # in authzs from containing a wildcard character.
         if self.config.allow_subset_of_names and successful_domains != domains:
-            return self._retry_obtain_certificate(domains, successful_domains, old_keypath)
+            return self._retry_obtain_certificate(domains, successful_domains)
         else:
             try:
                 cert, chain = self.obtain_certificate_from_csr(csr, orderr)
@@ -459,8 +458,7 @@ class Client:
                 if self.config.allow_subset_of_names:
                     successful_domains = self._successful_domains_from_error(error, domains)
                     if successful_domains != domains and len(successful_domains) != 0:
-                        return self._retry_obtain_certificate(
-                            domains, successful_domains, old_keypath)
+                        return self._retry_obtain_certificate(domains, successful_domains)
                 raise
 
     def _get_order_and_authorizations(self, csr_pem: bytes,
@@ -542,14 +540,13 @@ class Client:
             return successful_domains
         return []
 
-    def _retry_obtain_certificate(self, domains: List[str], successful_domains: List[str],
-                                old_keypath: Optional[str]
+    def _retry_obtain_certificate(self, domains: List[str], successful_domains: List[str]
                                 ) -> Tuple[bytes, bytes, util.Key, util.CSR]:
         failed_domains = [d for d in domains if d not in successful_domains]
         domains_list = ", ".join(failed_domains)
         display_util.notify("Unable to obtain a certificate with every requested "
             f"domain. Retrying without: {domains_list}")
-        return self.obtain_certificate(successful_domains, old_keypath)
+        return self.obtain_certificate(successful_domains)
 
     def _choose_lineagename(self, domains: List[str], certname: Optional[str]) -> str:
         """Chooses a name for the new lineage.
