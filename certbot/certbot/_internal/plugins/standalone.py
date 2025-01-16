@@ -16,7 +16,6 @@ from typing import Union
 from typing import TYPE_CHECKING
 
 from acme import challenges
-from acme import crypto_util
 from acme import standalone as acme_standalone
 from certbot import achallenges
 from certbot import errors
