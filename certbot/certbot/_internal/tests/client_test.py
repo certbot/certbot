@@ -646,6 +646,35 @@ class ClientTest(ClientTestCommon):
                                             " every domain. The dry run will continue, but results"
                                             " may not be accurate.")
 
+    @mock.patch("certbot._internal.client.crypto_util")
+    def test_obtain_certificate_reuse_key_with_allow_subset_of_names(self, mock_crypto_util):
+        csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
+        old_key = util.Key(file="old_key_file", pem="old_key_pem")
+        new_key = util.Key(file="new_key_file", pem="new_key_pem")
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = new_key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        authzr = self._authzr_from_domains(["example.com"])
+        self.config.allow_subset_of_names = True
+        self.config.reuse_key = True
+
+        self._mock_obtain_certificate()
+
+        self.eg_order.authorizations = authzr
+        self.client.auth_handler.handle_authorizations.return_value = authzr
+
+        with test_util.patch_display_util():
+            mocked_open = mock.mock_open(read_data="old_key_pem")
+            with mock.patch('builtins.open', mocked_open):
+                result = self.client.obtain_certificate(self.eg_domains, "old_key_file")
+
+        assert result == \
+            (mock.sentinel.cert, mock.sentinel.chain, old_key, csr)
+        self._check_obtain_certificate(2)
+
+        assert mock_crypto_util.generate_key.call_count == 0
+
     def _set_mock_from_fullchain(self, mock_from_fullchain):
         mock_cert = mock.Mock()
         mock_cert.encode.return_value = mock.sentinel.cert

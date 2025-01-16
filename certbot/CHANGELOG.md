@@ -17,6 +17,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Allow nginx plugin to parse non-breaking spaces in nginx configuration files.
+* Honor --reuse-key when --allow-subset-of-names is set
 *
 
 More details about these changes can be found on our GitHub repo.

@@ -434,7 +434,7 @@ class Client:
             if self.config.allow_subset_of_names:
                 successful_domains = self._successful_domains_from_error(error, domains)
                 if successful_domains != domains and len(successful_domains) != 0:
-                    return self._retry_obtain_certificate(domains, successful_domains)
+                    return self._retry_obtain_certificate(domains, successful_domains, old_keypath)
             raise
         authzr = orderr.authorizations
         auth_domains = {a.body.identifier.value for a in authzr}
@@ -446,7 +446,7 @@ class Client:
         # domains contains a wildcard because the ACME spec forbids identifiers
         # in authzs from containing a wildcard character.
         if self.config.allow_subset_of_names and successful_domains != domains:
-            return self._retry_obtain_certificate(domains, successful_domains)
+            return self._retry_obtain_certificate(domains, successful_domains, old_keypath)
         else:
             try:
                 cert, chain = self.obtain_certificate_from_csr(csr, orderr)
@@ -458,7 +458,8 @@ class Client:
                 if self.config.allow_subset_of_names:
                     successful_domains = self._successful_domains_from_error(error, domains)
                     if successful_domains != domains and len(successful_domains) != 0:
-                        return self._retry_obtain_certificate(domains, successful_domains)
+                        return self._retry_obtain_certificate(
+                            domains, successful_domains, old_keypath)
                 raise
 
     def _get_order_and_authorizations(self, csr_pem: bytes,
@@ -540,13 +541,14 @@ class Client:
             return successful_domains
         return []
 
-    def _retry_obtain_certificate(self, domains: List[str], successful_domains: List[str]
+    def _retry_obtain_certificate(self, domains: List[str], successful_domains: List[str],
+                                old_keypath: Optional[str]
                                 ) -> Tuple[bytes, bytes, util.Key, util.CSR]:
         failed_domains = [d for d in domains if d not in successful_domains]
         domains_list = ", ".join(failed_domains)
         display_util.notify("Unable to obtain a certificate with every requested "
             f"domain. Retrying without: {domains_list}")
-        return self.obtain_certificate(successful_domains)
+        return self.obtain_certificate(successful_domains, old_keypath)
 
     def _choose_lineagename(self, domains: List[str], certname: Optional[str]) -> str:
         """Chooses a name for the new lineage.
