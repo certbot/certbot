@@ -13,6 +13,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * certbot-nginx now requires pyparsing>=2.4.7.
 * certbot and its acme library now require cryptography>=42.0.0.
 * certbot-nginx and our acme library now require pyOpenSSL>=25.0.0.
+* Deprecated `gen_ss_cert` in `acme.crypto_util` as it uses deprecated
+  pyOpenSSL API.
+* Add `make_self_signed_cert` to `acme.crypto_util` to replace `gen_ss_cert.
 
 ### Fixed
 
