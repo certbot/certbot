@@ -12,7 +12,6 @@ import josepy as jose
 import pytest
 
 from acme import challenges
-from acme import crypto_util
 from acme import standalone as acme_standalone
 from certbot import achallenges
 from certbot import errors
