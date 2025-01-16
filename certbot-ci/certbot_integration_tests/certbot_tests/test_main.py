@@ -484,8 +484,6 @@ def test_reuse_key_allow_subset_of_names(context: IntegrationTestsContext) -> No
     stdout, _ = context.certbot(['certificates'])
     assert context.get_domain('fail-dns1') in stdout
     certname = context.get_domain('dns1')
-    with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
-        privkey1 = file.read()
 
     # manual_dns_auth_hook from misc is designed to fail if the domain contains 'fail-*'.
     context.certbot([

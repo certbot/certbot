@@ -649,7 +649,7 @@ class ClientTest(ClientTestCommon):
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_reuse_key_with_allow_subset_of_names(self, mock_crypto_util):
         csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
-        key = util.Key(file="old_key_file", pem="old_key_pem")
+        old_key = util.Key(file="old_key_file", pem="old_key_pem")
         new_key = util.Key(file="new_key_file", pem="new_key_pem")
         mock_crypto_util.generate_csr.return_value = csr
         mock_crypto_util.generate_key.return_value = new_key
@@ -670,7 +670,7 @@ class ClientTest(ClientTestCommon):
                 result = self.client.obtain_certificate(self.eg_domains, "old_key_file")
 
         assert result == \
-            (mock.sentinel.cert, mock.sentinel.chain, key, csr)
+            (mock.sentinel.cert, mock.sentinel.chain, old_key, csr)
         self._check_obtain_certificate(2)
 
         assert mock_crypto_util.generate_key.call_count == 0
