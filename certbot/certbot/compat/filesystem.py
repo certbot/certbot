@@ -389,7 +389,7 @@ def readlink(link_path: str) -> str:
     """
     path = os.readlink(link_path)
 
-    if POSIX_MODE:
+    if POSIX_MODE or not path.startswith('\\\\?\\'):
         return path
 
     # At this point, we know we are on Windows and that the path returned uses

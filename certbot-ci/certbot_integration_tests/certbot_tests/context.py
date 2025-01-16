@@ -47,6 +47,14 @@ class IntegrationTestsContext:
             "request.raise_for_status(); "
             '"'
         ).format(sys.executable, self.challtestsrv_url)
+        self.manual_dns_auth_hook_allow_fail = (
+            '{0} -c "import os; import requests; import json; '
+            "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN')),"
+            "'value':os.environ.get('CERTBOT_VALIDATION')}}; "
+            "request = requests.post('{1}/set-txt', data=json.dumps(data)); "
+            "request.raise_for_status(); "
+            '"'
+        ).format(sys.executable, self.challtestsrv_url)
         self.manual_dns_cleanup_hook = (
             '{0} -c "import os; import requests; import json; '
             "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN'))}}; "
