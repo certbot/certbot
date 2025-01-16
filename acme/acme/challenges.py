@@ -16,7 +16,6 @@ from typing import Union
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
-from cryptography import x509
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
