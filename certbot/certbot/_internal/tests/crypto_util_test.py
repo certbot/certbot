@@ -207,6 +207,14 @@ class MakeKeyTest(unittest.TestCase):
                            match=re.escape('Invalid key_type specified: unf.  Use [rsa|ecdsa]')):
             make_key(2048, key_type='unf')
 
+    def test_for_pkcs8_format(self):
+        from certbot.crypto_util import make_key
+
+        # PKCS#1 format will instead have text like "BEGIN RSA PRIVATE KEY" or "BEGIN EC PRIVATE
+        # KEY"
+        assert b"BEGIN PRIVATE KEY" in make_key(2048)
+        assert b"BEGIN PRIVATE KEY" in make_key(elliptic_curve='secp256r1', key_type='ecdsa')
+
 
 class VerifyCertSetup(unittest.TestCase):
     """Refactoring for verification tests."""

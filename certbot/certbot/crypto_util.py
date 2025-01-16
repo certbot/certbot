@@ -216,7 +216,8 @@ def make_key(bits: int = 2048, key_type: str = "rsa",
 
     :returns: new RSA or ECDSA key in PEM form with specified number of bits
               or of type ec_curve when key_type ecdsa is used.
-    :rtype: str
+    :rtype: bytes
+
     """
     key: Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
     if key_type == 'rsa':
@@ -247,7 +248,7 @@ def make_key(bits: int = 2048, key_type: str = "rsa",
         raise errors.Error("Invalid key_type specified: {}.  Use [rsa|ecdsa]".format(key_type))
     return key.private_bytes(
         encoding=Encoding.PEM,
-        format=PrivateFormat.TraditionalOpenSSL,
+        format=PrivateFormat.PKCS8,
         encryption_algorithm=NoEncryption()
     )
 
