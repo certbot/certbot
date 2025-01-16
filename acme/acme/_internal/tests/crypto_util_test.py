@@ -212,17 +212,18 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
     @mock.patch("acme.crypto_util._now")
     def test_expiry_times(self, mock_now):
         from acme.crypto_util import make_self_signed_cert
-        from datetime import datetime
+        from datetime import datetime, timedelta, timezone
         not_before = 1736200830
         validity = 100
 
         not_before_dt = datetime.fromtimestamp(not_before)
-        not_after_dt = datetime.fromtimestamp(not_before + validity)
+        validity_td = timedelta(validity)
+        not_after_dt = not_before_dt + validity_td
         cert = make_self_signed_cert(
             self.privkey,
             ['dummy'],
-            not_before=not_before,
-            validity=validity,
+            not_before=not_before_dt,
+            validity=validity_td,
         )
         # TODO: This should be `not_valid_before_utc` once we raise the minimum
         # cryptography version.
@@ -237,12 +238,12 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
 
         now = not_before + 1
         now_dt = datetime.fromtimestamp(now)
-        mock_now.return_value = now_dt
-        valid_after_now_dt = datetime.fromtimestamp(now + validity)
+        mock_now.return_value = now_dt.replace(tzinfo=timezone.utc)
+        valid_after_now_dt = now_dt + validity_td
         cert = make_self_signed_cert(
             self.privkey,
             ['dummy'],
-            validity=validity,
+            validity=validity_td,
         )
         with warnings.catch_warnings():
             warnings.filterwarnings(

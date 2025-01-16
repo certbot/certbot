@@ -2,7 +2,7 @@
 import binascii
 import contextlib
 import enum
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
 import os
@@ -393,13 +393,13 @@ def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) 
 
 # Helper function that can be mocked in unit tests
 def _now() -> datetime:
-    return datetime.utcnow()
+    return datetime.now(tz=timezone.utc)
 
 
 def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
                           domains: Optional[List[str]] = None,
-                          not_before: Optional[int] = None,
-                          validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
+                          not_before: Optional[datetime] = None,
+                          validity: Optional[timedelta] = None, force_san: bool = True,
                           extensions: Optional[List[x509.Extension]] = None,
                           ips: Optional[List[Union[ipaddress.IPv4Address,
                                                    ipaddress.IPv6Address]]] = None
@@ -407,8 +407,12 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
     """Generate new self-signed certificate.
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
     :type domains: `list` of `str`
-    :param int not_before: A POSIX UTC timestamp after which the cert is valid
-    :param validity: Time (in seconds) for which the cert will be valid
+    :param int not_before: A datetime after which the cert is valid. If no
+    timezone is specified, UTC is assumed
+    :type not_before: `datetime.datetime`
+    :param validity: Duration for which the cert will be valid. Defaults to 1
+    week
+    :type validity: `datetime.timedelta`
     :param buffer private_key_pem: One of `CertificateIssuerPrivateKeyTypes`
     :param bool force_san:
     :param extensions: List of additional extensions to include in the cert.
@@ -455,12 +459,11 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
         )
 
     if not_before is None:
-        not_before_datetime = _now()
-    else:
-        not_before_datetime = datetime.fromtimestamp(not_before)
-    not_valid_after = not_before_datetime + timedelta(seconds=validity)
-    builder = builder.not_valid_before(not_before_datetime)
-    builder = builder.not_valid_after(not_valid_after)
+        not_before = _now()
+    if validity is None:
+        validity = timedelta(seconds=7 * 24 * 60 * 60)
+    builder = builder.not_valid_before(not_before)
+    builder = builder.not_valid_after(not_before + validity)
 
     public_key = private_key.public_key()
     builder = builder.public_key(public_key)
