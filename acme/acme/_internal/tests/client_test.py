@@ -24,6 +24,7 @@ from acme.client import ClientV2
 
 CERT_SAN_PEM = test_util.load_vector('cert-san.pem')
 CSR_MIXED_PEM = test_util.load_vector('csr-mixed.pem')
+CSR_NO_SANS_PEM = test_util.load_vector('csr-nosans.pem')
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 
 DIRECTORY_V2 = messages.Directory({
@@ -97,6 +98,10 @@ class ClientV2Test(unittest.TestCase):
             body=self.order,
             uri='https://www.letsencrypt-demo.org/acme/acct/1/order/1',
             authorizations=[self.authzr, self.authzr2], csr_pem=CSR_MIXED_PEM)
+        self.orderr2 = messages.OrderResource(
+            body=self.order,
+            uri='https://www.letsencrypt-demo.org/acme/acct/1/order/1',
+            authorizations=[self.authzr, self.authzr2], csr_pem=CSR_NO_SANS_PEM)
 
     def test_new_account(self):
         self.response.status_code = http_client.CREATED
@@ -157,6 +162,10 @@ class ClientV2Test(unittest.TestCase):
         with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
             mock_post_as_get.side_effect = (authz_response, authz_response2)
             assert self.client.new_order(CSR_MIXED_PEM) == self.orderr
+
+        with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
+            mock_post_as_get.side_effect = (authz_response, authz_response2)
+            assert self.client.new_order(CSR_NO_SANS_PEM) == self.orderr2
 
     def test_answer_challege(self):
         self.response.links['up'] = {'url': self.challr.authzr_uri}

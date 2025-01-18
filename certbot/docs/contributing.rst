@@ -50,14 +50,22 @@ Install and configure the OS system dependencies required to run Certbot.
    # NB2: RHEL-based distributions use python3X instead of python3 (e.g. python38)
    sudo dnf install python3 augeas-libs
    # For macOS installations with Homebrew already installed and configured
-   # NB: If you also run `brew install python` you don't need the ~/lib
-   #     directory created below, however, without this directory and symlinks
-   #     to augeas, Certbot's Apache plugin won't work if you use Python
-   #     installed from other sources such as pyenv or the version provided by
-   #     Apple.
-   brew install augeas
+   # NB1: If you also run `brew install python` you don't need the ~/lib
+   #      directory created below, however, without this directory and symlinks
+   #      to augeas, Certbot's Apache plugin won't work if you use Python
+   #      installed from other sources such as pyenv or the version provided by
+   #      Apple.
+   # NB2: Some of our developer scripts expect GNU coreutils be first in your
+   #      PATH. The commands below set this up for bash and zsh, but your
+   #      instructions may be slightly different if you use an alternate shell.
+   brew install augeas coreutils gnu-sed
    mkdir ~/lib
-   ln -s $(brew --prefix)/lib/libaugeas* ~/lib
+   BREW_PREFIX=$(brew --prefix)
+   ln -s "$BREW_PREFIX"/lib/libaugeas* ~/lib
+   RC_LINE="export PATH=\"$BREW_PREFIX/opt/coreutils/libexec/gnubin:"
+   RC_LINE+="$BREW_PREFIX/opt/gnu-sed/libexec/gnubin:\$PATH\""
+   echo "$RC_LINE" >> ~/.bashrc  # for bash
+   echo "$RC_LINE" >> ~/.zshrc  # for zsh
 
 .. note:: If you have trouble creating the virtual environment below, you may
    need to install additional dependencies. See the `cryptography project's
@@ -624,27 +632,19 @@ If you want to learn more about the design used here, see
 Choosing dependency versions
 ----------------------------
 
-A number of Unix distributions create third-party Certbot packages for their users.
-Where feasible, the Certbot project tries to manage its dependencies in a way that
-does not create avoidable work for packagers.
+When choosing dependency versions, we should choose whatever minimum versions
+simplify development of Certbot and our own distribution methods such as snaps,
+pip, and docker. Since these approaches have full access to PyPI, it's OK if
+the required packages declared in ``setup.py`` are quite new.
 
-Avoiding adding new dependencies is a good way to help with this.
-
-When adding new or upgrading existing Python dependencies, Certbot developers should
-pay attention to which distributions are actively packaging Certbot. In particular:
-
-- EPEL (used by RHEL/CentOS/Fedora) updates Certbot regularly. At the time of writing,
-  EPEL9 is the release of EPEL where Certbot is being updated, but check the `EPEL
-  home page <https://docs.fedoraproject.org/en-US/epel/>`_ and `pkgs.org
-  <https://pkgs.org/search/?q=python3-certbot>`_ for the latest release.
-- Debian and Ubuntu only package Certbot when making new releases of their distros.
-  Checking the available version of dependencies in Debian "sid" and "unstable" can help
-  to identify dependencies that are likely to be available in the next stable release of
-  these distros.
-
-If a dependency is already packaged in these distros and is acceptable for use in Certbot,
-the oldest packaged version of that dependency should be chosen and set as the minimum
-version in ``setup.py``.
+If this approach to development creates significant trouble for some of our users, we
+can revisit this decision and weigh their trouble against the difficulties
+involved in maintaining support for a wider range of package versions. When
+doing this, we should also be sure to consider the feasibility of users getting
+access to these newer packages on their system rather than changing our own
+approach here. Their OS distribution may be able to package it, especially in
+an alternate repository and/or for a different version of Python to help avoid
+conflicts with other packages on their system.
 
 macOS suggestions
 =================

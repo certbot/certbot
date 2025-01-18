@@ -2,7 +2,33 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 3.1.0 - main
+## 3.2.0 - main
+
+### Added
+
+*
+
+### Changed
+
+* certbot-nginx now requires pyparsing>=2.4.7.
+* certbot and its acme library now require cryptography>=42.0.0.
+* certbot-nginx and our acme library now require pyOpenSSL>=25.0.0.
+* Deprecated `gen_ss_cert` in `acme.crypto_util` as it uses deprecated
+  pyOpenSSL API.
+* Add `make_self_signed_cert` to `acme.crypto_util` to replace `gen_ss_cert.
+
+### Fixed
+
+* Private keys are now saved in PKCS#8 format instead of PKCS#1. Using PKCS#1
+  was a regression introduced in Certbot 3.1.0.
+* Allow nginx plugin to parse non-breaking spaces in nginx configuration files.
+* Honor --reuse-key when --allow-subset-of-names is set
+* Fixed regression in symlink parsing on Windows that was introduced in Certbot
+  3.1.0.
+
+More details about these changes can be found on our GitHub repo.
+
+## 3.1.0 - 2025-01-07
 
 ### Added
 

@@ -407,7 +407,11 @@ def get_os_info_ua() -> str:
 
     :returns: os_ua
     :rtype: `str`
+
     """
+    # distro.name returns an empty string if one cannot be determined. see
+    # https://github.com/python-distro/distro/blob/3bd19e61fcb7f8d2bf3d45d9e40d69c92e05d241/src/distro/distro.py#L883
+    os_info = ""
     if _USE_DISTRO:
         os_info = distro.name(pretty=True)
 

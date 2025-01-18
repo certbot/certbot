@@ -160,11 +160,11 @@ def fstat(*unused_args, **unused_kwargs):  # type: ignore
                        '(eg. has_min_permissions, has_same_ownership).')
 
 
-# Method os.readlink has a significant behavior change with Python 3.8+. Starting
-# with this version, it will return the resolved path in its "extended-style" form
-# unconditionally, which allows to use more than 259 characters, and its string
-# representation is prepended with "\\?\". Problem is that it does it for any path,
-# and will make equality comparison fail with paths that will use the simple form.
+# On Windows, os.readlink "typically" returns the resolved path in its "extended-style" form which
+# allows use of more than 259 characters and its string representation is prepended with "\\?\". See
+# https://docs.python.org/3/library/os.html#os.readlink. This causes problems for us because the
+# behavior is not consistent (see https://github.com/certbot/certbot/pull/10136) and paths that have
+# this prefix won't match those that do not in simple equality comparisons.
 def readlink(*unused_args, **unused_kwargs):  # type: ignore
     """Method os.readlink() is forbidden"""
     raise RuntimeError('Usage of os.readlink() is forbidden. '
