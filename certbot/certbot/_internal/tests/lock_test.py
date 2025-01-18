@@ -11,7 +11,7 @@ from certbot.compat import os
 from certbot.tests import util as test_util
 
 try:
-    import fcntl  # pylint: disable=import-error,unused-import  # noqa
+    import fcntl  # pylint: disable=import-error,unused-import
 except ImportError:
     POSIX_MODE = False
 else:

@@ -445,7 +445,7 @@ class ParseTest(unittest.TestCase):
         assert_set_by_user_with_value(namespace, 'renew_hook', value)
 
     def test_renew_hook_conflict(self):
-        with mock.patch("sys.stderr"):
+        with mock.patch("certbot._internal.cli.sys.stderr"):
             with pytest.raises(SystemExit):
                 self.parse("--deploy-hook foo --renew-hook bar".split())
 
