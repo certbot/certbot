@@ -392,7 +392,7 @@ class NginxConfigurator(common.Configurator):
             for addr in vh.addrs:
                 if addr.ipv6:
                     ipv6_active = True
-                if addr.ipv6only and addr.get_port() == port:
+                if addr.ipv6only and addr.get_port() == port and addr.get_addr() == host:
                     ipv6only_present = True
         return ipv6_active, ipv6only_present
 
