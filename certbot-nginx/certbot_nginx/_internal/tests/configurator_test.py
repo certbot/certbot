@@ -42,7 +42,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         assert (1, 6, 2) == self.config.version
-        assert 14 == len(self.config.parser.parsed)
+        assert 15 == len(self.config.parser.parsed)
 
     @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
     @mock.patch("certbot_nginx._internal.configurator.subprocess.run")
@@ -100,7 +100,7 @@ class NginxConfiguratorTest(util.NginxTest):
             "155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
-             "headers.com", "example.net", "ssl.both.com"}
+             "headers.com", "example.net", "ssl.both.com", 'addr-80.com'}
 
     def test_supported_enhancements(self):
         assert ['redirect', 'ensure-http-header', 'staple-ocsp'] == \
@@ -202,14 +202,30 @@ class NginxConfiguratorTest(util.NginxTest):
                     self.config.choose_vhosts(name)
 
     def test_choose_vhosts_keep_ip_address(self):
-        name = 'example.com'
-        conf_path = os.path.normpath('etc_nginx/sites-enabled/example.com')
+        # no listen on port 80
+        # listen       69.50.225.155:9000;
+        # listen       127.0.0.1;
+        vhost = self.config.choose_vhosts('example.com')[0]
+        assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
 
-        vhost = self.config.choose_vhosts(name)[0]
-        path = os.path.relpath(vhost.filep, self.temp_dir)
+        # no listens at all
+        vhost = self.config.choose_vhosts('headers.com')[0]
+        assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
+        assert obj.Addr.fromstring("80") in vhost.addrs
 
-        assert vhost.names == {'.example.com', 'example.*'}
-        assert path == conf_path
+        # blank addr listen on 80 should result in blank addr ssl
+        # listen 80;
+        # listen [::]:80;
+        vhost = self.config.choose_vhosts('ipv6.com')[0]
+        assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
+        assert obj.Addr.fromstring("[::]:5001 ssl") in vhost.addrs
+
+        # listen on 80 with ip address should result in copied addr
+        # listen 1.2.3.4:80;
+        # listen [1:20::300]:80;
+        vhost = self.config.choose_vhosts('addr-80.com')[0]
+        assert obj.Addr.fromstring("1.2.3.4:5001 ssl") in vhost.addrs
+        assert obj.Addr.fromstring("[1:20::300]:5001 ssl ipv6only=on") in vhost.addrs
 
 
     def test_ipv6only(self):
@@ -968,7 +984,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                                 prefer_ssl=False,
                                                 no_ssl_filter_port='80')
             # Check that the dialog was called with only port 80 vhosts
-            assert len(mock_select_vhs.call_args[0][0]) == 8
+            assert len(mock_select_vhs.call_args[0][0]) == 9
 
     def test_choose_auth_vhosts(self):
         """choose_auth_vhosts correctly selects duplicative and HTTP/HTTPS vhosts"""

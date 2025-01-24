@@ -726,6 +726,9 @@ class NginxConfigurator(common.Configurator):
         https_port = self.config.https_port
         http_port = self.config.http01_port
 
+        # no addresses should have ssl turned on here
+        assert not vhost.ssl
+
         sslified_addrs: List[obj.Addr] = [obj.Addr(addr.get_addr(), str(https_port), True, False,
                                                addr.ipv6, False)
                                          for addr in vhost.addrs
