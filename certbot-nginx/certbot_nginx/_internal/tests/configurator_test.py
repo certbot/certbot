@@ -211,14 +211,12 @@ class NginxConfiguratorTest(util.NginxTest):
         assert vhost.names == {'.example.com', 'example.*'}
         assert path == conf_path
 
-        import ipdb; ipdb.set_trace()
-
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
-        assert (True, False) == self.config.ipv6_info("80")
+        assert (True, False) == self.config.ipv6_info("[::]", "80")
         # Port 443 has ipv6only=on because of ipv6ssl.com vhost
-        assert (True, True) == self.config.ipv6_info("443")
+        assert (True, True) == self.config.ipv6_info("[::]", "443")
 
     def test_ipv6only_detection(self):
         self.config.version = (1, 3, 1)
@@ -598,7 +596,7 @@ class NginxConfiguratorTest(util.NginxTest):
         generated_conf = self.config.parser.parsed[example_conf]
         assert [[['server'], [
                ['server_name', '.example.com'],
-               ['server_name', 'example.*'], [],
+               ['server_name', 'example.*'],
                ['listen', '5001', 'ssl'], ['#', ' managed by Certbot'],
                ['ssl_certificate', 'example/fullchain.pem'], ['#', ' managed by Certbot'],
                ['ssl_certificate_key', 'example/key.pem'], ['#', ' managed by Certbot'],
@@ -628,7 +626,7 @@ class NginxConfiguratorTest(util.NginxTest):
         generated_conf = self.config.parser.parsed[example_conf]
         assert [[['server'], [
                ['server_name', '.example.com'],
-               ['server_name', 'example.*'], [],
+               ['server_name', 'example.*'],
                ['listen', '5001', 'ssl'], ['#', ' managed by Certbot'],
                ['ssl_certificate', 'example/fullchain.pem'], ['#', ' managed by Certbot'],
                ['ssl_certificate_key', 'example/key.pem'], ['#', ' managed by Certbot'],
@@ -643,7 +641,7 @@ class NginxConfiguratorTest(util.NginxTest):
                ['listen', '127.0.0.1'],
                ['server_name', '.example.com'],
                ['server_name', 'example.*'],
-               [], [], []]]] == \
+               [], []]]] == \
             generated_conf
 
     def test_http_header_hsts(self):

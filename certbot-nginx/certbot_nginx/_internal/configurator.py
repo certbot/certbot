@@ -745,7 +745,7 @@ class NginxConfigurator(common.Configurator):
                 sslified_addrs += [obj.Addr('', str(https_port), True, False, False, False)]
 
         addr_blocks: List[List[str]] = []
-        ipv6only_set_for_tuples_by_this_function: Set[Tuple[str, str]] = set()
+        ipv6only_set_here: Set[Tuple[str, str]] = set()
         for addr in sslified_addrs:
             host = addr.get_addr()
             port = addr.get_port()
@@ -757,9 +757,9 @@ class NginxConfigurator(common.Configurator):
                               ' ',
                               'ssl']
                 ipv6only_exists = self.ipv6_info(host, port)[1]
-                if not ipv6only_exists and (host, port) not in ipv6only_set_for_tuples_by_this_function:
+                if not ipv6only_exists and (host, port) not in ipv6only_set_here:
                     addr.ipv6only = True
-                    ipv6only_set_for_tuples_by_this_function.add((host, port))
+                    ipv6only_set_here.add((host, port))
                     addr_block.append(' ')
                     addr_block.append('ipv6only=on')
                 addr_blocks.append(addr_block)
