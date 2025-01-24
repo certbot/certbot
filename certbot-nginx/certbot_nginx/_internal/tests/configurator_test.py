@@ -201,6 +201,19 @@ class NginxConfiguratorTest(util.NginxTest):
                 with pytest.raises(errors.MisconfigurationError):
                     self.config.choose_vhosts(name)
 
+    def test_choose_vhosts_keep_ip_address(self):
+        name = 'example.com'
+        conf_path = os.path.normpath('etc_nginx/sites-enabled/example.com')
+
+        vhost = self.config.choose_vhosts(name)[0]
+        path = os.path.relpath(vhost.filep, self.temp_dir)
+
+        assert vhost.names == {'.example.com', 'example.*'}
+        assert path == conf_path
+
+        import ipdb; ipdb.set_trace()
+
+
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
         assert (True, False) == self.config.ipv6_info("80")

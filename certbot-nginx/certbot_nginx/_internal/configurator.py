@@ -371,13 +371,14 @@ class NginxConfigurator(common.Configurator):
 
         return vhosts
 
-    def ipv6_info(self, port: str) -> Tuple[bool, bool]:
+    def ipv6_info(self, host: str, port: str) -> Tuple[bool, bool]:
         """Returns tuple of booleans (ipv6_active, ipv6only_present)
         ipv6_active is true if any server block listens ipv6 address in any port
 
         ipv6only_present is true if ipv6only=on option exists in any server
         block ipv6 listen directive for the specified port.
 
+        :param str host: Host to check ipv6only=on directive for
         :param str port: Port to check ipv6only=on directive for
 
         :returns: Tuple containing information if IPv6 is enabled in the global
@@ -723,9 +724,12 @@ class NginxConfigurator(common.Configurator):
 
         """
         https_port = self.config.https_port
-        ipv6info = self.ipv6_info(str(https_port))
-        ipv6_block = ['']
-        ipv4_block = ['']
+        http_port = self.config.http01_port
+
+        sslified_addrs: List[obj.Addr] = [obj.Addr(addr.get_addr(), str(https_port), True, False,
+                                               addr.ipv6, False)
+                                         for addr in vhost.addrs
+                                         if addr.get_port() == str(http_port)]
 
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.
@@ -733,31 +737,46 @@ class NginxConfigurator(common.Configurator):
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block)
 
-        if vhost.ipv6_enabled():
-            ipv6_block = ['\n    ',
-                          'listen',
-                          ' ',
-                          '[::]:{0}'.format(https_port),
-                          ' ',
-                          'ssl']
-            if not ipv6info[1]:
-                # ipv6only=on is absent in global config
-                ipv6_block.append(' ')
-                ipv6_block.append('ipv6only=on')
+        if not sslified_addrs:
+            # there are no existing addressing listening on 80
+            if vhost.ipv6_enabled():
+                sslified_addrs += [obj.Addr('[::]', str(https_port), True, False, True, False)]
+            if vhost.ipv4_enabled():
+                sslified_addrs += [obj.Addr('', str(https_port), True, False, False, False)]
 
-        if vhost.ipv4_enabled():
-            ipv4_block = ['\n    ',
-                          'listen',
-                          ' ',
-                          '{0}'.format(https_port),
-                          ' ',
-                          'ssl']
+        addr_blocks: List[List[str]] = []
+        ipv6only_set_for_tuples_by_this_function: Set[Tuple[str, str]] = set()
+        for addr in sslified_addrs:
+            host = addr.get_addr()
+            port = addr.get_port()
+            if addr.ipv6:
+                addr_block = ['\n    ',
+                              'listen',
+                              ' ',
+                              f'{host}:{port}',
+                              ' ',
+                              'ssl']
+                ipv6only_exists = self.ipv6_info(host, port)[1]
+                if not ipv6only_exists and (host, port) not in ipv6only_set_for_tuples_by_this_function:
+                    addr.ipv6only = True
+                    ipv6only_set_for_tuples_by_this_function.add((host, port))
+                    addr_block.append(' ')
+                    addr_block.append('ipv6only=on')
+                addr_blocks.append(addr_block)
+            else:
+                tuple_string = f'{host}:{port}' if host else f'{port}'
+                addr_block = ['\n    ',
+                              'listen',
+                              ' ',
+                              tuple_string,
+                              ' ',
+                              'ssl']
+                addr_blocks.append(addr_block)
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
         ssl_block = ([
-            ipv6_block,
-            ipv4_block,
+            *addr_blocks,
             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
             ['\n    ', 'include', ' ', self.mod_ssl_conf],
