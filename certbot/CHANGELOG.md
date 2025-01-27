@@ -16,6 +16,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Deprecated `gen_ss_cert` in `acme.crypto_util` as it uses deprecated
   pyOpenSSL API.
 * Add `make_self_signed_cert` to `acme.crypto_util` to replace `gen_ss_cert.
+* Help output now shows `False` as default when it can be set via `cli.ini` instead of `None`
 
 ### Fixed
 
