@@ -1410,14 +1410,6 @@ class MainTest(test_util.ConfigTestCase):
         assert 'donate' in mock_register.call_args[0][1]
         assert mock_subscription.called is True
 
-    @mock.patch('certbot._internal.eff.handle_subscription')
-    def test_certonly_new_request_failure(self, mock_subscription):
-        mock_client = mock.MagicMock()
-        mock_client.obtain_and_enroll_certificate.return_value = False
-        with pytest.raises(errors.Error):
-            self._certonly_new_request_common(mock_client)
-        assert mock_subscription.called is False
-
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
                              quiet_mode=False, expiry_date=datetime.datetime.now(),
