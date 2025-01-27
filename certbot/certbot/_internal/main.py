@@ -140,8 +140,6 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
                 )
             )
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
-            if lineage is False:
-                raise errors.Error("Certificate could not be obtained")
             if lineage is not None:
                 hooks.deploy_hook(config, lineage.names(), lineage.live_dir)
                 renewed_domains.extend(domains)
