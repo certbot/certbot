@@ -182,7 +182,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         help=config_help("email"))
     helpful.add(["register", "update_account", "automation"], "--eff-email", action="store_true",
                 default=flag_default("eff_email"), dest="eff_email",
-                help="Share your e-mail address with EFF")
+                help="Share your e-mail address with EFF (default: False)")
     helpful.add(["register", "update_account", "automation"], "--no-eff-email",
                 action="store_false", default=flag_default("eff_email"), dest="eff_email",
                 help="Don't share your e-mail address with EFF")
@@ -336,7 +336,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         "--hsts", action="store_true", dest="hsts", default=flag_default("hsts"),
         help="Add the Strict-Transport-Security header to every HTTP response."
              " Forcing browser to always use SSL for the domain."
-             " Defends against SSL Stripping.")
+             " Defends against SSL Stripping. (default: False)")
     helpful.add(
         "security", "--no-hsts", action="store_false", dest="hsts",
         default=flag_default("hsts"), help=argparse.SUPPRESS)
@@ -345,7 +345,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         "--uir", action="store_true", dest="uir", default=flag_default("uir"),
         help='Add the "Content-Security-Policy: upgrade-insecure-requests"'
              ' header to every HTTP response. Forcing the browser to use'
-             ' https:// for every http:// resource.')
+             ' https:// for every http:// resource. (default: False)')
     helpful.add(
         "security", "--no-uir", action="store_false", dest="uir", default=flag_default("uir"),
         help=argparse.SUPPRESS)
@@ -353,7 +353,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         "security", "--staple-ocsp", action="store_true", dest="staple",
         default=flag_default("staple"),
         help="Enables OCSP Stapling. A valid OCSP response is stapled to"
-        " the certificate that the server offers during TLS.")
+        " the certificate that the server offers during TLS. (default: False)")
     helpful.add(
         "security", "--no-staple-ocsp", action="store_false", dest="staple",
         default=flag_default("staple"), help=argparse.SUPPRESS)
