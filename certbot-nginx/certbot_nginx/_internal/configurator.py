@@ -762,7 +762,7 @@ class NginxConfigurator(common.Configurator):
                               'ssl']
                 ipv6only_exists = self.ipv6_info(host, port)[1]
                 if not ipv6only_exists and (host, port) not in ipv6only_set_here:
-                    addr.ipv6only = True
+                    addr.ipv6only = True # bookkeeping in case we switch output implementation
                     ipv6only_set_here.add((host, port))
                     addr_block.append(' ')
                     addr_block.append('ipv6only=on')
