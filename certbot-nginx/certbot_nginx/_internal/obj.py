@@ -12,6 +12,10 @@ from certbot.plugins import common
 ADD_HEADER_DIRECTIVE = 'add_header'
 
 
+class SocketAddrError(Exception):
+    """Raised when a UNIX-domain socket address is encountered."""
+
+
 class Addr(common.Addr):
     r"""Represents an Nginx address, i.e. what comes after the 'listen'
     directive.
@@ -51,8 +55,15 @@ class Addr(common.Addr):
         self.unspecified_address = host in self.UNSPECIFIED_IPV4_ADDRESSES
 
     @classmethod
-    def fromstring(cls, str_addr: str) -> Optional["Addr"]:  # type: ignore[override]
-        """Initialize Addr from string."""
+    def fromstring(cls, str_addr: str) -> "Addr":
+        """Initialize Addr from string.
+
+        :param str str_addr: nginx address string
+        :returns: parsed nginx address
+        :rtype: Addr
+        :raises SocketAddrError: if a UNIX-domain socket address is given
+
+        """
         parts = str_addr.split(' ')
         ssl = False
         default = False
@@ -64,9 +75,9 @@ class Addr(common.Addr):
         # The first part must be the address
         addr = parts.pop(0)
 
-        # Ignore UNIX-domain sockets
+        # Raise for UNIX-domain sockets
         if addr.startswith('unix:'):
-            return None
+            raise SocketAddrError(f'encountered UNIX-domain socket address {str_addr}')
 
         # IPv6 check
         ipv6_match = re.match(r'\[.*\]', addr)

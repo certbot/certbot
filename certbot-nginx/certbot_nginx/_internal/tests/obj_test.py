@@ -16,8 +16,7 @@ class AddrTest(unittest.TestCase):
         self.addr4 = Addr.fromstring("*:80 default_server ssl")
         self.addr5 = Addr.fromstring("myhost")
         self.addr6 = Addr.fromstring("80 default_server spdy")
-        self.addr7 = Addr.fromstring("unix:/var/run/nginx.sock")
-        self.addr8 = Addr.fromstring("*:80 default ssl")
+        self.addr7 = Addr.fromstring("*:80 default ssl")
 
     def test_fromstring(self):
         assert self.addr1.get_addr() == "192.168.1.1"
@@ -50,9 +49,13 @@ class AddrTest(unittest.TestCase):
         assert self.addr6.ssl is False
         assert self.addr6.default is True
 
-        assert self.addr8.default is True
+        assert self.addr7.default is True
 
-        assert self.addr7 is None
+    def test_fromstring_socket(self):
+        from certbot_nginx._internal.obj import Addr, SocketAddrError
+        socket_string = r"unix:/var/run/nginx.sock"
+        with pytest.raises(SocketAddrError, match=socket_string):
+            Addr.fromstring(socket_string)
 
     def test_str(self):
         assert str(self.addr1) == "192.168.1.1"
@@ -61,7 +64,7 @@ class AddrTest(unittest.TestCase):
         assert str(self.addr4) == "*:80 default_server ssl"
         assert str(self.addr5) == "myhost"
         assert str(self.addr6) == "80 default_server"
-        assert str(self.addr8) == "*:80 default_server ssl"
+        assert str(self.addr7) == "*:80 default_server ssl"
 
     def test_to_string(self):
         assert self.addr1.to_string() == "192.168.1.1"
