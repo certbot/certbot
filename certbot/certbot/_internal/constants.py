@@ -37,7 +37,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     dry_run=False,
     register_unsafely_without_email=False,
     email=None,
-    eff_email=None, # listed as False in help output
+    eff_email=None, # listed as Ask in help output
     reinstall=False,
     expand=False,
     renew_by_default=False,
@@ -89,7 +89,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     user_agent_comment=None,
     csr=None,
     reason=0,
-    delete_after_revoke=None, # listed as False in help output
+    delete_after_revoke=None, # listed as Ask in help output
     rollback_checkpoints=1,
     init=False,
     prepare=False,
