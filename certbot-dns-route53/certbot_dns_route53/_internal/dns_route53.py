@@ -9,6 +9,7 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Type
+from typing import cast
 
 import boto3
 from botocore.exceptions import ClientError
@@ -107,7 +108,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
            domain.
         """
         paginator = self.r53.get_paginator("list_hosted_zones")
-        zones = []
+        zones: list[tuple[str, str]] = []
         target_labels = domain.rstrip(".").split(".")
         for page in paginator.paginate():
             for zone in page["HostedZones"]:
@@ -164,7 +165,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
                 ]
             }
         )
-        return response["ChangeInfo"]["Id"]
+        return cast(str, response["ChangeInfo"]["Id"])
 
     def _wait_for_change(self, change_id: str) -> None:
         """Wait for a change to be propagated to all Route53 DNS servers.
