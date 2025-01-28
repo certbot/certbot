@@ -26,6 +26,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Honor --reuse-key when --allow-subset-of-names is set
 * Fixed regression in symlink parsing on Windows that was introduced in Certbot
   3.1.0.
+* When adding ssl listen directives in nginx server blocks, IP addresses are now
+  preserved.
 
 More details about these changes can be found on our GitHub repo.
 
