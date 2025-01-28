@@ -44,7 +44,7 @@ def _create_subparsers(helpful: "helpful.HelpfulArgumentParser") -> None:
                 "--delete-after-revoke", action="store_true",
                 default=flag_default("delete_after_revoke"),
                 help="Delete certificates after revoking them, along with all previous and later "
-                "versions of those certificates. (default: False)")
+                "versions of those certificates. (default: Ask)")
     helpful.add("revoke",
                 "--no-delete-after-revoke", action="store_false",
                 dest="delete_after_revoke",
@@ -52,7 +52,7 @@ def _create_subparsers(helpful: "helpful.HelpfulArgumentParser") -> None:
                 help="Do not delete certificates after revoking them. This "
                      "option should be used with caution because the 'renew' "
                      "subcommand will attempt to renew undeleted revoked "
-                     "certificates. (default: True)")
+                     "certificates. (default: Ask)")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
