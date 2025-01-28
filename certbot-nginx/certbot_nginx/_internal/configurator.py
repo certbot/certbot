@@ -741,7 +741,7 @@ class NginxConfigurator(common.Configurator):
             self.parser.add_server_directives(vhost, listen_block)
 
         if not sslified_addrs:
-            # there are no existing addressing listening on 80
+            # there are no existing addresses listening on 80
             if vhost.ipv6_enabled():
                 sslified_addrs += [obj.Addr('[::]', str(https_port), True, False, True, False)]
             if vhost.ipv4_enabled():
