@@ -21,6 +21,7 @@ from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import cast
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -730,7 +731,7 @@ class NginxConfigurator(common.Configurator):
         assert not vhost.ssl
 
         addrs_to_insert: List[obj.Addr] = [
-            obj.Addr.fromstring(f'{addr.get_addr()}:{https_port} ssl')
+            cast(obj.Addr, obj.Addr.fromstring(f'{addr.get_addr()}:{https_port} ssl'))
             for addr in vhost.addrs
             if addr.get_port() == str(http_port)
         ]
@@ -744,9 +745,9 @@ class NginxConfigurator(common.Configurator):
         if not addrs_to_insert:
             # there are no existing addresses listening on 80
             if vhost.ipv6_enabled():
-                addrs_to_insert += [obj.Addr.fromstring(f'[::]:{https_port} ssl')]
+                addrs_to_insert += [cast(obj.Addr, obj.Addr.fromstring(f'[::]:{https_port} ssl'))]
             if vhost.ipv4_enabled():
-                addrs_to_insert += [obj.Addr.fromstring(f'{https_port} ssl')]
+                addrs_to_insert += [cast(obj.Addr, obj.Addr.fromstring(f'{https_port} ssl'))]
 
         addr_blocks: List[List[str]] = []
         ipv6only_set_here: Set[Tuple[str, str]] = set()
