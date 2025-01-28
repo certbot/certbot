@@ -729,10 +729,11 @@ class NginxConfigurator(common.Configurator):
         # no addresses should have ssl turned on here
         assert not vhost.ssl
 
-        sslified_addrs: List[obj.Addr] = [obj.Addr(addr.get_addr(), str(https_port), True, False,
-                                               addr.ipv6, False)
-                                         for addr in vhost.addrs
-                                         if addr.get_port() == str(http_port)]
+        addrs_to_insert: List[obj.Addr] = [
+            obj.Addr.fromstring(f'{addr.get_addr()}:{https_port} ssl')
+            for addr in vhost.addrs
+            if addr.get_port() == str(http_port)
+        ]
 
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.
@@ -740,16 +741,16 @@ class NginxConfigurator(common.Configurator):
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block)
 
-        if not sslified_addrs:
+        if not addrs_to_insert:
             # there are no existing addresses listening on 80
             if vhost.ipv6_enabled():
-                sslified_addrs += [obj.Addr('[::]', str(https_port), True, False, True, False)]
+                addrs_to_insert += [obj.Addr.fromstring(f'[::]:{https_port} ssl')]
             if vhost.ipv4_enabled():
-                sslified_addrs += [obj.Addr('', str(https_port), True, False, False, False)]
+                addrs_to_insert += [obj.Addr.fromstring(f'{https_port} ssl')]
 
         addr_blocks: List[List[str]] = []
         ipv6only_set_here: Set[Tuple[str, str]] = set()
-        for addr in sslified_addrs:
+        for addr in addrs_to_insert:
             host = addr.get_addr()
             port = addr.get_port()
             if addr.ipv6:
