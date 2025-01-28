@@ -598,11 +598,9 @@ def ariCertIdent(cert: crypto.X509) -> str:
             x509.oid.ExtensionOID.AUTHORITY_KEY_IDENTIFIER
         )
         akid = ext.value.key_identifier
-        if not akid:
-            raise ValueError("AccountKeyIdentifier does not have a KeyId field")
-    except Exception as exc:
-        #raise  # or CustomException
-        return '' # pragma: no cover
+    except (x509.ExtensionNotFound, AttributeError): # pragma: no cover
+        #return empty string as ident if akid doesn't exsit
+        return ''
     p1 = urlsafe_b64encode(akid).decode('ascii').replace("=", "")
 
     #p2 after period : base64url of serial
@@ -613,46 +611,3 @@ def ariCertIdent(cert: crypto.X509) -> str:
 
     #build certificate
     return f"{p1}.{p2}"
-
-def parseakid(ext:bytes) -> bytes:
-    """tiny parser subset of asn.1 to extract keyIdentifier from akid extinsion,
-      ignore other parts.
-    :param ext: akid certificate extension.
-    :type cert: bytes.
-
-    :returns: akid embeded in extension
-    :rtype: bytes or None if not right one exsit
-    """
-    offset = 0
-    length = 0
-    if ext[0] != 0x30:
-        #invalid extension, exit
-        raise Exception(offset, ext[0])
-        return ''
-    offset += 1
-    
-    if ext[offset] < 0x80:
-        totallen = ext[offset]
-        offset += 1 #short encoding
-    else: #long encoding
-        llen=ext[offset]
-        offset += 1
-        totallen = int.from_bytes(ext[offset:offset+llen],"big")
-        offset = offset +llen
-    #now header is done once and inside sequence
-    if ext[offset] == 0x80:
-        #this is what we find
-        offset += 1
-        if ext[offset] < 0x80:
-            totallen = ext[offset]
-            offset += 1 #short encoding
-            akid = ext[offset:offset+totallen]
-        else: #long encoding
-            llen=ext[offset]
-            offset += 1
-            totallen = int.from_bytes(ext[offset:offset+llen],"big")
-            offset = offset +llen
-            akid = ext[offset:offset+totallen]
-        return akid
-    else: #akid extionsion doesn't have keyidentifier
-        return None
