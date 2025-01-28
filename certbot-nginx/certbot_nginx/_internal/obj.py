@@ -51,7 +51,7 @@ class Addr(common.Addr):
         self.unspecified_address = host in self.UNSPECIFIED_IPV4_ADDRESSES
 
     @classmethod
-    def fromstring(cls, str_addr: str) -> Optional["Addr"]:
+    def fromstring(cls, str_addr: str) -> Optional["Addr"]:  # type: ignore[override]
         """Initialize Addr from string."""
         parts = str_addr.split(' ')
         ssl = False
