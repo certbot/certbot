@@ -581,7 +581,7 @@ def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X50
     # newline character
     return b"".join(_dump_cert(cert) for cert in chain)
 
-def ariCertIdent(cert: crypto.X509) -> str:
+def ariCertIdent(crypto_cert: x509.Certificate) -> str:
     """Make draft-ietf-acme-ari-03 identifier of a certificate
     :param cert: Certificate.
     :type cert: `OpenSSL.crypto.X509`.
@@ -591,20 +591,21 @@ def ariCertIdent(cert: crypto.X509) -> str:
     :rtype: str
     """
 
-    crypto_cert = cert.to_cryptography()
     akid = None
     try:
-        ext = crypto_cert.extensions.get_extension_for_oid(
-            x509.oid.ExtensionOID.AUTHORITY_KEY_IDENTIFIER
+        ext = crypto_cert.extensions.get_extension_for_class(
+            x509.AuthorityKeyIdentifier
         )
         akid = ext.value.key_identifier
-    except (x509.ExtensionNotFound, AttributeError): # pragma: no cover
+        if akid is None: # pragma: no cover
+            return ''
+    except x509.ExtensionNotFound:
         #return empty string as ident if akid doesn't exsit
         return ''
     p1 = urlsafe_b64encode(akid).decode('ascii').replace("=", "")
 
     #p2 after period : base64url of serial
-    serial = cert.get_serial_number()
+    serial = crypto_cert.serial_number
     # we need one more byte when aligend due to sign padding
     p2b = urlsafe_b64encode(serial.to_bytes((serial.bit_length() +8) // 8, 'big'))
     p2 = p2b.decode('ascii').replace("=", "")

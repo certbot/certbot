@@ -533,7 +533,8 @@ def ariCertIdent(cert_path: str) -> str:
     :rtype: str
     """
     with open(cert_path, "rb") as f:
-        cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
+        #cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
+        cert = x509.load_pem_x509_certificate(f.read())
     return acme_crypto_util.ariCertIdent(cert)
 
 def sha256sum(filename: str) -> str:
