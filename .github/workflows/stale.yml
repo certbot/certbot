@@ -3,6 +3,7 @@ on:
   schedule:
     # Run 1:24AM every night
     - cron: '24 1 * * *'
+  workflow_dispatch:
 permissions:
   issues: write
 jobs:

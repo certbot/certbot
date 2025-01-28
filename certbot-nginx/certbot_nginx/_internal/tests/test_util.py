@@ -1,5 +1,6 @@
 """Common utilities for certbot_nginx."""
 import copy
+import importlib.resources
 import shutil
 import tempfile
 import sys
@@ -14,11 +15,6 @@ from certbot.plugins import common
 from certbot.tests import util as test_util
 from certbot_nginx._internal import configurator
 from certbot_nginx._internal import nginxparser
-
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
 
 class NginxTest(test_util.ConfigTestCase):
 
@@ -86,8 +82,8 @@ class NginxTest(test_util.ConfigTestCase):
 @contextmanager
 def get_data_filename(filename):
     """Gets the filename of a test data file."""
-    ref = importlib_resources.files(__package__) / "testdata" / "etc_nginx"/ filename
-    with importlib_resources.as_file(ref) as path:
+    ref = importlib.resources.files(__package__) / "testdata" / "etc_nginx"/ filename
+    with importlib.resources.as_file(ref) as path:
         yield path
 
 

@@ -3,10 +3,10 @@
 import atexit
 from contextlib import ExitStack
 import logging
+import importlib.resources
 import re
 import socket
 import subprocess
-import sys
 import tempfile
 import time
 from typing import Any
@@ -22,7 +22,8 @@ from typing import Tuple
 from typing import Type
 from typing import Union
 
-import OpenSSL
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
@@ -39,11 +40,6 @@ from certbot_nginx._internal import http_01
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
 from certbot_nginx._internal import parser
-
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1
@@ -171,10 +167,10 @@ class NginxConfigurator(common.Configurator):
 
         file_manager = ExitStack()
         atexit.register(file_manager.close)
-        ref = (importlib_resources.files("certbot_nginx").joinpath("_internal")
+        ref = (importlib.resources.files("certbot_nginx").joinpath("_internal")
                .joinpath("tls_configs").joinpath(config_filename))
 
-        return str(file_manager.enter_context(importlib_resources.as_file(ref)))
+        return str(file_manager.enter_context(importlib.resources.as_file(ref)))
 
     @property
     def mod_ssl_conf(self) -> str:
@@ -691,7 +687,7 @@ class NginxConfigurator(common.Configurator):
                         else:
                             socket.inet_pton(socket.AF_INET, host)
                         all_names.add(socket.gethostbyaddr(host)[0])
-                    except (socket.error, socket.herror, socket.timeout):
+                    except (OSError, socket.herror, socket.timeout):
                         continue
 
         return util.get_filtered_names(all_names)
@@ -701,14 +697,16 @@ class NginxConfigurator(common.Configurator):
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
         le_key = crypto_util.generate_key(
-            key_size=2048, key_dir=tmp_dir, keyname="key.pem",
+            key_type='rsa', key_size=2048, key_dir=tmp_dir, keyname="key.pem",
             strict_permissions=self.config.strict_permissions)
         assert le_key.file is not None
-        key = OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
-        cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
-        cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, cert)
+        cryptography_key = serialization.load_pem_private_key(le_key.pem, password=None)
+        assert isinstance(cryptography_key, rsa.RSAPrivateKey)
+        cert = acme_crypto_util.make_self_signed_cert(
+            cryptography_key,
+            domains=[socket.gethostname()]
+        )
+        cert_pem = cert.public_bytes(serialization.Encoding.PEM)
         cert_file, cert_path = util.unique_file(
             os.path.join(tmp_dir, "cert.pem"), mode="wb")
         with cert_file:

@@ -2,10 +2,10 @@
 import atexit
 import binascii
 import fnmatch
+import importlib.resources
 import logging
 import re
 import subprocess
-import sys
 from contextlib import ExitStack
 from typing import Dict
 from typing import Iterable
@@ -16,12 +16,6 @@ from typing import Tuple
 from certbot import errors
 from certbot import util
 from certbot.compat import os
-
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
-
 
 logger = logging.getLogger(__name__)
 
@@ -257,6 +251,6 @@ def find_ssl_apache_conf(prefix: str) -> str:
     """
     file_manager = ExitStack()
     atexit.register(file_manager.close)
-    ref = (importlib_resources.files("certbot_apache").joinpath("_internal")
+    ref = (importlib.resources.files("certbot_apache").joinpath("_internal")
            .joinpath("tls_configs").joinpath("{0}-options-ssl-apache.conf".format(prefix)))
-    return str(file_manager.enter_context(importlib_resources.as_file(ref)))
+    return str(file_manager.enter_context(importlib.resources.as_file(ref)))

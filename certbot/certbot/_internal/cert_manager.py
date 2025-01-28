@@ -30,22 +30,6 @@ logger = logging.getLogger(__name__)
 ###################
 
 
-def update_live_symlinks(config: configuration.NamespaceConfig) -> None:
-    """Update the certificate file family symlinks to use archive_dir.
-
-    Use the information in the config file to make symlinks point to
-    the correct archive directory.
-
-    .. note:: This assumes that the installation is using a Reverter object.
-
-    :param config: Configuration.
-    :type config: :class:`certbot._internal.configuration.NamespaceConfig`
-
-    """
-    for renewal_file in storage.renewal_conf_files(config):
-        storage.RenewableCert(renewal_file, config, update_symlinks=True)
-
-
 def rename_lineage(config: configuration.NamespaceConfig) -> None:
     """Rename the specified lineage to the new name.
 
@@ -133,7 +117,7 @@ def lineage_for_certname(cli_config: configuration.NamespaceConfig,
         return None
     try:
         return storage.RenewableCert(renewal_file, cli_config)
-    except (errors.CertStorageError, IOError):
+    except (OSError, errors.CertStorageError):
         logger.debug("Renewal conf file %s is broken.", renewal_file)
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
@@ -435,7 +419,7 @@ def _search_lineages(cli_config: configuration.NamespaceConfig, func: Callable[.
     for renewal_file in storage.renewal_conf_files(cli_config):
         try:
             candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
-        except (errors.CertStorageError, IOError):
+        except (OSError, errors.CertStorageError):
             logger.debug("Renewal conf file %s is broken. Skipping.", renewal_file)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             continue

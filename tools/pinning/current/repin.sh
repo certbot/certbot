@@ -9,7 +9,11 @@ set -euo pipefail
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 COMMON_DIR="$(dirname "${WORK_DIR}")/common"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-RELATIVE_SCRIPT_PATH="$(realpath --relative-to "$REPO_ROOT" "$WORK_DIR")/$(basename "${BASH_SOURCE[0]}")"
+if ! RELATIVE_WORK_DIR="$(realpath --relative-to "$REPO_ROOT" "$WORK_DIR")"; then
+    echo this script needs GNU coreutils to be first in your PATH rather than macOS/BSD versions
+    exit 1
+fi
+RELATIVE_SCRIPT_PATH="$RELATIVE_WORK_DIR/$(basename "${BASH_SOURCE[0]}")"
 REQUIREMENTS_FILE="$REPO_ROOT/tools/requirements.txt"
 
 PINNINGS=$("${COMMON_DIR}/export-pinned-dependencies.sh" "${WORK_DIR}" "$@")

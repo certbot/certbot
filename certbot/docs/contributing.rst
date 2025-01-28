@@ -17,8 +17,11 @@ its dependencies, Certbot needs to be run on a UNIX-like OS so if you're using
 Windows, you'll need to set up a (virtual) machine running an OS such as Linux
 and continue with these instructions on that UNIX-like OS.
 
+If you're using macOS, it is recommended to first check out the `macOS
+suggestions`_ section before continuing with the installation instructions
+below.
+
 .. _local copy:
-.. _prerequisites:
 
 Running a local copy of the client
 ----------------------------------
@@ -47,14 +50,22 @@ Install and configure the OS system dependencies required to run Certbot.
    # NB2: RHEL-based distributions use python3X instead of python3 (e.g. python38)
    sudo dnf install python3 augeas-libs
    # For macOS installations with Homebrew already installed and configured
-   # NB: If you also run `brew install python` you don't need the ~/lib
-   #     directory created below, however, without this directory and symlinks
-   #     to augeas, Certbot's Apache plugin won't work if you use Python
-   #     installed from other sources such as pyenv or the version provided by
-   #     Apple.
-   brew install augeas
+   # NB1: If you also run `brew install python` you don't need the ~/lib
+   #      directory created below, however, without this directory and symlinks
+   #      to augeas, Certbot's Apache plugin won't work if you use Python
+   #      installed from other sources such as pyenv or the version provided by
+   #      Apple.
+   # NB2: Some of our developer scripts expect GNU coreutils be first in your
+   #      PATH. The commands below set this up for bash and zsh, but your
+   #      instructions may be slightly different if you use an alternate shell.
+   brew install augeas coreutils gnu-sed
    mkdir ~/lib
-   ln -s $(brew --prefix)/lib/libaugeas* ~/lib
+   BREW_PREFIX=$(brew --prefix)
+   ln -s "$BREW_PREFIX"/lib/libaugeas* ~/lib
+   RC_LINE="export PATH=\"$BREW_PREFIX/opt/coreutils/libexec/gnubin:"
+   RC_LINE+="$BREW_PREFIX/opt/gnu-sed/libexec/gnubin:\$PATH\""
+   echo "$RC_LINE" >> ~/.bashrc  # for bash
+   echo "$RC_LINE" >> ~/.zshrc  # for zsh
 
 .. note:: If you have trouble creating the virtual environment below, you may
    need to install additional dependencies. See the `cryptography project's
@@ -93,17 +104,15 @@ found in the `virtualenv docs`_.
 Find issues to work on
 ----------------------
 
-You can find the open issues in the `github issue tracker`_.  Comparatively
-easy ones are marked `good first issue`_.  If you're starting work on
-something, post a comment to let others know and seek feedback on your plan
-where appropriate.
+You can find the open issues in the `github issue tracker`_. If you're starting
+work on something, post a comment to let others know and seek feedback on your
+plan where appropriate.
 
 Once you've got a working branch, you can open a pull request.  All changes in
 your pull request must have thorough unit test coverage, pass our
 tests, and be compliant with the :ref:`coding style <coding-style>`.
 
 .. _github issue tracker: https://github.com/certbot/certbot/issues
-.. _good first issue: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 
 .. _testing:
 
@@ -237,8 +246,6 @@ certbot-apache and certbot-nginx
   client code to configure specific web servers
 certbot-dns-*
   client code to configure DNS providers
-windows installer
-  Installs Certbot on Windows and is built using the files in windows-installer/
 
 Plugin-architecture
 -------------------
@@ -255,8 +262,8 @@ certificate once it is issued. Some plugins, like the built-in Apache and Nginx
 plugins, implement both interfaces and perform both tasks. Others, like the
 built-in Standalone authenticator, implement just one interface.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/plugins/common.py#L45
+.. _interfaces.py: https://github.com/certbot/certbot/blob/main/certbot/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/main/certbot/certbot/plugins/common.py#L45
 
 
 Authenticators
@@ -386,7 +393,7 @@ identifier ``metadata-1``.
 
 The script used to generate the snapcraft.yaml files for our own externally
 snapped plugins can be found at
-https://github.com/certbot/certbot/blob/master/tools/snap/generate_dnsplugins_snapcraft.sh.
+https://github.com/certbot/certbot/blob/main/tools/snap/generate_dnsplugins_snapcraft.sh.
 
 For more information on building externally snapped plugins, see the section on
 :ref:`Building snaps`.
@@ -559,7 +566,7 @@ Building the Certbot and DNS plugin snaps
 
 Instructions for how to manually build and run the Certbot snap and the externally
 snapped DNS plugins that the Certbot project supplies are located in the README
-file at https://github.com/certbot/certbot/tree/master/tools/snap.
+file at https://github.com/certbot/certbot/tree/main/tools/snap.
 
 Updating the documentation
 ==========================
@@ -586,8 +593,7 @@ Certbot's dependencies
 
 We attempt to pin all of Certbot's dependencies whenever we can for reliability
 and consistency. Some of the places we have Certbot's dependencies pinned
-include our snaps, Docker images, Windows installer, CI, and our development
-environments.
+include our snaps, Docker images, CI, and our development environments.
 
 In most cases, the file where dependency versions are specified is
 ``tools/requirements.txt``. The one exception to this is our "oldest" tests
@@ -626,25 +632,42 @@ If you want to learn more about the design used here, see
 Choosing dependency versions
 ----------------------------
 
-A number of Unix distributions create third-party Certbot packages for their users.
-Where feasible, the Certbot project tries to manage its dependencies in a way that
-does not create avoidable work for packagers.
+When choosing dependency versions, we should choose whatever minimum versions
+simplify development of Certbot and our own distribution methods such as snaps,
+pip, and docker. Since these approaches have full access to PyPI, it's OK if
+the required packages declared in ``setup.py`` are quite new.
 
-Avoiding adding new dependencies is a good way to help with this.
+If this approach to development creates significant trouble for some of our users, we
+can revisit this decision and weigh their trouble against the difficulties
+involved in maintaining support for a wider range of package versions. When
+doing this, we should also be sure to consider the feasibility of users getting
+access to these newer packages on their system rather than changing our own
+approach here. Their OS distribution may be able to package it, especially in
+an alternate repository and/or for a different version of Python to help avoid
+conflicts with other packages on their system.
 
-When adding new or upgrading existing Python dependencies, Certbot developers should
-pay attention to which distributions are actively packaging Certbot. In particular:
+macOS suggestions
+=================
 
-- EPEL (used by RHEL/CentOS/Fedora) updates Certbot regularly. At the time of writing,
-  EPEL9 is the release of EPEL where Certbot is being updated, but check the `EPEL
-  home page <https://docs.fedoraproject.org/en-US/epel/>`_ and `pkgs.org
-  <https://pkgs.org/search/?q=python3-certbot>`_ for the latest release.
-- Debian and Ubuntu only package Certbot when making new releases of their distros.
-  Checking the available version of dependencies in Debian "sid" and "unstable" can help
-  to identify dependencies that are likely to be available in the next stable release of
-  these distros.
+If you're developing on macOS, before :ref:`setting up your Certbot development
+environment <local copy>`, it is recommended you perform the following steps.
+None of this is required, but it is the approach used by all/most of the
+current Certbot developers on macOS as of writing this:
 
-If a dependency is already packaged in these distros and is acceptable for use in Certbot,
-the oldest packaged version of that dependency should be chosen and set as the minimum
-version in ``setup.py``.
+0. Install `Homebrew <https://brew.sh/>`_. It is the most popular package
+   manager on macOS by a wide margin and works well enough.
+1. Install `pyenv <https://github.com/pyenv/pyenv>`_, ideally through Homebrew
+   by running ``brew install pyenv``. Using Homebrew's Python for Certbot
+   development is annoying because it regularly updates and every time it does
+   it breaks your virtual environments. Using Python from ``pyenv`` avoids this
+   problem and gives you easy access to all versions of Python.
+2. If you're using ``pyenv``, make sure you've set up your shell for it by
+   following instructions like
+   https://github.com/pyenv/pyenv?tab=readme-ov-file#set-up-your-shell-environment-for-pyenv.
+3. Configure ``git`` to ignore the ``.DS_Store`` files that are created by
+   macOS's file manager Finder by running something like:
 
+.. code-block:: shell
+
+   mkdir -p ~/.config/git
+   echo '.DS_Store' >> ~/.config/git/ignore

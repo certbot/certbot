@@ -1,6 +1,5 @@
 """ACME Identifier Validation Challenges."""
 import abc
-import codecs
 import functools
 import hashlib
 import logging
@@ -15,6 +14,7 @@ from typing import Type
 from typing import TypeVar
 from typing import Union
 
+from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 import josepy as jose
 from OpenSSL import crypto
@@ -89,7 +89,7 @@ class _TokenChallenge(Challenge):
     :ivar bytes token:
 
     """
-    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
+    TOKEN_SIZE = 128 // 8  # Based on the entropy value from the spec
     """Minimum size of the :attr:`token` in bytes."""
 
     # TODO: acme-spec doesn't specify token as base64-encoded value
@@ -435,12 +435,22 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
             key = crypto.PKey()
             key.generate_key(crypto.TYPE_RSA, bits)
 
-        der_value = b"DER:" + codecs.encode(self.h, 'hex')
-        acme_extension = crypto.X509Extension(self.ID_PE_ACME_IDENTIFIER_V1,
-                                              critical=True, value=der_value)
+        oid = x509.ObjectIdentifier(self.ID_PE_ACME_IDENTIFIER_V1.decode())
+        acme_extension = x509.Extension(
+            oid,
+            critical=True,
+            value=x509.UnrecognizedExtension(oid, self.h)
+        )
 
-        return crypto_util.gen_ss_cert(key, [domain], force_san=True,
-                                       extensions=[acme_extension]), key
+        cryptography_key = key.to_cryptography_key()
+        assert isinstance(cryptography_key, crypto_util.CertificateIssuerPrivateKeyTypesTpl)
+        cert = crypto_util.make_self_signed_cert(
+            cryptography_key,
+            [domain],
+            force_san=True,
+            extensions=[acme_extension]
+        )
+        return crypto.X509.from_cryptography(cert), key
 
     def probe_cert(self, domain: str, host: Optional[str] = None,
                    port: Optional[int] = None) -> crypto.X509:
@@ -460,34 +470,39 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         return crypto_util.probe_sni(host=host.encode(), port=port, name=domain.encode(),
                                      alpn_protocols=[self.ACME_TLS_1_PROTOCOL])
 
-    def verify_cert(self, domain: str, cert: crypto.X509) -> bool:
+    def verify_cert(self, domain: str, cert: Union[x509.Certificate, crypto.X509]) -> bool:
         """Verify tls-alpn-01 challenge certificate.
 
         :param str domain: Domain name being validated.
-        :param OpensSSL.crypto.X509 cert: Challenge certificate.
+        :param cert: Challenge certificate.
+        :type cert: `cryptography.x509.Certificate` or `OpenSSL.crypto.X509`
 
         :returns: Whether the certificate was successfully verified.
         :rtype: bool
 
         """
-        # pylint: disable=protected-access
-        names = crypto_util._pyopenssl_cert_or_req_all_names(cert)
-        # Type ignore needed due to
-        # https://github.com/pyca/pyopenssl/issues/730.
-        logger.debug('Certificate %s. SANs: %s',
-                     cert.digest('sha256'), names)
+        if not isinstance(cert, x509.Certificate):
+            cert = cert.to_cryptography()
+
+        names = crypto_util.get_names_from_subject_and_extensions(
+            cert.subject, cert.extensions
+        )
+        logger.debug(
+            "Certificate %s. SANs: %s", cert.fingerprint(hashes.SHA256()), names
+        )
         if len(names) != 1 or names[0].lower() != domain.lower():
             return False
 
-        for i in range(cert.get_extension_count()):
-            ext = cert.get_extension(i)
-            # FIXME: assume this is the ACME extension. Currently there is no
-            # way to get full OID of an unknown extension from pyopenssl.
-            if ext.get_short_name() == b'UNDEF':
-                data = ext.get_data()
-                return data == self.h
+        try:
+            ext = cert.extensions.get_extension_for_oid(
+                x509.ObjectIdentifier(self.ID_PE_ACME_IDENTIFIER_V1.decode())
+            )
+        except x509.ExtensionNotFound:
+            return False
 
-        return False
+        # This is for the type checker.
+        assert isinstance(ext.value, x509.UnrecognizedExtension)
+        return ext.value.value == self.h
 
     # pylint: disable=too-many-arguments
     def simple_verify(self, chall: 'TLSALPN01', domain: str, account_public_key: jose.JWK,

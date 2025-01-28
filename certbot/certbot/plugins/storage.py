@@ -48,7 +48,7 @@ class PluginStorage:
         try:
             with open(self._storagepath, 'r') as fh:
                 filedata = fh.read()
-        except IOError as e:
+        except OSError as e:
             errmsg = "Could not read PluginStorage data file: {0} : {1}".format(
                 self._storagepath, str(e))
             if os.path.isfile(self._storagepath):
@@ -92,7 +92,7 @@ class PluginStorage:
                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
                     0o600), 'w') as fh:
                 fh.write(serialized)
-        except IOError as e:
+        except OSError as e:
             errmsg = "Could not write PluginStorage data to file {0} : {1}".format(
                 self._storagepath, str(e))
             logger.error(errmsg)

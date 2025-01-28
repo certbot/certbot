@@ -30,18 +30,18 @@ install_requires = [
     f'acme>={version}',
     'ConfigArgParse>=1.5.3',
     'configobj>=5.0.6',
-    'cryptography>=3.2.1',
+    'cryptography>=42.0.0',
     'distro>=1.0.1',
-    'importlib_resources>=1.3.1; python_version < "3.9"',
     'importlib_metadata>=4.6; python_version < "3.10"',
-    'josepy>=1.13.0',
+    # Josepy 2+ may introduce backward incompatible changes by droping usage of
+    # deprecated PyOpenSSL APIs.
+    'josepy>=1.13.0, <2',
     'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz>=2019.3',
     # This dependency needs to be added using environment markers to avoid its
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
-    'setuptools>=41.6.0',
 ]
 
 dev_extras = [
@@ -77,13 +77,11 @@ test_extras = [
     'setuptools',
     'tox',
     'types-httplib2',
-    'types-pyOpenSSL',
     'types-pyRFC3339',
     'types-pytz',
     'types-pywin32',
     'types-requests',
     'types-setuptools',
-    'types-six',
     'wheel',
 ]
 
@@ -99,7 +97,7 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.8',
+    python_requires='>=3.9',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -109,7 +107,6 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',

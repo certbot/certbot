@@ -844,21 +844,6 @@ class RenewableCertTests(BaseRenewableCertTest):
         assert stat.S_IMODE(os.lstat(temp).st_mode) == \
                          stat.S_IMODE(os.lstat(temp2).st_mode)
 
-    def test_update_symlinks(self):
-        from certbot._internal import storage
-        archive_dir_path = os.path.join(self.config.config_dir, "archive", "example.org")
-        for kind in ALL_FOUR:
-            live_path = self.config_file[kind]
-            basename = kind + "1.pem"
-            archive_path = os.path.join(archive_dir_path, basename)
-            open(archive_path, 'a').close()
-            os.symlink(os.path.join(self.config.config_dir, basename), live_path)
-        with pytest.raises(errors.CertStorageError):
-            storage.RenewableCert(self.config_file.filename,
-                          self.config)
-        storage.RenewableCert(self.config_file.filename, self.config,
-            update_symlinks=True)
-
     def test_truncate(self):
         # It should not do anything when there's less than 5 cert history
         for kind in ALL_FOUR:

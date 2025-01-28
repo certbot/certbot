@@ -35,8 +35,8 @@ class RawNginxParser:
     """A class that parses nginx configuration with pyparsing."""
 
     # constants
-    space = Optional(White()).leaveWhitespace()
-    required_space = White().leaveWhitespace()
+    space = Optional(White(ws=' \t\r\n\u00a0')).leaveWhitespace()
+    required_space = White(ws=' \t\r\n\u00a0').leaveWhitespace()
 
     left_bracket = Literal("{").suppress()
     right_bracket = space + Literal("}").suppress()
@@ -102,8 +102,7 @@ class RawNginxDumper:
             if isinstance(item[0], list): # block
                 yield "".join(item.pop(0)) + '{'
                 for parameter in item.pop(0):
-                    for line in self.__iter__([parameter]): # negate "for b0 in blocks"
-                        yield line
+                    yield from self.__iter__([parameter]) # negate "for b0 in blocks"
                 yield '}'
             else: # not a block - list of strings
                 semicolon = ";"
@@ -294,7 +293,7 @@ def dumps(blocks: UnspacedList) -> str:
     """Dump to a Unicode string.
 
     :param UnspacedList blocks: The parsed tree
-    :rtype: six.text_type
+    :rtype: str
 
     """
     return str(RawNginxDumper(blocks.spaced))

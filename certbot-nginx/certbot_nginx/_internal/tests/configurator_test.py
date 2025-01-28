@@ -2,8 +2,10 @@
 import sys
 from unittest import mock
 
-import OpenSSL
 import pytest
+
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
 
 from acme import challenges
 from acme import messages
@@ -545,12 +547,10 @@ class NginxConfiguratorTest(util.NginxTest):
         cert, key = self.config._get_snakeoil_paths()
         assert os.path.exists(cert)
         assert os.path.exists(key)
-        with open(cert) as cert_file:
-            OpenSSL.crypto.load_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, cert_file.read())
-        with open(key) as key_file:
-            OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, key_file.read())
+        with open(cert, "rb") as cert_file:
+            x509.load_pem_x509_certificate(cert_file.read())
+        with open(key, "rb") as key_file:
+            serialization.load_pem_private_key(key_file.read(), password=None)
 
     def test_redirect_enhance(self):
         # Test that we successfully add a redirect when there is
@@ -1074,16 +1074,13 @@ class InstallSslOptionsConfTest(util.NginxTest):
         file has been manually edited by the user, and will refuse to update it.
         This test ensures that all necessary hashes are present.
         """
-        if sys.version_info >= (3, 9):  # pragma: no cover
-            import importlib.resources as importlib_resources
-        else:  # pragma: no cover
-            import importlib_resources
-        
+        import importlib.resources
+
         from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
 
-        tls_configs_ref = importlib_resources.files("certbot_nginx").joinpath(
+        tls_configs_ref = importlib.resources.files("certbot_nginx").joinpath(
             "_internal", "tls_configs")
-        with importlib_resources.as_file(tls_configs_ref) as tls_configs_dir:
+        with importlib.resources.as_file(tls_configs_ref) as tls_configs_dir:
             for tls_config_file in os.listdir(tls_configs_dir):
                 file_hash = crypto_util.sha256sum(os.path.join(tls_configs_dir, tls_config_file))
                 assert file_hash in ALL_SSL_OPTIONS_HASHES, \

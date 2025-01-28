@@ -6,7 +6,6 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
-from typing import Type
 from typing import TYPE_CHECKING
 from typing import TypeVar
 
@@ -21,7 +20,8 @@ if TYPE_CHECKING:
 
 GenericAugeasParserNode = TypeVar("GenericAugeasParserNode", bound="AugeasParserNode")
 GenericApacheParserNode = TypeVar("GenericApacheParserNode", bound="ApacheParserNode")
-GenericDualNode = TypeVar("GenericDualNode", bound="DualNodeBase")
+# Circular imports needs Any, see https://github.com/python/mypy/issues/11910
+GenericDualNode = TypeVar("GenericDualNode", bound="DualNodeBase[Any, Any]")
 
 
 class DualNodeBase(Generic[GenericAugeasParserNode, GenericApacheParserNode]):
@@ -53,11 +53,11 @@ class DualNodeBase(Generic[GenericAugeasParserNode, GenericApacheParserNode]):
             assertions.assertEqualSimple(firstval, secondval)
         return firstval
 
-    def find_ancestors(self, name: str) -> List["DualNodeBase"]:
+    def find_ancestors(self, name: str) -> List["DualBlockNode"]:
         """ Traverses the ancestor tree and returns ancestors matching name """
         return self._find_helper(DualBlockNode, "find_ancestors", name)
 
-    def _find_helper(self, nodeclass: Type[GenericDualNode], findfunc: str, search: str,
+    def _find_helper(self, nodeclass: type[GenericDualNode], findfunc: str, search: str,
                      **kwargs: Any) -> List[GenericDualNode]:
         """A helper for find_* functions. The function specific attributes should
         be passed as keyword arguments.

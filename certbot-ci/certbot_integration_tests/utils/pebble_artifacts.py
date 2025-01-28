@@ -1,10 +1,10 @@
 # pylint: disable=missing-module-docstring
 import atexit
+import importlib.resources
 import io
 import json
 import os
 import stat
-import sys
 import zipfile
 from contextlib import ExitStack
 from typing import Optional, Tuple
@@ -14,11 +14,6 @@ import requests
 from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
-
 PEBBLE_VERSION = 'v2.6.0'
 
 
@@ -26,8 +21,8 @@ def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str
     # pylint: disable=missing-function-docstring
     file_manager = ExitStack()
     atexit.register(file_manager.close)
-    pebble_path_ref = importlib_resources.files('certbot_integration_tests') / 'assets'
-    assets_path = str(file_manager.enter_context(importlib_resources.as_file(pebble_path_ref)))
+    pebble_path_ref = importlib.resources.files('certbot_integration_tests') / 'assets'
+    assets_path = str(file_manager.enter_context(importlib.resources.as_file(pebble_path_ref)))
 
     pebble_path = _fetch_asset('pebble', assets_path)
     challtestsrv_path = _fetch_asset('pebble-challtestsrv', assets_path)

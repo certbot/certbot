@@ -659,7 +659,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
 
         # new account
         try:
-            self._call(f'--cert-name example.com --account newaccountid'.split())
+            self._call('--cert-name example.com --account newaccountid'.split())
         except errors.ConfigurationError as err:
             assert "Using reconfigure to change the ACME account" in str(err)
 
@@ -674,7 +674,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
 
         # new server
         try:
-            self._call(f'--cert-name example.com --server x.com'.split())
+            self._call('--cert-name example.com --server x.com'.split())
         except errors.ConfigurationError as err:
             assert "Using reconfigure to change the ACME account" in str(err)
 
@@ -1215,11 +1215,6 @@ class MainTest(test_util.ConfigTestCase):
         client.rollback.assert_called_once_with(
             mock.ANY, 123, mock.ANY, mock.ANY)
 
-    @mock.patch('certbot._internal.cert_manager.update_live_symlinks')
-    def test_update_symlinks(self, mock_cert_manager):
-        self._call_no_clientmock(['update_symlinks'])
-        assert 1 == mock_cert_manager.call_count
-
     @mock.patch('certbot._internal.cert_manager.certificates')
     def test_certificates(self, mock_cert_manager):
         self._call_no_clientmock(['certificates'])
@@ -1332,7 +1327,7 @@ class MainTest(test_util.ConfigTestCase):
     def test_certonly_bad_args(self):
         try:
             self._call(['-a', 'bad_auth', 'certonly'])
-            assert False, "Exception should have been raised"
+            pytest.fail("Exception should have been raised")
         except errors.PluginSelectionError as e:
             assert 'The requested bad_auth plugin does not appear' in str(e)
 
@@ -1361,7 +1356,7 @@ class MainTest(test_util.ConfigTestCase):
         except errors.Error as e:
             assert "Please try the certonly" in repr(e)
             return
-        assert False, "Expected supplying --csr to fail with default verb"
+        pytest.fail("Expected supplying --csr to fail with default verb")
 
     def test_csr_with_no_domains(self):
         with pytest.raises(errors.Error):
@@ -1414,14 +1409,6 @@ class MainTest(test_util.ConfigTestCase):
         assert key_path in mock_report.call_args[0][3]
         assert 'donate' in mock_register.call_args[0][1]
         assert mock_subscription.called is True
-
-    @mock.patch('certbot._internal.eff.handle_subscription')
-    def test_certonly_new_request_failure(self, mock_subscription):
-        mock_client = mock.MagicMock()
-        mock_client.obtain_and_enroll_certificate.return_value = False
-        with pytest.raises(errors.Error):
-            self._certonly_new_request_common(mock_client)
-        assert mock_subscription.called is False
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,

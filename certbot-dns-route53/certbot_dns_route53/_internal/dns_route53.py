@@ -6,18 +6,20 @@ from typing import Any
 from typing import Callable
 from typing import DefaultDict
 from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Type
 
 import boto3
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
 
-from acme.challenges import ChallengeResponse
+from acme import challenges
 from certbot import achallenges
 from certbot import errors
+from certbot import interfaces
 from certbot.achallenges import AnnotatedChallenge
-from certbot.plugins import dns_common
-from certbot.util import add_deprecated_argument
+from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ INSTRUCTIONS = (
     "and add the necessary permissions for Route53 access.")
 
 
-class Authenticator(dns_common.DNSAuthenticator):
+class Authenticator(common.Plugin, interfaces.Authenticator):
     """Route53 Authenticator
 
     This authenticator solves a DNS01 challenge by uploading the answer to AWS
@@ -41,6 +43,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
+        self._attempt_cleanup = False
         self._resource_records: DefaultDict[str, List[Dict[str, str]]] = \
             collections.defaultdict(list)
 
@@ -48,9 +51,9 @@ class Authenticator(dns_common.DNSAuthenticator):
         return "Solve a DNS01 challenge using AWS Route53"
 
     @classmethod
-    def add_parser_arguments(cls, add: Callable[..., None],  # pylint: disable=arguments-differ
-                             default_propagation_seconds: int = 10) -> None:
-        add_deprecated_argument(add, 'propagation-seconds', 1)
+    def add_parser_arguments(cls, add: Callable[..., None]) -> None:
+        # This authenticator currently adds no extra arguments.
+        pass
 
     def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
         return (
@@ -58,13 +61,13 @@ class Authenticator(dns_common.DNSAuthenticator):
             '--dns-route53. Ensure the above domains have their DNS hosted by AWS Route53.'
         )
 
-    def _setup_credentials(self) -> None:
+    def prepare(self) -> None:
         pass
 
-    def _perform(self, domain: str, validation_name: str, validation: str) -> None:
-        pass
+    def get_chall_pref(self, unused_domain: str) -> Iterable[Type[challenges.Challenge]]:
+        return [challenges.DNS01]
 
-    def perform(self, achalls: List[AnnotatedChallenge]) -> List[ChallengeResponse]:
+    def perform(self, achalls: List[AnnotatedChallenge]) -> List[challenges.ChallengeResponse]:
         self._attempt_cleanup = True
 
         try:
@@ -82,7 +85,16 @@ class Authenticator(dns_common.DNSAuthenticator):
             raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
         return [achall.response(achall.account_key) for achall in achalls]
 
-    def _cleanup(self, domain: str, validation_name: str, validation: str) -> None:
+    def cleanup(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:
+        if self._attempt_cleanup:
+            for achall in achalls:
+                domain = achall.domain
+                validation_domain_name = achall.validation_domain_name(domain)
+                validation = achall.validation(achall.account_key)
+
+                self._cleanup(validation_domain_name, validation)
+
+    def _cleanup(self, validation_name: str, validation: str) -> None:
         try:
             self._change_txt_record("DELETE", validation_name, validation)
         except (NoCredentialsError, ClientError) as e:
@@ -166,3 +178,13 @@ class Authenticator(dns_common.DNSAuthenticator):
         raise errors.PluginError(
             "Timed out waiting for Route53 change. Current status: %s" %
             response["ChangeInfo"]["Status"])
+
+
+# Our route53 plugin was initially a 3rd party plugin named `certbot-route53:auth` as described at
+# https://github.com/certbot/certbot/issues/4688. This shim exists to allow installations using the
+# old plugin name of `certbot-route53:auth` to continue to work without cluttering things like
+# Certbot's help output with two route53 plugins.
+class HiddenAuthenticator(Authenticator):
+    """A hidden shim around certbot-dns-route53 for backwards compatibility."""
+
+    hidden = True

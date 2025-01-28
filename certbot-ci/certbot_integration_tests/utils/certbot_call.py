@@ -51,7 +51,7 @@ def _prepare_environ(workspace: str) -> Dict[str, str]:
 
     # So, pytest is nice, and a little too nice for our usage.
     # In order to help user to call seamlessly any piece of python code without requiring to
-    # install it as a full-fledged setuptools distribution for instance, it may inject the path
+    # install it as a full-fledged Python package for instance, it may inject the path
     # to the test files into the PYTHONPATH. This allows the python interpreter to import
     # as modules any python file available at this path.
     # See https://docs.pytest.org/en/3.2.5/pythonpath.html for the explanation and description.
@@ -96,7 +96,6 @@ def _prepare_args_env(certbot_args: List[str], directory_url: str, http_01_port:
         '--no-verify-ssl',
         '--http-01-port', str(http_01_port),
         '--https-port', str(tls_alpn_01_port),
-        '--manual-public-ip-logging-ok',
         '--config-dir', config_dir,
         '--work-dir', os.path.join(workspace, 'work'),
         '--logs-dir', os.path.join(workspace, 'logs'),
