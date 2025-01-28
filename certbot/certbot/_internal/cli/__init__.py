@@ -182,10 +182,10 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         help=config_help("email"))
     helpful.add(["register", "update_account", "automation"], "--eff-email", action="store_true",
                 default=flag_default("eff_email"), dest="eff_email",
-                help="Share your e-mail address with EFF (default: False)")
+                help="Share your e-mail address with EFF (default: Ask)")
     helpful.add(["register", "update_account", "automation"], "--no-eff-email",
                 action="store_false", default=flag_default("eff_email"), dest="eff_email",
-                help="Don't share your e-mail address with EFF")
+                help="Don't share your e-mail address with EFF (default: Ask)")
     helpful.add(
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
