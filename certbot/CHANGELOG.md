@@ -16,6 +16,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Deprecated `gen_ss_cert` in `acme.crypto_util` as it uses deprecated
   pyOpenSSL API.
 * Add `make_self_signed_cert` to `acme.crypto_util` to replace `gen_ss_cert.
+* Directory hooks are now run on all commands by default, not just `renew`
 * Help output now shows `False` as default when it can be set via `cli.ini` instead of `None`
 
 ### Fixed
@@ -26,6 +27,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Honor --reuse-key when --allow-subset-of-names is set
 * Fixed regression in symlink parsing on Windows that was introduced in Certbot
   3.1.0.
+* When adding ssl listen directives in nginx server blocks, IP addresses are now
+  preserved.
 
 More details about these changes can be found on our GitHub repo.
 

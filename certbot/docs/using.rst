@@ -683,10 +683,13 @@ configuration directory. Assuming your configuration directory is
 ``/etc/letsencrypt/renewal-hooks/pre``,
 ``/etc/letsencrypt/renewal-hooks/deploy``, and
 ``/etc/letsencrypt/renewal-hooks/post`` will be run as pre, deploy, and post
-hooks respectively when any certificate is renewed with the ``renew``
-subcommand. These hooks are run in alphabetical order and are not run for other
-subcommands. (The order the hooks are run is determined by the byte value of
-the characters in their filenames and is not dependent on your locale.)
+hooks respectively. These hooks are run in alphabetical order. (The order the
+hooks are run is determined by the byte value of the characters in their
+filenames and is not dependent on your locale.)
+
+Prior to certbot 3.2.0, hooks in directories were only run when certificates
+were renewed with the ``renew`` subcommand, but as of 3.2.0, they are run for
+any subcommand.
 
 Hooks specified in the command line, :ref:`configuration file
 <config-file>`, or :ref:`renewal configuration files <renewal-config-file>` are
