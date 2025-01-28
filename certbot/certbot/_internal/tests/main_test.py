@@ -264,7 +264,7 @@ class CertonlyTest(unittest.TestCase):
         mock_domains.return_value = domains
         mock_lineage.names.return_value = domains
         self._call(('certonly --webroot -d example.com -d test.org '
-            '--cert-name example.com').split())
+            '--cert-name example.com --no-directory-hooks').split())
 
         assert mock_lineage.call_count == 1
         assert mock_domains.call_count == 1
@@ -276,7 +276,7 @@ class CertonlyTest(unittest.TestCase):
 
         # user confirms updating lineage with new domains
         self._call(('certonly --webroot -d example.com -d test.com '
-            '--cert-name example.com').split())
+            '--cert-name example.com --no-directory-hooks').split())
         assert mock_lineage.call_count == 2
         assert mock_domains.call_count == 2
         assert mock_renew_cert.call_count == 2
@@ -286,7 +286,8 @@ class CertonlyTest(unittest.TestCase):
         # error in _ask_user_to_confirm_new_names
         self.mock_get_utility().yesno.return_value = False
         with pytest.raises(errors.ConfigurationError):
-            self._call('certonly --webroot -d example.com -d test.com --cert-name example.com'.split())
+            self._call('certonly --webroot -d example.com -d test.com --cert-name example.com'
+                ' --no-directory-hooks'.split())
 
     @mock.patch('certbot._internal.main._report_next_steps')
     @mock.patch('certbot._internal.cert_manager.domains_for_certname')
@@ -299,14 +300,14 @@ class CertonlyTest(unittest.TestCase):
 
         # no lineage with this name but we specified domains so create a new cert
         self._call(('certonly --webroot -d example.com -d test.com '
-            '--cert-name example.com').split())
+            '--cert-name example.com --no-directory-hooks').split())
         assert mock_lineage.call_count == 1
         assert mock_report_cert.call_count == 1
 
         # no lineage with this name and we didn't give domains
         mock_choose_names.return_value = ["somename"]
         mock_domains_for_certname.return_value = None
-        self._call(('certonly --webroot --cert-name example.com').split())
+        self._call(('certonly --webroot --cert-name example.com --no-directory-hooks').split())
         assert mock_choose_names.called is True
 
     @mock.patch('certbot._internal.main._report_next_steps')

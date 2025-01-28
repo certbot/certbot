@@ -442,8 +442,8 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     helpful.add(
         "renew", "--no-directory-hooks", action="store_false",
         default=flag_default("directory_hooks"), dest="directory_hooks",
-        help="Disable running executables found in Certbot's hook directories"
-        " during renewal. (default: False)")
+        help="Disable running executables found in Certbot's hook directories."
+        " (default: False)")
     helpful.add(
         "renew", "--disable-renew-updates", action="store_true",
         default=flag_default("disable_renew_updates"), dest="disable_renew_updates",
