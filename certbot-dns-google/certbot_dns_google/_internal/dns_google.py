@@ -98,13 +98,13 @@ class _GoogleClient:
 
         if account_json is not None:
             try:
-                credentials, project_id = google.auth.load_credentials_from_file( # type: ignore [no-untyped-call]
+                credentials, project_id = google.auth.load_credentials_from_file( # type: ignore [no-untyped-call, unused-ignore] # pylint: disable=line-too-long
                     account_json, scopes=scopes)
             except googleauth_exceptions.GoogleAuthError as e:
                 raise errors.PluginError(
                     "Error loading credentials file '{}': {}".format(account_json, e))
         else:
-            credentials, project_id = google.auth.default(scopes=scopes) # type: ignore [no-untyped-call]
+            credentials, project_id = google.auth.default(scopes=scopes) # type: ignore [no-untyped-call, unused-ignore] # pylint: disable=line-too-long
 
         if dns_project_id is not None:
             project_id = dns_project_id
