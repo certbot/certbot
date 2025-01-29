@@ -223,7 +223,7 @@ class AccountFileStorage(interfaces.AccountStorage):
                 key = jose.JWK.json_loads(key_file.read())
             with open(self._metadata_path(account_dir_path)) as metadata_file:
                 meta = Account.Meta.json_loads(metadata_file.read())
-        except IOError as error:
+        except OSError as error:
             raise errors.AccountStorageError(error)
 
         return Account(regr, key, meta)
@@ -243,7 +243,7 @@ class AccountFileStorage(interfaces.AccountStorage):
             self._create(account, dir_path)
             self._update_meta(account, dir_path)
             self._update_regr(account, dir_path)
-        except IOError as error:
+        except OSError as error:
             raise errors.AccountStorageError(error)
 
     def update_regr(self, account: Account) -> None:
@@ -255,7 +255,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         try:
             dir_path = self._prepare(account)
             self._update_regr(account, dir_path)
-        except IOError as error:
+        except OSError as error:
             raise errors.AccountStorageError(error)
 
     def update_meta(self, account: Account) -> None:
@@ -267,7 +267,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         try:
             dir_path = self._prepare(account)
             self._update_meta(account, dir_path)
-        except IOError as error:
+        except OSError as error:
             raise errors.AccountStorageError(error)
 
     def delete(self, account_id: str) -> None:

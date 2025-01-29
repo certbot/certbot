@@ -1,6 +1,5 @@
 """A class that performs HTTP-01 challenges for Nginx"""
 
-import io
 import logging
 from typing import Any
 from typing import List
@@ -139,7 +138,7 @@ class NginxHttp01(common.ChallengePerformer):
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
-        with io.open(self.challenge_conf, "w", encoding="utf-8") as new_conf:
+        with open(self.challenge_conf, "w", encoding="utf-8") as new_conf:
             nginxparser.dump(config, new_conf)
 
     def _default_listen_addresses(self) -> List[Addr]:
@@ -147,13 +146,13 @@ class NginxHttp01(common.ChallengePerformer):
         :returns: list of :class:`certbot_nginx._internal.obj.Addr` to apply
         :rtype: list
         """
-        addresses: List[Optional[Addr]] = []
+        addresses: List[Addr] = []
         default_addr = "%s" % self.configurator.config.http01_port
         ipv6_addr = "[::]:{0}".format(
             self.configurator.config.http01_port)
         port = self.configurator.config.http01_port
 
-        ipv6, ipv6only = self.configurator.ipv6_info(str(port))
+        ipv6, ipv6only = self.configurator.ipv6_info("[::]", str(port))
 
         if ipv6:
             # If IPv6 is active in Nginx configuration
@@ -170,7 +169,7 @@ class NginxHttp01(common.ChallengePerformer):
             logger.debug("Using default address %s for authentication.",
                         default_addr)
 
-        return [address for address in addresses if address]
+        return addresses
 
     def _get_validation_path(self, achall: KeyAuthorizationAnnotatedChallenge) -> str:
         return os.sep + os.path.join(challenges.HTTP01.URI_ROOT_PATH, achall.chall.encode("token"))

@@ -139,6 +139,7 @@ Authors
 * [John Reed](https://github.com/leerspace)
 * [Jonas Berlin](https://github.com/xkr47)
 * [Jonathan Herlin](https://github.com/Jonher937)
+* [Jonathan Vanasco](https://github.com/jvanasco)
 * [Jon Walsh](https://github.com/code-tree)
 * [Joona Hoikkala](https://github.com/joohoi)
 * [Josh McCullough](https://github.com/JoshMcCullough)

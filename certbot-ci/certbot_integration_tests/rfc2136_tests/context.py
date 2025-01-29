@@ -1,6 +1,6 @@
 """Module to handle the context of RFC2136 integration tests."""
 from contextlib import contextmanager
-import sys
+import importlib.resources
 import tempfile
 from typing import Generator
 from typing import Iterable
@@ -10,11 +10,6 @@ import pytest
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import certbot_call
-
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
 
 
 class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
@@ -48,9 +43,9 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         :yields: Path to credentials file
         :rtype: str
         """
-        src_ref_file = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+        src_ref_file = (importlib.resources.files('certbot_integration_tests').joinpath('assets')
                         .joinpath('bind-config').joinpath(f'rfc2136-credentials-{label}.ini.tpl'))
-        with importlib_resources.as_file(src_ref_file) as src_file:
+        with importlib.resources.as_file(src_ref_file) as src_file:
             with open(src_file, 'r') as f:
                 contents = f.read().format(
                     server_address=self._dns_xdist['address'],

@@ -19,6 +19,7 @@ Note, that all annotated challenges act as a proxy objects::
 """
 import logging
 from typing import Any
+from typing import Tuple
 from typing import Type
 
 import josepy as jose
@@ -49,7 +50,8 @@ class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
     """Client annotated `KeyAuthorizationChallenge` challenge."""
     __slots__ = ('challb', 'domain', 'account_key') # pylint: disable=redefined-slots-in-subclass
 
-    def response_and_validation(self, *args: Any, **kwargs: Any) -> Any:
+    def response_and_validation(self, *args: Any, **kwargs: Any
+        ) -> Tuple['challenges.KeyAuthorizationChallengeResponse', Any]:
         """Generate response and validation."""
         return self.challb.chall.response_and_validation(
             self.account_key, *args, **kwargs)

@@ -21,7 +21,7 @@ class HeaderTest(unittest.TestCase):
     except (ValueError, TypeError):
         assert True
     else:
-        assert False  # pragma: no cover
+        pytest.fail("Exception from jose.b64decode wasn't raised")  # pragma: no cover
 
     def test_nonce_decoder(self):
         from acme.jws import Header

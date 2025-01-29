@@ -295,7 +295,7 @@ class ApacheConfigurator(common.Configurator):
         try:
             with open(ssl_module_location, mode="rb") as f:
                 contents = f.read()
-        except IOError as error:
+        except OSError as error:
             logger.debug(str(error), exc_info=True)
             return None
         return contents
@@ -928,7 +928,7 @@ class ApacheConfigurator(common.Configurator):
             try:
                 socket.inet_aton(addr.get_addr())
                 return socket.gethostbyaddr(addr.get_addr())[0]
-            except (socket.error, socket.herror, socket.timeout):
+            except (OSError, socket.herror, socket.timeout):
                 pass
 
         return ""
@@ -994,9 +994,7 @@ class ApacheConfigurator(common.Configurator):
         for arg in args:
             arg_value = self.parser.get_arg(arg)
             if arg_value is not None:
-                addr = obj.Addr.fromstring(arg_value)
-                if addr is not None:
-                    addrs.add(addr)
+                addrs.add(obj.Addr.fromstring(arg_value))
         is_ssl = False
 
         if self.parser.find_dir("SSLEngine", "on", start=path, exclude=False):
@@ -1126,9 +1124,7 @@ class ApacheConfigurator(common.Configurator):
         """
         addrs = set()
         for param in node.parameters:
-            addr = obj.Addr.fromstring(param)
-            if addr:
-                addrs.add(addr)
+            addrs.add(obj.Addr.fromstring(param))
 
         is_ssl = False
         # Exclusion to match the behavior in get_virtual_hosts_v2
@@ -1523,7 +1519,7 @@ class ApacheConfigurator(common.Configurator):
             # activation (it's not included as default)
             if not self.parser.parsed_in_current(ssl_fp):
                 self.parser.parse_file(ssl_fp)
-        except IOError:
+        except OSError:
             logger.critical("Error writing/reading to file in make_vhost_ssl", exc_info=True)
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
@@ -1646,10 +1642,9 @@ class ApacheConfigurator(common.Configurator):
         for addr in ssl_addr_p:
             old_addr = obj.Addr.fromstring(
                 str(self.parser.get_arg(addr)))
-            if old_addr:
-                ssl_addr = old_addr.get_addr_obj("443")
-                self.parser.aug.set(addr, str(ssl_addr))
-                ssl_addrs.add(ssl_addr)
+            ssl_addr = old_addr.get_addr_obj("443")
+            self.parser.aug.set(addr, str(ssl_addr))
+            ssl_addrs.add(ssl_addr)
 
         return ssl_addrs
 

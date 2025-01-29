@@ -185,8 +185,7 @@ class Statements(Parsable):
                 match: Optional[Callable[["Parsable"], bool]] = None) -> Iterator[Any]:
         """ Combines each statement's iterator.  """
         for elem in self._data:
-            for sub_elem in elem.iterate(expanded, match):
-                yield sub_elem
+            yield from elem.iterate(expanded, match)
 
     # ======== End overridden functions
 
@@ -310,8 +309,7 @@ class Block(Parsable):
         if match is None or match(self):
             yield self
         if expanded:
-            for elem in self.contents.iterate(expanded, match):
-                yield elem
+            yield from self.contents.iterate(expanded, match)
 
     def parse(self, raw_list: List[Any], add_spaces: bool = False) -> None:
         """ Parses a list that resembles a block.

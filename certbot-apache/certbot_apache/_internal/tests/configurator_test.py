@@ -174,9 +174,9 @@ class MultipleVhostsTest(util.ApacheTest):
         assert "certbot.demo" in names
 
     def test_get_bad_path(self):
-        assert apache_util.get_file_path(None) == None
-        assert apache_util.get_file_path("nonexistent") == None
-        assert self.config._create_vhost("nonexistent") == None # pylint: disable=protected-access
+        assert apache_util.get_file_path(None) is None
+        assert apache_util.get_file_path("nonexistent") is None
+        assert self.config._create_vhost("nonexistent") is None # pylint: disable=protected-access
 
     def test_get_aug_internal_path(self):
         from certbot_apache._internal.apache_util import get_internal_aug_path
@@ -303,7 +303,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         assert self.vh_truth[3] == self.config._find_best_vhost("certbot.demo")
         assert self.vh_truth[0] == self.config._find_best_vhost("encryption-example.demo")
-        assert self.config._find_best_vhost("does-not-exist.com") == None
+        assert self.config._find_best_vhost("does-not-exist.com") is None
 
     def test_find_best_vhost_variety(self):
         # pylint: disable=protected-access
@@ -1417,7 +1417,7 @@ class AugeasVhostsTest(util.ApacheTest):
         self.config.parser.aug.match.side_effect = RuntimeError
         path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old-and-default.conf"
         chosen_vhost = self.config._create_vhost(path)
-        assert None == chosen_vhost
+        assert chosen_vhost is None
 
     def test_choosevhost_works(self):
         path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old-and-default.conf"
@@ -1518,16 +1518,11 @@ class MultiVhostsTest(util.ApacheTest):
         with_index_1 = ["/path[1]/section[1]"]
         without_index = ["/path/section"]
         with_index_2 = ["/path[2]/section[2]"]
-        assert self.config._get_new_vh_path(without_index,
-                                                      with_index_1) == \
-                         None
-        assert self.config._get_new_vh_path(without_index,
-                                                      with_index_2) == \
-                         with_index_2[0]
+        assert self.config._get_new_vh_path(without_index, with_index_1) is None
+        assert self.config._get_new_vh_path(without_index, with_index_2) == with_index_2[0]
 
         both = with_index_1 + with_index_2
-        assert self.config._get_new_vh_path(without_index, both) == \
-                         with_index_2[0]
+        assert self.config._get_new_vh_path(without_index, both) == with_index_2[0]
 
     @mock.patch("certbot_apache._internal.configurator.display_util.notify")
     def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_notify):
@@ -1658,15 +1653,12 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         file has been manually edited by the user, and will refuse to update it.
         This test ensures that all necessary hashes are present.
         """
-        if sys.version_info >= (3, 9):  # pragma: no cover
-            import importlib.resources as importlib_resources
-        else:  # pragma: no cover
-            import importlib_resources
+        import importlib.resources
 
         from certbot_apache._internal.constants import ALL_SSL_OPTIONS_HASHES
 
-        ref = importlib_resources.files("certbot_apache") / "_internal" / "tls_configs"
-        with importlib_resources.as_file(ref) as tls_configs_dir:
+        ref = importlib.resources.files("certbot_apache") / "_internal" / "tls_configs"
+        with importlib.resources.as_file(ref) as tls_configs_dir:
             all_files = [os.path.join(tls_configs_dir, name) for name in os.listdir(tls_configs_dir)
                         if name.endswith('options-ssl-apache.conf')]
             assert len(all_files) >= 1
@@ -1723,14 +1715,14 @@ class InstallSslOptionsConfTest(util.ApacheTest):
 
         self.config._openssl_version = None
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
-            assert self.config.openssl_version() == None
+            assert self.config.openssl_version() is None
             assert "Could not find ssl_module" in mock_log.call_args[0][0]
 
         # When no ssl_module is present at all
         self.config._openssl_version = None
         assert "ssl_module" not in self.config.parser.modules
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
-            assert self.config.openssl_version() == None
+            assert self.config.openssl_version() is None
             assert "Could not find ssl_module" in mock_log.call_args[0][0]
 
         # When ssl_module is statically linked but --apache-bin not provided
@@ -1738,13 +1730,13 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         self.config.options.bin = None
         self.config.parser.modules['ssl_module'] = None
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
-            assert self.config.openssl_version() == None
+            assert self.config.openssl_version() is None
             assert "ssl_module is statically linked but" in mock_log.call_args[0][0]
 
         self.config.parser.modules['ssl_module'] = "/fake/path"
         with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
             # Check that correct logger.warning was printed
-            assert self.config.openssl_version() == None
+            assert self.config.openssl_version() is None
             assert "Unable to read" in mock_log.call_args[0][0]
 
         contents_missing_openssl = b"these contents won't match the regex"
@@ -1753,7 +1745,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             mock_omf.return_value = contents_missing_openssl
             with mock.patch("certbot_apache._internal.configurator.logger.warning") as mock_log:
                 # Check that correct logger.warning was printed
-                assert self.config.openssl_version() == None
+                assert self.config.openssl_version() is None
                 assert "Could not find OpenSSL" in mock_log.call_args[0][0]
 
     def test_open_module_file(self):

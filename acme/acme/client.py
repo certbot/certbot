@@ -15,6 +15,8 @@ from typing import Set
 from typing import Tuple
 from typing import Union
 
+from cryptography import x509
+
 import josepy as jose
 import OpenSSL
 import requests
@@ -121,18 +123,21 @@ class ClientV2:
         :returns: The newly created order.
         :rtype: OrderResource
         """
-        csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        # pylint: disable=protected-access
-        dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
-        ipNames = crypto_util._pyopenssl_cert_or_req_san_ip(csr)
-        # ipNames is now []string
+        csr = x509.load_pem_x509_csr(csr_pem)
+        dnsNames = crypto_util.get_names_from_subject_and_extensions(csr.subject, csr.extensions)
+        try:
+            san_ext = csr.extensions.get_extension_for_class(x509.SubjectAlternativeName)
+        except x509.ExtensionNotFound:
+            ipNames = []
+        else:
+            ipNames = san_ext.value.get_values_for_type(x509.IPAddress)
         identifiers = []
         for name in dnsNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
                 value=name))
-        for ips in ipNames:
+        for ip in ipNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
-                value=ips))
+                value=str(ip)))
         order = messages.NewOrder(identifiers=identifiers)
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())

@@ -65,7 +65,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
 
     def test_add_to_checkpoint_copy_failure(self):
         with mock.patch("certbot.reverter.shutil.copy2") as mock_copy2:
-            mock_copy2.side_effect = IOError("bad copy")
+            mock_copy2.side_effect = OSError("bad copy")
             with pytest.raises(errors.ReverterError):
                 self.reverter.add_to_checkpoint(self.sets[0], "save1")
 

@@ -184,7 +184,7 @@ class Reverter:
                         cp_dir, os.path.basename(filename) + "_" + str(idx)))
                     op_fd.write('{0}\n'.format(filename))
                 # https://stackoverflow.com/questions/4726260/effective-use-of-python-shutil-copy2
-                except IOError:
+                except OSError:
                     op_fd.close()
                     logger.error(
                         "Unable to add file %s to checkpoint %s",
@@ -238,7 +238,7 @@ class Reverter:
                         shutil.copy2(os.path.join(
                             cp_dir,
                             os.path.basename(path) + "_" + str(idx)), path)
-            except (IOError, OSError):
+            except OSError:
                 # This file is required in all checkpoints.
                 logger.error("Unable to recover files from %s", cp_dir)
                 raise errors.ReverterError(f"Unable to recover files from {cp_dir}")
@@ -327,7 +327,7 @@ class Reverter:
             for path in files:
                 if path not in ex_files:
                     new_fd.write("{0}\n".format(path))
-        except (IOError, OSError):
+        except OSError:
             logger.error("Unable to register file creation(s) - %s", files)
             raise errors.ReverterError(
                 "Unable to register file creation(s) - {0}".format(files))
@@ -360,7 +360,7 @@ class Reverter:
             with open(commands_fp, mode, **kwargs) as f:  # type: ignore
                 csvwriter = csv.writer(f)
                 csvwriter.writerow(command)
-        except (IOError, OSError):
+        except OSError:
             logger.error("Unable to register undo command")
             raise errors.ReverterError(
                 "Unable to register undo command.")
@@ -434,7 +434,7 @@ class Reverter:
                             "File: %s - Could not be found to be deleted\n"
                             " - Certbot probably shut down unexpectedly",
                             path)
-        except (IOError, OSError):
+        except OSError:
             logger.critical(
                 "Unable to remove filepaths contained within %s", file_list)
             raise errors.ReverterError(
@@ -476,7 +476,7 @@ class Reverter:
 
         # Move self.config.in_progress_dir to Backups directory
             shutil.move(changes_since_tmp_path, changes_since_path)
-        except (IOError, OSError):
+        except OSError:
             logger.error("Unable to finalize checkpoint - adding title")
             logger.debug("Exception was:\n%s", traceback.format_exc())
             raise errors.ReverterError("Unable to add title")

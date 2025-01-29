@@ -9,7 +9,6 @@ from typing import Iterable
 from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Pattern
 from typing import Set
 from typing import Tuple
 from typing import TYPE_CHECKING
@@ -43,7 +42,7 @@ class ApacheParser:
         default - user config file, name - NameVirtualHost,
 
     """
-    arg_var_interpreter: Pattern = re.compile(r"\$\{[^ \}]*}")
+    arg_var_interpreter: re.Pattern[str] = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars: Set[str] = {"*", "?", "\\", "[", "]"}
 
     # pylint: disable=unused-argument
@@ -127,7 +126,7 @@ class ApacheParser:
 
         self.aug.set("/test/path/testing/arg", "aRgUMeNT")
         try:
-            matches = self.aug.match(
+            matches: List[str] = self.aug.match(
                 "/test//*[self::arg=~regexp('argument', 'i')]")
         except RuntimeError:
             self.aug.remove("/test/path")
@@ -153,7 +152,7 @@ class ApacheParser:
         try:
             # This is a noop save
             self.aug.save()
-        except (RuntimeError, IOError):
+        except (OSError, RuntimeError):
             self._log_save_errors(ex_errs)
             # Erase Save Notes
             self.configurator.save_notes = ""
@@ -198,7 +197,7 @@ class ApacheParser:
         ex_errs = self.aug.match("/augeas//error")
         try:
             self.aug.save()
-        except IOError:
+        except OSError:
             self._log_save_errors(ex_errs)
             raise
 
@@ -390,7 +389,7 @@ class ApacheParser:
         :rtype: str
 
         """
-        if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
+        if_mods: List[str] = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                   (aug_conf_path, mod)))
         if not if_mods:
             return self.create_ifmod(aug_conf_path, mod)
@@ -578,7 +577,7 @@ class ApacheParser:
         This also converts all variables and parameters appropriately.
 
         """
-        value = self.aug.get(match)
+        value: str = self.aug.get(match)
 
         # No need to strip quotes for variables, as apache2ctl already does
         # this, but we do need to strip quotes for all normal arguments.

@@ -2,7 +2,72 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+<<<<<<< HEAD
 ## 3.0.0 - main
+=======
+## 3.2.0 - main
+
+### Added
+
+*
+
+### Changed
+
+* certbot-nginx now requires pyparsing>=2.4.7.
+* certbot and its acme library now require cryptography>=42.0.0.
+* certbot-nginx and our acme library now require pyOpenSSL>=25.0.0.
+* Deprecated `gen_ss_cert` in `acme.crypto_util` as it uses deprecated
+  pyOpenSSL API.
+* Add `make_self_signed_cert` to `acme.crypto_util` to replace `gen_ss_cert.
+* Directory hooks are now run on all commands by default, not just `renew`
+* Help output now shows `False` as default when it can be set via `cli.ini` instead of `None`
+
+### Fixed
+
+* Private keys are now saved in PKCS#8 format instead of PKCS#1. Using PKCS#1
+  was a regression introduced in Certbot 3.1.0.
+* Allow nginx plugin to parse non-breaking spaces in nginx configuration files.
+* Honor --reuse-key when --allow-subset-of-names is set
+* Fixed regression in symlink parsing on Windows that was introduced in Certbot
+  3.1.0.
+* When adding ssl listen directives in nginx server blocks, IP addresses are now
+  preserved.
+
+More details about these changes can be found on our GitHub repo.
+
+## 3.1.0 - 2025-01-07
+
+### Added
+
+*
+
+### Changed
+
+* Python 3.8 support was removed.
+* certbot-dns-rfc2136's minimum required version of dnspython is now 2.6.1.
+* Updated our Docker images to be based on Alpine Linux 3.20.
+* Our runtime dependency on setuptools has been dropped from all Certbot
+  components.
+* Certbot's packages no longer depend on library importlib_resources.
+
+### Fixed
+
+* Included an OpenSSL library that was missing in our Certbot snap fixing
+  crashes affecting 32-bit ARM users.
+
+More details about these changes can be found on our GitHub repo.
+
+## 3.0.1 - 2024-11-14
+
+### Fixed
+
+* Removed a CryptographyDeprecationWarning that was being displayed to users
+  when checking OCSP status.
+
+More details about these changes can be found on our GitHub repo.
+
+## 3.0.0 - 2024-11-05
+>>>>>>> main
 
 ### Added
 
@@ -18,6 +83,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The `certbot_dns_route53.authenticator` module has been removed. This should
   not affect any users of the plugin and instead would only affect developers
   trying to develop on top of the old code.
+* Support for Python 3.8 was deprecated and will be removed in our next planned
+  release.
 
 ### Fixed
 
