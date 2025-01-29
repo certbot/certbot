@@ -477,9 +477,9 @@ class NginxConfigurator(common.Configurator):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]
-            return max(wildcards, key=lambda x: len(x['name']))['vhost']
+            return cast(obj.VirtualHost, max(wildcards, key=lambda x: len(x['name']))['vhost'])
         # Exact or regex match
-        return matches[0]['vhost']
+        return cast(obj.VirtualHost, matches[0]['vhost'])
 
     def _rank_matches_by_name(self, vhost_list: Iterable[obj.VirtualHost],
                               target_name: str) -> List[Dict[str, Any]]:
@@ -1118,7 +1118,7 @@ class NginxConfigurator(common.Configurator):
         """
         text = self._nginx_version()
 
-        matches = re.findall(r"running with OpenSSL ([^ ]+) ", text)
+        matches: List[str] = re.findall(r"running with OpenSSL ([^ ]+) ", text)
         if not matches:
             matches = re.findall(r"built with OpenSSL ([^ ]+) ", text)
             if not matches:
