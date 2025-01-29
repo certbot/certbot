@@ -1,6 +1,8 @@
 """Tests for certbot_dns_google._internal.dns_google."""
 
 import sys
+from typing import Optional
+from typing import Tuple
 import unittest
 from unittest import mock
 
@@ -44,7 +46,9 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
     @test_util.patch_display_util()
     def test_perform(self, unused_mock_get_utility):
         # _get_google_client | pylint: disable=protected-access
-        self.auth._get_google_client = mock.MagicMock(return_value=self.mock_client)
+        # workaround for wont-fix https://github.com/python/mypy/issues/2427 that works with
+        # both strict and non-strict mypy
+        setattr(self.auth, '_get_google_client', mock.MagicMock(return_value=self.mock_client))
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
@@ -52,7 +56,9 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
     def test_cleanup(self):
         # _get_google_client | pylint: disable=protected-access
-        self.auth._get_google_client = mock.MagicMock(return_value=self.mock_client)
+        # workaround for wont-fix https://github.com/python/mypy/issues/2427 that works with
+        # both strict and non-strict mypy
+        setattr(self.auth, '_get_google_client', mock.MagicMock(return_value=self.mock_client))
         # _attempt_cleanup | pylint: disable=protected-access
         self.auth._attempt_cleanup = True
         self.auth.cleanup([self.achall])
@@ -62,7 +68,9 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
     @test_util.patch_display_util()
     def test_without_auth(self, unused_mock_get_utility):
-        self.auth._get_google_client = mock.MagicMock(side_effect=googleauth_exceptions.DefaultCredentialsError)
+        # workaround for wont-fix https://github.com/python/mypy/issues/2427 that works with
+        # both strict and non-strict mypy
+        setattr(self.auth, '_get_google_client', mock.MagicMock(side_effect=googleauth_exceptions.DefaultCredentialsError))
         self.config.google_credentials = None
         with pytest.raises(PluginError):
             self.auth.perform([self.achall])
@@ -90,7 +98,12 @@ class GoogleClientTest(unittest.TestCase):
     change = "an-id"
     visibility = "public"
 
-    def _setUp_client_with_mock(self, zone_request_side_effect, rrs_list_side_effect=None):
+    import certbot_dns_google # should get overwritten later; need for typing
+
+    def _setUp_client_with_mock(self,
+        zone_request_side_effect: list[dict[str, list[dict[str, str]]]],
+        rrs_list_side_effect: Optional[Error] = None
+        ) -> Tuple['certbot_dns_google._internal.dns_google._GoogleClient', mock.MagicMock]:
         from certbot_dns_google._internal.dns_google import _GoogleClient
 
         pwd = os.path.dirname(__file__)
@@ -107,7 +120,7 @@ class GoogleClientTest(unittest.TestCase):
 
         mock_rrs = mock.MagicMock()
         def rrs_list(project=None, managedZone=None, name=None, type=None):
-            response = {"rrsets": []}
+            response: dict[str, list[dict[str, str | int | list[str]]]]= {"rrsets": []}
             if name == "_acme-challenge.example.org.":
                 response = {"rrsets": [{"name": "_acme-challenge.example.org.", "type": "TXT",
                               "rrdatas": ["\"example-txt-contents\""], "ttl": 60}]}
@@ -153,7 +166,8 @@ class GoogleClientTest(unittest.TestCase):
 
     @mock.patch('google.auth.load_credentials_from_file')
     def test_client_bad_credentials_file(self, credential_mock):
-        credential_mock.side_effect = googleauth_exceptions.DefaultCredentialsError('Some exception buried in google.auth')
+        google_dce: type[googleauth_exceptions.DefaultCredentialsError] = googleauth_exceptions.DefaultCredentialsError
+        credential_mock.side_effect = google_dce('Some exception buried in google.auth')
         with pytest.raises(errors.PluginError) as exc_info:
             self._setUp_client_with_mock([])
         assert str(exc_info.value) == \
@@ -444,6 +458,7 @@ class GoogleClientTest(unittest.TestCase):
             [{'managedZones': [{'id': self.zone, 'visibility': self.visibility}]}])
         # Record name mocked in setUp
         found = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
+        assert found
         assert found["rrdatas"] == ["\"example-txt-contents\""]
         assert found["ttl"] == 60
 
