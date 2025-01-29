@@ -794,11 +794,14 @@ def _parse_server_raw(server: UnspacedList) -> Dict[str, Any]:
         if not directive:
             continue
         if directive[0] == 'listen':
-            addr = obj.Addr.fromstring(" ".join(directive[1:]))
-            if addr:
-                addrs.add(addr)
-                if addr.ssl:
-                    ssl = True
+            try:
+                addr = obj.Addr.fromstring(" ".join(directive[1:]))
+            except obj.SocketAddrError:
+                # Ignore UNIX-domain socket addresses
+                continue
+            addrs.add(addr)
+            if addr.ssl:
+                ssl = True
         elif directive[0] == 'server_name':
             names.update(x.strip('"\'') for x in directive[1:])
         elif _is_ssl_on_directive(directive):
