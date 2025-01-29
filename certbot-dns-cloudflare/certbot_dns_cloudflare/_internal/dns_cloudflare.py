@@ -5,6 +5,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import cast
 
 import CloudFlare
 
@@ -220,7 +221,7 @@ class _CloudflareClient:
                                  'Continuing with next zone guess...', e, e)
 
             if zones:
-                zone_id = zones[0]['id']
+                zone_id: str = zones[0]['id']
                 logger.debug('Found zone_id of %s for %s using name %s', zone_id, domain, zone_name)
                 return zone_id
 
@@ -267,6 +268,6 @@ class _CloudflareClient:
         if records:
             # Cleanup is returning the system to the state we found it. If, for some reason,
             # there are multiple matching records, we only delete one because we only added one.
-            return records[0]['id']
+            return cast(str, records[0]['id'])
         logger.debug('Unable to find TXT record.')
         return None
