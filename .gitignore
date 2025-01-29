@@ -27,6 +27,8 @@ tags
 .idea
 .ropeproject
 .vscode
+*.sublime-project
+*.sublime-workspace
 
 # auth --cert-path --chain-path
 /*.pem
