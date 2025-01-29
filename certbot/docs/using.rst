@@ -391,7 +391,7 @@ Example::
 
 .. _updating_certs:
 
-Re-creating and Updating Existing Certificates
+Modifying and Updating Certificates
 ----------------------------------------------
 
 You can use ``certonly`` or ``run`` subcommands to request
@@ -453,10 +453,75 @@ certificate counts against several rate limits that are intended to prevent
 abuse of the ACME protocol, as described
 `here <https://letsencrypt.org/docs/rate-limits/>`__.
 
+.. _Modifying the Renewal Configuration File:
+
+Modifying the Renewal Configuration of Existing Certificates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When creating a certificate, Certbot will keep track of all of the relevant options chosen by the user. At renewal
+time, Certbot will remember these options and apply them once again.
+
+Sometimes, you may encounter the need to change some of these options for future certificate renewals. To achieve this,
+you will need to perform the following steps:
+
+Certbot v2.3.0 and newer
+~~~~~~~~~~~~~~~~~~~~~~~~
+The ``certbot reconfigure`` command can be used to change a certificate's renewal options.
+This command will use the new renewal options to perform a test renewal against the Let's Encrypt staging server.
+If this is successful, the new renewal options will be saved and will apply to future renewals.
+
+You will need to specify the ``--cert-name``, which can be found by running ``certbot certificates``.
+
+A list of common options that may be updated with the ``reconfigure`` command can be found by running
+``certbot help reconfigure``.
+
+As a practical example, if you were using the ``webroot`` authenticator and had relocated your website to another directory,
+you can change the ``--webroot-path`` to the new directory using the following command:
+
+.. code-block:: shell
+
+  certbot reconfigure --cert-name example.com --webroot-path /path/to/new/location
+
+Certbot v2.2.0 and older
+~~~~~~~~~~~~~~~~~~~~~~~~
+1. Perform a *dry run renewal* with the amended options on the command line. This allows you to confirm that the change
+   is valid and will result in successful future renewals.
+2. If the dry run is successful, perform a *live renewal* of the certificate. This will persist the change for future
+   renewals. If the certificate is not yet due to expire, you will need to force a renewal using ``--force-renewal``.
+
+.. note:: Rate limits from the certificate authority may prevent you from performing multiple renewals in a short
+   period of time. It is strongly recommended to perform the second step only once, when you have decided on what
+   options should change.
+
+As a practical example, if you were using the ``webroot`` authenticator and had relocated your website to another directory,
+you would need to change the ``--webroot-path`` to the new directory. Following the above advice:
+
+1. Perform a *dry-run renewal* of the individual certificate with the amended options::
+
+     certbot renew --cert-name example.com --webroot-path /path/to/new/location --dry-run
+
+2. If the dry-run was successful, make the change permanent by performing a *live renewal* of the certificate with the
+   amended options, including ``--force-renewal``::
+
+     certbot renew --cert-name example.com --webroot-path /path/to/new/location --force-renewal
+
+   ``--cert-name`` selects the particular certificate to be modified. Without this option, all certificates will be selected.
+
+   ``--webroot-path`` is the option intended to be changed. All other previously selected options will be kept the same
+   and do not need to be included in the command.
+
+For advanced certificate management tasks, it is also possible to manually modify the certificate's renewal configuration
+file, but this is discouraged since it can easily break Certbot's ability to renew your certificates. These renewal
+configuration files are located at ``/etc/letsencrypt/renewal/CERTNAME.conf``. If you choose to modify the renewal
+configuration file we advise you to make a backup of the file beforehand and test its validity with the ``certbot renew --dry-run`` command.
+
+.. warning:: Manually modifying files under ``/etc/letsencrypt/renewal/`` can damage them if done improperly and we do not recommend doing so.
+
+
 .. _changing:
 
 Changing a Certificate's Domains
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``--cert-name`` flag can also be used to modify the domains a certificate contains,
 by specifying new domains using the ``-d`` or ``--domains`` flag. If certificate ``example.com``
@@ -738,70 +803,6 @@ Congratulations, Certbot will now automatically renew your certificates in the b
 
 If you are interested in learning more about how Certbot renews your certificates, see the
 `Renewing certificates`_ section above.
-
-.. _Modifying the Renewal Configuration File:
-
-Modifying the Renewal Configuration of Existing Certificates
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When creating a certificate, Certbot will keep track of all of the relevant options chosen by the user. At renewal
-time, Certbot will remember these options and apply them once again.
-
-Sometimes, you may encounter the need to change some of these options for future certificate renewals. To achieve this,
-you will need to perform the following steps:
-
-Certbot v2.3.0 and newer
-~~~~~~~~~~~~~~~~~~~~~~~~
-The ``certbot reconfigure`` command can be used to change a certificate's renewal options.
-This command will use the new renewal options to perform a test renewal against the Let's Encrypt staging server.
-If this is successful, the new renewal options will be saved and will apply to future renewals.
-
-You will need to specify the ``--cert-name``, which can be found by running ``certbot certificates``.
-
-A list of common options that may be updated with the ``reconfigure`` command can be found by running
-``certbot help reconfigure``.
-
-As a practical example, if you were using the ``webroot`` authenticator and had relocated your website to another directory,
-you can change the ``--webroot-path`` to the new directory using the following command:
-
-.. code-block:: shell
-
-  certbot reconfigure --cert-name example.com --webroot-path /path/to/new/location
-
-Certbot v2.2.0 and older
-~~~~~~~~~~~~~~~~~~~~~~~~
-1. Perform a *dry run renewal* with the amended options on the command line. This allows you to confirm that the change
-   is valid and will result in successful future renewals.
-2. If the dry run is successful, perform a *live renewal* of the certificate. This will persist the change for future
-   renewals. If the certificate is not yet due to expire, you will need to force a renewal using ``--force-renewal``.
-
-.. note:: Rate limits from the certificate authority may prevent you from performing multiple renewals in a short
-   period of time. It is strongly recommended to perform the second step only once, when you have decided on what
-   options should change.
-
-As a practical example, if you were using the ``webroot`` authenticator and had relocated your website to another directory,
-you would need to change the ``--webroot-path`` to the new directory. Following the above advice:
-
-1. Perform a *dry-run renewal* of the individual certificate with the amended options::
-
-     certbot renew --cert-name example.com --webroot-path /path/to/new/location --dry-run
-
-2. If the dry-run was successful, make the change permanent by performing a *live renewal* of the certificate with the
-   amended options, including ``--force-renewal``::
-
-     certbot renew --cert-name example.com --webroot-path /path/to/new/location --force-renewal
-
-   ``--cert-name`` selects the particular certificate to be modified. Without this option, all certificates will be selected.
-
-   ``--webroot-path`` is the option intended to be changed. All other previously selected options will be kept the same
-   and do not need to be included in the command.
-
-For advanced certificate management tasks, it is also possible to manually modify the certificate's renewal configuration
-file, but this is discouraged since it can easily break Certbot's ability to renew your certificates. These renewal
-configuration files are located at ``/etc/letsencrypt/renewal/CERTNAME.conf``. If you choose to modify the renewal
-configuration file we advise you to make a backup of the file beforehand and test its validity with the ``certbot renew --dry-run`` command.
-
-.. warning:: Manually modifying files under ``/etc/letsencrypt/renewal/`` can damage them if done improperly and we do not recommend doing so.
 
 .. _references:
 
