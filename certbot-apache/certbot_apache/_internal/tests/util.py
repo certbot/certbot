@@ -1,6 +1,5 @@
 """Common utilities for certbot_apache."""
 import shutil
-from typing import cast
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -141,71 +140,71 @@ def get_vh_truth(temp_dir: str, config_name: str) -> Optional[List[obj.VirtualHo
             obj.VirtualHost(
                 os.path.join(prefix, "encryption-example.conf"),
                 os.path.join(aug_pre, "encryption-example.conf/Virtualhost"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))},
+                {obj.Addr, obj.Addr.fromstring("*:80")},
                 False, True, "encryption-example.demo"),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl.conf"),
                 os.path.join(aug_pre,
                              "default-ssl.conf/IfModule/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("_default_:443"))}, True, True),
+                {obj.Addr, obj.Addr.fromstring("_default_:443")}, True, True),
             obj.VirtualHost(
                 os.path.join(prefix, "000-default.conf"),
                 os.path.join(aug_pre, "000-default.conf/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80")),
-                     cast(obj.Addr, obj.Addr.fromstring("[::]:80"))},
+                {obj.Addr, obj.Addr.fromstring("*:80"),
+                     obj.Addr, obj.Addr.fromstring("[::]:80")},
                 False, True, "ip-172-30-0-17"),
             obj.VirtualHost(
                 os.path.join(prefix, "certbot.conf"),
                 os.path.join(aug_pre, "certbot.conf/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))}, False, True,
+                {obj.Addr, obj.Addr.fromstring("*:80")}, False, True,
                 "certbot.demo", aliases={"www.certbot.demo"}),
             obj.VirtualHost(
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,
                              "mod_macro-example.conf/Macro/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))}, False, True,
+                {obj.Addr, obj.Addr.fromstring("*:80")}, False, True,
                 modmacro=True),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl-port-only.conf"),
                 os.path.join(aug_pre, ("default-ssl-port-only.conf/"
                                        "IfModule/VirtualHost")),
-                {cast(obj.Addr, obj.Addr.fromstring("_default_:443"))}, True, True),
+                {obj.Addr, obj.Addr.fromstring("_default_:443")}, True, True),
             obj.VirtualHost(
                 os.path.join(prefix, "wildcard.conf"),
                 os.path.join(aug_pre, "wildcard.conf/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))}, False, True,
+                {obj.Addr, obj.Addr.fromstring("*:80")}, False, True,
                 "ip-172-30-0-17", aliases={"*.blue.purple.com"}),
             obj.VirtualHost(
                 os.path.join(prefix, "ocsp-ssl.conf"),
                 os.path.join(aug_pre, "ocsp-ssl.conf/IfModule/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("10.2.3.4:443"))}, True, True,
+                {obj.Addr, obj.Addr.fromstring("10.2.3.4:443")}, True, True,
                 "ocspvhost.com"),
             obj.VirtualHost(
                 os.path.join(prefix, "non-symlink.conf"),
                 os.path.join(aug_pre, "non-symlink.conf/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))}, False, True,
+                {obj.Addr, obj.Addr.fromstring("*:80")}, False, True,
                 "nonsym.link"),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl-port-only.conf"),
                 os.path.join(aug_pre,
                              "default-ssl-port-only.conf/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))}, True, True, ""),
+                {obj.Addr, obj.Addr.fromstring("*:80")}, True, True, ""),
             obj.VirtualHost(
                 os.path.join(temp_dir, config_name,
                              "apache2/apache2.conf"),
                 "/files" + os.path.join(temp_dir, config_name,
                                         "apache2/apache2.conf/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))}, False, True,
+                {obj.Addr, obj.Addr.fromstring("*:80")}, False, True,
                 "vhost.in.rootconf"),
             obj.VirtualHost(
                 os.path.join(prefix, "duplicatehttp.conf"),
                 os.path.join(aug_pre, "duplicatehttp.conf/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("10.2.3.4:80"))}, False, True,
+                {obj.Addr, obj.Addr.fromstring("10.2.3.4:80")}, False, True,
                 "duplicate.example.com"),
             obj.VirtualHost(
                 os.path.join(prefix, "duplicatehttps.conf"),
                 os.path.join(aug_pre, "duplicatehttps.conf/IfModule/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("10.2.3.4:443"))}, True, True,
+                {obj.Addr, obj.Addr.fromstring("10.2.3.4:443")}, True, True,
                 "duplicate.example.com")]
         return vh_truth
     if config_name == "debian_apache_2_4/multi_vhosts":
@@ -216,27 +215,27 @@ def get_vh_truth(temp_dir: str, config_name: str) -> Optional[List[obj.VirtualHo
             obj.VirtualHost(
                 os.path.join(prefix, "default.conf"),
                 os.path.join(aug_pre, "default.conf/VirtualHost[1]"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))},
+                {obj.Addr, obj.Addr.fromstring("*:80")},
                 False, True, "ip-172-30-0-17"),
             obj.VirtualHost(
                 os.path.join(prefix, "default.conf"),
                 os.path.join(aug_pre, "default.conf/VirtualHost[2]"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))},
+                {obj.Addr, obj.Addr.fromstring("*:80")},
                 False, True, "banana.vomit.com"),
             obj.VirtualHost(
                 os.path.join(prefix, "multi-vhost.conf"),
                 os.path.join(aug_pre, "multi-vhost.conf/VirtualHost[1]"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))},
+                {obj.Addr, obj.Addr.fromstring("*:80")},
                 False, True, "1.multi.vhost.tld"),
             obj.VirtualHost(
                 os.path.join(prefix, "multi-vhost.conf"),
                 os.path.join(aug_pre, "multi-vhost.conf/IfModule/VirtualHost"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))},
+                {obj.Addr, obj.Addr.fromstring("*:80")},
                 False, True, "2.multi.vhost.tld"),
             obj.VirtualHost(
                 os.path.join(prefix, "multi-vhost.conf"),
                 os.path.join(aug_pre, "multi-vhost.conf/VirtualHost[2]"),
-                {cast(obj.Addr, obj.Addr.fromstring("*:80"))},
+                {obj.Addr, obj.Addr.fromstring("*:80")},
                 False, True, "3.multi.vhost.tld")]
         return vh_truth
     return None  # pragma: no cover
