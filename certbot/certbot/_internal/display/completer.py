@@ -3,12 +3,9 @@ import glob
 from types import TracebackType
 from typing import Callable
 from typing import Iterator
+from typing import Literal
 from typing import Optional
 from typing import Type
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from typing_extensions import Literal
 
 # readline module is not available on all systems
 try:

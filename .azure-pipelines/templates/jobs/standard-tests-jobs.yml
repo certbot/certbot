@@ -1,58 +1,42 @@
 jobs:
   - job: test
     variables:
-      PYTHON_VERSION: 3.10
+      PYTHON_VERSION: 3.12
     strategy:
       matrix:
-        macos-py37-cover:
+        macos-py38-cover:
           IMAGE_NAME: macOS-12
-          PYTHON_VERSION: 3.7
-          TOXENV: py37-cover
-        macos-py310-cover:
-          IMAGE_NAME: macOS-12
-          PYTHON_VERSION: 3.10
-          TOXENV: py310-cover
-        windows-py37:
-          IMAGE_NAME: windows-2019
-          PYTHON_VERSION: 3.7
-          TOXENV: py37-win
-        windows-py39-cover:
-          IMAGE_NAME: windows-2019
-          PYTHON_VERSION: 3.9
-          TOXENV: py39-cover-win
-        windows-integration-certbot:
-          IMAGE_NAME: windows-2019
-          PYTHON_VERSION: 3.9
-          TOXENV: integration-certbot
-        linux-oldest-tests-1:
+          PYTHON_VERSION: 3.8
+          TOXENV: cover
+          # As of pip 23.1.0, builds started failing on macOS unless this flag was set.
+          # See https://github.com/certbot/certbot/pull/9717#issuecomment-1610861794.
+          PIP_USE_PEP517: "true"
+        macos-cover:
+          IMAGE_NAME: macOS-13
+          TOXENV: cover
+          # See explanation under macos-py38-cover.
+          PIP_USE_PEP517: "true"
+        linux-oldest:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.7
-          TOXENV: '{acme,apache,apache-v2,certbot}-oldest'
-        linux-oldest-tests-2:
+          PYTHON_VERSION: 3.8
+          TOXENV: oldest
+        linux-py38:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.7
-          TOXENV: '{dns,nginx}-oldest'
-        linux-py37:
+          PYTHON_VERSION: 3.8
+          TOXENV: py38
+        linux-cover:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.7
-          TOXENV: py37
-        linux-py310-cover:
+          TOXENV: cover
+        linux-lint:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.10
-          TOXENV: py310-cover
-        linux-py310-lint:
-          IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.10
           TOXENV: lint-posix
-        linux-py310-mypy:
+        linux-mypy:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.10
-          TOXENV: mypy-posix
+          TOXENV: mypy
         linux-integration:
           IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: 3.8
           TOXENV: integration
-          ACME_SERVER: pebble
         apache-compat:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: apache_compat

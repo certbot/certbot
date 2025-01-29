@@ -41,10 +41,9 @@ import urllib.request as urllib_request
 
 import boto3
 from botocore.exceptions import ClientError
-import yaml
-
 from fabric import Config
 from fabric import Connection
+import yaml
 
 # Command line parser
 #-------------------------------------------------------------------------------
@@ -59,17 +58,17 @@ parser.add_argument('test_script',
                     default='test_apache2.sh',
                     help='path of bash script in to deploy and run')
 parser.add_argument('--repo',
-                    default='https://github.com/letsencrypt/letsencrypt.git',
+                    default='https://github.com/certbot/certbot.git',
                     help='certbot git repo to use')
 parser.add_argument('--branch',
                     default='~',
                     help='certbot git branch to trial')
 parser.add_argument('--pull_request',
                     default='~',
-                    help='letsencrypt/letsencrypt pull request to trial')
-parser.add_argument('--merge_master',
+                    help='certbot/certbot pull request to trial')
+parser.add_argument('--merge_main',
                     action='store_true',
-                    help="if set merges PR into master branch of letsencrypt/letsencrypt")
+                    help="if set merges PR into main branch of certbot/certbot")
 parser.add_argument('--saveinstances',
                     action='store_true',
                     help="don't kill EC2 instances after run, useful for debugging")
@@ -208,7 +207,7 @@ def block_until_instance_ready(booting_instance, extra_wait_time=20):
 # Fabric Routines
 #-------------------------------------------------------------------------------
 def local_git_clone(local_cxn, repo_url, log_dir):
-    """clones master of repo_url"""
+    """clones main of repo_url"""
     local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % log_dir)
     local_cxn.local('cd %s && git clone %s letsencrypt'% (log_dir, repo_url))
     local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt'% log_dir)
@@ -220,17 +219,17 @@ def local_git_branch(local_cxn, repo_url, branch_name, log_dir):
         (log_dir, repo_url, branch_name))
     local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % log_dir)
 
-def local_git_PR(local_cxn, repo_url, PRnumstr, log_dir, merge_master=True):
-    """clones specified pull request from repo_url and optionally merges into master"""
+def local_git_PR(local_cxn, repo_url, PRnumstr, log_dir, merge_main=True):
+    """clones specified pull request from repo_url and optionally merges into main"""
     local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % log_dir)
     local_cxn.local('cd %s && git clone %s letsencrypt' % (log_dir, repo_url))
     local_cxn.local('cd %s && cd letsencrypt && '
         'git fetch origin pull/%s/head:lePRtest' % (log_dir, PRnumstr))
     local_cxn.local('cd %s && cd letsencrypt && git checkout lePRtest' % log_dir)
-    if merge_master:
+    if merge_main:
         local_cxn.local('cd %s && cd letsencrypt && git remote update origin' % log_dir)
         local_cxn.local('cd %s && cd letsencrypt && '
-            'git merge origin/master -m "testmerge"' % log_dir)
+            'git merge origin/main -m "testmerge"' % log_dir)
     local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % log_dir)
 
 def local_repo_to_remote(cxn, log_dir):
@@ -287,15 +286,15 @@ def create_client_instance(ec2_client, target, security_group_id, subnet_id, sel
         # 32 bit systems
         machine_type = 'c1.medium'
     name = 'le-%s'%target['name']
-    print(name, end=" ")
-    return make_instance(ec2_client,
-                         name,
-                         target['ami'],
-                         KEYNAME,
-                         machine_type=machine_type,
-                         security_group_id=security_group_id,
-                         subnet_id=subnet_id,
-                         self_destruct=self_destruct)
+    try:
+        instance = make_instance(ec2_client, name, target['ami'], KEYNAME,
+                                 machine_type=machine_type, security_group_id=security_group_id,
+                                 subnet_id=subnet_id, self_destruct=self_destruct)
+    except Exception:
+        print(f'FAIL: Unable to create instance {name}')
+        raise
+    print(f'Created instance {name}')
+    return instance
 
 
 def test_client_process(fab_config, inqueue, outqueue, log_dir):
@@ -383,9 +382,9 @@ def main():
         print("Making local git repo")
         if cl_args.pull_request != '~':
             print('Testing PR %s ' % cl_args.pull_request,
-                  "MERGING into master" if cl_args.merge_master else "")
+                  "MERGING into main" if cl_args.merge_main else "")
             local_git_PR(local_cxn, cl_args.repo, cl_args.pull_request, log_dir,
-                         cl_args.merge_master)
+                         cl_args.merge_main)
         elif cl_args.branch != '~':
             print('Testing branch %s of %s' % (cl_args.branch, cl_args.repo))
             local_git_branch(local_cxn, cl_args.repo, cl_args.branch, log_dir)
@@ -436,7 +435,6 @@ def main():
 
     instances = []
     try:
-        print("Creating instances: ", end="")
         # If we want to preserve instances, do not have them self-destruct.
         self_destruct = not cl_args.saveinstances
         for target in targetlist:
@@ -445,7 +443,6 @@ def main():
                                        security_group_id, subnet_id,
                                        self_destruct)
             )
-        print()
 
         # Install and launch client scripts in parallel
         #-------------------------------------------------------------------------------

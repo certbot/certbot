@@ -2,6 +2,7 @@
 Misc module contains stateless functions that could be used during pytest execution,
 or outside during setup/teardown of the integration tests environment.
 """
+import atexit
 import contextlib
 import errno
 import functools
@@ -15,42 +16,38 @@ import sys
 import tempfile
 import threading
 import time
-import warnings
 from typing import Generator
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
+import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
-from cryptography.x509 import load_pem_x509_certificate
 from cryptography.x509 import Certificate
+from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import crypto
-import pkg_resources
 import requests
 
-from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
 from certbot_integration_tests.utils.constants import PEBBLE_ALTERNATE_ROOTS
 from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
 
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
 
 
 def _suppress_x509_verification_warnings() -> None:
-    try:
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    except ImportError:
-        # Handle old versions of request with vendorized urllib3
-        # pylint: disable=no-member
-        from requests.packages.urllib3.exceptions import InsecureRequestWarning
-        requests.packages.urllib3.disable_warnings(  # type: ignore[attr-defined]
-            InsecureRequestWarning)
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def check_until_timeout(url: str, attempts: int = 30) -> None:
@@ -65,9 +62,9 @@ def check_until_timeout(url: str, attempts: int = 30) -> None:
     for _ in range(attempts):
         time.sleep(1)
         try:
-            if requests.get(url, verify=False).status_code == 200:
+            if requests.get(url, verify=False, timeout=10).status_code == 200:
                 return
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.RequestException:
             pass
 
     raise ValueError('Error, url did not respond after {0} attempts: {1}'.format(attempts, url))
@@ -125,7 +122,11 @@ def generate_test_file_hooks(config_dir: str, hook_probe: str) -> None:
     :param str config_dir: current certbot config directory
     :param str hook_probe: path to the hook probe to test hook scripts execution
     """
-    hook_path = pkg_resources.resource_filename('certbot_integration_tests', 'assets/hook.py')
+    file_manager = contextlib.ExitStack()
+    atexit.register(file_manager.close)
+    hook_path_ref = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+                     .joinpath('hook.py'))
+    hook_path = str(file_manager.enter_context(importlib_resources.as_file(hook_path_ref)))
 
     for hook_dir in list_renewal_hooks_dirs(config_dir):
         # We want an equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
@@ -158,14 +159,12 @@ set -e
 
 
 @contextlib.contextmanager
-def manual_http_hooks(http_server_root: str,
-                      http_port: int) -> Generator[Tuple[str, str], None, None]:
+def manual_http_hooks(http_server_root: str) -> Generator[Tuple[str, str], None, None]:
     """
     Generate suitable http-01 hooks command for test purpose in the given HTTP
     server webroot directory. These hooks command use temporary python scripts
     that are deleted upon context exit.
     :param str http_server_root: path to the HTTP server configured to serve http-01 challenges
-    :param int http_port: HTTP port that the HTTP server listen on
     :return (str, str): a tuple containing the authentication hook and cleanup hook commands
     """
     tempdir = tempfile.mkdtemp()
@@ -175,24 +174,12 @@ def manual_http_hooks(http_server_root: str,
             file_h.write('''\
 #!/usr/bin/env python
 import os
-import requests
-import time
-import sys
 challenge_dir = os.path.join('{0}', '.well-known', 'acme-challenge')
 os.makedirs(challenge_dir)
 challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN'))
 with open(challenge_file, 'w') as file_h:
     file_h.write(os.environ.get('CERTBOT_VALIDATION'))
-url = 'http://localhost:{1}/.well-known/acme-challenge/' + os.environ.get('CERTBOT_TOKEN')
-for _ in range(0, 10):
-    time.sleep(1)
-    try:
-        if request.get(url).status_code == 200:
-            sys.exit(0)
-    except requests.exceptions.ConnectionError:
-        pass
-raise ValueError('Error, url did not respond after 10 attempts: {{0}}'.format(url))
-'''.format(http_server_root.replace('\\', '\\\\'), http_port))
+'''.format(http_server_root.replace('\\', '\\\\')))
         os.chmod(auth_script_path, 0o755)
 
         cleanup_script_path = os.path.join(tempdir, 'cleanup.py')
@@ -230,11 +217,7 @@ def generate_csr(domains: Iterable[str], key_path: str, csr_path: str,
             # Ignore a warning on some old versions of cryptography
             warnings.simplefilter('ignore', category=PendingDeprecationWarning)
             _key = ec.generate_private_key(ec.SECP384R1(), default_backend())
-        # This type ignore directive is required due to an outdated version of types-cryptography.
-        # It can be removed once package types-pyOpenSSL depends on cryptography instead of
-        # types-cryptography and so types-cryptography is not installed anymore.
-        # See https://github.com/python/typeshed/issues/5618
-        _bytes = _key.private_bytes(encoding=Encoding.PEM,  # type: ignore
+        _bytes = _key.private_bytes(encoding=Encoding.PEM,
                                     format=PrivateFormat.TraditionalOpenSSL,
                                     encryption_algorithm=NoEncryption())
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, _bytes)
@@ -250,7 +233,7 @@ def generate_csr(domains: Iterable[str], key_path: str, csr_path: str,
     req.add_extensions([san_constraint])
 
     req.set_pubkey(key)
-    req.set_version(2)
+    req.set_version(0)
     req.sign(key, 'sha256')
 
     with open(csr_path, 'wb') as file_h:
@@ -278,9 +261,11 @@ def load_sample_data_path(workspace: str) -> str:
     :returns: the path to the loaded sample data directory
     :rtype: str
     """
-    original = pkg_resources.resource_filename('certbot_integration_tests', 'assets/sample-config')
-    copied = os.path.join(workspace, 'sample-config')
-    shutil.copytree(original, copied, symlinks=True)
+    original_ref = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+                    .joinpath('sample-config'))
+    with importlib_resources.as_file(original_ref) as original:
+        copied = os.path.join(workspace, 'sample-config')
+        shutil.copytree(original, copied, symlinks=True)
 
     if os.name == 'nt':
         # Fix the symlinks on Windows if GIT is not configured to create them upon checkout
@@ -317,21 +302,19 @@ def echo(keyword: str, path: Optional[str] = None) -> str:
         os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
 
 
-def get_acme_issuers(context: IntegrationTestsContext) -> List[Certificate]:
+def get_acme_issuers() -> List[Certificate]:
     """Gets the list of one or more issuer certificates from the ACME server used by the
     context.
     :param context: the testing context.
     :return: the `list of x509.Certificate` representing the list of issuers.
     """
-    # TODO: in fact, Boulder has alternate chains in config-next/, just not yet in config/.
-    if context.acme_server != "pebble":
-        raise NotImplementedError()
-
     _suppress_x509_verification_warnings()
 
     issuers = []
     for i in range(PEBBLE_ALTERNATE_ROOTS + 1):
-        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/{}'.format(i), verify=False)
+        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/{}'.format(i),
+                               verify=False,
+                               timeout=10)
         issuers.append(load_pem_x509_certificate(request.content, default_backend()))
 
     return issuers

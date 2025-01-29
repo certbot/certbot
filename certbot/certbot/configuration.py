@@ -1,7 +1,10 @@
 """Certbot user-supplied configuration."""
 import argparse
 import copy
+import enum
+import logging
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from urllib import parse
@@ -13,6 +16,24 @@ from certbot.compat import misc
 from certbot.compat import os
 
 
+logger = logging.getLogger(__name__)
+
+
+class ArgumentSource(enum.Enum):
+    """Enum for describing where a configuration argument was set."""
+
+    COMMAND_LINE = enum.auto()
+    """Argument was specified on the command line"""
+    CONFIG_FILE = enum.auto()
+    """Argument was specified in a .ini config file"""
+    DEFAULT = enum.auto()
+    """Argument was not set by the user, and was assigned its default value"""
+    ENV_VAR = enum.auto()
+    """Argument was specified in an environment variable"""
+    RUNTIME = enum.auto()
+    """Argument was set at runtime by certbot"""
+
+
 class NamespaceConfig:
     """Configuration wrapper around :class:`argparse.Namespace`.
 
@@ -21,9 +42,7 @@ class NamespaceConfig:
     paths defined in :py:mod:`certbot._internal.constants`:
 
       - `accounts_dir`
-      - `csr_dir`
       - `in_progress_dir`
-      - `key_dir`
       - `temp_checkpoint_dir`
 
     And the following paths are dynamically resolved using
@@ -44,6 +63,8 @@ class NamespaceConfig:
         self.namespace: argparse.Namespace
         # Avoid recursion loop because of the delegation defined in __setattr__
         object.__setattr__(self, 'namespace', namespace)
+        object.__setattr__(self, '_argument_sources', None)
+        object.__setattr__(self, '_previously_accessed_mutables', {})
 
         self.namespace.config_dir = os.path.abspath(self.namespace.config_dir)
         self.namespace.work_dir = os.path.abspath(self.namespace.work_dir)
@@ -52,12 +73,121 @@ class NamespaceConfig:
         # Check command line parameters sanity, and error out in case of problem.
         _check_config_sanity(self)
 
+    def set_argument_sources(self, argument_sources: Dict[str, ArgumentSource]) -> None:
+        """
+        Associate the NamespaceConfig with a dictionary describing where each of
+        its arguments came from, e.g. `{ 'email': ArgumentSource.CONFIG_FILE }`.
+        This is necessary for making runtime evaluations on whether an argument
+        was specified by the user or not (see `set_by_user`).
+
+        For an example of how to build such a dictionary, see
+        `certbot._internal.cli.helpful.HelpfulArgumentParser._build_sources_dict`
+
+        :ivar argument_sources: dictionary of argument names to their :class:`ArgumentSource`
+        :type argument_sources: :class:`Dict[str, ArgumentSource]`
+        """
+
+        # Avoid recursion loop because of the delegation defined in __setattr__
+        object.__setattr__(self, '_argument_sources', argument_sources)
+
+
+    def set_by_user(self, var: str) -> bool:
+        """
+        Return True if a particular config variable has been set by the user
+        (via CLI or config file) including if the user explicitly set it to the
+        default, or if it was dynamically set at runtime.  Returns False if the
+        variable was assigned a default value.
+
+        Raises an exception if `argument_sources` is not set.
+        """
+        from certbot._internal.cli.cli_constants import DEPRECATED_OPTIONS
+        from certbot._internal.cli.cli_constants import VAR_MODIFIERS
+        from certbot._internal.plugins import selection
+
+        if self.argument_sources is None:
+            raise RuntimeError(
+                "NamespaceConfig.set_by_user called without an ArgumentSources dict. "
+                "See NamespaceConfig.set_argument_sources().")
+
+        # We should probably never actually hit this code. But if we do,
+        # a deprecated option has logically never been set by the CLI.
+        if var in DEPRECATED_OPTIONS:
+            return False
+
+        if var in ['authenticator', 'installer']:
+            auth, inst = selection.cli_plugin_requests(self)
+            if var == 'authenticator':
+                return auth is not None
+            if var == 'installer':
+                return inst is not None
+
+        if var in self.argument_sources and self.argument_sources[var] != ArgumentSource.DEFAULT:
+            logger.debug("Var %s=%s (set by user).", var, getattr(self, var))
+            return True
+
+        for modifier in VAR_MODIFIERS.get(var, []):
+            if self.set_by_user(modifier):
+                logger.debug("Var %s=%s (set by user).",
+                    var, VAR_MODIFIERS.get(var, []))
+                return True
+
+        return False
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a dictionary mapping all argument names to their values
+        """
+        return vars(self.namespace)
+
+    def _mark_runtime_override(self, name: str) -> None:
+        """
+        If an argument_sources dict was set, overwrites an argument's source to
+        be ArgumentSource.RUNTIME. Used when certbot sets an argument's values
+        at runtime. This also clears the modified value from
+        _previously_accessed_mutables since it is no longer needed.
+        """
+        if self._argument_sources is not None:
+            self._argument_sources[name] = ArgumentSource.RUNTIME
+            if name in self._previously_accessed_mutables:
+                del self._previously_accessed_mutables[name]
+
+    @property
+    def argument_sources(self) -> Optional[Dict[str, ArgumentSource]]:
+        """Returns _argument_sources after handling any changes to accessed mutable values."""
+        # We keep values in _previously_accessed_mutables until we've detected a modification to try
+        # to provide up-to-date information when argument_sources is accessed. Once a mutable object
+        # has been accessed, it can be modified at any time if a reference to it was kept somewhere
+        # else.
+
+        # We copy _previously_accessed_mutables because _mark_runtime_override modifies it.
+        for name, prev_value in self._previously_accessed_mutables.copy().items():
+            current_value = getattr(self.namespace, name)
+            if current_value != prev_value:
+                self._mark_runtime_override(name)
+        return self._argument_sources
+
     # Delegate any attribute not explicitly defined to the underlying namespace object.
+    #
+    # If any mutable namespace attributes are explicitly defined in the future, you'll probably want
+    # to take an approach like the one used in __getattr__ and the argument_sources property.
 
     def __getattr__(self, name: str) -> Any:
-        return getattr(self.namespace, name)
+        arg_sources = self.argument_sources
+        value = getattr(self.namespace, name)
+        if arg_sources is not None:
+            # If the requested attribute was already modified at runtime, we don't need to track any
+            # future changes.
+            if name not in arg_sources or arg_sources[name] != ArgumentSource.RUNTIME:
+                # If name is already in _previously_accessed_mutables, we don't need to make a copy
+                # of it again. If its value was changed, this would have been caught while preparing
+                # the return value of the property self.argument_sources accessed earlier in this
+                # function.
+                if name not in self._previously_accessed_mutables and not _is_immutable(value):
+                    self._previously_accessed_mutables[name] = copy.deepcopy(value)
+        return value
 
     def __setattr__(self, name: str, value: Any) -> None:
+        self._mark_runtime_override(name)
         setattr(self.namespace, name, value)
 
     @property
@@ -67,6 +197,7 @@ class NamespaceConfig:
 
     @server.setter
     def server(self, server_: str) -> None:
+        self._mark_runtime_override('server')
         self.namespace.server = server_
 
     @property
@@ -80,6 +211,7 @@ class NamespaceConfig:
 
     @email.setter
     def email(self, mail: str) -> None:
+        self._mark_runtime_override('email')
         self.namespace.email = mail
 
     @property
@@ -90,6 +222,7 @@ class NamespaceConfig:
     @rsa_key_size.setter
     def rsa_key_size(self, ksize: int) -> None:
         """Set the rsa_key_size property"""
+        self._mark_runtime_override('rsa_key_size')
         self.namespace.rsa_key_size = ksize
 
     @property
@@ -103,6 +236,7 @@ class NamespaceConfig:
     @elliptic_curve.setter
     def elliptic_curve(self, ecurve: str) -> None:
         """Set the elliptic_curve property"""
+        self._mark_runtime_override('elliptic_curve')
         self.namespace.elliptic_curve = ecurve
 
     @property
@@ -116,6 +250,7 @@ class NamespaceConfig:
     @key_type.setter
     def key_type(self, ktype: str) -> None:
         """Set the key_type property"""
+        self._mark_runtime_override('key_type')
         self.namespace.key_type = ktype
 
     @property
@@ -148,19 +283,9 @@ class NamespaceConfig:
         return os.path.join(self.namespace.work_dir, constants.BACKUP_DIR)
 
     @property
-    def csr_dir(self) -> str:
-        """Directory where new Certificate Signing Requests (CSRs) are saved."""
-        return os.path.join(self.namespace.config_dir, constants.CSR_DIR)
-
-    @property
     def in_progress_dir(self) -> str:
         """Directory used before a permanent checkpoint is finalized."""
         return os.path.join(self.namespace.work_dir, constants.IN_PROGRESS_DIR)
-
-    @property
-    def key_dir(self) -> str:
-        """Keys storage."""
-        return os.path.join(self.namespace.config_dir, constants.KEY_DIR)
 
     @property
     def temp_checkpoint_dir(self) -> str:
@@ -315,9 +440,13 @@ class NamespaceConfig:
 
     def __deepcopy__(self, _memo: Any) -> 'NamespaceConfig':
         # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
-        # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
         new_ns = copy.deepcopy(self.namespace)
-        return type(self)(new_ns)
+        new_config = type(self)(new_ns)
+        # Avoid recursion loop because of the delegation defined in __setattr__
+        object.__setattr__(new_config, '_argument_sources', copy.deepcopy(self.argument_sources))
+        object.__setattr__(new_config, '_previously_accessed_mutables',
+                           copy.deepcopy(self._previously_accessed_mutables))
+        return new_config
 
 
 def _check_config_sanity(config: NamespaceConfig) -> None:
@@ -339,3 +468,15 @@ def _check_config_sanity(config: NamespaceConfig) -> None:
         for domain in config.namespace.domains:
             # This may be redundant, but let's be paranoid
             util.enforce_domain_sanity(domain)
+
+
+def _is_immutable(value: Any) -> bool:
+    """Is value of an immutable type?"""
+    if isinstance(value, tuple):
+        # tuples are only immutable if all contained values are immutable.
+        return all(_is_immutable(subvalue) for subvalue in value)
+    for immutable_type in (int, float, complex, str, bytes, bool, frozenset,):
+        if isinstance(value, immutable_type):
+            return True
+    # The last case we consider here is None which is also immutable.
+    return value is None

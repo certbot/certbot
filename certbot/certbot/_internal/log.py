@@ -75,7 +75,10 @@ def pre_arg_parse_setup() -> None:
 
     stream_handler = ColoredStreamHandler()
     stream_handler.setFormatter(logging.Formatter(CLI_FMT))
-    stream_handler.setLevel(constants.QUIET_LOGGING_LEVEL)
+    # The pre-argparse logging level is set to WARNING here. This is to ensure that
+    # deprecated flags (see DeprecatedArgumentAction) print something to the terminal.
+    # See https://github.com/certbot/certbot/issues/9618.
+    stream_handler.setLevel(logging.WARNING)
 
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)  # send all records to handlers
@@ -348,7 +351,11 @@ def post_arg_parse_except_hook(exc_type: Type[BaseException], exc_value: BaseExc
     """
     exc_info = (exc_type, exc_value, trace)
     # Only print human advice if not running under --quiet
-    exit_func = lambda: sys.exit(1) if quiet else exit_with_advice(log_path)
+    def exit_func() -> None:
+        if quiet:
+            sys.exit(1)
+        else:
+            exit_with_advice(log_path)
     # constants.QUIET_LOGGING_LEVEL or higher should be used to
     # display message the user, otherwise, a lower level like
     # logger.DEBUG should be used

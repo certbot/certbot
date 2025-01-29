@@ -15,11 +15,14 @@ from typing import List
 from typing import Optional
 from typing import Type
 
-from pkg_resources import resource_filename
-
 from certbot_integration_tests.utils import constants
 
-BIND_DOCKER_IMAGE = "internetsystemsconsortium/bind9:9.16"
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
+
+BIND_DOCKER_IMAGE = "internetsystemsconsortium/bind9:9.20"
 BIND_BIND_ADDRESS = ("127.0.0.1", 45953)
 
 # A TCP DNS message which is a query for '. CH A' transaction ID 0xcb37. This is used
@@ -70,7 +73,7 @@ class DNSServer:
             try:
                 self.process.terminate()
                 self.process.wait(constants.MAX_SUBPROCESS_WAIT)
-            except BaseException as e:
+            except BaseException as e:  # pylint: disable=broad-except
                 print("BIND9 did not stop cleanly: {}".format(e), file=sys.stderr)
 
         shutil.rmtree(self.bind_root, ignore_errors=True)
@@ -80,13 +83,12 @@ class DNSServer:
 
     def _configure_bind(self) -> None:
         """Configure the BIND9 server based on the prebaked configuration"""
-        bind_conf_src = resource_filename(
-            "certbot_integration_tests", "assets/bind-config"
-        )
-        for directory in ("conf", "zones"):
-            shutil.copytree(
-                os.path.join(bind_conf_src, directory), os.path.join(self.bind_root, directory)
-            )
+        ref = importlib_resources.files("certbot_integration_tests") / "assets" / "bind-config"
+        with importlib_resources.as_file(ref) as path:
+            for directory in ("conf", "zones"):
+                shutil.copytree(
+                    os.path.join(path, directory), os.path.join(self.bind_root, directory)
+                )
 
     def _start_bind(self) -> None:
         """Launch the BIND9 server as a Docker container"""

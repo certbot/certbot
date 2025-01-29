@@ -2,6 +2,7 @@
 # pylint: disable=too-many-lines
 
 from contextlib import contextmanager
+import copy
 import functools
 import logging.handlers
 import sys
@@ -17,8 +18,7 @@ from typing import Union
 
 import configobj
 import josepy as jose
-import zope.component
-import zope.interface
+from josepy import b64
 
 from acme import client as acme_client
 from acme import errors as acme_errors
@@ -38,7 +38,6 @@ from certbot._internal import eff
 from certbot._internal import hooks
 from certbot._internal import log
 from certbot._internal import renewal
-from certbot._internal import reporter
 from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
@@ -115,6 +114,8 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
 
     """
     hooks.pre_hook(config)
+    renewed_domains: List[str] = []
+
     try:
         if lineage is not None:
             # Renewal, where we already know the specific lineage we're
@@ -143,30 +144,33 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
                 raise errors.Error("Certificate could not be obtained")
             if lineage is not None:
                 hooks.deploy_hook(config, lineage.names(), lineage.live_dir)
+                renewed_domains.extend(domains)
     finally:
-        hooks.post_hook(config)
+        hooks.post_hook(config, renewed_domains)
 
     return lineage
 
 
 def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
-                                          cert: storage.RenewableCert) -> None:
+                                          cert: storage.RenewableCert) -> bool:
     """
     This function ensures that the user will not implicitly migrate an existing key
     from one type to another in the situation where a certificate for that lineage
     already exist and they have not provided explicitly --key-type and --cert-name.
     :param config: Current configuration provided by the client
     :param cert: Matching certificate that could be renewed
+    :returns: Whether a key type migration is going ahead.
+    :rtype: `bool`
     """
     new_key_type = config.key_type.upper()
     cur_key_type = cert.private_key_type.upper()
 
     if new_key_type == cur_key_type:
-        return
+        return False
 
     # If both --key-type and --cert-name are provided, we consider the user's intent to
     # be unambiguous: to change the key type of this lineage.
-    is_confirmed_via_cli = cli.set_by_cli("key_type") and cli.set_by_cli("certname")
+    is_confirmed_via_cli = config.set_by_user("key_type") and config.set_by_user("certname")
 
     # Failing that, we interactively prompt the user to confirm the change.
     if is_confirmed_via_cli or display_util.yesno(
@@ -175,11 +179,11 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
         yes_label='Update key type', no_label='Keep existing key type',
         default=False, force_interactive=False,
     ):
-        return
+        return True
 
     # If --key-type was set on the CLI but the user did not confirm the key type change using
     # one of the two above methods, their intent is ambiguous. Error out.
-    if cli.set_by_cli("key_type"):
+    if config.set_by_user("key_type"):
         raise errors.Error(
             'Are you trying to change the key type of the certificate named '
             f'{cert.lineagename} from {cur_key_type} to {new_key_type}? Please provide '
@@ -191,6 +195,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
     # default value. The user is not asking for a key change: keep the key type of the existing
     # lineage.
     config.key_type = cur_key_type.lower()
+    return False
 
 
 def _handle_subset_cert_request(config: configuration.NamespaceConfig,
@@ -257,11 +262,11 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     :rtype: `tuple` of `str`
 
     """
-    _handle_unexpected_key_type_migration(config, lineage)
+    is_key_type_changing = _handle_unexpected_key_type_migration(config, lineage)
 
     if not lineage.ensure_deployed():
         return "reinstall", lineage
-    if renewal.should_renew(config, lineage):
+    if is_key_type_changing or renewal.should_renew(config, lineage):
         return "renew", lineage
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
@@ -948,7 +953,7 @@ def update_account(config: configuration.NamespaceConfig,
     # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
     # so that we can also continue to use the account object with acmev1.
     acc.regr = acc.regr.update(uri=prev_regr_uri)
-    account_storage.update_regr(acc, cb_client.acme)
+    account_storage.update_regr(acc)
 
     if not config.email:
         display_util.notify("Any contact information associated "
@@ -991,6 +996,9 @@ def show_account(config: configuration.NamespaceConfig,
     regr = cb_client.acme.query_registration(acc.regr)
     output = [f"Account details for server {config.server}:",
               f"  Account URL: {regr.uri}"]
+
+    thumbprint = b64.b64encode(acc.key.thumbprint()).decode()
+    output.append(f"  Account Thumbprint: {thumbprint}")
 
     emails = []
 
@@ -1120,13 +1128,13 @@ def _populate_from_certname(config: configuration.NamespaceConfig) -> configurat
     if not lineage:
         return config
     if not config.key_path:
-        config.namespace.key_path = lineage.key_path
+        config.key_path = lineage.key_path
     if not config.cert_path:
-        config.namespace.cert_path = lineage.cert_path
+        config.cert_path = lineage.cert_path
     if not config.chain_path:
-        config.namespace.chain_path = lineage.chain_path
+        config.chain_path = lineage.chain_path
     if not config.fullchain_path:
-        config.namespace.fullchain_path = lineage.fullchain_path
+        config.fullchain_path = lineage.fullchain_path
     return config
 
 
@@ -1165,15 +1173,14 @@ def plugins_cmd(config: configuration.NamespaceConfig,
         return
 
     filtered.init(config)
-    verified = filtered.verify(ifaces)
-    logger.debug("Verified plugins: %r", verified)
+    logger.debug("Filtered plugins: %r", filtered)
 
     if not config.prepare:
-        notify(str(verified))
+        notify(str(filtered))
         return
 
-    verified.prepare()
-    available = verified.available()
+    filtered.prepare()
+    available = filtered.available()
     logger.debug("Prepared plugins: %s", available)
     notify(str(available))
 
@@ -1258,26 +1265,6 @@ def rollback(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
     client.rollback(config.installer, config.checkpoints, config, plugins)
 
 
-def update_symlinks(config: configuration.NamespaceConfig,
-                    unused_plugins: plugins_disco.PluginsRegistry) -> None:
-    """Update the certificate file family symlinks
-
-    Use the information in the config file to make symlinks point to
-    the correct archive directory.
-
-    :param config: Configuration object
-    :type config: configuration.NamespaceConfig
-
-    :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: plugins_disco.PluginsRegistry
-
-    :returns: `None`
-    :rtype: None
-
-    """
-    cert_manager.update_live_symlinks(config)
-
-
 def rename(config: configuration.NamespaceConfig,
            unused_plugins: plugins_disco.PluginsRegistry) -> None:
     """Rename a certificate
@@ -1358,7 +1345,7 @@ def revoke(config: configuration.NamespaceConfig,
             storage.renewal_file_for_certname(config, config.certname), config)
         config.cert_path = lineage.cert_path
         # --server takes priority over lineage.server
-        if lineage.server and not cli.set_by_cli("server"):
+        if lineage.server and not config.set_by_user("server"):
             config.server = lineage.server
     elif not config.cert_path or (config.cert_path and config.certname):
         # intentionally not supporting --cert-path & --cert-name together,
@@ -1626,10 +1613,13 @@ def renew(config: configuration.NamespaceConfig,
     :rtype: None
 
     """
+
+    renewed_domains: List[str] = []
+    failed_domains: List[str] = []
     try:
-        renewal.handle_renewal_request(config)
+        renewed_domains, failed_domains = renewal.handle_renewal_request(config)
     finally:
-        hooks.run_saved_post_hooks()
+        hooks.run_saved_post_hooks(renewed_domains, failed_domains)
 
 
 def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
@@ -1643,7 +1633,10 @@ def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
 
     """
     util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE, config.strict_permissions)
-    util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE, config.strict_permissions)
+
+    # Ensure the working directory has the expected mode, even under stricter umask settings
+    with filesystem.temp_umask(0o022):
+        util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE, config.strict_permissions)
 
     hook_dirs = (config.renewal_pre_hooks_dir,
                  config.renewal_deploy_hooks_dir,
@@ -1652,10 +1645,156 @@ def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
         util.make_or_verify_dir(hook_dir, strict=config.strict_permissions)
 
 
+def _report_reconfigure_results(renewal_file: str, orig_renewal_conf: configobj.ConfigObj) -> None:
+    """Reports the outcome of certificate renewal reconfiguration to the user.
+
+    :param renewal_file: Path to the cert's renewal file
+    :type renewal_file: str
+
+    :param orig_renewal_conf: Loaded original renewal configuration
+    :type orig_renewal_conf: configobj.ConfigObj
+
+    :returns: `None`
+    :rtype: None
+
+    """
+    try:
+        final_renewal_conf = configobj.ConfigObj(
+            renewal_file, encoding='utf-8', default_encoding='utf-8')
+    except configobj.ConfigObjError:
+        raise errors.CertStorageError(
+            f'error parsing {renewal_file}')
+
+    orig_renewal_params = orig_renewal_conf['renewalparams']
+    final_renewal_params = final_renewal_conf['renewalparams']
+
+    if final_renewal_params == orig_renewal_params:
+        success_message = '\nNo changes were made to the renewal configuration.'
+    else:
+        success_message = '\nSuccessfully updated configuration.' + \
+                          '\nChanges will apply when the certificate renews.'
+
+    display_util.notify(success_message)
+
+
+def reconfigure(config: configuration.NamespaceConfig,
+          plugins: plugins_disco.PluginsRegistry) -> None:
+    """Allow the user to set new configuration options for an existing certificate without
+       forcing renewal. This can be used for things like authenticator, installer, and hooks,
+       but not for the domains on the cert, since those are only saved in the cert.
+
+    :param config: Configuration object
+    :type config: configuration.NamespaceConfig
+
+    :param plugins: List of plugins
+    :type plugins: plugins_disco.PluginsRegistry
+
+    :raises errors.Error: if the dry run fails
+    :raises errors.ConfigurationError: if certificate could not be loaded
+
+    """
+
+    if config.domains:
+        raise errors.ConfigurationError("You have specified domains, but this function cannot "
+            "be used to modify the domains in a certificate. If you would like to do so, follow "
+            "the instructions at https://certbot.org/change-cert-domain. Otherwise, remove the "
+            "domains from the command to continue reconfiguring. You can specify which certificate "
+            "you want on the command line with flag --cert-name instead.")
+    # While we could technically allow domains to be used to specify the certificate in addition to
+    # --cert-name, there's enough complexity with matching certs to domains that it's not worth it,
+    # to say nothing of the difficulty in explaining what exactly this subcommand can modify
+
+
+    # To make sure that the requested changes work, we're going to do a dry run, and only save
+    # upon success. First, modify the config as the user requested.
+    if not config.certname:
+        certname_question = "Which certificate would you like to reconfigure?"
+        config.certname = cert_manager.get_certnames(
+            config, "reconfigure", allow_multiple=False,
+            custom_prompt=certname_question)[0]
+
+    certname = config.certname
+
+    try:
+        renewal_file = storage.renewal_file_for_certname(config, certname)
+    except errors.CertStorageError:
+        raise errors.ConfigurationError(f"An existing certificate with name {certname} could not "
+            "be found. Run `certbot certificates` to list available certificates.")
+
+    # figure this out before we modify config
+    if config.deploy_hook and not config.run_deploy_hooks:
+        msg = ("You are attempting to set a --deploy-hook. Would you like Certbot to run deploy "
+               "hooks when it performs a dry run with the new settings? This will run all "
+               "relevant deploy hooks, including directory hooks, unless --no-directory-hooks "
+               "is set. This will use the current active certificate, and not the temporary test "
+               "certificate acquired during the dry run.")
+        config.run_deploy_hooks = display_util.yesno(msg,"Run deploy hooks",
+            "Do not run deploy hooks", default=False)
+
+    # cache previous version for later comparison
+    try:
+        orig_renewal_conf = configobj.ConfigObj(
+            renewal_file, encoding='utf-8', default_encoding='utf-8')
+    except configobj.ConfigObjError:
+        raise errors.CertStorageError(
+            f"error parsing {renewal_file}")
+
+    lineage_config = copy.deepcopy(config)
+    try:
+        renewal_candidate = renewal.reconstitute(lineage_config, renewal_file)
+    except Exception as e:  # pylint: disable=broad-except
+        raise errors.ConfigurationError(f"Renewal configuration file {renewal_file} "
+            f"(cert: {certname}) produced an unexpected error: {e}.")
+    if not renewal_candidate:
+        raise errors.ConfigurationError("Could not load certificate. See logs for errors.")
+
+    renewalparams = orig_renewal_conf['renewalparams']
+    # If server was set but hasn't changed and no account is loaded,
+    # load the old account because reconstitute won't have
+    if lineage_config.set_by_user('server') and lineage_config.server == renewalparams['server']\
+        and lineage_config.account is None:
+        lineage_config.account = renewalparams['account']
+    for param in ('account', 'server',):
+        if getattr(lineage_config, param) != renewalparams.get(param):
+            msg = ("Using reconfigure to change the ACME account or server is not supported. "
+                   "If you would like to do so, use renew with the --force-renewal flag instead "
+                   "of reconfigure. Note that doing so will count against any rate limits. For "
+                   "more information on this method, see "
+                   "https://certbot.org/renew-reconfiguration")
+            raise errors.ConfigurationError(msg)
+
+    # this is where lineage_config gets fully filled out (e.g. --apache will set auth and installer)
+    installer, auth = plug_sel.choose_configurator_plugins(lineage_config, plugins, "certonly")
+
+    # make a deep copy of lineage_config because we're about to modify it for a test dry run
+    dry_run_lineage_config = copy.deepcopy(lineage_config)
+
+    # we also set noninteractive_mode to more accurately simulate renewal (since `certbot renew`
+    # implies noninteractive mode) and to avoid prompting the user as changes made to
+    # dry_run_lineage_config beyond this point will not be applied to the original lineage_config
+    dry_run_lineage_config.noninteractive_mode = True
+    dry_run_lineage_config.dry_run = True
+    cli.set_test_server_options("reconfigure", dry_run_lineage_config)
+
+    le_client = _init_le_client(dry_run_lineage_config, auth, installer)
+
+    # renews cert as dry run to test that the new values are ok
+    # at this point, renewal_candidate.configuration has the old values, but will use
+    # the values from lineage_config when doing the dry run
+    _get_and_save_cert(le_client, dry_run_lineage_config, certname=certname,
+        lineage=renewal_candidate)
+
+    # this function will update lineage.configuration with the new values, and save it to disk
+    # use the pre-dry-run version
+    renewal_candidate.save_new_config_values(lineage_config)
+
+    _report_reconfigure_results(renewal_file, orig_renewal_conf)
+
+
 @contextmanager
 def make_displayer(config: configuration.NamespaceConfig
-                   ) -> Generator[Union[display_util.NoninteractiveDisplay,
-                                        display_util.FileDisplay], None, None]:
+                   ) -> Generator[Union[display_obj.NoninteractiveDisplay,
+                                        display_obj.FileDisplay], None, None]:
     """Creates a display object appropriate to the flags in the supplied config.
 
     :param config: Configuration object
@@ -1663,18 +1802,18 @@ def make_displayer(config: configuration.NamespaceConfig
     :returns: Display object
 
     """
-    displayer: Union[None, display_util.NoninteractiveDisplay,
-                     display_util.FileDisplay] = None
+    displayer: Union[None, display_obj.NoninteractiveDisplay,
+                     display_obj.FileDisplay] = None
     devnull: Optional[IO] = None
 
     if config.quiet:
         config.noninteractive_mode = True
         devnull = open(os.devnull, "w")  # pylint: disable=consider-using-with
-        displayer = display_util.NoninteractiveDisplay(devnull)
+        displayer = display_obj.NoninteractiveDisplay(devnull)
     elif config.noninteractive_mode:
-        displayer = display_util.NoninteractiveDisplay(sys.stdout)
+        displayer = display_obj.NoninteractiveDisplay(sys.stdout)
     else:
-        displayer = display_util.FileDisplay(
+        displayer = display_obj.FileDisplay(
             sys.stdout, config.force_interactive)
 
     try:
@@ -1684,7 +1823,7 @@ def make_displayer(config: configuration.NamespaceConfig
             devnull.close()
 
 
-def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
+def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
     """Run Certbot.
 
     :param cli_args: command line to Certbot, defaults to ``sys.argv[1:]``
@@ -1713,12 +1852,7 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
     misc.prepare_virtual_console()
 
     # note: arg parser internally handles --help (and exits afterwards)
-    args = cli.prepare_and_parse_args(plugins, cli_args)
-    config = configuration.NamespaceConfig(args)
-
-    # This call is done only for retro-compatibility purposes.
-    # TODO: Remove this call once zope dependencies are removed from Certbot.
-    zope.component.provideUtility(config, interfaces.IConfig)
+    config = cli.prepare_and_parse_args(plugins, cli_args)
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
@@ -1731,12 +1865,6 @@ def main(cli_args: List[str] = None) -> Optional[Union[str, int]]:
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
-
-    # These calls are done only for retro-compatibility purposes.
-    # TODO: Remove these calls once zope dependencies are removed from Certbot.
-    report = reporter.Reporter(config)
-    zope.component.provideUtility(report, interfaces.IReporter)
-    util.atexit_register(report.print_messages)
 
     with make_displayer(config) as displayer:
         display_obj.set_display(displayer)

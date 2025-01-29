@@ -7,14 +7,13 @@ from typing import Set
 from typing import Tuple
 from unittest import mock
 
+from certbot import configuration
+from certbot import errors as le_errors
+from certbot import util as certbot_util
 from certbot_apache._internal import entrypoint
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
-
-from certbot import configuration
-from certbot import errors as le_errors
-from certbot import util as certbot_util
 
 
 class Proxy(configurators_common.Proxy):
@@ -76,7 +75,7 @@ def _get_server_root(config: str) -> str:
         if os.path.isdir(os.path.join(config, name))]
 
     if len(subdirs) != 1:
-        errors.Error("Malformed configuration directory {0}".format(config))
+        raise errors.Error("Malformed configuration directory {0}".format(config))
 
     return os.path.join(config, subdirs[0].rstrip())
 

@@ -1,6 +1,7 @@
 """Facilities for implementing hooks that call shell commands."""
 
 import logging
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
@@ -55,7 +56,8 @@ def validate_hook(shell_cmd: str, hook_name: str) -> None:
                 msg = f"{cmd}-hook command {hook_name} exists, but is not executable."
             else:
                 msg = (
-                    f"Unable to find {hook_name}-hook command {cmd} in the PATH.\n(PATH is {path})"
+                    f"Unable to find {hook_name}-hook command {cmd} in the PATH.\n(PATH is "
+                    f"{path})\nSee also the --disable-hook-validation option."
                 )
 
             raise errors.HookCommandNotFound(msg)
@@ -101,7 +103,11 @@ def _run_pre_hook_if_necessary(command: str) -> None:
         executed_pre_hooks.add(command)
 
 
-def post_hook(config: configuration.NamespaceConfig) -> None:
+def post_hook(
+    config: configuration.NamespaceConfig,
+    renewed_domains: List[str]
+) -> None:
+
     """Run post-hooks if defined.
 
     This function also registers any executables found in
@@ -129,7 +135,22 @@ def post_hook(config: configuration.NamespaceConfig) -> None:
             _run_eventually(cmd)
     # certonly / run
     elif cmd:
-        _run_hook("post-hook", cmd)
+        renewed_domains_str = ' '.join(renewed_domains)
+        # 32k is reasonable on Windows and likely quite conservative on other platforms
+        if len(renewed_domains_str) > 32_000:
+            logger.warning("Limiting RENEWED_DOMAINS environment variable to 32k characters")
+            renewed_domains_str = renewed_domains_str[:32_000]
+
+        _run_hook(
+            "post-hook",
+            cmd,
+            {
+                'RENEWED_DOMAINS': renewed_domains_str,
+                # Since other commands stop certbot execution on failure,
+                # it doesn't make sense to have a FAILED_DOMAINS variable
+                'FAILED_DOMAINS': ""
+            }
+        )
 
 
 post_hooks: List[str] = []
@@ -148,10 +169,30 @@ def _run_eventually(command: str) -> None:
         post_hooks.append(command)
 
 
-def run_saved_post_hooks() -> None:
+def run_saved_post_hooks(renewed_domains: List[str], failed_domains: List[str]) -> None:
     """Run any post hooks that were saved up in the course of the 'renew' verb"""
+
+    renewed_domains_str = ' '.join(renewed_domains)
+    failed_domains_str = ' '.join(failed_domains)
+
+    # 32k combined is reasonable on Windows and likely quite conservative on other platforms
+    if len(renewed_domains_str) > 16_000:
+        logger.warning("Limiting RENEWED_DOMAINS environment variable to 16k characters")
+        renewed_domains_str = renewed_domains_str[:16_000]
+
+    if len(failed_domains_str) > 16_000:
+        logger.warning("Limiting FAILED_DOMAINS environment variable to 16k characters")
+        renewed_domains_str = failed_domains_str[:16_000]
+
     for cmd in post_hooks:
-        _run_hook("post-hook", cmd)
+        _run_hook(
+            "post-hook",
+            cmd,
+            {
+                'RENEWED_DOMAINS': renewed_domains_str,
+                'FAILED_DOMAINS': failed_domains_str
+            }
+        )
 
 
 def deploy_hook(config: configuration.NamespaceConfig, domains: List[str],
@@ -166,7 +207,7 @@ def deploy_hook(config: configuration.NamespaceConfig, domains: List[str],
     """
     if config.deploy_hook:
         _run_deploy_hook(config.deploy_hook, domains,
-                         lineage_path, config.dry_run)
+                         lineage_path, config.dry_run, config.run_deploy_hooks)
 
 
 def renew_hook(config: configuration.NamespaceConfig, domains: List[str],
@@ -190,7 +231,7 @@ def renew_hook(config: configuration.NamespaceConfig, domains: List[str],
     executed_dir_hooks = set()
     if config.directory_hooks:
         for hook in list_hooks(config.renewal_deploy_hooks_dir):
-            _run_deploy_hook(hook, domains, lineage_path, config.dry_run)
+            _run_deploy_hook(hook, domains, lineage_path, config.dry_run, config.run_deploy_hooks)
             executed_dir_hooks.add(hook)
 
     if config.renew_hook:
@@ -199,10 +240,11 @@ def renew_hook(config: configuration.NamespaceConfig, domains: List[str],
                         config.renew_hook)
         else:
             _run_deploy_hook(config.renew_hook, domains,
-                             lineage_path, config.dry_run)
+                             lineage_path, config.dry_run, config.run_deploy_hooks)
 
 
-def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_run: bool) -> None:
+def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_run: bool,
+                     run_deploy_hooks: bool) -> None:
     """Run the specified deploy-hook (if not doing a dry run).
 
     If dry_run is True, command is not run and a message is logged
@@ -214,9 +256,10 @@ def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_ru
     :type domains: `list` of `str`
     :param str lineage_path: live directory path for the new cert
     :param bool dry_run: True iff Certbot is doing a dry run
+    :param bool run_deploy_hooks: True if deploy hooks should run despite Certbot doing a dry run
 
     """
-    if dry_run:
+    if dry_run and not run_deploy_hooks:
         logger.info("Dry run: skipping deploy hook command: %s",
                        command)
         return
@@ -226,16 +269,20 @@ def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_ru
     _run_hook("deploy-hook", command)
 
 
-def _run_hook(cmd_name: str, shell_cmd: str) -> str:
+def _run_hook(cmd_name: str, shell_cmd: str, extra_env: Optional[Dict[str, str]] = None) -> str:
     """Run a hook command.
 
     :param str cmd_name: the user facing name of the hook being run
     :param shell_cmd: shell command to execute
     :type shell_cmd: `list` of `str` or `str`
+    :param dict extra_env: extra environment variables to set
+    :type extra_env: `dict` of `str` to `str`
 
     :returns: stderr if there was any"""
+    env = util.env_no_snap_for_external_calls()
+    env.update(extra_env or {})
     returncode, err, out = misc.execute_command_status(
-        cmd_name, shell_cmd, env=util.env_no_snap_for_external_calls())
+        cmd_name, shell_cmd, env=env)
     display_ops.report_executed_command(f"Hook '{cmd_name}'", returncode, out, err)
     return err
 

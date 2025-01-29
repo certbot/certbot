@@ -56,7 +56,10 @@ _WEB_CONFIG_SHA256SUMS = [
 class Authenticator(common.Plugin, interfaces.Authenticator):
     """Webroot Authenticator."""
 
-    description = "Place files in webroot directory"
+    description = """\
+Saves the necessary validation files to a .well-known/acme-challenge/ directory within the \
+nominated webroot path. A separate HTTP server must be running and serving files from the \
+webroot path. HTTP challenge only (wildcards not supported)."""
 
     MORE_INFO = """\
 Authenticator plugin that performs http-01 challenge by saving
@@ -193,8 +196,7 @@ to serve all files under specified web root ({0})."""
             # Change the permissions to be writable (GH #1389)
             # Umask is used instead of chmod to ensure the client can also
             # run as non-root (GH #1795)
-            old_umask = filesystem.umask(0o022)
-            try:
+            with filesystem.temp_umask(0o022):
                 # We ignore the last prefix in the next iteration,
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
@@ -219,8 +221,6 @@ to serve all files under specified web root ({0})."""
                         raise errors.PluginError(
                             "Couldn't create root for {0} http-01 "
                             "challenge responses: {1}".format(name, exception))
-            finally:
-                filesystem.umask(old_umask)
 
             # On Windows, generate a local web.config file that allows IIS to serve expose
             # challenge files despite the fact they do not have a file extension.
@@ -246,13 +246,9 @@ to serve all files under specified web root ({0})."""
         logger.debug("Attempting to save validation to %s", validation_path)
 
         # Change permissions to be world-readable, owner-writable (GH #1795)
-        old_umask = filesystem.umask(0o022)
-
-        try:
+        with filesystem.temp_umask(0o022):
             with safe_open(validation_path, mode="wb", chmod=0o644) as validation_file:
                 validation_file.write(validation.encode())
-        finally:
-            filesystem.umask(old_umask)
 
         self.performed[root_path].add(achall)
         return response

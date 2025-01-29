@@ -10,7 +10,6 @@ import subprocess
 import sys
 from typing import Optional
 from typing import Tuple
-import warnings
 
 from certbot import errors
 from certbot.compat import os
@@ -144,8 +143,8 @@ def execute_command_status(cmd_name: str, shell_cmd: str,
           subprocess.run(shell=True)
         - on Windows command will be run in a Powershell shell
 
-    This differs from execute_command: it returns the exit code, and does not log the result
-    and output of the command.
+    This function returns the exit code, and does not log the result and output
+    of the command.
 
     :param str cmd_name: the user facing name of the hook being run
     :param str shell_cmd: shell command to execute
@@ -168,36 +167,3 @@ def execute_command_status(cmd_name: str, shell_cmd: str,
     # bytes in Python 3
     out, err = proc.stdout, proc.stderr
     return proc.returncode, err, out
-
-
-def execute_command(cmd_name: str, shell_cmd: str, env: Optional[dict] = None) -> Tuple[str, str]:
-    """
-    Run a command:
-        - on Linux command will be run by the standard shell selected with
-          subprocess.run(shell=True)
-        - on Windows command will be run in a Powershell shell
-
-    This differs from execute_command: it returns the exit code, and does not log the result
-    and output of the command.
-
-    :param str cmd_name: the user facing name of the hook being run
-    :param str shell_cmd: shell command to execute
-    :param dict env: environ to pass into subprocess.run
-
-    :returns: `tuple` (`str` stderr, `str` stdout)
-    """
-    # Deprecation per https://github.com/certbot/certbot/issues/8854
-    warnings.warn(
-        "execute_command will be deprecated in the future, use execute_command_status instead",
-        PendingDeprecationWarning
-    )
-    returncode, err, out = execute_command_status(cmd_name, shell_cmd, env)
-    base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
-    if out:
-        logger.info('Output from %s command %s:\n%s', cmd_name, base_cmd, out)
-    if returncode != 0:
-        logger.error('%s command "%s" returned error code %d',
-                     cmd_name, shell_cmd, returncode)
-    if err:
-        logger.error('Error output from %s command %s:\n%s', cmd_name, base_cmd, err)
-    return err, out

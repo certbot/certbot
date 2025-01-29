@@ -39,7 +39,7 @@ if [ "$RELEASE_GPG_KEY" = "" ]; then
         F2871B4152AE13C49519111F447BF683AA3B26C3
     "
     for key in $TRUSTED_KEYS; do
-        if gpg2 --with-colons --card-status | grep -q "$key"; then
+        if gpg --with-colons --card-status | grep -q "$key"; then
             RELEASE_GPG_KEY="$key"
             break
         fi
@@ -57,7 +57,7 @@ export GPG_TTY=$(tty)
 PORT=${PORT:-1234}
 
 # subpackages to be released (the way the script thinks about them)
-SUBPKGS_NO_CERTBOT="acme certbot-apache certbot-nginx certbot-dns-cloudflare certbot-dns-cloudxns \
+SUBPKGS_NO_CERTBOT="acme certbot-apache certbot-nginx certbot-dns-cloudflare \
                     certbot-dns-digitalocean certbot-dns-dnsimple certbot-dns-dnsmadeeasy \
                     certbot-dns-gehirn certbot-dns-google certbot-dns-linode certbot-dns-luadns \
                     certbot-dns-nsone certbot-dns-ovh certbot-dns-rfc2136 certbot-dns-route53 \
@@ -70,20 +70,19 @@ SUBPKGS="certbot $SUBPKGS_NO_CERTBOT"
 #   there
 
 tag="v$version"
-mv "dist.$version" "dist.$version.$(date +%s).bak" || true
+built_package_dir="packages"
+if [ -d "$built_package_dir" ]; then
+    echo "there shouldn't already be a $built_package_dir directory!"
+    echo "if it's not important, maybe delete it and try running the script again?"
+    exit 1
+fi
 git tag --delete "$tag" || true
 
 tmpvenv=$(mktemp -d)
 python3 -m venv "$tmpvenv"
 . $tmpvenv/bin/activate
-# update setuptools/pip just like in other places in the repo
-pip install -U setuptools
-pip install -U pip  # latest pip => no --pre for dev releases
-pip install -U wheel  # setup.py bdist_wheel
-
-# newer versions of virtualenv inherit setuptools/pip/wheel versions
-# from current env when creating a child env
-pip install -U virtualenv
+# update packaging tools to their pinned versions
+tools/pip_install.py virtualenv
 
 root_without_le="$version.$$"
 root="$RELEASE_DIR/le.$root_without_le"
@@ -98,7 +97,7 @@ fi
 git checkout "$RELEASE_BRANCH"
 
 # Update changelog
-sed -i "s/master/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
+sed -i "s/main/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
 git commit -m "Update changelog for $version release"
 
@@ -145,30 +144,37 @@ do
   python setup.py sdist
   python setup.py bdist_wheel
 
-  echo "Signing ($pkg_dir)"
-  for x in dist/*.tar.gz dist/*.whl
-  do
-      gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 $x
-  done
-
   cd -
 done
 
-
-mkdir "dist.$version"
+mkdir "$built_package_dir"
 for pkg_dir in $SUBPKGS
 do
-  mv $pkg_dir/dist/* "dist.$version"
+  mv "$pkg_dir"/dist/* "$built_package_dir"
 done
 
-echo "Testing packages"
-cd "dist.$version"
+
+cd "$built_package_dir"
+echo "Generating checksum file and signing it"
+sha256sum *.tar.gz > SHA256SUMS
+gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 SHA256SUMS
+git add *.tar.gz SHA256SUMS*
+
+echo "Installing packages to generate documentation"
 # cd .. is NOT done on purpose: we make sure that all subpackages are
 # installed from local archives rather than current directory (repo root)
 VIRTUALENV_NO_DOWNLOAD=1 virtualenv ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
+
+# This creates a string like "acme==a.b.c certbot==a.b.c ..." which can be used
+# with pip to ensure the correct versions of our packages installed.
+subpkgs_with_version=""
+for pkg in $SUBPKGS; do
+    subpkgs_with_version="$subpkgs_with_version $pkg==$version"
+done
+
 # Now, use our local archives. Disable cache so we get the correct packages even if
 # we (or our dependencies) have conditional dependencies implemented with if
 # statements in setup.py and we have cached wheels lying around that would cause
@@ -176,7 +182,7 @@ pip install -U pip
 python ../tools/pip_install.py \
   --no-cache-dir \
   --find-links . \
-  $SUBPKGS
+  $subpkgs_with_version
 cd ~-
 
 # get a snapshot of the CLI help for the docs
@@ -190,13 +196,16 @@ deactivate
 git add certbot/docs/cli-help.txt
 while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     echo "Unable to sign the release commit using git."
-    echo "You may have to configure git to use gpg2 by running:"
-    echo 'git config --global gpg.program $(command -v gpg2)'
+    echo "You may have to configure git to use gpg by running:"
+    echo 'git config --global gpg.program $(command -v gpg)'
     read -p "Press enter to try signing again."
 done
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
 
-# Add master section to CHANGELOG.md
+git rm --cached -r "$built_package_dir"
+git commit -m "Remove built packages from git"
+
+# Add main section to CHANGELOG.md
 header=$(head -n 4 certbot/CHANGELOG.md)
 body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
 footer=$(tail -n +5 certbot/CHANGELOG.md)

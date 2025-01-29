@@ -26,6 +26,7 @@ manage certificates:
     certificates    Display information about certificates you have from Certbot
     revoke          Revoke a certificate (supply --cert-name or --cert-path)
     delete          Delete a certificate (supply --cert-name)
+    reconfigure     Update a certificate's configuration (supply --cert-name)
 
 manage your account:
     register        Create an ACME account
@@ -58,44 +59,39 @@ options:
                         it's not being run in a terminal. This flag cannot be
                         used with the renew subcommand. (default: False)
   -d DOMAIN, --domains DOMAIN, --domain DOMAIN
-                        Domain names to apply. For multiple domains you can
+                        Domain names to include. For multiple domains you can
                         use multiple -d flags or enter a comma separated list
-                        of domains as a parameter. The first domain provided
-                        will be the subject CN of the certificate, and all
-                        domains will be Subject Alternative Names on the
-                        certificate. The first domain will also be used in
-                        some software user interfaces and as the file paths
-                        for the certificate and related material unless
-                        otherwise specified or you already have a certificate
-                        with the same name. In the case of a name collision it
-                        will append a number like 0001 to the file path name.
-                        (default: Ask)
+                        of domains as a parameter. All domains will be
+                        included as Subject Alternative Names on the
+                        certificate. The first domain will be used as the
+                        certificate name, unless otherwise specified or if you
+                        already have a certificate with the same name. In the
+                        case of a name conflict, a number like -0001 will be
+                        appended to the certificate name. (default: Ask)
   --eab-kid EAB_KID     Key Identifier for External Account Binding (default:
                         None)
   --eab-hmac-key EAB_HMAC_KEY
                         HMAC key for External Account Binding (default: None)
   --cert-name CERTNAME  Certificate name to apply. This name is used by
                         Certbot for housekeeping and in file paths; it doesn't
-                        affect the content of the certificate itself. To see
+                        affect the content of the certificate itself.
+                        Certificate name cannot contain filepath separators
+                        (i.e. '/' or '\', depending on the platform). To see
                         certificate names, run 'certbot certificates'. When
                         creating a new certificate, specifies the new
                         certificate's name. (default: the first provided
                         domain or the name of an existing certificate on your
                         system for the same domains)
-  --dry-run             Perform a test run of the client, obtaining test
-                        (invalid) certificates but not saving them to disk.
-                        This can currently only be used with the 'certonly'
-                        and 'renew' subcommands. Note: Although --dry-run
-                        tries to avoid making any persistent changes on a
-                        system, it is not completely side-effect free: if used
-                        with webserver authenticator plugins like apache and
-                        nginx, it makes and then reverts temporary config
-                        changes in order to obtain test certificates, and
-                        reloads webservers to deploy and then roll back those
-                        changes. It also calls --pre-hook and --post-hook
-                        commands if they are defined because they may be
-                        necessary to accurately simulate renewal. --deploy-
-                        hook commands are not called. (default: False)
+  --dry-run             Perform a test run against the Let's Encrypt staging
+                        server, obtaining test (invalid) certificates but not
+                        saving them to disk. This can only be used with the
+                        'certonly' and 'renew' subcommands. It may trigger
+                        webserver reloads to temporarily modify & roll back
+                        configuration files. --pre-hook and --post-hook
+                        commands run by default. --deploy-hook commands do not
+                        run, unless enabled by --run-deploy-hooks. The test
+                        server may be overridden with --server. (default:
+                        False)
   --debug-challenges    After setting up challenges, wait for user input
                         before submitting to CA. When used in combination with
                         the `-v` option, the challenge URLs or FQDNs and their
@@ -126,7 +122,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/1.31.0 (certbot;
+                        "". (default: CertbotACMEClient/2.11.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -196,7 +192,7 @@ security:
   --key-type {rsa,ecdsa}
                         Type of generated private key. Only *ONE* per
                         invocation can be provided at this time. (default:
-                        rsa)
+                        ecdsa)
   --elliptic-curve N    The SECG elliptic curve name to use. Please see RFC
                         8446 for supported values. (default: secp256r1)
   --must-staple         Adds the OCSP Must-Staple extension to the
@@ -229,11 +225,23 @@ security:
 testing:
   The following flags are meant for testing and integration purposes only.
 
+  --run-deploy-hooks    When performing a test run using `--dry-run` or
+                        `reconfigure`, run any applicable deploy hooks. This
+                        includes hooks set on the command line, saved in the
+                        certificate's renewal configuration file, or present
+                        in the renewal-hooks directory. To exclude directory
+                        hooks, use --no-directory-hooks. The hook(s) will only
+                        be run if the dry run succeeds, and will use the
+                        current active certificate, not the temporary test
+                        certificate acquired during the dry run. This flag is
+                        recommended when modifying the deploy hook using
+                        `reconfigure`. (default: False)
   --test-cert, --staging
-                        Use the staging server to obtain or revoke test
-                        (invalid) certificates; equivalent to --server
-                        https://acme-staging-v02.api.letsencrypt.org/directory
-                        (default: False)
+                        Use the Let's Encrypt staging server to obtain or
+                        revoke test (invalid) certificates; equivalent to
+                        --server https://acme-
+                        staging-v02.api.letsencrypt.org/directory (default:
+                        False)
   --debug               Show tracebacks in case of errors (default: False)
   --no-verify-ssl       Disable verification of the ACME server's certificate.
                         The root certificates trusted by Certbot can be
@@ -286,8 +294,8 @@ manage:
                         name)
   revoke                Revoke a certificate specified with --cert-path or
                         --cert-name
-  update_symlinks       Recreate symlinks in your /etc/letsencrypt/live/
-                        directory
+  reconfigure           Update renewal configuration for a certificate
+                        specified by --cert-name
 
 run:
   Options for obtaining & installing certificates
@@ -310,25 +318,34 @@ renew:
   more information on these.
 
   --pre-hook PRE_HOOK   Command to be run in a shell before obtaining any
-                        certificates. Intended primarily for renewal, where it
-                        can be used to temporarily shut down a webserver that
-                        might conflict with the standalone plugin. This will
-                        only be called if a certificate is actually to be
-                        obtained/renewed. When renewing several certificates
-                        that have identical pre-hooks, only the first will be
-                        executed. (default: None)
+                        certificates. Unless --disable-hook-validation is
+                        used, the command’s first word must be the absolute
+                        pathname of an executable or one found via the PATH
+                        environment variable. Intended primarily for renewal,
+                        where it can be used to temporarily shut down a
+                        webserver that might conflict with the standalone
+                        plugin. This will only be called if a certificate is
+                        actually to be obtained/renewed. When renewing several
+                        certificates that have identical pre-hooks, only the
+                        first will be executed. (default: None)
   --post-hook POST_HOOK
                         Command to be run in a shell after attempting to
-                        obtain/renew certificates. Can be used to deploy
-                        renewed certificates, or to restart any servers that
-                        were stopped by --pre-hook. This is only run if an
-                        attempt was made to obtain/renew a certificate. If
+                        obtain/renew certificates. Unless --disable-hook-
+                        validation is used, the command’s first word must be
+                        the absolute pathname of an executable or one found
+                        via the PATH environment variable. Can be used to
+                        deploy renewed certificates, or to restart any servers
+                        that were stopped by --pre-hook. This is only run if
+                        an attempt was made to obtain/renew a certificate. If
                         multiple renewed certificates have identical post-
                         hooks, only one will be run. (default: None)
   --deploy-hook DEPLOY_HOOK
                         Command to be run in a shell once for each
-                        successfully issued certificate. For this command, the
-                        shell variable $RENEWED_LINEAGE will point to the
+                        successfully issued certificate. Unless --disable-
+                        hook-validation is used, the command’s first word must
+                        be the absolute pathname of an executable or one found
+                        via the PATH environment variable. For this command,
+                        the shell variable $RENEWED_LINEAGE will point to the
                         config live subdirectory (for example,
                         "/etc/letsencrypt/live/example.com") containing the
                         new certificates and keys; the shell variable
@@ -421,16 +438,15 @@ plugins:
   --authenticators      Limit to authenticator plugins only. (default: None)
   --installers          Limit to installer plugins only. (default: None)
 
-update_symlinks:
-  Recreates certificate and key symlinks in /etc/letsencrypt/live, if you
-  changed them by hand or edited a renewal configuration file
-
 enhance:
   Helps to harden the TLS configuration by adding security enhancements to
   already existing configuration.
 
 show_account:
   Options useful for the "show_account" subcommand:
+
+reconfigure:
+  Common options that may be updated with the "reconfigure" subcommand:
 
 plugins:
   Plugin Selection: Certbot client supports an extensible plugins
@@ -460,8 +476,6 @@ plugins:
                         directory. (default: False)
   --dns-cloudflare      Obtain certificates using a DNS TXT record (if you are
                         using Cloudflare for DNS). (default: False)
-  --dns-cloudxns        Obtain certificates using a DNS TXT record (if you are
-                        using CloudXNS for DNS). (default: False)
   --dns-digitalocean    Obtain certificates using a DNS TXT record (if you are
                         using DigitalOcean for DNS). (default: False)
   --dns-dnsimple        Obtain certificates using a DNS TXT record (if you are
@@ -534,17 +548,6 @@ dns-cloudflare:
   --dns-cloudflare-credentials DNS_CLOUDFLARE_CREDENTIALS
                         Cloudflare credentials INI file. (default: None)
 
-dns-cloudxns:
-  Obtain certificates using a DNS TXT record (if you are using CloudXNS for
-  DNS).
-
-  --dns-cloudxns-propagation-seconds DNS_CLOUDXNS_PROPAGATION_SECONDS
-                        The number of seconds to wait for DNS to propagate
-                        before asking the ACME server to verify the DNS
-                        record. (default: 30)
-  --dns-cloudxns-credentials DNS_CLOUDXNS_CREDENTIALS
-                        CloudXNS credentials INI file. (default: None)
-
 dns-digitalocean:
   Obtain certificates using a DNS TXT record (if you are using DigitalOcean
   for DNS).
@@ -599,13 +602,22 @@ dns-google:
                         before asking the ACME server to verify the DNS
                         record. (default: 60)
   --dns-google-credentials DNS_GOOGLE_CREDENTIALS
-                        Path to Google Cloud DNS service account JSON file.
-                        (See https://developers.google.com/identity/protocols/
-                        OAuth2ServiceAccount#creatinganaccount forinformation
-                        about creating a service account and
-                        https://cloud.google.com/dns/access-
+                        Path to Google Cloud DNS service account JSON file to
+                        use instead of relying on Application Default
+                        Credentials (ADC). (See https://cloud.google.com/docs/
+                        authentication/application-default-credentials for
+                        information about ADC, https://developers.google.com/i
+                        dentity/protocols/OAuth2ServiceAccount#creatinganaccou
+                        nt for information about creating a service account,
+                        and https://cloud.google.com/dns/access-
                         control#permissions_and_roles for information about
-                        therequired permissions.) (default: None)
+                        the permissions required to modify Cloud DNS records.)
+                        (default: None)
+  --dns-google-project DNS_GOOGLE_PROJECT
+                        The ID of the Google Cloud project that the Google
+                        Cloud DNS managed zone(s) reside in. This will be
+                        determined automatically if not specified. (default:
+                        None)
 
 dns-linode:
   Obtain certificates using a DNS TXT record (if you are using Linode for
@@ -664,11 +676,6 @@ dns-route53:
   Obtain certificates using a DNS TXT record (if you are using AWS Route53
   for DNS).
 
-  --dns-route53-propagation-seconds DNS_ROUTE53_PROPAGATION_SECONDS
-                        The number of seconds to wait for DNS to propagate
-                        before asking the ACME server to verify the DNS
-                        record. (default: 10)
-
 dns-sakuracloud:
   Obtain certificates using a DNS TXT record (if you are using Sakura Cloud
   for DNS).
@@ -720,10 +727,16 @@ null:
   Null Installer
 
 standalone:
-  Spin up a temporary webserver
+  Runs an HTTP server locally which serves the necessary validation files
+  under the /.well-known/acme-challenge/ request path. Suitable if there is
+  no HTTP server already running. HTTP challenge only (wildcards not
+  supported).
 
 webroot:
-  Place files in webroot directory
+  Saves the necessary validation files to a .well-known/acme-challenge/
+  directory within the nominated webroot path. A separate HTTP server must
+  be running and serving files from the webroot path. HTTP challenge only
+  (wildcards not supported).
 
   --webroot-path WEBROOT_PATH, -w WEBROOT_PATH
                         public_html / webroot path. This can be specified

@@ -24,7 +24,6 @@ from certbot import util
 from certbot.compat.os import getenv
 from certbot.interfaces import RenewableCert
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -79,7 +78,7 @@ class RevocationChecker:
         # Let's Encrypt doesn't update OCSP for expired certificates,
         # so don't check OCSP if the cert is expired.
         # https://github.com/certbot/certbot/issues/7152
-        now = pytz.UTC.fromutc(datetime.utcnow())
+        now = datetime.now(pytz.UTC)
         if crypto_util.notAfter(cert_path) <= now:
             return False
 
@@ -234,7 +233,8 @@ def _check_ocsp_response(response_ocsp: 'ocsp.OCSPResponse', request_ocsp: 'ocsp
     #      for OpenSSL, so we do not do it here.
     # See OpenSSL implementation as a reference:
     # https://github.com/openssl/openssl/blob/ef45aa14c5af024fcb8bef1c9007f3d1c115bd85/crypto/ocsp/ocsp_cl.c#L338-L391
-    now = datetime.utcnow()  # thisUpdate/nextUpdate are expressed in UTC/GMT time zone
+    # thisUpdate/nextUpdate are expressed in UTC/GMT time zone
+    now = datetime.now(pytz.UTC).replace(tzinfo=None)
     if not response_ocsp.this_update:
         raise AssertionError('param thisUpdate is not set.')
     if response_ocsp.this_update > now + timedelta(minutes=5):
@@ -285,6 +285,7 @@ def _check_ocsp_response_signature(response_ocsp: 'ocsp.OCSPResponse',
 
         # Following line may raise UnsupportedAlgorithm
         chosen_cert_hash = responder_cert.signature_hash_algorithm
+        assert chosen_cert_hash # always present for RSA and ECDSA certificates.
         # For a delegate OCSP responder, we need first check that its certificate is effectively
         # signed by the certificate issuer.
         crypto_util.verify_signed_payload(issuer_cert.public_key(), responder_cert.signature,

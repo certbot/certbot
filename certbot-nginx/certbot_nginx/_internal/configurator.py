@@ -1,9 +1,12 @@
 # pylint: disable=too-many-lines
 """Nginx Configuration"""
+import atexit
+from contextlib import ExitStack
 import logging
 import re
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 from typing import Any
@@ -15,19 +18,11 @@ from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from typing import Set
-from typing import Text
 from typing import Tuple
 from typing import Type
 from typing import Union
 
-from certbot_nginx._internal import constants
-from certbot_nginx._internal import display_ops
-from certbot_nginx._internal import http_01
-from certbot_nginx._internal import nginxparser
-from certbot_nginx._internal import obj
-from certbot_nginx._internal import parser
 import OpenSSL
-import pkg_resources
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
@@ -38,6 +33,17 @@ from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins import common
+from certbot_nginx._internal import constants
+from certbot_nginx._internal import display_ops
+from certbot_nginx._internal import http_01
+from certbot_nginx._internal import nginxparser
+from certbot_nginx._internal import obj
+from certbot_nginx._internal import parser
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1
@@ -163,8 +169,12 @@ class NginxConfigurator(common.Configurator):
             else:
                 config_filename = "options-ssl-nginx-old.conf"
 
-        return pkg_resources.resource_filename(
-            "certbot_nginx", os.path.join("_internal", "tls_configs", config_filename))
+        file_manager = ExitStack()
+        atexit.register(file_manager.close)
+        ref = (importlib_resources.files("certbot_nginx").joinpath("_internal")
+               .joinpath("tls_configs").joinpath(config_filename))
+
+        return str(file_manager.enter_context(importlib_resources.as_file(ref)))
 
     @property
     def mod_ssl_conf(self) -> str:
@@ -268,10 +278,12 @@ class NginxConfigurator(common.Configurator):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
         if prefer_ssl:
             vhosts_cache = self._wildcard_vhosts
-            preference_test = lambda x: x.ssl
+            def preference_test(x: obj.VirtualHost) -> bool:
+                return x.ssl
         else:
             vhosts_cache = self._wildcard_redirect_vhosts
-            preference_test = lambda x: not x.ssl
+            def preference_test(x: obj.VirtualHost) -> bool:
+                return not x.ssl
 
         # Caching!
         if domain in vhosts_cache:
@@ -609,8 +621,9 @@ class NginxConfigurator(common.Configurator):
 
         # if we want ssl vhosts: either 'ssl on' or 'addr.ssl' should be enabled
         # if we want plaintext vhosts: neither 'ssl on' nor 'addr.ssl' should be enabled
-        _ssl_matches = lambda addr: addr.ssl or all_addrs_are_ssl if ssl else \
-                                    not addr.ssl and not all_addrs_are_ssl
+        def _ssl_matches(addr: obj.Addr) -> bool:
+            return addr.ssl or all_addrs_are_ssl if ssl else \
+                   not addr.ssl and not all_addrs_are_ssl
 
         # if there are no listen directives at all, Nginx defaults to
         # listening on port 80.
@@ -688,8 +701,9 @@ class NginxConfigurator(common.Configurator):
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
         le_key = crypto_util.generate_key(
-            key_size=1024, key_dir=tmp_dir, keyname="key.pem",
+            key_size=2048, key_dir=tmp_dir, keyname="key.pem",
             strict_permissions=self.config.strict_permissions)
+        assert le_key.file is not None
         key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
         cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
@@ -1112,7 +1126,7 @@ class NginxConfigurator(common.Configurator):
     ###################################################
     # Wrapper functions for Reverter class (Installer)
     ###################################################
-    def save(self, title: str = None, temporary: bool = False) -> None:
+    def save(self, title: Optional[str] = None, temporary: bool = False) -> None:
         """Saves all changes to the configuration files.
 
         :param str title: The title of the save. If a title is given, the
@@ -1260,7 +1274,7 @@ def nginx_restart(nginx_ctl: str, nginx_conf: str, sleep_duration: int) -> None:
 
     """
     try:
-        reload_output: Text = ""
+        reload_output: str = ""
         with tempfile.TemporaryFile() as out:
             proc = subprocess.run([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
                                   env=util.env_no_snap_for_external_calls(),

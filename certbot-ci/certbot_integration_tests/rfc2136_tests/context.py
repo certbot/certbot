@@ -1,16 +1,20 @@
 """Module to handle the context of RFC2136 integration tests."""
-
 from contextlib import contextmanager
+import sys
 import tempfile
 from typing import Generator
 from typing import Iterable
 from typing import Tuple
 
-from pkg_resources import resource_filename
 import pytest
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import certbot_call
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
 
 
 class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
@@ -21,7 +25,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self.request = request
 
         if hasattr(request.config, 'workerinput'):  # Worker node
-            self._dns_xdist = request.config.workerinput['dns_xdist']  # type: ignore[attr-defined]
+            self._dns_xdist = request.config.workerinput['dns_xdist']
         else:  # Primary node
             self._dns_xdist = request.config.dns_xdist  # type: ignore[attr-defined]
 
@@ -44,15 +48,14 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         :yields: Path to credentials file
         :rtype: str
         """
-        src_file = resource_filename('certbot_integration_tests',
-                                     'assets/bind-config/rfc2136-credentials-{}.ini.tpl'
-                                     .format(label))
-
-        with open(src_file, 'r') as f:
-            contents = f.read().format(
-                server_address=self._dns_xdist['address'],
-                server_port=self._dns_xdist['port']
-            )
+        src_ref_file = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+                        .joinpath('bind-config').joinpath(f'rfc2136-credentials-{label}.ini.tpl'))
+        with importlib_resources.as_file(src_ref_file) as src_file:
+            with open(src_file, 'r') as f:
+                contents = f.read().format(
+                    server_address=self._dns_xdist['address'],
+                    server_port=self._dns_xdist['port']
+                )
 
         with tempfile.NamedTemporaryFile('w+', prefix='rfc2136-creds-{}'.format(label),
                                          suffix='.ini', dir=self.workspace) as fp:

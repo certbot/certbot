@@ -1,8 +1,18 @@
-trigger: none
+# We run the test suite on commits to main so codecov gets coverage data
+# about the main branch and can use it to track coverage changes.
+trigger:
+  - main
 pr:
-  - master
+  - main
   - '*.x'
+
+variables:
+  # We set this here to avoid coverage data being uploaded from things like our
+  # nightly pipeline. This is done because codecov (helpfully) keeps track of
+  # the number of coverage uploads for a commit and displays a warning when
+  # comparing two commits with an unequal number of uploads. Only uploading
+  # coverage here should keep the number of uploads it sees consistent.
+  uploadCoverage: true
 
 jobs:
   - template: templates/jobs/standard-tests-jobs.yml
-

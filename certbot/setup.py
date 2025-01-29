@@ -1,26 +1,9 @@
 import codecs
 import os
 import re
-import sys
 
-from pkg_resources import parse_version
-from setuptools import __version__ as setuptools_version
 from setuptools import find_packages
 from setuptools import setup
-
-min_setuptools_version='41.6.0'
-# This conditional isn't necessary, but it provides better error messages to
-# people who try to install this package with older versions of setuptools.
-if parse_version(setuptools_version) < parse_version(min_setuptools_version):
-    raise RuntimeError(f'setuptools {min_setuptools_version}+ is required')
-
-# Workaround for https://bugs.python.org/issue8876, see
-# https://bugs.python.org/issue8876#msg208792
-# This can be removed when using Python 2.7.9 or later:
-# https://hg.python.org/cpython/raw-file/v2.7.9/Misc/NEWS
-if os.path.abspath(__file__).split(os.path.sep)[1] == 'vagrant':
-    del os.link
-
 
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
@@ -45,23 +28,22 @@ install_requires = [
     # simplicity. See https://github.com/certbot/certbot/issues/8761 for more
     # info.
     f'acme>={version}',
-    # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
-    # saying so here causes a runtime error against our temporary fork of 0.9.3
-    # in which we added 2.6 support (see #2243), so we relax the requirement.
-    'ConfigArgParse>=0.9.3',
+    'ConfigArgParse>=1.5.3',
     'configobj>=5.0.6',
-    'cryptography>=2.5.0',
+    'cryptography>=3.2.1',
     'distro>=1.0.1',
-    'josepy>=1.13.0',
+    'importlib_resources>=1.3.1; python_version < "3.9"',
+    'importlib_metadata>=4.6; python_version < "3.10"',
+    # Josepy 2+ may introduce backward incompatible changes by droping usage of
+    # deprecated PyOpenSSL APIs.
+    'josepy>=1.13.0, <2',
     'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz>=2019.3',
     # This dependency needs to be added using environment markers to avoid its
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
-    f'setuptools>={min_setuptools_version}',
-    'zope.component',
-    'zope.interface',
+    'setuptools>=41.6.0',
 ]
 
 dev_extras = [
@@ -96,16 +78,13 @@ test_extras = [
     'pytest-xdist',
     'setuptools',
     'tox',
-    'types-mock',
+    'types-httplib2',
     'types-pyOpenSSL',
     'types-pyRFC3339',
     'types-pytz',
+    'types-pywin32',
     'types-requests',
     'types-setuptools',
-    'types-six',
-    # typing-extensions is required to import typing.Protocol and make the mypy checks
-    # pass (along with pylint about non-existent objects) on Python 3.7
-    'typing-extensions',
     'wheel',
 ]
 
@@ -117,11 +96,11 @@ setup(
     version=version,
     description="ACME client",
     long_description=readme,
-    url='https://github.com/letsencrypt/letsencrypt',
+    url='https://github.com/certbot/certbot',
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -131,10 +110,11 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',

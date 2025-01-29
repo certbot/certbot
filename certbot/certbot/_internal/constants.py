@@ -1,13 +1,19 @@
 """Certbot constants."""
+import atexit
 import logging
+import sys
+from contextlib import ExitStack
 from typing import Any
 from typing import Dict
-
-import pkg_resources
 
 from acme import challenges
 from certbot.compat import misc
 from certbot.compat import os
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
 
 SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 """Setuptools entry point group name for plugins."""
@@ -15,7 +21,7 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 """Plugins Setuptools entry point before rename."""
 
-CLI_DEFAULTS: Dict[str, Any] = dict(  # noqa
+CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     config_files=[
         os.path.join(misc.get_default_folder('config'), 'cli.ini'),
         # https://freedesktop.org/wiki/Software/xdg-user-dirs/
@@ -61,7 +67,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # noqa
     break_my_certs=False,
     rsa_key_size=2048,
     elliptic_curve="secp256r1",
-    key_type="rsa",
+    key_type="ecdsa",
     must_staple=False,
     redirect=None,
     auto_hsts=False,
@@ -80,6 +86,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # noqa
     eab_hmac_key=None,
     eab_kid=None,
     issuance_timeout=90,
+    run_deploy_hooks=False,
 
     # Subparsers
     num=None,
@@ -112,7 +119,6 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # noqa
     manual=False,
     webroot=False,
     dns_cloudflare=False,
-    dns_cloudxns=False,
     dns_digitalocean=False,
     dns_dnsimple=False,
     dns_dnsmadeeasy=False,
@@ -176,9 +182,6 @@ BACKUP_DIR = "backups"
 """Directory (relative to `certbot.configuration.NamespaceConfig.work_dir`)
 where backups are kept."""
 
-CSR_DIR = "csr"
-"""See `certbot.configuration.NamespaceConfig.csr_dir`."""
-
 IN_PROGRESS_DIR = "IN_PROGRESS"
 """Directory used before a permanent checkpoint is finalized (relative to
 `certbot.configuration.NamespaceConfig.work_dir`)."""
@@ -220,8 +223,15 @@ SSL_DHPARAMS_DEST = "ssl-dhparams.pem"
 """Name of the ssl_dhparams file as saved
 in `certbot.configuration.NamespaceConfig.config_dir`."""
 
-SSL_DHPARAMS_SRC = pkg_resources.resource_filename(
-    "certbot", "ssl-dhparams.pem")
+def _generate_ssl_dhparams_src_static() -> str:
+    # This code ensures that the resource is accessible as file for the lifetime of current
+    # Python process, and will be automatically cleaned up on exit.
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    ssl_dhparams_src_ref = importlib_resources.files("certbot") / "ssl-dhparams.pem"
+    return str(file_manager.enter_context(importlib_resources.as_file(ssl_dhparams_src_ref)))
+
+SSL_DHPARAMS_SRC = _generate_ssl_dhparams_src_static()
 """Path to the nginx ssl_dhparams file found in the Certbot distribution."""
 
 UPDATED_SSL_DHPARAMS_DIGEST = ".updated-ssl-dhparams-pem-digest.txt"

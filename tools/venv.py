@@ -27,7 +27,6 @@ REQUIREMENTS = [
     '-e certbot[all]',
     '-e certbot-apache',
     '-e certbot-dns-cloudflare',
-    '-e certbot-dns-cloudxns',
     '-e certbot-dns-digitalocean',
     '-e certbot-dns-dnsimple',
     '-e certbot-dns-dnsmadeeasy',
@@ -118,7 +117,7 @@ def _check_version(version_str):
 
     version = (int(search.group(1)), int(search.group(2)))
 
-    if version >= (3, 7):
+    if version >= (3, 8):
         return True
 
     print('Incompatible python version for Certbot found: {0}'.format(version_str))
@@ -198,7 +197,6 @@ def install_packages(venv_name, pip_args):
     """
     # Using the python executable from venv, we ensure to execute following commands in this venv.
     py_venv = get_venv_python_path(venv_name)
-    subprocess_with_print([py_venv, os.path.abspath('tools/pipstrap.py')])
     command = [py_venv, os.path.abspath('tools/pip_install.py')]
     command.extend(pip_args)
     subprocess_with_print(command)

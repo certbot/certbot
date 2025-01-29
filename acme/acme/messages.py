@@ -1,10 +1,8 @@
 """ACME protocol messages."""
-import datetime
 from collections.abc import Hashable
+import datetime
 import json
-from types import ModuleType
 from typing import Any
-from typing import cast
 from typing import Dict
 from typing import Iterator
 from typing import List
@@ -13,11 +11,7 @@ from typing import MutableMapping
 from typing import Optional
 from typing import Tuple
 from typing import Type
-from typing import TYPE_CHECKING
 from typing import TypeVar
-from typing import Union
-import sys
-import warnings
 
 import josepy as jose
 
@@ -26,16 +20,7 @@ from acme import errors
 from acme import fields
 from acme import jws
 from acme import util
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", ".*acme.mixins", category=DeprecationWarning)
-    from acme.mixins import ResourceMixin
 
-if TYPE_CHECKING:
-    from typing_extensions import Protocol  # pragma: no cover
-else:
-    Protocol = object
-
-OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
 
 ERROR_CODES = {
@@ -73,15 +58,13 @@ ERROR_CODES = {
 
 ERROR_TYPE_DESCRIPTIONS = {**{
     ERROR_PREFIX + name: desc for name, desc in ERROR_CODES.items()
-}, **{  # add errors with old prefix, deprecate me
-    OLD_ERROR_PREFIX + name: desc for name, desc in ERROR_CODES.items()
 }}
 
 
 def is_acme_error(err: BaseException) -> bool:
     """Check if argument is an ACME error."""
     if isinstance(err, Error) and (err.typ is not None):
-        return (ERROR_PREFIX in err.typ) or (OLD_ERROR_PREFIX in err.typ)
+        return ERROR_PREFIX in err.typ
     return False
 
 
@@ -138,6 +121,9 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     """ACME error.
 
     https://datatracker.ietf.org/doc/html/rfc7807
+
+    Note: Although Error inherits from JSONObjectWithFields, which is immutable,
+    we add mutability for Error to comply with the Python exception API.
 
     :ivar str typ:
     :ivar str title:
@@ -201,6 +187,10 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             return code
         return None
 
+    # Hack to allow mutability on Errors (see GH #9539)
+    def __setattr__(self, name: str, value: Any) -> None:
+        return object.__setattr__(self, name, value)
+
     def __str__(self) -> str:
         result = b' :: '.join(
             part.encode('ascii', 'backslashreplace') for part in
@@ -229,25 +219,15 @@ STATUS_READY = Status('ready')
 STATUS_DEACTIVATED = Status('deactivated')
 
 
-class HasResourceType(Protocol):
-    """
-    Represents a class with a resource_type class parameter of type string.
-    """
-    resource_type: str = NotImplemented
-
-
-GenericHasResourceType = TypeVar("GenericHasResourceType", bound=HasResourceType)
-
-
 class Directory(jose.JSONDeSerializable):
-    """Directory."""
+    """Directory.
 
-    _REGISTERED_TYPES: Dict[str, Type[HasResourceType]] = {}
+    Directory resources must be accessed by the exact field name in RFC8555 (section 9.7.5).
+    """
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
-        _terms_of_service: str = jose.field('terms-of-service', omitempty=True)
-        _terms_of_service_v2: str = jose.field('termsOfService', omitempty=True)
+        _terms_of_service: str = jose.field('termsOfService', omitempty=True)
         website: str = jose.field('website', omitempty=True)
         caa_identities: List[str] = jose.field('caaIdentities', omitempty=True)
         external_account_required: bool = jose.field('externalAccountRequired', omitempty=True)
@@ -259,7 +239,7 @@ class Directory(jose.JSONDeSerializable):
         @property
         def terms_of_service(self) -> str:
             """URL for the CA TOS"""
-            return self._terms_of_service or self._terms_of_service_v2
+            return self._terms_of_service
 
         def __iter__(self) -> Iterator[str]:
             # When iterating over fields, use the external name 'terms_of_service' instead of
@@ -270,51 +250,23 @@ class Directory(jose.JSONDeSerializable):
         def _internal_name(self, name: str) -> str:
             return '_' + name if name == 'terms_of_service' else name
 
-    @classmethod
-    def _canon_key(cls, key: Union[str, HasResourceType, Type[HasResourceType]]) -> str:
-        if isinstance(key, str):
-            return key
-        return key.resource_type
-
-    @classmethod
-    def register(cls,
-                 resource_body_cls: Type[GenericHasResourceType]) -> Type[GenericHasResourceType]:
-        """Register resource."""
-        warnings.warn(
-            "acme.messages.Directory.register is deprecated and will be removed in the next "
-            "major release of Certbot", DeprecationWarning, stacklevel=2
-        )
-        resource_type = resource_body_cls.resource_type
-        assert resource_type not in cls._REGISTERED_TYPES
-        cls._REGISTERED_TYPES[resource_type] = resource_body_cls
-        return resource_body_cls
-
     def __init__(self, jobj: Mapping[str, Any]) -> None:
-        canon_jobj = util.map_keys(jobj, self._canon_key)
-        # TODO: check that everything is an absolute URL; acme-spec is
-        # not clear on that
-        self._jobj = canon_jobj
+        self._jobj = jobj
 
     def __getattr__(self, name: str) -> Any:
         try:
-            return self[name.replace('_', '-')]
+            return self[name]
         except KeyError as error:
             raise AttributeError(str(error))
 
-    def __getitem__(self, name: Union[str, HasResourceType, Type[HasResourceType]]) -> Any:
-        if not isinstance(name, str):
-            warnings.warn(
-                "Looking up acme.messages.Directory resources by non-string keys is deprecated "
-                "and will be removed in the next major release of Certbot",
-                DeprecationWarning, stacklevel=2
-            )
+    def __getitem__(self, name: str) -> Any:
         try:
-            return self._jobj[self._canon_key(name)]
+            return self._jobj[name]
         except KeyError:
-            raise KeyError('Directory field "' + self._canon_key(name) + '" not found')
+            raise KeyError(f'Directory field "{name}" not found')
 
     def to_partial_json(self) -> Dict[str, Any]:
-        return self._jobj
+        return util.map_keys(self._jobj, lambda k: k)
 
     @classmethod
     def from_json(cls, jobj: MutableMapping[str, Any]) -> 'Directory':
@@ -475,6 +427,14 @@ class Registration(ResourceBody):
         return self._filter_contact(self.email_prefix)
 
 
+class NewRegistration(Registration):
+    """New registration."""
+
+
+class UpdateRegistration(Registration):
+    """Update registration."""
+
+
 class RegistrationResource(ResourceWithURI):
     """Registration Resource.
 
@@ -510,7 +470,6 @@ class ChallengeBody(ResourceBody):
     # challenge object supports either one, but should be accessed through the
     # name "uri". In Client.answer_challenge, whichever one is set will be
     # used.
-    _uri: str = jose.field('uri', omitempty=True, default=None)
     _url: str = jose.field('url', omitempty=True, default=None)
     status: Status = jose.field('status', decoder=Status.from_json,
                         omitempty=True, default=STATUS_PENDING)
@@ -539,7 +498,7 @@ class ChallengeBody(ResourceBody):
     @property
     def uri(self) -> str:
         """The URL of this challenge."""
-        return self._url or self._uri
+        return self._url
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.chall, name)
@@ -548,10 +507,10 @@ class ChallengeBody(ResourceBody):
         # When iterating over fields, use the external name 'uri' instead of
         # the internal '_uri'.
         for name in super().__iter__():
-            yield name[1:] if name == '_uri' else name
+            yield 'uri' if name == '_url' else name
 
     def _internal_name(self, name: str) -> str:
-        return '_' + name if name == 'uri' else name
+        return '_url' if name == 'uri' else name
 
 
 class ChallengeResource(Resource):
@@ -575,15 +534,12 @@ class Authorization(ResourceBody):
 
     :ivar acme.messages.Identifier identifier:
     :ivar list challenges: `list` of `.ChallengeBody`
-    :ivar tuple combinations: Challenge combinations (`tuple` of `tuple`
-        of `int`, as opposed to `list` of `list` from the spec). (deprecated since 1.30.0)
     :ivar acme.messages.Status status:
     :ivar datetime.datetime expires:
 
     """
     identifier: Identifier = jose.field('identifier', decoder=Identifier.from_json, omitempty=True)
     challenges: List[ChallengeBody] = jose.field('challenges', omitempty=True)
-    _combinations: Tuple[Tuple[int, ...], ...] = jose.field('combinations', omitempty=True)
 
     status: Status = jose.field('status', omitempty=True, decoder=Status.from_json)
     # TODO: 'expires' is allowed for Authorization Resources in
@@ -593,53 +549,19 @@ class Authorization(ResourceBody):
     expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
     wildcard: bool = jose.field('wildcard', omitempty=True)
 
-    # combinations is temporarily renamed to _combinations during its deprecation
-    # period. See https://github.com/certbot/certbot/pull/9369#issuecomment-1199849262.
-    def __init__(self, **kwargs: Any) -> None:
-        if 'combinations' in kwargs:
-            kwargs['_combinations'] = kwargs.pop('combinations')
-        super().__init__(**kwargs)
-
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that challenge is redefined. Let's ignore the type check here.
     @challenges.decoder  # type: ignore
     def challenges(value: List[Dict[str, Any]]) -> Tuple[ChallengeBody, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
-    @property
-    def combinations(self) -> Tuple[Tuple[int, ...], ...]:
-        """Challenge combinations.
-        (`tuple` of `tuple` of `int`, as opposed to `list` of `list` from the spec).
 
-        .. deprecated: 1.30.0
+class NewAuthorization(Authorization):
+    """New authorization."""
 
-        """
-        warnings.warn(
-            "acme.messages.Authorization.combinations is deprecated and will be "
-            "removed in a future release.", DeprecationWarning, stacklevel=2)
-        return self._combinations
 
-    @combinations.setter
-    def combinations(self, combos: Tuple[Tuple[int, ...], ...]) -> None: # pragma: no cover
-        warnings.warn(
-            "acme.messages.Authorization.combinations is deprecated and will be "
-            "removed in a future release.", DeprecationWarning, stacklevel=2)
-        self._combinations = combos
-
-    @property
-    def resolved_combinations(self) -> Tuple[Tuple[ChallengeBody, ...], ...]:
-        """Combinations with challenges instead of indices.
-
-        .. deprecated: 1.30.0
-
-        """
-        warnings.warn(
-            "acme.messages.Authorization.resolved_combinations is deprecated and will be "
-            "removed in a future release.", DeprecationWarning, stacklevel=2)
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', '.*combinations', DeprecationWarning)
-            return tuple(tuple(self.challenges[idx] for idx in combo)
-                        for combo in self.combinations)  # pylint: disable=not-an-iterable
+class UpdateAuthorization(Authorization):
+    """Update authorization."""
 
 
 class AuthorizationResource(ResourceWithURI):
@@ -653,6 +575,16 @@ class AuthorizationResource(ResourceWithURI):
     new_cert_uri: str = jose.field('new_cert_uri', omitempty=True)
 
 
+class CertificateRequest(jose.JSONObjectWithFields):
+    """ACME newOrder request.
+
+    :ivar jose.ComparableX509 csr:
+        `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
+
+    """
+    csr: jose.ComparableX509 = jose.field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
+
+
 class CertificateResource(ResourceWithURI):
     """Certificate Resource.
 
@@ -664,6 +596,18 @@ class CertificateResource(ResourceWithURI):
     """
     cert_chain_uri: str = jose.field('cert_chain_uri')
     authzrs: Tuple[AuthorizationResource, ...] = jose.field('authzrs')
+
+
+class Revocation(jose.JSONObjectWithFields):
+    """Revocation message.
+
+    :ivar jose.ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
+        `jose.ComparableX509`
+
+    """
+    certificate: jose.ComparableX509 = jose.field(
+        'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
+    reason: int = jose.field('reason')
 
 
 class Order(ResourceBody):
@@ -710,105 +654,28 @@ class OrderResource(ResourceWithURI):
     :vartype alternative_fullchains_pem: `list` of `str`
     """
     body: Order = jose.field('body', decoder=Order.from_json)
-    csr_pem: bytes = jose.field('csr_pem', omitempty=True)
+    csr_pem: bytes = jose.field('csr_pem', omitempty=True,
+                                # This looks backwards, but it's not -
+                                # we want the deserialized value to be
+                                # `bytes`, but anything we put into
+                                # JSON needs to be `str`, so we encode
+                                # to decode and decode to
+                                # encode. Otherwise we end up with an
+                                # array of ints on serialization
+                                decoder=lambda s: s.encode("utf-8"),
+                                encoder=lambda b: b.decode("utf-8"))
+
     authorizations: List[AuthorizationResource] = jose.field('authorizations')
     fullchain_pem: str = jose.field('fullchain_pem', omitempty=True)
     alternative_fullchains_pem: List[str] = jose.field('alternative_fullchains_pem',
                                                        omitempty=True)
 
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", "acme.messages.Directory.register", DeprecationWarning)
-    warnings.filterwarnings("ignore", "resource attribute in acme.fields", DeprecationWarning)
-
-    @Directory.register
-    class NewOrder(Order):
-        """New order."""
-        resource_type = 'new-order'
+    # Mypy does not understand the josepy magic happening here, and falsely claims
+    # that authorizations is redefined. Let's ignore the type check here.
+    @authorizations.decoder  # type: ignore
+    def authorizations(value: List[Dict[str, Any]]) -> Tuple[AuthorizationResource, ...]: # pylint: disable=no-self-argument,missing-function-docstring
+        return tuple(AuthorizationResource.from_json(authz) for authz in value)
 
 
-    @Directory.register
-    class Revocation(ResourceMixin, jose.JSONObjectWithFields):
-        """Revocation message.
-
-        :ivar jose.ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
-            `jose.ComparableX509`
-
-        """
-        resource_type = 'revoke-cert'
-        resource: str = fields.resource(resource_type)
-        certificate: jose.ComparableX509 = jose.field(
-            'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
-        reason: int = jose.field('reason')
-
-
-    @Directory.register
-    class CertificateRequest(ResourceMixin, jose.JSONObjectWithFields):
-        """ACME new-cert request.
-
-        :ivar jose.ComparableX509 csr:
-            `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
-
-        """
-        resource_type = 'new-cert'
-        resource: str = fields.resource(resource_type)
-        csr: jose.ComparableX509 = jose.field('csr', decoder=jose.decode_csr,
-                                                encoder=jose.encode_csr)
-
-
-    @Directory.register
-    class NewAuthorization(ResourceMixin, Authorization):
-        """New authorization."""
-        resource_type = 'new-authz'
-        resource: str = fields.resource(resource_type)
-
-
-    class UpdateAuthorization(ResourceMixin, Authorization):
-        """Update authorization."""
-        resource_type = 'authz'
-        resource: str = fields.resource(resource_type)
-
-
-    @Directory.register
-    class NewRegistration(ResourceMixin, Registration):
-        """New registration."""
-        resource_type = 'new-reg'
-        resource: str = fields.resource(resource_type)
-
-
-    class UpdateRegistration(ResourceMixin, Registration):
-        """Update registration."""
-        resource_type = 'reg'
-        resource: str = fields.resource(resource_type)
-
-
-# This class takes a similar approach to the cryptography project to deprecate attributes
-# in public modules. See the _ModuleWithDeprecation class here:
-# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
-class _MessagesDeprecationModule: # pragma: no cover
-    """
-    Internal class delegating to a module, and displaying warnings when
-    module attributes deprecated in acme.messages are accessed.
-    """
-    def __init__(self, module: ModuleType) -> None:
-        self.__dict__['_module'] = module
-
-    def __getattr__(self, attr: str) -> None:
-        if attr == 'OLD_ERROR_PREFIX':
-            warnings.warn('{0} attribute in acme.messages module is deprecated '
-                          'and will be removed soon.'.format(attr),
-                          DeprecationWarning, stacklevel=2)
-        return getattr(self._module, attr)
-
-    def __setattr__(self, attr: str, value: Any) -> None:
-        setattr(self._module, attr, value)
-
-    def __delattr__(self, attr: str) -> None:
-        delattr(self._module, attr)
-
-    def __dir__(self) -> List[str]:
-        return ['_module'] + dir(self._module)
-
-
-# Patching ourselves to warn about acme.messages.OLD_ERROR_PREFIX deprecation and planned removal.
-sys.modules[__name__] = cast(ModuleType, _MessagesDeprecationModule(sys.modules[__name__]))
+class NewOrder(Order):
+    """New order."""

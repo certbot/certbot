@@ -1,20 +1,27 @@
 """ Utility functions for certbot-apache plugin """
+import atexit
 import binascii
 import fnmatch
 import logging
 import re
 import subprocess
+import sys
+from contextlib import ExitStack
 from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
 
-import pkg_resources
-
 from certbot import errors
 from certbot import util
 from certbot.compat import os
+
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
+
 
 logger = logging.getLogger(__name__)
 
@@ -136,20 +143,18 @@ def included_in_paths(filepath: str, paths: Iterable[str]) -> bool:
     return any(fnmatch.fnmatch(filepath, path) for path in paths)
 
 
-def parse_defines(apachectl: str) -> Dict[str, str]:
+def parse_defines(define_cmd: List[str]) -> Dict[str, str]:
     """
     Gets Defines from httpd process and returns a dictionary of
     the defined variables.
 
-    :param str apachectl: Path to apachectl executable
+    :param list define_cmd: httpd command to dump defines
 
     :returns: dictionary of defined variables
     :rtype: dict
     """
 
     variables: Dict[str, str] = {}
-    define_cmd = [apachectl, "-t", "-D",
-                  "DUMP_RUN_CFG"]
     matches = parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
     try:
         matches.remove("DUMP_RUN_CFG")
@@ -165,33 +170,31 @@ def parse_defines(apachectl: str) -> Dict[str, str]:
     return variables
 
 
-def parse_includes(apachectl: str) -> List[str]:
+def parse_includes(inc_cmd: List[str]) -> List[str]:
     """
     Gets Include directives from httpd process and returns a list of
     their values.
 
-    :param str apachectl: Path to apachectl executable
+    :param list inc_cmd: httpd command to dump includes
 
     :returns: list of found Include directive values
     :rtype: list of str
     """
 
-    inc_cmd: List[str] = [apachectl, "-t", "-D", "DUMP_INCLUDES"]
     return parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
 
 
-def parse_modules(apachectl: str) -> List[str]:
+def parse_modules(mod_cmd: List[str]) -> List[str]:
     """
     Get loaded modules from httpd process, and return the list
     of loaded module names.
 
-    :param str apachectl: Path to apachectl executable
+    :param list mod_cmd: httpd command to dump loaded modules
 
     :returns: list of found LoadModule module names
     :rtype: list of str
     """
 
-    mod_cmd = [apachectl, "-t", "-D", "DUMP_MODULES"]
     return parse_from_subprocess(mod_cmd, r"(.*)_module")
 
 
@@ -252,6 +255,8 @@ def find_ssl_apache_conf(prefix: str) -> str:
     :return: the path the TLS Apache config file
     :rtype: str
     """
-    return pkg_resources.resource_filename(
-        "certbot_apache",
-        os.path.join("_internal", "tls_configs", "{0}-options-ssl-apache.conf".format(prefix)))
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    ref = (importlib_resources.files("certbot_apache").joinpath("_internal")
+           .joinpath("tls_configs").joinpath("{0}-options-ssl-apache.conf".format(prefix)))
+    return str(file_manager.enter_context(importlib_resources.as_file(ref)))

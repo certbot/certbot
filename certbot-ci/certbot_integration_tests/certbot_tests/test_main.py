@@ -6,7 +6,6 @@ import re
 import shutil
 import subprocess
 import time
-from typing import Iterable
 from typing import Generator
 from typing import Tuple
 from typing import Type
@@ -18,7 +17,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import SECP521R1
 from cryptography.x509 import NameOID
 import pytest
 
-from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
 from certbot_integration_tests.certbot_tests.assertions import assert_elliptic_key
 from certbot_integration_tests.certbot_tests.assertions import assert_equals_group_owner
@@ -31,6 +29,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_saved_rene
 from certbot_integration_tests.certbot_tests.assertions import assert_world_no_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
+from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
 from certbot_integration_tests.utils import misc
 
 
@@ -82,11 +81,9 @@ def test_registration_override(context: IntegrationTestsContext) -> None:
     context.certbot(['update_account', '--email', 'ex1@domain.org,ex2@domain.org'])
     stdout2, _ = context.certbot(['show_account'])
 
-    # https://github.com/letsencrypt/boulder/issues/6144
-    if context.acme_server != 'boulder-v2':
-        assert 'example@domain.org' in stdout1, "New email should be present"
-        assert 'example@domain.org' not in stdout2, "Old email should not be present"
-        assert 'ex1@domain.org, ex2@domain.org' in stdout2, "New emails should be present"
+    assert 'example@domain.org' in stdout1, "New email should be present"
+    assert 'example@domain.org' not in stdout2, "Old email should not be present"
+    assert 'ex1@domain.org, ex2@domain.org' in stdout2, "New emails should be present"
 
 
 def test_prepare_plugins(context: IntegrationTestsContext) -> None:
@@ -112,13 +109,13 @@ def test_http_01(context: IntegrationTestsContext) -> None:
 
     assert_hook_execution(context.hook_probe, 'deploy')
     assert_saved_renew_hook(context.config_dir, certname)
-    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'rsa')
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
 
 def test_manual_http_auth(context: IntegrationTestsContext) -> None:
     """Test the HTTP-01 challenge using manual plugin."""
     with misc.create_http_server(context.http_01_port) as webroot,\
-            misc.manual_http_hooks(webroot, context.http_01_port) as scripts:
+            misc.manual_http_hooks(webroot) as scripts:
 
         certname = context.get_domain()
         context.certbot([
@@ -248,8 +245,9 @@ def test_renew_files_propagate_permissions(context: IntegrationTestsContext) -> 
     if os.name != 'nt':
         os.chmod(privkey1, 0o444)
     else:
-        import win32security  # pylint: disable=import-error
         import ntsecuritycon  # pylint: disable=import-error
+        import win32security  # pylint: disable=import-error
+
         # Get the current DACL of the private key
         security = win32security.GetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION)
         dacl = security.GetSecurityDescriptorDacl()
@@ -315,23 +313,22 @@ def test_graceful_renew_it_is_time(context: IntegrationTestsContext) -> None:
 def test_renew_with_changed_private_key_complexity(context: IntegrationTestsContext) -> None:
     """Test proper renew with updated private key complexity."""
     certname = context.get_domain('renew')
-    context.certbot(['-d', certname, '--rsa-key-size', '4096'])
+    context.certbot(['-d', certname, '--key-type', 'rsa', '--rsa-key-size', '4096'])
 
     key1 = join(context.config_dir, 'archive', certname, 'privkey1.pem')
-    assert os.stat(key1).st_size > 3000  # 4096 bits keys takes more than 3000 bytes
+    assert_rsa_key(key1, 4096)
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     key2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
-    assert os.stat(key2).st_size > 3000
+    assert_rsa_key(key2, 4096)
 
     context.certbot(['renew', '--rsa-key-size', '2048'])
 
-    assert_cert_count_for_lineage(context.config_dir, certname, 3)
     key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
-    assert os.stat(key3).st_size < 1800  # 2048 bits keys takes less than 1800 bytes
+    assert_rsa_key(key3, 2048)
 
 
 def test_renew_ignoring_directory_hooks(context: IntegrationTestsContext) -> None:
@@ -437,37 +434,36 @@ def test_reuse_key(context: IntegrationTestsContext) -> None:
 
     with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
         privkey1 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/cert1.pem').format(certname), 'r') as file:
+        cert1 = file.read()
     with open(join(context.config_dir, 'archive/{0}/privkey2.pem').format(certname), 'r') as file:
         privkey2 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/cert2.pem').format(certname), 'r') as file:
+        cert2 = file.read()
     assert privkey1 == privkey2
 
     context.certbot(['--cert-name', certname, '--domains', certname, '--force-renewal'])
 
     with open(join(context.config_dir, 'archive/{0}/privkey3.pem').format(certname), 'r') as file:
         privkey3 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/cert3.pem').format(certname), 'r') as file:
+        cert3 = file.read()
     assert privkey2 != privkey3
 
     context.certbot(['--cert-name', certname, '--domains', certname,
                      '--reuse-key','--force-renewal'])
-    context.certbot(['renew', '--cert-name', certname, '--no-reuse-key', '--force-renewal'])
-    context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
-
     with open(join(context.config_dir, 'archive/{0}/privkey4.pem').format(certname), 'r') as file:
         privkey4 = file.read()
+    context.certbot(['renew', '--cert-name', certname, '--no-reuse-key', '--force-renewal'])
     with open(join(context.config_dir, 'archive/{0}/privkey5.pem').format(certname), 'r') as file:
         privkey5 = file.read()
+    context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
     with open(join(context.config_dir, 'archive/{0}/privkey6.pem').format(certname), 'r') as file:
         privkey6 = file.read()
+
     assert privkey3 == privkey4
     assert privkey4 != privkey5
     assert privkey5 != privkey6
-
-    with open(join(context.config_dir, 'archive/{0}/cert1.pem').format(certname), 'r') as file:
-        cert1 = file.read()
-    with open(join(context.config_dir, 'archive/{0}/cert2.pem').format(certname), 'r') as file:
-        cert2 = file.read()
-    with open(join(context.config_dir, 'archive/{0}/cert3.pem').format(certname), 'r') as file:
-        cert3 = file.read()
 
     assert len({cert1, cert2, cert3}) == 3
 
@@ -482,7 +478,7 @@ def test_new_key(context: IntegrationTestsContext) -> None:
     certname = context.get_domain('newkey')
 
     context.certbot(['--domains', certname, '--reuse-key',
-                     '--key-type', 'rsa', '--rsa-key-size', '4096'])
+                     '--key-type', 'ecdsa', '--elliptic-curve', 'secp384r1'])
     privkey1, _ = private_key(1)
 
     # renew: --new-key should replace the key, but keep reuse_key and the key type + params
@@ -490,22 +486,34 @@ def test_new_key(context: IntegrationTestsContext) -> None:
     privkey2, privkey2_path = private_key(2)
     assert privkey1 != privkey2
     assert_saved_lineage_option(context.config_dir, certname, 'reuse_key', 'True')
-    assert_rsa_key(privkey2_path, 4096)
+    assert_elliptic_key(privkey2_path, SECP384R1)
 
-    # certonly: it should replace the key but the key size will change
+    # certonly: it should replace the key but the elliptic curve will change
     context.certbot(['certonly', '-d', certname, '--reuse-key', '--new-key'])
     privkey3, privkey3_path = private_key(3)
     assert privkey2 != privkey3
     assert_saved_lineage_option(context.config_dir, certname, 'reuse_key', 'True')
-    assert_rsa_key(privkey3_path, 2048)
+    assert_elliptic_key(privkey3_path, SECP256R1)
 
     # certonly: it should be possible to change the key type and keep reuse_key
-    context.certbot(['certonly', '-d', certname, '--reuse-key', '--new-key', '--key-type', 'ecdsa',
-                     '--cert-name', certname])
+    context.certbot(['certonly', '-d', certname, '--reuse-key', '--new-key', '--key-type', 'rsa',
+                     '--rsa-key-size', '4096', '--cert-name', certname])
     privkey4, privkey4_path = private_key(4)
     assert privkey3 != privkey4
     assert_saved_lineage_option(context.config_dir, certname, 'reuse_key', 'True')
-    assert_elliptic_key(privkey4_path, SECP256R1)
+    assert_rsa_key(privkey4_path, 4096)
+
+    # certonly: it should not be possible to change a key parameter without --new-key
+    with pytest.raises(subprocess.CalledProcessError) as error:
+        context.certbot(['certonly', '-d', certname, '--key-type', 'rsa', '--reuse-key',
+                         '--rsa-key-size', '2048'])
+    assert 'Unable to change the --rsa-key-size' in error.value.stderr
+
+    # certonly: not specifying --key-type should keep the existing key type (non-interactively).
+    context.certbot(['certonly', '-d', certname, '--no-reuse-key'])
+    privkey5, privkey5_path = private_key(5)
+    assert_rsa_key(privkey5_path, 2048)
+    assert privkey4 != privkey5
 
 
 def test_incorrect_key_type(context: IntegrationTestsContext) -> None:
@@ -535,39 +543,35 @@ def test_ecdsa(context: IntegrationTestsContext) -> None:
 
 
 def test_default_key_type(context: IntegrationTestsContext) -> None:
-    """Test default key type is RSA"""
+    """Test default key type is ECDSA"""
     certname = context.get_domain('renew')
     context.certbot([
         'certonly',
         '--cert-name', certname, '-d', certname
     ])
     filename = join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname)
-    assert_rsa_key(filename)
+    assert_elliptic_key(filename, SECP256R1)
 
 
-def test_default_curve_type(context: IntegrationTestsContext) -> None:
-    """test that the curve used when not specifying any is secp256r1"""
+def test_default_rsa_size(context: IntegrationTestsContext) -> None:
+    """test that the RSA key size used when not specifying any is 2048"""
     certname = context.get_domain('renew')
     context.certbot([
-        '--key-type', 'ecdsa', '--cert-name', certname, '-d', certname
+        '--key-type', 'rsa', '--cert-name', certname, '-d', certname
     ])
     key1 = join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname))
-    assert_elliptic_key(key1, SECP256R1)
+    assert_rsa_key(key1, 2048)
 
 
-@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
+@pytest.mark.parametrize('curve,curve_cls', [
     # Curve name, Curve class, ACME servers to skip
-    ('secp256r1', SECP256R1, []),
-    ('secp384r1', SECP384R1, []),
-    ('secp521r1', SECP521R1, ['boulder-v2'])]
+    ('secp256r1', SECP256R1),
+    ('secp384r1', SECP384R1),
+    ('secp521r1', SECP521R1)]
 )
-def test_ecdsa_curves(context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve],
-                      skip_servers: Iterable[str]) -> None:
+def test_ecdsa_curves(context: IntegrationTestsContext, curve: str,
+                      curve_cls: Type[EllipticCurve]) -> None:
     """Test issuance for each supported ECDSA curve"""
-    if context.acme_server in skip_servers:
-        pytest.skip('ACME server {} does not support ECDSA curve {}'
-                    .format(context.acme_server, curve))
-
     domain = context.get_domain('curve')
     context.certbot([
         'certonly',
@@ -603,7 +607,6 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
     # to the lineage key type, Certbot should keep the lineage key type. The curve will still
     # change to the default value, in order to stay consistent with the behavior of certonly.
     context.certbot(['certonly', '--force-renewal', '-d', certname])
-    assert_cert_count_for_lineage(context.config_dir, certname, 3)
     key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
     assert 200 < os.stat(key3).st_size < 250  # ec keys of 256 bits are ~225 bytes
     assert_elliptic_key(key3, SECP256R1)
@@ -617,14 +620,12 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
 
     context.certbot(['certonly', '--force-renewal', '-d', certname,
                      '--key-type', 'rsa', '--cert-name', certname])
-    assert_cert_count_for_lineage(context.config_dir, certname, 4)
     key4 = join(context.config_dir, 'archive', certname, 'privkey4.pem')
     assert_rsa_key(key4)
 
     # We expect that the previous behavior of requiring both --cert-name and
     # --key-type to be set to not apply to the renew subcommand.
     context.certbot(['renew', '--force-renewal', '--key-type', 'ecdsa'])
-    assert_cert_count_for_lineage(context.config_dir, certname, 5)
     key5 = join(context.config_dir, 'archive', certname, 'privkey5.pem')
     assert 200 < os.stat(key5).st_size < 250  # ec keys of 256 bits are ~225 bytes
     assert_elliptic_key(key5, SECP256R1)
@@ -632,9 +633,6 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
 
 def test_ocsp_must_staple(context: IntegrationTestsContext) -> None:
     """Test that OCSP Must-Staple is correctly set in the generated certificate."""
-    if context.acme_server == 'pebble':
-        pytest.skip('Pebble does not support OCSP Must-Staple.')
-
     certname = context.get_domain('must-staple')
     context.certbot(['auth', '--must-staple', '--domains', certname])
 
@@ -702,17 +700,14 @@ def test_revoke_and_unregister(context: IntegrationTestsContext) -> None:
     assert cert3 in stdout
 
 
-@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
-    ('secp256r1', SECP256R1, []),
-    ('secp384r1', SECP384R1, []),
-    ('secp521r1', SECP521R1, ['boulder-v2'])]
+@pytest.mark.parametrize('curve,curve_cls', [
+    ('secp256r1', SECP256R1),
+    ('secp384r1', SECP384R1),
+    ('secp521r1', SECP521R1)]
 )
 def test_revoke_ecdsa_cert_key(
-    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve],
-    skip_servers: Iterable[str]) -> None:
+    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve]) -> None:
     """Test revoking a certificate """
-    if context.acme_server in skip_servers:
-        pytest.skip(f'ACME server {context.acme_server} does not support ECDSA curve {curve}')
     cert: str = context.get_domain('curve')
     context.certbot([
         'certonly',
@@ -730,17 +725,14 @@ def test_revoke_ecdsa_cert_key(
     assert stdout.count('INVALID: REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
 
 
-@pytest.mark.parametrize('curve,curve_cls,skip_servers', [
-    ('secp256r1', SECP256R1, []),
-    ('secp384r1', SECP384R1, []),
-    ('secp521r1', SECP521R1, ['boulder-v2'])]
+@pytest.mark.parametrize('curve,curve_cls', [
+    ('secp256r1', SECP256R1),
+    ('secp384r1', SECP384R1),
+    ('secp521r1', SECP521R1)]
 )
 def test_revoke_ecdsa_cert_key_delete(
-    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve],
-    skip_servers: Iterable[str]) -> None:
+    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve]) -> None:
     """Test revoke and deletion for each supported curve type"""
-    if context.acme_server in skip_servers:
-        pytest.skip(f'ACME server {context.acme_server} does not support ECDSA curve {curve}')
     cert: str = context.get_domain('curve')
     context.certbot([
         'certonly',
@@ -799,6 +791,25 @@ def test_revoke_multiple_lineages(context: IntegrationTestsContext) -> None:
 
     with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
         assert 'Not deleting revoked certificates due to overlapping archive dirs' in f.read()
+
+
+def test_reconfigure(context: IntegrationTestsContext) -> None:
+    """Test the reconfigure verb"""
+    certname = context.get_domain()
+    context.certbot(['-d', certname])
+    conf_path = join(context.config_dir, 'renewal', '{}.conf'.format(certname))
+
+    with misc.create_http_server(context.http_01_port) as webroot:
+        context.certbot(['reconfigure', '--cert-name', certname,
+                         '-a', 'webroot', '--webroot-path', webroot])
+        with open(conf_path, 'r') as f:
+            file_contents = f.read()
+            # Check changed value
+            assert 'authenticator = webroot' in file_contents, \
+                   'Expected authenticator to be changed to webroot in renewal config'
+            # Check added value
+            assert f'webroot_path = {webroot}' in file_contents, \
+                   'Expected new webroot path to be added to renewal config'
 
 
 def test_wildcard_certificates(context: IntegrationTestsContext) -> None:
@@ -886,11 +897,11 @@ def test_dry_run_deactivate_authzs(context: IntegrationTestsContext) -> None:
 def test_preferred_chain(context: IntegrationTestsContext) -> None:
     """Test that --preferred-chain results in the correct chain.pem being produced"""
     try:
-        issuers = misc.get_acme_issuers(context)
+        issuers = misc.get_acme_issuers()
     except NotImplementedError:
         pytest.skip('This ACME server does not support alternative issuers.')
 
-    names = [i.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value \
+    names = [str(i.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value) \
              for i in issuers]
 
     domain = context.get_domain('preferred-chain')
@@ -903,9 +914,30 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
         context.certbot(args)
 
         dumped = misc.read_certificate(cert_path)
-        assert 'Issuer: CN={}'.format(expected) in dumped, \
-               'Expected chain issuer to be {} when preferring {}'.format(expected, requested)
+        assert f'Issuer: CN={expected}'in dumped, \
+               f'Expected chain issuer to be {expected} when preferring {requested}'
 
         with open(conf_path, 'r') as f:
-            assert 'preferred_chain = {}'.format(requested) in f.read(), \
+            assert f'preferred_chain = {requested}' in f.read(), \
                    'Expected preferred_chain to be set in renewal config'
+
+
+def test_ancient_rsa_key_type_preserved(context: IntegrationTestsContext) -> None:
+    certname = context.get_domain('newname')
+    context.certbot(['certonly', '-d', certname, '--key-type', 'rsa'])
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'rsa')
+
+    # Remove `key_type = rsa` from the renewal config to emulate a <v1.25.0 Certbot certificate.
+    conf_path = join(context.config_dir, 'renewal', f'{certname}.conf')
+    conf_contents: str = ''
+    with open(conf_path) as f:
+        conf_contents = f.read()
+    conf_contents = conf_contents.replace('key_type = rsa', '')
+    with open(conf_path, 'w') as f:
+        f.write(conf_contents)
+
+    context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
+
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'rsa')
+    key2 = join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname))
+    assert_rsa_key(key2, 2048)

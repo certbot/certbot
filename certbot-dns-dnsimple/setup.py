@@ -4,16 +4,18 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.32.0.dev0'
+version = '2.12.0.dev0'
 
 install_requires = [
     # This version of lexicon is required to address the problem described in
     # https://github.com/AnalogJ/lexicon/issues/387.
-    'dns-lexicon>=3.2.1',
+    'dns-lexicon>=3.14.1',
     'setuptools>=41.6.0',
 ]
 
-if not os.environ.get('SNAP_BUILD'):
+if os.environ.get('SNAP_BUILD'):
+    install_requires.append('packaging')
+else:
     install_requires.extend([
         # We specify the minimum acme and certbot version as the current plugin
         # version for simplicity. See
@@ -21,15 +23,14 @@ if not os.environ.get('SNAP_BUILD'):
         f'acme>={version}',
         f'certbot>={version}',
     ])
-elif 'bdist_wheel' in sys.argv[1:]:
-    raise RuntimeError('Unset SNAP_BUILD when building wheels '
-                       'to include certbot dependencies.')
-if os.environ.get('SNAP_BUILD'):
-    install_requires.append('packaging')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
+]
+
+test_extras = [
+    'pytest',
 ]
 
 setup(
@@ -40,7 +41,7 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
@@ -49,10 +50,11 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
@@ -66,6 +68,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         'docs': docs_extras,
+        'test': test_extras,
     },
     entry_points={
         'certbot.plugins': [

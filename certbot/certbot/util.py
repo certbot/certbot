@@ -1,8 +1,8 @@
 """Utilities for all Certbot."""
 import argparse
 import atexit
-import collections
 import errno
+import itertools
 import logging
 import platform
 import re
@@ -14,12 +14,11 @@ from typing import Callable
 from typing import Dict
 from typing import IO
 from typing import List
+from typing import NamedTuple
 from typing import Optional
 from typing import Set
 from typing import Tuple
-from typing import TYPE_CHECKING
 from typing import Union
-import warnings
 
 import configargparse
 
@@ -33,15 +32,94 @@ _USE_DISTRO = sys.platform.startswith('linux')
 if _USE_DISTRO:
     import distro
 
-if TYPE_CHECKING:
-    import distutils.version # pylint: disable=deprecated-module
-
 logger = logging.getLogger(__name__)
 
 
-Key = collections.namedtuple("Key", "file pem")
-# Note: form is the type of data, "pem" or "der"
-CSR = collections.namedtuple("CSR", "file data form")
+class Key(NamedTuple):
+    """Container for an optional file path and contents for a PEM-formated private key."""
+    file: Optional[str]
+    pem: bytes
+
+
+class CSR(NamedTuple):
+    """Container for an optional file path and contents for a PEM or DER-formatted CSR."""
+    file: Optional[str]
+    data: bytes
+    # Note: form is the type of data, "pem" or "der"
+    form: str
+
+
+class LooseVersion:
+    """A version with loose rules, i.e. any given string is a valid version number.
+
+    but regular comparison is not supported. Instead, the `try_risky_comparison` method is
+    provided, which may return an error if two LooseVersions are 'incomparible'.
+    For example when integer and string version components are present in the same position.
+
+    Differences with old distutils.version.LooseVersion:
+    (https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L269)
+    Most version comparisons should give the same result. However, if a version has multiple
+    trailing zeroes, not all of them are used in the comparison. This ensure that, for example,
+    "2.0" and "2.0.0" are equal.
+    """
+
+    def __init__(self, version_string: str) -> None:
+        """Parses a version string into its components.
+
+        :param str version_string: version string
+        """
+        components: List[Union[int, str]]
+        components = [x for x in _VERSION_COMPONENT_RE.split(version_string)
+                              if x and x != '.']
+        for i, obj in enumerate(components):
+            try:
+                components[i] = int(obj)
+            except ValueError:
+                pass
+
+        self.version_components = components
+
+    def try_risky_comparison(self, other: 'LooseVersion') -> int:
+        """Compares the LooseVersion to another value.
+
+        If the other value is another LooseVersion, the version components are compared. Otherwise,
+        an exception is raised.
+
+        Comparison is performed element-wise. If the version components being compared are of
+        different types, the two versions are considered incomparible. Otherwise, if either of the
+        components is not equal to the other, less or greater is returned based on the comparison's
+        result. In case the two versions are of different lengths, some elements in the longer
+        version have not yet been compared. If these are all equal to zero, the two versions are
+        equal. Otherwise, the longer version is greater.
+
+        If the two versions are incomparible, an exception is raised. Otherwise, the returned
+        integer indicates the result of the comparison. If self == other, 0 is returned.
+        If self > other, 1 is returned. If self < other -1 is returned.
+
+        Examples:
+        Equality:
+        - LooseVersion('1.0').try_risky_comparison(LooseVersion('1.0')) -> 0
+        - LooseVersion('2.0.0a').try_risky_comparison(LooseVersion('2.0.0a')) -> 0
+        Inequality:
+        - LooseVersion('2.0.0').try_risky_comparison(LooseVersion('1.0')) -> 1
+        - LooseVersion('1.0.1').try_risky_comparison(LooseVersion('2.0a')) -> -1
+        Incomparability:
+        - LooseVersion('1a').try_risky_comparison(LooseVersion('1.0')) -> ValueError
+        """
+        try:
+            for self_vc, other_vc in itertools.zip_longest(self.version_components,
+                                                           other.version_components,
+                                                           fillvalue=0):
+                # ensure mypy ignores types here and catch any TypeErrors
+                if self_vc < other_vc:  # type: ignore
+                    return -1
+                elif self_vc > other_vc:  # type: ignore
+                    return 1
+            return 0
+        except TypeError:
+            raise ValueError("Cannot meaningfully compare LooseVersion {} with LooseVersion {} "
+                             "due to comparison of version components with different types."
+                             .format(self.version_components, other.version_components))
 
 
 # ANSI SGR escape codes
@@ -450,7 +528,7 @@ class DeprecatedArgumentAction(argparse.Action):
     """Action to log a warning when an argument is used."""
     def __call__(self, unused1: Any, unused2: Any, unused3: Any,
                  option_string: Optional[str] = None) -> None:
-        warnings.warn("Use of %s is deprecated." % option_string, DeprecationWarning)
+        logger.warning("Use of %s is deprecated.", option_string)
 
 
 def add_deprecated_argument(add_argument: Callable[..., None], argument_name: str,
@@ -611,24 +689,6 @@ def is_wildcard_domain(domain: Union[str, bytes]) -> bool:
     return domain.startswith(b"*.")
 
 
-def get_strict_version(normalized: str) -> "distutils.version.StrictVersion":
-    """Converts a normalized version to a strict version.
-
-    :param str normalized: normalized version string
-
-    :returns: An equivalent strict version
-    :rtype: distutils.version.StrictVersion
-
-    """
-    warnings.warn("certbot.util.get_strict_version is deprecated and will be "
-                  "removed in a future release.", DeprecationWarning)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        import distutils.version # pylint: disable=deprecated-module
-        # strict version ending with "a" and a number designates a pre-release
-        return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
-
-
 def is_staging(srv: str) -> bool:
     """
     Determine whether a given ACME server is a known test / staging server.
@@ -654,28 +714,17 @@ def atexit_register(func: Callable, *args: Any, **kwargs: Any) -> None:
 
 def parse_loose_version(version_string: str) -> List[Union[int, str]]:
     """Parses a version string into its components.
-
     This code and the returned tuple is based on the now deprecated
     distutils.version.LooseVersion class from the Python standard library.
     Two LooseVersion classes and two lists as returned by this function should
     compare in the same way. See
     https://github.com/python/cpython/blob/v3.10.0/Lib/distutils/version.py#L205-L347.
-
     :param str version_string: version string
-
     :returns: list of parsed version string components
     :rtype: list
-
     """
-    components: List[Union[int, str]]
-    components = [x for x in _VERSION_COMPONENT_RE.split(version_string)
-                          if x and x != '.']
-    for i, obj in enumerate(components):
-        try:
-            components[i] = int(obj)
-        except ValueError:
-            pass
-    return components
+    loose_version = LooseVersion(version_string)
+    return loose_version.version_components
 
 
 def _atexit_call(func: Callable, *args: Any, **kwargs: Any) -> None:

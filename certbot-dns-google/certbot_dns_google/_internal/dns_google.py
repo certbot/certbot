@@ -1,21 +1,22 @@
 """DNS Authenticator for Google Cloud DNS."""
-import json
 import logging
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Optional
 
+import google.auth
+
+from google.auth import exceptions as googleauth_exceptions
 from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
-import httplib2
-from oauth2client.service_account import ServiceAccountCredentials
 
 from certbot import errors
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 
+ADC_URL = 'https://cloud.google.com/docs/authentication/application-default-credentials'
 ACCT_URL = 'https://developers.google.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount'
 PERMISSIONS_URL = 'https://cloud.google.com/dns/access-control#permissions_and_roles'
 METADATA_URL = 'http://metadata.google.internal/computeMetadata/v1/'
@@ -31,15 +32,23 @@ class Authenticator(dns_common.DNSAuthenticator):
     description = ('Obtain certificates using a DNS TXT record (if you are using Google Cloud DNS '
                    'for DNS).')
     ttl = 60
+    google_client = None
 
     @classmethod
     def add_parser_arguments(cls, add: Callable[..., None],
                              default_propagation_seconds: int = 60) -> None:
         super().add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials',
-            help=('Path to Google Cloud DNS service account JSON file. (See {0} for' +
-                  'information about creating a service account and {1} for information about the' +
-                  'required permissions.)').format(ACCT_URL, PERMISSIONS_URL),
+            help=('Path to Google Cloud DNS service account JSON file to use instead of relying on'
+                  ' Application Default Credentials (ADC). (See {0} for information about ADC, {1}'
+                  ' for information about creating a service account, and {2} for information about'
+                  ' the permissions required to modify Cloud DNS records.)')
+                  .format(ADC_URL, ACCT_URL, PERMISSIONS_URL),
+            default=None)
+
+        add('project',
+            help=('The ID of the Google Cloud project that the Google Cloud DNS managed zone(s)' +
+                  ' reside in. This will be determined automatically if not specified.'),
             default=None)
 
     def more_info(self) -> str:
@@ -47,21 +56,18 @@ class Authenticator(dns_common.DNSAuthenticator):
                'the Google Cloud DNS API.'
 
     def _setup_credentials(self) -> None:
-        if self.conf('credentials') is None:
-            try:
-                # use project_id query to check for availability of google metadata server
-                # we won't use the result but know we're not on GCP when an exception is thrown
-                _GoogleClient.get_project_id()
-            except (ValueError, httplib2.ServerNotFoundError):
-                raise errors.PluginError('Unable to get Google Cloud Metadata and no credentials'
-                                         ' specified. Automatic credential lookup is only '
-                                         'available on Google Cloud Platform. Please configure'
-                                         ' credentials using --dns-google-credentials <file>')
-        else:
+        if self.conf('credentials') is not None:
             self._configure_file('credentials',
                                  'path to Google Cloud DNS service account JSON file')
 
             dns_common.validate_file_permissions(self.conf('credentials'))
+
+        try:
+            self._get_google_client()
+        except googleauth_exceptions.DefaultCredentialsError as e:
+            raise errors.PluginError('Authentication using Google Application Default Credentials '
+                                     'failed ({}). Please configure credentials using'
+                                     ' --dns-google-credentials <file>'.format(e))
 
     def _perform(self, domain: str, validation_name: str, validation: str) -> None:
         self._get_google_client().add_txt_record(domain, validation_name, validation, self.ttl)
@@ -70,7 +76,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_google_client().del_txt_record(domain, validation_name, validation, self.ttl)
 
     def _get_google_client(self) -> '_GoogleClient':
-        return _GoogleClient(self.conf('credentials'))
+        if self.google_client is None:
+            self.google_client = _GoogleClient(self.conf('credentials'), self.conf('project'))
+        return self.google_client
+
 
 
 class _GoogleClient:
@@ -79,20 +88,31 @@ class _GoogleClient:
     """
 
     def __init__(self, account_json: Optional[str] = None,
+                 dns_project_id: Optional[str] = None,
                  dns_api: Optional[discovery.Resource] = None) -> None:
 
         scopes = ['https://www.googleapis.com/auth/ndev.clouddns.readwrite']
+        credentials = None
+        project_id = None
+
         if account_json is not None:
             try:
-                credentials = ServiceAccountCredentials.from_json_keyfile_name(account_json, scopes)
-                with open(account_json) as account:
-                    self.project_id = json.load(account)['project_id']
-            except Exception as e:
+                credentials, project_id = google.auth.load_credentials_from_file(
+                    account_json, scopes=scopes)
+            except googleauth_exceptions.GoogleAuthError as e:
                 raise errors.PluginError(
-                    "Error parsing credentials file '{}': {}".format(account_json, e))
+                    "Error loading credentials file '{}': {}".format(account_json, e))
         else:
-            credentials = None
-            self.project_id = self.get_project_id()
+            credentials, project_id = google.auth.default(scopes=scopes)
+
+        if dns_project_id is not None:
+            project_id = dns_project_id
+
+        if not project_id:
+            raise errors.PluginError('The Google Cloud project could not be automatically '
+                                     'determined. Please configure it using --dns-google-project'
+                                     ' <project>.')
+        self.project_id = project_id
 
         if not dns_api:
             self.dns = discovery.build('dns', 'v1',
@@ -286,32 +306,9 @@ class _GoogleClient:
 
             for zone in zones:
                 zone_id = zone['id']
-                if 'privateVisibilityConfig' not in zone:
+                if zone['visibility'] == "public":
                     logger.debug('Found id of %s for %s using name %s', zone_id, domain, zone_name)
                     return zone_id
 
         raise errors.PluginError('Unable to determine managed zone for {0} using zone names: {1}.'
                                  .format(domain, zone_dns_name_guesses))
-
-    @staticmethod
-    def get_project_id() -> str:
-        """
-        Query the google metadata service for the current project ID
-
-        This only works on Google Cloud Platform
-
-        :raises ServerNotFoundError: Not running on Google Compute or DNS not available
-        :raises ValueError: Server is found, but response code is not 200
-        :returns: project id
-        """
-        url = '{0}project/project-id'.format(METADATA_URL)
-
-        # Request an access token from the metadata server.
-        http = httplib2.Http()
-        r, content = http.request(url, headers=METADATA_HEADERS)
-        if r.status != 200:
-            raise ValueError("Invalid status code: {0}".format(r))
-
-        if isinstance(content, bytes):
-            return content.decode()
-        return content

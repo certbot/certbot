@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 """General purpose nginx test configuration generator."""
+import atexit
 import getpass
+import sys
+from contextlib import ExitStack
 from typing import Optional
 
-import pkg_resources
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
 
 
 def construct_nginx_config(nginx_root: str, nginx_webroot: str, http_port: int, https_port: int,
@@ -23,10 +29,20 @@ def construct_nginx_config(nginx_root: str, nginx_webroot: str, http_port: int, 
     :return: a string containing the full nginx configuration
     :rtype: str
     """
-    key_path = key_path if key_path \
-        else pkg_resources.resource_filename('certbot_integration_tests', 'assets/key.pem')
-    cert_path = cert_path if cert_path \
-        else pkg_resources.resource_filename('certbot_integration_tests', 'assets/cert.pem')
+    if not key_path:
+        file_manager = ExitStack()
+        atexit.register(file_manager.close)
+        ref = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+               .joinpath('key.pem'))
+        key_path = str(file_manager.enter_context(importlib_resources.as_file(ref)))
+
+    if not cert_path:
+        file_manager = ExitStack()
+        atexit.register(file_manager.close)
+        ref = (importlib_resources.files('certbot_integration_tests').joinpath('assets')
+               .joinpath('cert.pem'))
+        cert_path = str(file_manager.enter_context(importlib_resources.as_file(ref)))
+
     return '''\
 # This error log will be written regardless of server scope error_log
 # definitions, so we have to set this here in the main scope.

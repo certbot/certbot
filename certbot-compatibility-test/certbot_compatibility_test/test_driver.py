@@ -18,12 +18,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 
-from certbot_compatibility_test import errors
-from certbot_compatibility_test import util
-from certbot_compatibility_test import validator
-from certbot_compatibility_test.configurators import common
-from certbot_compatibility_test.configurators.apache import common as a_common
-from certbot_compatibility_test.configurators.nginx import common as n_common
 from OpenSSL import crypto
 from urllib3.util import connection
 
@@ -33,8 +27,13 @@ from acme import messages
 from certbot import achallenges
 from certbot import errors as le_errors
 from certbot._internal.display import obj as display_obj
-from certbot.display import util as display_util
 from certbot.tests import acme_util
+from certbot_compatibility_test import errors
+from certbot_compatibility_test import util
+from certbot_compatibility_test import validator
+from certbot_compatibility_test.configurators import common
+from certbot_compatibility_test.configurators.apache import common as a_common
+from certbot_compatibility_test.configurators.nginx import common as n_common
 
 DESCRIPTION = """
 Tests Certbot plugins against different server configurations. It is
@@ -339,7 +338,7 @@ def setup_logging(args: argparse.Namespace) -> None:
 
 def setup_display() -> None:
     """"Prepares a display utility instance for the Certbot plugins """
-    displayer = display_util.NoninteractiveDisplay(sys.stdout)
+    displayer = display_obj.NoninteractiveDisplay(sys.stdout)
     display_obj.set_display(displayer)
 
 

@@ -1,54 +1,76 @@
 # pylint: disable=missing-module-docstring
-
+import atexit
+import io
 import json
 import os
 import stat
-from typing import Tuple
+import sys
+import zipfile
+from contextlib import ExitStack
+from typing import Optional, Tuple
 
-import pkg_resources
 import requests
 
 from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
-PEBBLE_VERSION = 'v2.3.1'
-ASSETS_PATH = pkg_resources.resource_filename('certbot_integration_tests', 'assets')
+if sys.version_info >= (3, 9):  # pragma: no cover
+    import importlib.resources as importlib_resources
+else:  # pragma: no cover
+    import importlib_resources
+
+PEBBLE_VERSION = 'v2.5.1'
 
 
 def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str, str, str]:
     # pylint: disable=missing-function-docstring
-    suffix = 'linux-amd64' if os.name != 'nt' else 'windows-amd64.exe'
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    pebble_path_ref = importlib_resources.files('certbot_integration_tests') / 'assets'
+    assets_path = str(file_manager.enter_context(importlib_resources.as_file(pebble_path_ref)))
 
-    pebble_path = _fetch_asset('pebble', suffix)
-    challtestsrv_path = _fetch_asset('pebble-challtestsrv', suffix)
-    pebble_config_path = _build_pebble_config(workspace, http_01_port)
+    pebble_path = _fetch_asset('pebble', assets_path)
+    challtestsrv_path = _fetch_asset('pebble-challtestsrv', assets_path)
+    pebble_config_path = _build_pebble_config(workspace, http_01_port, assets_path)
 
     return pebble_path, challtestsrv_path, pebble_config_path
 
 
-def _fetch_asset(asset: str, suffix: str) -> str:
-    asset_path = os.path.join(ASSETS_PATH, '{0}_{1}_{2}'.format(asset, PEBBLE_VERSION, suffix))
+def _fetch_asset(asset: str, assets_path: str) -> str:
+    platform = 'linux-amd64'
+    base_url = 'https://github.com/letsencrypt/pebble/releases/download'
+    asset_path = os.path.join(assets_path, f'{asset}_{PEBBLE_VERSION}_{platform}')
     if not os.path.exists(asset_path):
-        asset_url = ('https://github.com/letsencrypt/pebble/releases/download/{0}/{1}_{2}'
-                     .format(PEBBLE_VERSION, asset, suffix))
-        response = requests.get(asset_url)
+        asset_url = f'{base_url}/{PEBBLE_VERSION}/{asset}-{platform}.zip'
+        response = requests.get(asset_url, timeout=30)
         response.raise_for_status()
+        asset_data = _unzip_asset(response.content, asset)
+        if asset_data is None:
+            raise ValueError(f"zipfile {asset_url} didn't contain file {asset}")
         with open(asset_path, 'wb') as file_h:
-            file_h.write(response.content)
+            file_h.write(asset_data)
     os.chmod(asset_path, os.stat(asset_path).st_mode | stat.S_IEXEC)
 
     return asset_path
 
 
-def _build_pebble_config(workspace: str, http_01_port: int) -> str:
+def _unzip_asset(zipped_data: bytes, asset_name: str) -> Optional[bytes]:
+    with zipfile.ZipFile(io.BytesIO(zipped_data)) as zip_file:
+        for entry in zip_file.filelist:
+            if not entry.is_dir() and entry.filename.endswith(asset_name):
+                return zip_file.read(entry)
+    return None
+
+
+def _build_pebble_config(workspace: str, http_01_port: int, assets_path: str) -> str:
     config_path = os.path.join(workspace, 'pebble-config.json')
     with open(config_path, 'w') as file_h:
         file_h.write(json.dumps({
             'pebble': {
                 'listenAddress': '0.0.0.0:14000',
                 'managementListenAddress': '0.0.0.0:15000',
-                'certificate': os.path.join(ASSETS_PATH, 'cert.pem'),
-                'privateKey': os.path.join(ASSETS_PATH, 'key.pem'),
+                'certificate': os.path.join(assets_path, 'cert.pem'),
+                'privateKey': os.path.join(assets_path, 'key.pem'),
                 'httpPort': http_01_port,
                 'tlsPort': 5001,
                 'ocspResponderURL': 'http://127.0.0.1:{0}'.format(MOCK_OCSP_SERVER_PORT),

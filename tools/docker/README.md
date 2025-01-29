@@ -20,17 +20,30 @@ DNS plugin Docker images to Docker Hub.
 High-level behavior
 -------------------
 
-Running `./build.sh <TAG> all && ./deploy.sh <TAG> all` causes the Docker
-images to be built and deployed to Docker Hub for all supported architectures
-where `<TAG>` is the base of the tag that should be given to the given images.
-The tag should either be `nightly` or a git version tag like `v0.34.0`. The
-given tag is only the base of the tag because the CPU architecture is also
-added to the tag.
+Running `./build.sh <TAG> all` causes the Docker images to be built for all 
+supported architectures. The generated images are stored in the local docker image cache.
+
+Running `./test.sh <TAG> all` loads images from the docker image cache
+and runs a test command to validate the image contents.
+
+Running `./deploy_images.sh <TAG> all` will push the previously generated images 
+to Docker Hub.  The <TAG> argument is an identifier applied to all docker 
+images and manifests. It may be something like `nightly` or `v2.3.2`. If 
+the tag is a version stamp greater than `v2.0.0`, then a `latest` tag will 
+also be generated and pushed to the docker hub repo. 
+
+Running `./deploy_manifests.sh <TAG> all` will add multiarch manifests to 
+Docker Hub. This command assumes that `./deploy_images.sh <TAG> all` has
+been previously run with the same tag.
 
 Configuration
 -------------
 
 To run these scripts you need:
 
-1. An x86_64 machine with Docker installed and the Docker daemon running. You probably don't want to use the docker snap as these scripts have failed when using that in the past.
-2. To be logged into Docker Hub with an account able to push to the Certbot and Certbot DNS Docker images on Docker Hub.
+1. A computer with Docker installed and the Docker daemon running. You probably 
+don't want to use the docker snap as these scripts have failed when using that 
+in the past.
+2. To be logged into Docker Hub with an account able to push to the Certbot and 
+Certbot DNS Docker images on Docker Hub. Altering the value of `DOCKER_HUB_ORG` 
+in `lib/common` will allow you to push to your own account for testing.

@@ -1,9 +1,17 @@
+# This does not include the dependencies needed to build cryptography. See
+# https://cryptography.io/en/latest/installation/
 steps:
   # We run brew update because we've seen attempts to install an older version
   # of a package fail. See
   # https://github.com/actions/virtual-environments/issues/3165.
+  #
+  # We untap homebrew/core and homebrew/cask and unset HOMEBREW_NO_INSTALL_FROM_API (which
+  # is set by the CI macOS env) because GitHub has been having issues, making these jobs
+  # fail on git clones: https://github.com/orgs/Homebrew/discussions/4612.
   - bash: |
       set -e
+      unset HOMEBREW_NO_INSTALL_FROM_API
+      brew untap homebrew/core homebrew/cask
       brew update
       brew install augeas
     condition: startswith(variables['IMAGE_NAME'], 'macOS')
@@ -12,32 +20,19 @@ steps:
       set -e
       sudo apt-get update
       sudo apt-get install -y --no-install-recommends \
-        python3-dev \
-        gcc \
         libaugeas0 \
-        libssl-dev \
-        libffi-dev \
-        ca-certificates \
-        nginx-light \
-        openssl
+        nginx-light
       sudo systemctl stop nginx
+      sudo sysctl net.ipv4.ip_unprivileged_port_start=0
     condition: startswith(variables['IMAGE_NAME'], 'ubuntu')
     displayName: Install Linux dependencies
   - task: UsePythonVersion@0
     inputs:
       versionSpec: $(PYTHON_VERSION)
       addToPath: true
-    # tools/pip_install.py is used to pin packages to a known working version
-    # except in tests where the environment variable CERTBOT_NO_PIN is set.
-    # virtualenv is listed here explicitly to make sure it is upgraded when
-    # CERTBOT_NO_PIN is set to work around failures we've seen when using an older
-    # version of virtualenv. The option "-I" is set so when CERTBOT_NO_PIN is also
-    # set, pip updates dependencies it thinks are already satisfied to avoid some
-    # problems with its lack of real dependency resolution.
   - bash: |
       set -e
-      python3 tools/pipstrap.py
-      python3 tools/pip_install.py -I tox virtualenv
+      python3 tools/pip_install.py tox
     displayName: Install runtime dependencies
   - task: DownloadSecureFile@1
     name: testFarmPem
@@ -49,9 +44,34 @@ steps:
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
       [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
       env
-      python3 -m tox
+      python3 -m tox run
     env:
       AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
       AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
       AWS_EC2_PEM_FILE: $(testFarmPem.secureFilePath)
     displayName: Run tox
+    # For now, let's omit `set -e` and avoid the script exiting with a nonzero
+    # status code to prevent problems here from causing build failures.  If
+    # this turns out to work well, we can change this.
+  - bash: |
+      python3 tools/pip_install.py -I coverage
+      case "$AGENT_OS" in
+        Darwin)
+          CODECOV_URL="https://uploader.codecov.io/latest/macos/codecov"
+          ;;
+        Linux)
+          CODECOV_URL="https://uploader.codecov.io/latest/linux/codecov"
+          ;;
+        Windows_NT)
+          CODECOV_URL="https://uploader.codecov.io/latest/windows/codecov.exe"
+          ;;
+        *)
+          echo "Unexpected OS"
+          exit 0
+      esac
+      curl --retry 3 -o codecov "$CODECOV_URL"
+      chmod +x codecov
+      coverage xml
+      ./codecov || echo "Uploading coverage data failed"
+    condition: and(eq(variables['uploadCoverage'], true), or(startsWith(variables['TOXENV'], 'cover'), startsWith(variables['TOXENV'], 'integration')))
+    displayName: Upload coverage data

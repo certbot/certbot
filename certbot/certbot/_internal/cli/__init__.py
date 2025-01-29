@@ -10,6 +10,7 @@ from typing import Optional
 from typing import Type
 
 import certbot
+from certbot.configuration import NamespaceConfig
 from certbot._internal import constants
 from certbot._internal.cli.cli_constants import ARGPARSE_PARAMS_TO_REMOVE
 from certbot._internal.cli.cli_constants import cli_command
@@ -20,7 +21,6 @@ from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
 from certbot._internal.cli.cli_constants import SHORT_USAGE
 from certbot._internal.cli.cli_constants import VAR_MODIFIERS
 from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
-from certbot._internal.cli.cli_utils import _Default
 from certbot._internal.cli.cli_utils import _DeployHookAction
 from certbot._internal.cli.cli_utils import _DomainsAction
 from certbot._internal.cli.cli_utils import _EncodeReasonAction
@@ -36,6 +36,7 @@ from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
 from certbot._internal.cli.cli_utils import nonnegative_int
 from certbot._internal.cli.cli_utils import parse_preferred_challenges
 from certbot._internal.cli.cli_utils import read_file
+from certbot._internal.cli.cli_utils import set_test_server_options
 from certbot._internal.cli.group_adder import _add_all_groups
 from certbot._internal.cli.helpful import HelpfulArgumentParser
 from certbot._internal.cli.paths_parser import _paths_parser
@@ -54,19 +55,19 @@ logger = logging.getLogger(__name__)
 helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
-def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[str],
-                           detect_defaults: bool = False) -> argparse.Namespace:
+def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[str]
+                           ) -> NamespaceConfig:
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
     :param list args: command line arguments with the program name removed
 
     :returns: parsed command line arguments
-    :rtype: argparse.Namespace
+    :rtype: configuration.NamespaceConfig
 
     """
 
-    helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
+    helpful = HelpfulArgumentParser(args, plugins)
     _add_all_groups(helpful)
 
     # --help is automatically provided by argparse
@@ -115,17 +116,12 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction,
         default=flag_default("domains"),
-        help="Domain names to apply. For multiple domains you can use "
-             "multiple -d flags or enter a comma separated list of domains "
-             "as a parameter. The first domain provided will be the "
-             "subject CN of the certificate, and all domains will be "
-             "Subject Alternative Names on the certificate. "
-             "The first domain will also be used in "
-             "some software user interfaces and as the file paths for the "
-             "certificate and related material unless otherwise "
-             "specified or you already have a certificate with the same "
-             "name. In the case of a name collision it will append a number "
-             "like 0001 to the file path name. (default: Ask)")
+        help="Domain names to include. For multiple domains you can use multiple -d flags "
+             "or enter a comma separated list of domains as a parameter. All domains will "
+             "be included as Subject Alternative Names on the certificate. The first domain "
+             "will be used as the certificate name, unless otherwise specified or if you "
+             "already have a certificate with the same name. In the case of a name conflict, "
+             "a number like -0001 will be appended to the certificate name. (default: Ask)")
     helpful.add(
         [None, "run", "certonly", "register"],
         "--eab-kid", dest="eab_kid",
@@ -140,10 +136,12 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     )
     helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates",
-         "renew", "enhance"], "--cert-name", dest="certname",
+         "renew", "enhance", "reconfigure"], "--cert-name", dest="certname",
         metavar="CERTNAME", default=flag_default("certname"),
         help="Certificate name to apply. This name is used by Certbot for housekeeping "
              "and in file paths; it doesn't affect the content of the certificate itself. "
+             "Certificate name cannot contain filepath separators (i.e. '/' or '\\', depending "
+             "on the platform). "
              "To see certificate names, run 'certbot certificates'. "
              "When creating a new certificate, specifies the new certificate's name. "
              "(default: the first provided domain or the name of an existing "
@@ -152,16 +150,24 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
         default=flag_default("dry_run"),
-        help="Perform a test run of the client, obtaining test (invalid) certificates"
-             " but not saving them to disk. This can currently only be used"
-             " with the 'certonly' and 'renew' subcommands. \nNote: Although --dry-run"
-             " tries to avoid making any persistent changes on a system, it "
-             " is not completely side-effect free: if used with webserver authenticator plugins"
-             " like apache and nginx, it makes and then reverts temporary config changes"
-             " in order to obtain test certificates, and reloads webservers to deploy and then"
-             " roll back those changes.  It also calls --pre-hook and --post-hook commands"
-             " if they are defined because they may be necessary to accurately simulate"
-             " renewal. --deploy-hook commands are not called.")
+        help="Perform a test run against the Let's Encrypt staging server, obtaining test"
+             " (invalid) certificates but not saving them to disk. This can only be used with the"
+             " 'certonly' and 'renew' subcommands. It may trigger webserver reloads to "
+             " temporarily modify & roll back configuration files."
+             " --pre-hook and --post-hook commands run by default."
+             " --deploy-hook commands do not run, unless enabled by --run-deploy-hooks."
+             " The test server may be overridden with --server.")
+    helpful.add(
+        ["testing", "renew", "certonly", "reconfigure"],
+        "--run-deploy-hooks", action="store_true", dest="run_deploy_hooks",
+        default=flag_default("run_deploy_hooks"),
+        help="When performing a test run using `--dry-run` or `reconfigure`, run any applicable"
+             " deploy hooks. This includes hooks set on the command line, saved in the"
+             " certificate's renewal configuration file, or present in the renewal-hooks directory."
+             " To exclude directory hooks, use --no-directory-hooks. The hook(s) will only"
+             " be run if the dry run succeeds, and will use the current active certificate, not"
+             " the temporary test certificate acquired during the dry run. This flag is recommended"
+             " when modifying the deploy hook using `reconfigure`.")
     helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         default=flag_default("register_unsafely_without_email"),
@@ -262,8 +268,8 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     # overwrites server, handled in HelpfulArgumentParser.parse_args()
     helpful.add(["testing", "revoke", "run"], "--test-cert", "--staging",
         dest="staging", action="store_true", default=flag_default("staging"),
-        help="Use the staging server to obtain or revoke test (invalid) certificates; equivalent"
-             " to --server " + constants.STAGING_URI)
+        help="Use the Let's Encrypt staging server to obtain or revoke test (invalid) "
+             "certificates; equivalent to --server " + constants.STAGING_URI)
     helpful.add(
         "testing", "--debug", action="store_true", default=flag_default("debug"),
         help="Show tracebacks in case of errors")
@@ -379,31 +385,42 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         default=flag_default("issuance_timeout"),
         help=config_help("issuance_timeout"))
     helpful.add(
-        "renew", "--pre-hook",
+        ["renew", "reconfigure"], "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
+        " Unless --disable-hook-validation is used, the command’s first word"
+        " must be the absolute pathname of an executable or one found via the"
+        " PATH environment variable."
         " Intended primarily for renewal, where it can be used to temporarily"
         " shut down a webserver that might conflict with the standalone"
         " plugin. This will only be called if a certificate is actually to be"
         " obtained/renewed. When renewing several certificates that have"
         " identical pre-hooks, only the first will be executed.")
     helpful.add(
-        "renew", "--post-hook",
+        ["renew", "reconfigure"], "--post-hook",
         help="Command to be run in a shell after attempting to obtain/renew"
-        " certificates. Can be used to deploy renewed certificates, or to"
+        " certificates."
+        " Unless --disable-hook-validation is used, the command’s first word"
+        " must be the absolute pathname of an executable or one found via the"
+        " PATH environment variable."
+        " Can be used to deploy renewed certificates, or to"
         " restart any servers that were stopped by --pre-hook. This is only"
         " run if an attempt was made to obtain/renew a certificate. If"
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
-    helpful.add("renew", "--renew-hook",
+    helpful.add(["renew", "reconfigure"], "--renew-hook",
                 action=_RenewHookAction, help=argparse.SUPPRESS)
     helpful.add(
         "renew", "--no-random-sleep-on-renew", action="store_false",
         default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
         help=argparse.SUPPRESS)
     helpful.add(
-        "renew", "--deploy-hook", action=_DeployHookAction,
+        ["renew", "reconfigure"], "--deploy-hook", action=_DeployHookAction,
         help='Command to be run in a shell once for each successfully'
-        ' issued certificate. For this command, the shell variable'
+        ' issued certificate.'
+        ' Unless --disable-hook-validation is used, the command’s first word'
+        ' must be the absolute pathname of an executable or one found via the'
+        ' PATH environment variable.'
+        ' For this command, the shell variable'
         ' $RENEWED_LINEAGE will point to the config live subdirectory'
         ' (for example, "/etc/letsencrypt/live/example.com") containing'
         ' the new certificates and keys; the shell variable'
@@ -455,95 +472,16 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
-    if not detect_defaults:
-        global helpful_parser # pylint: disable=global-statement
-        helpful_parser = helpful
+    global helpful_parser # pylint: disable=global-statement
+    helpful_parser = helpful
     return helpful.parse_args()
-
-
-def set_by_cli(var: str) -> bool:
-    """
-    Return True if a particular config variable has been set by the user
-    (CLI or config file) including if the user explicitly set it to the
-    default.  Returns False if the variable was assigned a default value.
-    """
-    # We should probably never actually hit this code. But if we do,
-    # a deprecated option has logically never been set by the CLI.
-    if var in DEPRECATED_OPTIONS:
-        return False
-
-    detector = set_by_cli.detector  # type: ignore
-    if detector is None and helpful_parser is not None:
-        # Setup on first run: `detector` is a weird version of config in which
-        # the default value of every attribute is wrangled to be boolean-false
-        plugins = plugins_disco.PluginsRegistry.find_all()
-        # reconstructed_args == sys.argv[1:], or whatever was passed to main()
-        reconstructed_args = helpful_parser.args + [helpful_parser.verb]
-
-        detector = set_by_cli.detector = prepare_and_parse_args(  # type: ignore
-            plugins, reconstructed_args, detect_defaults=True)
-        # propagate plugin requests: eg --standalone modifies config.authenticator
-        detector.authenticator, detector.installer = (
-            plugin_selection.cli_plugin_requests(detector))
-
-    if not isinstance(getattr(detector, var), _Default):
-        logger.debug("Var %s=%s (set by user).", var, getattr(detector, var))
-        return True
-
-    for modifier in VAR_MODIFIERS.get(var, []):
-        if set_by_cli(modifier):
-            logger.debug("Var %s=%s (set by user).",
-                var, VAR_MODIFIERS.get(var, []))
-            return True
-
-    return False
-
-
-# static housekeeping var
-# functions attributed are not supported by mypy
-# https://github.com/python/mypy/issues/2087
-set_by_cli.detector = None  # type: ignore
-
-
-def has_default_value(option: str, value: Any) -> bool:
-    """Does option have the default value?
-
-    If the default value of option is not known, False is returned.
-
-    :param str option: configuration variable being considered
-    :param value: value of the configuration variable named option
-
-    :returns: True if option has the default value, otherwise, False
-    :rtype: bool
-
-    """
-    if helpful_parser is not None:
-        return (option in helpful_parser.defaults and
-                helpful_parser.defaults[option] == value)
-    return False
-
-
-def option_was_set(option: str, value: Any) -> bool:
-    """Was option set by the user or does it differ from the default?
-
-    :param str option: configuration variable being considered
-    :param value: value of the configuration variable named option
-
-    :returns: True if the option was set, otherwise, False
-    :rtype: bool
-
-    """
-    # If an option is deprecated, it was effectively not set by the user.
-    if option in DEPRECATED_OPTIONS:
-        return False
-    return set_by_cli(option) or not has_default_value(option, value)
 
 
 def argparse_type(variable: Any) -> Type:
     """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
     if helpful_parser is not None:
-        for action in helpful_parser.parser._actions:
+        for action in helpful_parser.actions:
             if action.type is not None and action.dest == variable:
                 return action.type
     return str

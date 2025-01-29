@@ -4,7 +4,7 @@ import pip_install
 
 
 def main():
-    pip_install.main('pip setuptools wheel'.split())
+    pip_install.pipstrap()
 
 
 if __name__ == '__main__':

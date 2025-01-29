@@ -88,7 +88,7 @@ def subscribe(email: str) -> None:
             'form_id': 'eff_supporters_library_subscribe_form'}
     logger.info('Subscribe to the EFF mailing list (email: %s).', email)
     logger.debug('Sending POST request to %s:\n%s', url, data)
-    _check_response(requests.post(url, data=data))
+    _check_response(requests.post(url, data=data, timeout=60))
 
 
 def _check_response(response: requests.Response) -> None:

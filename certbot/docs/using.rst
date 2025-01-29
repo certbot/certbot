@@ -99,7 +99,7 @@ Apache
 ------
 
 The Apache plugin currently `supports
-<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/entrypoint.py>`_
+<https://github.com/certbot/certbot/blob/main/certbot-apache/certbot_apache/_internal/entrypoint.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo, CentOS and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
@@ -206,7 +206,6 @@ use the DNS plugins on your system.
 Once installed, you can find documentation on how to use each plugin at:
 
 * `certbot-dns-cloudflare <https://certbot-dns-cloudflare.readthedocs.io>`_
-* `certbot-dns-cloudxns <https://certbot-dns-cloudxns.readthedocs.io>`_
 * `certbot-dns-digitalocean <https://certbot-dns-digitalocean.readthedocs.io>`_
 * `certbot-dns-dnsimple <https://certbot-dns-dnsimple.readthedocs.io>`_
 * `certbot-dns-dnsmadeeasy <https://certbot-dns-dnsmadeeasy.readthedocs.io>`_
@@ -323,6 +322,12 @@ DuckDNS_           Y    N    DNS Authentication for DuckDNS
 Porkbun_           Y    N    DNS Authentication for Porkbun
 Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
 dns-multi_         Y    N    DNS authentication of 100+ providers using go-acme/lego
+dns-dnsmanager_    Y    N    DNS Authentication for dnsmanager.io
+standalone-nfq_    Y    N    HTTP Authentication that works with any webserver (Linux only)
+dns-solidserver_   Y    N    DNS Authentication using SOLIDserver (EfficientIP)
+dns-stackit_       Y    N    DNS Authentication using STACKIT DNS
+dns-ionos_         Y    N    DNS Authentication using IONOS Cloud DNS
+dns-mijn-host_     Y    N    DNS Authentication using mijn.host DNS
 ================== ==== ==== ===============================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -346,6 +351,12 @@ dns-multi_         Y    N    DNS authentication of 100+ providers using go-acme/
 .. _Porkbun: https://github.com/infinityofspace/certbot_dns_porkbun
 .. _Infomaniak: https://github.com/Infomaniak/certbot-dns-infomaniak
 .. _dns-multi: https://github.com/alexzorin/certbot-dns-multi
+.. _dns-dnsmanager: https://github.com/stayallive/certbot-dns-dnsmanager
+.. _standalone-nfq: https://github.com/alexzorin/certbot-standalone-nfq
+.. _dns-solidserver: https://gitlab.com/charlyhong/certbot-dns-solidserver
+.. _dns-stackit: https://github.com/stackitcloud/certbot-dns-stackit
+.. _dns-ionos: https://github.com/ionos-cloud/certbot-dns-ionos-cloud
+.. _dns-mijn-host: https://github.com/mijnhost/certbot-dns-mijn-host
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -371,7 +382,9 @@ This returns information in the following format::
 
 ``Certificate Name`` shows the name of the certificate. Pass this name
 using the ``--cert-name`` flag to specify a particular certificate for the ``run``,
-``certonly``, ``certificates``, ``renew``, and ``delete`` commands. Example::
+``certonly``, ``certificates``, ``renew``, and ``delete`` commands. The certificate
+name cannot contain filepath separators (i.e. '/' or '\\', depending on the platform).
+Example::
 
   certbot certonly --cert-name example.com
 
@@ -456,68 +469,49 @@ replace that set entirely::
 
   certbot certonly --cert-name example.com -d example.org,www.example.org
 
+.. _using-ecdsa-keys:
 
-Using ECDSA keys
-----------------
+RSA and ECDSA keys
+------------------------
 
-As of version 1.10, Certbot supports two types of private key algorithms:
-``rsa`` and ``ecdsa``. The type of key used by Certbot can be controlled
-through the ``--key-type`` option. You can also use the ``--elliptic-curve``
-option to control the curve used in ECDSA certificates.
+Certbot supports two certificate private key algorithms: ``rsa`` and ``ecdsa``.
+
+As of version 2.0.0, Certbot defaults to ECDSA ``secp256r1`` (P-256) certificate private keys
+for all new certificates. Existing certificates will continue to renew using their existing key
+type, unless a key type change is requested.
+
+The type of key used by Certbot can be controlled through the ``--key-type`` option.
+You can use the ``--elliptic-curve`` option to control the curve used in ECDSA
+certificates and the ``--rsa-key-size`` option to control the size of RSA keys.
 
 .. warning:: If you obtain certificates using ECDSA keys, you should be careful
-   not to downgrade your Certbot installation since ECDSA keys are not
-   supported by older versions of Certbot. Downgrades like this are possible if
-   you switch from something like the snaps or pip to packages
-   provided by your operating system which often lag behind.
+   not to downgrade to a Certbot version earlier than 1.10.0 where ECDSA keys were
+   not supported. Downgrades like this are possible if you switch from something like
+   the snaps or pip to packages provided by your operating system which often lag behind.
 
-Changing existing certificates from RSA to ECDSA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Changing a certificate's key type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Unless you are aware that you need to support very old HTTPS clients that are
-not supported by most sites, you can safely just transition your site to use
-ECDSA keys instead of RSA keys. To accomplish this if you have existing
-certificates managed by Certbot, you may freely change the certificate to a new
-private key.
-
-If you want to use ECDSA keys for all certificates in the future, you can
-simply add the following line to Certbot's :ref:`configuration file <config-file>`
-
-.. code-block:: ini
-
-  key-type = ecdsa
-
-After this option is set, newly obtained certificates will use ECDSA keys. This
-includes certificates managed by Certbot that previously used RSA keys.
+not supported by most sites, you can safely transition your site to use
+ECDSA keys instead of RSA keys.
 
 If you want to change a single certificate to use ECDSA keys, you'll need to
-issue a new Certbot command setting ``--key-type ecdsa`` on the command line
-like
+create or renew a certificate while setting ``--key-type ecdsa`` on the command line:
 
 .. code-block:: shell
 
   certbot renew --key-type ecdsa --cert-name example.com --force-renewal
 
-Obtaining ECDSA certificates in addition to RSA certificates
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you want to use ECDSA keys for all certificates in the future (including renewals
+of existing certificates), you can add the following line to Certbot's
+:ref:`configuration file <config-file>`:
 
-When Certbot configures the certificates it obtains with Apache or Nginx, all
-HTTPS clients that we try to support can use certificates with ECDSA keys. If,
-however, you are aware of having a specific need to support very old TLS
-clients, you may want to obtain both ECDSA and RSA certificates for the same
-domains. Certbot can only configure Apache or Nginx to use a single
-certificate, however, you could manually configure your software to use the
-different certificates depending on your needs.
+.. code-block:: ini
 
-When obtaining both ECDSA and RSA certificates for the same domains with
-Certbot, we recommend using the ``--cert-name`` option to give your
-certificates names so that you can easily identify them. For instance, you may
-want to append "ecdsa" to the name of your ECDSA certificate by using a command
-like
+  key-type = ecdsa
 
-.. code-block:: shell
-
-  certbot certonly --key-type ecdsa --cert-name example.com-ecdsa
+which will take effect upon the next renewal of each certificate.
 
 Revoking certificates
 ---------------------
@@ -678,7 +672,54 @@ Run the following line, which will add a cron job to `/etc/crontab`:
 
 .. code-block:: shell
 
+
   SLEEPTIME=$(awk 'BEGIN{srand(); print int(rand()*(3600+1))}'); echo "0 0,12 * * * root sleep $SLEEPTIME && certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
+
+If you're sure that this command executes successfully without human
+intervention, you can add the command to ``crontab`` (since certificates
+are only renewed when they're determined to be near expiry, the command
+can run on a regular basis, like every week or every day). In that case,
+you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
+silence all output except errors.
+
+If you are manually renewing all of your certificates, the
+``--force-renewal`` flag may be helpful; it causes the expiration time of
+the certificate(s) to be ignored when considering renewal, and attempts to
+renew each and every installed certificate regardless of its age. (This
+form is not appropriate to run daily because each certificate will be
+renewed every day, which will quickly run into the certificate authority
+rate limit.)
+
+Starting with Certbot 2.7.0, certbot provides the environment variables
+`RENEWED_DOMAINS` and `FAILED_DOMAINS` to all post renewal hooks. These
+variables contain a space separated list of domains. These variables can be used
+to determine if a renewal has succeeded or failed as part of your post renewal
+hook.
+
+Note that options provided to ``certbot renew`` will apply to
+*every* certificate for which renewal is attempted; for example,
+``certbot renew --rsa-key-size 4096`` would try to replace every
+near-expiry certificate with an equivalent certificate using a 4096-bit
+RSA public key. If a certificate is successfully renewed using
+specified options, those options will be saved and used for future
+renewals of that certificate.
+
+An alternative form that provides for more fine-grained control over the
+renewal process (while renewing specified certificates one at a time),
+is ``certbot certonly`` with the complete set of subject domains of
+a specific certificate specified via `-d` flags. You may also want to
+include the ``-n`` or ``--noninteractive`` flag to prevent blocking on
+user input (which is useful when running the command from cron).
+
+``certbot certonly -n -d example.com -d www.example.com``
+
+All of the domains covered by the certificate must be specified in
+this case in order to renew and replace the old certificate rather
+than obtaining a new one; don't forget any `www.` domains! Specifying
+a subset of the domains creates a new, separate certificate containing
+only those domains, rather than replacing the original certificate.
+When run with a set of domains corresponding to an existing certificate,
+the ``certonly`` command attempts to renew that specific certificate.
 
 If you needed to stop your webserver to run Certbot, you'll want to
 add ``pre`` and ``post`` hooks to stop and start your webserver automatically.
@@ -708,6 +749,26 @@ time, Certbot will remember these options and apply them once again.
 Sometimes, you may encounter the need to change some of these options for future certificate renewals. To achieve this,
 you will need to perform the following steps:
 
+Certbot v2.3.0 and newer
+~~~~~~~~~~~~~~~~~~~~~~~~
+The ``certbot reconfigure`` command can be used to change a certificate's renewal options.
+This command will use the new renewal options to perform a test renewal against the Let's Encrypt staging server.
+If this is successful, the new renewal options will be saved and will apply to future renewals.
+
+You will need to specify the ``--cert-name``, which can be found by running ``certbot certificates``.
+
+A list of common options that may be updated with the ``reconfigure`` command can be found by running
+``certbot help reconfigure``.
+
+As a practical example, if you were using the ``webroot`` authenticator and had relocated your website to another directory,
+you can change the ``--webroot-path`` to the new directory using the following command:
+
+.. code-block:: shell
+
+  certbot reconfigure --cert-name example.com --webroot-path /path/to/new/location
+
+Certbot v2.2.0 and older
+~~~~~~~~~~~~~~~~~~~~~~~~
 1. Perform a *dry run renewal* with the amended options on the command line. This allows you to confirm that the change
    is valid and will result in successful future renewals.
 2. If the dry run is successful, perform a *live renewal* of the certificate. This will persist the change for future
@@ -887,10 +948,6 @@ For servers that drop root privileges before attempting to read the
 private key file, you will also need to use ``chgrp`` and ``chmod
 0640`` to allow the server to read
 ``/etc/letsencrypt/live/$domain/privkey.pem``.
-
-.. note:: ``/etc/letsencrypt/archive`` and ``/etc/letsencrypt/keys``
-   contain all previous keys and certificates, while
-   ``/etc/letsencrypt/live`` symlinks to the latest versions.
 
 The following files are available:
 
@@ -1080,19 +1137,19 @@ ACME directory. For example, if you would like to use Let's Encrypt's
 staging server, you would add ``--server
 https://acme-staging-v02.api.letsencrypt.org/directory`` to the command line.
 
+.. note:: ``--dry-run`` uses the Let's Encrypt staging server, unless ``--server``
+   is specified on the CLI or in the :ref:`cli.ini configuration file <config-file>`.
+   Take caution when using ``--dry-run`` with a custom server, as it may cause real
+   certificates to be issued and discarded.
+
 If Certbot does not trust the SSL certificate used by the ACME server, you
 can use the `REQUESTS_CA_BUNDLE
 <https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification>`_
 environment variable to override the root certificates trusted by Certbot. Certbot
 uses the ``requests`` library, which does not use the operating system trusted root store.
+Make sure that ``REQUESTS_CA_BUNDLE`` is set globally in the environment and not only on
+the CLI, or scheduled renewal will not succeed.
 
-If you use ``--server`` to specify an ACME CA that implements the standardized
-version of the spec, you may be able to obtain a certificate for a
-wildcard domain. Some CAs (such as Let's Encrypt) require that domain
-validation for wildcard domains must be done through modifications to
-DNS records which means that the dns-01_ challenge type must be used. To
-see a list of Certbot plugins that support this challenge type and how
-to use them, see plugins_.
 
 Lock Files
 ==========

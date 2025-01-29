@@ -13,7 +13,7 @@ set -euo pipefail
 # If this script wasn't given a command line argument, print usage and exit.
 if [ -z ${1+x} ]; then
     echo "Usage:" >&2
-    echo "$0 PYPROJECT_TOML_DIRECTORY" >&2
+    echo "$0 PYPROJECT_TOML_DIRECTORY [POETRY_ARGS]" >&2
     exit 1
 fi
 
@@ -37,7 +37,14 @@ if [ -f poetry.lock ]; then
     rm poetry.lock
 fi
 
-poetry lock >&2
+echo "If this takes more than a few minutes, you can try running this script again" >&2
+echo "with arguments for poetry like -vvv on the command line to help see where" >&2
+echo "poetry is getting stuck." >&2
+extra_args="${*:2}"
+# If you're running this with different Python versions (say to update both our
+# "current" and "oldest" pinnings), poetry's cache can become corrupted causing
+# poetry to hang indefinitely. --no-cache avoids this.
+poetry lock --no-cache ${extra_args:+"$extra_args"} >&2
 trap 'rm poetry.lock' EXIT
 
 # We need to remove local packages from the output.

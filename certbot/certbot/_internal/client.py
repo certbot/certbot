@@ -2,24 +2,23 @@
 import datetime
 import logging
 import platform
-from typing import cast
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Dict
 from typing import IO
 from typing import List
 from typing import Optional
 from typing import Tuple
-import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 import josepy as jose
-import OpenSSL
 from josepy import ES256
 from josepy import ES384
 from josepy import ES512
 from josepy import RS256
+import OpenSSL
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -70,16 +69,8 @@ def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-
-        client = acme_client.BackwardsCompatibleClientV2(net, key, config.server)
-        if client.acme_version == 1:
-            logger.warning(
-                "Certbot is configured to use an ACMEv1 server (%s). ACMEv1 support is deprecated"
-                " and will soon be removed. See https://community.letsencrypt.org/t/143839 for "
-                "more information.", config.server)
-        return cast(acme_client.ClientV2, client)
+    directory = acme_client.ClientV2.get_directory(config.server, net)
+    return acme_client.ClientV2(directory, net)
 
 
 def determine_user_agent(config: configuration.NamespaceConfig) -> str:
@@ -256,18 +247,13 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
                    " Please use --eab-kid and --eab-hmac-key.")
             raise errors.Error(msg)
 
+    tos = acme.directory.meta.terms_of_service
+    if tos_cb and tos:
+        tos_cb(tos)
+
     try:
-        newreg = messages.NewRegistration.from_data(
-            email=config.email, external_account_binding=eab)
-        # Until ACME v1 support is removed from Certbot, we actually need the provided
-        # ACME client to be a wrapper of type BackwardsCompatibleClientV2.
-        # TODO: Remove this cast and rewrite the logic when the client is actually a ClientV2
-        try:
-            return cast(acme_client.BackwardsCompatibleClientV2,
-                        acme).new_account_and_tos(newreg, tos_cb)
-        except AttributeError:
-            raise errors.Error("The ACME client must be an instance of "
-                               "acme.client.BackwardsCompatibleClientV2")
+        return acme.new_account(messages.NewRegistration.from_data(
+                email=config.email, terms_of_service_agreed=True, external_account_binding=eab))
     except messages.Error as e:
         if e.code in ("invalidEmail", "invalidContact"):
             if config.noninteractive_mode:
@@ -291,8 +277,8 @@ class Client:
     :ivar .Authenticator auth: Prepared (`.Authenticator.prepare`)
         authenticator that can solve ACME challenges.
     :ivar .Installer installer: Installer.
-    :ivar acme.client.BackwardsCompatibleClientV2 acme: Optional ACME
-        client API handle. You might already have one from `register`.
+    :ivar acme.client.ClientV2 acme: Optional ACME client API handle. You might
+        already have one from `register`.
 
     """
 
@@ -430,13 +416,13 @@ class Client:
         else:
             key = key or crypto_util.generate_key(
                 key_size=key_size,
-                key_dir=self.config.key_dir,
+                key_dir=None,
                 key_type=self.config.key_type,
                 elliptic_curve=elliptic_curve,
                 strict_permissions=self.config.strict_permissions,
             )
-            csr = crypto_util.generate_csr(key, domains, self.config.csr_dir,
-                                           self.config.must_staple, self.config.strict_permissions)
+            csr = crypto_util.generate_csr(
+                key, domains, None, self.config.must_staple, self.config.strict_permissions)
 
         try:
             orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
@@ -447,7 +433,7 @@ class Client:
             if self.config.allow_subset_of_names:
                 successful_domains = self._successful_domains_from_error(error, domains)
                 if successful_domains != domains and len(successful_domains) != 0:
-                    return self._retry_obtain_certificate(key, csr, domains, successful_domains)
+                    return self._retry_obtain_certificate(domains, successful_domains)
             raise
         authzr = orderr.authorizations
         auth_domains = {a.body.identifier.value for a in authzr}
@@ -459,7 +445,7 @@ class Client:
         # domains contains a wildcard because the ACME spec forbids identifiers
         # in authzs from containing a wildcard character.
         if self.config.allow_subset_of_names and successful_domains != domains:
-            return self._retry_obtain_certificate(key, csr, domains, successful_domains)
+            return self._retry_obtain_certificate(domains, successful_domains)
         else:
             try:
                 cert, chain = self.obtain_certificate_from_csr(csr, orderr)
@@ -471,7 +457,7 @@ class Client:
                 if self.config.allow_subset_of_names:
                     successful_domains = self._successful_domains_from_error(error, domains)
                     if successful_domains != domains and len(successful_domains) != 0:
-                        return self._retry_obtain_certificate(key, csr, domains, successful_domains)
+                        return self._retry_obtain_certificate(domains, successful_domains)
                 raise
 
     def _get_order_and_authorizations(self, csr_pem: bytes,
@@ -527,6 +513,7 @@ class Client:
             referred to the enrolled cert lineage, or None if doing a successful dry run.
 
         """
+        new_name = self._choose_lineagename(domains, certname)
         cert, chain, key, _ = self.obtain_certificate(domains)
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
@@ -534,8 +521,6 @@ class Client:
             logger.info(
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
-
-        new_name = self._choose_lineagename(domains, certname)
 
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s", new_name)
@@ -554,16 +539,12 @@ class Client:
             return successful_domains
         return []
 
-    def _retry_obtain_certificate(self, key: util.Key,
-                                csr: util.CSR, domains: List[str], successful_domains: List[str]
+    def _retry_obtain_certificate(self, domains: List[str], successful_domains: List[str]
                                 ) -> Tuple[bytes, bytes, util.Key, util.CSR]:
         failed_domains = [d for d in domains if d not in successful_domains]
         domains_list = ", ".join(failed_domains)
         display_util.notify("Unable to obtain a certificate with every requested "
             f"domain. Retrying without: {domains_list}")
-        if not self.config.dry_run:
-            os.remove(key.file)
-            os.remove(csr.file)
         return self.obtain_certificate(successful_domains)
 
     def _choose_lineagename(self, domains: List[str], certname: Optional[str]) -> str:
@@ -577,13 +558,41 @@ class Client:
         :returns: lineage name that should be used
         :rtype: str
 
+        :raises errors.Error: If the chosen lineage name is invalid.
+
         """
+        # Remember chosen name for new lineage
+        lineagename = None
         if certname:
-            return certname
+            lineagename = certname
         elif util.is_wildcard_domain(domains[0]):
             # Don't make files and directories starting with *.
-            return domains[0][2:]
-        return domains[0]
+            lineagename = domains[0][2:]
+        else:
+            lineagename = domains[0]
+        # Verify whether chosen lineage is valid
+        if self._is_valid_lineagename(lineagename):
+            return lineagename
+        else:
+            raise errors.Error(
+                "The provided certname cannot be used as a lineage name because it contains "
+                "an illegal character (i.e. filepath separator)." if certname else
+                "Cannot use domain name as lineage name because it contains an illegal "
+                "character (i.e. filepath separator). Specify an explicit lineage name "
+                "with --cert-name.")
+
+    def _is_valid_lineagename(self, name: str) -> bool:
+        """Determines whether the provided name is a valid lineagename. A lineagename
+        is invalid when it contains filepath separators.
+
+        :param name: the lineage name to determine validity for
+        :type name: `str`
+
+        :returns: Whether the provided string constitutes a valid lineage name.
+        :rtype: bool
+
+        """
+        return os.path.sep not in name
 
     def save_certificate(self, cert_pem: bytes, chain_pem: bytes,
                          cert_path: str, chain_path: str, fullchain_path: str
@@ -606,15 +615,16 @@ class Client:
         for path in cert_path, chain_path, fullchain_path:
             util.make_or_verify_dir(os.path.dirname(path), 0o755, self.config.strict_permissions)
 
-        cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
+        cert_file, abs_cert_path = _open_pem_file(self.config, 'cert_path', cert_path)
 
         try:
             cert_file.write(cert_pem)
         finally:
             cert_file.close()
 
-        chain_file, abs_chain_path = _open_pem_file('chain_path', chain_path)
-        fullchain_file, abs_fullchain_path = _open_pem_file('fullchain_path', fullchain_path)
+        chain_file, abs_chain_path = _open_pem_file(self.config, 'chain_path', chain_path)
+        fullchain_file, abs_fullchain_path = _open_pem_file(
+            self.config, 'fullchain_path', fullchain_path)
 
         _save_chain(chain_pem, chain_file)
         _save_chain(cert_pem + chain_pem, fullchain_file)
@@ -838,7 +848,8 @@ def rollback(default_installer: str, checkpoints: int,
         installer.restart()
 
 
-def _open_pem_file(cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
+def _open_pem_file(config: configuration.NamespaceConfig,
+                   cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
     """Open a pem file.
 
     If cli_arg_path was set by the client, open that.
@@ -850,7 +861,7 @@ def _open_pem_file(cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
     :returns: a tuple of file object and its absolute file path
 
     """
-    if cli.set_by_cli(cli_arg_path):
+    if config.set_by_user(cli_arg_path):
         return util.safe_open(pem_path, chmod=0o644, mode="wb"),\
             os.path.abspath(pem_path)
     uniq = util.unique_file(pem_path, 0o644, "wb")

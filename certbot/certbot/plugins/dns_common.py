@@ -25,6 +25,10 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
+# As of writing this, the only one of our plugins that does not inherit from this class (either
+# directly or indirectly through certbot.plugins.dns_common_lexicon.LexiconDNSAuthenticator) is
+# certbot-dns-route53. If you are attempting to make changes to all of our DNS plugins, please keep
+# this difference in mind.
 class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.ABCMeta):
     """Base class for DNS Authenticators"""
 
@@ -272,8 +276,18 @@ class CredentialsConfiguration:
         try:
             self.confobj = configobj.ConfigObj(filename)
         except configobj.ConfigObjError as e:
-            logger.debug("Error parsing credentials configuration: %s", e, exc_info=True)
-            raise errors.PluginError("Error parsing credentials configuration: {0}".format(e))
+            logger.debug(
+                "Error parsing credentials configuration '%s': %s",
+                filename,
+                e,
+                exc_info=True
+            )
+            raise errors.PluginError(
+                "Error parsing credentials configuration '{}': {}".format(
+                    filename,
+                    e
+                )
+            )
 
         self.mapper = mapper
 
@@ -302,12 +316,12 @@ class CredentialsConfiguration:
                     )
             )
 
-    def conf(self, var: str) -> str:
+    def conf(self, var: str) -> Optional[str]:
         """Find a configuration value for variable `var`, as transformed by `mapper`.
 
         :param str var: The variable to get.
-        :returns: The value of the variable.
-        :rtype: str
+        :returns: The value of the variable, if it exists.
+        :rtype: str or None
         """
 
         return self._get(var)
@@ -315,7 +329,7 @@ class CredentialsConfiguration:
     def _has(self, var: str) -> bool:
         return self.mapper(var) in self.confobj
 
-    def _get(self, var: str) -> str:
+    def _get(self, var: str) -> Optional[str]:
         return self.confobj.get(self.mapper(var))
 
 

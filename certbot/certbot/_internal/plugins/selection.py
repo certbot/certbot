@@ -65,7 +65,6 @@ def get_unprepared_installer(config: configuration.NamespaceConfig,
         return None
     installers = plugins.filter(lambda p_ep: p_ep.check_name(req_inst))
     installers.init(config)
-    installers = installers.verify((interfaces.Installer,))
     if len(installers) > 1:
         raise errors.PluginSelectionError(
             "Found multiple installers with the name %s, Certbot is unable to "
@@ -113,12 +112,12 @@ def pick_plugin(config: configuration.NamespaceConfig, default: Optional[str],
                 "https://eff.org/letsencrypt-plugins for more detail on what "
                 "the plugins do and how to use them.")
 
-        filtered = plugins.visible().ifaces(ifaces)
+        filtered = plugins.visible()
 
+    filtered = filtered.ifaces(ifaces)
     filtered.init(config)
-    verified = filtered.verify(ifaces)
-    verified.prepare()
-    prepared = verified.available()
+    filtered.prepare()
+    prepared = filtered.available()
 
     if len(prepared) > 1:
         logger.debug("Multiple candidate plugins: %s", prepared)
@@ -168,7 +167,7 @@ def choose_plugin(prepared: List[disco.PluginEntryPoint],
             return None
 
 
-noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-cloudxns",
+noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare",
                         "dns-digitalocean", "dns-dnsimple", "dns-dnsmadeeasy", "dns-gehirn",
                         "dns-google", "dns-linode", "dns-luadns", "dns-nsone", "dns-ovh",
                         "dns-rfc2136", "dns-route53", "dns-sakuracloud"]
@@ -316,8 +315,6 @@ def cli_plugin_requests(config: configuration.NamespaceConfig
         req_auth = set_configurator(req_auth, "manual")
     if config.dns_cloudflare:
         req_auth = set_configurator(req_auth, "dns-cloudflare")
-    if config.dns_cloudxns:
-        req_auth = set_configurator(req_auth, "dns-cloudxns")
     if config.dns_digitalocean:
         req_auth = set_configurator(req_auth, "dns-digitalocean")
     if config.dns_dnsimple:

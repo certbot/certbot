@@ -22,9 +22,9 @@ def _plugins_parsing(helpful: "helpful.HelpfulArgumentParser",
                 help="Name of the plugin that is both an authenticator and an installer."
                 " Should not be used together with --authenticator or --installer. "
                 "(default: Ask)")
-    helpful.add("plugins", "-a", "--authenticator", default=flag_default("authenticator"),
-                help="Authenticator plugin name.")
-    helpful.add("plugins", "-i", "--installer", default=flag_default("installer"),
+    helpful.add(["plugins", "reconfigure"], "-a", "--authenticator",
+                default=flag_default("authenticator"), help="Authenticator plugin name.")
+    helpful.add(["plugins", "reconfigure"], "-i", "--installer", default=flag_default("installer"),
                 help="Installer plugin name (also used to find domains).")
     helpful.add(["plugins", "certonly", "run", "install"],
                 "--apache", action="store_true", default=flag_default("apache"),
@@ -38,17 +38,13 @@ def _plugins_parsing(helpful: "helpful.HelpfulArgumentParser",
     helpful.add(["plugins", "certonly"], "--manual", action="store_true",
                 default=flag_default("manual"),
                 help="Provide laborious manual instructions for obtaining a certificate")
-    helpful.add(["plugins", "certonly"], "--webroot", action="store_true",
+    helpful.add(["plugins", "certonly", "reconfigure"], "--webroot", action="store_true",
                 default=flag_default("webroot"),
                 help="Obtain certificates by placing files in a webroot directory.")
     helpful.add(["plugins", "certonly"], "--dns-cloudflare", action="store_true",
                 default=flag_default("dns_cloudflare"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using Cloudflare for DNS)."))
-    helpful.add(["plugins", "certonly"], "--dns-cloudxns", action="store_true",
-                default=flag_default("dns_cloudxns"),
-                help=("Obtain certificates using a DNS TXT record (if you are "
-                     "using CloudXNS for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-digitalocean", action="store_true",
                 default=flag_default("dns_digitalocean"),
                 help=("Obtain certificates using a DNS TXT record (if you are "

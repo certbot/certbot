@@ -17,13 +17,12 @@ class IntegrationTestsContext:
         self.request = request
 
         if hasattr(request.config, 'workerinput'):  # Worker node
-            self.worker_id = request.config.workerinput['workerid']  # type: ignore[attr-defined]
-            acme_xdist = request.config.workerinput['acme_xdist']  # type: ignore[attr-defined]
+            self.worker_id = request.config.workerinput['workerid']
+            acme_xdist = request.config.workerinput['acme_xdist']
         else:  # Primary node
             self.worker_id = 'primary'
             acme_xdist = request.config.acme_xdist  # type: ignore[attr-defined]
 
-        self.acme_server = acme_xdist['acme_server']
         self.directory_url = acme_xdist['directory_url']
         self.tls_alpn_01_port = acme_xdist['https_port'][self.worker_id]
         self.http_01_port = acme_xdist['http_port'][self.worker_id]

@@ -2,6 +2,7 @@
 import logging
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Optional
 
 import dns.flags
@@ -59,7 +60,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                'RFC 2136 Dynamic Updates.'
 
     def _validate_credentials(self, credentials: CredentialsConfiguration) -> None:
-        server = credentials.conf('server')
+        server = cast(str, credentials.conf('server'))
         if not is_ipaddress(server):
             raise errors.PluginError("The configured target DNS server ({0}) is not a valid IPv4 "
                                      "or IPv6 address. A hostname is not allowed.".format(server))
@@ -89,12 +90,14 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_rfc2136_client(self) -> "_RFC2136Client":
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
-        return _RFC2136Client(self.credentials.conf('server'),
-                              int(self.credentials.conf('port') or self.PORT),
-                              self.credentials.conf('name'),
-                              self.credentials.conf('secret'),
-                              self.ALGORITHMS.get(self.credentials.conf('algorithm'),
-                                                  dns.tsig.HMAC_MD5))
+
+        return _RFC2136Client(cast(str, self.credentials.conf('server')),
+                              int(cast(str, self.credentials.conf('port')) or self.PORT),
+                              cast(str, self.credentials.conf('name')),
+                              cast(str, self.credentials.conf('secret')),
+                              self.ALGORITHMS.get(self.credentials.conf('algorithm') or '',
+                                                  dns.tsig.HMAC_MD5),
+                              (self.credentials.conf('sign_query') or '').upper() == "TRUE")
 
 
 class _RFC2136Client:
@@ -102,13 +105,15 @@ class _RFC2136Client:
     Encapsulates all communication with the target DNS server.
     """
     def __init__(self, server: str, port: int, key_name: str, key_secret: str,
-                 key_algorithm: dns.name.Name, timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
+                 key_algorithm: dns.name.Name, sign_query: bool,
+                 timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
         self.server = server
         self.port = port
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
         })
         self.algorithm = key_algorithm
+        self.sign_query = sign_query
         self._default_timeout = timeout
 
     def add_txt_record(self, record_name: str, record_content: str, record_ttl: int) -> None:
@@ -138,7 +143,7 @@ class _RFC2136Client:
         except Exception as e:
             raise errors.PluginError('Encountered error adding TXT record: {0}'
                                      .format(e))
-        rcode = response.rcode()  # type: ignore[attr-defined]
+        rcode = response.rcode()
 
         if rcode == dns.rcode.NOERROR:
             logger.debug('Successfully added TXT record %s', record_name)
@@ -173,7 +178,7 @@ class _RFC2136Client:
         except Exception as e:
             raise errors.PluginError('Encountered error deleting TXT record: {0}'
                                      .format(e))
-        rcode = response.rcode()  # type: ignore[attr-defined]
+        rcode = response.rcode()
 
         if rcode == dns.rcode.NOERROR:
             logger.debug('Successfully deleted TXT record %s', record_name)
@@ -216,8 +221,9 @@ class _RFC2136Client:
         request = dns.message.make_query(domain, dns.rdatatype.SOA, dns.rdataclass.IN)
         # Turn off Recursion Desired bit in query
         request.flags ^= dns.flags.RD
-        # Use our TSIG keyring
-        request.use_tsig(self.keyring, algorithm=self.algorithm) # type: ignore[attr-defined]
+        # Use our TSIG keyring if configured
+        if self.sign_query:
+            request.use_tsig(self.keyring, algorithm=self.algorithm)
 
         try:
             try:
@@ -225,11 +231,11 @@ class _RFC2136Client:
             except (OSError, dns.exception.Timeout) as e:
                 logger.debug('TCP query failed, fallback to UDP: %s', e)
                 response = dns.query.udp(request, self.server, self._default_timeout, self.port)
-            rcode = response.rcode()  # type: ignore[attr-defined]
+            rcode = response.rcode()
 
             # Authoritative Answer bit should be set
             if (rcode == dns.rcode.NOERROR
-                    and response.get_rrset(response.answer,  # type: ignore[attr-defined]
+                    and response.get_rrset(response.answer,
                                            domain, dns.rdataclass.IN, dns.rdatatype.SOA)
                     and response.flags & dns.flags.AA):
                 logger.debug('Received authoritative SOA response for %s', domain_name)

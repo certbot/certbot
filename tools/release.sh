@@ -19,7 +19,7 @@ CheckVersion() {
 CheckVersion "$1"
 CheckVersion "$2"
 
-if [ "$RELEASE_GPG_KEY" = "" ] && ! gpg2 --card-status >/dev/null 2>&1; then
+if [ "$RELEASE_GPG_KEY" = "" ] && ! gpg --card-status >/dev/null 2>&1; then
     echo OpenPGP card not found!
     echo Please insert your PGP card and run this script again.
     exit 1
@@ -28,6 +28,15 @@ fi
 if ! command -v script >/dev/null 2>&1; then
     echo The command script was not found.
     echo Please install it.
+    exit 1
+fi
+
+if [ -n "$SNAP_BUILD" ]; then
+    echo "Running the release script with the environment variable SNAP_BUILD"
+    echo "set will cause plugins' wheels to be built without dependencies"
+    echo "on Certbot. See https://github.com/certbot/certbot/pull/8091 for more"
+    echo "info. Please unset this environment variable and run this script"
+    echo "again."
     exit 1
 fi
 
