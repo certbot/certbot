@@ -18,7 +18,7 @@ from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
 DOMAIN = 'example.com'
-KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
+KEY = jose.jwk.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
 class AuthenticatorTest(unittest.TestCase):
@@ -52,8 +52,8 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.auth.get_chall_pref("example.org"), [challenges.DNS01])
 
     def test_perform(self):
-        self.auth._change_txt_record = mock.MagicMock()
-        self.auth._wait_for_change = mock.MagicMock()
+        self.auth._change_txt_record = mock.MagicMock() # type: ignore[method-assign, unused-ignore]
+        self.auth._wait_for_change = mock.MagicMock() # type: ignore [method-assign, unused-ignore]
 
         self.auth.perform([self.achall])
 
@@ -63,13 +63,14 @@ class AuthenticatorTest(unittest.TestCase):
         assert self.auth._wait_for_change.call_count == 1
 
     def test_perform_no_credentials_error(self):
-        self.auth._change_txt_record = mock.MagicMock(side_effect=NoCredentialsError)
+        self.auth._change_txt_record = mock.MagicMock( # type: ignore [method-assign, unused-ignore]
+            side_effect=NoCredentialsError)
 
         with pytest.raises(errors.PluginError):
             self.auth.perform([self.achall])
 
     def test_perform_client_error(self):
-        self.auth._change_txt_record = mock.MagicMock(
+        self.auth._change_txt_record = mock.MagicMock( # type: ignore [method-assign, unused-ignore]
             side_effect=ClientError({"Error": {"Code": "foo"}}, "bar"))
 
         with pytest.raises(errors.PluginError):
@@ -78,7 +79,7 @@ class AuthenticatorTest(unittest.TestCase):
     def test_cleanup(self):
         self.auth._attempt_cleanup = True
 
-        self.auth._change_txt_record = mock.MagicMock()
+        self.auth._change_txt_record = mock.MagicMock() # type: ignore[method-assign, unused-ignore]
 
         self.auth.cleanup([self.achall])
 
@@ -89,14 +90,15 @@ class AuthenticatorTest(unittest.TestCase):
     def test_cleanup_no_credentials_error(self):
         self.auth._attempt_cleanup = True
 
-        self.auth._change_txt_record = mock.MagicMock(side_effect=NoCredentialsError)
+        self.auth._change_txt_record = mock.MagicMock( # type: ignore [method-assign, unused-ignore]
+        side_effect=NoCredentialsError)
 
         self.auth.cleanup([self.achall])
 
     def test_cleanup_client_error(self):
         self.auth._attempt_cleanup = True
 
-        self.auth._change_txt_record = mock.MagicMock(
+        self.auth._change_txt_record = mock.MagicMock( # type: ignore [method-assign, unused-ignore]
             side_effect=ClientError({"Error": {"Code": "foo"}}, "bar"))
 
         self.auth.cleanup([self.achall])
@@ -209,7 +211,7 @@ class ClientTest(unittest.TestCase):
             self.client._find_zone_id_for_domain("foo.example.com")
 
     def test_change_txt_record(self):
-        self.client._find_zone_id_for_domain = mock.MagicMock()
+        self.client._find_zone_id_for_domain = mock.MagicMock() # type: ignore [method-assign, unused-ignore]
         self.client.r53.change_resource_record_sets = mock.MagicMock(
             return_value={"ChangeInfo": {"Id": 1}})
 
@@ -219,7 +221,7 @@ class ClientTest(unittest.TestCase):
         assert call_count == 1
 
     def test_change_txt_record_delete(self):
-        self.client._find_zone_id_for_domain = mock.MagicMock()
+        self.client._find_zone_id_for_domain = mock.MagicMock() # type: ignore[ method-assign, unused-ignore]
         self.client.r53.change_resource_record_sets = mock.MagicMock(
             return_value={"ChangeInfo": {"Id": 1}})
 
@@ -238,8 +240,7 @@ class ClientTest(unittest.TestCase):
             [validation_record]
 
     def test_change_txt_record_multirecord(self):
-        self.client._find_zone_id_for_domain = mock.MagicMock()
-        self.client._get_validation_rrset = mock.MagicMock()
+        self.client._find_zone_id_for_domain = mock.MagicMock() # type: ignore [method-assign, unused-ignore]
         self.client._resource_records[DOMAIN] = [
             {"Value": "\"pre-existing-value\""},
             {"Value": "\"pre-existing-value-two\""},
@@ -263,7 +264,7 @@ class ClientTest(unittest.TestCase):
             side_effect=[{"ChangeInfo": {"Status": "PENDING"}},
                          {"ChangeInfo": {"Status": "INSYNC"}}])
 
-        self.client._wait_for_change(1)
+        self.client._wait_for_change("1")
 
         assert self.client.r53.get_change.called
 
