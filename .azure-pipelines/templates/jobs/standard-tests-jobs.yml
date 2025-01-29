@@ -1,7 +1,7 @@
 jobs:
   - job: test
     variables:
-      PYTHON_VERSION: 3.12
+      PYTHON_VERSION: 3.13
     strategy:
       matrix:
         macos-cover:

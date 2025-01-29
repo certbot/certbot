@@ -36,7 +36,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-*
+* Support for Python 3.13 was added.
 
 ### Changed
 
