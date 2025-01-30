@@ -357,7 +357,7 @@ class Client:
         `.register` must be called before `.obtain_certificate`
 
         :param list domains: domains to get a certificate
-        :param str ari_hint: draft-ieft-ari-03 identifier for cert replaced
+        :param str ari_hint: draft-ietf-acme-ari identifier for cert replaced
 
         :returns: certificate as PEM string, chain as PEM string,
             newly generated private key (`.util.Key`), and DER-encoded

@@ -1053,7 +1053,7 @@ class RenewableCert(interfaces.RenewableCert):
                 "cert", self.latest_common_version()))
             now = datetime.datetime.now(pytz.UTC)
 
-            # Try draft-ietf-acme-ari-03 endpoint if server has it
+            # Try draft-ietf-acme-ari endpoint if server has it
             hasari, start, end = self.get_renewalinfo(self.latest_common_version(),
                                                        verify_ssl, useragent)
             if hasari:

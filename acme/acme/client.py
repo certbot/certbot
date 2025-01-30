@@ -120,7 +120,7 @@ class ClientV2:
             with ari_hint give it will try but if it failes will try without one
 
         :param bytes csr_pem: A CSR in PEM format.
-        :param str ari_hint:  draft-ieft-ari-03 format certificate identifier 
+        :param str ari_hint:  draft-ietf-acme-ari format certificate identifier 
                     of old cert to be replaced by this.
 
         :returns: The newly created order.

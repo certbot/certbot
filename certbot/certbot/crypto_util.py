@@ -526,7 +526,7 @@ def notAfter(cert_path: str) -> datetime.datetime:
     return cert.not_valid_after_utc
 
 def ariCertIdent(cert_path: str) -> str:
-    """Make draft-ietf-acme-ari-03 identifier of a certificate
+    """Make draft-ietf-acme-ari identifier of a certificate
     :param str cert_path: path to a cert in PEM format
 
     :returns: unique identifier of the cert at cert_path to be used for ari related uses

@@ -582,7 +582,7 @@ def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X50
     return b"".join(_dump_cert(cert) for cert in chain)
 
 def ariCertIdent(crypto_cert: x509.Certificate) -> str:
-    """Make draft-ietf-acme-ari-03 identifier of a certificate
+    """Make draft-ietf-acme-ari identifier of a certificate
     :param cert: Certificate.
     :type cert: `OpenSSL.crypto.X509`.
 

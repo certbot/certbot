@@ -681,7 +681,7 @@ class OrderResource(ResourceWithURI):
 
 class NewOrder(Order):
     """New order.
-    :ivar: replaces: draft-ieft-ari-03 certificate identifier string
+    :ivar: replaces: draft-ietf-acme-ari certificate identifier string
     :vartype: str
     """
     replaces: str = jose.field("replaces", omitempty= True)
