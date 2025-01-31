@@ -1,0 +1,43 @@
+name: Bug Report
+description: File a bug report.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    attributes:
+      label: Environment
+      description: |
+        examples:
+          - **OS**: Ubuntu
+          - **Version** 22.04
+          - **Install Type**: (snap, OS package manager, pip, certbot-auto, etc)
+      value: |
+        - OS:
+        - Version:
+        - Install Type:
+    render: markdown
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: I ran this command and it produced this output.
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected?
+      description: Certbot's behavior differed from what I expected because.
+      placeholder: "What was expected?"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Here is a Certbot log showing the issue (if available). Logs are stored in `/var/log/letsencrypt` by default. Feel free to redact domains, e-mail and IP addresses as you see fit.
+    render: shell
