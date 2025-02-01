@@ -41,7 +41,7 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: Expected?
+      label: Expected behavior
       description: Certbot's behavior differed from what I expected because.
       placeholder: "What was expected?"
     validations:
