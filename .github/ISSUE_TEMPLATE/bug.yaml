@@ -11,7 +11,7 @@ body:
     attributes:
       label: Environment
       description: |
-        examples:
+        Describe your environment. Examples:
           - **OS**: Ubuntu
           - **Version** 22.04
           - **Install Type**: (snap, OS package manager, pip, certbot-auto, etc)
