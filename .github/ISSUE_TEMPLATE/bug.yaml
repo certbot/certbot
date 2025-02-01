@@ -7,19 +7,30 @@ body:
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report!
-  - type: textarea
+  - type: input
     attributes:
-      label: Environment
+      label: OS
       description: |
         Describe your environment. Examples:
           - **OS**: Ubuntu
           - **Version** 22.04
           - **Install Type**: (snap, OS package manager, pip, certbot-auto, etc)
       value: |
-        - OS:
-        - Version:
-        - Install Type:
-    render: markdown
+        OS:
+      render: markdown
+  - type: input
+    attributes:
+      label: Installation method
+      description: |
+        How did you install Certbot? Example:
+          - **Installation method**: snap
+      placeholder: snap
+  - type: input
+    attributes:
+      label: Certbot Version
+      description: |
+        If you're not sure, you can find this by running `certbot --version`.
+      placeholder: 1.0.0
   - type: textarea
     id: what-happened
     attributes:
