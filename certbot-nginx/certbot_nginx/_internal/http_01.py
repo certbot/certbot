@@ -77,11 +77,11 @@ class NginxHttp01(common.ChallengePerformer):
         """
         included = False
         include_directive = ['\n', 'include', ' ', self.challenge_conf]
-        root = self.configurator.parser.config_root
+        http_path = self.configurator.parser.http_path
 
         bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
 
-        main = self.configurator.parser.parsed[root]
+        main = self.configurator.parser.parsed[http_path]
         # insert include directive
         for line in main:
             if line[0] == ['http']:
@@ -126,6 +126,7 @@ class NginxHttp01(common.ChallengePerformer):
                     body.insert(0, bucket_directive)
                     break
 
+        root = self.configurator.parser.config_root
         if not included:
             raise errors.MisconfigurationError(
                 'Certbot could not find a block to include '
