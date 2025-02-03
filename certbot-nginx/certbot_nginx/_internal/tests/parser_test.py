@@ -99,7 +99,7 @@ class NginxParserTest(util.NginxTest):
                                         ['listen', '127.0.0.1'],
                                         ['server_name', '.example.com'],
                                         ['server_name', 'example.*']]]] == \
-                         parsed[0]
+                         parsed[nparser.abs_path('sites-enabled/example.com.test')]
 
     def test__do_for_subarray(self):
         # pylint: disable=protected-access
@@ -490,8 +490,8 @@ class NginxParserTest(util.NginxTest):
         nparser = parser.NginxParser(self.config_path)
         path = nparser.abs_path('valid_unicode_comments.conf')
         parsed = nparser._parse_files(path)  # pylint: disable=protected-access
-        assert ['server'] == parsed[0][2][0]
-        assert ['listen', '80'] == parsed[0][2][1][3]
+        assert ['server'] == parsed[path][2][0]
+        assert ['listen', '80'] == parsed[path][2][1][3]
 
     def test_valid_unicode_roundtrip(self):
         """This tests the parser's ability to load and save a config containing Unicode"""
@@ -507,7 +507,7 @@ class NginxParserTest(util.NginxTest):
             path = nparser.abs_path('invalid_unicode_comments.conf')
             parsed = nparser._parse_files(path)  # pylint: disable=protected-access
 
-        assert [] == parsed
+        assert {} == parsed
         assert any(
             ('invalid character' in output) and ('UTF-8' in output)
             for output in log.output

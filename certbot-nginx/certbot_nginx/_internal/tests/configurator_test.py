@@ -134,7 +134,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['server_name', 'example.*'],
                             ['listen', '5001', 'ssl'],
                             ['#', parser.COMMENT]]]] == \
-                         parsed[0]
+                         parsed[filep]
 
     def test_choose_vhosts_alias(self):
         self._test_choose_vhosts_common('alias', 'server_conf')
