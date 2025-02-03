@@ -18,6 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Add `make_self_signed_cert` to `acme.crypto_util` to replace `gen_ss_cert.
 * Directory hooks are now run on all commands by default, not just `renew`
 * Help output now shows `False` as default when it can be set via `cli.ini` instead of `None`
+* Changed terms of service agreement text to have a newline after the TOS link
 
 ### Fixed
 
