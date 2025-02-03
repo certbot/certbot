@@ -74,6 +74,15 @@ class NginxParserTest(util.NginxTest):
                          nparser.parsed[nparser.abs_path(
                              'sites-enabled/example.com')]
 
+    def test_included_load(self):
+        # Test for when the root file doesn't have http in it
+        nparser = parser.NginxParser(self.config_path)
+        nparser.config_root = os.path.join(self.config_path, "nginx-include.conf")
+        nparser.load()
+        assert len(nparser.parsed) > 1
+        assert len(nparser.parsed[nparser.config_root]) == 4
+        assert os.path.join(self.config_path, "nginx.conf") in nparser.parsed
+
     def test_abs_path(self):
         nparser = parser.NginxParser(self.config_path)
         if os.name != 'nt':
