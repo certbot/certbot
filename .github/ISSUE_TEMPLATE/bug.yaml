@@ -12,8 +12,7 @@ body:
       label: OS
       description: |
         Describe your Operating System. Examples: Ubuntu 18.04, CentOS 8 Stream
-      value: |
-        OS:
+      placeholder: Ubuntu 24.04
   - type: input
     attributes:
       label: Installation method
