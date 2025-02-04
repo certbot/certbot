@@ -11,8 +11,7 @@ body:
     attributes:
       label: OS
       description: |
-        Describe your Operating System. Example:
-          - **OS**: Ubuntu 18.04
+        Describe your Operating System. Examples: Ubuntu 18.04, CentOS 8 Stream
       value: |
         OS:
   - type: input
