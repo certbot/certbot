@@ -17,8 +17,7 @@ body:
     attributes:
       label: Installation method
       description: |
-        How did you install Certbot? Example:
-          - **Installation method**: snap
+        How did you install Certbot? Examples: snap, pip, apt, yum
       placeholder: snap
   - type: input
     attributes:
