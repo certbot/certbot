@@ -21,6 +21,8 @@ body:
       description: |
         How did you install Certbot? Examples: snap, pip, apt, yum
       placeholder: snap
+    validations:
+      required: true
   - type: input
     attributes:
       label: Certbot Version
