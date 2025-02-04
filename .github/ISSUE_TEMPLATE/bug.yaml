@@ -25,6 +25,8 @@ body:
       description: |
         If you're not sure, you can find this by running `certbot --version`.
       placeholder: 1.0.0
+    validations:
+      required: true
   - type: textarea
     id: what-happened
     attributes:
