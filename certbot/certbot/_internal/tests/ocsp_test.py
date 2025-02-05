@@ -6,14 +6,12 @@ from datetime import timedelta
 import sys
 import unittest
 from unittest import mock
-import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
-from cryptography.utils import CryptographyDeprecationWarning
 from cryptography.x509 import ocsp as ocsp_lib
 import pytest
 import pytz
@@ -286,25 +284,6 @@ class OSCPTestCryptography(unittest.TestCase):
                     revoked = self.checker.ocsp_revoked(self.cert_obj)
         assert revoked is False
 
-    def test_this_update_warning(self):
-        with _ocsp_mock(ocsp_lib.OCSPCertStatus.GOOD,
-                        ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
-            value = mocks['mock_response'].return_value.this_update
-
-            def warn_first():
-                msg = ('Properties that return a naïve datetime object have been deprecated. Please '
-                       'switch to this_update_utc.')
-                warnings.warn(msg, CryptographyDeprecationWarning)
-                return value
-
-            property_mock = mock.PropertyMock(side_effect=warn_first)
-            # Using type() in this way is recommended in mock's documentation at
-            # https://docs.python.org/3/library/unittest.mock.html#unittest.mock.PropertyMock
-            type(mocks['mock_response'].return_value).this_update = property_mock
-
-            revoked = self.checker.ocsp_revoked(self.cert_obj)
-        assert revoked is False
-
 
 @contextlib.contextmanager
 def _ocsp_mock(certificate_status, response_status,
@@ -345,8 +324,8 @@ def _construct_mock_ocsp_response(certificate_status, response_status):
         responder_name=responder.subject,
         certificates=[responder],
         hash_algorithm=hashes.SHA1(),
-        next_update=datetime.now(pytz.UTC).replace(tzinfo=None) + timedelta(days=1),
-        this_update=datetime.now(pytz.UTC).replace(tzinfo=None) - timedelta(days=1),
+        next_update_utc=datetime.now(pytz.UTC) + timedelta(days=1),
+        this_update_utc=datetime.now(pytz.UTC) - timedelta(days=1),
         signature_algorithm_oid=x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA1,
     )
 
