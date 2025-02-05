@@ -1,5 +1,5 @@
 """Tests for certbot_dns_google._internal.dns_google."""
-
+from __future__ import annotations
 import sys
 from typing import Optional
 from typing import Tuple
