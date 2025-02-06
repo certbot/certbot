@@ -19,6 +19,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Directory hooks are now run on all commands by default, not just `renew`
 * Help output now shows `False` as default when it can be set via `cli.ini` instead of `None`
 * Changed terms of service agreement text to have a newline after the TOS link
+* certbot-cloudflare-dns is now pinned to version 2.19 of Cloudflare's python library
 
 ### Fixed
 

@@ -9,7 +9,7 @@ version = '3.2.0.dev0'
 install_requires = [
     # for now, do not upgrade to cloudflare>=2.20 to avoid deprecation warnings and the breaking
     # changes in version 3.0. see https://github.com/certbot/certbot/issues/9938
-    'cloudflare>=1.5.1, <2.20',
+    'cloudflare>=2.19, <2.20',
 ]
 
 if os.environ.get('SNAP_BUILD'):
