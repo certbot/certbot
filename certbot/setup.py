@@ -35,7 +35,7 @@ install_requires = [
     'importlib_metadata>=4.6; python_version < "3.10"',
     # Josepy 2+ introduced backward incompatible changes by droping usage of
     # deprecated PyOpenSSL APIs.
-    'josepy>=2',
+    'josepy>=2.0.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz>=2019.3',
