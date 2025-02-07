@@ -1801,23 +1801,16 @@ class MainTest(test_util.ConfigTestCase):
             mock_delete_if_appropriate):
         mock_delete_if_appropriate.return_value = False
         server = 'foo.bar'
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                'ignore',
-                message='certbot.crypto_util.pyopenssl_load_certificate is *'
-            )
-            self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
-                                     '--server', server, 'revoke'])
-            with open(RSA2048_KEY_PATH, 'rb') as f:
-                assert mock_acme_client.ClientV2.call_count == 1
-                assert mock_acme_client.ClientNetwork.call_args[0][0] == \
-                                 jose.JWK.load(f.read())
-            with open(SS_CERT_PATH, 'rb') as f:
-                cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
-                mock_revoke = mock_acme_client.ClientV2().revoke
-                mock_revoke.assert_called_once_with(
-                        jose.ComparableX509(cert),
-                        mock.ANY)
+        self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
+                                 '--server', server, 'revoke'])
+        with open(RSA2048_KEY_PATH, 'rb') as f:
+            assert mock_acme_client.ClientV2.call_count == 1
+            assert mock_acme_client.ClientNetwork.call_args[0][0] == \
+                             jose.JWK.load(f.read())
+        with open(SS_CERT_PATH, 'rb') as f:
+            cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+            mock_revoke = mock_acme_client.ClientV2().revoke
+            mock_revoke.assert_called_once_with(cert, mock.ANY)
 
     def test_revoke_with_key_mismatch(self):
         server = 'foo.bar'
@@ -1831,18 +1824,11 @@ class MainTest(test_util.ConfigTestCase):
             mock_delete_if_appropriate):
         mock_delete_if_appropriate.return_value = False
         mock_determine_account.return_value = (mock.MagicMock(), None)
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                'ignore',
-                message='certbot.crypto_util.pyopenssl_load_certificate is *'
-            )
-            _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
-            with open(CERT) as f:
-                cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
-                mock_revoke = client.acme_from_config_key().revoke
-                mock_revoke.assert_called_once_with(
-                        jose.ComparableX509(cert),
-                        mock.ANY)
+        _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
+        with open(CERT) as f:
+            cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+            mock_revoke = client.acme_from_config_key().revoke
+            mock_revoke.assert_called_once_with(cert, mock.ANY)
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_register(self, _):

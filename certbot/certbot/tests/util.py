@@ -121,11 +121,6 @@ def load_csr(*names: str) -> crypto.X509Req:
     return crypto.load_certificate_request(loader, load_vector(*names))
 
 
-def load_comparable_csr(*names: str) -> jose.ComparableX509:
-    """Load ComparableX509 certificate request."""
-    return jose.ComparableX509(load_csr(*names))
-
-
 def load_jose_rsa_private_key_pem(*names: str) -> jose.ComparableRSAKey:
     """Load RSA private key wrapped in jose.ComparableRSAKey"""
     return jose.ComparableRSAKey(load_rsa_private_key_pem(*names))

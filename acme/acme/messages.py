@@ -596,10 +596,7 @@ class CertificateResource(ResourceWithURI):
     :ivar tuple authzrs: `tuple` of `AuthorizationResource`.
 
     """
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore',
-            message='The next major version of josepy will remove josepy.util.ComparableX509')
-        cert_chain_uri: str = jose.field('cert_chain_uri')
+    cert_chain_uri: str = jose.field('cert_chain_uri')
     authzrs: Tuple[AuthorizationResource, ...] = jose.field('authzrs')
 
 
