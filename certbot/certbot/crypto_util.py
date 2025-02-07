@@ -482,21 +482,6 @@ def get_names_from_req(
     )
 
 
-def dump_pyopenssl_chain(
-    chain: Union[List[crypto.X509], List[josepy.ComparableX509]],
-    filetype: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM,
-) -> bytes:
-    """Dump certificate chain into a bundle.
-
-    :param list chain: List of `crypto.X509` (or wrapped in
-        :class:`josepy.util.ComparableX509`).
-
-    """
-    # XXX: returns empty string when no chain is available, which
-    # shuts up RenewableCert, but might not be the best solution...
-    return acme_crypto_util.dump_pyopenssl_chain(chain, filetype)
-
-
 def notBefore(cert_path: str) -> datetime.datetime:
     """When does the cert at cert_path start being valid?
 

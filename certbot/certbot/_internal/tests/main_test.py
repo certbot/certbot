@@ -1806,9 +1806,7 @@ class MainTest(test_util.ConfigTestCase):
         with open(SS_CERT_PATH, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = mock_acme_client.ClientV2().revoke
-            mock_revoke.assert_called_once_with(
-                    jose.ComparableX509(cert),
-                    mock.ANY)
+            mock_revoke.assert_called_once_with(cert, mock.ANY)
 
     def test_revoke_with_key_mismatch(self):
         server = 'foo.bar'
@@ -1826,9 +1824,7 @@ class MainTest(test_util.ConfigTestCase):
         with open(CERT) as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = client.acme_from_config_key().revoke
-            mock_revoke.assert_called_once_with(
-                    jose.ComparableX509(cert),
-                    mock.ANY)
+            mock_revoke.assert_called_once_with(cert, mock.ANY)
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_register(self, _):

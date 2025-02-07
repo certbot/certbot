@@ -383,22 +383,5 @@ class MakeCSRTest(unittest.TestCase):
             make_csr(privkey_pem, ["a.example"])
 
 
-class DumpPyopensslChainTest(unittest.TestCase):
-    """Test for dump_pyopenssl_chain."""
-
-    @classmethod
-    def _call(cls, loaded):
-        # pylint: disable=protected-access
-        from acme.crypto_util import dump_cryptography_chain
-        return dump_cryptography_chain(loaded)
-
-    def test_dump_pyopenssl_chain(self):
-        names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
-        loaded = [test_util.load_cert(name) for name in names]
-        length = sum(
-            len(cert.public_bytes(serialization.Encoding.PEM))
-            for cert in loaded)
-        assert len(self._call(loaded)) == length
-
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
