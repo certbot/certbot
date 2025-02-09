@@ -1476,9 +1476,9 @@ class MainTest(test_util.ConfigTestCase):
                     mock_client.obtain_certificate.assert_called_once_with([mock.ANY],
                         os.path.normpath(os.path.join(
                             self.config.config_dir, "live/sample-renewal/privkey.pem")),
-                            ari_hint=mock.ANY)
+                            certid=mock.ANY)
                 else:
-                    mock_client.obtain_certificate.assert_called_once_with([mock.ANY], None, ari_hint=mock.ANY)
+                    mock_client.obtain_certificate.assert_called_once_with([mock.ANY], None, certid=mock.ANY)
             else:
                 assert mock_client.obtain_certificate.call_count == 0
         except:

@@ -351,13 +351,13 @@ class Client:
         return cert.encode(), chain.encode()
 
     def obtain_certificate(self, domains: List[str], old_keypath: Optional[str] = None,
-                           ari_hint: str = '') -> Tuple[bytes, bytes, util.Key, util.CSR]:
+                           certid: str = '') -> Tuple[bytes, bytes, util.Key, util.CSR]:
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
 
         :param list domains: domains to get a certificate
-        :param str ari_hint: draft-ietf-acme-ari identifier for cert replaced
+        :param str certid: draft-ietf-acme-ari identifier for cert replaced
 
         :returns: certificate as PEM string, chain as PEM string,
             newly generated private key (`.util.Key`), and DER-encoded
@@ -428,7 +428,7 @@ class Client:
 
         try:
             orderr = self._get_order_and_authorizations(csr.data,
-                                                        self.config.allow_subset_of_names, ari_hint)
+                                                        self.config.allow_subset_of_names, certid)
         except messages.Error as error:
             # Some domains may be rejected during order creation.
             # Certbot can retry the operation without the rejected
@@ -466,7 +466,7 @@ class Client:
 
     def _get_order_and_authorizations(self, csr_pem: bytes,
                                       best_effort: bool,
-                                      ari_hint: str = '') -> messages.OrderResource:
+                                      certid: str = '') -> messages.OrderResource:
         """Request a new order and complete its authorizations.
 
         :param bytes csr_pem: A CSR in PEM format.
@@ -480,7 +480,7 @@ class Client:
         if not self.acme:
             raise errors.Error("ACME client is not set.")
         try:
-            orderr = self.acme.new_order(csr_pem, ari_hint = ari_hint)
+            orderr = self.acme.new_order(csr_pem, certid = certid)
         except acme_errors.WildcardUnsupportedError:
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")
