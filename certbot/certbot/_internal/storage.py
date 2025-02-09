@@ -25,6 +25,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
 import pytz
+import pyrfc3339
 
 import certbot
 from certbot import configuration
@@ -121,11 +122,11 @@ def add_time_interval(base_time: datetime.datetime, interval: str,
 
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
-def parse_js_time(instr: str) -> datetime.datetime:
-    """parse JS Z ended UTC isoformat timestring because 
-    fromisoformat can't parse it until 3.11"""
+def parse_rfc3399_time(instr: str) -> datetime.datetime:
+    """try rfc3399 specific parser first, 
+    if its malformed try generic python time parser"""
     try:
-        return datetime.datetime.fromisoformat(instr)
+        return pyrfc3339.parse(instr)
     except ValueError:
         return datetime.datetime.fromisoformat(instr.replace('Z',"+00:00"))
 
@@ -1000,8 +1001,8 @@ class RenewableCert(interfaces.RenewableCert):
             endpoint = r.json()["renewalInfo"]
             r = session.get(f"{endpoint}/{suffix}", timeout = 1)
             suggestedWindow = r.json()["suggestedWindow"]
-            start = parse_js_time(suggestedWindow['start'])
-            end = parse_js_time(suggestedWindow['end'])
+            start = parse_rfc3399_time(suggestedWindow['start'])
+            end = parse_rfc3399_time(suggestedWindow['end'])
             logger.debug("Accquired renewalinfo for %s: window starts at %s",
                          self.lineagename, start.date())
             reason = getattr(r.json(), "explanationURL", None)

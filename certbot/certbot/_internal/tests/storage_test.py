@@ -780,7 +780,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_parse_js_time(self):
         ts = "2024-07-04T19:56:35Z"
         from certbot._internal import storage
-        t = storage.parse_js_time(ts)
+        t = storage.parse_rfc3399_time(ts)
         assert t == datetime.datetime(2024, 7, 4, 19, 56, 35, tzinfo=datetime.timezone.utc)
 
     def test_server(self):
