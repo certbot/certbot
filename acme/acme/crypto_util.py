@@ -392,7 +392,9 @@ def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req: Union[crypto.X509, cryp
     )
 
 
-def _cryptography_cert_or_req_san(cert_or_req: Union[x509.Certificate, x509.CertificateSigningRequest]) -> List[str]:
+def _cryptography_cert_or_req_san(
+    cert_or_req: Union[x509.Certificate, x509.CertificateSigningRequest],
+) -> List[str]:
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
 
     .. note:: Although this is `acme` internal API, it is used by
