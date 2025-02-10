@@ -373,7 +373,9 @@ def get_names_from_subject_and_extensions(
         return [cns[0]] + [d for d in dns_names if d != cns[0]]
 
 
-def _cryptography_cert_or_req_san(cert_or_req: Union[x509.Certificate, x509.CertificateSigningRequest]) -> List[str]:
+def _cryptography_cert_or_req_san(
+    cert_or_req: Union[x509.Certificate, x509.CertificateSigningRequest],
+) -> List[str]:
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
 
     .. note:: Although this is `acme` internal API, it is used by
@@ -564,12 +566,6 @@ def dump_cryptography_chain(
     Deprecated
     .. deprecated: 3.2.1
     """
-    warnings.warn(
-        "acme.crypto_util.dump_pyopenssl_chain is deprecated and "
-        "will be removed in the next major release of Certbot.",
-        DeprecationWarning,
-        stacklevel=2
-    )
     # XXX: returns empty string when no chain is available, which
     # shuts up RenewableCert, but might not be the best solution...
 

@@ -144,8 +144,8 @@ class TLSALPN01ServerTest(unittest.TestCase):
     #    cert = crypto_util.probe_sni(
     #        b'localhost', host=host, port=port, timeout=1)
     #    # Expect normal cert when connecting without ALPN.
-    #    self.assertEqual(jose.ComparableX509(cert),
-    #                     jose.ComparableX509(self.certs[b'localhost'][1]))
+    #    self.assertEqual(cert,
+    #                     self.certs[b'localhost'][1])
 
     def test_challenge_certs(self):
         host, port = self.server.socket.getsockname()[:2]
