@@ -22,6 +22,7 @@ from typing import Union
 import unittest
 from unittest import mock
 
+from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
@@ -107,18 +108,12 @@ def _guess_loader(filename: str, loader_pem: int, loader_der: int) -> int:
     raise ValueError("Loader could not be recognized based on extension")  # pragma: no cover
 
 
-def load_cert(*names: str) -> crypto.X509:
+def load_cert(*names: str) -> x509.Certificate:
     """Load certificate."""
     loader = _guess_loader(
-        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
-    return crypto.load_certificate(loader, load_vector(*names))
-
-
-def load_csr(*names: str) -> crypto.X509Req:
-    """Load certificate request."""
-    loader = _guess_loader(
-        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
-    return crypto.load_certificate_request(loader, load_vector(*names))
+        names[-1], x509.load_pem_x509_certificate, x509.load_der_x509_certificate
+    )
+    return loader(load_vector(*names))
 
 
 def load_jose_rsa_private_key_pem(*names: str) -> jose.ComparableRSAKey:
