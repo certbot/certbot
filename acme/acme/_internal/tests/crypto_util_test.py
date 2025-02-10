@@ -95,6 +95,23 @@ class SSLSocketTest(unittest.TestCase):
             _ = SSLSocket(None)
 
 
+class MiscTests(unittest.TestCase):
+
+    def test_dump_cryptography_chain(self):
+        from acme.crypto_util import dump_cryptography_chain
+
+        cert1 = test_util.load_cert('rsa2048_cert.pem')
+        cert2 = test_util.load_cert('rsa4096_cert.pem')
+
+        chain = [cert1, cert2]
+        dumped = dump_cryptography_chain(chain)
+
+        # default is PEM encoding Encoding.PEM
+        assert isinstance(dumped, bytes)
+
+
+
+
 class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):
     """Test for acme.crypto_util._pyopenssl_cert_or_req_all_names."""
 
@@ -148,6 +165,74 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
 
     def _call_csr(self, name):
         return self._call(test_util.load_pyopenssl_csr, name)
+
+    def test_cert_no_sans(self):
+        assert self._call_cert('cert.pem') == []
+
+    def test_cert_two_sans(self):
+        assert self._call_cert('cert-san.pem') == \
+                         ['example.com', 'www.example.com']
+
+    def test_cert_hundred_sans(self):
+        assert self._call_cert('cert-100sans.pem') == \
+                         ['example{0}.com'.format(i) for i in range(1, 101)]
+
+    def test_cert_idn_sans(self):
+        assert self._call_cert('cert-idnsans.pem') == \
+                         self._get_idn_names()
+
+    def test_csr_no_sans(self):
+        assert self._call_csr('csr-nosans.pem') == []
+
+    def test_csr_one_san(self):
+        assert self._call_csr('csr.pem') == ['example.com']
+
+    def test_csr_two_sans(self):
+        assert self._call_csr('csr-san.pem') == \
+                         ['example.com', 'www.example.com']
+
+    def test_csr_six_sans(self):
+        assert self._call_csr('csr-6sans.pem') == \
+                         ['example.com', 'example.org', 'example.net',
+                          'example.info', 'subdomain.example.com',
+                          'other.subdomain.example.com']
+
+    def test_csr_hundred_sans(self):
+        assert self._call_csr('csr-100sans.pem') == \
+                         ['example{0}.com'.format(i) for i in range(1, 101)]
+
+    def test_csr_idn_sans(self):
+        assert self._call_csr('csr-idnsans.pem') == \
+                         self._get_idn_names()
+
+    def test_critical_san(self):
+        assert self._call_cert('critical-san.pem') == \
+                         ['chicago-cubs.venafi.example', 'cubs.venafi.example']
+
+
+class CryptographyCertOrReqSANTest(unittest.TestCase):
+    """Test for acme.crypto_util._cryptography_cert_or_req_san."""
+
+    @classmethod
+    def _call(cls, loader, name):
+        # pylint: disable=protected-access
+        from acme.crypto_util import _cryptography_cert_or_req_san
+        return _cryptography_cert_or_req_san(loader(name))
+
+    @classmethod
+    def _get_idn_names(cls):
+        """Returns expected names from '{cert,csr}-idnsans.pem'."""
+        chars = [chr(i) for i in itertools.chain(range(0x3c3, 0x400),
+                                                 range(0x641, 0x6fc),
+                                                 range(0x1820, 0x1877))]
+        return [''.join(chars[i: i + 45]) + '.invalid'
+                for i in range(0, len(chars), 45)]
+
+    def _call_cert(self, name):
+        return self._call(test_util.load_cert, name)
+
+    def _call_csr(self, name):
+        return self._call(test_util.load_csr, name)
 
     def test_cert_no_sans(self):
         assert self._call_cert('cert.pem') == []
