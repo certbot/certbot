@@ -1809,7 +1809,7 @@ class MainTest(test_util.ConfigTestCase):
             assert mock_acme_client.ClientNetwork.call_args[0][0] == \
                              jose.JWK.load(f.read())
         with open(SS_CERT_PATH, 'rb') as f:
-            cert = x509.load_pem_x509_certificate(f.read())[0]
+            cert = x509.load_pem_x509_certificate(f.read())
             mock_revoke = mock_acme_client.ClientV2().revoke
             mock_revoke.assert_called_once_with(cert, mock.ANY)
 
@@ -1827,7 +1827,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_determine_account.return_value = (mock.MagicMock(), None)
         _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
         with open(CERT) as f:
-            cert = x509.load_pem_x509_certificate(f.read())[0]
+            cert = x509.load_pem_x509_certificate(f.read())
             mock_revoke = client.acme_from_config_key().revoke
             mock_revoke.assert_called_once_with(cert, mock.ANY)
 
