@@ -102,7 +102,13 @@ class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):
     def _call(cls, loader, name):
         # pylint: disable=protected-access
         from acme.crypto_util import _pyopenssl_cert_or_req_all_names
-        return _pyopenssl_cert_or_req_all_names(loader(name))
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='_pyopenssl_cert_or_req_all_names is deprecated and will be removed*'
+            )
+            return _pyopenssl_cert_or_req_all_names(loader(name))
 
     def _call_cert(self, name):
         return self._call(test_util.load_pyopenssl_cert, name)
