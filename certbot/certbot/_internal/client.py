@@ -48,8 +48,9 @@ from certbot.interfaces import AccountStorage
 logger = logging.getLogger(__name__)
 
 
-def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
-                         regr: Optional[messages.RegistrationResource] = None
+def acme_from_config_key(config: configuration.NamespaceConfig,
+                         key: jose.JWK,
+                         regr: Optional[messages.RegistrationResource] = None,
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
     if key.typ == 'EC':
