@@ -32,6 +32,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * When adding ssl listen directives in nginx server blocks, IP addresses are now
   preserved.
 * Nginx configurations can now have the http block in files other than the root (nginx.conf)
+* Nginx `server_name` directives with internal comments now ignore commented names
 
 More details about these changes can be found on our GitHub repo.
 
