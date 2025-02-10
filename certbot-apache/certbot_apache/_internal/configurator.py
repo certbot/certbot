@@ -271,10 +271,10 @@ class ApacheConfigurator(common.Configurator):
         self.parser: parser.ApacheParser
         self.parser_root: Optional[dualparser.DualBlockNode] = None
         self.version = version
-        self._openssl_version = openssl_version
+        self._openssl_version: Optional[str] = openssl_version
         self.vhosts: List[obj.VirtualHost]
         self.options = copy.deepcopy(self.OS_DEFAULTS)
-        self._enhance_func: Dict[str, Callable] = {
+        self._enhance_func: Dict[str, Callable[[obj.VirtualHost, Any], None]] = {
             "redirect": self._enable_redirect,
             "ensure-http-header": self._set_http_header,
             "staple-ocsp": self._enable_ocsp_stapling,
@@ -599,7 +599,7 @@ class ApacheConfigurator(common.Configurator):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
 
         # Get all vhosts that are covered by the wildcard domain
-        vhosts: List = self._vhosts_for_wildcard(domain)
+        vhosts: List[obj.VirtualHost] = self._vhosts_for_wildcard(domain)
 
         # Go through the vhosts, making sure that we cover all the names
         # present, but preferring the SSL vhosts
@@ -994,9 +994,7 @@ class ApacheConfigurator(common.Configurator):
         for arg in args:
             arg_value = self.parser.get_arg(arg)
             if arg_value is not None:
-                addr = obj.Addr.fromstring(arg_value)
-                if addr is not None:
-                    addrs.add(addr)
+                addrs.add(obj.Addr.fromstring(arg_value))
         is_ssl = False
 
         if self.parser.find_dir("SSLEngine", "on", start=path, exclude=False):
@@ -1126,9 +1124,7 @@ class ApacheConfigurator(common.Configurator):
         """
         addrs = set()
         for param in node.parameters:
-            addr = obj.Addr.fromstring(param)
-            if addr:
-                addrs.add(addr)
+            addrs.add(obj.Addr.fromstring(param))
 
         is_ssl = False
         # Exclusion to match the behavior in get_virtual_hosts_v2
@@ -1646,10 +1642,9 @@ class ApacheConfigurator(common.Configurator):
         for addr in ssl_addr_p:
             old_addr = obj.Addr.fromstring(
                 str(self.parser.get_arg(addr)))
-            if old_addr:
-                ssl_addr = old_addr.get_addr_obj("443")
-                self.parser.aug.set(addr, str(ssl_addr))
-                ssl_addrs.add(ssl_addr)
+            ssl_addr = old_addr.get_addr_obj("443")
+            self.parser.aug.set(addr, str(ssl_addr))
+            ssl_addrs.add(ssl_addr)
 
         return ssl_addrs
 

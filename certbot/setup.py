@@ -30,7 +30,7 @@ install_requires = [
     f'acme>={version}',
     'ConfigArgParse>=1.5.3',
     'configobj>=5.0.6',
-    'cryptography>=42.0.0',
+    'cryptography>=43.0.0',
     'distro>=1.0.1',
     'importlib_metadata>=4.6; python_version < "3.10"',
     # Josepy 2+ may introduce backward incompatible changes by droping usage of
@@ -50,10 +50,8 @@ dev_extras = [
     # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
     # https://github.com/python-poetry/poetry/issues/1584.
     'poetry>=1.2.0',
-    # poetry-plugin-export>=1.1.0 is required to use the constraints.txt export
-    # format. See
-    # https://github.com/python-poetry/poetry-plugin-export/blob/efcfd34859e72f6a79a80398f197ce6eb2bbd7cd/CHANGELOG.md#added.
-    'poetry-plugin-export>=1.1.0',
+    # allows us to use newer urllib3 https://github.com/python-poetry/poetry-plugin-export/issues/183
+    'poetry-plugin-export>=1.9.0',
     'twine',
 ]
 
@@ -111,6 +109,7 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',

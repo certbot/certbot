@@ -62,7 +62,8 @@ class NginxParserTest(util.NginxTest):
                            'sites-enabled/globalssl.com',
                            'sites-enabled/ipv6.com',
                            'sites-enabled/ipv6ssl.com',
-                           'sites-enabled/example.net']} == \
+                           'sites-enabled/example.net',
+                           'sites-enabled/addr-80.com']} == \
                          set(nparser.parsed.keys())
         assert [['server_name', 'somename', 'alias', 'another.alias']] == \
                          nparser.parsed[nparser.abs_path('server.conf')]
@@ -72,6 +73,15 @@ class NginxParserTest(util.NginxTest):
                                         ['server_name', 'example.*']]]] == \
                          nparser.parsed[nparser.abs_path(
                              'sites-enabled/example.com')]
+
+    def test_included_load(self):
+        # Test for when the root file doesn't have http in it
+        nparser = parser.NginxParser(self.config_path)
+        nparser.config_root = os.path.join(self.config_path, "nginx-include.conf")
+        nparser.load()
+        assert len(nparser.parsed) > 1
+        assert len(nparser.parsed[nparser.config_root]) == 4
+        assert os.path.join(self.config_path, "nginx.conf") in nparser.parsed
 
     def test_abs_path(self):
         nparser = parser.NginxParser(self.config_path)
@@ -92,13 +102,13 @@ class NginxParserTest(util.NginxTest):
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))
         assert 4 == len(glob.glob(nparser.abs_path('*.test')))
-        assert 10 == len(
+        assert 11 == len(
             glob.glob(nparser.abs_path('sites-enabled/*.test')))
         assert [[['server'], [['listen', '69.50.225.155:9000'],
                                         ['listen', '127.0.0.1'],
                                         ['server_name', '.example.com'],
                                         ['server_name', 'example.*']]]] == \
-                         parsed[0]
+                         parsed[nparser.abs_path('sites-enabled/example.com.test')]
 
     def test__do_for_subarray(self):
         # pylint: disable=protected-access
@@ -175,7 +185,7 @@ class NginxParserTest(util.NginxTest):
                                                   '*.www.example.com'},
                                  [], [2, 1, 0])
 
-        assert 19 == len(vhosts)
+        assert 20 == len(vhosts)
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
         assert vhost3 == example_com
         default = [x for x in vhosts if 'default' in x.filep][0]
@@ -543,8 +553,8 @@ class NginxParserTest(util.NginxTest):
         nparser = parser.NginxParser(self.config_path)
         path = nparser.abs_path('valid_unicode_comments.conf')
         parsed = nparser._parse_files(path)  # pylint: disable=protected-access
-        assert ['server'] == parsed[0][2][0]
-        assert ['listen', '80'] == parsed[0][2][1][3]
+        assert ['server'] == parsed[path][2][0]
+        assert ['listen', '80'] == parsed[path][2][1][3]
 
     def test_valid_unicode_roundtrip(self):
         """This tests the parser's ability to load and save a config containing Unicode"""
@@ -560,7 +570,7 @@ class NginxParserTest(util.NginxTest):
             path = nparser.abs_path('invalid_unicode_comments.conf')
             parsed = nparser._parse_files(path)  # pylint: disable=protected-access
 
-        assert [] == parsed
+        assert {} == parsed
         assert any(
             ('invalid character' in output) and ('UTF-8' in output)
             for output in log.output

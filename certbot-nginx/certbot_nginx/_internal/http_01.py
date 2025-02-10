@@ -77,11 +77,11 @@ class NginxHttp01(common.ChallengePerformer):
         """
         included = False
         include_directive = ['\n', 'include', ' ', self.challenge_conf]
-        root = self.configurator.parser.config_root
+        http_path = self.configurator.parser.http_path
 
         bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
 
-        main = self.configurator.parser.parsed[root]
+        main = self.configurator.parser.parsed[http_path]
         # insert include directive
         for line in main:
             if line[0] == ['http']:
@@ -126,6 +126,7 @@ class NginxHttp01(common.ChallengePerformer):
                     body.insert(0, bucket_directive)
                     break
 
+        root = self.configurator.parser.config_root
         if not included:
             raise errors.MisconfigurationError(
                 'Certbot could not find a block to include '
@@ -146,13 +147,13 @@ class NginxHttp01(common.ChallengePerformer):
         :returns: list of :class:`certbot_nginx._internal.obj.Addr` to apply
         :rtype: list
         """
-        addresses: List[Optional[Addr]] = []
+        addresses: List[Addr] = []
         default_addr = "%s" % self.configurator.config.http01_port
         ipv6_addr = "[::]:{0}".format(
             self.configurator.config.http01_port)
         port = self.configurator.config.http01_port
 
-        ipv6, ipv6only = self.configurator.ipv6_info(str(port))
+        ipv6, ipv6only = self.configurator.ipv6_info("[::]", str(port))
 
         if ipv6:
             # If IPv6 is active in Nginx configuration
@@ -169,7 +170,7 @@ class NginxHttp01(common.ChallengePerformer):
             logger.debug("Using default address %s for authentication.",
                         default_addr)
 
-        return [address for address in addresses if address]
+        return addresses
 
     def _get_validation_path(self, achall: KeyAuthorizationAnnotatedChallenge) -> str:
         return os.sep + os.path.join(challenges.HTTP01.URI_ROOT_PATH, achall.chall.encode("token"))

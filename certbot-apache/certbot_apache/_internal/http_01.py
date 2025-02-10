@@ -172,6 +172,7 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def _set_up_challenge(self, achall: KeyAuthorizationAnnotatedChallenge
                           ) -> KeyAuthorizationChallengeResponse:
+        response: KeyAuthorizationChallengeResponse
         response, validation = achall.response_and_validation()
 
         name: str = os.path.join(self.challenge_dir, achall.chall.encode("token"))

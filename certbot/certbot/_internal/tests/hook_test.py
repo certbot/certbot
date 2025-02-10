@@ -136,7 +136,8 @@ class PreHookTest(HookTest):
 
     def _test_nonrenew_common(self):
         mock_execute = self._call_with_mock_execute(self.config)
-        mock_execute.assert_called_once_with("pre-hook", self.config.pre_hook, env=mock.ANY)
+        mock_execute.assert_any_call("pre-hook", self.dir_hook, env=mock.ANY)
+        mock_execute.assert_called_with("pre-hook", self.config.pre_hook, env=mock.ANY)
         self._test_no_executions_common()
 
     def test_no_hooks(self):
@@ -208,14 +209,16 @@ class PostHookTest(HookTest):
         for verb in ("certonly", "run",):
             self.config.verb = verb
             mock_execute = self._call_with_mock_execute(self.config, [])
-            mock_execute.assert_called_once_with("post-hook", self.config.post_hook, env=mock.ANY)
+            mock_execute.assert_any_call("post-hook", self.dir_hook, env=mock.ANY)
+            mock_execute.assert_called_with("post-hook", self.config.post_hook, env=mock.ANY)
             assert not self._get_eventually()
 
-    def test_cert_only_and_run_without_hook(self):
+    def test_certonly_and_run_without_cli_hook(self):
         self.config.post_hook = None
         for verb in ("certonly", "run",):
             self.config.verb = verb
-            assert not self._call_with_mock_execute(self.config, []).called
+            mock_execute = self._call_with_mock_execute(self.config, [])
+            mock_execute.assert_called_once_with("post-hook", self.dir_hook, env=mock.ANY)
             assert not self._get_eventually()
 
     def test_renew_env(self):

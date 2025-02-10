@@ -3,7 +3,6 @@ import re
 from typing import Any
 from typing import Iterable
 from typing import Optional
-from typing import Pattern
 from typing import Set
 from typing import Union
 
@@ -126,7 +125,7 @@ class VirtualHost:
 
     """
     # ?: is used for not returning enclosed characters
-    strip_name: Pattern = re.compile(r"^(?:.+://)?([^ :$]*)")
+    strip_name: re.Pattern[str] = re.compile(r"^(?:.+://)?([^ :$]*)")
 
     def __init__(self, filepath: str, path: str, addrs: Set["Addr"], ssl: bool,
                  enabled: bool, name: Optional[str] = None, aliases: Optional[Set[str]] = None,

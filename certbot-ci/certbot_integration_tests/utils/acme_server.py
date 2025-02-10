@@ -55,7 +55,7 @@ class ACMEServer:
 
         self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
-        self._processes: List[subprocess.Popen] = []
+        self._processes: List[subprocess.Popen[bytes]] = []
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
         self._dns_server = dns_server
         self._http_01_port = DEFAULT_HTTP_01_PORT
@@ -165,7 +165,7 @@ class ACMEServer:
 
     def _launch_process(self, command: List[str], cwd: str = os.getcwd(),
                         env: Optional[Mapping[str, str]] = None,
-                        force_stderr: bool = False) -> subprocess.Popen:
+                        force_stderr: bool = False) -> subprocess.Popen[bytes]:
         """Launch silently a subprocess OS command"""
         if not env:
             env = os.environ
