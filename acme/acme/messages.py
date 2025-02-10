@@ -12,7 +12,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
-import warnings
 
 from cryptography import x509
 
@@ -585,7 +584,8 @@ class CertificateRequest(jose.JSONObjectWithFields):
     :ivar x509.CertificateSigningRequest csr: `x509.CertificateSigningRequest`
 
     """
-    csr: x509.CertificateSigningRequest = jose.field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
+    csr: x509.CertificateSigningRequest = jose.field(
+        'csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
 
 
 class CertificateResource(ResourceWithURI):

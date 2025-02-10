@@ -99,7 +99,7 @@ def load_vector(*names: str) -> bytes:
         return data
 
 
-def _guess_loader(filename: str, loader_pem: int, loader_der: int) -> int:
+def _guess_loader(filename: str, loader_pem: Callable, loader_der: Callable) -> Callable:
     _, ext = os.path.splitext(filename)
     if ext.lower() == '.pem':
         return loader_pem
@@ -121,9 +121,18 @@ def load_jose_rsa_private_key_pem(*names: str) -> jose.ComparableRSAKey:
     return jose.ComparableRSAKey(load_rsa_private_key_pem(*names))
 
 
+def _guess_loader__pyopenssl(filename: str, loader_pem: int, loader_der: int) -> int:
+    _, ext = os.path.splitext(filename)
+    if ext.lower() == '.pem':
+        return loader_pem
+    elif ext.lower() == '.der':
+        return loader_der
+    raise ValueError("Loader could not be recognized based on extension")  # pragma: no cover
+
+
 def load_rsa_private_key_pem(*names: str) -> RSAPrivateKey:
     """Load RSA private key."""
-    loader = _guess_loader(names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    loader = _guess_loader__pyopenssl(names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
     loader_fn: Callable[..., Any]
     if loader == crypto.FILETYPE_PEM:
         loader_fn = serialization.load_pem_private_key

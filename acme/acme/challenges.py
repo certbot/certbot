@@ -544,7 +544,8 @@ class TLSALPN01(KeyAuthorizationChallenge):
     response_cls = TLSALPN01Response
     typ = response_cls.typ
 
-    def validation(self, account_key: jose.JWK, **kwargs: Any) -> Tuple[x509.Certificate, crypto.PKey]:
+    def validation(self, account_key: jose.JWK,
+                   **kwargs: Any) -> Tuple[x509.Certificate, crypto.PKey]:
         """Generate validation.
 
         :param JWK account_key:

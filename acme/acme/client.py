@@ -14,7 +14,6 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Union
-import warnings
 
 from cryptography import x509
 
