@@ -1,11 +1,8 @@
 """DNS Authenticator for Linode."""
 import logging
-import re
 from typing import Any
 from typing import Callable
-from typing import cast
 from typing import Optional
-from typing import Union
 
 from certbot import errors
 from certbot.plugins import dns_common_lexicon
