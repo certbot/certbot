@@ -5,6 +5,7 @@ import re
 import sys
 import unittest
 from unittest import mock
+import warnings
 
 import OpenSSL
 import pytest
@@ -405,7 +406,13 @@ class CertLoaderTest(unittest.TestCase):
     def test_load_valid_cert(self):
         from certbot.crypto_util import pyopenssl_load_certificate
 
-        cert, file_type = pyopenssl_load_certificate(CERT)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='certbot.crypto_util.pyopenssl_load_certificate is *'
+            )
+            cert, file_type = pyopenssl_load_certificate(CERT)
+
         assert file_type == OpenSSL.crypto.FILETYPE_PEM
         assert binascii.unhexlify(
             cert.digest("sha256").replace(b":", b"")
@@ -415,7 +422,12 @@ class CertLoaderTest(unittest.TestCase):
         from certbot.crypto_util import pyopenssl_load_certificate
         bad_cert_data = CERT.replace(b"BEGIN CERTIFICATE", b"ASDFASDFASDF!!!")
         with pytest.raises(errors.Error):
-            pyopenssl_load_certificate(bad_cert_data)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    'ignore',
+                    message='certbot.crypto_util.pyopenssl_load_certificate is *'
+                )
+                pyopenssl_load_certificate(bad_cert_data)
 
 
 class NotBeforeTest(unittest.TestCase):

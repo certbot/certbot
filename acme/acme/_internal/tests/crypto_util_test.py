@@ -104,7 +104,12 @@ class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):
     def _call(cls, loader, name):
         # pylint: disable=protected-access
         from acme.crypto_util import _pyopenssl_cert_or_req_all_names
-        return _pyopenssl_cert_or_req_all_names(loader(name))
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='acme.crypto_util._pyopenssl_cert_or_req_all_names is deprecated *'
+            )
+            return _pyopenssl_cert_or_req_all_names(loader(name))
 
     def _call_cert(self, name):
         return self._call(test_util.load_cert, name)
@@ -128,7 +133,12 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     def _call(cls, loader, name):
         # pylint: disable=protected-access
         from acme.crypto_util import _pyopenssl_cert_or_req_san
-        return _pyopenssl_cert_or_req_san(loader(name))
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='acme.crypto_util._pyopenssl_cert_or_req_san is deprecated *'
+            )
+            return _pyopenssl_cert_or_req_san(loader(name))
 
     @classmethod
     def _get_idn_names(cls):
@@ -392,7 +402,12 @@ class DumpPyopensslChainTest(unittest.TestCase):
     def _call(cls, loaded):
         # pylint: disable=protected-access
         from acme.crypto_util import dump_pyopenssl_chain
-        return dump_pyopenssl_chain(loaded)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='acme.crypto_util.dump_pyopenssl_chain is *'
+            )
+            return dump_pyopenssl_chain(loaded)
 
     def test_dump_pyopenssl_chain(self):
         names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
@@ -406,10 +421,15 @@ class DumpPyopensslChainTest(unittest.TestCase):
         names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
         loaded = [test_util.load_cert(name) for name in names]
         wrap_func = jose.ComparableX509
-        wrapped = [wrap_func(cert) for cert in loaded]
-        dump_func = OpenSSL.crypto.dump_certificate
-        length = sum(len(dump_func(OpenSSL.crypto.FILETYPE_PEM, cert)) for cert in loaded)
-        assert len(self._call(wrapped)) == length
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='The next major version of josepy *'
+            )
+            wrapped = [wrap_func(cert) for cert in loaded]
+            dump_func = OpenSSL.crypto.dump_certificate
+            length = sum(len(dump_func(OpenSSL.crypto.FILETYPE_PEM, cert)) for cert in loaded)
+            assert len(self._call(wrapped)) == length
 
 
 if __name__ == '__main__':

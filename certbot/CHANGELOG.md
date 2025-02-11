@@ -2,6 +2,17 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 3.2.1 - main
+
+### Changed
+
+* deprecated `acme.crypto_util.dump_pyopenssl_chain`
+* deprecated `acme.crypto_util._pyopenssl_cert_or_req_all_names`
+* deprecated `acme.crypto_util._pyopenssl_cert_or_req_san`
+* deprecated `certbot.crypto_util.dump_pyopenssl_chain`
+* deprecated `certbot.crypto_util.pyopenssl_load_certificate`
+
+
 ## 3.2.0 - main
 
 ### Added
