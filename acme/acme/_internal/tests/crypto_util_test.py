@@ -11,7 +11,6 @@ import unittest
 from unittest import mock
 import warnings
 
-import josepy as jose
 import OpenSSL
 import pytest
 from cryptography import x509
@@ -33,10 +32,10 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
     """Tests for acme.crypto_util.SSLSocket/probe_sni."""
 
     def setUp(self):
-        self.cert = test_util.load_comparable_cert('rsa2048_cert.pem')
+        self.cert = test_util.load_cert('rsa2048_cert.pem')
         key = test_util.load_pyopenssl_private_key('rsa2048_key.pem')
         # pylint: disable=protected-access
-        certs = {b'foo': (key, self.cert.wrapped)}
+        certs = {b'foo': (key, self.cert)}
 
         from acme.crypto_util import SSLSocket
 
@@ -58,8 +57,7 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
 
     def _probe(self, name):
         from acme.crypto_util import probe_sni
-        return jose.ComparableX509(probe_sni(
-            name, host='127.0.0.1', port=self.port))
+        return probe_sni(name, host='127.0.0.1', port=self.port)
 
     def _start_server(self):
         self.server_thread.start()
@@ -97,6 +95,23 @@ class SSLSocketTest(unittest.TestCase):
             _ = SSLSocket(None)
 
 
+class MiscTests(unittest.TestCase):
+
+    def test_dump_cryptography_chain(self):
+        from acme.crypto_util import dump_cryptography_chain
+
+        cert1 = test_util.load_cert('rsa2048_cert.pem')
+        cert2 = test_util.load_cert('rsa4096_cert.pem')
+
+        chain = [cert1, cert2]
+        dumped = dump_cryptography_chain(chain)
+
+        # default is PEM encoding Encoding.PEM
+        assert isinstance(dumped, bytes)
+
+
+
+
 class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):
     """Test for acme.crypto_util._pyopenssl_cert_or_req_all_names."""
 
@@ -104,10 +119,16 @@ class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):
     def _call(cls, loader, name):
         # pylint: disable=protected-access
         from acme.crypto_util import _pyopenssl_cert_or_req_all_names
-        return _pyopenssl_cert_or_req_all_names(loader(name))
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='_pyopenssl_cert_or_req_all_names is deprecated and will be removed*'
+            )
+            return _pyopenssl_cert_or_req_all_names(loader(name))
 
     def _call_cert(self, name):
-        return self._call(test_util.load_cert, name)
+        return self._call(test_util.load_pyopenssl_cert, name)
 
     def test_cert_one_san_no_common(self):
         assert self._call_cert('cert-nocn.der') == \
@@ -129,6 +150,74 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
         # pylint: disable=protected-access
         from acme.crypto_util import _pyopenssl_cert_or_req_san
         return _pyopenssl_cert_or_req_san(loader(name))
+
+    @classmethod
+    def _get_idn_names(cls):
+        """Returns expected names from '{cert,csr}-idnsans.pem'."""
+        chars = [chr(i) for i in itertools.chain(range(0x3c3, 0x400),
+                                                 range(0x641, 0x6fc),
+                                                 range(0x1820, 0x1877))]
+        return [''.join(chars[i: i + 45]) + '.invalid'
+                for i in range(0, len(chars), 45)]
+
+    def _call_cert(self, name):
+        return self._call(test_util.load_pyopenssl_cert, name)
+
+    def _call_csr(self, name):
+        return self._call(test_util.load_pyopenssl_csr, name)
+
+    def test_cert_no_sans(self):
+        assert self._call_cert('cert.pem') == []
+
+    def test_cert_two_sans(self):
+        assert self._call_cert('cert-san.pem') == \
+                         ['example.com', 'www.example.com']
+
+    def test_cert_hundred_sans(self):
+        assert self._call_cert('cert-100sans.pem') == \
+                         ['example{0}.com'.format(i) for i in range(1, 101)]
+
+    def test_cert_idn_sans(self):
+        assert self._call_cert('cert-idnsans.pem') == \
+                         self._get_idn_names()
+
+    def test_csr_no_sans(self):
+        assert self._call_csr('csr-nosans.pem') == []
+
+    def test_csr_one_san(self):
+        assert self._call_csr('csr.pem') == ['example.com']
+
+    def test_csr_two_sans(self):
+        assert self._call_csr('csr-san.pem') == \
+                         ['example.com', 'www.example.com']
+
+    def test_csr_six_sans(self):
+        assert self._call_csr('csr-6sans.pem') == \
+                         ['example.com', 'example.org', 'example.net',
+                          'example.info', 'subdomain.example.com',
+                          'other.subdomain.example.com']
+
+    def test_csr_hundred_sans(self):
+        assert self._call_csr('csr-100sans.pem') == \
+                         ['example{0}.com'.format(i) for i in range(1, 101)]
+
+    def test_csr_idn_sans(self):
+        assert self._call_csr('csr-idnsans.pem') == \
+                         self._get_idn_names()
+
+    def test_critical_san(self):
+        assert self._call_cert('critical-san.pem') == \
+                         ['chicago-cubs.venafi.example', 'cubs.venafi.example']
+
+
+class CryptographyCertOrReqSANTest(unittest.TestCase):
+    """Test for acme.crypto_util._cryptography_cert_or_req_san."""
+
+    @classmethod
+    def _call(cls, loader, name):
+        # pylint: disable=protected-access
+        from acme.crypto_util import _cryptography_cert_or_req_san
+        return _cryptography_cert_or_req_san(loader(name))
 
     @classmethod
     def _get_idn_names(cls):
@@ -383,33 +472,6 @@ class MakeCSRTest(unittest.TestCase):
 
         with pytest.raises(ValueError):
             make_csr(privkey_pem, ["a.example"])
-
-
-class DumpPyopensslChainTest(unittest.TestCase):
-    """Test for dump_pyopenssl_chain."""
-
-    @classmethod
-    def _call(cls, loaded):
-        # pylint: disable=protected-access
-        from acme.crypto_util import dump_pyopenssl_chain
-        return dump_pyopenssl_chain(loaded)
-
-    def test_dump_pyopenssl_chain(self):
-        names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
-        loaded = [test_util.load_cert(name) for name in names]
-        length = sum(
-            len(OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert))
-            for cert in loaded)
-        assert len(self._call(loaded)) == length
-
-    def test_dump_pyopenssl_chain_wrapped(self):
-        names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
-        loaded = [test_util.load_cert(name) for name in names]
-        wrap_func = jose.ComparableX509
-        wrapped = [wrap_func(cert) for cert in loaded]
-        dump_func = OpenSSL.crypto.dump_certificate
-        length = sum(len(dump_func(OpenSSL.crypto.FILETYPE_PEM, cert)) for cert in loaded)
-        assert len(self._call(wrapped)) == length
 
 
 if __name__ == '__main__':
