@@ -17,6 +17,7 @@ Authors
 * [Alex Halderman](https://github.com/jhalderm)
 * [Alex Jordan](https://github.com/strugee)
 * [Alex Zorin](https://github.com/alexzorin)
+* [Alexey Vesnin](https://github.com/netsafe)
 * [Alexis Hancock](https://github.com/zoracon)
 * [Amir Omidi](https://github.com/aaomidi)
 * [Amjad Mashaal](https://github.com/TheNavigat)
