@@ -116,10 +116,13 @@ class ClientV2:
         self.net.account = new_regr
         return new_regr
 
-    def new_order(self, csr_pem: bytes) -> messages.OrderResource:
+    def new_order(self, csr_pem: bytes, certid: str = '') -> messages.OrderResource:
         """Request a new Order object from the server.
+            with certid give it will try but if it failes will try without one
 
         :param bytes csr_pem: A CSR in PEM format.
+        :param str certid:  draft-ietf-acme-ari format certificate identifier 
+                    of old cert to be replaced by this.
 
         :returns: The newly created order.
         :rtype: OrderResource
@@ -139,8 +142,20 @@ class ClientV2:
         for ip in ipNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=str(ip)))
-        order = messages.NewOrder(identifiers=identifiers)
-        response = self._post(self.directory['newOrder'], order)
+        if hasattr(self.directory,"renewalInfo") and certid != "": # pragma: no cover
+            try: #coverage doesn't have server to ask ari
+                order = messages.NewOrder(identifiers=identifiers, replaces = certid)
+                response = self._post(self.directory['newOrder'], order)
+            except messages.Error as e:
+                # if neworder with ARI failed try without one
+                # server may not impliment ari-05 draft for alreadyReplaced error
+                if e.code == 'alreadyReplaced':
+                    logger.info('neworder with ARI failed with error %s, Retrying without ARI', e)
+                order = messages.NewOrder(identifiers=identifiers)
+                response = self._post(self.directory['newOrder'], order)
+        else:
+            order = messages.NewOrder(identifiers=identifiers)
+            response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
         # pylint has trouble understanding our josepy based objects which use
