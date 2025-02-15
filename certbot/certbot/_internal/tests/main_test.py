@@ -16,6 +16,7 @@ import unittest
 from unittest import mock
 
 import configobj
+from cryptography import x509
 import josepy as jose
 import pytest
 import pytz
@@ -1804,11 +1805,9 @@ class MainTest(test_util.ConfigTestCase):
             assert mock_acme_client.ClientNetwork.call_args[0][0] == \
                              jose.JWK.load(f.read())
         with open(SS_CERT_PATH, 'rb') as f:
-            cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+            cert = x509.load_pem_x509_certificate(f.read())
             mock_revoke = mock_acme_client.ClientV2().revoke
-            mock_revoke.assert_called_once_with(
-                    jose.ComparableX509(cert),
-                    mock.ANY)
+            mock_revoke.assert_called_once_with(cert, mock.ANY)
 
     def test_revoke_with_key_mismatch(self):
         server = 'foo.bar'
@@ -1823,12 +1822,10 @@ class MainTest(test_util.ConfigTestCase):
         mock_delete_if_appropriate.return_value = False
         mock_determine_account.return_value = (mock.MagicMock(), None)
         _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
-        with open(CERT) as f:
-            cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+        with open(CERT, 'rb') as f:
+            cert = x509.load_pem_x509_certificate(f.read())
             mock_revoke = client.acme_from_config_key().revoke
-            mock_revoke.assert_called_once_with(
-                    jose.ComparableX509(cert),
-                    mock.ANY)
+            mock_revoke.assert_called_once_with(cert, mock.ANY)
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_register(self, _):
