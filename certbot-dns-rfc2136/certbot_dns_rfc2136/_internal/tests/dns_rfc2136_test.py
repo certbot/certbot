@@ -79,12 +79,17 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
             self.auth.perform([self.achall])
 
     @test_util.patch_display_util()
-    def test_valid_algorithm_passes(self, unused_mock_get_utility):
+    @mock.patch('certbot_dns_rfc2136._internal.dns_rfc2136._RFC2136Client')
+    def test_valid_algorithm_passes(self, client, unused_mock_get_utility):
+        from certbot_dns_rfc2136._internal.dns_rfc2136 import Authenticator
+
         config = VALID_CONFIG.copy()
         config["rfc2136_algorithm"] = "HMAC-sha512"
         dns_test_common.write(config, self.config.rfc2136_credentials)
+        self.auth = Authenticator(self.config, "rfc2136")
 
         self.auth.perform([self.achall])
+        assert dns.tsig.HMAC_SHA512 in client.call_args.args
 
     def test_invalid_server_raises(self):
         config = VALID_CONFIG.copy()
