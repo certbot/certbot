@@ -225,6 +225,11 @@ def make_key(bits: int = 2048, key_type: str = "rsa",
             raise errors.Error("Unsupported RSA key length: {}".format(bits))
 
         key = rsa.generate_private_key(public_exponent=65537, key_size=bits)
+        return key.private_bytes(
+            encoding=Encoding.PEM,
+            format=PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=NoEncryption()
+        )
     elif key_type == 'ecdsa':
         if not elliptic_curve:
             raise errors.Error("When key_type == ecdsa, elliptic_curve must be set.")
