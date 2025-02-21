@@ -76,6 +76,9 @@ cryptography = "!= 37.0.3"
 # version of tox to keep deterministic builds.
 tox = ">=4"
 
+# josepy 2.x introduces backwards incompatible changes
+josepy = "<2.0"
+
 
 [tool.poetry.dev-dependencies]
 
