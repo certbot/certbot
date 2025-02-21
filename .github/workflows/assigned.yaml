@@ -3,9 +3,8 @@ name: Issue Assigned
 on:
   issues:
     types: [assigned]
-
   pull_request:
-     types: [assigned]
+     types: [review_requested, assigned]
 jobs:
   send-mattermost-message:
     runs-on: ubuntu-latest
