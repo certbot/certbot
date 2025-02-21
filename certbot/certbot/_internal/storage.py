@@ -98,7 +98,7 @@ def config_with_defaults(config: Optional[configuration.NamespaceConfig] = None
 
 
 def add_time_interval(base_time: datetime.datetime, interval: str,
-                      textparser: parsedatetime.Calendar = parsedatetime.Calendar()
+                      textparser: parsedatetime.Calendar = parsedatetime.Calendar(version=2)
                       ) -> datetime.datetime:
     """Parse the time specified time interval, and add it to the base_time
 
