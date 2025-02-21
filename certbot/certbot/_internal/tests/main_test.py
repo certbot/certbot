@@ -1450,7 +1450,7 @@ class MainTest(test_util.ConfigTestCase):
                 if not quiet_mode:
                     mock_display().notification.side_effect = write_msg
                 mock_crypto_util.notAfter.return_value = expiry_date
-                mock_renewalinfo.return_value = False, None, None
+                mock_renewalinfo.return_value = None
                 # Mocking functions needed
 
                 if not args:
@@ -2576,7 +2576,7 @@ class TestLockOrder:
     def test_lock_order(self, args_and_lock_order, mock_lock_dir):
         args, lock_order = args_and_lock_order
         with mock.patch('certbot._internal.storage.RenewableCert.get_renewalinfo') as mock_renewalinfo:
-            mock_renewalinfo.return_value = False, None, None
+            mock_renewalinfo.return_value = None
             with pytest.raises(self.EXPECTED_ERROR_TYPE, match=self.EXPECTED_ERROR_STR_REGEX):
                 main.main(args)
         assert mock_lock_dir.call_count == len(lock_order)

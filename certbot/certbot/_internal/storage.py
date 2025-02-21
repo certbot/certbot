@@ -126,9 +126,9 @@ def parse_rfc3399_time(instr: str) -> datetime.datetime:
     """try rfc3399 specific parser first, 
     if its malformed try generic python time parser"""
     try:
-        return pyrfc3339.parse(instr)
+        return pyrfc3339.parse(instr).astimezone(datetime.UTC)
     except ValueError:
-        return datetime.datetime.fromisoformat(instr.replace('Z',"+00:00"))
+        return datetime.datetime.fromisoformat(instr.replace('Z',"+00:00")).astimezone(datetime.UTC)
 
 
 def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
@@ -976,43 +976,57 @@ class RenewableCert(interfaces.RenewableCert):
             logger.debug(str(e))
             return False
 
-    def get_renewalinfo(self, version:int, verify_ssl: bool, ua:str) -> Tuple[
-        bool, datetime.datetime, datetime.datetime]:
+    def get_renewalinfo(self, version:int, verify_ssl: bool, ua:str) -> Optional[dict]:
         """from server in config try to get renewalinfo of certificate
         if it sees error it will return datetime 1-01-01
 
-        :returns: tuple of [hasari, startdatetime, enddatetime]
-        :rtype: tuple[bool, datetime.datetime, datetime.datetime]
+        :returns: dict from request.json() if request succeed, None if not
+        :rtype: Optional[dict]
         """
         #if it's unittest it doesn't have any server
         try:
             serverurl = self.configuration["renewalparams"]["server"]
         except KeyError:
-            serverurl = None
+            return None
 
         if serverurl is None:
-            return False, datetime.datetime(1,1,1), datetime.datetime(1,1,1)
+            return None
         try:
             suffix = crypto_util.ariCertIdent(self.version('cert', version))
             session = requests.session()
             session.verify = verify_ssl
             session.headers.update({'User-Agent': f'{ua}'})
             r = session.get(serverurl, timeout = 1)
+            if r.status_code != 200:
+                return None
             endpoint = r.json()["renewalInfo"]
             r = session.get(f"{endpoint}/{suffix}", timeout = 1)
-            suggestedWindow = r.json()["suggestedWindow"]
-            start = parse_rfc3399_time(suggestedWindow['start'])
-            end = parse_rfc3399_time(suggestedWindow['end'])
-            logger.debug("Accquired renewalinfo for %s: window starts at %s",
-                         self.lineagename, start.date())
-            reason = getattr(r.json(), "explanationURL", None)
-            if reason is not None:
-                logger.info("renewalwindow adjusted because of: %s", reason)
-            return True, start, end
+            if r.status_code != 200:
+                return None
+            return r.json()
         except (KeyError, requests.exceptions.RequestException) as e:
             logger.debug("%s",e)
-            return False, datetime.datetime(1,1,1), datetime.datetime(1,1,1)
+            return None
 
+    def parse_ari_result(self, inputjson: dict) -> \
+        Tuple[datetime.datetime|None, datetime.datetime|None]:
+        """parse Ari result json if make sense, raise valueerror if not
+        this accepts parse json object with load, so 
+        :returns: dict from request.json() if request succeed, None if not
+        :rtype: Tuple[datetime.datetime|None, datetime.datetime|None]
+        """
+        try:
+            suggestedWindow = inputjson["suggestedWindow"]
+            start = parse_rfc3399_time(suggestedWindow['start'])
+            end = parse_rfc3399_time(suggestedWindow['end'])
+        except (KeyError, ValueError):
+            return None, None
+        logger.debug("Accquired renewalinfo for %s: window starts at %s",
+                        self.lineagename, start.date())
+        reason = getattr(inputjson, "explanationURL", None)
+        if reason is not None:
+            logger.info("renewalwindow adjusted because of: %s", reason)
+        return start, end
 
     def autorenewal_is_enabled(self) -> bool:
         """Is automatic renewal enabled for this cert?
@@ -1055,15 +1069,24 @@ class RenewableCert(interfaces.RenewableCert):
             now = datetime.datetime.now(pytz.UTC)
 
             # Try draft-ietf-acme-ari endpoint if server has it
-            hasari, start, end = self.get_renewalinfo(self.latest_common_version(),
+            ariinfo = self.get_renewalinfo(self.latest_common_version(),
                                                        verify_ssl, useragent)
-            if hasari:
+            if ariinfo is not None:
                 # Server have ari endpoint
-                rtime = start + random()*(end-start)
-                # If random time is before next wakeup we'll do renewal this time
-                if rtime < now + datetime.timedelta(hours=12):
-                    logger.debug("Should renew, inside ARI renwal window")
-                    return True
+                start, end = self.parse_ari_result(ariinfo)
+                if start is None or end is None:
+                    logger.debug('server gave result but malformed')
+                else:
+                    rtime = start + random()*(end-start)
+                    # If random time is before next wakeup we'll do renewal this time
+                    # Todo: actually detect cron frequency
+                    if rtime < now + datetime.timedelta(hours=12):
+                        logger.debug("Should renew, inside ARI renwal window")
+                        return True
+                    # failsafe if server gave nonsense ARI for cert
+                    if expiry < now:
+                        logger.debug("Already expired, renew now")
+                        return True
             else:
                 # Renewal info for this cert not exsit or not supported version
                 # server not support ari or asking on wrong server
