@@ -489,24 +489,24 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_parse_renewalinfo(self):
         json = {'suggestedWindow': {'start': '2025-02-23T00:21:03Z', 'end': '2025-02-25T00:21:03Z'}}
         #should not happen as already shorted get_ari_info, but
-        assert self.test_rc.parse_ari_result(json) == (
-            datetime.datetime(2025, 2, 23, 0, 21, 3, tzinfo=datetime.UTC),
-            datetime.datetime(2025, 2, 25, 0, 21, 3, tzinfo=datetime.UTC))
+        assert self.test_rc.parse_renewalinfo(json) == (
+            datetime.datetime(2025, 2, 23, 0, 21, 3, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2025, 2, 25, 0, 21, 3, tzinfo=datetime.timezone.utc))
         
         # valid json at http 200 but it actually has something else in it
         json = {"type": "urn:ietf:params:acme:error:malformed",
             "detail": "Requested certificate was not found",
             "status": 404
             }
-        assert self.test_rc.parse_ari_result(json) == (None, None)
+        assert self.test_rc.parse_renewalinfo(json) == (None, None)
 
         #server reply with a timezone
         json = {'suggestedWindow': {'start': '1996-12-19T16:39:57-08:00', 'end': '2025-02-25T00:21:03Z'}}
-        assert self.test_rc.parse_ari_result(json)[0] == datetime.datetime(1996,12,20,0,39,57, tzinfo=datetime.UTC)
+        assert self.test_rc.parse_renewalinfo(json)[0] == datetime.datetime(1996,12,20,0,39,57, tzinfo=datetime.timezone.utc)
         
         #nanosecond range timestamp: don't care about subseconds but shouldn't error
         json = {'suggestedWindow': {'start': '2025-02-23T00:21:03.123683421Z', 'end': '2025-02-25T00:21:03Z'}}
-        assert self.test_rc.parse_ari_result(json)[0].second == 3
+        assert self.test_rc.parse_renewalinfo(json)[0].second == 3
 
     def test_autorenewal_is_enabled(self):
         self.test_rc.configuration["renewalparams"] = {}

@@ -126,9 +126,10 @@ def parse_rfc3399_time(instr: str) -> datetime.datetime:
     """try rfc3399 specific parser first, 
     if its malformed try generic python time parser"""
     try:
-        return pyrfc3339.parse(instr).astimezone(datetime.UTC)
+        return pyrfc3339.parse(instr, utc = True)
     except ValueError:
-        return datetime.datetime.fromisoformat(instr.replace('Z',"+00:00")).astimezone(datetime.UTC)
+        lctime = datetime.datetime.fromisoformat(instr.replace('Z',"+00:00"))
+        return lctime.astimezone(datetime.timezone.utc)
 
 
 def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
@@ -1008,12 +1009,12 @@ class RenewableCert(interfaces.RenewableCert):
             logger.debug("%s",e)
             return None
 
-    def parse_ari_result(self, inputjson: dict) -> \
-        Tuple[datetime.datetime|None, datetime.datetime|None]:
+    def parse_renewalinfo(self, inputjson: dict) -> \
+        Tuple[Optional[datetime.datetime], Optional[datetime.datetime]]:
         """parse Ari result json if make sense, raise valueerror if not
         this accepts parse json object with load, so 
         :returns: dict from request.json() if request succeed, None if not
-        :rtype: Tuple[datetime.datetime|None, datetime.datetime|None]
+        :rtype: Tuple[Optional(datetime.datetime), Optional(datetime.datetime)]
         """
         try:
             suggestedWindow = inputjson["suggestedWindow"]
@@ -1073,7 +1074,7 @@ class RenewableCert(interfaces.RenewableCert):
                                                        verify_ssl, useragent)
             if ariinfo is not None:
                 # Server have ari endpoint
-                start, end = self.parse_ari_result(ariinfo)
+                start, end = self.parse_renewalinfo(ariinfo)
                 if start is None or end is None:
                     logger.debug('server gave result but malformed')
                 else:
