@@ -33,11 +33,6 @@ targets:
   #-----------------------------------------------------------------------------
   # CentOS
   # These AMI were found on https://centos.org/download/aws-images/.
-  - ami: ami-0aedf6b1cb669b4c7
-    name: centos7
-    type: centos
-    virt: hvm
-    user: centos
   - ami: ami-00d53d23711185071
     name: centos9stream
     type: centos
