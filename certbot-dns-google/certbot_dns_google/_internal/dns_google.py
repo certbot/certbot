@@ -4,6 +4,7 @@ from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Optional
+from typing import cast
 
 import google.auth
 
@@ -97,13 +98,13 @@ class _GoogleClient:
 
         if account_json is not None:
             try:
-                credentials, project_id = google.auth.load_credentials_from_file(
+                credentials, project_id = google.auth.load_credentials_from_file( # type: ignore [no-untyped-call, unused-ignore] # pylint: disable=line-too-long
                     account_json, scopes=scopes)
             except googleauth_exceptions.GoogleAuthError as e:
                 raise errors.PluginError(
                     "Error loading credentials file '{}': {}".format(account_json, e))
         else:
-            credentials, project_id = google.auth.default(scopes=scopes)
+            credentials, project_id = google.auth.default(scopes=scopes) # type: ignore [no-untyped-call, unused-ignore] # pylint: disable=line-too-long
 
         if dns_project_id is not None:
             project_id = dns_project_id
@@ -279,7 +280,7 @@ class _GoogleClient:
             logger.debug("Error was:", exc_info=True)
         else:
             if response and response["rrsets"]:
-                return response["rrsets"][0]
+                return cast(dict[str, Any], response["rrsets"][0])
         return None
 
     def _find_managed_zone_id(self, domain: str) -> str:
@@ -305,7 +306,7 @@ class _GoogleClient:
                                          .format(e))
 
             for zone in zones:
-                zone_id = zone['id']
+                zone_id: str = zone['id']
                 if zone['visibility'] == "public":
                     logger.debug('Found id of %s for %s using name %s', zone_id, domain, zone_name)
                     return zone_id

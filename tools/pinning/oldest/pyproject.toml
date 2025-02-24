@@ -1,5 +1,13 @@
+# The purpose of this file is to help us test Certbot against the oldest
+# versions of our dependencies which we claim to support in our setup.py files.
+#
 # Security alerts about vulnerable packages in this file can be ignored since
 # they are only used during testing.
+#
+# Ideally, generating package pinnings based on our minimum allowed dependency
+# versions would be done automatically by tooling, but as of writing this, both
+# https://github.com/pypa/pip/issues/8085 and
+# https://github.com/python-poetry/poetry/issues/3527 remain unresolved.
 [tool.poetry]
 name = "certbot-pinner"
 version = "0.1.0"
@@ -10,7 +18,7 @@ license = "Apache License 2.0"
 [tool.poetry.dependencies]
 # The Python version here should be kept in sync with the one used in our
 # oldest tests in tox.ini.
-python = "<3.9 >= 3.8"
+python = "<3.10 >= 3.9"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -50,12 +58,12 @@ boto3 = "1.15.15"
 botocore = "1.18.15"
 cffi = "1.12.3"
 chardet = "3.0.4"
-cloudflare = "1.5.1"
+cloudflare = "2.19"
 configobj = "5.0.6"
-cryptography = "3.2.1"
+cryptography = "43.0.0"
 distro = "1.0.1"
 dns-lexicon = "3.15.1"
-dnspython = "1.15.0"
+dnspython = "2.6.1"
 funcsigs = "0.4"
 google-api-python-client = "1.6.5"
 google-auth = "2.16.0"
@@ -67,16 +75,15 @@ ndg-httpsclient = "0.3.2"
 parsedatetime = "2.4"
 pbr = "1.8.0"
 ply = "3.4"
-pyOpenSSL = "17.5.0"
+pyOpenSSL = "25.0.0"
 pyRFC3339 = "1.0"
 pyasn1 = "0.4.8"
 pycparser = "2.14"
-pyparsing = "2.2.1"
+pyparsing = "2.4.7"
 python-augeas = "0.5.0"
 python-digitalocean = "1.11"
 pytz = "2019.3"
 requests = "2.20.0"
-setuptools = "41.6.0"
 six = "1.11.0"
 urllib3 = "1.24.2"
 
@@ -97,12 +104,6 @@ cython = "<3.0"
 # Other dependencies
 # We add any dependencies that must be specified in this file for any another
 # reason below.
-
-# wheel 0.34.1+ does not support the version of setuptools pinned above (and
-# wheel 0.34.0 is buggy).
-wheel = "<0.34.0"
-
-[tool.poetry.dev-dependencies]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

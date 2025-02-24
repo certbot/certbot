@@ -1,8 +1,8 @@
 """NginxParser is a member object of the NginxConfigurator class."""
+from __future__ import annotations
 import copy
 import functools
 import glob
-import io
 import logging
 import re
 from typing import Any
@@ -42,6 +42,7 @@ class NginxParser:
         self.parsed: Dict[str, UnspacedList] = {}
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
+        self._http_path: str | None = None
 
         # Parse nginx.conf and included files.
         # TODO: Check sites-available/ as well. For now, the configurator does
@@ -55,6 +56,14 @@ class NginxParser:
         self.parsed = {}
         self._parse_recursively(self.config_root)
 
+    @property
+    def http_path(self) -> str:
+        """ Filepath of file containing nginx http block. Set in self._parse_recursively
+        """
+        if self._http_path is None:
+            raise errors.MisconfigurationError('No nginx http block found')
+        return self._http_path
+
     def _parse_recursively(self, filepath: str) -> None:
         """Parses nginx config files recursively by looking at 'include'
         directives inside 'http' and 'server' blocks. Note that this only
@@ -65,13 +74,16 @@ class NginxParser:
         """
         # pylint: disable=too-many-nested-blocks
         filepath = self.abs_path(filepath)
-        trees = self._parse_files(filepath)
-        for tree in trees:
+        trees: dict[str, UnspacedList] = self._parse_files(filepath)
+        for filename, tree in trees.items():
             for entry in tree:
                 if _is_include_directive(entry):
                     # Parse the top-level included file
                     self._parse_recursively(entry[1])
                 elif entry[0] == ['http'] or entry[0] == ['server']:
+                    # Note http block location for http_01.py
+                    if entry[0] == ['http']:
+                        self._http_path = filename
                     # Look for includes in the top-level 'http'/'server' context
                     for subentry in entry[1]:
                         if _is_include_directive(subentry):
@@ -194,35 +206,35 @@ class NginxParser:
                         pass
         return result
 
-    def _parse_files(self, filepath: str, override: bool = False) -> List[UnspacedList]:
+    def _parse_files(self, filepath: str, override: bool = False) -> dict[str, UnspacedList]:
         """Parse files from a glob
 
         :param str filepath: Nginx config file path
         :param bool override: Whether to parse a file that has been parsed
-        :returns: list of parsed tree structures
-        :rtype: list
+        :returns: dict of parsed tree structures indexed by filename
+        :rtype: dict[str, UnspacedList]
 
         """
-        files = glob.glob(filepath) # nginx on unix calls glob(3) for this
+        files: list[str] = glob.glob(filepath) # nginx on unix calls glob(3) for this
                                     # XXX Windows nginx uses FindFirstFile, and
                                     # should have a narrower call here
-        trees = []
-        for item in files:
-            if item in self.parsed and not override:
+        trees: dict[str, UnspacedList] = {}
+        for filename in files:
+            if filename in self.parsed and not override:
                 continue
             try:
-                with io.open(item, "r", encoding="utf-8") as _file:
+                with open(filename, "r", encoding="utf-8") as _file:
                     parsed = nginxparser.load(_file)
-                    self.parsed[item] = parsed
-                    trees.append(parsed)
-            except IOError:
-                logger.warning("Could not open file: %s", item)
+                    self.parsed[filename] = parsed
+                    trees[filename] = parsed
+            except OSError:
+                logger.warning("Could not open file: %s", filename)
             except UnicodeDecodeError:
                 logger.warning("Could not read file: %s due to invalid "
                                "character. Only UTF-8 encoding is "
-                               "supported.", item)
+                               "supported.", filename)
             except pyparsing.ParseException as err:
-                logger.warning("Could not parse file: %s due to %s", item, err)
+                logger.warning("Could not parse file: %s due to %s", filename, err)
         return trees
 
     def _find_config_root(self) -> str:
@@ -255,10 +267,10 @@ class NginxParser:
                     continue
                 out = nginxparser.dumps(tree)
                 logger.debug('Writing nginx conf tree to %s:\n%s', filename, out)
-                with io.open(filename, 'w', encoding='utf-8') as _file:
+                with open(filename, 'w', encoding='utf-8') as _file:
                     _file.write(out)
 
-            except IOError:
+            except OSError:
                 logger.error("Could not open file for writing: %s", filename)
 
     def parse_server(self, server: UnspacedList) -> Dict[str, Any]:
@@ -431,9 +443,9 @@ class NginxParser:
 def _parse_ssl_options(ssl_options: Optional[str]) -> List[UnspacedList]:
     if ssl_options is not None:
         try:
-            with io.open(ssl_options, "r", encoding="utf-8") as _file:
+            with open(ssl_options, "r", encoding="utf-8") as _file:
                 return nginxparser.load(_file)
-        except IOError:
+        except OSError:
             logger.warning("Missing NGINX TLS options file: %s", ssl_options)
         except UnicodeDecodeError:
             logger.warning("Could not read file: %s due to invalid character. "
@@ -795,13 +807,20 @@ def _parse_server_raw(server: UnspacedList) -> Dict[str, Any]:
         if not directive:
             continue
         if directive[0] == 'listen':
-            addr = obj.Addr.fromstring(" ".join(directive[1:]))
-            if addr:
-                addrs.add(addr)
-                if addr.ssl:
-                    ssl = True
+            try:
+                addr = obj.Addr.fromstring(" ".join(directive[1:]))
+            except obj.SocketAddrError:
+                # Ignore UNIX-domain socket addresses
+                continue
+            addrs.add(addr)
+            if addr.ssl:
+                ssl = True
         elif directive[0] == 'server_name':
-            names.update(x.strip('"\'') for x in directive[1:])
+            params = directive[1:]
+            while '#' in params:
+                end_index = [i for i, param in enumerate(params) if param.startswith('\n')][0]
+                params = params[:params.index('#')] + params[end_index+1:]
+            names.update(x.strip('"\'') for x in params)
         elif _is_ssl_on_directive(directive):
             ssl = True
             apply_ssl_to_all_addrs = True

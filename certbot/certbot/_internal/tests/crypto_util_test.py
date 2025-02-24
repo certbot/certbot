@@ -1,12 +1,18 @@
 """Tests for certbot.crypto_util."""
+import binascii
 import logging
 import re
 import sys
 import unittest
 from unittest import mock
+import warnings
 
 import OpenSSL
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 
 from certbot import errors
 from certbot import util
@@ -168,18 +174,19 @@ class MakeKeyTest(unittest.TestCase):
         from certbot.crypto_util import make_key
 
         # Do not test larger keys as it takes too long.
-        OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, make_key(2048))
+        serialization.load_pem_private_key(make_key(2048), password=None)
 
     def test_ec(self):  # pylint: disable=no-self-use
         # ECDSA Key Type Tests
         from certbot.crypto_util import make_key
 
         for (name, bits) in [('secp256r1', 256), ('secp384r1', 384), ('secp521r1', 521)]:
-            pkey = OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM,
-                make_key(elliptic_curve=name, key_type='ecdsa')
+            pkey = serialization.load_pem_private_key(
+                make_key(elliptic_curve=name, key_type='ecdsa'),
+                password=None
             )
-            assert pkey.bits() == bits
+            assert isinstance(pkey, ec.EllipticCurvePrivateKey)
+            assert pkey.curve.key_size == bits
 
     def test_bad_key_sizes(self):
         from certbot.crypto_util import make_key
@@ -199,8 +206,15 @@ class MakeKeyTest(unittest.TestCase):
         # Try a bad --key-type
         with pytest.raises(errors.Error,
                            match=re.escape('Invalid key_type specified: unf.  Use [rsa|ecdsa]')):
-            OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, make_key(2048, key_type='unf'))
+            make_key(2048, key_type='unf')
+
+    def test_for_pkcs8_format(self):
+        from certbot.crypto_util import make_key
+
+        # PKCS#1 format will instead have text like "BEGIN RSA PRIVATE KEY" or "BEGIN EC PRIVATE
+        # KEY"
+        assert b"BEGIN PRIVATE KEY" in make_key(2048)
+        assert b"BEGIN PRIVATE KEY" in make_key(elliptic_curve='secp256r1', key_type='ecdsa')
 
 
 class VerifyCertSetup(unittest.TestCase):
@@ -355,8 +369,8 @@ class GetNamesFromCertTest(unittest.TestCase):
             self._call(test_util.load_vector('cert-5sans_512.pem'))
 
     def test_parse_non_cert(self):
-        with pytest.raises(OpenSSL.crypto.Error):
-            self._call("hello there")
+        with pytest.raises(ValueError):
+            self._call(b"hello there")
 
 
 class GetNamesFromReqTest(unittest.TestCase):
@@ -392,15 +406,28 @@ class CertLoaderTest(unittest.TestCase):
     def test_load_valid_cert(self):
         from certbot.crypto_util import pyopenssl_load_certificate
 
-        cert, file_type = pyopenssl_load_certificate(CERT)
-        assert cert.digest('sha256') == \
-                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha256')
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='certbot.crypto_util.pyopenssl_load_certificate is *'
+            )
+            cert, file_type = pyopenssl_load_certificate(CERT)
+
+        assert file_type == OpenSSL.crypto.FILETYPE_PEM
+        assert binascii.unhexlify(
+            cert.digest("sha256").replace(b":", b"")
+        ) == x509.load_pem_x509_certificate(CERT).fingerprint(hashes.SHA256())
 
     def test_load_invalid_cert(self):
         from certbot.crypto_util import pyopenssl_load_certificate
         bad_cert_data = CERT.replace(b"BEGIN CERTIFICATE", b"ASDFASDFASDF!!!")
         with pytest.raises(errors.Error):
-            pyopenssl_load_certificate(bad_cert_data)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    'ignore',
+                    message='certbot.crypto_util.pyopenssl_load_certificate is *'
+                )
+                pyopenssl_load_certificate(bad_cert_data)
 
 
 class NotBeforeTest(unittest.TestCase):

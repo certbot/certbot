@@ -4,7 +4,7 @@ jobs:
       - name: IMAGE_NAME
         value: ubuntu-22.04
       - name: PYTHON_VERSION
-        value: 3.12
+        value: 3.13
       - group: certbot-common
     strategy:
       matrix:
@@ -17,16 +17,17 @@ jobs:
         linux-py311:
           PYTHON_VERSION: 3.11
           TOXENV: py311
+        linux-py312:
+          PYTHON_VERSION: 3.12
+          TOXENV: py312
         linux-isolated:
           TOXENV: 'isolated-acme,isolated-certbot,isolated-apache,isolated-cloudflare,isolated-digitalocean,isolated-dnsimple,isolated-dnsmadeeasy,isolated-gehirn,isolated-google,isolated-linode,isolated-luadns,isolated-nsone,isolated-ovh,isolated-rfc2136,isolated-route53,isolated-sakuracloud,isolated-nginx'
         linux-integration-certbot-oldest:
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.9
           TOXENV: integration-certbot-oldest
         linux-integration-nginx-oldest:
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.9
           TOXENV: integration-nginx-oldest
-        # python 3.8 integration tests are not run here because they're run as    
-        # part of the standard test suite 
         linux-py39-integration:
           PYTHON_VERSION: 3.9
           TOXENV: integration
@@ -39,17 +40,19 @@ jobs:
         linux-py312-integration:
           PYTHON_VERSION: 3.12
           TOXENV: integration
+        # python 3.13 integration tests are not run here because they're run as
+        # part of the standard test suite
         nginx-compat:
           TOXENV: nginx_compat
         linux-integration-rfc2136:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.12
           TOXENV: integration-dns-rfc2136
         le-modification:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: modification
         farmtest-apache2:
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.12
           TOXENV: test-farm-apache2
     pool:
       vmImage: $(IMAGE_NAME)

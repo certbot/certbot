@@ -6,7 +6,6 @@ version = '0.32.0.dev0'
 install_requires = [
     'coverage',
     'cryptography',
-    'importlib_resources>=1.3.1; python_version < "3.9"',
     'pyopenssl',
     'pytest',
     'pytest-cov',
@@ -22,7 +21,6 @@ install_requires = [
     # requests unvendored its dependencies in version 2.16.0 and this code relies on that for
     # calling `urllib3.disable_warnings`.
     'requests>=2.16.0',
-    'setuptools',
     'types-python-dateutil',
 ]
 
@@ -34,18 +32,18 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.8',
+    python_requires='>=3.9',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],

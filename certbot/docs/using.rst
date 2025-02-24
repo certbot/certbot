@@ -99,7 +99,7 @@ Apache
 ------
 
 The Apache plugin currently `supports
-<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/_internal/entrypoint.py>`_
+<https://github.com/certbot/certbot/blob/main/certbot-apache/certbot_apache/_internal/entrypoint.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo, CentOS and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
@@ -298,9 +298,9 @@ There are also a number of third-party plugins for the client, provided by
 other developers. Many are beta/experimental, but some are already in
 widespread use:
 
-================== ==== ==== ===============================================================
+================== ==== ==== =================================================================
 Plugin             Auth Inst Notes
-================== ==== ==== ===============================================================
+================== ==== ==== =================================================================
 haproxy_           Y    Y    Integration with the HAProxy load balancer
 s3front_           Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
 gandi_             Y    N    Obtain certificates via the Gandi LiveDNS API
@@ -310,6 +310,7 @@ pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN
 proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
+dns-cloudns_       Y    N    DNS Authentication using ClouDNS API
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
 dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
@@ -328,7 +329,8 @@ dns-solidserver_   Y    N    DNS Authentication using SOLIDserver (EfficientIP)
 dns-stackit_       Y    N    DNS Authentication using STACKIT DNS
 dns-ionos_         Y    N    DNS Authentication using IONOS Cloud DNS
 dns-mijn-host_     Y    N    DNS Authentication using mijn.host DNS
-================== ==== ==== ===============================================================
+nginx-unit_        Y    Y    Automates obtaining and installing a certificate with Nginx Unit
+================== ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
@@ -339,6 +341,7 @@ dns-mijn-host_     Y    N    DNS Authentication using mijn.host DNS
 .. _external-auth: https://github.com/EnigmaBridge/certbot-external-auth
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
+.. _dns-cloudns: https://github.com/inventage/certbot-dns-cloudns
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 .. _dns-lightsail: https://github.com/noi/certbot-dns-lightsail
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
@@ -357,6 +360,7 @@ dns-mijn-host_     Y    N    DNS Authentication using mijn.host DNS
 .. _dns-stackit: https://github.com/stackitcloud/certbot-dns-stackit
 .. _dns-ionos: https://github.com/ionos-cloud/certbot-dns-ionos-cloud
 .. _dns-mijn-host: https://github.com/mijnhost/certbot-dns-mijn-host
+.. _nginx-unit: https://github.com/kea/certbot-nginx-unit
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -681,10 +685,13 @@ configuration directory. Assuming your configuration directory is
 ``/etc/letsencrypt/renewal-hooks/pre``,
 ``/etc/letsencrypt/renewal-hooks/deploy``, and
 ``/etc/letsencrypt/renewal-hooks/post`` will be run as pre, deploy, and post
-hooks respectively when any certificate is renewed with the ``renew``
-subcommand. These hooks are run in alphabetical order and are not run for other
-subcommands. (The order the hooks are run is determined by the byte value of
-the characters in their filenames and is not dependent on your locale.)
+hooks respectively. These hooks are run in alphabetical order. (The order the
+hooks are run is determined by the byte value of the characters in their
+filenames and is not dependent on your locale.)
+
+Prior to certbot 3.2.0, hooks in directories were only run when certificates
+were renewed with the ``renew`` subcommand, but as of 3.2.0, they are run for
+any subcommand.
 
 Hooks specified in the command line, :ref:`configuration file
 <config-file>`, or :ref:`renewal configuration files <renewal-config-file>` are

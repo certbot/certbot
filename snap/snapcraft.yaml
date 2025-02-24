@@ -18,20 +18,34 @@ base: core24
 grade: stable
 adopt-info: certbot
 
+environment:
+  AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
+  CERTBOT_SNAPPED: "True"
+  # This is needed to help openssl find its legacy provider on architectures
+  # where we cannot use cryptography's pre-built wheels. See
+  # https://github.com/certbot/certbot/issues/10055.
+  OPENSSL_MODULES: "$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/ossl-modules"
+  PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+  PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
+  # Disable FIPS mode detection. See
+  # https://git.launchpad.net/ubuntu/+source/openssl/tree/debian/patches/fips/crypto-Add-kernel-FIPS-mode-detection.patch?h=applied/ubuntu/noble
+  # for more on this flag, and https://github.com/certbot/certbot/issues/10044
+  # for more on the issue.
+  #
+  # This is needed because the Python + OpenSSL bundled in core24 don't include
+  # an OpenSSL FIPS provider, which causes crashes on host systems with OpenSSL
+  # 1.1.1f (e.g. Ubuntu Pro 20.04). For some reason, core24's OpenSSL also looks
+  # in a non-standard location for the provider, which also causes crashes on
+  # systems with OpenSSL 3.x (e.g. RHEL 9). If you need FIPS functionality in
+  # certbot, install via pip.
+  OPENSSL_FORCE_FIPS_MODE: "0"
+
 apps:
   certbot:
     command: bin/python3 -s $SNAP/bin/certbot
-    environment:
-      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
-      AUGEAS_LENS_LIB: "$SNAP/usr/share/augeas/lenses/dist"
-      CERTBOT_SNAPPED: "True"
   renew:
     command: bin/python3 -s $SNAP/bin/certbot -q renew
     daemon: oneshot
-    environment:
-      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
-      AUGEAS_LENS_LIB: $SNAP/usr/share/augeas/lenses/dist
-      CERTBOT_SNAPPED: "True"
     # Run approximately twice a day with randomization
     timer: 00:00~24:00/2
 
@@ -58,6 +72,10 @@ parts:
     stage-packages:
       - libaugeas0
       - libpython3.12-dev
+      # This library included so openssl has a legacy provider available at
+      # runtime when we are unable to use cryptography's pre-built wheels. See
+      # https://github.com/certbot/certbot/issues/10055.
+      - libssl3t64
       # added to stage python:
       - libpython3-stdlib
       - libpython3.12-stdlib

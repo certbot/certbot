@@ -190,7 +190,7 @@ class AuthenticatorTest(unittest.TestCase):
             with open(permission_canary, "r"):
                 pass
             print("Warning, running tests as root skips permissions tests...")
-        except IOError:
+        except OSError:
             # ok, permissions work, test away...
             with pytest.raises(errors.PluginError):
                 self.auth.perform([])

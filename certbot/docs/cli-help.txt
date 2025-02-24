@@ -36,7 +36,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -122,7 +122,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/2.11.0 (certbot;
+                        "". (default: CertbotACMEClient/3.2.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -208,14 +208,15 @@ security:
                         enhance)
   --hsts                Add the Strict-Transport-Security header to every HTTP
                         response. Forcing browser to always use SSL for the
-                        domain. Defends against SSL Stripping. (default: None)
+                        domain. Defends against SSL Stripping. (default:
+                        False)
   --uir                 Add the "Content-Security-Policy: upgrade-insecure-
                         requests" header to every HTTP response. Forcing the
                         browser to use https:// for every http:// resource.
-                        (default: None)
+                        (default: False)
   --staple-ocsp         Enables OCSP Stapling. A valid OCSP response is
                         stapled to the certificate that the server offers
-                        during TLS. (default: None)
+                        during TLS. (default: False)
   --strict-permissions  Require that all configuration files are owned by the
                         current user; only needed if your config is somewhere
                         unsafe like /tmp/ (default: False)
@@ -362,7 +363,7 @@ renew:
                         shell constructs, so you can use this switch to
                         disable it. (default: False)
   --no-directory-hooks  Disable running executables found in Certbot's hook
-                        directories during renewal. (default: False)
+                        directories. (default: False)
   --disable-renew-updates
                         Disable automatic updates to your server configuration
                         that would otherwise be done by the selected installer
@@ -387,12 +388,12 @@ revoke:
   --delete-after-revoke
                         Delete certificates after revoking them, along with
                         all previous and later versions of those certificates.
-                        (default: None)
+                        (default: Ask)
   --no-delete-after-revoke
                         Do not delete certificates after revoking them. This
                         option should be used with caution because the 'renew'
                         subcommand will attempt to renew undeleted revoked
-                        certificates. (default: None)
+                        certificates. (default: Ask)
 
 register:
   Options for account registration
@@ -409,9 +410,9 @@ register:
                         Email used for registration and recovery contact. Use
                         comma to register multiple emails, ex:
                         u1@example.com,u2@example.com. (default: Ask).
-  --eff-email           Share your e-mail address with EFF (default: None)
+  --eff-email           Share your e-mail address with EFF (default: Ask)
   --no-eff-email        Don't share your e-mail address with EFF (default:
-                        None)
+                        Ask)
 
 update_account:
   Options for account modification

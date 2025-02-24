@@ -1,5 +1,8 @@
 """Common utilities for certbot_apache."""
 import shutil
+from typing import List
+from typing import Optional
+from typing import Tuple
 import unittest
 from unittest import mock
 
@@ -16,9 +19,10 @@ from certbot_apache._internal import obj
 
 class ApacheTest(unittest.TestCase):
 
-    def setUp(self, test_dir="debian_apache_2_4/multiple_vhosts",
-              config_root="debian_apache_2_4/multiple_vhosts/apache2",
-              vhost_root="debian_apache_2_4/multiple_vhosts/apache2/sites-available"):
+    def setUp(self, test_dir: str = "debian_apache_2_4/multiple_vhosts",
+              config_root: str = "debian_apache_2_4/multiple_vhosts/apache2",
+              vhost_root: str = "debian_apache_2_4/multiple_vhosts/apache2/sites-available"
+              ) -> None:
         # pylint: disable=arguments-differ
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
             test_dir=test_dir,
@@ -27,7 +31,7 @@ class ApacheTest(unittest.TestCase):
         self.config_path = os.path.join(self.temp_dir, config_root)
         self.vhost_path = os.path.join(self.temp_dir, vhost_root)
 
-        self.rsa512jwk = jose.JWKRSA.load(test_util.load_vector(
+        self.rsa512jwk = jose.jwk.JWKRSA.load(test_util.load_vector(
             "rsa512_key.pem"))
 
         self.config = get_apache_configurator(self.config_path, vhost_root,
@@ -50,7 +54,7 @@ class ApacheTest(unittest.TestCase):
                     os.path.pardir, "sites-available", vhost_basename)
                 os.symlink(target, vhost)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
@@ -58,9 +62,10 @@ class ApacheTest(unittest.TestCase):
 
 class ParserTest(ApacheTest):
 
-    def setUp(self, test_dir="debian_apache_2_4/multiple_vhosts",
-              config_root="debian_apache_2_4/multiple_vhosts/apache2",
-              vhost_root="debian_apache_2_4/multiple_vhosts/apache2/sites-available"):
+    def setUp(self, test_dir: str = "debian_apache_2_4/multiple_vhosts",
+              config_root: str = "debian_apache_2_4/multiple_vhosts/apache2",
+              vhost_root: str = "debian_apache_2_4/multiple_vhosts/apache2/sites-available"
+              ) -> None:
         super().setUp(test_dir, config_root, vhost_root)
 
         from certbot_apache._internal.parser import ApacheParser
@@ -73,12 +78,12 @@ class ParserTest(ApacheTest):
 
 
 def get_apache_configurator(
-        config_path, vhost_path,
-        config_dir, work_dir, version=(2, 4, 7),
-        os_info="generic",
-        conf_vhost_path=None,
-        use_parsernode=False,
-        openssl_version="1.1.1a"):
+        config_path: str, vhost_path: str,
+        config_dir: str, work_dir: str, version: Tuple[int, int, int] = (2, 4, 7),
+        os_info: str = "generic",
+        conf_vhost_path: Optional[str] = None,
+        use_parsernode: bool = False,
+        openssl_version: str = "1.1.1a") -> configurator.ApacheConfigurator:
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -124,7 +129,7 @@ def get_apache_configurator(
     return config
 
 
-def get_vh_truth(temp_dir, config_name):
+def get_vh_truth(temp_dir: str, config_name: str) -> Optional[List[obj.VirtualHost]]:
     """Return the ground truth for the specified directory."""
     if config_name == "debian_apache_2_4/multiple_vhosts":
         prefix = os.path.join(
@@ -146,13 +151,13 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "000-default.conf"),
                 os.path.join(aug_pre, "000-default.conf/VirtualHost"),
                 {obj.Addr.fromstring("*:80"),
-                     obj.Addr.fromstring("[::]:80")},
+                    obj.Addr.fromstring("[::]:80")},
                 False, True, "ip-172-30-0-17"),
             obj.VirtualHost(
                 os.path.join(prefix, "certbot.conf"),
                 os.path.join(aug_pre, "certbot.conf/VirtualHost"),
                 {obj.Addr.fromstring("*:80")}, False, True,
-                "certbot.demo", aliases=["www.certbot.demo"]),
+                "certbot.demo", aliases={"www.certbot.demo"}),
             obj.VirtualHost(
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,
@@ -168,7 +173,7 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "wildcard.conf"),
                 os.path.join(aug_pre, "wildcard.conf/VirtualHost"),
                 {obj.Addr.fromstring("*:80")}, False, True,
-                "ip-172-30-0-17", aliases=["*.blue.purple.com"]),
+                "ip-172-30-0-17", aliases={"*.blue.purple.com"}),
             obj.VirtualHost(
                 os.path.join(prefix, "ocsp-ssl.conf"),
                 os.path.join(aug_pre, "ocsp-ssl.conf/IfModule/VirtualHost"),

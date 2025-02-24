@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Module to setup an RFC2136-capable DNS server"""
+import importlib.resources
 import os
 import os.path
 import shutil
@@ -16,11 +17,6 @@ from typing import Optional
 from typing import Type
 
 from certbot_integration_tests.utils import constants
-
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
 
 BIND_DOCKER_IMAGE = "internetsystemsconsortium/bind9:9.20"
 BIND_BIND_ADDRESS = ("127.0.0.1", 45953)
@@ -49,7 +45,7 @@ class DNSServer:
 
         self.bind_root = tempfile.mkdtemp()
 
-        self.process: Optional[subprocess.Popen] = None
+        self.process: Optional[subprocess.Popen[bytes]] = None
 
         self.dns_xdist = {"address": BIND_BIND_ADDRESS[0], "port": BIND_BIND_ADDRESS[1]}
 
@@ -83,8 +79,8 @@ class DNSServer:
 
     def _configure_bind(self) -> None:
         """Configure the BIND9 server based on the prebaked configuration"""
-        ref = importlib_resources.files("certbot_integration_tests") / "assets" / "bind-config"
-        with importlib_resources.as_file(ref) as path:
+        ref = importlib.resources.files("certbot_integration_tests") / "assets" / "bind-config"
+        with importlib.resources.as_file(ref) as path:
             for directory in ("conf", "zones"):
                 shutil.copytree(
                     os.path.join(path, directory), os.path.join(self.bind_root, directory)

@@ -66,9 +66,9 @@ parser.add_argument('--branch',
 parser.add_argument('--pull_request',
                     default='~',
                     help='certbot/certbot pull request to trial')
-parser.add_argument('--merge_master',
+parser.add_argument('--merge_main',
                     action='store_true',
-                    help="if set merges PR into master branch of certbot/certbot")
+                    help="if set merges PR into main branch of certbot/certbot")
 parser.add_argument('--saveinstances',
                     action='store_true',
                     help="don't kill EC2 instances after run, useful for debugging")
@@ -185,7 +185,7 @@ def block_until_ssh_open(ipstring, wait_time=10, timeout=120):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((ipstring, 22))
             reached = True
-        except socket.error as err:
+        except OSError as err:
             time.sleep(wait_time)
             t_elapsed += wait_time
     sock.close()
@@ -207,7 +207,7 @@ def block_until_instance_ready(booting_instance, extra_wait_time=20):
 # Fabric Routines
 #-------------------------------------------------------------------------------
 def local_git_clone(local_cxn, repo_url, log_dir):
-    """clones master of repo_url"""
+    """clones main of repo_url"""
     local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % log_dir)
     local_cxn.local('cd %s && git clone %s letsencrypt'% (log_dir, repo_url))
     local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt'% log_dir)
@@ -219,17 +219,17 @@ def local_git_branch(local_cxn, repo_url, branch_name, log_dir):
         (log_dir, repo_url, branch_name))
     local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % log_dir)
 
-def local_git_PR(local_cxn, repo_url, PRnumstr, log_dir, merge_master=True):
-    """clones specified pull request from repo_url and optionally merges into master"""
+def local_git_PR(local_cxn, repo_url, PRnumstr, log_dir, merge_main=True):
+    """clones specified pull request from repo_url and optionally merges into main"""
     local_cxn.local('cd %s && if [ -d letsencrypt ]; then rm -rf letsencrypt; fi' % log_dir)
     local_cxn.local('cd %s && git clone %s letsencrypt' % (log_dir, repo_url))
     local_cxn.local('cd %s && cd letsencrypt && '
         'git fetch origin pull/%s/head:lePRtest' % (log_dir, PRnumstr))
     local_cxn.local('cd %s && cd letsencrypt && git checkout lePRtest' % log_dir)
-    if merge_master:
+    if merge_main:
         local_cxn.local('cd %s && cd letsencrypt && git remote update origin' % log_dir)
         local_cxn.local('cd %s && cd letsencrypt && '
-            'git merge origin/master -m "testmerge"' % log_dir)
+            'git merge origin/main -m "testmerge"' % log_dir)
     local_cxn.local('cd %s && tar czf le.tar.gz letsencrypt' % log_dir)
 
 def local_repo_to_remote(cxn, log_dir):
@@ -382,9 +382,9 @@ def main():
         print("Making local git repo")
         if cl_args.pull_request != '~':
             print('Testing PR %s ' % cl_args.pull_request,
-                  "MERGING into master" if cl_args.merge_master else "")
+                  "MERGING into main" if cl_args.merge_main else "")
             local_git_PR(local_cxn, cl_args.repo, cl_args.pull_request, log_dir,
-                         cl_args.merge_master)
+                         cl_args.merge_main)
         elif cl_args.branch != '~':
             print('Testing branch %s of %s' % (cl_args.branch, cl_args.repo))
             local_git_branch(local_cxn, cl_args.repo, cl_args.branch, log_dir)

@@ -49,7 +49,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
             command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
             self.config_dir, self.workspace, force_renew=True)
 
-    def _start_nginx(self, default_server: bool) -> subprocess.Popen:
+    def _start_nginx(self, default_server: bool) -> subprocess.Popen[bytes]:
         self.nginx_config = config.construct_nginx_config(
             self.nginx_root, self.webroot, self.http_01_port, self.tls_alpn_01_port,
             self.other_port, default_server, wtf_prefix=self.worker_id)

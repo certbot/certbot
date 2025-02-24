@@ -16,7 +16,6 @@ from typing import Set
 from typing import Tuple
 from typing import Type
 
-from OpenSSL import crypto
 from OpenSSL import SSL
 
 from acme import challenges
@@ -46,7 +45,7 @@ class TLSServer(socketserver.TCPServer):
             method=self.method))
 
     def _cert_selection(self, connection: SSL.Connection
-                        ) -> Optional[Tuple[crypto.PKey, crypto.X509]]:  # pragma: no cover
+                        ) -> Optional[crypto_util._KeyAndCert]:  # pragma: no cover
         """Callback selecting certificate for connection."""
         server_name = connection.get_servername()
         if server_name:
@@ -98,7 +97,7 @@ class BaseDualNetworkedServers:
                 logger.debug(
                     "Successfully bound to %s:%s using %s", new_address[0],
                     new_address[1], "IPv6" if ip_version else "IPv4")
-            except socket.error as e:
+            except OSError as e:
                 last_socket_err = e
                 if self.servers:
                     # Already bound using IPv6.
@@ -121,7 +120,7 @@ class BaseDualNetworkedServers:
             if last_socket_err:
                 raise last_socket_err
             else: # pragma: no cover
-                raise socket.error("Could not bind to IPv4 or IPv6.")
+                raise OSError("Could not bind to IPv4 or IPv6.")
 
     def serve_forever(self) -> None:
         """Wraps socketserver.TCPServer.serve_forever"""
@@ -152,8 +151,8 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
     ACME_TLS_1_PROTOCOL = b"acme-tls/1"
 
     def __init__(self, server_address: Tuple[str, int],
-                 certs: List[Tuple[crypto.PKey, crypto.X509]],
-                 challenge_certs: Mapping[bytes, Tuple[crypto.PKey, crypto.X509]],
+                 certs: List[crypto_util._KeyAndCert],
+                 challenge_certs: Mapping[bytes, crypto_util._KeyAndCert],
                  ipv6: bool = False) -> None:
         # We don't need to implement a request handler here because the work
         # (including logging) is being done by wrapped socket set up in the
@@ -163,8 +162,7 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
             ipv6=ipv6)
         self.challenge_certs = challenge_certs
 
-    def _cert_selection(self, connection: SSL.Connection) -> Optional[Tuple[crypto.PKey,
-                                                                            crypto.X509]]:
+    def _cert_selection(self, connection: SSL.Connection) -> Optional[crypto_util._KeyAndCert]:
         # TODO: We would like to serve challenge cert only if asked for it via
         # ALPN. To do this, we need to retrieve the list of protos from client
         # hello, but this is currently impossible with openssl [0], and ALPN

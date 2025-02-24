@@ -1,4 +1,4 @@
-# Nightly pipeline running each day for master.
+# Nightly pipeline running each day for main.
 trigger: none
 pr: none
 schedules:
@@ -6,7 +6,7 @@ schedules:
     displayName: Nightly build
     branches:
       include:
-      - master
+      - main
     always: true
 
 variables:

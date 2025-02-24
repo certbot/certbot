@@ -2,8 +2,10 @@
 import sys
 from unittest import mock
 
-import OpenSSL
 import pytest
+
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
 
 from acme import challenges
 from acme import messages
@@ -40,7 +42,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         assert (1, 6, 2) == self.config.version
-        assert 14 == len(self.config.parser.parsed)
+        assert 15 == len(self.config.parser.parsed)
 
     @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
     @mock.patch("certbot_nginx._internal.configurator.subprocess.run")
@@ -98,7 +100,7 @@ class NginxConfiguratorTest(util.NginxTest):
             "155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
-             "headers.com", "example.net", "ssl.both.com"}
+             "headers.com", "example.net", "ssl.both.com", 'addr-80.com'}
 
     def test_supported_enhancements(self):
         assert ['redirect', 'ensure-http-header', 'staple-ocsp'] == \
@@ -132,7 +134,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['server_name', 'example.*'],
                             ['listen', '5001', 'ssl'],
                             ['#', parser.COMMENT]]]] == \
-                         parsed[0]
+                         parsed[filep]
 
     def test_choose_vhosts_alias(self):
         self._test_choose_vhosts_common('alias', 'server_conf')
@@ -199,11 +201,38 @@ class NginxConfiguratorTest(util.NginxTest):
                 with pytest.raises(errors.MisconfigurationError):
                     self.config.choose_vhosts(name)
 
+    def test_choose_vhosts_keep_ip_address(self):
+        # no listen on port 80
+        # listen       69.50.225.155:9000;
+        # listen       127.0.0.1;
+        vhost = self.config.choose_vhosts('example.com')[0]
+        assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
+
+        # no listens at all
+        vhost = self.config.choose_vhosts('headers.com')[0]
+        assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
+        assert obj.Addr.fromstring("80") in vhost.addrs
+
+        # blank addr listen on 80 should result in blank addr ssl
+        # listen 80;
+        # listen [::]:80;
+        vhost = self.config.choose_vhosts('ipv6.com')[0]
+        assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
+        assert obj.Addr.fromstring("[::]:5001 ssl") in vhost.addrs
+
+        # listen on 80 with ip address should result in copied addr
+        # listen 1.2.3.4:80;
+        # listen [1:20::300]:80;
+        vhost = self.config.choose_vhosts('addr-80.com')[0]
+        assert obj.Addr.fromstring("1.2.3.4:5001 ssl") in vhost.addrs
+        assert obj.Addr.fromstring("[1:20::300]:5001 ssl ipv6only=on") in vhost.addrs
+
+
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
-        assert (True, False) == self.config.ipv6_info("80")
+        assert (True, False) == self.config.ipv6_info("[::]", "80")
         # Port 443 has ipv6only=on because of ipv6ssl.com vhost
-        assert (True, True) == self.config.ipv6_info("443")
+        assert (True, True) == self.config.ipv6_info("[::]", "443")
 
     def test_ipv6only_detection(self):
         self.config.version = (1, 3, 1)
@@ -545,12 +574,10 @@ class NginxConfiguratorTest(util.NginxTest):
         cert, key = self.config._get_snakeoil_paths()
         assert os.path.exists(cert)
         assert os.path.exists(key)
-        with open(cert) as cert_file:
-            OpenSSL.crypto.load_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, cert_file.read())
-        with open(key) as key_file:
-            OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, key_file.read())
+        with open(cert, "rb") as cert_file:
+            x509.load_pem_x509_certificate(cert_file.read())
+        with open(key, "rb") as key_file:
+            serialization.load_pem_private_key(key_file.read(), password=None)
 
     def test_redirect_enhance(self):
         # Test that we successfully add a redirect when there is
@@ -585,7 +612,7 @@ class NginxConfiguratorTest(util.NginxTest):
         generated_conf = self.config.parser.parsed[example_conf]
         assert [[['server'], [
                ['server_name', '.example.com'],
-               ['server_name', 'example.*'], [],
+               ['server_name', 'example.*'],
                ['listen', '5001', 'ssl'], ['#', ' managed by Certbot'],
                ['ssl_certificate', 'example/fullchain.pem'], ['#', ' managed by Certbot'],
                ['ssl_certificate_key', 'example/key.pem'], ['#', ' managed by Certbot'],
@@ -615,7 +642,7 @@ class NginxConfiguratorTest(util.NginxTest):
         generated_conf = self.config.parser.parsed[example_conf]
         assert [[['server'], [
                ['server_name', '.example.com'],
-               ['server_name', 'example.*'], [],
+               ['server_name', 'example.*'],
                ['listen', '5001', 'ssl'], ['#', ' managed by Certbot'],
                ['ssl_certificate', 'example/fullchain.pem'], ['#', ' managed by Certbot'],
                ['ssl_certificate_key', 'example/key.pem'], ['#', ' managed by Certbot'],
@@ -630,7 +657,7 @@ class NginxConfiguratorTest(util.NginxTest):
                ['listen', '127.0.0.1'],
                ['server_name', '.example.com'],
                ['server_name', 'example.*'],
-               [], [], []]]] == \
+               [], []]]] == \
             generated_conf
 
     def test_http_header_hsts(self):
@@ -957,7 +984,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                                 prefer_ssl=False,
                                                 no_ssl_filter_port='80')
             # Check that the dialog was called with only port 80 vhosts
-            assert len(mock_select_vhs.call_args[0][0]) == 8
+            assert len(mock_select_vhs.call_args[0][0]) == 9
 
     def test_choose_auth_vhosts(self):
         """choose_auth_vhosts correctly selects duplicative and HTTP/HTTPS vhosts"""
@@ -1074,16 +1101,13 @@ class InstallSslOptionsConfTest(util.NginxTest):
         file has been manually edited by the user, and will refuse to update it.
         This test ensures that all necessary hashes are present.
         """
-        if sys.version_info >= (3, 9):  # pragma: no cover
-            import importlib.resources as importlib_resources
-        else:  # pragma: no cover
-            import importlib_resources
-        
+        import importlib.resources
+
         from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
 
-        tls_configs_ref = importlib_resources.files("certbot_nginx").joinpath(
+        tls_configs_ref = importlib.resources.files("certbot_nginx").joinpath(
             "_internal", "tls_configs")
-        with importlib_resources.as_file(tls_configs_ref) as tls_configs_dir:
+        with importlib.resources.as_file(tls_configs_ref) as tls_configs_dir:
             for tls_config_file in os.listdir(tls_configs_dir):
                 file_hash = crypto_util.sha256sum(os.path.join(tls_configs_dir, tls_config_file))
                 assert file_hash in ALL_SSL_OPTIONS_HASHES, \

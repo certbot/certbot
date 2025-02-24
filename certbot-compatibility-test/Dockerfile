@@ -1,4 +1,4 @@
-FROM docker.io/python:3.8-buster
+FROM docker.io/python:3.11-buster
 LABEL maintainer="Brad Warren <bmw@eff.org>"
 
 # This does not include the dependencies needed to build cryptography. See

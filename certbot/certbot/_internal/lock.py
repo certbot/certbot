@@ -124,7 +124,7 @@ class _UnixLockMechanism(_BaseLockMechanism):
         """
         try:
             fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except IOError as err:
+        except OSError as err:
             if err.errno in (errno.EACCES, errno.EAGAIN):
                 logger.debug('A lock on %s is held by another process.', self._path)
                 raise errors.LockError('Another instance of Certbot is already running.')
@@ -187,13 +187,13 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     By default on Windows, acquiring a file handler gives exclusive access to the process
     and results in an effective lock. However, it is possible to explicitly acquire the
     file handler in shared access in terms of read and write, and this is done by os.open
-    and io.open in Python. So an explicit lock needs to be done through the call of
+    in Python. So an explicit lock needs to be done through the call of
     msvcrt.locking, that will lock the first byte of the file. In theory, it is also
     possible to access a file in shared delete access, allowing other processes to delete an
     opened file. But this needs also to be done explicitly by all processes using the Windows
     low level APIs, and Python does not do it. As of Python 3.7 and below, Python developers
     state that deleting a file opened by a process from another process is not possible with
-    os.open and io.open.
+    os.open.
     Consequently, msvcrt.locking is sufficient to obtain an effective lock, and the race
     condition encountered on Linux is not possible on Windows, leading to a simpler workflow.
     """
@@ -210,7 +210,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
             # are only defined on Windows. See
             # https://github.com/python/typeshed/blob/16ae4c61201cd8b96b8b22cdfb2ab9e89ba5bcf2/stdlib/msvcrt.pyi.
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)  # type: ignore # pylint: disable=used-before-assignment
-        except (IOError, OSError) as err:
+        except OSError as err:
             if fd:
                 os.close(fd)
             # Anything except EACCES is unexpected. Raise directly the error in that case.

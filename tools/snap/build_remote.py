@@ -206,7 +206,7 @@ def _dump_failed_build_logs(
 
             build_output_path = [log_name for log_name in logs_list if arch in log_name]
             if not build_output_path:
-                build_output = f'No output has been dumped by snapcraft remote-build.'
+                build_output = 'No output has been dumped by snapcraft remote-build.'
             else:
                 with open(build_output_path[0]) as file_h:
                     build_output = file_h.read()

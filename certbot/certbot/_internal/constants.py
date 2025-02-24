@@ -1,7 +1,7 @@
 """Certbot constants."""
 import atexit
+import importlib.resources
 import logging
-import sys
 from contextlib import ExitStack
 from typing import Any
 from typing import Dict
@@ -9,11 +9,6 @@ from typing import Dict
 from acme import challenges
 from certbot.compat import misc
 from certbot.compat import os
-
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
 
 SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 """Setuptools entry point group name for plugins."""
@@ -42,7 +37,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     dry_run=False,
     register_unsafely_without_email=False,
     email=None,
-    eff_email=None,
+    eff_email=None, # listed as Ask in help output
     reinstall=False,
     expand=False,
     renew_by_default=False,
@@ -69,11 +64,11 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     elliptic_curve="secp256r1",
     key_type="ecdsa",
     must_staple=False,
-    redirect=None,
+    redirect=None, # default described manually in text in help output
     auto_hsts=False,
-    hsts=None,
-    uir=None,
-    staple=None,
+    hsts=None, # listed as False in help output
+    uir=None, # listed as False in help output
+    staple=None, # listed as False in help output
     strict_permissions=False,
     preferred_chain=None,
     pref_challs=[],
@@ -94,7 +89,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     user_agent_comment=None,
     csr=None,
     reason=0,
-    delete_after_revoke=None,
+    delete_after_revoke=None, # listed as Ask in help output
     rollback_checkpoints=1,
     init=False,
     prepare=False,
@@ -228,8 +223,8 @@ def _generate_ssl_dhparams_src_static() -> str:
     # Python process, and will be automatically cleaned up on exit.
     file_manager = ExitStack()
     atexit.register(file_manager.close)
-    ssl_dhparams_src_ref = importlib_resources.files("certbot") / "ssl-dhparams.pem"
-    return str(file_manager.enter_context(importlib_resources.as_file(ssl_dhparams_src_ref)))
+    ssl_dhparams_src_ref = importlib.resources.files("certbot") / "ssl-dhparams.pem"
+    return str(file_manager.enter_context(importlib.resources.as_file(ssl_dhparams_src_ref)))
 
 SSL_DHPARAMS_SRC = _generate_ssl_dhparams_src_static()
 """Path to the nginx ssl_dhparams file found in the Certbot distribution."""

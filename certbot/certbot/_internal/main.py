@@ -140,8 +140,6 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
                 )
             )
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
-            if lineage is False:
-                raise errors.Error("Certificate could not be obtained")
             if lineage is not None:
                 hooks.deploy_hook(config, lineage.names(), lineage.live_dir)
                 renewed_domains.extend(domains)
@@ -280,7 +278,8 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
 
     if config.verb == "run":
         keep_opt = "Attempt to reinstall this existing certificate"
-    elif config.verb == "certonly":
+    else:
+        assert config.verb == "certonly", "Unexpected Certbot subcommand"
         keep_opt = "Keep the existing certificate for now"
     choices = [keep_opt,
                "Renew & replace the certificate (may be subject to CA rate limits)"]
@@ -710,8 +709,8 @@ def _determine_account(config: configuration.NamespaceConfig
     def _tos_cb(terms_of_service: str) -> None:
         if config.tos:
             return
-        msg = ("Please read the Terms of Service at {0}. You "
-               "must agree in order to register with the ACME "
+        msg = ("Please read the Terms of Service at: {0}\n"
+               "You must agree in order to register with the ACME "
                "server. Do you agree?".format(terms_of_service))
         result = display_util.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
         if not result:

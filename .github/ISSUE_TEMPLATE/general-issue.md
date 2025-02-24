@@ -1,3 +1,12 @@
+---
+name: General issue
+about: General template for creating new issues
+title: ''
+labels: ''
+assignees: ''
+
+---
+
 If you're having trouble using Certbot and aren't sure you've found a bug or
 request for a new feature, please first try asking for help at
 https://community.letsencrypt.org/. There is a much larger community there of

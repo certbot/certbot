@@ -1,5 +1,5 @@
 #base image
-FROM python:3.12-alpine3.18 as certbot
+FROM python:3.12-alpine3.20 AS certbot
 
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
@@ -15,7 +15,7 @@ COPY certbot src/certbot
 # Install certbot runtime dependencies
 RUN apk add --no-cache --virtual .certbot-deps \
         libffi \
-        libssl1.1 \
+        libssl3 \
         openssl \
         ca-certificates \
         binutils
@@ -25,6 +25,12 @@ RUN apk add --no-cache --virtual .certbot-deps \
 # cryptography library
 ARG CARGO_NET_GIT_FETCH_WITH_CLI=true
 # Install certbot from sources
+#
+# For some reason, setting the CARGO_LOG and CARGO_TERM_VERBOSE environment
+# variables and -v/--verbose flags on pip seems to help cryptography builds not
+# hang when building Docker images for other architectures using QEMU. See
+# https://github.com/certbot/certbot/issues/10020. This may hopefully also help
+# us to get more information about the problem to aid further debugging.
 RUN apk add --no-cache --virtual .build-deps \
         gcc \
         linux-headers \
@@ -35,7 +41,8 @@ RUN apk add --no-cache --virtual .build-deps \
         cargo \
         git \
         pkgconfig \
-    && python tools/pip_install.py --no-cache-dir \
+    && CARGO_LOG=trace CARGO_TERM_VERBOSE=true python tools/pip_install.py \
+            --no-cache-dir -vvv \
             --editable src/acme \
             --editable src/certbot \
     && apk del .build-deps \
@@ -44,6 +51,6 @@ RUN apk add --no-cache --virtual .build-deps \
 #static definition for making a plugin, but beware that
 #using this layer definition will cause collisions if you make
 #extensive use of the cache.
-FROM certbot as certbot-plugin
+FROM certbot AS certbot-plugin
 COPY --from=plugin-src . /opt/certbot/src/plugin
 RUN python tools/pip_install.py --no-cache-dir --editable /opt/certbot/src/plugin

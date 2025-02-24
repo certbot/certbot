@@ -314,5 +314,5 @@ texinfo_documents = [
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
-    'acme': ('https://acme-python.readthedocs.org/en/latest/', None),
+    'acme': ('https://acme-python.readthedocs.io/en/latest/', None),
 }

@@ -40,7 +40,7 @@ def read_file(filename: str, mode: str = "rb") -> Tuple[str, Any]:
         with open(filename, mode) as the_file:
             contents = the_file.read()
         return filename, contents
-    except IOError as exc:
+    except OSError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 
 

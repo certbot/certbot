@@ -75,13 +75,11 @@ def pre_hook(config: configuration.NamespaceConfig) -> None:
     :param configuration.NamespaceConfig config: Certbot settings
 
     """
-    if config.verb == "renew" and config.directory_hooks:
-        for hook in list_hooks(config.renewal_pre_hooks_dir):
-            _run_pre_hook_if_necessary(hook)
-
-    cmd = config.pre_hook
-    if cmd:
-        _run_pre_hook_if_necessary(cmd)
+    all_hooks: List[str] = (list_hooks(config.renewal_pre_hooks_dir) if config.directory_hooks
+        else [])
+    all_hooks += [config.pre_hook] if config.pre_hook else []
+    for hook in all_hooks:
+        _run_pre_hook_if_necessary(hook)
 
 
 executed_pre_hooks: Set[str] = set()
@@ -125,32 +123,31 @@ def post_hook(
 
     """
 
-    cmd = config.post_hook
+    all_hooks: List[str] = (list_hooks(config.renewal_post_hooks_dir) if config.directory_hooks
+        else [])
+    all_hooks += [config.post_hook] if config.post_hook else []
     # In the "renew" case, we save these up to run at the end
     if config.verb == "renew":
-        if config.directory_hooks:
-            for hook in list_hooks(config.renewal_post_hooks_dir):
-                _run_eventually(hook)
-        if cmd:
-            _run_eventually(cmd)
+        for hook in all_hooks:
+            _run_eventually(hook)
     # certonly / run
-    elif cmd:
+    else:
         renewed_domains_str = ' '.join(renewed_domains)
         # 32k is reasonable on Windows and likely quite conservative on other platforms
         if len(renewed_domains_str) > 32_000:
             logger.warning("Limiting RENEWED_DOMAINS environment variable to 32k characters")
             renewed_domains_str = renewed_domains_str[:32_000]
-
-        _run_hook(
-            "post-hook",
-            cmd,
-            {
-                'RENEWED_DOMAINS': renewed_domains_str,
-                # Since other commands stop certbot execution on failure,
-                # it doesn't make sense to have a FAILED_DOMAINS variable
-                'FAILED_DOMAINS': ""
-            }
-        )
+        for hook in all_hooks:
+            _run_hook(
+                "post-hook",
+                hook,
+                {
+                    'RENEWED_DOMAINS': renewed_domains_str,
+                    # Since other commands stop certbot execution on failure,
+                    # it doesn't make sense to have a FAILED_DOMAINS variable
+                    'FAILED_DOMAINS': ""
+                }
+            )
 
 
 post_hooks: List[str] = []
@@ -228,19 +225,16 @@ def renew_hook(config: configuration.NamespaceConfig, domains: List[str],
     :param str lineage_path: live directory path for the new cert
 
     """
-    executed_dir_hooks = set()
-    if config.directory_hooks:
-        for hook in list_hooks(config.renewal_deploy_hooks_dir):
-            _run_deploy_hook(hook, domains, lineage_path, config.dry_run, config.run_deploy_hooks)
-            executed_dir_hooks.add(hook)
-
-    if config.renew_hook:
-        if config.renew_hook in executed_dir_hooks:
-            logger.info("Skipping deploy-hook '%s' as it was already run.",
-                        config.renew_hook)
+    executed_hooks = set()
+    all_hooks: List[str] = (list_hooks(config.renewal_deploy_hooks_dir)if config.directory_hooks
+        else [])
+    all_hooks += [config.renew_hook] if config.renew_hook else []
+    for hook in all_hooks:
+        if hook in executed_hooks:
+            logger.info("Skipping deploy-hook '%s' as it was already run.", hook)
         else:
-            _run_deploy_hook(config.renew_hook, domains,
-                             lineage_path, config.dry_run, config.run_deploy_hooks)
+            _run_deploy_hook(hook, domains, lineage_path, config.dry_run, config.run_deploy_hooks)
+            executed_hooks.add(hook)
 
 
 def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_run: bool,

@@ -1,5 +1,4 @@
 """This module contains advanced assertions for the certbot integration tests."""
-import io
 import os
 from typing import Optional
 from typing import Type
@@ -60,7 +59,7 @@ def assert_hook_execution(probe_path: str, probe_content: str) -> None:
     :param str probe_content: content expected when the hook is executed
     """
     encoding = 'utf-8' if POSIX_MODE else 'utf-16'
-    with io.open(probe_path, 'rt', encoding=encoding) as file:
+    with open(probe_path, 'rt', encoding=encoding) as file:
         data = file.read()
 
     lines = [line.strip() for line in data.splitlines()]
@@ -76,7 +75,7 @@ def assert_saved_lineage_option(config_dir: str, lineage: str,
     :param str option: the option key
     :param value: if desired, the expected option value
     """
-    with open(os.path.join(config_dir, 'renewal', '{0}.conf'.format(lineage))) as file_h:
+    with open(os.path.join(config_dir, 'renewal', f'{lineage}.conf')) as file_h:
         assert f"{option} = {value if value else ''}" in file_h.read()
 
 

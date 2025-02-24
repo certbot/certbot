@@ -3,10 +3,10 @@
 import atexit
 from contextlib import ExitStack
 import logging
+import importlib.resources
 import re
 import socket
 import subprocess
-import sys
 import tempfile
 import time
 from typing import Any
@@ -21,8 +21,10 @@ from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import cast
 
-import OpenSSL
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
@@ -39,11 +41,6 @@ from certbot_nginx._internal import http_01
 from certbot_nginx._internal import nginxparser
 from certbot_nginx._internal import obj
 from certbot_nginx._internal import parser
-
-if sys.version_info >= (3, 9):  # pragma: no cover
-    import importlib.resources as importlib_resources
-else:  # pragma: no cover
-    import importlib_resources
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1
@@ -171,10 +168,10 @@ class NginxConfigurator(common.Configurator):
 
         file_manager = ExitStack()
         atexit.register(file_manager.close)
-        ref = (importlib_resources.files("certbot_nginx").joinpath("_internal")
+        ref = (importlib.resources.files("certbot_nginx").joinpath("_internal")
                .joinpath("tls_configs").joinpath(config_filename))
 
-        return str(file_manager.enter_context(importlib_resources.as_file(ref)))
+        return str(file_manager.enter_context(importlib.resources.as_file(ref)))
 
     @property
     def mod_ssl_conf(self) -> str:
@@ -375,13 +372,14 @@ class NginxConfigurator(common.Configurator):
 
         return vhosts
 
-    def ipv6_info(self, port: str) -> Tuple[bool, bool]:
+    def ipv6_info(self, host: str, port: str) -> Tuple[bool, bool]:
         """Returns tuple of booleans (ipv6_active, ipv6only_present)
         ipv6_active is true if any server block listens ipv6 address in any port
 
         ipv6only_present is true if ipv6only=on option exists in any server
         block ipv6 listen directive for the specified port.
 
+        :param str host: Host to check ipv6only=on directive for
         :param str port: Port to check ipv6only=on directive for
 
         :returns: Tuple containing information if IPv6 is enabled in the global
@@ -395,7 +393,7 @@ class NginxConfigurator(common.Configurator):
             for addr in vh.addrs:
                 if addr.ipv6:
                     ipv6_active = True
-                if addr.ipv6only and addr.get_port() == port:
+                if addr.ipv6only and addr.get_port() == port and addr.get_addr() == host:
                     ipv6only_present = True
         return ipv6_active, ipv6only_present
 
@@ -479,9 +477,9 @@ class NginxConfigurator(common.Configurator):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]
-            return max(wildcards, key=lambda x: len(x['name']))['vhost']
+            return cast(obj.VirtualHost, max(wildcards, key=lambda x: len(x['name']))['vhost'])
         # Exact or regex match
-        return matches[0]['vhost']
+        return cast(obj.VirtualHost, matches[0]['vhost'])
 
     def _rank_matches_by_name(self, vhost_list: Iterable[obj.VirtualHost],
                               target_name: str) -> List[Dict[str, Any]]:
@@ -691,7 +689,7 @@ class NginxConfigurator(common.Configurator):
                         else:
                             socket.inet_pton(socket.AF_INET, host)
                         all_names.add(socket.gethostbyaddr(host)[0])
-                    except (socket.error, socket.herror, socket.timeout):
+                    except (OSError, socket.herror, socket.timeout):
                         continue
 
         return util.get_filtered_names(all_names)
@@ -701,14 +699,16 @@ class NginxConfigurator(common.Configurator):
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
         le_key = crypto_util.generate_key(
-            key_size=2048, key_dir=tmp_dir, keyname="key.pem",
+            key_type='rsa', key_size=2048, key_dir=tmp_dir, keyname="key.pem",
             strict_permissions=self.config.strict_permissions)
         assert le_key.file is not None
-        key = OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
-        cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
-        cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, cert)
+        cryptography_key = serialization.load_pem_private_key(le_key.pem, password=None)
+        assert isinstance(cryptography_key, rsa.RSAPrivateKey)
+        cert = acme_crypto_util.make_self_signed_cert(
+            cryptography_key,
+            domains=[socket.gethostname()]
+        )
+        cert_pem = cert.public_bytes(serialization.Encoding.PEM)
         cert_file, cert_path = util.unique_file(
             os.path.join(tmp_dir, "cert.pem"), mode="wb")
         with cert_file:
@@ -725,9 +725,16 @@ class NginxConfigurator(common.Configurator):
 
         """
         https_port = self.config.https_port
-        ipv6info = self.ipv6_info(str(https_port))
-        ipv6_block = ['']
-        ipv4_block = ['']
+        http_port = self.config.http01_port
+
+        # no addresses should have ssl turned on here
+        assert not vhost.ssl
+
+        addrs_to_insert: List[obj.Addr] = [
+            obj.Addr.fromstring(f'{addr.get_addr()}:{https_port} ssl')
+            for addr in vhost.addrs
+            if addr.get_port() == str(http_port)
+        ]
 
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.
@@ -735,31 +742,46 @@ class NginxConfigurator(common.Configurator):
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block)
 
-        if vhost.ipv6_enabled():
-            ipv6_block = ['\n    ',
-                          'listen',
-                          ' ',
-                          '[::]:{0}'.format(https_port),
-                          ' ',
-                          'ssl']
-            if not ipv6info[1]:
-                # ipv6only=on is absent in global config
-                ipv6_block.append(' ')
-                ipv6_block.append('ipv6only=on')
+        if not addrs_to_insert:
+            # there are no existing addresses listening on 80
+            if vhost.ipv6_enabled():
+                addrs_to_insert += [obj.Addr.fromstring(f'[::]:{https_port} ssl')]
+            if vhost.ipv4_enabled():
+                addrs_to_insert += [obj.Addr.fromstring(f'{https_port} ssl')]
 
-        if vhost.ipv4_enabled():
-            ipv4_block = ['\n    ',
-                          'listen',
-                          ' ',
-                          '{0}'.format(https_port),
-                          ' ',
-                          'ssl']
+        addr_blocks: List[List[str]] = []
+        ipv6only_set_here: Set[Tuple[str, str]] = set()
+        for addr in addrs_to_insert:
+            host = addr.get_addr()
+            port = addr.get_port()
+            if addr.ipv6:
+                addr_block = ['\n    ',
+                              'listen',
+                              ' ',
+                              f'{host}:{port}',
+                              ' ',
+                              'ssl']
+                ipv6only_exists = self.ipv6_info(host, port)[1]
+                if not ipv6only_exists and (host, port) not in ipv6only_set_here:
+                    addr.ipv6only = True # bookkeeping in case we switch output implementation
+                    ipv6only_set_here.add((host, port))
+                    addr_block.append(' ')
+                    addr_block.append('ipv6only=on')
+                addr_blocks.append(addr_block)
+            else:
+                tuple_string = f'{host}:{port}' if host else f'{port}'
+                addr_block = ['\n    ',
+                              'listen',
+                              ' ',
+                              tuple_string,
+                              ' ',
+                              'ssl']
+                addr_blocks.append(addr_block)
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
         ssl_block = ([
-            ipv6_block,
-            ipv4_block,
+            *addr_blocks,
             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
             ['\n    ', 'include', ' ', self.mod_ssl_conf],
@@ -1096,7 +1118,7 @@ class NginxConfigurator(common.Configurator):
         """
         text = self._nginx_version()
 
-        matches = re.findall(r"running with OpenSSL ([^ ]+) ", text)
+        matches: List[str] = re.findall(r"running with OpenSSL ([^ ]+) ", text)
         if not matches:
             matches = re.findall(r"built with OpenSSL ([^ ]+) ", text)
             if not matches:

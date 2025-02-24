@@ -6,10 +6,7 @@ authors = ["Certbot Project"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = "^3.8"
-
-# workaround for: https://github.com/python-poetry/poetry-plugin-export/issues/183
-urllib3 = ">=1.25.4,<1.27"
+python = "^3.9"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -35,7 +32,6 @@ certbot-apache = {path = "../../../certbot-apache", extras = ["dev"]}
 certbot = {path = "../../../certbot", extras = ["all"]}
 acme = {path = "../../../acme", extras = ["docs", "test"]}
 letstest = {path = "../../../letstest"}
-windows-installer = {path = "../../../windows-installer"}
 
 # Extra dependencies
 # As of writing this, cython is a build dependency of pyyaml. Since there
@@ -61,7 +57,7 @@ setuptools-rust = "*"
 #
 # If this pinning is removed, we may still need to add a lower bound for the
 # pylint version. See https://github.com/certbot/certbot/pull/9229.
-pylint = "3.0.2"
+pylint = "3.3.3"
 # mypy often adds new checks that we need to conform our code to when updating
 # dependencies. To help control when this needs to be done, we pin mypy to a
 # compatible version here.
@@ -75,9 +71,6 @@ cryptography = "!= 37.0.3"
 # Branch 4.x of tox introduces backward incompatibility changes, so require a newer
 # version of tox to keep deterministic builds.
 tox = ">=4"
-
-
-[tool.poetry.dev-dependencies]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

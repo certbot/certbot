@@ -8,13 +8,25 @@ import threading
 import time
 from typing import List
 import unittest
+from unittest import mock
+import warnings
 
 import josepy as jose
 import OpenSSL
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa, x25519
 
 from acme import errors
 from acme._internal.tests import test_util
+
+
+class FormatTest(unittest.TestCase):
+    def test_to_cryptography_encoding(self):
+        from acme.crypto_util import Format
+        assert Format.DER.to_cryptography_encoding() == serialization.Encoding.DER
+        assert Format.PEM.to_cryptography_encoding() == serialization.Encoding.PEM
 
 
 class SSLSocketAndProbeSNITest(unittest.TestCase):
@@ -92,7 +104,12 @@ class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):
     def _call(cls, loader, name):
         # pylint: disable=protected-access
         from acme.crypto_util import _pyopenssl_cert_or_req_all_names
-        return _pyopenssl_cert_or_req_all_names(loader(name))
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='acme.crypto_util._pyopenssl_cert_or_req_all_names is deprecated *'
+            )
+            return _pyopenssl_cert_or_req_all_names(loader(name))
 
     def _call_cert(self, name):
         return self._call(test_util.load_cert, name)
@@ -116,7 +133,12 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     def _call(cls, loader, name):
         # pylint: disable=protected-access
         from acme.crypto_util import _pyopenssl_cert_or_req_san
-        return _pyopenssl_cert_or_req_san(loader(name))
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='acme.crypto_util._pyopenssl_cert_or_req_san is deprecated *'
+            )
+            return _pyopenssl_cert_or_req_san(loader(name))
 
     @classmethod
     def _get_idn_names(cls):
@@ -177,46 +199,90 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
                          ['chicago-cubs.venafi.example', 'cubs.venafi.example']
 
 
-class PyOpenSSLCertOrReqSANIPTest(unittest.TestCase):
-    """Test for acme.crypto_util._pyopenssl_cert_or_req_san_ip."""
+class GenMakeSelfSignedCertTest(unittest.TestCase):
+    """Test for make_self_signed_cert."""
 
-    @classmethod
-    def _call(cls, loader, name):
-        # pylint: disable=protected-access
-        from acme.crypto_util import _pyopenssl_cert_or_req_san_ip
-        return _pyopenssl_cert_or_req_san_ip(loader(name))
+    def setUp(self):
+        self.cert_count = 5
+        self.serial_num: List[int] = []
+        self.privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
-    def _call_cert(self, name):
-        return self._call(test_util.load_cert, name)
+    def test_sn_collisions(self):
+        from acme.crypto_util import make_self_signed_cert
+        for _ in range(self.cert_count):
+            cert = make_self_signed_cert(self.privkey, ['dummy'], force_san=True,
+                               ips=[ipaddress.ip_address("10.10.10.10")])
+            self.serial_num.append(cert.serial_number)
+        assert len(set(self.serial_num)) >= self.cert_count
 
-    def _call_csr(self, name):
-        return self._call(test_util.load_csr, name)
+    def test_no_ips(self):
+        from acme.crypto_util import make_self_signed_cert
+        cert = make_self_signed_cert(self.privkey, ['dummy'])
 
-    def test_cert_no_sans(self):
-        assert self._call_cert('cert.pem') == []
+    @mock.patch("acme.crypto_util._now")
+    def test_expiry_times(self, mock_now):
+        from acme.crypto_util import make_self_signed_cert
+        from datetime import datetime, timedelta, timezone
+        not_before = 1736200830
+        validity = 100
 
-    def test_csr_no_sans(self):
-        assert self._call_csr('csr-nosans.pem') == []
+        not_before_dt = datetime.fromtimestamp(not_before)
+        validity_td = timedelta(validity)
+        not_after_dt = not_before_dt + validity_td
+        cert = make_self_signed_cert(
+            self.privkey,
+            ['dummy'],
+            not_before=not_before_dt,
+            validity=validity_td,
+        )
+        # TODO: This should be `not_valid_before_utc` once we raise the minimum
+        # cryptography version.
+        # https://github.com/certbot/certbot/issues/10105
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='Properties that return.*datetime object'
+            )
+            self.assertEqual(cert.not_valid_before, not_before_dt)
+            self.assertEqual(cert.not_valid_after, not_after_dt)
 
-    def test_cert_domain_sans(self):
-        assert self._call_cert('cert-san.pem') == []
+        now = not_before + 1
+        now_dt = datetime.fromtimestamp(now)
+        mock_now.return_value = now_dt.replace(tzinfo=timezone.utc)
+        valid_after_now_dt = now_dt + validity_td
+        cert = make_self_signed_cert(
+            self.privkey,
+            ['dummy'],
+            validity=validity_td,
+        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='Properties that return.*datetime object'
+            )
+            self.assertEqual(cert.not_valid_before, now_dt)
+            self.assertEqual(cert.not_valid_after, valid_after_now_dt)
 
-    def test_csr_domain_sans(self):
-        assert self._call_csr('csr-san.pem') == []
+    def test_no_name(self):
+        from acme.crypto_util import make_self_signed_cert
+        with pytest.raises(AssertionError):
+            make_self_signed_cert(self.privkey, ips=[ipaddress.ip_address("1.1.1.1")])
+            make_self_signed_cert(self.privkey)
 
-    def test_cert_ip_two_sans(self):
-        assert self._call_cert('cert-ipsans.pem') == ['192.0.2.145', '203.0.113.1']
-
-    def test_csr_ip_two_sans(self):
-        assert self._call_csr('csr-ipsans.pem') == ['192.0.2.145', '203.0.113.1']
-
-    def test_csr_ipv6_sans(self):
-        assert self._call_csr('csr-ipv6sans.pem') == \
-                         ['0:0:0:0:0:0:0:1', 'A3BE:32F3:206E:C75D:956:CEE:9858:5EC5']
-
-    def test_cert_ipv6_sans(self):
-        assert self._call_cert('cert-ipv6sans.pem') == \
-                         ['0:0:0:0:0:0:0:1', 'A3BE:32F3:206E:C75D:956:CEE:9858:5EC5']
+    def test_extensions(self):
+        from acme.crypto_util import make_self_signed_cert
+        extension_type = x509.TLSFeature([x509.TLSFeatureType.status_request])
+        extension = x509.Extension(
+            x509.TLSFeature.oid,
+            False,
+            extension_type
+        )
+        cert = make_self_signed_cert(
+            self.privkey,
+            ips=[ipaddress.ip_address("1.1.1.1")],
+            extensions=[extension]
+        )
+        self.assertIn(extension, cert.extensions)
 
 
 class GenSsCertTest(unittest.TestCase):
@@ -231,18 +297,27 @@ class GenSsCertTest(unittest.TestCase):
 
     def test_sn_collisions(self):
         from acme.crypto_util import gen_ss_cert
-        for _ in range(self.cert_count):
-            cert = gen_ss_cert(self.key, ['dummy'], force_san=True,
-                               ips=[ipaddress.ip_address("10.10.10.10")])
-            self.serial_num.append(cert.get_serial_number())
-        assert len(set(self.serial_num)) >= self.cert_count
-
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            for _ in range(self.cert_count):
+                cert = gen_ss_cert(self.key, ['dummy'], force_san=True,
+                                ips=[ipaddress.ip_address("10.10.10.10")])
+                self.serial_num.append(cert.get_serial_number())
+            assert len(set(self.serial_num)) >= self.cert_count
 
     def test_no_name(self):
         from acme.crypto_util import gen_ss_cert
-        with pytest.raises(AssertionError):
-            gen_ss_cert(self.key, ips=[ipaddress.ip_address("1.1.1.1")])
-            gen_ss_cert(self.key)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            with pytest.raises(AssertionError):
+                gen_ss_cert(self.key, ips=[ipaddress.ip_address("1.1.1.1")])
+                gen_ss_cert(self.key)
+
+    def test_no_ips(self):
+        from acme.crypto_util import gen_ss_cert
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            gen_ss_cert(self.key, ['dummy'])
 
 
 class MakeCSRTest(unittest.TestCase):
@@ -250,79 +325,74 @@ class MakeCSRTest(unittest.TestCase):
 
     @classmethod
     def _call_with_key(cls, *args, **kwargs):
-        privkey = OpenSSL.crypto.PKey()
-        privkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
-        privkey_pem = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey)
+        privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        privkey_pem = privkey.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
         from acme.crypto_util import make_csr
+
         return make_csr(privkey_pem, *args, **kwargs)
 
     def test_make_csr(self):
         csr_pem = self._call_with_key(["a.example", "b.example"])
-        assert b'--BEGIN CERTIFICATE REQUEST--' in csr_pem
-        assert b'--END CERTIFICATE REQUEST--' in csr_pem
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
-        # have a get_extensions() method, so we skip this test if the method
-        # isn't available.
-        if hasattr(csr, 'get_extensions'):
-            assert len(csr.get_extensions()) == 1
-            assert csr.get_extensions()[0].get_data() == \
-                OpenSSL.crypto.X509Extension(
-                    b'subjectAltName',
-                    critical=False,
-                    value=b'DNS:a.example, DNS:b.example',
-                ).get_data()
+        assert b"--BEGIN CERTIFICATE REQUEST--" in csr_pem
+        assert b"--END CERTIFICATE REQUEST--" in csr_pem
+        csr = x509.load_pem_x509_csr(csr_pem)
+
+        assert len(csr.extensions) == 1
+        assert list(
+            csr.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+        ) == [
+            x509.DNSName("a.example"),
+            x509.DNSName("b.example"),
+        ]
 
     def test_make_csr_ip(self):
-        csr_pem = self._call_with_key(["a.example"], False, [ipaddress.ip_address('127.0.0.1'), ipaddress.ip_address('::1')])
-        assert b'--BEGIN CERTIFICATE REQUEST--' in csr_pem
-        assert b'--END CERTIFICATE REQUEST--' in csr_pem
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
-        # have a get_extensions() method, so we skip this test if the method
-        # isn't available.
-        if hasattr(csr, 'get_extensions'):
-            assert len(csr.get_extensions()) == 1
-            assert csr.get_extensions()[0].get_data() == \
-                             OpenSSL.crypto.X509Extension(
-                                 b'subjectAltName',
-                                 critical=False,
-                                 value=b'DNS:a.example, IP:127.0.0.1, IP:::1',
-                             ).get_data()
-            # for IP san it's actually need to be octet-string,
-            # but somewhere downstream thankfully handle it for us
+        csr_pem = self._call_with_key(
+            ["a.example"],
+            False,
+            [ipaddress.ip_address("127.0.0.1"), ipaddress.ip_address("::1")],
+        )
+        assert b"--BEGIN CERTIFICATE REQUEST--" in csr_pem
+        assert b"--END CERTIFICATE REQUEST--" in csr_pem
+
+        csr = x509.load_pem_x509_csr(csr_pem)
+
+        assert len(csr.extensions) == 1
+        assert list(
+            csr.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+        ) == [
+            x509.DNSName("a.example"),
+            x509.IPAddress(ipaddress.ip_address("127.0.0.1")),
+            x509.IPAddress(ipaddress.ip_address("::1")),
+        ]
 
     def test_make_csr_must_staple(self):
         csr_pem = self._call_with_key(["a.example"], must_staple=True)
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        csr = x509.load_pem_x509_csr(csr_pem)
 
-        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
-        # have a get_extensions() method, so we skip this test if the method
-        # isn't available.
-        if hasattr(csr, 'get_extensions'):
-            assert len(csr.get_extensions()) == 2
-            # NOTE: Ideally we would filter by the TLS Feature OID, but
-            # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
-            # and the shortname field is just "UNDEF"
-            must_staple_exts = [e for e in csr.get_extensions()
-                if e.get_data() == b"0\x03\x02\x01\x05"]
-            assert len(must_staple_exts) == 1, \
-                "Expected exactly one Must Staple extension"
+        assert len(csr.extensions) == 2
+        assert list(csr.extensions.get_extension_for_class(x509.TLSFeature).value) == [
+            x509.TLSFeatureType.status_request
+        ]
 
     def test_make_csr_without_hostname(self):
         with pytest.raises(ValueError):
             self._call_with_key()
 
-    def test_make_csr_correct_version(self):
-        csr_pem = self._call_with_key(["a.example"])
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+    def test_make_csr_invalid_key_type(self):
+        privkey = x25519.X25519PrivateKey.generate()
+        privkey_pem = privkey.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        from acme.crypto_util import make_csr
 
-        assert csr.get_version() == 0, \
-            "Expected CSR version to be v1 (encoded as 0), per RFC 2986, section 4"
+        with pytest.raises(ValueError):
+            make_csr(privkey_pem, ["a.example"])
 
 
 class DumpPyopensslChainTest(unittest.TestCase):
@@ -332,7 +402,12 @@ class DumpPyopensslChainTest(unittest.TestCase):
     def _call(cls, loaded):
         # pylint: disable=protected-access
         from acme.crypto_util import dump_pyopenssl_chain
-        return dump_pyopenssl_chain(loaded)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='acme.crypto_util.dump_pyopenssl_chain is *'
+            )
+            return dump_pyopenssl_chain(loaded)
 
     def test_dump_pyopenssl_chain(self):
         names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
@@ -346,10 +421,15 @@ class DumpPyopensslChainTest(unittest.TestCase):
         names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
         loaded = [test_util.load_cert(name) for name in names]
         wrap_func = jose.ComparableX509
-        wrapped = [wrap_func(cert) for cert in loaded]
-        dump_func = OpenSSL.crypto.dump_certificate
-        length = sum(len(dump_func(OpenSSL.crypto.FILETYPE_PEM, cert)) for cert in loaded)
-        assert len(self._call(wrapped)) == length
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='The next major version of josepy *'
+            )
+            wrapped = [wrap_func(cert) for cert in loaded]
+            dump_func = OpenSSL.crypto.dump_certificate
+            length = sum(len(dump_func(OpenSSL.crypto.FILETYPE_PEM, cert)) for cert in loaded)
+            assert len(self._call(wrapped)) == length
 
 
 if __name__ == '__main__':
