@@ -2,6 +2,12 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.11.1 - main
+
+## Fixed
+
+* Pinned the version of josepy to <2.0, since 2.0 introduced breaking changes
+
 ## 2.11.0 - 2024-06-05
 
 ### Added
