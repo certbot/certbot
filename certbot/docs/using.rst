@@ -310,6 +310,7 @@ pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN
 proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
+dns-cloudns_       Y    N    DNS Authentication using ClouDNS API
 dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
 dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
 dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
@@ -340,6 +341,7 @@ nginx-unit_        Y    Y    Automates obtaining and installing a certificate wi
 .. _external-auth: https://github.com/EnigmaBridge/certbot-external-auth
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 .. _dns-ispconfig: https://github.com/m42e/certbot-dns-ispconfig
+.. _dns-cloudns: https://github.com/inventage/certbot-dns-cloudns
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 .. _dns-lightsail: https://github.com/noi/certbot-dns-lightsail
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
@@ -683,10 +685,13 @@ configuration directory. Assuming your configuration directory is
 ``/etc/letsencrypt/renewal-hooks/pre``,
 ``/etc/letsencrypt/renewal-hooks/deploy``, and
 ``/etc/letsencrypt/renewal-hooks/post`` will be run as pre, deploy, and post
-hooks respectively when any certificate is renewed with the ``renew``
-subcommand. These hooks are run in alphabetical order and are not run for other
-subcommands. (The order the hooks are run is determined by the byte value of
-the characters in their filenames and is not dependent on your locale.)
+hooks respectively. These hooks are run in alphabetical order. (The order the
+hooks are run is determined by the byte value of the characters in their
+filenames and is not dependent on your locale.)
+
+Prior to certbot 3.2.0, hooks in directories were only run when certificates
+were renewed with the ``renew`` subcommand, but as of 3.2.0, they are run for
+any subcommand.
 
 Hooks specified in the command line, :ref:`configuration file
 <config-file>`, or :ref:`renewal configuration files <renewal-config-file>` are

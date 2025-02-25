@@ -34,7 +34,10 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
         self.mock_client = mock.MagicMock()
         # _get_digitalocean_client | pylint: disable=protected-access
-        self.auth._get_digitalocean_client = mock.MagicMock(return_value=self.mock_client)
+        # workaround for wont-fix https://github.com/python/mypy/issues/2427 that works with
+        # both strict and non-strict mypy
+        setattr(self.auth, '_get_digitalocean_client',
+            mock.MagicMock(return_value=self.mock_client))
 
     @test_util.patch_display_util()
     def test_perform(self, unused_mock_get_utility):

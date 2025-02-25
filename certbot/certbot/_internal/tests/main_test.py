@@ -14,6 +14,7 @@ import traceback
 from typing import List
 import unittest
 from unittest import mock
+import warnings
 
 import configobj
 import josepy as jose
@@ -264,7 +265,7 @@ class CertonlyTest(unittest.TestCase):
         mock_domains.return_value = domains
         mock_lineage.names.return_value = domains
         self._call(('certonly --webroot -d example.com -d test.org '
-            '--cert-name example.com').split())
+            '--cert-name example.com --no-directory-hooks').split())
 
         assert mock_lineage.call_count == 1
         assert mock_domains.call_count == 1
@@ -276,7 +277,7 @@ class CertonlyTest(unittest.TestCase):
 
         # user confirms updating lineage with new domains
         self._call(('certonly --webroot -d example.com -d test.com '
-            '--cert-name example.com').split())
+            '--cert-name example.com --no-directory-hooks').split())
         assert mock_lineage.call_count == 2
         assert mock_domains.call_count == 2
         assert mock_renew_cert.call_count == 2
@@ -286,7 +287,8 @@ class CertonlyTest(unittest.TestCase):
         # error in _ask_user_to_confirm_new_names
         self.mock_get_utility().yesno.return_value = False
         with pytest.raises(errors.ConfigurationError):
-            self._call('certonly --webroot -d example.com -d test.com --cert-name example.com'.split())
+            self._call('certonly --webroot -d example.com -d test.com --cert-name example.com'
+                ' --no-directory-hooks'.split())
 
     @mock.patch('certbot._internal.main._report_next_steps')
     @mock.patch('certbot._internal.cert_manager.domains_for_certname')
@@ -299,14 +301,14 @@ class CertonlyTest(unittest.TestCase):
 
         # no lineage with this name but we specified domains so create a new cert
         self._call(('certonly --webroot -d example.com -d test.com '
-            '--cert-name example.com').split())
+            '--cert-name example.com --no-directory-hooks').split())
         assert mock_lineage.call_count == 1
         assert mock_report_cert.call_count == 1
 
         # no lineage with this name and we didn't give domains
         mock_choose_names.return_value = ["somename"]
         mock_domains_for_certname.return_value = None
-        self._call(('certonly --webroot --cert-name example.com').split())
+        self._call(('certonly --webroot --cert-name example.com --no-directory-hooks').split())
         assert mock_choose_names.called is True
 
     @mock.patch('certbot._internal.main._report_next_steps')
@@ -434,7 +436,12 @@ class RevokeTest(test_util.TempDirTestCase):
         config = cli.prepare_and_parse_args(plugins, args)
 
         from certbot._internal.main import revoke
-        revoke(config, plugins)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='certbot.crypto_util.pyopenssl_load_certificate is *'
+            )
+            revoke(config, plugins)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.main.client.acme_client')
@@ -1803,18 +1810,23 @@ class MainTest(test_util.ConfigTestCase):
             mock_delete_if_appropriate):
         mock_delete_if_appropriate.return_value = False
         server = 'foo.bar'
-        self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
-                                 '--server', server, 'revoke'])
-        with open(RSA2048_KEY_PATH, 'rb') as f:
-            assert mock_acme_client.ClientV2.call_count == 1
-            assert mock_acme_client.ClientNetwork.call_args[0][0] == \
-                             jose.JWK.load(f.read())
-        with open(SS_CERT_PATH, 'rb') as f:
-            cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
-            mock_revoke = mock_acme_client.ClientV2().revoke
-            mock_revoke.assert_called_once_with(
-                    jose.ComparableX509(cert),
-                    mock.ANY)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='certbot.crypto_util.pyopenssl_load_certificate is *'
+            )
+            self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
+                                     '--server', server, 'revoke'])
+            with open(RSA2048_KEY_PATH, 'rb') as f:
+                assert mock_acme_client.ClientV2.call_count == 1
+                assert mock_acme_client.ClientNetwork.call_args[0][0] == \
+                                 jose.JWK.load(f.read())
+            with open(SS_CERT_PATH, 'rb') as f:
+                cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+                mock_revoke = mock_acme_client.ClientV2().revoke
+                mock_revoke.assert_called_once_with(
+                        jose.ComparableX509(cert),
+                        mock.ANY)
 
     def test_revoke_with_key_mismatch(self):
         server = 'foo.bar'
@@ -1828,13 +1840,18 @@ class MainTest(test_util.ConfigTestCase):
             mock_delete_if_appropriate):
         mock_delete_if_appropriate.return_value = False
         mock_determine_account.return_value = (mock.MagicMock(), None)
-        _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
-        with open(CERT) as f:
-            cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
-            mock_revoke = client.acme_from_config_key().revoke
-            mock_revoke.assert_called_once_with(
-                    jose.ComparableX509(cert),
-                    mock.ANY)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='certbot.crypto_util.pyopenssl_load_certificate is *'
+            )
+            _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
+            with open(CERT) as f:
+                cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+                mock_revoke = client.acme_from_config_key().revoke
+                mock_revoke.assert_called_once_with(
+                        jose.ComparableX509(cert),
+                        mock.ANY)
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_register(self, _):

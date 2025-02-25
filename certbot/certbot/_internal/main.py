@@ -709,8 +709,8 @@ def _determine_account(config: configuration.NamespaceConfig
     def _tos_cb(terms_of_service: str) -> None:
         if config.tos:
             return
-        msg = ("Please read the Terms of Service at {0}. You "
-               "must agree in order to register with the ACME "
+        msg = ("Please read the Terms of Service at: {0}\n"
+               "You must agree in order to register with the ACME "
                "server. Do you agree?".format(terms_of_service))
         result = display_util.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
         if not result:

@@ -15,6 +15,7 @@ from typing import Set
 from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
+import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -396,7 +397,15 @@ def pyopenssl_load_certificate(data: bytes) -> Tuple[crypto.X509, int]:
 
     :raises errors.Error:
 
+    Deprecated
+    .. deprecated: 3.2.1
     """
+    warnings.warn(
+        "certbot.crypto_util.pyopenssl_load_certificate is deprecated and "
+        "will be removed in the next major release of Certbot.",
+        DeprecationWarning,
+        stacklevel=2
+    )
 
     openssl_errors = []
 
@@ -492,7 +501,15 @@ def dump_pyopenssl_chain(
     :param list chain: List of `crypto.X509` (or wrapped in
         :class:`josepy.util.ComparableX509`).
 
+    Deprecated
+    .. deprecated: 3.2.1
     """
+    warnings.warn(
+        "certbot.crypto_util.dump_pyopenssl_chain is deprecated and "
+        "will be removed in the next major release of Certbot.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     # XXX: returns empty string when no chain is available, which
     # shuts up RenewableCert, but might not be the best solution...
     return acme_crypto_util.dump_pyopenssl_chain(chain, filetype)

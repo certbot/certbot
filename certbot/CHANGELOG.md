@@ -2,7 +2,27 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 3.2.0 - main
+## 4.0.0 - main
+
+### Added
+
+*
+
+### Changed
+
+* deprecated `acme.crypto_util.dump_pyopenssl_chain`
+* deprecated `acme.crypto_util._pyopenssl_cert_or_req_all_names`
+* deprecated `acme.crypto_util._pyopenssl_cert_or_req_san`
+* deprecated `certbot.crypto_util.dump_pyopenssl_chain`
+* deprecated `certbot.crypto_util.pyopenssl_load_certificate`
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 3.2.0 - 2025-02-11
 
 ### Added
 
@@ -11,11 +31,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * certbot-nginx now requires pyparsing>=2.4.7.
-* certbot and its acme library now require cryptography>=42.0.0.
+* certbot and its acme library now require cryptography>=43.0.0.
 * certbot-nginx and our acme library now require pyOpenSSL>=25.0.0.
 * Deprecated `gen_ss_cert` in `acme.crypto_util` as it uses deprecated
   pyOpenSSL API.
 * Add `make_self_signed_cert` to `acme.crypto_util` to replace `gen_ss_cert.
+* Directory hooks are now run on all commands by default, not just `renew`
+* Help output now shows `False` as default when it can be set via `cli.ini` instead of `None`
+* Changed terms of service agreement text to have a newline after the TOS link
+* certbot-cloudflare-dns is now pinned to version 2.19 of Cloudflare's python library
+* Removed support for Linode API v3 which was sunset at the end of July 203.
 
 ### Fixed
 
@@ -25,6 +50,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Honor --reuse-key when --allow-subset-of-names is set
 * Fixed regression in symlink parsing on Windows that was introduced in Certbot
   3.1.0.
+* When adding ssl listen directives in nginx server blocks, IP addresses are now
+  preserved.
+* Nginx configurations can now have the http block in files other than the root (nginx.conf)
+* Nginx `server_name` directives with internal comments now ignore commented names
 
 More details about these changes can be found on our GitHub repo.
 
@@ -32,7 +61,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-*
+* Support for Python 3.13 was added.
 
 ### Changed
 

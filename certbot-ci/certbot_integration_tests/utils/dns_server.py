@@ -45,7 +45,7 @@ class DNSServer:
 
         self.bind_root = tempfile.mkdtemp()
 
-        self.process: Optional[subprocess.Popen] = None
+        self.process: Optional[subprocess.Popen[bytes]] = None
 
         self.dns_xdist = {"address": BIND_BIND_ADDRESS[0], "port": BIND_BIND_ADDRESS[1]}
 

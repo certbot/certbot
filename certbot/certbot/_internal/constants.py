@@ -37,7 +37,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     dry_run=False,
     register_unsafely_without_email=False,
     email=None,
-    eff_email=None,
+    eff_email=None, # listed as Ask in help output
     reinstall=False,
     expand=False,
     renew_by_default=False,
@@ -64,11 +64,11 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     elliptic_curve="secp256r1",
     key_type="ecdsa",
     must_staple=False,
-    redirect=None,
+    redirect=None, # default described manually in text in help output
     auto_hsts=False,
-    hsts=None,
-    uir=None,
-    staple=None,
+    hsts=None, # listed as False in help output
+    uir=None, # listed as False in help output
+    staple=None, # listed as False in help output
     strict_permissions=False,
     preferred_chain=None,
     pref_challs=[],
@@ -89,7 +89,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     user_agent_comment=None,
     csr=None,
     reason=0,
-    delete_after_revoke=None,
+    delete_after_revoke=None, # listed as Ask in help output
     rollback_checkpoints=1,
     init=False,
     prepare=False,

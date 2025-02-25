@@ -374,6 +374,16 @@ def get_names_from_subject_and_extensions(
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req: Union[crypto.X509, crypto.X509Req]
                                      ) -> List[str]:
+    """
+    Deprecated
+    .. deprecated: 3.2.1
+    """
+    warnings.warn(
+        "acme.crypto_util._pyopenssl_cert_or_req_all_names is deprecated and "
+        "will be removed in the next major release of Certbot.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     cert_or_req = loaded_cert_or_req.to_cryptography()
     return get_names_from_subject_and_extensions(
         cert_or_req.subject, cert_or_req.extensions
@@ -392,7 +402,15 @@ def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) 
     :returns: A list of Subject Alternative Names that is DNS.
     :rtype: `list` of `str`
 
+    Deprecated
+    .. deprecated: 3.2.1
     """
+    warnings.warn(
+        "acme.crypto_util._pyopenssl_cert_or_req_san is deprecated and "
+        "will be removed in the next major release of Certbot.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     exts = cert_or_req.to_cryptography().extensions
     try:
         san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
@@ -564,7 +582,15 @@ def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X50
     :returns: certificate chain bundle
     :rtype: bytes
 
+    Deprecated
+    .. deprecated: 3.2.1
     """
+    warnings.warn(
+        "acme.crypto_util.dump_pyopenssl_chain is deprecated and "
+        "will be removed in the next major release of Certbot.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     # XXX: returns empty string when no chain is available, which
     # shuts up RenewableCert, but might not be the best solution...
 

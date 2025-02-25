@@ -14,6 +14,7 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Union
+import warnings
 
 from cryptography import x509
 
@@ -115,7 +116,8 @@ class ClientV2:
         self.net.account = new_regr
         return new_regr
 
-    def new_order(self, csr_pem: bytes, certid: str = '') -> messages.OrderResource:
+    def new_order(self, csr_pem: bytes, profile: Optional[str] = None, certid: str = ''
+                  ) -> messages.OrderResource:
         """Request a new Order object from the server.
             with certid give it will try but if it failes will try without one
 
@@ -141,19 +143,22 @@ class ClientV2:
         for ip in ipNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=str(ip)))
+        if profile is None:
+            profile = ""
         if hasattr(self.directory,"renewalInfo") and certid != "": # pragma: no cover
             try: #coverage doesn't have server to ask ari
-                order = messages.NewOrder(identifiers=identifiers, replaces = certid)
+                order = messages.NewOrder(identifiers=identifiers,
+                                          profile=profile, replaces = certid)
                 response = self._post(self.directory['newOrder'], order)
             except messages.Error as e:
                 # if neworder with ARI failed try without one
                 # server may not impliment ari-05 draft for alreadyReplaced error
                 if e.code == 'alreadyReplaced':
                     logger.info('neworder with ARI failed with error %s, Retrying without ARI', e)
-                order = messages.NewOrder(identifiers=identifiers)
+                order = messages.NewOrder(identifiers=identifiers, profile=profile)
                 response = self._post(self.directory['newOrder'], order)
         else:
-            order = messages.NewOrder(identifiers=identifiers)
+            order = messages.NewOrder(identifiers=identifiers, profile=profile)
             response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
@@ -241,7 +246,10 @@ class ClientV2:
         """
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
-        wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore',
+                message='The next major version of josepy will remove josepy.util.ComparableX509')
+            wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
         res = self._post(orderr.body.finalize, wrapped_csr)
         orderr = orderr.update(body=messages.Order.from_json(res.json()))
         return orderr
