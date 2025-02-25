@@ -232,6 +232,7 @@ class Directory(jose.JSONDeSerializable):
         website: str = jose.field('website', omitempty=True)
         caa_identities: List[str] = jose.field('caaIdentities', omitempty=True)
         external_account_required: bool = jose.field('externalAccountRequired', omitempty=True)
+        profiles: Dict[str, str] = jose.field('profiles', omitempty=True)
 
         def __init__(self, **kwargs: Any) -> None:
             kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
@@ -624,6 +625,8 @@ class Revocation(jose.JSONObjectWithFields):
 class Order(ResourceBody):
     """Order Resource Body.
 
+    :ivar profile: The profile to request.
+    :vartype profile: str
     :ivar identifiers: List of identifiers for the certificate.
     :vartype identifiers: `list` of `.Identifier`
     :ivar acme.messages.Status status:
@@ -635,6 +638,8 @@ class Order(ResourceBody):
     :ivar datetime.datetime expires: When the order expires.
     :ivar ~.Error error: Any error that occurred during finalization, if applicable.
     """
+    # https://datatracker.ietf.org/doc/draft-aaron-acme-profiles/
+    profile: str = jose.field('profile', omitempty=True)
     identifiers: List[Identifier] = jose.field('identifiers', omitempty=True)
     status: Status = jose.field('status', decoder=Status.from_json, omitempty=True)
     authorizations: List[str] = jose.field('authorizations', omitempty=True)
