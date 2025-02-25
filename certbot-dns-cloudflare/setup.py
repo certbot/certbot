@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.11.1'
+version = '2.11.2.dev0'
 
 install_requires = [
     # for now, do not upgrade to cloudflare>=2.20 to avoid deprecation warnings and the breaking
