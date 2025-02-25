@@ -19,15 +19,16 @@ from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 
-RSA256_KEY = test_util.load_vector('rsa256_key.pem')
-RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
 RSA512_KEY = test_util.load_vector('rsa512_key.pem')
+RSA512_KEY_PATH = test_util.vector_path('rsa512_key.pem')
+RSA2048_KEY = test_util.load_vector('rsa2048_key.pem')
 RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.load_vector('cert_512.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 SS_CERT = test_util.load_vector('cert_2048.pem')
 P256_KEY = test_util.load_vector('nistp256_key.pem')
+P256_KEY_PATH = test_util.vector_path('nistp256_key.pem')
 P256_CERT_PATH = test_util.vector_path('cert-nosans_nistp256.pem')
 P256_CERT = test_util.load_vector('cert-nosans_nistp256.pem')
 # CERT_LEAF is signed by CERT_ISSUER. CERT_ALT_ISSUER is a cross-sign of CERT_ISSUER.
@@ -125,7 +126,7 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
 
     def test_invalid_false(self):
         assert not self._call(
-            test_util.load_vector('csr_512.pem'), RSA256_KEY)
+            test_util.load_vector('csr_512.pem'), P256_KEY)
 
 
 class ImportCSRFileTest(unittest.TestCase):
@@ -304,7 +305,7 @@ class VerifyCertMatchesPrivKeyTest(VerifyCertSetup):
         assert self._call(self.renewable_cert) is None
 
     def test_cert_priv_key_mismatch(self):
-        self.bad_renewable_cert.privkey = RSA256_KEY_PATH
+        self.bad_renewable_cert.privkey = P256_KEY_PATH
         self.bad_renewable_cert.cert = SS_CERT_PATH
 
         with pytest.raises(errors.Error):
