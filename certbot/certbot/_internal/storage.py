@@ -1082,16 +1082,14 @@ class RenewableCert(interfaces.RenewableCert):
                     # If random time is before next wakeup we'll do renewal this time
                     # Todo: actually detect cron frequency
                     if rtime < now + datetime.timedelta(hours=12):
-                        logger.debug("Should renew, inside ARI renwal window")
+                        logger.debug("Should renew, inside ARI renewal window")
                         return True
-                    # failsafe if server gave nonsense ARI for cert
-                    if expiry < now:
-                        logger.debug("Already expired, renew now")
-                        return True
+
             else:
                 # Renewal info for this cert not exsit or not supported version
                 # server not support ari or asking on wrong server
                 logger.debug("ARI infomation is not avabliable for this cert")
+
             # Renews some period before expiry time
             default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
             interval = self.configuration.get("renew_before_expiry", default_interval)

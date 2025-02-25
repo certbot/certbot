@@ -309,6 +309,22 @@ def test_graceful_renew_it_is_time(context: IntegrationTestsContext) -> None:
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_hook_execution(context.hook_probe, 'deploy')
 
+def test_renew_ari(context: IntegrationTestsContext) -> None:
+    """Test that certificates are renewed because of ari renewalwindow."""
+    # Obtain a certificate, subdomain is whitelisted on pebble OCSP to retrun good
+    certname = context.get_domain('aritest')
+    context.certbot(['--domains', certname])
+
+    # Test that "certbot renew" does not renew the certificate
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+    context.certbot(['renew'], force_renew=False)
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
+    #  revoke to pebble to trigger ari window adjust test that it does renew the certificate
+    context.certbot(['revoke', '--cert-name', certname, '--no-delete-after-revoke'])
+    context.certbot(['renew'], force_renew=False)
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+
 
 def test_renew_with_changed_private_key_complexity(context: IntegrationTestsContext) -> None:
     """Test proper renew with updated private key complexity."""
