@@ -1001,17 +1001,32 @@ class RenewableCert(interfaces.RenewableCert):
                 logger.debug("Should renew, certificate is revoked.")
                 return True
 
-            # Renews some period before expiry time
-            default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
-            interval = self.configuration.get("renew_before_expiry", default_interval)
-            expiry = crypto_util.notAfter(self.version(
-                "cert", self.latest_common_version()))
+            cert = self.version("cert", self.latest_common_version())
+            notBefore = crypto_util.notBefore(cert)
+            notAfter = crypto_util.notAfter(cert)
+            lifetime = notAfter - notBefore
+
+            config_interval = self.configuration.get("renew_before_expiry")
             now = datetime.datetime.now(pytz.UTC)
-            if expiry < add_time_interval(now, interval):
+            if config_interval is not None and notAfter < add_time_interval(now, config_interval):
                 logger.debug("Should renew, less than %s before certificate "
-                             "expiry %s.", interval,
-                             expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
+                             "expiry %s.", config_interval,
+                             notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
                 return True
+
+            # No config for "renew_before_expiry", provide default behavior.
+            # For most certs, renew with 1/3 of certificate lifetime remaining.
+            # For short lived certificates, renew at 1/2 of certificate lifetime.
+            default_interval = lifetime / 3
+            if lifetime.total_seconds() < 10 * 86400:
+                default_interval = lifetime / 2
+            remaining_time = notAfter - now
+            if remaining_time < default_interval:
+                logger.debug("Should renew, less than %ss before certificate "
+                             "expiry %s.", default_interval,
+                             notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
+                return True
+
         return False
 
     @classmethod
