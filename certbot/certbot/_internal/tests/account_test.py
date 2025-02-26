@@ -15,7 +15,20 @@ from certbot.compat import misc
 from certbot.compat import os
 import certbot.tests.util as test_util
 
-KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
+# This test checks properties that depend on this specific key
+# (like its hash and the repr of objects derived from that hash).
+# So we hardcode it here. If you change this key, the tests cases
+# must change too.
+KEY = jose.JWKRSA.load(b"""-----BEGIN RSA PRIVATE KEY-----
+MIIBOgIBAAJBAKx1c7RR7R/drnBSQ/zfx1vQLHUbFLh1AQQQ5R8DZUXd36efNK79
+vukFhN9HFoHZiUvOjm0c+pVE6K+EdE/twuUCAwEAAQJAMbrEnJCrQe8YqAbw1/Bn
+elAzIamndfE3U8bTavf9sgFpS4HL83rhd6PDbvx81ucaJAT/5x048fM/nFl4fzAc
+mQIhAOF/a9o3EIsDKEmUl+Z1OaOiUxDF3kqWSmALEsmvDhwXAiEAw8ljV5RO/rUp
+Zu2YMDFq3MKpyyMgBIJ8CxmGRc6gCmMCIGRQzkcmhfqBrhOFwkmozrqIBRIKJIjj
+8TRm2LXWZZ2DAiAqVO7PztdNpynugUy4jtbGKKjBrTSNBRGA7OHlUgm0dQIhALQq
+6oGU29Vxlvt3k0vmiRKU4AVfLyNXIGtcWcNG46h/
+-----END RSA PRIVATE KEY-----
+""")
 
 
 class AccountTest(unittest.TestCase):
