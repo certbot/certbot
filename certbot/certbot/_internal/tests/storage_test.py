@@ -445,6 +445,12 @@ class RenewableCertTests(BaseRenewableCertTest):
     @mock.patch("certbot._internal.storage.datetime")
     def test_time_interval_judgments(self, mock_datetime, mock_set_by_user):
         """Test should_autorenew() on the basis of expiry time windows."""
+        # Note: this certificate happens to have a lifetime of 7 days,
+        # and the tests below that use a "None" interval (i.e. choose a
+        # default) rely on that fact.
+        #
+        # Not Before: Dec 11 22:34:45 2014 GMT
+        # Not After : Dec 18 22:34:45 2014 GMT
         test_cert = test_util.load_vector("cert_512.pem")
 
         self._write_out_ex_kinds()
@@ -461,16 +467,22 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configuration["renewalparams"] = {}
 
         for (current_time, interval, result) in [
-                # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
+                # 2014-12-13 12:00 (about 5 days prior to expiry)
                 # Times that should result in autorenewal/autodeployment
                 (1418472000, "2 months", True), (1418472000, "1 week", True),
-                # Times that should not
+                # With the "default" logic, this 7-day certificate should autorenew
+                # at 3.5 days prior to expiry. We haven't reached that yet,
+                # so don't renew.
+                (1418472000, None, False),
+                # 2014-12-16 03:20, a little less than 3.5 days to expiry.
+                (1418700000, None, True),
+                # Times that should not renew
                 (1418472000, "4 days", False), (1418472000, "2 days", False),
                 # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
                 # Times that should result in autorenewal/autodeployment
                 (1241179200, "7 years", True),
                 (1241179200, "11 years 2 months", True),
-                # Times that should not
+                # Times that should not renew
                 (1241179200, "8 hours", False), (1241179200, "2 days", False),
                 (1241179200, "40 days", False), (1241179200, "9 months", False),
                 # 2015-01-01 (after expiry has already happened, so all
@@ -480,6 +492,27 @@ class RenewableCertTests(BaseRenewableCertTest):
                 (1420070400, "10 minutes", True),
                 (1420070400, "10 weeks", True), (1420070400, "10 months", True),
                 (1420070400, "10 years", True), (1420070400, "99 months", True),
+                (1420070400, None, True)
+        ]:
+            sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
+            mock_datetime.datetime.now.return_value = sometime
+            self.test_rc.configuration["renew_before_expiry"] = interval
+            assert self.test_rc.should_autorenew() == result
+
+        # Lifetime: 31 years
+        # Default renewal: about 10 years from expiry
+        # Not Before: May 29 07:42:01 2017 GMT
+        # Not After : Mar 30 07:42:01 2048 GMT
+        long_test_cert = test_util.load_vector("cert_2048.pem")
+        self.test_rc.update_all_links_to(12)
+        with open(self.test_rc.cert, "wb") as f:
+            f.write(long_test_cert)
+        self.test_rc.update_all_links_to(11)
+        with open(self.test_rc.cert, "wb") as f:
+            f.write(long_test_cert)
+        for (current_time, result) in [
+            (2114380800, False), # 2037-01-01
+            (2145916800, True), # 2038-01-01
         ]:
             sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
             mock_datetime.datetime.now.return_value = sometime
