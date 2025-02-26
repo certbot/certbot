@@ -19,8 +19,33 @@ from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 
-CERT = test_util.load_cert('cert_512.pem')
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography import x509
+from cryptography.x509 import Certificate
 
+import datetime
+from typing import Optional, Any
+
+def make_cert_with_lifetime(not_before: datetime.datetime, lifetime_days: int) -> Certificate:
+    """Return PEM of a self-signed certificate with the given notBefore and lifetime."""
+    key = ec.generate_private_key(ec.SECP256R1())
+    not_after=not_before + datetime.timedelta(days=lifetime_days)
+    cert = x509.CertificateBuilder(
+        issuer_name=x509.Name([]),
+        subject_name=x509.Name([]),
+        public_key=key.public_key(),
+        serial_number=x509.random_serial_number(),
+        not_valid_before=not_before,
+        not_valid_after=not_after,
+    ).add_extension(
+        x509.SubjectAlternativeName([x509.DNSName("example.com")]),
+        critical=False,
+    ).sign(
+        private_key=key,
+        algorithm=hashes.SHA256(),
+    )
+    return cert.public_bytes(serialization.Encoding.PEM)
 
 def unlink_all(rc_object):
     """Unlink all four items associated with this RenewableCert."""
@@ -451,16 +476,17 @@ class RenewableCertTests(BaseRenewableCertTest):
         #
         # Not Before: Dec 11 22:34:45 2014 GMT
         # Not After : Dec 18 22:34:45 2014 GMT
-        test_cert = test_util.load_vector("cert_512.pem")
+        not_before = datetime.datetime(2014, 12, 11, 22, 34, 45)
+        short_cert = make_cert_with_lifetime(not_before, 7)
 
         self._write_out_ex_kinds()
 
         self.test_rc.update_all_links_to(12)
         with open(self.test_rc.cert, "wb") as f:
-            f.write(test_cert)
+            f.write(short_cert)
         self.test_rc.update_all_links_to(11)
         with open(self.test_rc.cert, "wb") as f:
-            f.write(test_cert)
+            f.write(short_cert)
 
         mock_datetime.timedelta = datetime.timedelta
         mock_set_by_user.return_value = False
@@ -503,16 +529,17 @@ class RenewableCertTests(BaseRenewableCertTest):
         # Default renewal: about 10 years from expiry
         # Not Before: May 29 07:42:01 2017 GMT
         # Not After : Mar 30 07:42:01 2048 GMT
-        long_test_cert = test_util.load_vector("cert_2048.pem")
+        not_before=datetime.datetime(2017, 5, 29, 7, 42, 1)
+        long_cert = make_cert_with_lifetime(not_before, 31 * 365)
         self.test_rc.update_all_links_to(12)
         with open(self.test_rc.cert, "wb") as f:
-            f.write(long_test_cert)
+            f.write(long_cert)
         self.test_rc.update_all_links_to(11)
         with open(self.test_rc.cert, "wb") as f:
-            f.write(long_test_cert)
+            f.write(long_cert)
         for (current_time, result) in [
             (2114380800, False), # 2037-01-01
-            (2145916800, True), # 2038-01-01
+            (2148000000, True), # 2038-01-25
         ]:
             sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
             mock_datetime.datetime.now.return_value = sometime
