@@ -1,9 +1,9 @@
 stages:
   - stage: Deploy
     jobs:
-      - template: ../jobs/common-deploy-jobs.yml
-        parameters:
-          snapReleaseChannel: beta
+      # - template: ../jobs/common-deploy-jobs.yml
+      #   parameters:
+      #     snapReleaseChannel: beta
       - job: create_github_release
         pool:
           vmImage: ubuntu-22.04
