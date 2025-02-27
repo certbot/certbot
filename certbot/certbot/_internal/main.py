@@ -1839,6 +1839,8 @@ def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
 
     if os.environ.get('CERTBOT_SNAPPED') == 'True':
         cli_args = snap_config.prepare_env(cli_args)
+        del os.environ['OPENSSL_MODULES']
+        del os.environ['OPENSSL_FORCE_FIPS_MODE']
 
     plugins = plugins_disco.PluginsRegistry.find_all()
     logger.debug("certbot version: %s", certbot.__version__)
