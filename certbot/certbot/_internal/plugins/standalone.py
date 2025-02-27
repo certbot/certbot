@@ -4,11 +4,9 @@ import errno
 import logging
 from typing import Any
 from collections.abc import Callable
-from typing import DefaultDict
-
 from collections.abc import Iterable
-
 from collections.abc import Mapping
+from collections import defaultdict
 
 
 
@@ -30,7 +28,7 @@ from OpenSSL import crypto
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    ServedType = Defaultdict[
+    ServedType = defaultdict[
         acme_standalone.BaseDualNetworkedServers,
         set[achallenges.AnnotatedChallenge]
     ]

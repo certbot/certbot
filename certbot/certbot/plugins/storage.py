@@ -27,7 +27,7 @@ class PluginStorage:
         self._config = config
         self._classkey = classkey
         self._initialized = False
-        self._data: Dict
+        self._data: dict
         self._storagepath: str
 
     def _initialize_storage(self) -> None:

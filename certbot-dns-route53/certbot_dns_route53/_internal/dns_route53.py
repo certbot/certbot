@@ -4,8 +4,7 @@ import logging
 import time
 from typing import Any
 from collections.abc import Callable
-from typing import DefaultDict
-
+from collections import defaultdict
 from collections.abc import Iterable
 
 
@@ -45,7 +44,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         super().__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
         self._attempt_cleanup = False
-        self._resource_records: Defaultdict[str, list[dict[str, str]]] = \
+        self._resource_records: defaultdict[str, list[dict[str, str]]] = \
             collections.defaultdict(list)
 
     def more_info(self) -> str:

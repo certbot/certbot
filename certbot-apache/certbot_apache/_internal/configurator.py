@@ -9,8 +9,8 @@ import socket
 import time
 from typing import Any
 from collections.abc import Callable
+from collections import defaultdict
 from typing import cast
-from typing import DefaultDict
 
 from collections.abc import Iterable
 
@@ -256,7 +256,7 @@ class ApacheConfigurator(common.Configurator):
         # used by deploy_cert() and enhance()
         self._wildcard_vhosts: dict[str, list[obj.VirtualHost]] = {}
         # Maps enhancements to vhosts we've enabled the enhancement for
-        self._enhanced_vhosts: Defaultdict[str, set[obj.VirtualHost]] = defaultdict(set)
+        self._enhanced_vhosts: defaultdict[str, set[obj.VirtualHost]] = defaultdict(set)
         # Temporary state for AutoHSTS enhancement
         self._autohsts: dict[str, dict[str, Union[int, float]]] = {}
         # Reverter save notes
@@ -1055,7 +1055,7 @@ class ApacheConfigurator(common.Configurator):
         """
         # Search base config, and all included paths for VirtualHosts
         file_paths: dict[str, str] = {}
-        internal_paths: Defaultdict[str, set[str]] = defaultdict(set)
+        internal_paths: defaultdict[str, set[str]] = defaultdict(set)
         vhs = []
         # Make a list of parser paths because the parser_paths
         # dictionary may be modified during the loop.
@@ -2129,7 +2129,7 @@ class ApacheConfigurator(common.Configurator):
         # There can be other RewriteRule directive lines in vhost config.
         # rewrite_args_dict keys are directive ids and the corresponding value
         # for each is a list of arguments to that directive.
-        rewrite_args_dict: Defaultdict[str, list[str]] = defaultdict(list)
+        rewrite_args_dict: defaultdict[str, list[str]] = defaultdict(list)
         pat = r'(.*directive\[\d+\]).*'
         for match in rewrite_path:
             m = re.match(pat, match)
