@@ -19,10 +19,11 @@ from certbot.display import util as display_util
 logger = logging.getLogger(__name__)
 
 
-def get_email(invalid: bool = False) -> Optional[str]:
+def get_email(invalid: bool = False, optional: bool = True) -> str:
     """Prompt for valid email address.
 
     :param bool invalid: True if an invalid address was provided by the user
+    :param bool optional: Ignored
 
     :returns: e-mail address
     :rtype: str
@@ -30,6 +31,7 @@ def get_email(invalid: bool = False) -> Optional[str]:
     :raises errors.Error: if the user cancels
 
     """
+    # pylint: disable=unused-argument
     invalid_prefix = ""
     if invalid:
         invalid_prefix = "The server reported a problem with your email address. "
@@ -41,11 +43,10 @@ def get_email(invalid: bool = False) -> Optional[str]:
         if code != display_util.OK:
             raise errors.Error("Error getting email address.")
         if email == "":
-            return None
+            return ""
         if util.safe_email(email):
             return email
         invalid_prefix = "There is a problem with your email address. "
-        invalid = True
 
 
 def choose_account(accounts: List[account.Account]) -> Optional[account.Account]:

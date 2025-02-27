@@ -187,6 +187,8 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
     if account_storage.find_all():
         logger.info("There are already existing accounts for %s", config.server)
 
+    if config.email == "":
+        config.email = None
     # If --dry-run is used, and there is no staging account, create one with no email.
     if config.dry_run:
         config.email = None
