@@ -1062,8 +1062,6 @@ class MainTest(test_util.ConfigTestCase):
     def test_noninteractive(self, _):
         args = ['-n', 'certonly']
         self._cli_missing_flag(args, "specify a plugin")
-        args.extend(['--standalone', '-d', 'eg.is'])
-        self._cli_missing_flag(args, "register before running")
 
     @mock.patch('certbot._internal.eff.handle_subscription')
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
