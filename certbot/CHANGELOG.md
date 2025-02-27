@@ -10,6 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* The --register-unsafely-without-email flag is no longer needed in non-interactive mode.
+* In interactive mode, pressing Enter at the email prompt will register without an email.
 * deprecated `acme.crypto_util.dump_pyopenssl_chain`
 * deprecated `acme.crypto_util._pyopenssl_cert_or_req_all_names`
 * deprecated `acme.crypto_util._pyopenssl_cert_or_req_san`

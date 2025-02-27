@@ -158,9 +158,10 @@ class RegisterTest(test_util.ConfigTestCase):
                 with pytest.raises(errors.Error):
                     self._call()
 
-    def test_needs_email(self):
+    def test_no_email_is_chill(self):
         self.config.email = None
-        with pytest.raises(errors.Error):
+        with self._patched_acme_client() as mock_client:
+            mock_client().external_account_required.side_effect = self._false_mock
             self._call()
 
     @mock.patch("certbot._internal.client.logger")
@@ -172,7 +173,6 @@ class RegisterTest(test_util.ConfigTestCase):
                 self.config.register_unsafely_without_email = True
                 self.config.dry_run = False
                 self._call()
-                mock_logger.debug.assert_called_once_with(mock.ANY)
                 assert mock_prepare.called is True
 
     @mock.patch("certbot._internal.client.display_ops.get_email")
