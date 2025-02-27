@@ -27,6 +27,7 @@ Authors
 * [Anselm Levskaya](https://github.com/levskaya)
 * [Antoine Jacoutot](https://github.com/ajacoutot)
 * [April King](https://github.com/april)
+* [Aronya Baksy](https://github.com/abaksy)
 * [asaph](https://github.com/asaph)
 * [Axel Beckert](https://github.com/xtaran)
 * [Bas](https://github.com/Mechazawa)

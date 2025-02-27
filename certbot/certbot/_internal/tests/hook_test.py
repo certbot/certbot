@@ -1,7 +1,7 @@
 """Tests for certbot._internal.hooks."""
+from platform import python_version_tuple
 import sys
 import unittest
-from platform import python_version_tuple
 from unittest import mock
 
 import pytest
@@ -11,7 +11,6 @@ from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
-from typing import List
 
 
 def pyver_lt(major: int, minor: int):
@@ -292,7 +291,7 @@ class RunSavedPostHooksTest(HookTest):
 
     def setUp(self):
         super().setUp()
-        self.eventually: List[str] = []
+        self.eventually: list[str] = []
 
     def test_empty(self):
         assert not self._call_with_mock_execute_and_eventually([], []).called

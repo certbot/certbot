@@ -1,5 +1,6 @@
 """Support for standalone client challenge solvers. """
 import collections
+from collections.abc import Mapping
 import functools
 import http.client as http_client
 import http.server as BaseHTTPServer
@@ -9,12 +10,7 @@ import socketserver
 import threading
 from typing import Any
 from typing import cast
-from typing import List
-from typing import Mapping
 from typing import Optional
-from typing import Set
-from typing import Tuple
-from typing import Type
 
 from OpenSSL import SSL
 
@@ -72,11 +68,11 @@ class BaseDualNetworkedServers:
        If two servers are instantiated, they will serve on the same port.
        """
 
-    def __init__(self, ServerClass: Type[socketserver.TCPServer], server_address: Tuple[str, int],
+    def __init__(self, ServerClass: type[socketserver.TCPServer], server_address: tuple[str, int],
                  *remaining_args: Any, **kwargs: Any) -> None:
         port = server_address[1]
-        self.threads: List[threading.Thread] = []
-        self.servers: List[socketserver.BaseServer] = []
+        self.threads: list[threading.Thread] = []
+        self.servers: list[socketserver.BaseServer] = []
 
         # Preserve socket error for re-raising, if no servers can be started
         last_socket_err: Optional[socket.error] = None
@@ -130,7 +126,7 @@ class BaseDualNetworkedServers:
             thread.start()
             self.threads.append(thread)
 
-    def getsocknames(self) -> List[Tuple[str, int]]:
+    def getsocknames(self) -> list[tuple[str, int]]:
         """Wraps socketserver.TCPServer.socket.getsockname"""
         return [server.socket.getsockname() for server in self.servers]
 
@@ -150,8 +146,8 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
 
     ACME_TLS_1_PROTOCOL = b"acme-tls/1"
 
-    def __init__(self, server_address: Tuple[str, int],
-                 certs: List[crypto_util._KeyAndCert],
+    def __init__(self, server_address: tuple[str, int],
+                 certs: list[crypto_util._KeyAndCert],
                  challenge_certs: Mapping[bytes, crypto_util._KeyAndCert],
                  ipv6: bool = False) -> None:
         # We don't need to implement a request handler here because the work
@@ -176,7 +172,7 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
             return self.challenge_certs[server_name]
         return None # pragma: no cover
 
-    def _alpn_selection(self, _connection: SSL.Connection, alpn_protos: List[bytes]) -> bytes:
+    def _alpn_selection(self, _connection: SSL.Connection, alpn_protos: list[bytes]) -> bytes:
         """Callback to select alpn protocol."""
         if len(alpn_protos) == 1 and alpn_protos[0] == self.ACME_TLS_1_PROTOCOL:
             logger.debug("Agreed on %s ALPN", self.ACME_TLS_1_PROTOCOL)
@@ -202,7 +198,7 @@ class HTTPServer(BaseHTTPServer.HTTPServer):
 class HTTP01Server(HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
 
-    def __init__(self, server_address: Tuple[str, int], resources: Set[challenges.HTTP01],
+    def __init__(self, server_address: tuple[str, int], resources: set[challenges.HTTP01],
                  ipv6: bool = False, timeout: int = 30) -> None:
         super().__init__(
             server_address, HTTP01RequestHandler.partial_init(
@@ -297,7 +293,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                          self.path)
 
     @classmethod
-    def partial_init(cls, simple_http_resources: Set[challenges.HTTP01],
+    def partial_init(cls, simple_http_resources: set[challenges.HTTP01],
                      timeout: int) -> 'functools.partial[HTTP01RequestHandler]':
         """Partially initialize this handler.
 

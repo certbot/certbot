@@ -1,19 +1,18 @@
 #!/usr/bin/env python
 # pylint: disable=missing-module-docstring
 
+from collections.abc import Mapping
 import http.server as BaseHTTPServer
 import json
 import re
 import sys
-from typing import Mapping
-from typing import Type
 
 import requests
 
 from certbot_integration_tests.utils.misc import GracefulTCPServer
 
 
-def _create_proxy(mapping: Mapping[str, str]) -> Type[BaseHTTPServer.BaseHTTPRequestHandler]:
+def _create_proxy(mapping: Mapping[str, str]) -> type[BaseHTTPServer.BaseHTTPRequestHandler]:
     # pylint: disable=missing-function-docstring
     class ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         # pylint: disable=missing-class-docstring

@@ -7,12 +7,12 @@ import unittest
 from unittest import mock
 import warnings
 
-import OpenSSL
-import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+import OpenSSL
+import pytest
 
 from certbot import errors
 from certbot import util

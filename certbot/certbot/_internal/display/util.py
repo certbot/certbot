@@ -1,7 +1,6 @@
 """Internal Certbot display utilities."""
 import sys
 import textwrap
-from typing import List
 from typing import Optional
 
 from acme import messages as acme_messages
@@ -69,7 +68,7 @@ def input_with_timeout(prompt: Optional[str] = None, timeout: float = 36000.0) -
     return line.rstrip('\n')
 
 
-def separate_list_input(input_: str) -> List[str]:
+def separate_list_input(input_: str) -> list[str]:
     """Separate a comma or space separated list.
 
     :param str input_: input from the user
@@ -84,7 +83,7 @@ def separate_list_input(input_: str) -> List[str]:
     return [str(string) for string in no_commas.split()]
 
 
-def summarize_domain_list(domains: List[str]) -> str:
+def summarize_domain_list(domains: list[str]) -> str:
     """Summarizes a list of domains in the format of:
         example.com.com and N more domains
     or if there is are only two domains:

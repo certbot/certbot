@@ -1,6 +1,5 @@
 """Tests for AugeasParserNode classes"""
 import os
-from typing import List
 from unittest import mock
 
 import pytest
@@ -111,7 +110,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
 
     def test_set_parameters(self):
         servernames = self.config.parser_root.find_directives("servername")
-        names: List[str] = []
+        names: list[str] = []
         for servername in servernames:
             names += servername.parameters
         assert "going_to_set_this" not in names

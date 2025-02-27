@@ -3,7 +3,6 @@ import glob
 import re
 import shutil
 import sys
-from typing import List
 
 import pytest
 
@@ -125,7 +124,7 @@ class NginxParserTest(util.NginxTest):
                    ([[[0], [3], [4]], [[5], [3], [0]]], [])]
 
         for mylist, result in mylists:
-            paths: List[List[int]] = []
+            paths: list[list[int]] = []
             parser._do_for_subarray(mylist,
                                     lambda x: isinstance(x, list) and
                                     len(x) >= 1 and

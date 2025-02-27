@@ -1,14 +1,14 @@
 """Module configuring Certbot in a snap environment"""
 from __future__ import annotations
+
+from collections.abc import Iterable
 import logging
 import socket
-from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
-from requests import PreparedRequest, Session
+from requests import PreparedRequest
+from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
@@ -39,7 +39,7 @@ CURRENT_PYTHON_VERSION_STRING = 'python3.12'
 LOGGER = logging.getLogger(__name__)
 
 
-def prepare_env(cli_args: List[str]) -> List[str]:
+def prepare_env(cli_args: list[str]) -> list[str]:
     """
     Prepare runtime environment for a certbot execution in snap.
     :param list cli_args: List of command line arguments
@@ -142,7 +142,7 @@ class _SnapdAdapter(HTTPAdapter):
     def get_connection_with_tls_context(self, request: PreparedRequest,
                                         verify: bool | str | None,
                                         proxies: Optional[Iterable[str]] = None,
-                                        cert: Optional[Union[str, Tuple[str,str]]] = None
+                                        cert: Optional[Union[str, tuple[str,str]]] = None
                                         ) -> _SnapdConnectionPool:
         """Required method for creating a new connection pool. Simply return our
         shim that forces a UNIX socket connection to snapd."""

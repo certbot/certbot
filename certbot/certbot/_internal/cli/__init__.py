@@ -5,12 +5,9 @@ import logging
 import logging.handlers
 import sys
 from typing import Any
-from typing import List
 from typing import Optional
-from typing import Type
 
 import certbot
-from certbot.configuration import NamespaceConfig
 from certbot._internal import constants
 from certbot._internal.cli.cli_constants import ARGPARSE_PARAMS_TO_REMOVE
 from certbot._internal.cli.cli_constants import cli_command
@@ -46,6 +43,7 @@ from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
 from certbot._internal.plugins import disco as plugins_disco
 import certbot._internal.plugins.selection as plugin_selection
+from certbot.configuration import NamespaceConfig
 from certbot.plugins import enhancements
 
 logger = logging.getLogger(__name__)
@@ -55,7 +53,7 @@ logger = logging.getLogger(__name__)
 helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
-def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[str]
+def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[str]
                            ) -> NamespaceConfig:
     """Returns parsed command line arguments.
 
@@ -477,7 +475,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     return helpful.parse_args()
 
 
-def argparse_type(variable: Any) -> Type:
+def argparse_type(variable: Any) -> type:
     """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
     if helpful_parser is not None:

@@ -1,8 +1,8 @@
 """Tests for certbot_dns_google._internal.dns_google."""
 from __future__ import annotations
+
 import sys
 from typing import Optional
-from typing import Tuple
 import unittest
 from unittest import mock
 
@@ -98,12 +98,12 @@ class GoogleClientTest(unittest.TestCase):
     change = "an-id"
     visibility = "public"
 
-    import certbot_dns_google # should get overwritten later; need for typing
+    import certbot_dns_google  # should get overwritten later; need for typing
 
     def _setUp_client_with_mock(self,
         zone_request_side_effect: list[dict[str, list[dict[str, str]]]],
         rrs_list_side_effect: Optional[Error] = None
-        ) -> Tuple['certbot_dns_google._internal.dns_google._GoogleClient', mock.MagicMock]:
+        ) -> tuple['certbot_dns_google._internal.dns_google._GoogleClient', mock.MagicMock]:
         from certbot_dns_google._internal.dns_google import _GoogleClient
 
         pwd = os.path.dirname(__file__)

@@ -5,6 +5,7 @@ import re
 from setuptools import find_packages
 from setuptools import setup
 
+
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
     with codecs.open(filename, encoding=encoding) as fd:

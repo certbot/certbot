@@ -52,7 +52,8 @@ class AddrTest(unittest.TestCase):
         assert self.addr7.default is True
 
     def test_fromstring_socket(self):
-        from certbot_nginx._internal.obj import Addr, SocketAddrError
+        from certbot_nginx._internal.obj import Addr
+        from certbot_nginx._internal.obj import SocketAddrError
         socket_string = r"unix:/var/run/nginx.sock"
         with pytest.raises(SocketAddrError, match=socket_string):
             Addr.fromstring(socket_string)
