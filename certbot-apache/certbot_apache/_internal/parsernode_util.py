@@ -1,9 +1,7 @@
 """ParserNode utils"""
-from typing import Any
-
 from collections.abc import Iterable
+from typing import Any
 from typing import Optional
-
 
 from certbot_apache._internal.interfaces import ParserNode
 

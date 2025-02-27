@@ -1,10 +1,8 @@
 """Contains UI methods for Apache operations."""
-import logging
 from collections.abc import Iterable
-
-from typing import Optional
 from collections.abc import Sequence
-
+import logging
+from typing import Optional
 
 from certbot import errors
 from certbot.compat import os

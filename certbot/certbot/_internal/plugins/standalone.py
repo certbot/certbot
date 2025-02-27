@@ -1,17 +1,18 @@
 """Standalone Authenticator."""
 import collections
-import errno
-import logging
-from typing import Any
+from collections import defaultdict
 from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Mapping
-from collections import defaultdict
-
-
-
-from typing import Union
+import errno
+import logging
+from typing import Any
 from typing import TYPE_CHECKING
+from typing import Union
+
+from cryptography import x509
+from cryptography.hazmat.primitives.asymmetric import types
+from OpenSSL import crypto
 
 from acme import challenges
 from acme import standalone as acme_standalone
@@ -20,10 +21,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
 from certbot.plugins import common
-
-from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import types
-from OpenSSL import crypto
 
 logger = logging.getLogger(__name__)
 

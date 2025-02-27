@@ -4,7 +4,6 @@ from abc import abstractmethod
 import argparse
 from typing import cast
 
-
 from certbot import interfaces
 from certbot.configuration import NamespaceConfig
 

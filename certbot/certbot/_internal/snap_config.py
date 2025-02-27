@@ -1,14 +1,14 @@
 """Module configuring Certbot in a snap environment"""
 from __future__ import annotations
+
+from collections.abc import Iterable
 import logging
 import socket
-from collections.abc import Iterable
-
 from typing import Optional
-
 from typing import Union
 
-from requests import PreparedRequest, Session
+from requests import PreparedRequest
+from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException

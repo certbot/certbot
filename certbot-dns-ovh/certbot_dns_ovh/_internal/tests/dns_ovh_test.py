@@ -1,6 +1,6 @@
 """Tests for certbot_dns_ovh._internal.dns_ovh."""
-from unittest import mock
 import sys
+from unittest import mock
 
 import pytest
 from requests import Response

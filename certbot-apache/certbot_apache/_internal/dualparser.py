@@ -1,11 +1,8 @@
 """ Dual ParserNode implementation """
+from collections.abc import Iterable
 from typing import Any
 from typing import Generic
-from collections.abc import Iterable
-
 from typing import Optional
-
-
 from typing import TYPE_CHECKING
 from typing import TypeVar
 

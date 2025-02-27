@@ -1,14 +1,12 @@
 """Tools for managing certificates."""
+from collections.abc import Callable
+from collections.abc import Iterable
 import datetime
 import logging
 import re
 import traceback
 from typing import Any
-from collections.abc import Callable
-from collections.abc import Iterable
-
 from typing import Optional
-
 from typing import TypeVar
 from typing import Union
 

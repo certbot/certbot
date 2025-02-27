@@ -1,16 +1,12 @@
 """ApacheParser is a member object of the ApacheConfigurator class."""
+from collections.abc import Collection
+from collections.abc import Iterable
+from collections.abc import Mapping
 import copy
 import fnmatch
 import logging
 import re
-from collections.abc import Collection
-
-from collections.abc import Iterable
-
-from collections.abc import Mapping
 from typing import Optional
-
-
 from typing import TYPE_CHECKING
 from typing import Union
 

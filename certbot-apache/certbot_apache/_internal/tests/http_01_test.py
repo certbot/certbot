@@ -1,7 +1,6 @@
 """Test for certbot_apache._internal.http_01."""
 import errno
 import sys
-
 import unittest
 from unittest import mock
 

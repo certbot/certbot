@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Module executing integration tests against certbot snap."""
+from collections.abc import Generator
 import glob
 import os
 import re
 import subprocess
-from collections.abc import Generator
 
 import pytest
 

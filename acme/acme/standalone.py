@@ -1,5 +1,6 @@
 """Support for standalone client challenge solvers. """
 import collections
+from collections.abc import Mapping
 import functools
 import http.client as http_client
 import http.server as BaseHTTPServer
@@ -9,12 +10,7 @@ import socketserver
 import threading
 from typing import Any
 from typing import cast
-
-from collections.abc import Mapping
 from typing import Optional
-
-
-
 
 from OpenSSL import SSL
 

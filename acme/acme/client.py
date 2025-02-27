@@ -1,5 +1,6 @@
 """ACME client API."""
 import base64
+from collections.abc import Mapping
 import datetime
 from email.utils import parsedate_tz
 import http.client as http_client
@@ -8,16 +9,11 @@ import re
 import time
 from typing import Any
 from typing import cast
-
-from collections.abc import Mapping
 from typing import Optional
-
-
 from typing import Union
 import warnings
 
 from cryptography import x509
-
 import josepy as jose
 import OpenSSL
 import requests

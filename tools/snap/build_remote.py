@@ -23,10 +23,6 @@ import tempfile
 from threading import Lock
 import time
 
-
-
-
-
 CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
 PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*'))]
 

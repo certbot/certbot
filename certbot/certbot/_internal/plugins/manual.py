@@ -1,12 +1,8 @@
 """Manual authenticator plugin"""
+from collections.abc import Callable
+from collections.abc import Iterable
 import logging
 from typing import Any
-from collections.abc import Callable
-
-from collections.abc import Iterable
-
-
-
 
 from acme import challenges
 from certbot import achallenges

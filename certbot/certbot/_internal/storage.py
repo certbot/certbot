@@ -1,5 +1,7 @@
 """Renewable certificates storage."""
 # pylint: disable=too-many-lines
+from collections.abc import Iterable
+from collections.abc import Mapping
 import datetime
 import glob
 import logging
@@ -8,12 +10,7 @@ import shutil
 import stat
 from typing import Any
 from typing import cast
-
-from collections.abc import Iterable
-
-from collections.abc import Mapping
 from typing import Optional
-
 from typing import Union
 
 import configobj

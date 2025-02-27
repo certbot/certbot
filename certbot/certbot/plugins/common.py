@@ -2,19 +2,15 @@
 from abc import ABCMeta
 from abc import abstractmethod
 import argparse
+from collections.abc import Callable
+from collections.abc import Iterable
 import importlib.resources
 import logging
 import re
 import shutil
 import tempfile
 from typing import Any
-from collections.abc import Callable
-from collections.abc import Iterable
-
 from typing import Optional
-
-
-
 from typing import TypeVar
 
 from acme import challenges

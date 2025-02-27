@@ -1,9 +1,8 @@
 """Module contains classes used by the Apache Configurator."""
+from collections.abc import Iterable
 import re
 from typing import Any
-from collections.abc import Iterable
 from typing import Optional
-
 from typing import Union
 
 from certbot.plugins import common

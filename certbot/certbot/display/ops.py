@@ -1,12 +1,10 @@
 """Contains UI methods for LE user operations."""
+from collections.abc import Callable
+from collections.abc import Iterable
 import logging
 from textwrap import indent
 from typing import Any
-from collections.abc import Callable
-from collections.abc import Iterable
-
 from typing import Optional
-
 
 from certbot import errors
 from certbot import interfaces

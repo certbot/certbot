@@ -1,8 +1,7 @@
 """Module to handle the context of nginx integration tests."""
+from collections.abc import Iterable
 import os
 import subprocess
-from collections.abc import Iterable
-
 
 import pytest
 

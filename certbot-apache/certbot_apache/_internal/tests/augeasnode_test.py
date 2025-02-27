@@ -1,6 +1,5 @@
 """Tests for AugeasParserNode classes"""
 import os
-
 from unittest import mock
 
 import pytest

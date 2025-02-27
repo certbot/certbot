@@ -1,11 +1,10 @@
 """Provides Tab completion when prompting users for a path."""
-import glob
-from types import TracebackType
 from collections.abc import Callable
 from collections.abc import Iterator
+import glob
+from types import TracebackType
 from typing import Literal
 from typing import Optional
-
 
 # readline module is not available on all systems
 try:

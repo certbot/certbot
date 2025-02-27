@@ -100,10 +100,7 @@ For this reason the internal representation of data should not ignore the case.
 """
 import abc
 from typing import Any
-
-
 from typing import Optional
-
 from typing import TypeVar
 
 GenericParserNode = TypeVar("GenericParserNode", bound="ParserNode")

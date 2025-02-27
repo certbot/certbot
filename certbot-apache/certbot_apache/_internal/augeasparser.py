@@ -64,14 +64,10 @@ Translates over to:
     "/files/etc/apache2/apache2.conf/bLoCk[1]",
 ]
 """
+from collections.abc import Iterable
 from typing import Any
 from typing import cast
-
-from collections.abc import Iterable
-
 from typing import Optional
-
-
 from typing import Union
 
 from certbot import errors

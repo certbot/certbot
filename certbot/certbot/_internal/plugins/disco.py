@@ -1,15 +1,12 @@
 """Utilities for plugins discovery and selection."""
-import logging
-import sys
 from collections.abc import Callable
-from typing import cast
-
 from collections.abc import Iterable
 from collections.abc import Iterator
-
 from collections.abc import Mapping
+import logging
+import sys
+from typing import cast
 from typing import Optional
-
 from typing import Union
 
 from certbot import configuration

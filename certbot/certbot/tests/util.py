@@ -1,5 +1,7 @@
 """Test utilities."""
 import atexit
+from collections.abc import Callable
+from collections.abc import Iterable
 from contextlib import ExitStack
 import copy
 from importlib import reload as reload_module
@@ -12,11 +14,8 @@ import shutil
 import sys
 import tempfile
 from typing import Any
-from collections.abc import Callable
 from typing import cast
 from typing import IO
-from collections.abc import Iterable
-
 from typing import Optional
 from typing import Union
 import unittest

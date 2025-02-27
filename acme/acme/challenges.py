@@ -1,16 +1,13 @@
 """ACME Identifier Validation Challenges."""
 import abc
+from collections.abc import Mapping
 import functools
 import hashlib
 import logging
 import socket
 from typing import Any
 from typing import cast
-
-from collections.abc import Mapping
 from typing import Optional
-
-
 from typing import TypeVar
 from typing import Union
 

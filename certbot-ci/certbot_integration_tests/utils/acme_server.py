@@ -2,6 +2,7 @@
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 
 import argparse
+from collections.abc import Mapping
 import errno
 import json
 import os
@@ -13,11 +14,7 @@ import time
 from types import TracebackType
 from typing import Any
 from typing import cast
-
-
-from collections.abc import Mapping
 from typing import Optional
-
 
 # pylint: disable=wildcard-import,unused-wildcard-import
 from certbot_integration_tests.utils import misc

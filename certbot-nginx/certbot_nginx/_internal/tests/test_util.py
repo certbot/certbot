@@ -1,10 +1,10 @@
 """Common utilities for certbot_nginx."""
+from contextlib import contextmanager
 import copy
 import importlib.resources
 import shutil
-import tempfile
 import sys
-from contextlib import contextmanager
+import tempfile
 from unittest import mock
 
 import josepy as jose
@@ -15,6 +15,7 @@ from certbot.plugins import common
 from certbot.tests import util as test_util
 from certbot_nginx._internal import configurator
 from certbot_nginx._internal import nginxparser
+
 
 class NginxTest(test_util.ConfigTestCase):
 

@@ -1,8 +1,7 @@
 """Module executing integration tests against certbot with nginx plugin."""
+from collections.abc import Generator
 import os
 import ssl
-from collections.abc import Generator
-
 
 import pytest
 

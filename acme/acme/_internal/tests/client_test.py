@@ -5,7 +5,6 @@ import datetime
 import http.client as http_client
 import json
 import sys
-
 import unittest
 from unittest import mock
 

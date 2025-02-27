@@ -1,10 +1,8 @@
 """Module contains classes used by the Nginx Configurator."""
+from collections.abc import Sequence
 import re
 from typing import Any
-
 from typing import Optional
-from collections.abc import Sequence
-
 from typing import Union
 
 from certbot.plugins import common

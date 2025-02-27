@@ -1,10 +1,9 @@
 """Certbot constants."""
 import atexit
+from contextlib import ExitStack
 import importlib.resources
 import logging
-from contextlib import ExitStack
 from typing import Any
-
 
 from acme import challenges
 from certbot.compat import misc

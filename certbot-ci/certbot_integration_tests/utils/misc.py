@@ -3,6 +3,8 @@ Misc module contains stateless functions that could be used during pytest execut
 or outside during setup/teardown of the integration tests environment.
 """
 import atexit
+from collections.abc import Generator
+from collections.abc import Iterable
 import contextlib
 import errno
 import functools
@@ -17,11 +19,7 @@ import sys
 import tempfile
 import threading
 import time
-from collections.abc import Generator
-from collections.abc import Iterable
-
 from typing import Optional
-
 from typing import Union
 
 from cryptography import x509

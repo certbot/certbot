@@ -3,8 +3,6 @@ import os
 import shutil
 import subprocess
 
-
-
 from certbot import configuration
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util

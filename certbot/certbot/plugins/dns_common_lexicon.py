@@ -1,15 +1,12 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
 import abc
+from collections.abc import Mapping
 import logging
 import sys
 from types import ModuleType
 from typing import Any
 from typing import cast
-
-
-from collections.abc import Mapping
 from typing import Optional
-
 from typing import Union
 import warnings
 

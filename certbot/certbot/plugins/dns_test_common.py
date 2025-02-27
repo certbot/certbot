@@ -1,6 +1,6 @@
 """Base test class for DNS authenticators."""
-from typing import Any
 from collections.abc import Mapping
+from typing import Any
 from typing import Protocol
 from unittest import mock
 

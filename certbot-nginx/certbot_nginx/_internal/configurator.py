@@ -1,27 +1,22 @@
 # pylint: disable=too-many-lines
 """Nginx Configuration"""
 import atexit
+from collections.abc import Callable
+from collections.abc import Iterable
+from collections.abc import Mapping
+from collections.abc import Sequence
 from contextlib import ExitStack
-import logging
 import importlib.resources
+import logging
 import re
 import socket
 import subprocess
 import tempfile
 import time
 from typing import Any
-from collections.abc import Callable
-
-from collections.abc import Iterable
-
-from collections.abc import Mapping
-from typing import Optional
-from collections.abc import Sequence
-
-
-
-from typing import Union
 from typing import cast
+from typing import Optional
+from typing import Union
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa

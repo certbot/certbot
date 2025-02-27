@@ -20,8 +20,6 @@ Note, that all annotated challenges act as a proxy objects::
 import logging
 from typing import Any
 
-
-
 import josepy as jose
 
 from acme import challenges

@@ -3,8 +3,6 @@ import argparse
 import os
 import shutil
 import subprocess
-
-
 from unittest import mock
 
 from certbot import configuration

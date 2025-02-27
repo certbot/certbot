@@ -5,12 +5,9 @@ import logging
 import logging.handlers
 import sys
 from typing import Any
-
 from typing import Optional
 
-
 import certbot
-from certbot.configuration import NamespaceConfig
 from certbot._internal import constants
 from certbot._internal.cli.cli_constants import ARGPARSE_PARAMS_TO_REMOVE
 from certbot._internal.cli.cli_constants import cli_command
@@ -46,6 +43,7 @@ from certbot._internal.cli.verb_help import VERB_HELP
 from certbot._internal.cli.verb_help import VERB_HELP_MAP
 from certbot._internal.plugins import disco as plugins_disco
 import certbot._internal.plugins.selection as plugin_selection
+from certbot.configuration import NamespaceConfig
 from certbot.plugins import enhancements
 
 logger = logging.getLogger(__name__)

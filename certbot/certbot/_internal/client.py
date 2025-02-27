@@ -1,15 +1,12 @@
 """Certbot client API."""
+from collections.abc import Callable
 import datetime
 import logging
 import platform
 from typing import Any
-from collections.abc import Callable
 from typing import cast
-
 from typing import IO
-
 from typing import Optional
-
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend

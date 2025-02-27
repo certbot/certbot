@@ -1,10 +1,7 @@
 """Facilities for implementing hooks that call shell commands."""
 
 import logging
-
-
 from typing import Optional
-
 
 from certbot import configuration
 from certbot import errors

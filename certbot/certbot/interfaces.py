@@ -2,11 +2,9 @@
 from abc import ABCMeta
 from abc import abstractmethod
 from argparse import ArgumentParser
-from typing import Any
 from collections.abc import Iterable
-
+from typing import Any
 from typing import Optional
-
 from typing import TYPE_CHECKING
 from typing import Union
 

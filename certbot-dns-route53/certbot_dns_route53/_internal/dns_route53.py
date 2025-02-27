@@ -1,13 +1,11 @@
 """Certbot Route53 authenticator plugin."""
 import collections
+from collections import defaultdict
+from collections.abc import Callable
+from collections.abc import Iterable
 import logging
 import time
 from typing import Any
-from collections.abc import Callable
-from collections import defaultdict
-from collections.abc import Iterable
-
-
 from typing import cast
 
 import boto3

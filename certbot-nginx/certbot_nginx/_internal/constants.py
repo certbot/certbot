@@ -2,7 +2,6 @@
 import platform
 from typing import Any
 
-
 FREEBSD_DARWIN_SERVER_ROOT = "/usr/local/etc/nginx"
 LINUX_SERVER_ROOT = "/etc/nginx"
 PKGSRC_SERVER_ROOT = "/usr/pkg/etc/nginx"

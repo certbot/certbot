@@ -1,7 +1,6 @@
 """Null plugin."""
-import logging
 from collections.abc import Callable
-
+import logging
 from typing import Optional
 from typing import Union
 

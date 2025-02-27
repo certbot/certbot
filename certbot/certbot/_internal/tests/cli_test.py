@@ -5,7 +5,8 @@ from importlib import reload as reload_module
 import io
 import sys
 import tempfile
-from typing import Any, List
+from typing import Any
+from typing import List
 import unittest
 from unittest import mock
 
@@ -13,13 +14,14 @@ import pytest
 
 from acme import challenges
 from certbot import errors
-from certbot.configuration import ArgumentSource, NamespaceConfig
 from certbot._internal import cli
 from certbot._internal import constants
 from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.plugins import disco
 from certbot.compat import filesystem
 from certbot.compat import os
+from certbot.configuration import ArgumentSource
+from certbot.configuration import NamespaceConfig
 import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
 

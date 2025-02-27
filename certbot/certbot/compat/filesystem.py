@@ -1,13 +1,12 @@
 """Compat module to handle files security on Windows and Linux"""
 from __future__ import absolute_import
 
+from collections.abc import Generator
 from contextlib import contextmanager
 import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 from typing import Any
-
-from collections.abc import Generator
 from typing import Optional
 
 try:

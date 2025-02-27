@@ -1,10 +1,9 @@
 """Module to handle the context of integration tests."""
+from collections.abc import Iterable
 import os
 import shutil
 import sys
 import tempfile
-from collections.abc import Iterable
-
 
 import pytest
 

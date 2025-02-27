@@ -1,12 +1,10 @@
 """This modules define the actual display implementations used in Certbot"""
+from collections.abc import Iterable
 import logging
 import sys
 from typing import Any
-from collections.abc import Iterable
-
 from typing import Optional
 from typing import TextIO
-
 from typing import TypeVar
 from typing import Union
 

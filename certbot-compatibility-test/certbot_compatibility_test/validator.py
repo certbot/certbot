@@ -1,8 +1,8 @@
 """Validators to determine the current webserver configuration"""
+from collections.abc import Mapping
 import logging
 import socket
 from typing import cast
-from collections.abc import Mapping
 from typing import Optional
 from typing import Union
 

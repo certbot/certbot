@@ -5,9 +5,6 @@ import os
 import subprocess
 import sys
 
-
-
-
 import certbot_integration_tests
 # pylint: disable=wildcard-import,unused-wildcard-import
 from certbot_integration_tests.utils.constants import *

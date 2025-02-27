@@ -1,5 +1,7 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 
+from collections.abc import Iterable
+from collections.abc import Mapping
 import copy
 import itertools
 import logging
@@ -8,12 +10,7 @@ import sys
 import time
 import traceback
 from typing import Any
-
-from collections.abc import Iterable
-
-from collections.abc import Mapping
 from typing import Optional
-
 from typing import Union
 
 from cryptography.hazmat.backends import default_backend

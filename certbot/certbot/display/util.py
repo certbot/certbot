@@ -11,7 +11,6 @@ Other messages can use the `logging` module. See `log.py`.
 """
 
 from typing import Optional
-
 from typing import Union
 
 from certbot._internal.display import obj

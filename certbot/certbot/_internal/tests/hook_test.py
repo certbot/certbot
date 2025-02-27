@@ -1,7 +1,7 @@
 """Tests for certbot._internal.hooks."""
+from platform import python_version_tuple
 import sys
 import unittest
-from platform import python_version_tuple
 from unittest import mock
 
 import pytest
@@ -11,7 +11,6 @@ from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
-
 
 
 def pyver_lt(major: int, minor: int):

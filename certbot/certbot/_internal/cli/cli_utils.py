@@ -1,14 +1,12 @@
 """Certbot command line util function"""
 import argparse
+from collections.abc import Iterable
+from collections.abc import Sequence
 import copy
 import glob
 import inspect
 from typing import Any
-from collections.abc import Iterable
-
 from typing import Optional
-from collections.abc import Sequence
-
 from typing import TYPE_CHECKING
 from typing import Union
 

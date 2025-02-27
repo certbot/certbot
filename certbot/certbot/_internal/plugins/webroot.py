@@ -1,18 +1,13 @@
 """Webroot plugin."""
 import argparse
-import collections
+from collections import defaultdict
+from collections.abc import Callable
+from collections.abc import Iterable
+from collections.abc import Sequence
 import json
 import logging
 from typing import Any
-from collections.abc import Callable
-from typing import DefaultDict
-
-from collections.abc import Iterable
-
 from typing import Optional
-from collections.abc import Sequence
-
-
 from typing import Union
 
 from acme import challenges
@@ -101,7 +96,7 @@ to serve all files under specified web root ({0})."""
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.full_roots: dict[str, str] = {}
-        self.performed: collections.defaultdict[str, set[AnnotatedChallenge]] = collections.defaultdict(set)
+        self.performed: defaultdict[str, set[AnnotatedChallenge]] = defaultdict(set)
         # stack of dirs successfully created by this authenticator
         self._created_dirs: list[str] = []
 

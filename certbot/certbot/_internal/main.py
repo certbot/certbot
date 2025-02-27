@@ -1,18 +1,16 @@
 """Certbot main entry point."""
 # pylint: disable=too-many-lines
 
+from collections.abc import Generator
+from collections.abc import Iterable
 from contextlib import contextmanager
 import copy
 import functools
 import logging.handlers
 import sys
 from typing import cast
-from collections.abc import Generator
 from typing import IO
-from collections.abc import Iterable
-
 from typing import Optional
-
 from typing import TypeVar
 from typing import Union
 

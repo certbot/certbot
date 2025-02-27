@@ -1,4 +1,5 @@
 """Module executing integration tests against certbot core."""
+from collections.abc import Generator
 import os
 from os.path import exists
 from os.path import join
@@ -6,9 +7,6 @@ import re
 import shutil
 import subprocess
 import time
-from collections.abc import Generator
-
-
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1

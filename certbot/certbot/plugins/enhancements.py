@@ -1,11 +1,9 @@
 """New interface style Certbot enhancements"""
 import abc
-from typing import Any
 from collections.abc import Callable
-
 from collections.abc import Generator
 from collections.abc import Iterable
-
+from typing import Any
 from typing import Optional
 
 from certbot import configuration

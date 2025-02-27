@@ -2,7 +2,6 @@
 import functools
 import string
 import sys
-
 import unittest
 from unittest import mock
 

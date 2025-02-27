@@ -1,21 +1,18 @@
 """NginxParser is a member object of the NginxConfigurator class."""
 from __future__ import annotations
+
+from collections.abc import Callable
+from collections.abc import Iterable
+from collections.abc import Mapping
+from collections.abc import Sequence
 import copy
 import functools
 import glob
 import logging
 import re
 from typing import Any
-from collections.abc import Callable
 from typing import cast
-
-from collections.abc import Iterable
-
-from collections.abc import Mapping
 from typing import Optional
-from collections.abc import Sequence
-
-
 from typing import Union
 
 import pyparsing

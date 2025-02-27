@@ -11,10 +11,7 @@ import tempfile
 import time
 from types import TracebackType
 from typing import Any
-
-
 from typing import Optional
-
 
 from certbot_integration_tests.utils import constants
 

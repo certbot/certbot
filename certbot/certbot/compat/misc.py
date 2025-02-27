@@ -10,7 +10,6 @@ import subprocess
 import sys
 from typing import Optional
 
-
 from certbot import errors
 from certbot.compat import os
 

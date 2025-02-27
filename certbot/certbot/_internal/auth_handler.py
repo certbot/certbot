@@ -1,14 +1,10 @@
 """ACME AuthHandler."""
+from collections.abc import Iterable
+from collections.abc import Sequence
 import datetime
 import logging
 import time
-
-from collections.abc import Iterable
-
 from typing import Optional
-from collections.abc import Sequence
-
-
 
 import josepy
 from requests.models import Response

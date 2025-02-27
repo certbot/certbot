@@ -1,8 +1,6 @@
 """A class that performs HTTP-01 challenges for Apache"""
 import errno
 import logging
-
-
 from typing import TYPE_CHECKING
 
 from acme.challenges import KeyAuthorizationChallengeResponse

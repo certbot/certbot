@@ -1,5 +1,7 @@
 """Tests Certbot plugins against different server configurations."""
 import argparse
+from collections.abc import Generator
+from collections.abc import Iterable
 import contextlib
 import filecmp
 import logging
@@ -10,13 +12,7 @@ import sys
 import tempfile
 import time
 from typing import Any
-
-from collections.abc import Generator
-from collections.abc import Iterable
-
 from typing import Optional
-
-
 
 from cryptography.hazmat.primitives import serialization
 from urllib3.util import connection

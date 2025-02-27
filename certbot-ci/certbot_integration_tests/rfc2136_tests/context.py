@@ -1,10 +1,9 @@
 """Module to handle the context of RFC2136 integration tests."""
+from collections.abc import Generator
+from collections.abc import Iterable
 from contextlib import contextmanager
 import importlib.resources
 import tempfile
-from collections.abc import Generator
-from collections.abc import Iterable
-
 
 import pytest
 

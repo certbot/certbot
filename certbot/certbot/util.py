@@ -1,6 +1,7 @@
 """Utilities for all Certbot."""
 import argparse
 import atexit
+from collections.abc import Callable
 import errno
 import itertools
 import logging
@@ -10,14 +11,9 @@ import socket
 import subprocess
 import sys
 from typing import Any
-from collections.abc import Callable
-
 from typing import IO
-
 from typing import NamedTuple
 from typing import Optional
-
-
 from typing import Union
 
 import configargparse

@@ -1,9 +1,8 @@
 """Tests for certbot._internal.error_handler."""
+from collections.abc import Callable
 import contextlib
 import signal
 import sys
-from collections.abc import Callable
-
 from typing import Union
 import unittest
 from unittest import mock

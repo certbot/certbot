@@ -6,17 +6,17 @@ import socketserver
 import sys
 import threading
 import time
-
 import unittest
 from unittest import mock
 import warnings
 
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import x25519
 import josepy as jose
 import OpenSSL
 import pytest
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, x25519
 
 from acme import errors
 from acme._internal.tests import test_util
@@ -221,8 +221,11 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
 
     @mock.patch("acme.crypto_util._now")
     def test_expiry_times(self, mock_now):
+        from datetime import datetime
+        from datetime import timedelta
+        from datetime import timezone
+
         from acme.crypto_util import make_self_signed_cert
-        from datetime import datetime, timedelta, timezone
         not_before = 1736200830
         validity = 100
 

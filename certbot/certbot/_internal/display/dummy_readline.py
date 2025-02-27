@@ -1,7 +1,6 @@
 """A dummy module with no effect for use on systems without readline."""
 from collections.abc import Callable
 from collections.abc import Iterable
-
 from typing import Optional
 
 

@@ -1,7 +1,7 @@
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
+from collections.abc import Callable
 import logging
 from typing import Any
-from collections.abc import Callable
 from typing import cast
 from typing import Optional
 

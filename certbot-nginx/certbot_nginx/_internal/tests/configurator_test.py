@@ -2,10 +2,9 @@
 import sys
 from unittest import mock
 
-import pytest
-
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
+import pytest
 
 from acme import challenges
 from acme import messages

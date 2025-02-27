@@ -1,8 +1,7 @@
 """ACME utilities for testing."""
+from collections.abc import Iterable
 import datetime
 from typing import Any
-
-from collections.abc import Iterable
 
 import josepy as jose
 

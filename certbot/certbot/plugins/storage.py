@@ -3,7 +3,6 @@ import json
 import logging
 from typing import Any
 
-
 from certbot import configuration
 from certbot import errors
 from certbot.compat import filesystem

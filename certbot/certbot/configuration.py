@@ -4,8 +4,6 @@ import copy
 import enum
 import logging
 from typing import Any
-
-
 from typing import Optional
 from urllib import parse
 
@@ -14,7 +12,6 @@ from certbot import util
 from certbot._internal import constants
 from certbot.compat import misc
 from certbot.compat import os
-
 
 logger = logging.getLogger(__name__)
 

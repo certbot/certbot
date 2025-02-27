@@ -88,10 +88,10 @@ class RelevantValuesTest(unittest.TestCase):
         assert self._call(self.values) == expected_relevant_values
 
     def test_with_real_parser(self):
-        from certbot._internal.storage import relevant_values
-        from certbot._internal.plugins import disco
         from certbot._internal import cli
         from certbot._internal import constants
+        from certbot._internal.plugins import disco
+        from certbot._internal.storage import relevant_values
 
         PLUGINS = disco.PluginsRegistry.find_all()
         namespace = cli.prepare_and_parse_args(PLUGINS, [

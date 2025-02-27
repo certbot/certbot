@@ -1,8 +1,6 @@
 """Common utilities for certbot_apache."""
 import shutil
-
 from typing import Optional
-
 import unittest
 from unittest import mock
 

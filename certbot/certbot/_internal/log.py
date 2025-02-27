@@ -34,8 +34,6 @@ from typing import cast
 from typing import IO
 from typing import Optional
 
-
-
 from acme import messages
 from certbot import configuration
 from certbot import errors

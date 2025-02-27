@@ -1,7 +1,6 @@
 """Contains UI methods for Nginx operations."""
-import logging
 from collections.abc import Iterable
-
+import logging
 from typing import Optional
 
 from certbot.display import util as display_util

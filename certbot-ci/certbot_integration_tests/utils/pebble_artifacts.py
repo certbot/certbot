@@ -1,13 +1,13 @@
 # pylint: disable=missing-module-docstring
 import atexit
+from contextlib import ExitStack
 import importlib.resources
 import io
 import json
 import os
 import stat
+from typing import Optional
 import zipfile
-from contextlib import ExitStack
-from typing import Optional, Tuple
 
 import requests
 

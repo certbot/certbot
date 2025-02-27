@@ -11,7 +11,6 @@ import shutil
 import sys
 import tempfile
 import traceback
-
 import unittest
 from unittest import mock
 import warnings

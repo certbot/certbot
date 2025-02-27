@@ -1,15 +1,12 @@
 """Reverter class saves configuration checkpoints and allows for recovery."""
+from collections.abc import Iterable
 import csv
 import glob
 import logging
 import shutil
 import time
 import traceback
-from collections.abc import Iterable
-
-
 from typing import TextIO
-
 
 from certbot import configuration
 from certbot import errors

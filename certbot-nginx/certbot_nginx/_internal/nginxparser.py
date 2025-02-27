@@ -1,17 +1,15 @@
 """Very low-level nginx config parser based on pyparsing."""
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
+from collections.abc import Iterable
+from collections.abc import Iterator
 import copy
 import logging
 import operator
 import typing
 from typing import Any
 from typing import IO
-from collections.abc import Iterable
-from collections.abc import Iterator
-
 from typing import overload
 from typing import SupportsIndex
-
 from typing import Union
 
 from pyparsing import Combine

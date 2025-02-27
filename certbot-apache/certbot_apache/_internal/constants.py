@@ -1,10 +1,7 @@
 """Apache plugin constants."""
 import atexit
-import importlib.resources
 from contextlib import ExitStack
-
-
-
+import importlib.resources
 
 MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
 """Name of the mod_ssl config file as saved

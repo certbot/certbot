@@ -4,15 +4,14 @@ import socket
 import socketserver
 import sys
 import threading
-
 import unittest
 from unittest import mock
 
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import pytest
 import requests
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
 
 from acme import challenges
 from acme import crypto_util

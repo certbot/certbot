@@ -1,13 +1,11 @@
 """Base test class for DNS authenticators built on Lexicon."""
+from collections.abc import Generator
 import contextlib
 import sys
 from types import ModuleType
 from typing import Any
 from typing import cast
-from collections.abc import Generator
-
 from typing import Protocol
-
 from unittest import mock
 from unittest.mock import MagicMock
 import warnings

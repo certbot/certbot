@@ -2,9 +2,6 @@
 import errno
 import socket
 import sys
-
-
-
 import unittest
 from unittest import mock
 
@@ -23,7 +20,8 @@ class ServerManagerTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.standalone.ServerManager."""
 
     def setUp(self):
-        from certbot._internal.plugins.standalone import ServerManager, _KeyAndCert
+        from certbot._internal.plugins.standalone import _KeyAndCert
+        from certbot._internal.plugins.standalone import ServerManager
         self.certs: dict[bytes, _KeyAndCert] = {}
         self.http_01_resources: set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = {}
         self.mgr = ServerManager(self.certs, self.http_01_resources)

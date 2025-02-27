@@ -1,14 +1,11 @@
 """Certbot command line argument parser"""
 
 import argparse
+from collections.abc import Iterable
 import functools
 import sys
 from typing import Any
-
-from collections.abc import Iterable
-
 from typing import Optional
-
 from typing import Union
 
 import configargparse

@@ -1,17 +1,14 @@
 """ Utility functions for certbot-apache plugin """
 import atexit
 import binascii
+from collections.abc import Iterable
+from contextlib import ExitStack
 import fnmatch
 import importlib.resources
 import logging
 import re
 import subprocess
-from contextlib import ExitStack
-
-from collections.abc import Iterable
-
 from typing import Optional
-
 
 from certbot import errors
 from certbot import util

@@ -1,4 +1,6 @@
 """Creates ACME accounts for server."""
+from collections.abc import Callable
+from collections.abc import Mapping
 import datetime
 import functools
 import hashlib
@@ -6,11 +8,7 @@ import logging
 import shutil
 import socket
 from typing import Any
-from collections.abc import Callable
 from typing import cast
-
-
-from collections.abc import Mapping
 from typing import Optional
 
 from cryptography.hazmat.primitives import serialization

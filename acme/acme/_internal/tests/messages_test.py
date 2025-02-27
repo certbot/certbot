@@ -1,7 +1,6 @@
 """Tests for acme.messages."""
 import contextlib
 import sys
-
 import unittest
 from unittest import mock
 import warnings

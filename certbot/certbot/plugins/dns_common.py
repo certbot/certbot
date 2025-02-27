@@ -1,13 +1,11 @@
 """Common code for DNS Authenticator Plugins."""
 import abc
-import logging
-from time import sleep
 from collections.abc import Callable
 from collections.abc import Iterable
-
 from collections.abc import Mapping
+import logging
+from time import sleep
 from typing import Optional
-
 
 import configobj
 

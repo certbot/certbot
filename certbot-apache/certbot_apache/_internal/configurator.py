@@ -1,6 +1,9 @@
 """Apache Configurator."""
 # pylint: disable=too-many-lines
 from collections import defaultdict
+from collections.abc import Callable
+from collections.abc import Iterable
+from collections.abc import Sequence
 import copy
 import fnmatch
 import logging
@@ -8,17 +11,8 @@ import re
 import socket
 import time
 from typing import Any
-from collections.abc import Callable
-from collections import defaultdict
 from typing import cast
-
-from collections.abc import Iterable
-
 from typing import Optional
-from collections.abc import Sequence
-
-
-
 from typing import Union
 
 from acme import challenges

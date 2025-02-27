@@ -1,9 +1,7 @@
 """ apacheconfig implementation of the ParserNode interfaces """
-from typing import Any
 from collections.abc import Iterable
-
+from typing import Any
 from typing import Optional
-
 
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces

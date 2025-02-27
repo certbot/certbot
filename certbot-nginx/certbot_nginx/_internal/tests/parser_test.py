@@ -4,7 +4,6 @@ import re
 import shutil
 import sys
 
-
 import pytest
 
 from certbot import errors

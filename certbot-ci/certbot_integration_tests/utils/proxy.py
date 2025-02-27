@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # pylint: disable=missing-module-docstring
 
+from collections.abc import Mapping
 import http.server as BaseHTTPServer
 import json
 import re
 import sys
-from collections.abc import Mapping
-
 
 import requests
 

@@ -1,16 +1,12 @@
 """ACME protocol messages."""
 from collections.abc import Hashable
+from collections.abc import Iterator
+from collections.abc import Mapping
 import datetime
 import json
 from typing import Any
-
-from collections.abc import Iterator
-
-from collections.abc import Mapping
 from typing import MutableMapping
 from typing import Optional
-
-
 from typing import TypeVar
 import warnings
 

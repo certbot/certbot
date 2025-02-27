@@ -1,15 +1,12 @@
 """Registers functions to be called if an exception or signal occurs."""
+from collections.abc import Callable
 import functools
 import logging
 import signal
 import traceback
 from types import TracebackType
 from typing import Any
-from collections.abc import Callable
-
-
 from typing import Optional
-
 from typing import Union
 
 from certbot import errors

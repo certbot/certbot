@@ -1,12 +1,9 @@
 """Decide which plugins to use for authentication & installation"""
 
+from collections.abc import Iterable
 import logging
 from typing import cast
-from collections.abc import Iterable
-
 from typing import Optional
-
-
 from typing import TypeVar
 
 from certbot import configuration

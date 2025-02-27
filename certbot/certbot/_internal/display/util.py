@@ -1,7 +1,6 @@
 """Internal Certbot display utilities."""
 import sys
 import textwrap
-
 from typing import Optional
 
 from acme import messages as acme_messages

@@ -1,7 +1,6 @@
 """Plugin utilities."""
 import logging
 
-
 from certbot import util
 from certbot.compat import os
 from certbot.compat.misc import STANDARD_BINARY_DIRS

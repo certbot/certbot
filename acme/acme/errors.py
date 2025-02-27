@@ -1,9 +1,7 @@
 """ACME errors."""
+from collections.abc import Mapping
 import typing
 from typing import Any
-
-from collections.abc import Mapping
-
 
 from josepy import errors as jose_errors
 import requests

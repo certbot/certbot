@@ -2,7 +2,6 @@
 from importlib import reload as reload_module
 import string
 import sys
-
 import unittest
 from unittest import mock
 
