@@ -81,6 +81,7 @@ parts:
       - libpython3-stdlib
       - libpython3.12-stdlib
       - libpython3.12-minimal
+      - openssl
       - python3-pip
       - python3-wheel
       - python3-venv
