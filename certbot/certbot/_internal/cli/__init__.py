@@ -171,8 +171,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         default=flag_default("register_unsafely_without_email"),
-        help="Specifying this flag skips prompting for an email address when running"
-             " interactively.")
+        help=argparse.SUPPRESS)
     helpful.add(
         ["register", "update_account", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),

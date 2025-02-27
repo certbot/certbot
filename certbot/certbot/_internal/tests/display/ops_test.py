@@ -67,7 +67,7 @@ class GetEmailTest(unittest.TestCase):
 
     @test_util.patch_display_util()
     def test_optional_invalid_unsafe(self, mock_get_utility):
-        invalid_txt = "The server reported a problem"
+        invalid_txt = "There is a problem"
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:

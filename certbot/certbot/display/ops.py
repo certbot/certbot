@@ -30,12 +30,13 @@ def get_email(invalid: bool = False) -> Optional[str]:
     :raises errors.Error: if the user cancels
 
     """
-    msg = "Enter email address or hit Enter to skip.\n"
+    invalid_prefix = ""
     if invalid:
-        msg = "The server reported a problem with your email address. " + msg
+        invalid_prefix = "The server reported a problem with your email address. "
+    msg = "Enter email address or hit Enter to skip.\n"
 
     while True:
-        code, email = display_util.input_text(msg, force_interactive=True)
+        code, email = display_util.input_text(invalid_prefix + msg, default="")
 
         if code != display_util.OK:
             raise errors.Error("Error getting email address.")
@@ -43,6 +44,7 @@ def get_email(invalid: bool = False) -> Optional[str]:
             return None
         if util.safe_email(email):
             return email
+        invalid_prefix = "There is a problem with your email address. "
         invalid = True
 
 
