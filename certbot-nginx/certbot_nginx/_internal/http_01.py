@@ -2,7 +2,7 @@
 
 import logging
 from typing import Any
-from typing import List
+
 from typing import Optional
 from typing import TYPE_CHECKING
 
@@ -47,7 +47,7 @@ class NginxHttp01(common.ChallengePerformer):
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
 
-    def perform(self) -> List[KeyAuthorizationChallengeResponse]:
+    def perform(self) -> list[KeyAuthorizationChallengeResponse]:
         """Perform a challenge on Nginx.
 
         :returns: list of :class:`acme.challenges.KeyAuthorizationChallengeResponse`
@@ -142,12 +142,12 @@ class NginxHttp01(common.ChallengePerformer):
         with open(self.challenge_conf, "w", encoding="utf-8") as new_conf:
             nginxparser.dump(config, new_conf)
 
-    def _default_listen_addresses(self) -> List[Addr]:
+    def _default_listen_addresses(self) -> list[Addr]:
         """Finds addresses for a challenge block to listen on.
         :returns: list of :class:`certbot_nginx._internal.obj.Addr` to apply
         :rtype: list
         """
-        addresses: List[Addr] = []
+        addresses: list[Addr] = []
         default_addr = "%s" % self.configurator.config.http01_port
         ipv6_addr = "[::]:{0}".format(
             self.configurator.config.http01_port)
@@ -175,7 +175,7 @@ class NginxHttp01(common.ChallengePerformer):
     def _get_validation_path(self, achall: KeyAuthorizationAnnotatedChallenge) -> str:
         return os.sep + os.path.join(challenges.HTTP01.URI_ROOT_PATH, achall.chall.encode("token"))
 
-    def _make_server_block(self, achall: KeyAuthorizationAnnotatedChallenge) -> List[Any]:
+    def _make_server_block(self, achall: KeyAuthorizationAnnotatedChallenge) -> list[Any]:
         """Creates a server block for a challenge.
 
         :param achall: Annotated HTTP-01 challenge
@@ -199,7 +199,7 @@ class NginxHttp01(common.ChallengePerformer):
         return [['server'], block]
 
     def _location_directive_for_achall(self, achall: KeyAuthorizationAnnotatedChallenge
-                                       ) -> List[Any]:
+                                       ) -> list[Any]:
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
@@ -209,7 +209,7 @@ class NginxHttp01(common.ChallengePerformer):
         return location_directive
 
     def _make_or_mod_server_block(self, achall: KeyAuthorizationAnnotatedChallenge
-                                  ) -> Optional[List[Any]]:
+                                  ) -> Optional[list[Any]]:
         """Modifies server blocks to respond to a challenge. Returns a new HTTP server block
            to add to the configuration if an existing one can't be found.
 
@@ -222,7 +222,7 @@ class NginxHttp01(common.ChallengePerformer):
         """
         http_vhosts, https_vhosts = self.configurator.choose_auth_vhosts(achall.domain)
 
-        new_vhost: Optional[List[Any]] = None
+        new_vhost: Optional[list[Any]] = None
         if not http_vhosts:
             # Couldn't find either a matching name+port server block
             # or a port+default_server block, so create a dummy block

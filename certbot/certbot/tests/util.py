@@ -12,11 +12,11 @@ import shutil
 import sys
 import tempfile
 from typing import Any
-from typing import Callable
+from collections.abc import Callable
 from typing import cast
 from typing import IO
-from typing import Iterable
-from typing import List
+from collections.abc import Iterable
+
 from typing import Optional
 from typing import Union
 import unittest
@@ -50,10 +50,10 @@ class DummyInstaller(common.Installer):
         pass
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[Union[List[str], str]] = None) -> None:
+                options: Optional[Union[list[str], str]] = None) -> None:
         pass
 
-    def supported_enhancements(self) -> List[str]:
+    def supported_enhancements(self) -> list[str]:
         return []
 
     def save(self, title: Optional[str] = None, temporary: bool = False) -> None:

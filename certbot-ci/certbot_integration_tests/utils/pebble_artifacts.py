@@ -17,7 +17,7 @@ from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 PEBBLE_VERSION = 'v2.5.1'
 
 
-def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str, str, str]:
+def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> tuple[str, str, str]:
     # pylint: disable=missing-function-docstring
     file_manager = ExitStack()
     atexit.register(file_manager.close)

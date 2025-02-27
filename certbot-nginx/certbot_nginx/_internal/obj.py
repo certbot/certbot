@@ -1,10 +1,10 @@
 """Module contains classes used by the Nginx Configurator."""
 import re
 from typing import Any
-from typing import List
+
 from typing import Optional
-from typing import Sequence
-from typing import Set
+from collections.abc import Sequence
+
 from typing import Union
 
 from certbot.plugins import common
@@ -178,7 +178,7 @@ class VirtualHost:
     """
 
     def __init__(self, filep: str, addrs: Sequence[Addr], ssl: bool, enabled: bool,
-                 names: Set[str], raw: List[Any], path: List[int]) -> None:
+                 names: set[str], raw: list[Any], path: list[int]) -> None:
         """Initialize a VH."""
         self.filep = filep
         self.addrs = addrs
@@ -226,7 +226,7 @@ class VirtualHost:
         found = _find_directive(self.raw, ADD_HEADER_DIRECTIVE, header_name)
         return found is not None
 
-    def contains_list(self, test: List[Any]) -> bool:
+    def contains_list(self, test: list[Any]) -> bool:
         """Determine if raw server block contains test list at top level
         """
         for i in range(0, len(self.raw) - len(test) + 1):
@@ -265,7 +265,7 @@ class VirtualHost:
                 https="Yes" if self.ssl else "No"))
 
 
-def _find_directive(directives: Optional[Union[str, List[Any]]], directive_name: str,
+def _find_directive(directives: Optional[Union[str, list[Any]]], directive_name: str,
                     match_content: Optional[Any] = None) -> Optional[Any]:
     """Find a directive of type directive_name in directives. If match_content is given,
        Searches for `match_content` in the directive arguments.

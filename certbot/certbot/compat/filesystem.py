@@ -6,8 +6,8 @@ import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 from typing import Any
-from typing import Dict
-from typing import Generator
+
+from collections.abc import Generator
 from typing import Optional
 
 try:
@@ -609,7 +609,7 @@ def _generate_dacl(user_sid: Any, mode: int, mask: Optional[int] = None) -> Any:
     return dacl
 
 
-def _analyze_mode(mode: int) -> Dict[str, Dict[str, int]]:
+def _analyze_mode(mode: int) -> dict[str, dict[str, int]]:
     return {
         'user': {
             'read': mode & stat.S_IRUSR,
@@ -652,7 +652,7 @@ def _copy_win_mode(src: str, dst: str) -> None:
     win32security.SetFileSecurity(dst, win32security.DACL_SECURITY_INFORMATION, security_dst)
 
 
-def _generate_windows_flags(rights_desc: Dict[str, int]) -> int:
+def _generate_windows_flags(rights_desc: dict[str, int]) -> int:
     # Some notes about how each POSIX right is interpreted.
     #
     # For the rights read and execute, we have a pretty bijective relation between

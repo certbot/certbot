@@ -4,7 +4,7 @@ import socket
 import socketserver
 import sys
 import threading
-from typing import Set
+
 import unittest
 from unittest import mock
 

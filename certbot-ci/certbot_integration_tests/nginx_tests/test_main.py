@@ -1,8 +1,8 @@
 """Module executing integration tests against certbot with nginx plugin."""
 import os
 import ssl
-from typing import Generator
-from typing import List
+from collections.abc import Generator
+
 
 import pytest
 
@@ -33,7 +33,7 @@ def test_context(request: pytest.FixtureRequest) -> Generator[IntegrationTestsCo
         '--preferred-challenges', 'http'
     ], {'default_server': False}),
 ], indirect=['context'])
-def test_certificate_deployment(certname_pattern: str, params: List[str],
+def test_certificate_deployment(certname_pattern: str, params: list[str],
                                 context: IntegrationTestsContext) -> None:
     """
     Test various scenarios to deploy a certificate to nginx using certbot.

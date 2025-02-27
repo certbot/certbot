@@ -2,7 +2,7 @@
 import logging
 import socket
 from typing import cast
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Union
 

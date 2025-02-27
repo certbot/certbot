@@ -1,7 +1,7 @@
 """Null plugin."""
 import logging
-from typing import Callable
-from typing import List
+from collections.abc import Callable
+
 from typing import Optional
 from typing import Union
 
@@ -29,7 +29,7 @@ class Installer(common.Plugin, interfaces.Installer):
     def more_info(self) -> str:
         return "Installer that doesn't do anything (for testing)."
 
-    def get_all_names(self) -> List[str]:
+    def get_all_names(self) -> list[str]:
         return []
 
     def deploy_cert(self, domain: str, cert_path: str, key_path: str,
@@ -37,10 +37,10 @@ class Installer(common.Plugin, interfaces.Installer):
         pass  # pragma: no cover
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[Union[List[str], str]] = None) -> None:
+                options: Optional[Union[list[str], str]] = None) -> None:
         pass  # pragma: no cover
 
-    def supported_enhancements(self) -> List[str]:
+    def supported_enhancements(self) -> list[str]:
         return []
 
     def save(self, title: Optional[str] = None, temporary: bool = False) -> None:

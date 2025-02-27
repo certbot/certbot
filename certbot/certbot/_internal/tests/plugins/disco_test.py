@@ -2,7 +2,7 @@
 import functools
 import string
 import sys
-from typing import List
+
 import unittest
 from unittest import mock
 
@@ -264,7 +264,7 @@ class PluginsRegistryTest(unittest.TestCase):
         self.plugin_ep.prepare.assert_called_once_with()
 
     def test_prepare_order(self):
-        order: List[str] = []
+        order: list[str] = []
         plugins = {
             c: mock.MagicMock(prepare=functools.partial(order.append, c))
             for c in string.ascii_letters

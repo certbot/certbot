@@ -2,9 +2,9 @@
 from contextlib import contextmanager
 import importlib.resources
 import tempfile
-from typing import Generator
-from typing import Iterable
-from typing import Tuple
+from collections.abc import Generator
+from collections.abc import Iterable
+
 
 import pytest
 
@@ -24,7 +24,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         else:  # Primary node
             self._dns_xdist = request.config.dns_xdist  # type: ignore[attr-defined]
 
-    def certbot_test_rfc2136(self, args: Iterable[str]) -> Tuple[str, str]:
+    def certbot_test_rfc2136(self, args: Iterable[str]) -> tuple[str, str]:
         """
         Main command to execute certbot using the RFC2136 DNS authenticator.
         :param list args: list of arguments to pass to Certbot

@@ -1,9 +1,9 @@
 """ apacheconfig implementation of the ParserNode interfaces """
 from typing import Any
-from typing import Iterable
-from typing import List
+from collections.abc import Iterable
+
 from typing import Optional
-from typing import Tuple
+
 
 from certbot_apache._internal import assertions
 from certbot_apache._internal import interfaces
@@ -31,7 +31,7 @@ class ApacheParserNode(interfaces.ParserNode):
     def save(self, msg: str) -> None:
         pass  # pragma: no cover
 
-    def find_ancestors(self, name: str) -> List["ApacheParserNode"]:  # pylint: disable=unused-variable
+    def find_ancestors(self, name: str) -> list["ApacheParserNode"]:  # pylint: disable=unused-variable
         """Find ancestor BlockNodes with a given name"""
         return [ApacheBlockNode(name=assertions.PASS,
                                 parameters=assertions.PASS,
@@ -90,7 +90,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.children: Tuple[ApacheParserNode, ...] = ()
+        self.children: tuple[ApacheParserNode, ...] = ()
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
@@ -105,7 +105,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         return False  # pragma: no cover
 
     # pylint: disable=unused-argument
-    def add_child_block(self, name: str, parameters: Optional[List[str]] = None,
+    def add_child_block(self, name: str, parameters: Optional[list[str]] = None,
                         position: Optional[int] = None) -> "ApacheBlockNode":  # pragma: no cover
         """Adds a new BlockNode to the sequence of children"""
         new_block = ApacheBlockNode(name=assertions.PASS,
@@ -117,7 +117,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         return new_block
 
     # pylint: disable=unused-argument
-    def add_child_directive(self, name: str, parameters: Optional[List[str]] = None,
+    def add_child_directive(self, name: str, parameters: Optional[list[str]] = None,
                             position: Optional[int] = None
     ) -> ApacheDirectiveNode:  # pragma: no cover
         """Adds a new DirectiveNode to the sequence of children"""
@@ -142,7 +142,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
         self.children += (new_comment,)
         return new_comment
 
-    def find_blocks(self, name: str, exclude: bool = True) -> List["ApacheBlockNode"]:  # pylint: disable=unused-argument
+    def find_blocks(self, name: str, exclude: bool = True) -> list["ApacheBlockNode"]:  # pylint: disable=unused-argument
         """Recursive search of BlockNodes from the sequence of children"""
         return [ApacheBlockNode(name=assertions.PASS,
                                 parameters=assertions.PASS,
@@ -150,7 +150,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
                                 filepath=assertions.PASS,
                                 metadata=self.metadata)]
 
-    def find_directives(self, name: str, exclude: bool = True) -> List[ApacheDirectiveNode]:  # pylint: disable=unused-argument
+    def find_directives(self, name: str, exclude: bool = True) -> list[ApacheDirectiveNode]:  # pylint: disable=unused-argument
         """Recursive search of DirectiveNodes from the sequence of children"""
         return [ApacheDirectiveNode(name=assertions.PASS,
                                     parameters=assertions.PASS,
@@ -159,7 +159,7 @@ class ApacheBlockNode(ApacheDirectiveNode):
                                     metadata=self.metadata)]
 
     # pylint: disable=unused-argument
-    def find_comments(self, comment: str, exact: bool = False) -> List[ApacheCommentNode]:
+    def find_comments(self, comment: str, exact: bool = False) -> list[ApacheCommentNode]:
         """Recursive search of DirectiveNodes from the sequence of children"""
         return [ApacheCommentNode(comment=assertions.PASS,  # pragma: no cover
                                   ancestor=self,
@@ -170,11 +170,11 @@ class ApacheBlockNode(ApacheDirectiveNode):
         """Deletes a ParserNode from the sequence of children"""
         return  # pragma: no cover
 
-    def unsaved_files(self) -> List[str]:
+    def unsaved_files(self) -> list[str]:
         """Returns a list of unsaved filepaths"""
         return [assertions.PASS]  # pragma: no cover
 
-    def parsed_paths(self) -> List[str]:
+    def parsed_paths(self) -> list[str]:
         """Returns a list of parsed configuration file paths"""
         return [assertions.PASS]
 

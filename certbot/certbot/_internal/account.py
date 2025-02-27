@@ -6,11 +6,11 @@ import logging
 import shutil
 import socket
 from typing import Any
-from typing import Callable
+from collections.abc import Callable
 from typing import cast
-from typing import Dict
-from typing import List
-from typing import Mapping
+
+
+from collections.abc import Mapping
 from typing import Optional
 
 from cryptography.hazmat.primitives import serialization
@@ -108,10 +108,10 @@ class Account:
 class AccountMemoryStorage(interfaces.AccountStorage):
     """In-memory account storage."""
 
-    def __init__(self, initial_accounts: Optional[Dict[str, Account]] = None) -> None:
+    def __init__(self, initial_accounts: Optional[dict[str, Account]] = None) -> None:
         self.accounts = initial_accounts if initial_accounts is not None else {}
 
-    def find_all(self) -> List[Account]:
+    def find_all(self) -> list[Account]:
         return list(self.accounts.values())
 
     def save(self, account: Account, client: ClientV2) -> None:
@@ -155,7 +155,7 @@ class AccountFileStorage(interfaces.AccountStorage):
     def _metadata_path(cls, account_dir_path: str) -> str:
         return os.path.join(account_dir_path, "meta.json")
 
-    def _find_all_for_server_path(self, server_path: str) -> List[Account]:
+    def _find_all_for_server_path(self, server_path: str) -> list[Account]:
         accounts_dir = self.config.accounts_dir_for_server_path(server_path)
         try:
             candidates = os.listdir(accounts_dir)
@@ -182,7 +182,7 @@ class AccountFileStorage(interfaces.AccountStorage):
             accounts = prev_accounts
         return accounts
 
-    def find_all(self) -> List[Account]:
+    def find_all(self) -> list[Account]:
         return self._find_all_for_server_path(self.config.server_path)
 
     def _symlink_to_account_dir(self, prev_server_path: str, server_path: str,

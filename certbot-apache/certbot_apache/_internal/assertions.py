@@ -1,8 +1,8 @@
 """Dual parser node assertions"""
 import fnmatch
 from typing import Any
-from typing import Iterable
-from typing import List
+from collections.abc import Iterable
+
 from typing import Optional
 from typing import Union
 
@@ -103,7 +103,7 @@ def isPassComment(comment: CommentNode) -> bool:
     return False
 
 
-def isPassNodeList(nodelist: List[Union[DirectiveNode, CommentNode]]) -> bool:  # pragma: no cover
+def isPassNodeList(nodelist: list[Union[DirectiveNode, CommentNode]]) -> bool:  # pragma: no cover
     """ Checks if a ParserNode in the nodelist should pass the assertion,
     this function is used for results of find_* methods. Unimplemented find_*
     methods should return a sequence containing a single ParserNode instance

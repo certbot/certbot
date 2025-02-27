@@ -9,13 +9,13 @@ import os
 import socket
 import typing
 from typing import Any
-from typing import Callable
-from typing import List
-from typing import Mapping
+from collections.abc import Callable
+
+from collections.abc import Mapping
 from typing import Optional
-from typing import Sequence
-from typing import Set
-from typing import Tuple
+from collections.abc import Sequence
+
+
 from typing import Union
 
 from cryptography import x509
@@ -59,8 +59,8 @@ class Format(enum.IntEnum):
 
 
 _KeyAndCert = Union[
-    Tuple[crypto.PKey, crypto.X509],
-    Tuple[types.CertificateIssuerPrivateKeyTypes, x509.Certificate],
+    tuple[crypto.PKey, crypto.X509],
+    tuple[types.CertificateIssuerPrivateKeyTypes, x509.Certificate],
 ]
 
 
@@ -92,7 +92,7 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
         sock: socket.socket,
         certs: Optional[Mapping[bytes, _KeyAndCert]] = None,
         method: int = _DEFAULT_SSL_METHOD,
-        alpn_selection: Optional[Callable[[SSL.Connection, List[bytes]], bytes]] = None,
+        alpn_selection: Optional[Callable[[SSL.Connection, list[bytes]], bytes]] = None,
         cert_selection: Optional[
             Callable[
                 [SSL.Connection],
@@ -163,7 +163,7 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
                 # socketserver in the standard library.
                 raise OSError(error)
 
-    def accept(self) -> Tuple[FakeConnection, Any]:  # pylint: disable=missing-function-docstring
+    def accept(self) -> tuple[FakeConnection, Any]:  # pylint: disable=missing-function-docstring
         sock, addr = self.sock.accept()
 
         try:
@@ -196,7 +196,7 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
 
 
 def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # pylint: disable=too-many-arguments
-              method: int = _DEFAULT_SSL_METHOD, source_address: Tuple[str, int] = ('', 0),
+              method: int = _DEFAULT_SSL_METHOD, source_address: tuple[str, int] = ('', 0),
               alpn_protocols: Optional[Sequence[bytes]] = None) -> crypto.X509:
     """Probe SNI server for SSL certificate.
 
@@ -231,7 +231,7 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
                 source_address[1]
             ) if any(source_address) else ""
         )
-        socket_tuple: Tuple[bytes, int] = (host, port)
+        socket_tuple: tuple[bytes, int] = (host, port)
         sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore[arg-type]
     except OSError as error:
         raise errors.Error(error)
@@ -283,9 +283,9 @@ CertificateIssuerPrivateKeyTypesTpl = (
 
 def make_csr(
     private_key_pem: bytes,
-    domains: Optional[Union[Set[str], List[str]]] = None,
+    domains: Optional[Union[set[str], list[str]]] = None,
     must_staple: bool = False,
-    ipaddrs: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None,
+    ipaddrs: Optional[list[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None,
 ) -> bytes:
     """Generate a CSR containing domains or IPs as subjectAltNames.
 
@@ -339,7 +339,7 @@ def make_csr(
 
 def get_names_from_subject_and_extensions(
     subject: x509.Name, exts: x509.Extensions
-) -> List[str]:
+) -> list[str]:
     """Gets all DNS SAN names as well as the first Common Name from subject.
 
     :param subject: Name of the x509 object, which may include Common Name
@@ -372,7 +372,7 @@ def get_names_from_subject_and_extensions(
 
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req: Union[crypto.X509, crypto.X509Req]
-                                     ) -> List[str]:
+                                     ) -> list[str]:
     """
     Deprecated
     .. deprecated: 3.2.1
@@ -389,7 +389,7 @@ def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req: Union[crypto.X509, cryp
     )
 
 
-def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) -> List[str]:
+def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) -> list[str]:
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
 
     .. note:: Although this is `acme` internal API, it is used by
@@ -425,11 +425,11 @@ def _now() -> datetime:
 
 
 def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
-                          domains: Optional[List[str]] = None,
+                          domains: Optional[list[str]] = None,
                           not_before: Optional[datetime] = None,
                           validity: Optional[timedelta] = None, force_san: bool = True,
-                          extensions: Optional[List[x509.Extension]] = None,
-                          ips: Optional[List[Union[ipaddress.IPv4Address,
+                          extensions: Optional[list[x509.Extension]] = None,
+                          ips: Optional[list[Union[ipaddress.IPv4Address,
                                                    ipaddress.IPv6Address]]] = None
                           ) -> x509.Certificate:
     """Generate new self-signed certificate.
@@ -475,7 +475,7 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
     builder = builder.subject_name(x509.Name(name_attrs))
     builder = builder.issuer_name(x509.Name(name_attrs))
 
-    sanlist: List[x509.GeneralName] = []
+    sanlist: list[x509.GeneralName] = []
     for address in domains:
         sanlist.append(x509.DNSName(address))
     for ip in ips:
@@ -498,11 +498,11 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
     return builder.sign(private_key, hashes.SHA256())
 
 
-def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
+def gen_ss_cert(key: crypto.PKey, domains: Optional[list[str]] = None,
                 not_before: Optional[int] = None,
                 validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
-                extensions: Optional[List[crypto.X509Extension]] = None,
-                ips: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None
+                extensions: Optional[list[crypto.X509Extension]] = None,
+                ips: Optional[list[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None
                 ) -> crypto.X509:
     """Generate new self-signed certificate.
 
@@ -571,7 +571,7 @@ def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
     return cert
 
 
-def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X509]],
+def dump_pyopenssl_chain(chain: Union[list[jose.ComparableX509], list[crypto.X509]],
                          filetype: Union[Format, int] = Format.PEM) -> bytes:
     """Dump certificate chain into a bundle.
 

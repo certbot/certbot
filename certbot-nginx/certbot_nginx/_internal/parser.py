@@ -6,16 +6,16 @@ import glob
 import logging
 import re
 from typing import Any
-from typing import Callable
+from collections.abc import Callable
 from typing import cast
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Mapping
+
+from collections.abc import Iterable
+
+from collections.abc import Mapping
 from typing import Optional
-from typing import Sequence
-from typing import Set
-from typing import Tuple
+from collections.abc import Sequence
+
+
 from typing import Union
 
 import pyparsing
@@ -39,7 +39,7 @@ class NginxParser:
     """
 
     def __init__(self, root: str) -> None:
-        self.parsed: Dict[str, UnspacedList] = {}
+        self.parsed: dict[str, UnspacedList] = {}
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
         self._http_path: str | None = None
@@ -108,12 +108,12 @@ class NginxParser:
             return os.path.normpath(os.path.join(self.root, path))
         return os.path.normpath(path)
 
-    def _build_addr_to_ssl(self) -> Dict[Tuple[str, str], bool]:
+    def _build_addr_to_ssl(self) -> dict[tuple[str, str], bool]:
         """Builds a map from address to whether it listens on ssl in any server block
         """
         servers = self._get_raw_servers()
 
-        addr_to_ssl: Dict[Tuple[str, str], bool] = {}
+        addr_to_ssl: dict[tuple[str, str], bool] = {}
         for server_list in servers.values():
             for server, _ in server_list:
                 # Parse the server block to save addr info
@@ -125,11 +125,11 @@ class NginxParser:
                     addr_to_ssl[addr_tuple] = addr.ssl or addr_to_ssl[addr_tuple]
         return addr_to_ssl
 
-    def _get_raw_servers(self) -> Dict[str, Union[List[Any], UnspacedList]]:
+    def _get_raw_servers(self) -> dict[str, Union[list[Any], UnspacedList]]:
         # pylint: disable=cell-var-from-loop
         """Get a map of unparsed all server blocks
         """
-        servers: Dict[str, Union[List[Any], nginxparser.UnspacedList]] = {}
+        servers: dict[str, Union[list[Any], nginxparser.UnspacedList]] = {}
         for filename, tree in self.parsed.items():
             servers[filename] = []
             srv = servers[filename]  # workaround undefined loop var in lambdas
@@ -144,7 +144,7 @@ class NginxParser:
                 servers[filename][i] = (new_server, path)
         return servers
 
-    def get_vhosts(self) -> List[obj.VirtualHost]:
+    def get_vhosts(self) -> list[obj.VirtualHost]:
         """Gets list of all 'virtual hosts' found in Nginx configuration.
         Technically this is a misnomer because Nginx does not have virtual
         hosts, it has 'server blocks'.
@@ -273,7 +273,7 @@ class NginxParser:
             except OSError:
                 logger.error("Could not open file for writing: %s", filename)
 
-    def parse_server(self, server: UnspacedList) -> Dict[str, Any]:
+    def parse_server(self, server: UnspacedList) -> dict[str, Any]:
         """Parses a list of server directives, accounting for global address sslishness.
 
         :param list server: list of directives in a server block
@@ -302,7 +302,7 @@ class NginxParser:
 
         return False
 
-    def add_server_directives(self, vhost: obj.VirtualHost, directives: List[Any],
+    def add_server_directives(self, vhost: obj.VirtualHost, directives: list[Any],
                               insert_at_top: bool = False) -> None:
         """Add directives to the server block identified by vhost.
 
@@ -324,7 +324,7 @@ class NginxParser:
         self._modify_server_directives(vhost,
             functools.partial(_add_directives, directives, insert_at_top))
 
-    def update_or_add_server_directives(self, vhost: obj.VirtualHost, directives: List[Any],
+    def update_or_add_server_directives(self, vhost: obj.VirtualHost, directives: list[Any],
                                         insert_at_top: bool = False) -> None:
         """Add or replace directives in the server block identified by vhost.
 
@@ -370,7 +370,7 @@ class NginxParser:
         vhost.raw = new_server
 
     def _modify_server_directives(self, vhost: obj.VirtualHost,
-                                  block_func: Callable[[List[Any]], None]) -> None:
+                                  block_func: Callable[[list[Any]], None]) -> None:
         filename = vhost.filep
         try:
             result = self.parsed[filename]
@@ -387,7 +387,7 @@ class NginxParser:
 
     def duplicate_vhost(self, vhost_template: obj.VirtualHost,
                         remove_singleton_listen_params: bool = False,
-                        only_directives: Optional[List[Any]] = None) -> obj.VirtualHost:
+                        only_directives: Optional[list[Any]] = None) -> obj.VirtualHost:
         """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx._internal.obj.VirtualHost` vhost_template: The vhost
@@ -440,7 +440,7 @@ class NginxParser:
         return new_vhost
 
 
-def _parse_ssl_options(ssl_options: Optional[str]) -> List[UnspacedList]:
+def _parse_ssl_options(ssl_options: Optional[str]) -> list[UnspacedList]:
     if ssl_options is not None:
         try:
             with open(ssl_options, "r", encoding="utf-8") as _file:
@@ -455,9 +455,9 @@ def _parse_ssl_options(ssl_options: Optional[str]) -> List[UnspacedList]:
     return UnspacedList([])
 
 
-def _do_for_subarray(entry: List[Any], condition: Callable[[List[Any]], bool],
-                     func: Callable[[List[Any], List[int]], None],
-                     path: Optional[List[int]] = None) -> None:
+def _do_for_subarray(entry: list[Any], condition: Callable[[list[Any]], bool],
+                     func: Callable[[list[Any], list[int]], None],
+                     path: Optional[list[int]] = None) -> None:
     """Executes a function for a subarray of a nested array if it matches
     the given condition.
 
@@ -476,7 +476,7 @@ def _do_for_subarray(entry: List[Any], condition: Callable[[List[Any]], bool],
                 _do_for_subarray(item, condition, func, path + [index])
 
 
-def get_best_match(target_name: str, names: Iterable[str]) -> Tuple[Optional[str], Optional[str]]:
+def get_best_match(target_name: str, names: Iterable[str]) -> tuple[Optional[str], Optional[str]]:
     """Finds the best match for target_name out of names using the Nginx
     name-matching rules (exact > longest wildcard starting with * >
     longest wildcard ending with * > regex).
@@ -592,7 +592,7 @@ def _is_ssl_on_directive(entry: Any) -> bool:
             entry[1] == 'on')
 
 
-def _add_directives(directives: List[Any], insert_at_top: bool,
+def _add_directives(directives: list[Any], insert_at_top: bool,
                     block: UnspacedList) -> None:
     """Adds directives to a config block."""
     for directive in directives:
@@ -601,7 +601,7 @@ def _add_directives(directives: List[Any], insert_at_top: bool,
         block.append(nginxparser.UnspacedList('\n'))
 
 
-def _update_or_add_directives(directives: List[Any], insert_at_top: bool,
+def _update_or_add_directives(directives: list[Any], insert_at_top: bool,
                               block: UnspacedList) -> None:
     """Adds or replaces directives in a config block."""
     for directive in directives:
@@ -780,8 +780,8 @@ def _remove_directives(directive_name: str, match_func: Callable[[Any], bool],
         del block[location]
 
 
-def _apply_global_addr_ssl(addr_to_ssl: Mapping[Tuple[str, str], bool],
-                           parsed_server: Dict[str, Any]) -> None:
+def _apply_global_addr_ssl(addr_to_ssl: Mapping[tuple[str, str], bool],
+                           parsed_server: dict[str, Any]) -> None:
     """Apply global sslishness information to the parsed server block
     """
     for addr in parsed_server['addrs']:
@@ -790,16 +790,16 @@ def _apply_global_addr_ssl(addr_to_ssl: Mapping[Tuple[str, str], bool],
             parsed_server['ssl'] = True
 
 
-def _parse_server_raw(server: UnspacedList) -> Dict[str, Any]:
+def _parse_server_raw(server: UnspacedList) -> dict[str, Any]:
     """Parses a list of server directives.
 
     :param list server: list of directives in a server block
     :rtype: dict
 
     """
-    addrs: Set[obj.Addr] = set()
+    addrs: set[obj.Addr] = set()
     ssl: bool = False
-    names: Set[str] = set()
+    names: set[str] = set()
 
     apply_ssl_to_all_addrs = False
 

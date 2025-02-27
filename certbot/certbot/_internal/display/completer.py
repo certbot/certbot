@@ -1,11 +1,11 @@
 """Provides Tab completion when prompting users for a path."""
 import glob
 from types import TracebackType
-from typing import Callable
-from typing import Iterator
+from collections.abc import Callable
+from collections.abc import Iterator
 from typing import Literal
 from typing import Optional
-from typing import Type
+
 
 # readline module is not available on all systems
 try:
@@ -65,7 +65,7 @@ class Completer:
         else:
             readline.parse_and_bind('tab: complete')
 
-    def __exit__(self, unused_type: Optional[Type[BaseException]],
+    def __exit__(self, unused_type: Optional[type[BaseException]],
                  unused_value: Optional[BaseException],
                  unused_traceback: Optional[TracebackType]) -> 'Literal[False]':
         readline.set_completer_delims(self._original_delims)

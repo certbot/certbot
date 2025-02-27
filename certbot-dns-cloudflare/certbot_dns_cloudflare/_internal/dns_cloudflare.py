@@ -1,9 +1,9 @@
 """DNS Authenticator for Cloudflare."""
 import logging
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
+from collections.abc import Callable
+
+
 from typing import Optional
 from typing import cast
 
@@ -188,7 +188,7 @@ class _CloudflareClient:
         """
 
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
-        zones: List[Dict[str, Any]] = []
+        zones: list[dict[str, Any]] = []
         code = msg = None
 
         for zone_name in zone_name_guesses:

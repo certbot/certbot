@@ -4,8 +4,8 @@ import copy
 import enum
 import logging
 from typing import Any
-from typing import Dict
-from typing import List
+
+
 from typing import Optional
 from urllib import parse
 
@@ -73,7 +73,7 @@ class NamespaceConfig:
         # Check command line parameters sanity, and error out in case of problem.
         _check_config_sanity(self)
 
-    def set_argument_sources(self, argument_sources: Dict[str, ArgumentSource]) -> None:
+    def set_argument_sources(self, argument_sources: dict[str, ArgumentSource]) -> None:
         """
         Associate the NamespaceConfig with a dictionary describing where each of
         its arguments came from, e.g. `{ 'email': ArgumentSource.CONFIG_FILE }`.
@@ -84,7 +84,7 @@ class NamespaceConfig:
         `certbot._internal.cli.helpful.HelpfulArgumentParser._build_sources_dict`
 
         :ivar argument_sources: dictionary of argument names to their :class:`ArgumentSource`
-        :type argument_sources: :class:`Dict[str, ArgumentSource]`
+        :type argument_sources: :class:`dict[str, ArgumentSource]`
         """
 
         # Avoid recursion loop because of the delegation defined in __setattr__
@@ -133,7 +133,7 @@ class NamespaceConfig:
 
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Returns a dictionary mapping all argument names to their values
         """
@@ -152,7 +152,7 @@ class NamespaceConfig:
                 del self._previously_accessed_mutables[name]
 
     @property
-    def argument_sources(self) -> Optional[Dict[str, ArgumentSource]]:
+    def argument_sources(self) -> Optional[dict[str, ArgumentSource]]:
         """Returns _argument_sources after handling any changes to accessed mutable values."""
         # We keep values in _previously_accessed_mutables until we've detected a modification to try
         # to provide up-to-date information when argument_sources is accessed. Once a mutable object
@@ -326,7 +326,7 @@ class NamespaceConfig:
         return self.namespace.https_port
 
     @property
-    def pref_challs(self) -> List[str]:
+    def pref_challs(self) -> list[str]:
         """List of user specified preferred challenges.
 
         Sorted with the most preferred challenge listed first.

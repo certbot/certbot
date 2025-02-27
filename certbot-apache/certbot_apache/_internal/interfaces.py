@@ -100,10 +100,10 @@ For this reason the internal representation of data should not ignore the case.
 """
 import abc
 from typing import Any
-from typing import Dict
-from typing import List
+
+
 from typing import Optional
-from typing import Tuple
+
 from typing import TypeVar
 
 GenericParserNode = TypeVar("GenericParserNode", bound="ParserNode")
@@ -149,12 +149,12 @@ class ParserNode(metaclass=abc.ABCMeta):
 
     # Metadata dictionary holds all the implementation specific key-value pairs
     # for the ParserNode instance.
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     """
     ancestor: Optional["ParserNode"]
     dirty: bool
     filepath: Optional[str]
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
     @abc.abstractmethod
     def __init__(self, **kwargs: Any) -> None:
@@ -200,7 +200,7 @@ class ParserNode(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_ancestors(self: GenericParserNode, name: str) -> List[GenericParserNode]:
+    def find_ancestors(self: GenericParserNode, name: str) -> list[GenericParserNode]:
         """
         Traverses the ancestor tree up, searching for BlockNodes with a specific
         name.
@@ -281,12 +281,12 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
     name: Optional[str]
 
     # Tuple of parameters of this ParserNode object, excluding whitespaces.
-    parameters: Tuple[str, ...]
+    parameters: tuple[str, ...]
 
     """
     enabled: bool
     name: Optional[str]
-    parameters: Tuple[str, ...]
+    parameters: tuple[str, ...]
 
     @abc.abstractmethod
     def __init__(self, **kwargs: Any) -> None:
@@ -327,7 +327,7 @@ class DirectiveNode(ParserNode, metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
-    def set_parameters(self, parameters: List[str]) -> None:
+    def set_parameters(self, parameters: list[str]) -> None:
         """
         Sets the sequence of parameters for this ParserNode object without
         whitespaces. While the whitespaces for parameters are discarded when using
@@ -375,13 +375,13 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
     # Tuple of direct children of this BlockNode object. The order of children
     # in this tuple retain the order of elements in the parsed configuration
     # block.
-    children: Tuple[ParserNode, ...]
+    children: tuple[ParserNode, ...]
 
     """
-    children: Tuple[ParserNode, ...]
+    children: tuple[ParserNode, ...]
 
     @abc.abstractmethod
-    def add_child_block(self, name: str, parameters: Optional[List[str]] = None,
+    def add_child_block(self, name: str, parameters: Optional[list[str]] = None,
                         position: Optional[int] = None) -> "BlockNode":
         """
         Adds a new BlockNode child node with provided values and marks the callee
@@ -402,7 +402,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def add_child_directive(self, name: str, parameters: Optional[List[str]] = None,
+    def add_child_directive(self, name: str, parameters: Optional[list[str]] = None,
                             position: Optional[int] = None) -> DirectiveNode:
         """
         Adds a new DirectiveNode child node with provided values and marks the
@@ -444,7 +444,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_blocks(self, name: str, exclude: bool = True) -> List["BlockNode"]:
+    def find_blocks(self, name: str, exclude: bool = True) -> list["BlockNode"]:
         """
         Find a configuration block by name. This method walks the child tree of
         ParserNodes under the instance it was called from. This way it is possible
@@ -461,7 +461,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_directives(self, name: str, exclude: bool = True) -> List[DirectiveNode]:
+    def find_directives(self, name: str, exclude: bool = True) -> list[DirectiveNode]:
         """
         Find a directive by name. This method walks the child tree of ParserNodes
         under the instance it was called from. This way it is possible to search
@@ -479,7 +479,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def find_comments(self, comment: str) -> List[CommentNode]:
+    def find_comments(self, comment: str) -> list[CommentNode]:
         """
         Find comments with value containing the search term.
 
@@ -505,7 +505,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def unsaved_files(self) -> List[str]:
+    def unsaved_files(self) -> list[str]:
         """
         Returns a list of file paths that have been changed since the last save
         (or the initial configuration parse). The intended use for this method
@@ -518,7 +518,7 @@ class BlockNode(DirectiveNode, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def parsed_paths(self) -> List[str]:
+    def parsed_paths(self) -> list[str]:
         """
         Returns a list of file paths that have currently been parsed into the parser
         tree. The returned list may include paths with wildcard characters, for

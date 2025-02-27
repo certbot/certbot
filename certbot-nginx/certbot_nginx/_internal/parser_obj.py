@@ -7,13 +7,13 @@ raw lists of tokens from pyparsing. """
 import abc
 import logging
 from typing import Any
-from typing import Callable
-from typing import Iterator
-from typing import List
+from collections.abc import Callable
+from collections.abc import Iterator
+
 from typing import Optional
-from typing import Sequence
-from typing import Tuple
-from typing import Type
+from collections.abc import Sequence
+
+
 
 from certbot import errors
 
@@ -32,12 +32,12 @@ class Parsable:
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, parent: Optional["Parsable"] = None):
-        self._data: List[Any] = []
+        self._data: list[Any] = []
         self._tabs = None
         self.parent = parent
 
     @classmethod
-    def parsing_hooks(cls) -> Tuple[Type["Block"], Type["Sentence"], Type["Statements"]]:
+    def parsing_hooks(cls) -> tuple[type["Block"], type["Sentence"], type["Statements"]]:
         """Returns object types that this class should be able to `parse` recusrively.
         The order of the objects indicates the order in which the parser should
         try to parse each subitem.
@@ -57,7 +57,7 @@ class Parsable:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def parse(self, raw_list: List[Any], add_spaces: bool = False) -> None:
+    def parse(self, raw_list: list[Any], add_spaces: bool = False) -> None:
         """ Loads information into this object from underlying raw_list structure.
         Each Parsable object might make different assumptions about the structure of
         raw_list.
@@ -108,7 +108,7 @@ class Parsable:
         """
         raise NotImplementedError()
 
-    def dump(self, include_spaces: bool = False) -> List[Any]:
+    def dump(self, include_spaces: bool = False) -> list[Any]:
         """ Dumps back to pyparsing-like list tree. The opposite of `parse`.
 
         Note: if this object has not been modified, `dump` with `include_spaces=True`
@@ -153,7 +153,7 @@ class Statements(Parsable):
         if self.parent is not None:
             self._trailing_whitespace = "\n" + self.parent.get_tabs()
 
-    def parse(self, raw_list: List[Any], add_spaces: bool = False) -> None:
+    def parse(self, raw_list: list[Any], add_spaces: bool = False) -> None:
         """ Parses a list of statements.
         Expects all elements in `raw_list` to be parseable by `type(self).parsing_hooks`,
         with an optional whitespace string at the last index of `raw_list`.
@@ -173,7 +173,7 @@ class Statements(Parsable):
             return self._data[0].get_tabs()
         return ""
 
-    def dump(self, include_spaces: bool = False) -> List[Any]:
+    def dump(self, include_spaces: bool = False) -> list[Any]:
         """ Dumps this object by first dumping each statement, then appending its
         trailing whitespace (if `include_spaces` is set) """
         data = super().dump(include_spaces)
@@ -190,9 +190,9 @@ class Statements(Parsable):
     # ======== End overridden functions
 
 
-def _space_list(list_: Sequence[Any]) -> List[str]:
+def _space_list(list_: Sequence[Any]) -> list[str]:
     """ Inserts whitespace between adjacent non-whitespace tokens. """
-    spaced_statement: List[str] = []
+    spaced_statement: list[str] = []
     for i in reversed(range(len(list_))):
         spaced_statement.insert(0, list_[i])
         if i > 0 and not list_[i].isspace() and not list_[i-1].isspace():
@@ -217,7 +217,7 @@ class Sentence(Parsable):
         return (isinstance(lists, list) and len(lists) > 0 and
                 all(isinstance(elem, str) for elem in lists))
 
-    def parse(self, raw_list: List[Any], add_spaces: bool = False) -> None:
+    def parse(self, raw_list: list[Any], add_spaces: bool = False) -> None:
         """ Parses a list of string types into this object.
         If add_spaces is set, adds whitespace tokens between adjacent non-whitespace tokens."""
         if add_spaces:
@@ -240,7 +240,7 @@ class Sentence(Parsable):
             return
         self._data.insert(0, "\n" + tabs)
 
-    def dump(self, include_spaces: bool = False) -> List[Any]:
+    def dump(self, include_spaces: bool = False) -> list[Any]:
         """ Dumps this sentence. If include_spaces is set, includes whitespace tokens."""
         if not include_spaces:
             return self.words
@@ -258,7 +258,7 @@ class Sentence(Parsable):
     # ======== End overridden functions
 
     @property
-    def words(self) -> List[str]:
+    def words(self) -> list[str]:
         """ Iterates over words, but without spaces. Like Unspaced List. """
         return [word.strip("\"\'") for word in self._data if not word.isspace()]
 
@@ -311,7 +311,7 @@ class Block(Parsable):
         if expanded:
             yield from self.contents.iterate(expanded, match)
 
-    def parse(self, raw_list: List[Any], add_spaces: bool = False) -> None:
+    def parse(self, raw_list: list[Any], add_spaces: bool = False) -> None:
         """ Parses a list that resembles a block.
 
         The assumptions that this routine makes are:

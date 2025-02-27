@@ -3,8 +3,8 @@ import os
 import shutil
 import sys
 import tempfile
-from typing import Iterable
-from typing import Tuple
+from collections.abc import Iterable
+
 
 import pytest
 
@@ -67,7 +67,7 @@ class IntegrationTestsContext:
         """Cleanup the integration test context."""
         shutil.rmtree(self.workspace)
 
-    def certbot(self, args: Iterable[str], force_renew: bool = True) -> Tuple[str, str]:
+    def certbot(self, args: Iterable[str], force_renew: bool = True) -> tuple[str, str]:
         """
         Execute certbot with given args, not renewing certificates by default.
         :param args: args to pass to certbot

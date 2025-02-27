@@ -2,12 +2,12 @@
 import abc
 import logging
 from time import sleep
-from typing import Callable
-from typing import Iterable
-from typing import List
-from typing import Mapping
+from collections.abc import Callable
+from collections.abc import Iterable
+
+from collections.abc import Mapping
 from typing import Optional
-from typing import Type
+
 
 import configobj
 
@@ -46,7 +46,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
             help='The number of seconds to wait for DNS to propagate before asking the ACME server '
                  'to verify the DNS record.')
 
-    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
+    def auth_hint(self, failed_achalls: list[achallenges.AnnotatedChallenge]) -> str:
         """See certbot.plugins.common.Plugin.auth_hint."""
         delay = self.conf('propagation-seconds')
         return (
@@ -56,7 +56,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
             .format(name=self.name, secs=delay, suffix='s' if delay != 1 else '')
         )
 
-    def get_chall_pref(self, unused_domain: str) -> Iterable[Type[challenges.Challenge]]:  # pylint: disable=missing-function-docstring
+    def get_chall_pref(self, unused_domain: str) -> Iterable[type[challenges.Challenge]]:  # pylint: disable=missing-function-docstring
         return [challenges.DNS01]
 
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
@@ -65,8 +65,8 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
     def more_info(self) -> str:  # pylint: disable=missing-function-docstring
         raise NotImplementedError()
 
-    def perform(self, achalls: List[achallenges.AnnotatedChallenge]
-                ) -> List[challenges.ChallengeResponse]: # pylint: disable=missing-function-docstring
+    def perform(self, achalls: list[achallenges.AnnotatedChallenge]
+                ) -> list[challenges.ChallengeResponse]: # pylint: disable=missing-function-docstring
         self._setup_credentials()
 
         self._attempt_cleanup = True
@@ -89,7 +89,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
 
         return responses
 
-    def cleanup(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
+    def cleanup(self, achalls: list[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
         if self._attempt_cleanup:
             for achall in achalls:
                 domain = achall.domain
@@ -352,7 +352,7 @@ def validate_file_permissions(filename: str) -> None:
         logger.warning('Unsafe permissions on credentials configuration file: %s', filename)
 
 
-def base_domain_name_guesses(domain: str) -> List[str]:
+def base_domain_name_guesses(domain: str) -> list[str]:
     """Return a list of progressively less-specific domain names.
 
     One of these will probably be the domain name known to the DNS provider.

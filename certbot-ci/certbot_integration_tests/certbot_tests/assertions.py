@@ -1,7 +1,7 @@
 """This module contains advanced assertions for the certbot integration tests."""
 import os
 from typing import Optional
-from typing import Type
+
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
@@ -22,7 +22,7 @@ SYSTEM_SID = 'S-1-5-18'
 ADMINS_SID = 'S-1-5-32-544'
 
 
-def assert_elliptic_key(key_path: str, curve: Type[EllipticCurve]) -> None:
+def assert_elliptic_key(key_path: str, curve: type[EllipticCurve]) -> None:
     """
     Asserts that the key at the given path is an EC key using the given curve.
     :param key_path: path to key

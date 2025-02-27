@@ -3,7 +3,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 import argparse
 from typing import cast
-from typing import Set
+
 
 from certbot import interfaces
 from certbot.configuration import NamespaceConfig
@@ -45,7 +45,7 @@ class PluginProxy(interfaces.Plugin, metaclass=ABCMeta):
         """Loads the next config and returns its name"""
 
     @abstractmethod
-    def get_testable_domain_names(self) -> Set[str]:
+    def get_testable_domain_names(self) -> set[str]:
         """Returns the domain names that can be used in testing"""
 
 
@@ -57,7 +57,7 @@ class InstallerProxy(PluginProxy, interfaces.Installer, metaclass=ABCMeta):
     """Wraps a Certbot installer"""
 
     @abstractmethod
-    def get_all_names_answer(self) -> Set[str]:
+    def get_all_names_answer(self) -> set[str]:
         """Returns all names that should be found by the installer"""
 
 

@@ -2,8 +2,8 @@
 import os
 import shutil
 import subprocess
-from typing import Set
-from typing import Tuple
+
+
 
 from certbot import configuration
 from certbot_compatibility_test import errors
@@ -64,9 +64,9 @@ def _get_server_root(config: str) -> str:
     return os.path.join(config, subdirs[0].rstrip())
 
 
-def _get_names(config: str) -> Tuple[Set[str], Set[str]]:
+def _get_names(config: str) -> tuple[set[str], set[str]]:
     """Returns all and testable domain names in config"""
-    all_names: Set[str] = set()
+    all_names: set[str] = set()
     for root, _dirs, files in os.walk(config):
         for this_file in files:
             update_names = _get_server_names(root, this_file)
@@ -75,7 +75,7 @@ def _get_names(config: str) -> Tuple[Set[str], Set[str]]:
     return all_names, non_ip_names
 
 
-def _get_server_names(root: str, filename: str) -> Set[str]:
+def _get_server_names(root: str, filename: str) -> set[str]:
     """Returns all names in a config file path"""
     all_names = set()
     with open(os.path.join(root, filename)) as f:

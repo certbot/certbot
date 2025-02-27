@@ -6,7 +6,7 @@ import socketserver
 import sys
 import threading
 import time
-from typing import List
+
 import unittest
 from unittest import mock
 import warnings
@@ -204,7 +204,7 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
 
     def setUp(self):
         self.cert_count = 5
-        self.serial_num: List[int] = []
+        self.serial_num: list[int] = []
         self.privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     def test_sn_collisions(self):
@@ -291,7 +291,7 @@ class GenSsCertTest(unittest.TestCase):
 
     def setUp(self):
         self.cert_count = 5
-        self.serial_num: List[int] = []
+        self.serial_num: list[int] = []
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 

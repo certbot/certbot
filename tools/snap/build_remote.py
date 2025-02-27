@@ -22,10 +22,10 @@ import sys
 import tempfile
 from threading import Lock
 import time
-from typing import Dict
-from typing import List
-from typing import Set
-from typing import Tuple
+
+
+
+
 
 CERTBOT_DIR = dirname(dirname(dirname(realpath(__file__))))
 PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*'))]
@@ -47,8 +47,8 @@ def _snap_log_name(target: str, arch: str):
 
 
 def _execute_build(
-        target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
-        workspace: str, output_lock: Lock) -> Tuple[int, List[str]]:
+        target: str, archs: set[str], status: dict[str, dict[str, str]],
+        workspace: str, output_lock: Lock) -> tuple[int, list[str]]:
     # The implementation of remote-build recovery has changed over time.
     # Currently, you cannot set a build-id, and the build-id is instead derived
     # from a hash of the contents of the files in the directory:
@@ -79,7 +79,7 @@ def _execute_build(
             universal_newlines=True, env=environ, cwd=workspace)
 
     killed = False
-    process_output: List[str] = []
+    process_output: list[str] = []
     for line in process.stdout:
         process_output.append(line)
         _extract_state(target, line, status)
@@ -103,8 +103,8 @@ def _execute_build(
 
 
 def _build_snap(
-        target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
-        running: Dict[str, bool], output_lock: Lock) -> bool:
+        target: str, archs: set[str], status: dict[str, dict[str, str]],
+        running: dict[str, bool], output_lock: Lock) -> bool:
     if target == 'certbot':
         workspace = CERTBOT_DIR
     else:
@@ -154,7 +154,7 @@ def _build_snap(
     return build_success
 
 
-def _extract_state(project: str, output: str, status: Dict[str, Dict[str, str]]) -> None:
+def _extract_state(project: str, output: str, status: dict[str, dict[str, str]]) -> None:
     state = status[project]
 
     if "Starting new build" in output:
@@ -174,7 +174,7 @@ def _extract_state(project: str, output: str, status: Dict[str, Dict[str, str]])
     status[project] = state
 
 
-def _dump_status_helper(archs: Set[str], status: Dict[str, Dict[str, str]]) -> None:
+def _dump_status_helper(archs: set[str], status: dict[str, dict[str, str]]) -> None:
     headers = ['project', *archs]
     print(''.join(f'| {item:<25}' for item in headers))
     print(f'|{"-" * 26}' * len(headers))
@@ -185,8 +185,8 @@ def _dump_status_helper(archs: Set[str], status: Dict[str, Dict[str, str]]) -> N
 
 
 def _dump_status(
-        archs: Set[str], status: Dict[str, Dict[str, str]],
-        running: Dict[str, bool], output_lock: Lock) -> None:
+        archs: set[str], status: dict[str, dict[str, str]],
+        running: dict[str, bool], output_lock: Lock) -> None:
     while any(running.values()):
         with output_lock:
             print(f'Remote build status at {datetime.datetime.now()}')
@@ -195,7 +195,7 @@ def _dump_status(
 
 
 def _dump_failed_build_logs(
-        target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
+        target: str, archs: set[str], status: dict[str, dict[str, str]],
         workspace: str) -> None:
     logs_list = glob.glob(join(workspace, f'snapcraft-{target}-*.txt'))
     for arch in archs:
@@ -218,7 +218,7 @@ def _dump_failed_build_logs(
             print()
 
 
-def _dump_results(archs: Set[str], status: Dict[str, Dict[str, str]]) -> None:
+def _dump_results(archs: set[str], status: dict[str, dict[str, str]]) -> None:
     print(f'Results for remote build finished at {datetime.datetime.now()}')
     _dump_status_helper(archs, status)
 
@@ -258,7 +258,7 @@ def main():
     manager: SyncManager = Manager()
     pool = Pool(processes=len(targets))
     with manager, pool:
-        status: Dict[str, Dict[str, str]] = manager.dict()
+        status: dict[str, dict[str, str]] = manager.dict()
         running = manager.dict({target: True for target in targets})
         # While multiple processes are running, this lock should be acquired
         # before printing output.

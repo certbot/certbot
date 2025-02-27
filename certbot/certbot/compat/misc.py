@@ -9,7 +9,7 @@ import select
 import subprocess
 import sys
 from typing import Optional
-from typing import Tuple
+
 
 from certbot import errors
 from certbot.compat import os
@@ -136,7 +136,7 @@ def underscores_for_unsupported_characters_in_path(path: str) -> str:
 
 
 def execute_command_status(cmd_name: str, shell_cmd: str,
-                           env: Optional[dict] = None) -> Tuple[int, str, str]:
+                           env: Optional[dict] = None) -> tuple[int, str, str]:
     """
     Run a command:
         - on Linux command will be run by the standard shell selected with

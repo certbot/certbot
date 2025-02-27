@@ -1,7 +1,7 @@
 """DNS Authenticator for DigitalOcean."""
 import logging
 from typing import Any
-from typing import Callable
+from collections.abc import Callable
 from typing import cast
 from typing import Optional
 

@@ -8,13 +8,13 @@ import re
 import shutil
 import tempfile
 from typing import Any
-from typing import Callable
-from typing import Iterable
-from typing import List
+from collections.abc import Callable
+from collections.abc import Iterable
+
 from typing import Optional
-from typing import Set
-from typing import Tuple
-from typing import Type
+
+
+
 from typing import TypeVar
 
 from acme import challenges
@@ -108,7 +108,7 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
 
-    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
+    def auth_hint(self, failed_achalls: list[achallenges.AnnotatedChallenge]) -> str:
         """Human-readable string to help the user troubleshoot the authenticator.
 
         Shown to the user if one or more of the attempted challenges were not a success.
@@ -146,7 +146,7 @@ class Installer(AbstractInstaller, Plugin, metaclass=ABCMeta):
         self.storage = PluginStorage(self.config, self.name)
         self.reverter = reverter.Reverter(self.config)
 
-    def add_to_checkpoint(self, save_files: Set[str], save_notes: str,
+    def add_to_checkpoint(self, save_files: set[str], save_notes: str,
                           temporary: bool = False) -> None:
         """Add files to a checkpoint.
 
@@ -256,12 +256,12 @@ class Addr:
     :param str port: port number or \*, or ""
 
     """
-    def __init__(self, tup: Tuple[str, str], ipv6: bool = False):
+    def __init__(self, tup: tuple[str, str], ipv6: bool = False):
         self.tup = tup
         self.ipv6 = ipv6
 
     @classmethod
-    def fromstring(cls: Type[GenericAddr], str_addr: str) -> GenericAddr:
+    def fromstring(cls: type[GenericAddr], str_addr: str) -> GenericAddr:
         """Initialize Addr from string."""
         if str_addr.startswith('['):
             # ipv6 addresses starts with [
@@ -280,7 +280,7 @@ class Addr:
             return "%s:%s" % self.tup
         return self.tup[0]
 
-    def normalized_tuple(self) -> Tuple[str, str]:
+    def normalized_tuple(self) -> tuple[str, str]:
         """Normalized representation of addr/port tuple
         """
         if self.ipv6:
@@ -310,7 +310,7 @@ class Addr:
         """Return new address object with same addr and new port."""
         return self.__class__((self.tup[0], port), self.ipv6)
 
-    def _normalize_ipv6(self, addr: str) -> List[str]:
+    def _normalize_ipv6(self, addr: str) -> list[str]:
         """Return IPv6 address in normalized form, helper function"""
         addr = addr.lstrip("[")
         addr = addr.rstrip("]")
@@ -322,7 +322,7 @@ class Addr:
             return ":".join(self._normalize_ipv6(self.tup[0]))
         return ""
 
-    def _explode_ipv6(self, addr: str) -> List[str]:
+    def _explode_ipv6(self, addr: str) -> list[str]:
         """Explode IPv6 address for comparison"""
         result = ['0', '0', '0', '0', '0', '0', '0', '0']
         addr_list = addr.split(":")
@@ -361,8 +361,8 @@ class ChallengePerformer:
 
     def __init__(self, configurator: Configurator):
         self.configurator = configurator
-        self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
-        self.indices: List[int] = []
+        self.achalls: list[achallenges.KeyAuthorizationAnnotatedChallenge] = []
+        self.indices: list[int] = []
 
     def add_chall(self, achall: achallenges.KeyAuthorizationAnnotatedChallenge,
                   idx: Optional[int] = None) -> None:
@@ -377,7 +377,7 @@ class ChallengePerformer:
         if idx is not None:
             self.indices.append(idx)
 
-    def perform(self) -> List[challenges.KeyAuthorizationChallengeResponse]:
+    def perform(self) -> list[challenges.KeyAuthorizationChallengeResponse]:
         """Perform all added challenges.
 
         :returns: challenge responses
@@ -439,7 +439,7 @@ def install_version_controlled_file(dest_path: str, digest_path: str, src_path: 
 # "pragma: no cover") TODO: this might quickly lead to dead code (also
 # c.f. #383)
 
-def dir_setup(test_dir: str, pkg: str) -> Tuple[str, str, str]:  # pragma: no cover
+def dir_setup(test_dir: str, pkg: str) -> tuple[str, str, str]:  # pragma: no cover
     """Setup the directories necessary for the configurator."""
     def expanded_tempdir(prefix: str) -> str:
         """Return the real path of a temp directory with the specified prefix

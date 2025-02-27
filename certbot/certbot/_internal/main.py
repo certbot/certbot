@@ -7,12 +7,12 @@ import functools
 import logging.handlers
 import sys
 from typing import cast
-from typing import Generator
+from collections.abc import Generator
 from typing import IO
-from typing import Iterable
-from typing import List
+from collections.abc import Iterable
+
 from typing import Optional
-from typing import Tuple
+
 from typing import TypeVar
 from typing import Union
 
@@ -86,7 +86,7 @@ def _suggest_donation_if_appropriate(config: configuration.NamespaceConfig) -> N
 
 
 def _get_and_save_cert(le_client: client.Client, config: configuration.NamespaceConfig,
-                       domains: Optional[List[str]] = None, certname: Optional[str] = None,
+                       domains: Optional[list[str]] = None, certname: Optional[str] = None,
                        lineage: Optional[storage.RenewableCert] = None
                        ) -> Optional[storage.RenewableCert]:
     """Authenticate and enroll certificate.
@@ -114,7 +114,7 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
 
     """
     hooks.pre_hook(config)
-    renewed_domains: List[str] = []
+    renewed_domains: list[str] = []
 
     try:
         if lineage is not None:
@@ -199,7 +199,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
 def _handle_subset_cert_request(config: configuration.NamespaceConfig,
                                 domains: Iterable[str],
                                 cert: storage.RenewableCert
-                                ) -> Tuple[str, Optional[storage.RenewableCert]]:
+                                ) -> tuple[str, Optional[storage.RenewableCert]]:
     """Figure out what to do if a previous cert had a subset of the names now requested
 
     :param config: Configuration object
@@ -246,7 +246,7 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
 
 def _handle_identical_cert_request(config: configuration.NamespaceConfig,
                                    lineage: storage.RenewableCert,
-                                   ) -> Tuple[str, Optional[storage.RenewableCert]]:
+                                   ) -> tuple[str, Optional[storage.RenewableCert]]:
     """Figure out what to do if a lineage has the same names as a previously obtained one
 
     :param config: Configuration object
@@ -298,8 +298,8 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     raise AssertionError('This is impossible')
 
 
-def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: List[str]
-                              ) -> Tuple[Optional[str], Optional[storage.RenewableCert]]:
+def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: list[str]
+                              ) -> tuple[Optional[str], Optional[storage.RenewableCert]]:
     """Determine whether there are duplicated names and how to handle
     them (renew, reinstall, newcert, or raising an error to stop
     the client run if the user chooses to cancel the operation when
@@ -339,8 +339,8 @@ def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: Li
     return None, None
 
 
-def _find_cert(config: configuration.NamespaceConfig, domains: List[str], certname: str
-               ) -> Tuple[bool, Optional[storage.RenewableCert]]:
+def _find_cert(config: configuration.NamespaceConfig, domains: list[str], certname: str
+               ) -> tuple[bool, Optional[storage.RenewableCert]]:
     """Finds an existing certificate object given domains and/or a certificate name.
 
     :param config: Configuration object
@@ -365,8 +365,8 @@ def _find_cert(config: configuration.NamespaceConfig, domains: List[str], certna
 
 
 def _find_lineage_for_domains_and_certname(
-        config: configuration.NamespaceConfig, domains: List[str],
-        certname: str) -> Tuple[Optional[str], Optional[storage.RenewableCert]]:
+        config: configuration.NamespaceConfig, domains: list[str],
+        certname: str) -> tuple[Optional[str], Optional[storage.RenewableCert]]:
     """Find appropriate lineage based on given domains and/or certname.
 
     :param config: Configuration object
@@ -410,7 +410,7 @@ def _find_lineage_for_domains_and_certname(
 T = TypeVar("T")
 
 
-def _get_added_removed(after: Iterable[T], before: Iterable[T]) -> Tuple[List[T], List[T]]:
+def _get_added_removed(after: Iterable[T], before: Iterable[T]) -> tuple[list[T], list[T]]:
     """Get lists of items removed from `before`
     and a lists of items added to `after`
     """
@@ -475,7 +475,7 @@ def _ask_user_to_confirm_new_names(config: configuration.NamespaceConfig,
 
 def _find_domains_or_certname(config: configuration.NamespaceConfig,
                               installer: Optional[interfaces.Installer],
-                              question: Optional[str] = None) -> Tuple[List[str], str]:
+                              question: Optional[str] = None) -> tuple[list[str], str]:
     """Retrieve domains and certname from config or user input.
 
     :param config: Configuration object
@@ -536,7 +536,7 @@ def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Opt
                                      being saved (created or renewed).
 
     """
-    steps: List[str] = []
+    steps: list[str] = []
 
     # If the installation or enhancement raised an error, show advice on trying again
     if installer_err:
@@ -689,7 +689,7 @@ def _csr_report_new_cert(config: configuration.NamespaceConfig, cert_path: Optio
 
 
 def _determine_account(config: configuration.NamespaceConfig
-                       ) -> Tuple[account.Account,
+                       ) -> tuple[account.Account,
                                   Optional[acme_client.ClientV2]]:
     """Determine which account to use.
 
@@ -1030,7 +1030,7 @@ def _cert_name_from_config_or_lineage(config: configuration.NamespaceConfig,
 
 
 def _install_cert(config: configuration.NamespaceConfig, le_client: client.Client,
-                  domains: List[str], lineage: Optional[storage.RenewableCert] = None) -> None:
+                  domains: list[str], lineage: Optional[storage.RenewableCert] = None) -> None:
     """Install a cert
 
     :param config: Configuration object
@@ -1462,7 +1462,7 @@ def run(config: configuration.NamespaceConfig,
 
 
 def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
-                           le_client: client.Client) -> Tuple[
+                           le_client: client.Client) -> tuple[
                            Optional[str], Optional[str], Optional[str]]:
     """Obtain a cert using a user-supplied CSR
 
@@ -1613,8 +1613,8 @@ def renew(config: configuration.NamespaceConfig,
 
     """
 
-    renewed_domains: List[str] = []
-    failed_domains: List[str] = []
+    renewed_domains: list[str] = []
+    failed_domains: list[str] = []
     try:
         renewed_domains, failed_domains = renewal.handle_renewal_request(config)
     finally:
@@ -1822,7 +1822,7 @@ def make_displayer(config: configuration.NamespaceConfig
             devnull.close()
 
 
-def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
+def main(cli_args: Optional[list[str]] = None) -> Optional[Union[str, int]]:
     """Run Certbot.
 
     :param cli_args: command line to Certbot, defaults to ``sys.argv[1:]``

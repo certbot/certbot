@@ -8,17 +8,17 @@ import re
 import socket
 import time
 from typing import Any
-from typing import Callable
+from collections.abc import Callable
 from typing import cast
 from typing import DefaultDict
-from typing import Dict
-from typing import Iterable
-from typing import List
+
+from collections.abc import Iterable
+
 from typing import Optional
-from typing import Sequence
-from typing import Set
-from typing import Tuple
-from typing import Type
+from collections.abc import Sequence
+
+
+
 from typing import Union
 
 from acme import challenges
@@ -63,10 +63,10 @@ class OsOptions:
                  vhost_files: str = "*",
                  logs_root: str = "/var/log/apache2",
                  ctl: str = "apache2ctl",
-                 version_cmd: Optional[List[str]] = None,
-                 restart_cmd: Optional[List[str]] = None,
-                 restart_cmd_alt: Optional[List[str]] = None,
-                 conftest_cmd: Optional[List[str]] = None,
+                 version_cmd: Optional[list[str]] = None,
+                 restart_cmd: Optional[list[str]] = None,
+                 restart_cmd_alt: Optional[list[str]] = None,
+                 conftest_cmd: Optional[list[str]] = None,
                  enmod: Optional[str] = None,
                  dismod: Optional[str] = None,
                  le_vhost_ext: str = "-le-ssl.conf",
@@ -249,32 +249,32 @@ class ApacheConfigurator(common.Configurator):
         super().__init__(*args, **kwargs)
 
         # Add name_server association dict
-        self.assoc: Dict[str, obj.VirtualHost] = {}
+        self.assoc: dict[str, obj.VirtualHost] = {}
         # Outstanding challenges
-        self._chall_out: Set[achallenges.AnnotatedChallenge] = set()
+        self._chall_out: set[achallenges.AnnotatedChallenge] = set()
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts: Dict[str, List[obj.VirtualHost]] = {}
+        self._wildcard_vhosts: dict[str, list[obj.VirtualHost]] = {}
         # Maps enhancements to vhosts we've enabled the enhancement for
-        self._enhanced_vhosts: DefaultDict[str, Set[obj.VirtualHost]] = defaultdict(set)
+        self._enhanced_vhosts: Defaultdict[str, set[obj.VirtualHost]] = defaultdict(set)
         # Temporary state for AutoHSTS enhancement
-        self._autohsts: Dict[str, Dict[str, Union[int, float]]] = {}
+        self._autohsts: dict[str, dict[str, Union[int, float]]] = {}
         # Reverter save notes
         self.save_notes: str = ""
         # Should we use ParserNode implementation instead of the old behavior
         self.USE_PARSERNODE = use_parsernode
         # Saves the list of file paths that were parsed initially, and
         # not added to parser tree by self.conf("vhost-root") for example.
-        self.parsed_paths: List[str] = []
+        self.parsed_paths: list[str] = []
         # These will be set in the prepare function
         self._prepared: bool = False
         self.parser: parser.ApacheParser
         self.parser_root: Optional[dualparser.DualBlockNode] = None
         self.version = version
         self._openssl_version: Optional[str] = openssl_version
-        self.vhosts: List[obj.VirtualHost]
+        self.vhosts: list[obj.VirtualHost]
         self.options = copy.deepcopy(self.OS_DEFAULTS)
-        self._enhance_func: Dict[str, Callable[[obj.VirtualHost, Any], None]] = {
+        self._enhance_func: dict[str, Callable[[obj.VirtualHost, Any], None]] = {
             "redirect": self._enable_redirect,
             "ensure-http-header": self._set_http_header,
             "staple-ocsp": self._enable_ocsp_stapling,
@@ -482,7 +482,7 @@ class ApacheConfigurator(common.Configurator):
         return parser.ApacheParser(
             self.options.server_root, self, self.conf("vhost-root"), version=self.version)
 
-    def get_parsernode_root(self, metadata: Dict[str, Any]) -> dualparser.DualBlockNode:
+    def get_parsernode_root(self, metadata: dict[str, Any]) -> dualparser.DualBlockNode:
         """Initializes the ParserNode parser root instance."""
 
         if HAS_APACHECONFIG:
@@ -531,7 +531,7 @@ class ApacheConfigurator(common.Configurator):
             display_util.notify("Successfully deployed certificate for {} to {}"
                                 .format(domain, vhost.filep))
 
-    def choose_vhosts(self, domain: str, create_if_no_ssl: bool = True) -> List[obj.VirtualHost]:
+    def choose_vhosts(self, domain: str, create_if_no_ssl: bool = True) -> list[obj.VirtualHost]:
         """
         Finds VirtualHosts that can be used with the provided domain
 
@@ -553,14 +553,14 @@ class ApacheConfigurator(common.Configurator):
         else:
             return [self.choose_vhost(domain, create_if_no_ssl)]
 
-    def _vhosts_for_wildcard(self, domain: str) -> List[obj.VirtualHost]:
+    def _vhosts_for_wildcard(self, domain: str) -> list[obj.VirtualHost]:
         """
         Get VHost objects for every VirtualHost that the user wants to handle
         with the wildcard certificate.
         """
 
         # Collect all vhosts that match the name
-        matched: Set[obj.VirtualHost] = set()
+        matched: set[obj.VirtualHost] = set()
         for vhost in self.vhosts:
             for name in vhost.get_names():
                 if self._in_wildcard_scope(name, domain):
@@ -595,11 +595,11 @@ class ApacheConfigurator(common.Configurator):
         return None
 
     def _choose_vhosts_wildcard(self, domain: str, create_ssl: bool = True
-                                ) -> List[obj.VirtualHost]:
+                                ) -> list[obj.VirtualHost]:
         """Prompts user to choose vhosts to install a wildcard certificate for"""
 
         # Get all vhosts that are covered by the wildcard domain
-        vhosts: List[obj.VirtualHost] = self._vhosts_for_wildcard(domain)
+        vhosts: list[obj.VirtualHost] = self._vhosts_for_wildcard(domain)
 
         # Go through the vhosts, making sure that we cover all the names
         # present, but preferring the SSL vhosts
@@ -657,7 +657,7 @@ class ApacheConfigurator(common.Configurator):
         self._add_dummy_ssl_directives(vhost.path)
         self._clean_vhost(vhost)
 
-        path: Dict[str, Any] = {
+        path: dict[str, Any] = {
             "cert_path": self.parser.find_dir("SSLCertificateFile", None, vhost.path),
             "cert_key": self.parser.find_dir("SSLCertificateKeyFile", None, vhost.path),
         }
@@ -811,7 +811,7 @@ class ApacheConfigurator(common.Configurator):
         return self._find_best_vhost(target, filtered_vhosts, filter_defaults)
 
     def _find_best_vhost(
-        self, target_name: str, vhosts: Optional[List[obj.VirtualHost]] = None,
+        self, target_name: str, vhosts: Optional[list[obj.VirtualHost]] = None,
         filter_defaults: bool = True
     ) -> Optional[obj.VirtualHost]:
         """Finds the best vhost for a target_name.
@@ -874,13 +874,13 @@ class ApacheConfigurator(common.Configurator):
 
         return best_candidate
 
-    def _non_default_vhosts(self, vhosts: List[obj.VirtualHost]) -> List[obj.VirtualHost]:
+    def _non_default_vhosts(self, vhosts: list[obj.VirtualHost]) -> list[obj.VirtualHost]:
         """Return all non _default_ only vhosts."""
         return [vh for vh in vhosts if not all(
             addr.get_addr() == "_default_" for addr in vh.addrs
         )]
 
-    def get_all_names(self) -> Set[str]:
+    def get_all_names(self) -> set[str]:
         """Returns all names found in the Apache Configuration.
 
         :returns: All ServerNames, ServerAliases, and reverse DNS entries for
@@ -888,7 +888,7 @@ class ApacheConfigurator(common.Configurator):
         :rtype: set
 
         """
-        all_names: Set[str] = set()
+        all_names: set[str] = set()
 
         vhost_macro = []
 
@@ -933,7 +933,7 @@ class ApacheConfigurator(common.Configurator):
 
         return ""
 
-    def _get_vhost_names(self, path: Optional[str]) -> Tuple[Optional[str], List[Optional[str]]]:
+    def _get_vhost_names(self, path: Optional[str]) -> tuple[Optional[str], list[Optional[str]]]:
         """Helper method for getting the ServerName and
         ServerAlias values from vhost in path
 
@@ -985,7 +985,7 @@ class ApacheConfigurator(common.Configurator):
         :rtype: :class:`~certbot_apache._internal.obj.VirtualHost`
 
         """
-        addrs: Set[obj.Addr] = set()
+        addrs: set[obj.Addr] = set()
         try:
             args = self.parser.aug.match(path + "/arg")
         except RuntimeError:
@@ -1022,7 +1022,7 @@ class ApacheConfigurator(common.Configurator):
         self._add_servernames(vhost)
         return vhost
 
-    def get_virtual_hosts(self) -> List[obj.VirtualHost]:
+    def get_virtual_hosts(self) -> list[obj.VirtualHost]:
         """
         Temporary wrapper for legacy and ParserNode version for
         get_virtual_hosts. This should be replaced with the ParserNode
@@ -1045,7 +1045,7 @@ class ApacheConfigurator(common.Configurator):
             return v2_vhosts
         return v1_vhosts
 
-    def get_virtual_hosts_v1(self) -> List[obj.VirtualHost]:
+    def get_virtual_hosts_v1(self) -> list[obj.VirtualHost]:
         """Returns list of virtual hosts found in the Apache configuration.
 
         :returns: List of :class:`~certbot_apache._internal.obj.VirtualHost`
@@ -1054,8 +1054,8 @@ class ApacheConfigurator(common.Configurator):
 
         """
         # Search base config, and all included paths for VirtualHosts
-        file_paths: Dict[str, str] = {}
-        internal_paths: DefaultDict[str, Set[str]] = defaultdict(set)
+        file_paths: dict[str, str] = {}
+        internal_paths: Defaultdict[str, set[str]] = defaultdict(set)
         vhs = []
         # Make a list of parser paths because the parser_paths
         # dictionary may be modified during the loop.
@@ -1098,7 +1098,7 @@ class ApacheConfigurator(common.Configurator):
                     vhs.append(new_vhost)
         return vhs
 
-    def get_virtual_hosts_v2(self) -> List[obj.VirtualHost]:
+    def get_virtual_hosts_v2(self) -> list[obj.VirtualHost]:
         """Returns list of virtual hosts found in the Apache configuration using
         ParserNode interface.
         :returns: List of :class:`~certbot_apache.obj.VirtualHost`
@@ -1243,7 +1243,7 @@ class ApacheConfigurator(common.Configurator):
         else:
             self._add_listens_http(listen_dirs, listens, port)
 
-    def _add_listens_http(self, listens: Set[str], listens_orig: List[str], port: str) -> None:
+    def _add_listens_http(self, listens: set[str], listens_orig: list[str], port: str) -> None:
         """Helper method for ensure_listen to figure out which new
         listen statements need adding for listening HTTP on port
 
@@ -1268,7 +1268,7 @@ class ApacheConfigurator(common.Configurator):
                 self.save_notes += (f"Added Listen {listen} directive to "
                                     f"{self.parser.loc['listen']}\n")
 
-    def _add_listens_https(self, listens: Set[str], listens_orig: List[str], port: str) -> None:
+    def _add_listens_https(self, listens: set[str], listens_orig: list[str], port: str) -> None:
         """Helper method for ensure_listen to figure out which new
         listen statements need adding for listening HTTPS on port
 
@@ -1301,7 +1301,7 @@ class ApacheConfigurator(common.Configurator):
                 self.save_notes += (f"Added Listen {listen} directive to "
                                     f"{self.parser.loc['listen']}\n")
 
-    def _has_port_already(self, listens: List[str], port: str) -> Optional[bool]:
+    def _has_port_already(self, listens: list[str], port: str) -> Optional[bool]:
         """Helper method for prepare_server_https to find out if user
         already has an active Listen statement for the port we need
 
@@ -1416,7 +1416,7 @@ class ApacheConfigurator(common.Configurator):
 
         return ssl_vhost
 
-    def _get_new_vh_path(self, orig_matches: List[str], new_matches: List[str]) -> Optional[str]:
+    def _get_new_vh_path(self, orig_matches: list[str], new_matches: list[str]) -> Optional[str]:
         """ Helper method for make_vhost_ssl for matching augeas paths. Returns
         VirtualHost path from new_matches that's not present in orig_matches.
 
@@ -1532,11 +1532,11 @@ class ApacheConfigurator(common.Configurator):
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
         self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
 
-    def _sift_rewrite_rules(self, contents: Iterable[str]) -> Tuple[List[str], bool]:
+    def _sift_rewrite_rules(self, contents: Iterable[str]) -> tuple[list[str], bool]:
         """ Helper function for _copy_create_ssl_vhost_skeleton to prepare the
         new HTTPS VirtualHost contents. Currently disabling the rewrites """
 
-        result: List[str] = []
+        result: list[str] = []
         sift: bool = False
         contents = iter(contents)
 
@@ -1593,7 +1593,7 @@ class ApacheConfigurator(common.Configurator):
                     result.append('\n'.join(chunk))
         return result, sift
 
-    def _get_vhost_block(self, vhost: obj.VirtualHost) -> List[str]:
+    def _get_vhost_block(self, vhost: obj.VirtualHost) -> list[str]:
         """ Helper method to get VirtualHost contents from the original file.
         This is done with help of augeas span, which returns the span start and
         end positions
@@ -1616,7 +1616,7 @@ class ApacheConfigurator(common.Configurator):
         self._remove_closing_vhost_tag(vh_contents)
         return vh_contents
 
-    def _remove_closing_vhost_tag(self, vh_contents: List[str]) -> None:
+    def _remove_closing_vhost_tag(self, vh_contents: list[str]) -> None:
         """Removes the closing VirtualHost tag if it exists.
 
         This method modifies vh_contents directly to remove the closing
@@ -1635,9 +1635,9 @@ class ApacheConfigurator(common.Configurator):
                     vh_contents[content_index] = line[:line_index]
                 break
 
-    def _update_ssl_vhosts_addrs(self, vh_path: str) -> Set[obj.Addr]:
-        ssl_addrs: Set[obj.Addr] = set()
-        ssl_addr_p: List[str] = self.parser.aug.match(vh_path + "/arg")
+    def _update_ssl_vhosts_addrs(self, vh_path: str) -> set[obj.Addr]:
+        ssl_addrs: set[obj.Addr] = set()
+        ssl_addr_p: list[str] = self.parser.aug.match(vh_path + "/arg")
 
         for addr in ssl_addr_p:
             old_addr = obj.Addr.fromstring(
@@ -1656,7 +1656,7 @@ class ApacheConfigurator(common.Configurator):
         # remove all problematic directives
         self._remove_directives(vhost.path, ["SSLCertificateChainFile"])
 
-    def _deduplicate_directives(self, vh_path: Optional[str], directives: List[str]) -> None:
+    def _deduplicate_directives(self, vh_path: Optional[str], directives: list[str]) -> None:
         for directive in directives:
             while len(self.parser.find_dir(directive, None,
                                            vh_path, False)) > 1:
@@ -1664,7 +1664,7 @@ class ApacheConfigurator(common.Configurator):
                                                       vh_path, False)
                 self.parser.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
-    def _remove_directives(self, vh_path: Optional[str], directives: List[str]) -> None:
+    def _remove_directives(self, vh_path: Optional[str], directives: list[str]) -> None:
         for directive in directives:
             while self.parser.find_dir(directive, None, vh_path, False):
                 directive_path = self.parser.find_dir(directive, None,
@@ -1786,12 +1786,12 @@ class ApacheConfigurator(common.Configurator):
     ######################################################################
     # Enhancements
     ######################################################################
-    def supported_enhancements(self) -> List[str]:
+    def supported_enhancements(self) -> list[str]:
         """Returns currently supported enhancements."""
         return ["redirect", "ensure-http-header", "staple-ocsp"]
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[Union[List[str], str]] = None) -> None:
+                options: Optional[Union[list[str], str]] = None) -> None:
         """Enhance configuration.
 
         :param str domain: domain to enhance
@@ -2129,7 +2129,7 @@ class ApacheConfigurator(common.Configurator):
         # There can be other RewriteRule directive lines in vhost config.
         # rewrite_args_dict keys are directive ids and the corresponding value
         # for each is a list of arguments to that directive.
-        rewrite_args_dict: DefaultDict[str, List[str]] = defaultdict(list)
+        rewrite_args_dict: Defaultdict[str, list[str]] = defaultdict(list)
         pat = r'(.*directive\[\d+\]).*'
         for match in rewrite_path:
             m = re.match(pat, match)
@@ -2394,7 +2394,7 @@ class ApacheConfigurator(common.Configurator):
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
-    def get_version(self) -> Tuple[int, ...]:
+    def get_version(self) -> tuple[int, ...]:
         """Return version of Apache Server.
 
         Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
@@ -2440,12 +2440,12 @@ class ApacheConfigurator(common.Configurator):
     ###########################################################################
     # Challenges Section
     ###########################################################################
-    def get_chall_pref(self, unused_domain: str) -> Sequence[Type[challenges.HTTP01]]:
+    def get_chall_pref(self, unused_domain: str) -> Sequence[type[challenges.HTTP01]]:
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 
-    def perform(self, achalls: List[achallenges.AnnotatedChallenge]
-                ) -> List[challenges.ChallengeResponse]:
+    def perform(self, achalls: list[achallenges.AnnotatedChallenge]
+                ) -> list[challenges.ChallengeResponse]:
         """Perform the configuration related challenge.
 
         This function currently assumes all challenges will be fulfilled.
@@ -2454,7 +2454,7 @@ class ApacheConfigurator(common.Configurator):
 
         """
         self._chall_out.update(achalls)
-        responses: List[Optional[challenges.ChallengeResponse]] = [None] * len(achalls)
+        responses: list[Optional[challenges.ChallengeResponse]] = [None] * len(achalls)
         http_doer = http_01.ApacheHttp01(self)
 
         for i, achall in enumerate(achalls):
@@ -2483,8 +2483,8 @@ class ApacheConfigurator(common.Configurator):
 
     def _update_responses(
         self,
-        responses: List[Optional[challenges.ChallengeResponse]],
-        chall_response: List[challenges.KeyAuthorizationChallengeResponse],
+        responses: list[Optional[challenges.ChallengeResponse]],
+        chall_response: list[challenges.KeyAuthorizationChallengeResponse],
         chall_doer: http_01.ApacheHttp01
     ) -> None:
         # Go through all of the challenges and assign them to the proper
@@ -2493,7 +2493,7 @@ class ApacheConfigurator(common.Configurator):
         for i, resp in enumerate(chall_response):
             responses[chall_doer.indices[i]] = resp
 
-    def cleanup(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:
+    def cleanup(self, achalls: list[achallenges.AnnotatedChallenge]) -> None:
         """Revert all challenges."""
         self._chall_out.difference_update(achalls)
 
@@ -2519,7 +2519,7 @@ class ApacheConfigurator(common.Configurator):
         return common.install_version_controlled_file(
             options_ssl, options_ssl_digest, apache_config_path, constants.ALL_SSL_OPTIONS_HASHES)
 
-    def enable_autohsts(self, _unused_lineage: RenewableCert, domains: List[str]) -> None:
+    def enable_autohsts(self, _unused_lineage: RenewableCert, domains: list[str]) -> None:
         """
         Enable the AutoHSTS enhancement for defined domains
 
@@ -2531,7 +2531,7 @@ class ApacheConfigurator(common.Configurator):
         """
 
         self._autohsts_fetch_state()
-        _enhanced_vhosts: List[obj.VirtualHost] = []
+        _enhanced_vhosts: list[obj.VirtualHost] = []
         for d in domains:
             matched_vhosts = self.choose_vhosts(d, create_if_no_ssl=False)
             # We should be handling only SSL vhosts for AutoHSTS
@@ -2657,7 +2657,7 @@ class ApacheConfigurator(common.Configurator):
             # No autohsts enabled for any vhost
             return
 
-        vhosts: List[obj.VirtualHost] = []
+        vhosts: list[obj.VirtualHost] = []
         affected_ids = []
         # Copy, as we are removing from the dict inside the loop
         for id_str, config in list(self._autohsts.items()):

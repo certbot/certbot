@@ -9,9 +9,9 @@ should be used whenever:
 Other messages can use the `logging` module. See `log.py`.
 
 """
-from typing import List
+
 from typing import Optional
-from typing import Tuple
+
 from typing import Union
 
 from certbot._internal.display import obj
@@ -53,9 +53,9 @@ def notification(message: str, pause: bool = True, wrap: bool = True,
                                    force_interactive=force_interactive, decorate=decorate)
 
 
-def menu(message: str, choices: Union[List[str], List[Tuple[str, str]]],
+def menu(message: str, choices: Union[list[str], list[tuple[str, str]]],
          default: Optional[int] = None, cli_flag: Optional[str] = None,
-         force_interactive: bool = False) -> Tuple[str, int]:
+         force_interactive: bool = False) -> tuple[str, int]:
     """Display a menu.
 
     .. todo:: This doesn't enable the help label/button (I wasn't sold on
@@ -82,7 +82,7 @@ def menu(message: str, choices: Union[List[str], List[Tuple[str, str]]],
 
 
 def input_text(message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
-               force_interactive: bool = False) -> Tuple[str, str]:
+               force_interactive: bool = False) -> tuple[str, str]:
     """Accept input from the user.
 
     :param str message: message to display to the user
@@ -125,9 +125,9 @@ def yesno(message: str, yes_label: str = "Yes", no_label: str = "No",
                                    cli_flag=cli_flag, force_interactive=force_interactive)
 
 
-def checklist(message: str, tags: List[str], default: Optional[List[str]] = None,
+def checklist(message: str, tags: list[str], default: Optional[list[str]] = None,
               cli_flag: Optional[str] = None,
-              force_interactive: bool = False) -> Tuple[str, List[str]]:
+              force_interactive: bool = False) -> tuple[str, list[str]]:
     """Display a checklist.
 
     :param str message: Message to display to user
@@ -148,7 +148,7 @@ def checklist(message: str, tags: List[str], default: Optional[List[str]] = None
 
 
 def directory_select(message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
-                     force_interactive: bool = False) -> Tuple[str, str]:
+                     force_interactive: bool = False) -> tuple[str, str]:
     """Display a directory selection screen.
 
     :param str message: prompt to give the user

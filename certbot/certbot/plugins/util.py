@@ -1,6 +1,6 @@
 """Plugin utilities."""
 import logging
-from typing import List
+
 
 from certbot import util
 from certbot.compat import os
@@ -9,7 +9,7 @@ from certbot.compat.misc import STANDARD_BINARY_DIRS
 logger = logging.getLogger(__name__)
 
 
-def get_prefixes(path: str) -> List[str]:
+def get_prefixes(path: str) -> list[str]:
     """Retrieves all possible path prefixes of a path, in descending order
     of length. For instance:
 
@@ -22,7 +22,7 @@ def get_prefixes(path: str) -> List[str]:
     :rtype: `list` of `str`
     """
     prefix = os.path.normpath(path)
-    prefixes: List[str] = []
+    prefixes: list[str] = []
     while prefix:
         prefixes.append(prefix)
         prefix, _ = os.path.split(prefix)

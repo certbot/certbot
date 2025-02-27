@@ -5,11 +5,11 @@ import logging
 import shutil
 import time
 import traceback
-from typing import Iterable
-from typing import List
-from typing import Set
+from collections.abc import Iterable
+
+
 from typing import TextIO
-from typing import Tuple
+
 
 from certbot import configuration
 from certbot import errors
@@ -131,7 +131,7 @@ class Reverter:
                     "Unable to load checkpoint during rollback")
             rollback -= 1
 
-    def add_to_temp_checkpoint(self, save_files: Set[str], save_notes: str) -> None:
+    def add_to_temp_checkpoint(self, save_files: set[str], save_notes: str) -> None:
         """Add files to temporary checkpoint.
 
         :param set save_files: set of filepaths to save
@@ -141,7 +141,7 @@ class Reverter:
         self._add_to_checkpoint_dir(
             self.config.temp_checkpoint_dir, save_files, save_notes)
 
-    def add_to_checkpoint(self, save_files: Set[str], save_notes: str) -> None:
+    def add_to_checkpoint(self, save_files: set[str], save_notes: str) -> None:
         """Add files to a permanent checkpoint.
 
         :param set save_files: set of filepaths to save
@@ -153,7 +153,7 @@ class Reverter:
         self._add_to_checkpoint_dir(
             self.config.in_progress_dir, save_files, save_notes)
 
-    def _add_to_checkpoint_dir(self, cp_dir: str, save_files: Set[str], save_notes: str) -> None:
+    def _add_to_checkpoint_dir(self, cp_dir: str, save_files: set[str], save_notes: str) -> None:
         """Add save files to checkpoint directory.
 
         :param str cp_dir: Checkpoint directory filepath
@@ -198,7 +198,7 @@ class Reverter:
         with open(os.path.join(cp_dir, "CHANGES_SINCE"), "a") as notes_fd:
             notes_fd.write(save_notes)
 
-    def _read_and_append(self, filepath: str) -> Tuple[TextIO, List[str]]:
+    def _read_and_append(self, filepath: str) -> tuple[TextIO, list[str]]:
         """Reads the file lines and returns a file obj.
 
         Read the file returning the lines, and a pointer to the end of the file.
@@ -268,7 +268,7 @@ class Reverter:
                     logger.error(
                         "Unable to run undo command: %s", " ".join(command))
 
-    def _check_tempfile_saves(self, save_files: Set[str]) -> None:
+    def _check_tempfile_saves(self, save_files: set[str]) -> None:
         """Verify save isn't overwriting any temporary files.
 
         :param set save_files: Set of files about to be saved.

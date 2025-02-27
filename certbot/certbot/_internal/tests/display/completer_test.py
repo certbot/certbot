@@ -2,7 +2,7 @@
 from importlib import reload as reload_module
 import string
 import sys
-from typing import List
+
 import unittest
 from unittest import mock
 
@@ -30,7 +30,7 @@ class CompleterTest(test_util.TempDirTestCase):
         if self.tempdir[-1] != os.sep:
             self.tempdir += os.sep
 
-        self.paths: List[str] = []
+        self.paths: list[str] = []
         # create some files and directories in temp_dir
         for c in string.ascii_lowercase:
             path = os.path.join(self.tempdir, c)

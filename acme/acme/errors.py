@@ -1,9 +1,9 @@
 """ACME errors."""
 import typing
 from typing import Any
-from typing import List
-from typing import Mapping
-from typing import Set
+
+from collections.abc import Mapping
+
 
 from josepy import errors as jose_errors
 import requests
@@ -81,7 +81,7 @@ class PollError(ClientError):
         to the most recently updated one
 
     """
-    def __init__(self, exhausted: Set['messages.AuthorizationResource'],
+    def __init__(self, exhausted: set['messages.AuthorizationResource'],
                  updated: Mapping['messages.AuthorizationResource',
                                   'messages.AuthorizationResource']
                  ) -> None:
@@ -103,7 +103,7 @@ class ValidationError(Error):
     """Error for authorization failures. Contains a list of authorization
     resources, each of which is invalid and should have an error field.
     """
-    def __init__(self, failed_authzrs: List['messages.AuthorizationResource']) -> None:
+    def __init__(self, failed_authzrs: list['messages.AuthorizationResource']) -> None:
         self.failed_authzrs = failed_authzrs
         super().__init__()
 

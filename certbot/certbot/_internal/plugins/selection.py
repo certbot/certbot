@@ -2,11 +2,11 @@
 
 import logging
 from typing import cast
-from typing import Iterable
-from typing import List
+from collections.abc import Iterable
+
 from typing import Optional
-from typing import Tuple
-from typing import Type
+
+
 from typing import TypeVar
 
 from certbot import configuration
@@ -82,7 +82,7 @@ P = TypeVar('P', bound=interfaces.Plugin)
 
 def pick_plugin(config: configuration.NamespaceConfig, default: Optional[str],
                 plugins: disco.PluginsRegistry, question: str,
-                ifaces: Iterable[Type]) -> Optional[P]:
+                ifaces: Iterable[type]) -> Optional[P]:
     """Pick plugin.
 
     :param certbot.configuration.NamespaceConfig config: Configuration
@@ -136,7 +136,7 @@ def pick_plugin(config: configuration.NamespaceConfig, default: Optional[str],
         return None
 
 
-def choose_plugin(prepared: List[disco.PluginEntryPoint],
+def choose_plugin(prepared: list[disco.PluginEntryPoint],
                   question: str) -> Optional[disco.PluginEntryPoint]:
     """Allow the user to choose their plugin.
 
@@ -193,7 +193,7 @@ def record_chosen_plugins(config: configuration.NamespaceConfig, plugins: disco.
 
 def choose_configurator_plugins(config: configuration.NamespaceConfig,
                                 plugins: disco.PluginsRegistry,
-                                verb: str) -> Tuple[Optional[interfaces.Installer],
+                                verb: str) -> tuple[Optional[interfaces.Installer],
                                                     Optional[interfaces.Authenticator]]:
     """
     Figure out which configurator we're going to use, modifies
@@ -290,7 +290,7 @@ def set_configurator(previously: Optional[str], now: Optional[str]) -> Optional[
 
 
 def cli_plugin_requests(config: configuration.NamespaceConfig
-                        ) -> Tuple[Optional[str], Optional[str]]:
+                        ) -> tuple[Optional[str], Optional[str]]:
     """
     Figure out which plugins the user requested with CLI and config options
 

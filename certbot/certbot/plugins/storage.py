@@ -2,7 +2,7 @@
 import json
 import logging
 from typing import Any
-from typing import Dict
+
 
 from certbot import configuration
 from certbot import errors
@@ -43,7 +43,7 @@ class PluginStorage:
 
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         filedata = ""
         try:
             with open(self._storagepath, 'r') as fh:

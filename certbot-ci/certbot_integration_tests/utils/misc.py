@@ -17,11 +17,11 @@ import sys
 import tempfile
 import threading
 import time
-from typing import Generator
-from typing import Iterable
-from typing import List
+from collections.abc import Generator
+from collections.abc import Iterable
+
 from typing import Optional
-from typing import Tuple
+
 from typing import Union
 
 from cryptography import x509
@@ -102,7 +102,7 @@ def create_http_server(port: int) -> Generator[str, None, None]:
             server.server_close()
 
 
-def list_renewal_hooks_dirs(config_dir: str) -> List[str]:
+def list_renewal_hooks_dirs(config_dir: str) -> list[str]:
     """
     Find and return paths of all hook directories for the given certbot config directory
     :param str config_dir: path to the certbot config directory
@@ -158,7 +158,7 @@ set -e
 
 
 @contextlib.contextmanager
-def manual_http_hooks(http_server_root: str) -> Generator[Tuple[str, str], None, None]:
+def manual_http_hooks(http_server_root: str) -> Generator[tuple[str, str], None, None]:
     """
     Generate suitable http-01 hooks command for test purpose in the given HTTP
     server webroot directory. These hooks command use temporary python scripts
@@ -302,7 +302,7 @@ def echo(keyword: str, path: Optional[str] = None) -> str:
         os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
 
 
-def get_acme_issuers() -> List[Certificate]:
+def get_acme_issuers() -> list[Certificate]:
     """Gets the list of one or more issuer certificates from the ACME server used by the
     context.
     :param context: the testing context.

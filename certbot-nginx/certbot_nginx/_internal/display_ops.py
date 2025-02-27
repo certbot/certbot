@@ -1,7 +1,7 @@
 """Contains UI methods for Nginx operations."""
 import logging
-from typing import Iterable
-from typing import List
+from collections.abc import Iterable
+
 from typing import Optional
 
 from certbot.display import util as display_util
@@ -10,7 +10,7 @@ from certbot_nginx._internal.obj import VirtualHost
 logger = logging.getLogger(__name__)
 
 
-def select_vhost_multiple(vhosts: Optional[Iterable[VirtualHost]]) -> List[VirtualHost]:
+def select_vhost_multiple(vhosts: Optional[Iterable[VirtualHost]]) -> list[VirtualHost]:
     """Select multiple Vhosts to install the certificate for
     :param vhosts: Available Nginx VirtualHosts
     :type vhosts: :class:`list` of type `~obj.Vhost`
@@ -32,7 +32,7 @@ def select_vhost_multiple(vhosts: Optional[Iterable[VirtualHost]]) -> List[Virtu
     return []
 
 
-def _reversemap_vhosts(names: Iterable[str], vhosts: Iterable[VirtualHost]) -> List[VirtualHost]:
+def _reversemap_vhosts(names: Iterable[str], vhosts: Iterable[VirtualHost]) -> list[VirtualHost]:
     """Helper function for select_vhost_multiple for mapping string
     representations back to actual vhost objects"""
     return_vhosts = []

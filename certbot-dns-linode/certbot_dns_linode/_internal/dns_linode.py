@@ -1,7 +1,7 @@
 """DNS Authenticator for Linode."""
 import logging
 from typing import Any
-from typing import Callable
+from collections.abc import Callable
 from typing import Optional
 
 from certbot import errors

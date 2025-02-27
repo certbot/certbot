@@ -4,11 +4,11 @@ import copy
 import glob
 import inspect
 from typing import Any
-from typing import Iterable
-from typing import List
+from collections.abc import Iterable
+
 from typing import Optional
-from typing import Sequence
-from typing import Tuple
+from collections.abc import Sequence
+
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from certbot._internal.cli import helpful
 
 
-def read_file(filename: str, mode: str = "rb") -> Tuple[str, Any]:
+def read_file(filename: str, mode: str = "rb") -> tuple[str, Any]:
     """Returns the given file's contents.
 
     :param str filename: path to file
@@ -105,7 +105,7 @@ class _DomainsAction(argparse.Action):
 
 
 def add_domains(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
-                domains: Optional[str]) -> List[str]:
+                domains: Optional[str]) -> list[str]:
     """Registers new domains to be used during the current client run.
 
     Domains are not added to the list of requested domains if they have
@@ -120,7 +120,7 @@ def add_domains(args_or_config: Union[argparse.Namespace, configuration.Namespac
     :rtype: `list` of `str`
 
     """
-    validated_domains: List[str] = []
+    validated_domains: list[str] = []
     if not domains:
         return validated_domains
 
@@ -164,7 +164,7 @@ class _EncodeReasonAction(argparse.Action):
         setattr(namespace, self.dest, code)
 
 
-def parse_preferred_challenges(pref_challs: Iterable[str]) -> List[str]:
+def parse_preferred_challenges(pref_challs: Iterable[str]) -> list[str]:
     """Translate and validate preferred challenges.
 
     :param pref_challs: list of preferred challenge types

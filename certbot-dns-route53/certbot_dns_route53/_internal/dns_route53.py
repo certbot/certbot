@@ -3,12 +3,12 @@ import collections
 import logging
 import time
 from typing import Any
-from typing import Callable
+from collections.abc import Callable
 from typing import DefaultDict
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Type
+
+from collections.abc import Iterable
+
+
 from typing import cast
 
 import boto3
@@ -45,7 +45,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         super().__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
         self._attempt_cleanup = False
-        self._resource_records: DefaultDict[str, List[Dict[str, str]]] = \
+        self._resource_records: Defaultdict[str, list[dict[str, str]]] = \
             collections.defaultdict(list)
 
     def more_info(self) -> str:
@@ -56,7 +56,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         # This authenticator currently adds no extra arguments.
         pass
 
-    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
+    def auth_hint(self, failed_achalls: list[achallenges.AnnotatedChallenge]) -> str:
         return (
             'The Certificate Authority failed to verify the DNS TXT records created by '
             '--dns-route53. Ensure the above domains have their DNS hosted by AWS Route53.'
@@ -65,10 +65,10 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
     def prepare(self) -> None:
         pass
 
-    def get_chall_pref(self, unused_domain: str) -> Iterable[Type[challenges.Challenge]]:
+    def get_chall_pref(self, unused_domain: str) -> Iterable[type[challenges.Challenge]]:
         return [challenges.DNS01]
 
-    def perform(self, achalls: List[AnnotatedChallenge]) -> List[challenges.ChallengeResponse]:
+    def perform(self, achalls: list[AnnotatedChallenge]) -> list[challenges.ChallengeResponse]:
         self._attempt_cleanup = True
 
         try:
@@ -86,7 +86,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
             raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
         return [achall.response(achall.account_key) for achall in achalls]
 
-    def cleanup(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:
+    def cleanup(self, achalls: list[achallenges.AnnotatedChallenge]) -> None:
         if self._attempt_cleanup:
             for achall in achalls:
                 domain = achall.domain

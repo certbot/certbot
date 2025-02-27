@@ -1,8 +1,8 @@
 """DNS Authenticator for Google Cloud DNS."""
 import logging
 from typing import Any
-from typing import Callable
-from typing import Dict
+from collections.abc import Callable
+
 from typing import Optional
 from typing import cast
 
@@ -253,7 +253,7 @@ class _GoogleClient:
         except googleapiclient_errors.Error as e:
             logger.warning('Encountered error deleting TXT record: %s', e)
 
-    def get_existing_txt_rrset(self, zone_id: str, record_name: str) -> Optional[Dict[str, Any]]:
+    def get_existing_txt_rrset(self, zone_id: str, record_name: str) -> Optional[dict[str, Any]]:
         """
         Get existing TXT records from the RRset for the record name.
 
