@@ -125,10 +125,6 @@ You can test your code in several ways:
 - running the `automated integration`_ tests
 - running an *ad hoc* `manual integration`_ test
 
-.. note:: Running integration tests does not currently work on macOS. See
-   https://github.com/certbot/certbot/issues/6959. In the meantime, we
-   recommend developers on macOS open a PR to run integration tests.
-
 .. _automated unit:
 
 Running automated unit tests
@@ -164,12 +160,12 @@ Running automated integration tests
 
 Generally it is sufficient to open a pull request and let Github and Azure Pipelines run
 integration tests for you. However, you may want to run them locally before submitting
-your pull request. You need Docker installed and working.
+your pull request.
 
 The tox environment `integration` will setup `Pebble`_, the Let's Encrypt ACME CA server
 for integration testing, then launch the Certbot integration tests.
 
-With a user allowed to access your local Docker daemon, run:
+To do this, run:
 
 .. code-block:: shell
 
@@ -188,13 +184,8 @@ Running manual integration tests
 You can also manually execute Certbot against a local instance of the `Pebble`_ ACME server.
 This is useful to verify that the modifications done to the code makes Certbot behave as expected.
 
-To do so you need:
-
-- Docker installed, and a user with access to the Docker client,
-- an available `local copy`_ of Certbot.
-
-The virtual environment set up with `python tools/venv.py` contains two CLI tools
-that can be used once the virtual environment is activated:
+The virtual environment set up with the `local copy`_ of Certbot contains two
+CLI tools that can be used once the virtual environment is activated:
 
 .. code-block:: shell
 
@@ -221,8 +212,6 @@ using an HTTP-01 challenge on a machine with Python 3:
 
 .. code-block:: shell
 
-    python tools/venv.py
-    source venv/bin/activate
     run_acme_server &
     certbot_test certonly --standalone -d test.example.com
     # To stop Pebble, launch `fg` to get back the background job, then press CTRL+C
