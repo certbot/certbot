@@ -4,6 +4,7 @@ import importlib.resources
 import io
 import json
 import os
+import platform
 import stat
 import zipfile
 from contextlib import ExitStack
@@ -14,7 +15,7 @@ import requests
 from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
-PEBBLE_VERSION = 'v2.5.1'
+PEBBLE_VERSION = 'v2.7.0'
 
 
 def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str, str, str]:
@@ -32,11 +33,13 @@ def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str
 
 
 def _fetch_asset(asset: str, assets_path: str) -> str:
-    platform = 'linux-amd64'
     base_url = 'https://github.com/letsencrypt/pebble/releases/download'
-    asset_path = os.path.join(assets_path, f'{asset}_{PEBBLE_VERSION}_{platform}')
+    system = platform.system().lower()  # this will be something like "darwin" or "linux"
+    # we default to arm64 here because ARM can show up as arm64 or aarch64
+    machine = 'amd64' if platform.machine() == 'x86_64' else 'arm64'
+    asset_path = os.path.join(assets_path, f'{asset}_{PEBBLE_VERSION}_{system}_{machine}')
     if not os.path.exists(asset_path):
-        asset_url = f'{base_url}/{PEBBLE_VERSION}/{asset}-{platform}.zip'
+        asset_url = f'{base_url}/{PEBBLE_VERSION}/{asset}-{system}-{machine}.zip'
         response = requests.get(asset_url, timeout=30)
         response.raise_for_status()
         asset_data = _unzip_asset(response.content, asset)
