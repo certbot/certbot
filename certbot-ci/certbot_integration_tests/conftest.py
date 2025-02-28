@@ -64,7 +64,6 @@ def _setup_primary_node(config):
     Setup the environment for integration tests.
 
     This function will:
-        - check runtime compatibility (Docker, docker compose, Nginx)
         - create a temporary workspace and the persistent GIT repositories space
         - configure and start a DNS server using Docker, if configured
         - configure and start paralleled ACME CA servers using Docker

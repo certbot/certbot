@@ -108,8 +108,7 @@ class ACMEServer:
         """Generate and return the acme_xdist dict"""
         acme_xdist: Dict[str, Any] = {}
 
-        # Directory and ACME port are set implicitly in the docker-compose.yml
-        # files of Pebble.
+        # Directory and ACME port are set implicitly in Pebble
         acme_xdist['directory_url'] = PEBBLE_DIRECTORY_URL
         acme_xdist['challtestsrv_url'] = PEBBLE_CHALLTESTSRV_URL
         acme_xdist['http_port'] = dict(zip(nodes, range(5200, 5200 + len(nodes))))
