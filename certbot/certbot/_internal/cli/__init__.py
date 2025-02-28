@@ -171,11 +171,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         default=flag_default("register_unsafely_without_email"),
-        help="Specifying this flag enables registering an account with no "
-             "email address. This is strongly discouraged, because you will be "
-             "unable to receive notice about impending expiration or "
-             "revocation of your certificates or problems with your Certbot "
-             "installation that will lead to failure to renew.")
+        help=argparse.SUPPRESS)
     helpful.add(
         ["register", "update_account", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),
