@@ -34,12 +34,15 @@ def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str
 
 def _fetch_asset(asset: str, assets_path: str) -> str:
     base_url = 'https://github.com/letsencrypt/pebble/releases/download'
-    system = platform.system().lower()  # this will be something like "darwin" or "linux"
-    # we default to arm64 here because ARM can show up as arm64 or aarch64
-    machine = 'amd64' if platform.machine() == 'x86_64' else 'arm64'
-    asset_path = os.path.join(assets_path, f'{asset}_{PEBBLE_VERSION}_{system}_{machine}')
+    os_type = platform.system().lower()  # this will be something like "darwin" or "linux"
+    architecture = platform.machine()
+    if architecture == 'x86_64':
+        architecture = 'amd64'
+    elif architecture == 'aarch64':
+        architecture = 'arm64'
+    asset_path = os.path.join(assets_path, f'{asset}_{PEBBLE_VERSION}_{os_type}_{architecture}')
     if not os.path.exists(asset_path):
-        asset_url = f'{base_url}/{PEBBLE_VERSION}/{asset}-{system}-{machine}.zip'
+        asset_url = f'{base_url}/{PEBBLE_VERSION}/{asset}-{os_type}-{architecture}.zip'
         response = requests.get(asset_url, timeout=30)
         response.raise_for_status()
         asset_data = _unzip_asset(response.content, asset)
