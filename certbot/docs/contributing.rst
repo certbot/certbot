@@ -125,10 +125,6 @@ You can test your code in several ways:
 - running the `automated integration`_ tests
 - running an *ad hoc* `manual integration`_ test
 
-.. note:: Running integration tests does not currently work on macOS. See
-   https://github.com/certbot/certbot/issues/6959. In the meantime, we
-   recommend developers on macOS open a PR to run integration tests.
-
 .. _automated unit:
 
 Running automated unit tests
