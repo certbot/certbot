@@ -1,6 +1,9 @@
 """Module configuring Certbot in a snap environment"""
+# The unused ssl and cryptography imports below are used to trigger initialization of OpenSSL. See
+# the prepare_env function for more info.
 from __future__ import annotations
 import logging
+import ssl  # pylint: disable=unused-import
 import socket
 from typing import Iterable
 from typing import List
@@ -8,6 +11,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+import cryptography.hazmat.backends.openssl.backend  # pylint: disable=unused-import
 from requests import PreparedRequest, Session
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
@@ -47,13 +51,39 @@ def prepare_env(cli_args: List[str]) -> List[str]:
     :rtype: list
     """
     snap_arch = os.environ.get('SNAP_ARCH')
-
     if snap_arch not in _ARCH_TRIPLET_MAP:
         raise Error('Unrecognized value of SNAP_ARCH: {0}'.format(snap_arch))
-
     os.environ['CERTBOT_AUGEAS_PATH'] = '{0}/usr/lib/{1}/libaugeas.so.0'.format(
         os.environ.get('SNAP'), _ARCH_TRIPLET_MAP[snap_arch])
 
+    # These environment variables are needed when initializing OpenSSL in the snap environment as
+    # they are used to control how OpenSSL loads its "providers". See
+    # https://docs.openssl.org/master/man7/provider/ for information on OpenSSL providers. The first
+    # environment variable deleted below controls whether OpenSSL tries to load a FIPS provider
+    # while the second tells it where to find the legacy provider. Without these environment
+    # variables set, Certbot immediately crashes on some systems as can be seen at
+    # https://github.com/certbot/certbot/issues/10044 and
+    # https://github.com/certbot/certbot/issues/10055.
+    #
+    # At the same time, persisting these environment variables when Certbot calls out to external
+    # programs also causes trouble. See https://github.com/certbot/certbot/issues/10190. Luckily,
+    # we're able to trigger initialization of OpenSSL in the Python standard library and in
+    # cryptography through the imports above. After this is done, based on our testing, these
+    # environment variables can be deleted solving the problem of these variables persisting for the
+    # rest of Certbot's execution without dealing with the problem at every subprocess call found
+    # both now and in the future.
+    del os.environ['OPENSSL_FORCE_FIPS_MODE']
+    del os.environ['OPENSSL_MODULES']
+
+    _prepare_snap_plugins()
+
+    cli_args.append('--preconfigured-renewal')
+
+    return cli_args
+
+
+def _prepare_snap_plugins() -> None:
+    """Configures connected plugin snaps for use"""
     with Session() as session:
         session.mount('http://snapd/', _SnapdAdapter())
 
@@ -104,10 +134,6 @@ def prepare_env(cli_args: List[str]) -> List[str]:
         LOGGER.warning(plugin_list)
 
     os.environ['CERTBOT_PLUGIN_PATH'] = ':'.join(connections)
-
-    cli_args.append('--preconfigured-renewal')
-
-    return cli_args
 
 
 class _SnapdConnection(HTTPConnection):
