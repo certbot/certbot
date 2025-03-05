@@ -165,6 +165,12 @@ def env_no_snap_for_external_calls() -> Dict[str, str]:
     # Avoid accidentally modifying env
     if 'SNAP' not in env or 'CERTBOT_SNAPPED' not in env:
         return env
+
+    # These environment variables being set when running external programs can cause issues if these
+    # programs also use OpenSSL. See https://github.com/certbot/certbot/issues/10190.
+    env.pop('OPENSSL_FORCE_FIPS_MODE', None)
+    env.pop('OPENSSL_MODULES', None)
+
     for path_name in ('PATH', 'LD_LIBRARY_PATH'):
         if path_name in env:
             env[path_name] = ':'.join(x for x in env[path_name].split(':') if env['SNAP'] not in x)
