@@ -18,7 +18,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fixed a bug introduced in Certbot 3.1.0 where OpenSSL environment variables
+  needed in our snap configuration were persisted in calls to external programs
+  like nginx which could cause them to fail to load OpenSSL.
 
 More details about these changes can be found on our GitHub repo.
 
