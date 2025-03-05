@@ -4,7 +4,7 @@ on:
   issues:
     types: [assigned]
 
-  pull_request:
+  pull_request_target:
      types: [assigned]
 jobs:
   send-mattermost-message:
