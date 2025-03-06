@@ -44,7 +44,11 @@ def _fetch_asset(asset: str, assets_path: str) -> str:
     if not os.path.exists(asset_path):
         asset_url = f'{base_url}/{PEBBLE_VERSION}/{asset}-{os_type}-{architecture}.zip'
         response = requests.get(asset_url, timeout=30)
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.HTTPError:
+            raise ValueError(f'Unable to obtain pebble artifact for {os_type} {architecture}. Is '
+                              'your platform supported?')
         asset_data = _unzip_asset(response.content, asset)
         if asset_data is None:
             raise ValueError(f"zipfile {asset_url} didn't contain file {asset}")
