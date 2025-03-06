@@ -34,12 +34,7 @@ def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str
 
 def _fetch_asset(asset: str, assets_path: str) -> str:
     base_url = 'https://github.com/letsencrypt/pebble/releases/download'
-    os_type = platform.system().lower()  # this will be something like "darwin" or "linux"
-    architecture = platform.machine()
-    if architecture == 'x86_64':
-        architecture = 'amd64'
-    elif architecture == 'aarch64':
-        architecture = 'arm64'
+    os_type, architecture = _get_validated_os_and_architecture()
     asset_path = os.path.join(assets_path, f'{asset}_{PEBBLE_VERSION}_{os_type}_{architecture}')
     if not os.path.exists(asset_path):
         asset_url = f'{base_url}/{PEBBLE_VERSION}/{asset}-{os_type}-{architecture}.zip'
@@ -53,6 +48,22 @@ def _fetch_asset(asset: str, assets_path: str) -> str:
     os.chmod(asset_path, os.stat(asset_path).st_mode | stat.S_IEXEC)
 
     return asset_path
+
+
+def _get_validated_os_and_architecture() -> Tuple[str, str]:
+    os_type = platform.system().lower()
+    if os_type not in ('darwin', 'linux'):
+        raise ValueError(f'this code has not been tested on {os_type} systems')
+
+    architecture = platform.machine()
+    if architecture in ('amd64', 'x86_64'):
+        architecture = 'amd64'
+    elif architecture in ('aarch64' 'arm64'):
+        architecture = 'arm64'
+    else:
+        raise ValueError(f'this code has not been tested on {architecture} systems')
+
+    return os_type, architecture
 
 
 def _unzip_asset(zipped_data: bytes, asset_name: str) -> Optional[bytes]:
