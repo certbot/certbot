@@ -10,6 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* remove imports of `typing` for `List`, `Tuple`, `Dict`, `Set`, `Type`, `Sequence`, `Iterable`, `Mapping` and replaced them with imports from `collections`
 * deprecated `acme.crypto_util.dump_pyopenssl_chain`
 * deprecated `acme.crypto_util._pyopenssl_cert_or_req_all_names`
 * deprecated `acme.crypto_util._pyopenssl_cert_or_req_san`

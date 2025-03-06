@@ -1,10 +1,7 @@
 """Facilities for implementing hooks that call shell commands."""
 
 import logging
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Set
 
 from certbot import configuration
 from certbot import errors
@@ -75,14 +72,14 @@ def pre_hook(config: configuration.NamespaceConfig) -> None:
     :param configuration.NamespaceConfig config: Certbot settings
 
     """
-    all_hooks: List[str] = (list_hooks(config.renewal_pre_hooks_dir) if config.directory_hooks
+    all_hooks: list[str] = (list_hooks(config.renewal_pre_hooks_dir) if config.directory_hooks
         else [])
     all_hooks += [config.pre_hook] if config.pre_hook else []
     for hook in all_hooks:
         _run_pre_hook_if_necessary(hook)
 
 
-executed_pre_hooks: Set[str] = set()
+executed_pre_hooks: set[str] = set()
 
 
 def _run_pre_hook_if_necessary(command: str) -> None:
@@ -103,7 +100,7 @@ def _run_pre_hook_if_necessary(command: str) -> None:
 
 def post_hook(
     config: configuration.NamespaceConfig,
-    renewed_domains: List[str]
+    renewed_domains: list[str]
 ) -> None:
 
     """Run post-hooks if defined.
@@ -123,7 +120,7 @@ def post_hook(
 
     """
 
-    all_hooks: List[str] = (list_hooks(config.renewal_post_hooks_dir) if config.directory_hooks
+    all_hooks: list[str] = (list_hooks(config.renewal_post_hooks_dir) if config.directory_hooks
         else [])
     all_hooks += [config.post_hook] if config.post_hook else []
     # In the "renew" case, we save these up to run at the end
@@ -150,7 +147,7 @@ def post_hook(
             )
 
 
-post_hooks: List[str] = []
+post_hooks: list[str] = []
 
 
 def _run_eventually(command: str) -> None:
@@ -166,7 +163,7 @@ def _run_eventually(command: str) -> None:
         post_hooks.append(command)
 
 
-def run_saved_post_hooks(renewed_domains: List[str], failed_domains: List[str]) -> None:
+def run_saved_post_hooks(renewed_domains: list[str], failed_domains: list[str]) -> None:
     """Run any post hooks that were saved up in the course of the 'renew' verb"""
 
     renewed_domains_str = ' '.join(renewed_domains)
@@ -192,7 +189,7 @@ def run_saved_post_hooks(renewed_domains: List[str], failed_domains: List[str]) 
         )
 
 
-def deploy_hook(config: configuration.NamespaceConfig, domains: List[str],
+def deploy_hook(config: configuration.NamespaceConfig, domains: list[str],
                 lineage_path: str) -> None:
     """Run post-issuance hook if defined.
 
@@ -207,7 +204,7 @@ def deploy_hook(config: configuration.NamespaceConfig, domains: List[str],
                          lineage_path, config.dry_run, config.run_deploy_hooks)
 
 
-def renew_hook(config: configuration.NamespaceConfig, domains: List[str],
+def renew_hook(config: configuration.NamespaceConfig, domains: list[str],
                lineage_path: str) -> None:
     """Run post-renewal hooks.
 
@@ -226,7 +223,7 @@ def renew_hook(config: configuration.NamespaceConfig, domains: List[str],
 
     """
     executed_hooks = set()
-    all_hooks: List[str] = (list_hooks(config.renewal_deploy_hooks_dir)if config.directory_hooks
+    all_hooks: list[str] = (list_hooks(config.renewal_deploy_hooks_dir)if config.directory_hooks
         else [])
     all_hooks += [config.renew_hook] if config.renew_hook else []
     for hook in all_hooks:
@@ -237,7 +234,7 @@ def renew_hook(config: configuration.NamespaceConfig, domains: List[str],
             executed_hooks.add(hook)
 
 
-def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_run: bool,
+def _run_deploy_hook(command: str, domains: list[str], lineage_path: str, dry_run: bool,
                      run_deploy_hooks: bool) -> None:
     """Run the specified deploy-hook (if not doing a dry run).
 
@@ -263,7 +260,7 @@ def _run_deploy_hook(command: str, domains: List[str], lineage_path: str, dry_ru
     _run_hook("deploy-hook", command)
 
 
-def _run_hook(cmd_name: str, shell_cmd: str, extra_env: Optional[Dict[str, str]] = None) -> str:
+def _run_hook(cmd_name: str, shell_cmd: str, extra_env: Optional[dict[str, str]] = None) -> str:
     """Run a hook command.
 
     :param str cmd_name: the user facing name of the hook being run
@@ -281,7 +278,7 @@ def _run_hook(cmd_name: str, shell_cmd: str, extra_env: Optional[Dict[str, str]]
     return err
 
 
-def list_hooks(dir_path: str) -> List[str]:
+def list_hooks(dir_path: str) -> list[str]:
     """List paths to all hooks found in dir_path in sorted order.
 
     :param str dir_path: directory to search

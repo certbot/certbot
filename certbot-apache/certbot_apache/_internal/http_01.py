@@ -1,8 +1,6 @@
 """A class that performs HTTP-01 challenges for Apache"""
 import errno
 import logging
-from typing import List
-from typing import Set
 from typing import TYPE_CHECKING
 
 from acme.challenges import KeyAuthorizationChallengeResponse
@@ -48,9 +46,9 @@ class ApacheHttp01(common.ChallengePerformer):
         self.challenge_dir = os.path.join(
             self.configurator.config.work_dir,
             "http_challenges")
-        self.moded_vhosts: Set[VirtualHost] = set()
+        self.moded_vhosts: set[VirtualHost] = set()
 
-    def perform(self) -> List[KeyAuthorizationChallengeResponse]:
+    def perform(self) -> list[KeyAuthorizationChallengeResponse]:
         """Perform all HTTP-01 challenges."""
         if not self.achalls:
             return []
@@ -79,7 +77,7 @@ class ApacheHttp01(common.ChallengePerformer):
                     self.configurator.enable_mod(mod, temp=True)
 
     def _mod_config(self) -> None:
-        selected_vhosts: List[VirtualHost] = []
+        selected_vhosts: list[VirtualHost] = []
         http_port = str(self.configurator.config.http01_port)
 
         # Search for VirtualHosts matching by name
@@ -120,7 +118,7 @@ class ApacheHttp01(common.ChallengePerformer):
         with open(self.challenge_conf_post, "w") as new_conf:
             new_conf.write(config_text_post)
 
-    def _matching_vhosts(self, domain: str) -> List[VirtualHost]:
+    def _matching_vhosts(self, domain: str) -> list[VirtualHost]:
         """Return all VirtualHost objects that have the requested domain name or
         a wildcard name that would match the domain in ServerName or ServerAlias
         directive.
@@ -134,9 +132,9 @@ class ApacheHttp01(common.ChallengePerformer):
 
         return matching_vhosts
 
-    def _relevant_vhosts(self) -> List[VirtualHost]:
+    def _relevant_vhosts(self) -> list[VirtualHost]:
         http01_port = str(self.configurator.config.http01_port)
-        relevant_vhosts: List[VirtualHost] = []
+        relevant_vhosts: list[VirtualHost] = []
         for vhost in self.configurator.vhosts:
             if any(a.is_wildcard() or a.get_port() == http01_port for a in vhost.addrs):
                 if not vhost.ssl:
@@ -150,11 +148,11 @@ class ApacheHttp01(common.ChallengePerformer):
 
         return relevant_vhosts
 
-    def _unnamed_vhosts(self) -> List[VirtualHost]:
+    def _unnamed_vhosts(self) -> list[VirtualHost]:
         """Return all VirtualHost objects with no ServerName"""
         return [vh for vh in self.configurator.vhosts if vh.name is None]
 
-    def _set_up_challenges(self) -> List[KeyAuthorizationChallengeResponse]:
+    def _set_up_challenges(self) -> list[KeyAuthorizationChallengeResponse]:
         if not os.path.isdir(self.challenge_dir):
             with filesystem.temp_umask(0o022):
                 try:

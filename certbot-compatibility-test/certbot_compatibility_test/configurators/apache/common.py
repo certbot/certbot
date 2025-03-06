@@ -3,8 +3,6 @@ import argparse
 import os
 import shutil
 import subprocess
-from typing import Set
-from typing import Tuple
 from unittest import mock
 
 from certbot import configuration
@@ -80,7 +78,7 @@ def _get_server_root(config: str) -> str:
     return os.path.join(config, subdirs[0].rstrip())
 
 
-def _get_names(config: str) -> Tuple[Set[str], Set[str]]:
+def _get_names(config: str) -> tuple[set[str], set[str]]:
     """Returns all and testable domain names in config"""
     all_names = set()
     non_ip_names = set()

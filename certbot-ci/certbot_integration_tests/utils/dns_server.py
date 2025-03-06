@@ -11,10 +11,7 @@ import tempfile
 import time
 from types import TracebackType
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Type
 
 from certbot_integration_tests.utils import constants
 
@@ -36,7 +33,7 @@ class DNSServer:
     future to support parallelization (https://github.com/certbot/certbot/issues/8455).
     """
 
-    def __init__(self, unused_nodes: List[str], show_output: bool = False) -> None:
+    def __init__(self, unused_nodes: list[str], show_output: bool = False) -> None:
         """
         Create an DNSServer instance.
         :param list nodes: list of node names that will be setup by pytest xdist
@@ -155,10 +152,10 @@ class DNSServer:
             "Gave up waiting for DNS server {} to respond".format(BIND_BIND_ADDRESS)
         )
 
-    def __start__(self) -> Dict[str, Any]:
+    def __start__(self) -> dict[str, Any]:
         self.start()
         return self.dns_xdist
 
-    def __exit__(self, exc_type: Optional[Type[BaseException]], exc: Optional[BaseException],
+    def __exit__(self, exc_type: Optional[type[BaseException]], exc: Optional[BaseException],
                  traceback: Optional[TracebackType]) -> None:
         self.stop()

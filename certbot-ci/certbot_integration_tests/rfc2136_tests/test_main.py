@@ -1,5 +1,5 @@
 """Module executing integration tests against Certbot with the RFC2136 DNS authenticator."""
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 

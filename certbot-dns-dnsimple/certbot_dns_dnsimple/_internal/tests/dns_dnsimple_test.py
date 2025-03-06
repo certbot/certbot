@@ -1,6 +1,6 @@
 """Tests for certbot_dns_dnsimple._internal.dns_dnsimple."""
-from unittest import mock
 import sys
+from unittest import mock
 
 import pytest
 from requests import Response

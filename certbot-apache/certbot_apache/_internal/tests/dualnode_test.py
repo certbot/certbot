@@ -2,10 +2,11 @@
 import unittest
 from unittest import mock
 
+import pytest
+
 from certbot_apache._internal import assertions
 from certbot_apache._internal import augeasparser
 from certbot_apache._internal import dualparser
-import pytest
 
 
 class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-methods

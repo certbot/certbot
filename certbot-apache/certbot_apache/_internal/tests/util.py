@@ -1,8 +1,6 @@
 """Common utilities for certbot_apache."""
 import shutil
-from typing import List
 from typing import Optional
-from typing import Tuple
 import unittest
 from unittest import mock
 
@@ -79,7 +77,7 @@ class ParserTest(ApacheTest):
 
 def get_apache_configurator(
         config_path: str, vhost_path: str,
-        config_dir: str, work_dir: str, version: Tuple[int, int, int] = (2, 4, 7),
+        config_dir: str, work_dir: str, version: tuple[int, int, int] = (2, 4, 7),
         os_info: str = "generic",
         conf_vhost_path: Optional[str] = None,
         use_parsernode: bool = False,
@@ -129,7 +127,7 @@ def get_apache_configurator(
     return config
 
 
-def get_vh_truth(temp_dir: str, config_name: str) -> Optional[List[obj.VirtualHost]]:
+def get_vh_truth(temp_dir: str, config_name: str) -> Optional[list[obj.VirtualHost]]:
     """Return the ground truth for the specified directory."""
     if config_name == "debian_apache_2_4/multiple_vhosts":
         prefix = os.path.join(
