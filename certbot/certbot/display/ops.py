@@ -30,7 +30,6 @@ def get_email(invalid: bool = False, **kwargs: Any) -> str:
     :raises errors.Error: if the user cancels
 
     """
-    # pylint: disable=unused-argument
     invalid_prefix = ""
     if invalid:
         invalid_prefix = "The server reported a problem with your email address. "
