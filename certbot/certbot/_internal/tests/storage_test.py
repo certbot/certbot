@@ -488,7 +488,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_parse_renewalinfo(self):
         json = {'suggestedWindow': {'start': '2025-02-23T00:21:03Z', 'end': '2025-02-25T00:21:03Z'}}
-        #should not happen as already shorted get_ari_info, but
+        #should not happen as already shorted get_renewalinfo, but
         assert self.test_rc.parse_renewalinfo(json) == (
             datetime.datetime(2025, 2, 23, 0, 21, 3, tzinfo=datetime.timezone.utc),
             datetime.datetime(2025, 2, 25, 0, 21, 3, tzinfo=datetime.timezone.utc))
@@ -517,12 +517,14 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configuration["renewalparams"]["autorenew"] = "False"
         assert not self.test_rc.autorenewal_is_enabled()
 
+    @mock.patch("certbot._internal.storage.RenewableCert.get_renewalinfo")
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
     @mock.patch("certbot._internal.storage.RenewableCert.ocsp_revoked")
-    def test_should_autorenew(self, mock_ocsp, mock_set_by_user):
+    def test_should_autorenew(self, mock_ocsp, mock_set_by_user, mock_ari):
         """Test should_autorenew on the basis of reasons other than
         expiry time window."""
         mock_set_by_user.return_value = False
+        mock_ari.return_value = None 
         # Autorenewal turned off
         self.test_rc.configuration["renewalparams"] = {"autorenew": "False"}
         assert not self.test_rc.should_autorenew()
@@ -533,6 +535,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_ocsp.return_value = True
         assert self.test_rc.should_autorenew()
         mock_ocsp.return_value = False
+        # ARI window is past
+        mock_ari.return_value = \
+            {'suggestedWindow': {'start': '1970-02-19T16:39:57-08:00', 'end': '1970-02-25T00:21:03Z'}}
+        assert self.test_rc.should_autorenew()
 
     @mock.patch("certbot._internal.storage.relevant_values")
     def test_save_successor(self, mock_rv):

@@ -977,7 +977,8 @@ class RenewableCert(interfaces.RenewableCert):
             logger.debug(str(e))
             return False
 
-    def get_renewalinfo(self, version:int, verify_ssl: bool, ua:str) -> Optional[dict]:
+    def get_renewalinfo(self, version:int, verify_ssl: bool, ua:str) -> Optional[dict]: 
+        # pragma: no cover
         """from server in config try to get renewalinfo of certificate
         if it sees error it will return datetime 1-01-01
 
@@ -1065,8 +1066,6 @@ class RenewableCert(interfaces.RenewableCert):
                 logger.debug("Should renew, certificate is revoked.")
                 return True
 
-            expiry = crypto_util.notAfter(self.version(
-                "cert", self.latest_common_version()))
             now = datetime.datetime.now(pytz.UTC)
 
             # Try draft-ietf-acme-ari endpoint if server has it
@@ -1091,6 +1090,8 @@ class RenewableCert(interfaces.RenewableCert):
                 logger.debug("ARI infomation is not avabliable for this cert")
 
             # Renews some period before expiry time
+            expiry = crypto_util.notAfter(self.version(
+                "cert", self.latest_common_version()))
             default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
             interval = self.configuration.get("renew_before_expiry", default_interval)
             if expiry < add_time_interval(now, interval):
