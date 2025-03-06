@@ -50,7 +50,7 @@ def _fetch_asset(asset: str, assets_path: str) -> str:
     return asset_path
 
 
-def _get_validated_os_and_architecture() -> Tuple[str, str]:
+def _get_validated_os_and_architecture() -> tuple[str, str]:
     os_type = platform.system().lower()
     if os_type not in ('darwin', 'linux'):
         raise ValueError(f'this code has not been tested on {os_type} systems')
