@@ -932,7 +932,7 @@ def update_account(config: configuration.NamespaceConfig,
     if not accounts:
         return f"Could not find an existing account for server {config.server}."
     if config.email is None and not config.register_unsafely_without_email:
-        config.email = display_ops.get_email(optional=False)
+        config.email = display_ops.get_email()
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
