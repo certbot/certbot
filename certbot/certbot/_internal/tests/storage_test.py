@@ -486,6 +486,28 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.test_rc.configuration["renew_before_expiry"] = interval
             assert self.test_rc.should_autorenew() == result
 
+    def test_parse_renewalinfo(self):
+        json = {'suggestedWindow': {'start': '2025-02-23T00:21:03Z', 'end': '2025-02-25T00:21:03Z'}}
+        #should not happen as already shorted get_renewalinfo, but
+        assert self.test_rc.parse_renewalinfo(json) == (
+            datetime.datetime(2025, 2, 23, 0, 21, 3, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2025, 2, 25, 0, 21, 3, tzinfo=datetime.timezone.utc))
+        
+        # valid json at http 200 but it actually has something else in it
+        json = {"type": "urn:ietf:params:acme:error:malformed",
+            "detail": "Requested certificate was not found",
+            "status": 404
+            }
+        assert self.test_rc.parse_renewalinfo(json) == (None, None)
+
+        #server reply with a timezone
+        json = {'suggestedWindow': {'start': '1996-12-19T16:39:57-08:00', 'end': '2025-02-25T00:21:03Z'}}
+        assert self.test_rc.parse_renewalinfo(json)[0] == datetime.datetime(1996,12,20,0,39,57, tzinfo=datetime.timezone.utc)
+        
+        #nanosecond range timestamp: don't care about subseconds but shouldn't error
+        json = {'suggestedWindow': {'start': '2025-02-23T00:21:03.123683421Z', 'end': '2025-02-25T00:21:03Z'}}
+        assert self.test_rc.parse_renewalinfo(json)[0].second == 3
+
     def test_autorenewal_is_enabled(self):
         self.test_rc.configuration["renewalparams"] = {}
         assert self.test_rc.autorenewal_is_enabled()
@@ -495,12 +517,14 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configuration["renewalparams"]["autorenew"] = "False"
         assert not self.test_rc.autorenewal_is_enabled()
 
+    @mock.patch("certbot._internal.storage.RenewableCert.get_renewalinfo")
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
     @mock.patch("certbot._internal.storage.RenewableCert.ocsp_revoked")
-    def test_should_autorenew(self, mock_ocsp, mock_set_by_user):
+    def test_should_autorenew(self, mock_ocsp, mock_set_by_user, mock_ari):
         """Test should_autorenew on the basis of reasons other than
         expiry time window."""
         mock_set_by_user.return_value = False
+        mock_ari.return_value = None 
         # Autorenewal turned off
         self.test_rc.configuration["renewalparams"] = {"autorenew": "False"}
         assert not self.test_rc.should_autorenew()
@@ -511,6 +535,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_ocsp.return_value = True
         assert self.test_rc.should_autorenew()
         mock_ocsp.return_value = False
+        # ARI window is past
+        mock_ari.return_value = \
+            {'suggestedWindow': {'start': '1970-02-19T16:39:57-08:00', 'end': '1970-02-25T00:21:03Z'}}
+        assert self.test_rc.should_autorenew()
 
     @mock.patch("certbot._internal.storage.relevant_values")
     def test_save_successor(self, mock_rv):
@@ -776,6 +804,12 @@ class RenewableCertTests(BaseRenewableCertTest):
             base_time, interval = parameters
             assert storage.add_time_interval(base_time, interval) == \
                              excepted
+    
+    def test_parse_js_time(self):
+        ts = "2024-07-04T19:56:35Z"
+        from certbot._internal import storage
+        t = storage.parse_rfc3399_time(ts)
+        assert t == datetime.datetime(2024, 7, 4, 19, 56, 35, tzinfo=datetime.timezone.utc)
 
     def test_server(self):
         self.test_rc.configuration["renewalparams"] = {}
