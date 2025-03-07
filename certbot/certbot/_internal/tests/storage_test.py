@@ -27,7 +27,7 @@ from cryptography.x509 import Certificate
 import datetime
 from typing import Optional, Any
 
-def make_cert_with_lifetime(not_before: datetime.datetime, lifetime_days: int) -> Certificate:
+def make_cert_with_lifetime(not_before: datetime.datetime, lifetime_days: int) -> bytes:
     """Return PEM of a self-signed certificate with the given notBefore and lifetime."""
     key = ec.generate_private_key(ec.SECP256R1())
     not_after=not_before + datetime.timedelta(days=lifetime_days)
