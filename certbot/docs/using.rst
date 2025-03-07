@@ -640,7 +640,7 @@ impending expiry and attempt to renew them. The simplest form is simply
 
 ``certbot renew``
 
-This command attempts to renew any previously-obtained certificates are ready
+This command attempts to renew any previously-obtained certificates which are ready
 for renewal. As of Certbot 4.0.0, a certificate is considered ready for renewal
 when less than 1/3rd of its lifetime remains. For certificates with a lifetime
 of 10 days or less, that threshold is 1/2 of the lifetime. Prior to Certbot 4.0.0
