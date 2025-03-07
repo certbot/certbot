@@ -162,6 +162,10 @@ class DirectoryTest(unittest.TestCase):
                 terms_of_service='https://example.com/acme/terms',
                 website='https://www.example.com/',
                 caa_identities=['example.com'],
+                profiles={
+                    "example": "some profile",
+                    "other example": "a different profile"
+                }
             ),
         })
 
@@ -191,6 +195,10 @@ class DirectoryTest(unittest.TestCase):
                 'termsOfService': 'https://example.com/acme/terms',
                 'website': 'https://www.example.com/',
                 'caaIdentities': ['example.com'],
+                'profiles': {
+                    'example': 'some profile',
+                    'other example': 'a different profile'
+                }
             },
         }
 
@@ -528,12 +536,23 @@ class NewOrderTest(unittest.TestCase):
 
     def setUp(self):
         from acme.messages import NewOrder
-        self.reg = NewOrder(
+        self.order = NewOrder(
             identifiers=mock.sentinel.identifiers)
 
     def test_to_partial_json(self):
-        assert self.reg.to_json() == {
+        assert self.order.to_json() == {
             'identifiers': mock.sentinel.identifiers,
+        }
+
+    def test_default_profile_empty(self):
+        assert self.order.profile is None
+
+    def test_non_empty_profile(self):
+        from acme.messages import NewOrder
+        order = NewOrder(identifiers=mock.sentinel.identifiers, profile='example')
+        assert order.to_json() == {
+            'identifiers': mock.sentinel.identifiers,
+            'profile': 'example',
         }
 
 

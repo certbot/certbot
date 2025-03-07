@@ -1,6 +1,6 @@
 The following command has been used to generate test keys:
 
-	for x in 2048; do openssl genrsa -out rsa${k}_key.pem $k; done
+	for x in 512 2048; do openssl genrsa -out rsa${k}_key.pem $k; done
 
 For the elliptic curve private keys, this command was used:
 

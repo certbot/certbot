@@ -116,7 +116,7 @@ class ClientV2:
         self.net.account = new_regr
         return new_regr
 
-    def new_order(self, csr_pem: bytes) -> messages.OrderResource:
+    def new_order(self, csr_pem: bytes, profile: Optional[str] = None) -> messages.OrderResource:
         """Request a new Order object from the server.
 
         :param bytes csr_pem: A CSR in PEM format.
@@ -139,7 +139,9 @@ class ClientV2:
         for ip in ipNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=str(ip)))
-        order = messages.NewOrder(identifiers=identifiers)
+        if profile is None:
+            profile = ""
+        order = messages.NewOrder(identifiers=identifiers, profile=profile)
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []

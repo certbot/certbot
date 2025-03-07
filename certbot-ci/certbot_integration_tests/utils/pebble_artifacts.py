@@ -4,6 +4,7 @@ import importlib.resources
 import io
 import json
 import os
+import platform
 import stat
 import zipfile
 from contextlib import ExitStack
@@ -14,7 +15,7 @@ import requests
 from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
-PEBBLE_VERSION = 'v2.5.1'
+PEBBLE_VERSION = 'v2.7.0'
 
 
 def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str, str, str]:
@@ -32,11 +33,11 @@ def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str
 
 
 def _fetch_asset(asset: str, assets_path: str) -> str:
-    platform = 'linux-amd64'
     base_url = 'https://github.com/letsencrypt/pebble/releases/download'
-    asset_path = os.path.join(assets_path, f'{asset}_{PEBBLE_VERSION}_{platform}')
+    os_type, architecture = _get_validated_os_and_architecture()
+    asset_path = os.path.join(assets_path, f'{asset}_{PEBBLE_VERSION}_{os_type}_{architecture}')
     if not os.path.exists(asset_path):
-        asset_url = f'{base_url}/{PEBBLE_VERSION}/{asset}-{platform}.zip'
+        asset_url = f'{base_url}/{PEBBLE_VERSION}/{asset}-{os_type}-{architecture}.zip'
         response = requests.get(asset_url, timeout=30)
         response.raise_for_status()
         asset_data = _unzip_asset(response.content, asset)
@@ -47,6 +48,22 @@ def _fetch_asset(asset: str, assets_path: str) -> str:
     os.chmod(asset_path, os.stat(asset_path).st_mode | stat.S_IEXEC)
 
     return asset_path
+
+
+def _get_validated_os_and_architecture() -> tuple[str, str]:
+    os_type = platform.system().lower()
+    if os_type not in ('darwin', 'linux'):
+        raise ValueError(f'this code has not been tested on {os_type} systems')
+
+    architecture = platform.machine()
+    if architecture in ('amd64', 'x86_64'):
+        architecture = 'amd64'
+    elif architecture in ('aarch64' 'arm64'):
+        architecture = 'arm64'
+    else:
+        raise ValueError(f'this code has not been tested on {architecture} systems')
+
+    return os_type, architecture
 
 
 def _unzip_asset(zipped_data: bytes, asset_name: str) -> Optional[bytes]:

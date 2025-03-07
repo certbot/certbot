@@ -14,10 +14,19 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   if the lifetime is shorter than 10 days). This is a change from a hardcoded
   renewal at 30 days before expiration. The config field renew_before_expiry
   still overrides this default.
+* The --register-unsafely-without-email flag is no longer needed in non-interactive mode.
+* In interactive mode, pressing Enter at the email prompt will register without an email.
+* deprecated `acme.crypto_util.dump_pyopenssl_chain`
+* deprecated `acme.crypto_util._pyopenssl_cert_or_req_all_names`
+* deprecated `acme.crypto_util._pyopenssl_cert_or_req_san`
+* deprecated `certbot.crypto_util.dump_pyopenssl_chain`
+* deprecated `certbot.crypto_util.pyopenssl_load_certificate`
 
 ### Fixed
 
-*
+* Fixed a bug introduced in Certbot 3.1.0 where OpenSSL environment variables
+  needed in our snap configuration were persisted in calls to external programs
+  like nginx which could cause them to fail to load OpenSSL.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -52,6 +61,7 @@ More details about these changes can be found on our GitHub repo.
 * When adding ssl listen directives in nginx server blocks, IP addresses are now
   preserved.
 * Nginx configurations can now have the http block in files other than the root (nginx.conf)
+* Nginx `server_name` directives with internal comments now ignore commented names
 
 More details about these changes can be found on our GitHub repo.
 
