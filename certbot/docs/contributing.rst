@@ -134,20 +134,27 @@ You can test your code in several ways:
 Running automated unit tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To run all unittests:
+To run all unittests, mypy, and lint:
+
+.. code-block:: shell
 
     tox
 
 If you're working on a specific test and would like to run just that one:
 
+.. code-block:: shell
+
     pytest acme/acme/_internal/tests/messages_test.py # Use the test file you're working on
 
 To run a specific test case within a file:
 
-    pytest acme/acme/_internal/tests/messages_test.py::ChallengeBodyTest::test_to_partial_json
+.. code-block:: shell
+
+    pytest acme/acme/_internal/tests/messages_test.py -k test_to_partial_json
 
 For debugging, we recommend putting
-``import ipdb; ipdb.set_trace()`` statements inside the source code.
+``import ipdb; ipdb.set_trace()`` statements inside the source code, which will require
+adding the `-s` flag to `pytest` invocations.
 
 .. warning:: The full test suite may attempt to modify your system's Apache
   config if your user has sudo permissions, so it should not be run on a
