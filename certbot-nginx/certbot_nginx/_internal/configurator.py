@@ -1053,7 +1053,7 @@ class NginxConfigurator(common.Configurator):
                 universal_newlines=True,
                 check=False,
                 env=util.env_no_snap_for_external_calls())
-            text = proc.stderr  # nginx prints output to stderr
+            text = proc.stdout + proc.stderr  # nginx prints output to stderr
         except (OSError, ValueError) as error:
             logger.debug(str(error), exc_info=True)
             raise errors.PluginError(
