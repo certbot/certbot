@@ -10,6 +10,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* Certificates now renew with 1/3rd of lifetime left (or 1/2 of lifetime left,
+  if the lifetime is shorter than 10 days). This is a change from a hardcoded
+  renewal at 30 days before expiration. The config field renew_before_expiry
+  still overrides this default.
 * The --register-unsafely-without-email flag is no longer needed in non-interactive mode.
 * In interactive mode, pressing Enter at the email prompt will register without an email.
 * deprecated `acme.crypto_util.dump_pyopenssl_chain`
