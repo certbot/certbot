@@ -122,7 +122,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/3.2.0 (certbot;
+                        "". (default: CertbotACMEClient/3.3.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -398,14 +398,6 @@ revoke:
 register:
   Options for account registration
 
-  --register-unsafely-without-email
-                        Specifying this flag enables registering an account
-                        with no email address. This is strongly discouraged,
-                        because you will be unable to receive notice about
-                        impending expiration or revocation of your
-                        certificates or problems with your Certbot
-                        installation that will lead to failure to renew.
-                        (default: False)
   -m EMAIL, --email EMAIL
                         Email used for registration and recovery contact. Use
                         comma to register multiple emails, ex:
