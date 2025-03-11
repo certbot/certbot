@@ -364,6 +364,28 @@ class NamespaceConfig:
         return self.namespace.disable_renew_updates
 
     @property
+    def required_profile(self) -> Optional[str]:
+        """Request the given profile name from the ACME server.
+
+        If the ACME server returns an error, issuance (or renewal) will fail.
+        For long-term reliability, setting preferred_profile instead may be
+        preferable because it allows fallback to a default. Use this setting
+        when renewal failure is preferable to fallback.
+        """
+        return self.namespace.required_profile
+
+    @property
+    def preferred_profile(self) -> Optional[str]:
+        """Request the given profile name from the ACME server, or fallback to default.
+
+        If the given profile name exists in the ACME directory, use it to request a
+        a certificate. Otherwise, fall back to requesting a certificate without a profile
+        (which means the CA will use its default profile). This allows renewals to
+        succeed even if the CA deprecates and removes a given profile.
+        """
+        return self.namespace.preferred_profile
+
+    @property
     def preferred_chain(self) -> Optional[str]:
         """Set the preferred certificate chain.
 

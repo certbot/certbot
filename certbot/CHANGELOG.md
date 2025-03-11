@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* The --preferred-profile and --required-profile flags allow requesting a profile.
+  https://datatracker.ietf.org/doc/draft-aaron-acme-profiles/
 
 ### Changed
 

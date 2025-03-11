@@ -360,6 +360,16 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
         [None, "certonly", "renew", "run"],
+        "--required-profile", dest="required_profile",
+        default=flag_default("required_profile"), help=config_help("required_profile")
+    )
+    helpful.add(
+        [None, "certonly", "renew", "run"],
+        "--preferred-profile", dest="preferred_profile",
+        default=flag_default("preferred_profile"), help=config_help("preferred_profile")
+    )
+    helpful.add(
+        [None, "certonly", "renew", "run"],
         "--preferred-chain", dest="preferred_chain",
         default=flag_default("preferred_chain"), help=config_help("preferred_chain")
     )
