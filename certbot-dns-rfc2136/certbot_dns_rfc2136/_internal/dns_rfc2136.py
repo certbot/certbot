@@ -58,7 +58,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def more_info(self) -> str:
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
-               'RFC 2136 Dynamic Updates.'
+            'RFC 2136 Dynamic Updates.'
 
     def _validate_credentials(self, credentials: CredentialsConfiguration) -> None:
         server = cast(str, credentials.conf('server'))
@@ -87,9 +87,9 @@ class Authenticator(dns_common.DNSAuthenticator):
         validation_target = self.credentials.conf('validation_target')
         if validation_target:
             # Replace the original validation name with one under the target domain
-            original_prefix = validation_name.split('.')[0]  # Get _acme-challenge
             new_validation_name = f"{_domain}.{validation_target}"
-            logger.debug('Using validation target: %s instead of %s', new_validation_name, validation_name)
+            logger.debug('Using validation target: %s instead of %s', new_validation_name,
+                         validation_name)
             validation_name = new_validation_name
 
         self._get_rfc2136_client().add_txt_record(validation_name, validation, self.ttl)
@@ -98,9 +98,9 @@ class Authenticator(dns_common.DNSAuthenticator):
         validation_target = self.credentials.conf('validation_target')
         if validation_target:
             # Use the same transformation as in _perform
-            original_prefix = validation_name.split('.')[0]  # Get _acme-challenge
             new_validation_name = f"{_domain}.{validation_target}"
-            logger.debug('Using validation target: %s instead of %s', new_validation_name, validation_name)
+            logger.debug('Using validation target: %s instead of %s', new_validation_name,
+                         validation_name)
             validation_name = new_validation_name
 
         self._get_rfc2136_client().del_txt_record(validation_name, validation)
@@ -123,6 +123,7 @@ class _RFC2136Client:
     """
     Encapsulates all communication with the target DNS server.
     """
+
     def __init__(self, server: str, port: int, key_name: str, key_secret: str,
                  key_algorithm: dns.name.Name, sign_query: bool,
                  timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
@@ -254,9 +255,9 @@ class _RFC2136Client:
 
             # Authoritative Answer bit should be set
             if (rcode == dns.rcode.NOERROR
-                    and response.get_rrset(response.answer,
-                                           domain, dns.rdataclass.IN, dns.rdatatype.SOA)
-                    and response.flags & dns.flags.AA):
+                and response.get_rrset(response.answer,
+                                       domain, dns.rdataclass.IN, dns.rdatatype.SOA)
+                and response.flags & dns.flags.AA):
                 logger.debug('Received authoritative SOA response for %s', domain_name)
                 return True
 
