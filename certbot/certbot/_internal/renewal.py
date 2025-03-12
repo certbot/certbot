@@ -473,10 +473,10 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
         raise errors.Error("Currently, the renew verb is capable of either "
                            "renewing all installed certificates that are due "
                            "to be renewed or renewing a single certificate specified "
-                           "by its name. If you would like to renew specific "
-                           "certificates by their domains, use the certonly command "
-                           "instead. The renew verb may provide other options "
-                           "for selecting certificates to renew in the future.")
+                           "by its name using the --cert-name option (-d is not a valid option "
+                           "for renew). If you would like to renew specific certificates by their "
+                           "domains, use the certonly command instead. The renew verb may provide "
+                           "other options for selecting certificates to renew in the future.")
 
     if config.certname:
         conf_files = [storage.renewal_file_for_certname(config, config.certname)]
