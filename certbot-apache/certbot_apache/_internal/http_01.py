@@ -28,6 +28,7 @@ class ApacheHttp01(common.ChallengePerformer):
         RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [END]
     """
     CONFIG_TEMPLATE24_POST = """\
+        RewriteEngine on
         <Directory {0}>
             Require all granted
         </Directory>
