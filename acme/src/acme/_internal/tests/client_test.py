@@ -395,6 +395,114 @@ class ClientV2Test(unittest.TestCase):
         assert DIRECTORY_V2.to_partial_json() == \
             ClientV2.get_directory('https://example.com/dir', self.net).to_partial_json()
 
+    def test_renewal_time_no_renewal_info(self):
+        # A directory with no 'renewalInfo' should result in default renewal periods.
+        self.client.directory =  messages.Directory({})
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
+        )
+        t, _ = self.client.renewal_time(cert_pem)
+        assert t == datetime.datetime(2025, 3, 16, 00, 00, 00, tzinfo=datetime.timezone.utc)
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
+        )
+        t, _ = self.client.renewal_time(cert_pem)
+        assert t == datetime.datetime(2025, 3, 24, 00, 00, 00, tzinfo=datetime.timezone.utc)
+
+    def test_renewal_time_with_renewal_info(self):
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
+        )
+
+        self.client.directory =  messages.Directory({
+            'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
+        })
+
+        self.response.json.return_value = {
+            "suggestedWindow": {
+                "start": "2025-03-14T01:01:01Z",
+                "end": "2025-03-14T01:01:01Z",
+            },
+            "message": "Keep those certs fresh"
+        }
+        t, _ = self.client.renewal_time(cert_pem)
+        self.net.get.assert_called_once_with("https://www.letsencrypt-demo.org/acme/renewal-info/MTIzNA.AN3V", content_type='application/json')
+        assert t == datetime.datetime(2025, 3, 14, 1, 1, 1, tzinfo=datetime.timezone.utc)
+
+        self.net.reset_mock()
+
+        self.response.json.return_value = {
+            "suggestedWindow": {
+                "start": "2025-03-16T01:01:01Z",
+                "end": "2025-03-17T01:01:01Z",
+            },
+            "message": "Keep those certs fresh"
+        }
+        t, _ = self.client.renewal_time(cert_pem)
+        self.net.get.assert_called_once_with("https://www.letsencrypt-demo.org/acme/renewal-info/MTIzNA.AN3V", content_type='application/json')
+        assert t >= datetime.datetime(2025, 3, 16, 1, 1, 1, tzinfo=datetime.timezone.utc)
+        assert t <= datetime.datetime(2025, 3, 17, 1, 1, 1, tzinfo=datetime.timezone.utc)
+
+def test_renewal_info_path_component():
+    from cryptography import x509
+    from acme.client import _renewal_info_path_component
+
+    cert = x509.load_pem_x509_certificate(test_util.load_vector('rsa2048_cert.pem'))
+
+    assert _renewal_info_path_component(cert) == "fL5sRirC8VS5AtOQh9DfoAzYNCI.ALVG_VbBb5U7"
+
+    # From https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html appendix A.
+    ARI_TEST_CERT = b"""
+-----BEGIN CERTIFICATE-----
+MIIBQzCB66ADAgECAgUAh2VDITAKBggqhkjOPQQDAjAVMRMwEQYDVQQDEwpFeGFt
+cGxlIENBMCIYDzAwMDEwMTAxMDAwMDAwWhgPMDAwMTAxMDEwMDAwMDBaMBYxFDAS
+BgNVBAMTC2V4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEeBZu
+7cbpAYNXZLbbh8rNIzuOoqOOtmxA1v7cRm//AwyMwWxyHz4zfwmBhcSrf47NUAFf
+qzLQ2PPQxdTXREYEnKMjMCEwHwYDVR0jBBgwFoAUaYhba4dGQEHhs3uEe6CuLN4B
+yNQwCgYIKoZIzj0EAwIDRwAwRAIge09+S5TZAlw5tgtiVvuERV6cT4mfutXIlwTb
++FYN/8oCIClDsqBklhB9KAelFiYt9+6FDj3z4KGVelYM5MdsO3pK
+-----END CERTIFICATE-----
+"""
+
+    cert = x509.load_pem_x509_certificate(ARI_TEST_CERT)
+    assert _renewal_info_path_component(cert) == "aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE"
+
+if __name__ == '__main__':
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
+
+def make_cert_for_renewal(not_before, not_after) -> bytes:
+    """
+    Return a PEM-encoded, self-signed certificate with the given dates.
+    """
+    from cryptography import x509
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives import serialization, hashes
+    # AKID and serial are the inputs to constructing the renewalInfo URL
+    akid = x509.AuthorityKeyIdentifier(b"1234", None, None)
+    serial = 56789
+    key = ec.generate_private_key(ec.SECP256R1())
+    cert = x509.CertificateBuilder(
+        issuer_name=x509.Name([x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "Some Issuer")]),
+        subject_name=x509.Name([]),
+        public_key=key.public_key(),
+        serial_number=serial,
+        not_valid_before=not_before,
+        not_valid_after=not_after,
+    ).add_extension(
+        x509.SubjectAlternativeName([x509.DNSName('example.com')]),
+        critical=False,
+    ).add_extension(
+        akid,
+        critical=False,
+    ).sign(
+        private_key=key,
+        algorithm=hashes.SHA256(),
+    )
+    return cert.public_bytes(serialization.Encoding.PEM)
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
     # pylint: disable=missing-docstring

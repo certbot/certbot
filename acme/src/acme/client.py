@@ -4,6 +4,8 @@ import datetime
 from email.utils import parsedate_tz
 import http.client as http_client
 import logging
+import math
+import random
 import re
 import time
 from typing import Any
@@ -278,6 +280,57 @@ class ClientV2:
         """
         self.begin_finalization(orderr)
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
+
+    def renewal_time(self, cert_pem: bytes) -> Tuple[datetime.datetime, datetime.datetime]:
+        """Return an appropriate time to attempt renewal of the certificate,
+        and the next time to ask the ACME server for renewal info.
+
+        If the ACME directory has a "renewalInfo" field, the response will be
+        based on a fetch of the renewal info resource for the certificate
+        (https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html).
+
+        If there is no "renewalInfo" field, this function will fall back to
+        reasonable defaults based on the certificate lifetime.
+
+        This function may make other network calls in the future (e.g., OCSP
+        or CRL).
+        """
+        now = datetime.datetime.now()
+        # https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3.3
+        default_retry_after = datetime.timedelta(seconds=6 * 60 * 60)
+
+        cert = x509.load_pem_x509_certificate(cert_pem)
+
+        not_before = cert.not_valid_before_utc
+        lifetime = cert.not_valid_after_utc - not_before
+        if lifetime.total_seconds() < 10 * 86400:
+            default_renewal_time = not_before + lifetime / 2
+        else:
+            default_renewal_time = not_before + lifetime * 2 / 3
+
+        try:
+            renewal_info_base_url = self.directory['renewalInfo']
+        except KeyError:
+            return default_renewal_time, now + default_retry_after
+
+        ari_url = renewal_info_base_url + '/' + _renewal_info_path_component(cert)
+        try:
+            resp = self.net.get(ari_url, content_type='application/json')
+        except:
+            return default_renewal_time, now + default_retry_after
+
+        renewal_info: messages.RenewalInfo = messages.RenewalInfo.from_json(resp.json())
+
+        start = renewal_info.suggested_window.start
+        end = renewal_info.suggested_window.end
+
+        delta_seconds = (end - start).total_seconds()
+        random_seconds = random.uniform(0, delta_seconds)
+        random_time = start + datetime.timedelta(seconds=random_seconds)
+
+        retry_after = self.retry_after(resp, default_retry_after.seconds)
+        return random_time, retry_after
+
 
     def revoke(self, cert: x509.Certificate, rsn: int) -> None:
         """Revoke certificate.
@@ -758,3 +811,22 @@ class ClientNetwork:
         response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
         return response
+
+def _renewal_info_path_component(cert: x509.Certificate) -> str:
+    akid_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
+    key_identifier = akid_ext.value.key_identifier # type: ignore[attr-defined]
+
+    akid_encoded = base64.urlsafe_b64encode(key_identifier).decode('ascii').replace("=", "")
+
+    # We add one to the reported bit_length so there is room for the sign bit.
+    # https://docs.python.org/3/library/stdtypes.html#int.bit_length
+    # "Return the number of bits necessary to represent an integer in binary, excluding
+    # the sign and leading zeros"
+    serial = cert.serial_number
+    encoded_serial_len = math.ceil((serial.bit_length()+1)/8)
+    # Serials are encoded as ASN.1 INTEGERS, which means big endian and signed (two's complement).
+    # https://letsencrypt.org/docs/a-warm-welcome-to-asn1-and-der/#integer-encoding
+    serial_bytes = serial.to_bytes(encoded_serial_len, byteorder='big', signed=True)
+    serial_encoded = base64.urlsafe_b64encode(serial_bytes).decode('ascii').replace("=", "")
+
+    return f"{akid_encoded}.{serial_encoded}"
