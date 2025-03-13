@@ -133,8 +133,7 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
             return
         key, cert = pair
         new_context = SSL.Context(self.method)
-        new_context.set_options(SSL.OP_NO_SSLv2)
-        new_context.set_options(SSL.OP_NO_SSLv3)
+        new_context.set_min_proto_version(SSL.TLS1_2_VERSION)
         new_context.use_privatekey(key)
         new_context.use_certificate(cert)
         if self.alpn_selection is not None:
