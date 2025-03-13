@@ -27,7 +27,7 @@ Running `./test.sh <TAG> all` loads images from the docker image cache
 and runs a test command to validate the image contents.
 
 Running `./deploy_images.sh <TAG> all` will push the previously generated images 
-to Docker Hub.  The <TAG> argument is an identifier applied to all docker 
+to Docker Hub.  The `<TAG>` argument is an identifier applied to all docker
 images and manifests. It may be something like `nightly` or `v2.3.2`. If 
 the tag is a version stamp greater than `v2.0.0`, then a `latest` tag will 
 also be generated and pushed to the docker hub repo. 
