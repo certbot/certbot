@@ -78,7 +78,7 @@ Set up the Python virtual environment that will host your Certbot local instance
 .. code-block:: shell
 
    cd certbot
-   python tools/venv.py
+   python3 tools/venv.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
@@ -125,33 +125,32 @@ You can test your code in several ways:
 - running the `automated integration`_ tests
 - running an *ad hoc* `manual integration`_ test
 
-.. note:: Running integration tests does not currently work on macOS. See
-   https://github.com/certbot/certbot/issues/6959. In the meantime, we
-   recommend developers on macOS open a PR to run integration tests.
-
 .. _automated unit:
 
 Running automated unit tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When you are working in a file ``foo.py``, there should also be a file ``foo_test.py``
-either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
-(if there isn't, make one). While you are working on your code and tests, run
-``python foo_test.py`` to run the relevant tests.
+To run all unittests, mypy, and lint:
+
+.. code-block:: shell
+
+    tox
+
+If you're working on a specific test and would like to run just that one:
+
+.. code-block:: shell
+
+    pytest acme/acme/_internal/tests/messages_test.py # Use the test file you're working on
+
+To run a specific test case within a file:
+
+.. code-block:: shell
+
+    pytest acme/acme/_internal/tests/messages_test.py -k test_to_partial_json
 
 For debugging, we recommend putting
-``import ipdb; ipdb.set_trace()`` statements inside the source code.
-
-Once you are done with your code changes, and the tests in ``foo_test.py``
-pass, run all of the unit tests for Certbot and check for coverage with ``tox
--e cover``. You should then check for code style with ``tox run -e lint`` (all
-files) or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a
-time).
-
-Once all of the above is successful, you may run the full test suite using
-``tox --skip-missing-interpreters``. We recommend running the commands above
-first, because running all tests like this is very slow, and the large amount
-of output can make it hard to find specific failures when they happen.
+``import ipdb; ipdb.set_trace()`` statements inside the source code, which will require
+adding the `-s` flag to `pytest` invocations.
 
 .. warning:: The full test suite may attempt to modify your system's Apache
   config if your user has sudo permissions, so it should not be run on a
@@ -193,7 +192,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv.py` contains two CLI tools
+The virtual environment set up with `python3 tools/venv.py` contains two CLI tools
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -221,7 +220,7 @@ using an HTTP-01 challenge on a machine with Python 3:
 
 .. code-block:: shell
 
-    python tools/venv.py
+    python3 tools/venv.py
     source venv/bin/activate
     run_acme_server &
     certbot_test certonly --standalone -d test.example.com

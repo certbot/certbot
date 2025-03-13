@@ -35,7 +35,7 @@ class GetEmailTest(unittest.TestCase):
         with pytest.raises(errors.Error):
             self._call()
         with pytest.raises(errors.Error):
-            self._call(optional=False)
+            self._call()
 
     @test_util.patch_display_util()
     def test_ok_safe(self, mock_get_utility):
@@ -55,7 +55,7 @@ class GetEmailTest(unittest.TestCase):
 
     @test_util.patch_display_util()
     def test_invalid_flag(self, mock_get_utility):
-        invalid_txt = "There seem to be problems"
+        invalid_txt = "The server reported a problem"
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
@@ -66,18 +66,8 @@ class GetEmailTest(unittest.TestCase):
             assert invalid_txt in mock_input.call_args[0][0]
 
     @test_util.patch_display_util()
-    def test_optional_flag(self, mock_get_utility):
-        mock_input = mock_get_utility().input
-        mock_input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
-            mock_safe_email.side_effect = [False, True]
-            self._call(optional=False)
-            for call in mock_input.call_args_list:
-                assert "--register-unsafely-without-email" not in call[0][0]
-
-    @test_util.patch_display_util()
     def test_optional_invalid_unsafe(self, mock_get_utility):
-        invalid_txt = "There seem to be problems"
+        invalid_txt = "There is a problem"
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:

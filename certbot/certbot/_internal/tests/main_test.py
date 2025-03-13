@@ -43,9 +43,9 @@ import certbot.tests.util as test_util
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.vector_path('cert_512.pem')
 CSR = test_util.vector_path('csr_512.der')
-KEY = test_util.vector_path('rsa256_key.pem')
 JWK = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
+P256_KEY_PATH = test_util.vector_path('p256_key.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 
 
@@ -1062,8 +1062,6 @@ class MainTest(test_util.ConfigTestCase):
     def test_noninteractive(self, _):
         args = ['-n', 'certonly']
         self._cli_missing_flag(args, "specify a plugin")
-        args.extend(['--standalone', '-d', 'eg.is'])
-        self._cli_missing_flag(args, "register before running")
 
     @mock.patch('certbot._internal.eff.handle_subscription')
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
@@ -1831,7 +1829,7 @@ class MainTest(test_util.ConfigTestCase):
     def test_revoke_with_key_mismatch(self):
         server = 'foo.bar'
         with pytest.raises(errors.Error):
-            self._call_no_clientmock(['--cert-path', CERT, '--key-path', KEY,
+            self._call_no_clientmock(['--cert-path', CERT, '--key-path', P256_KEY_PATH,
                                  '--server', server, 'revoke'])
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')

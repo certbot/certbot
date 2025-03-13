@@ -19,12 +19,10 @@ from certbot.display import util as display_util
 logger = logging.getLogger(__name__)
 
 
-def get_email(invalid: bool = False, optional: bool = True) -> str:
+def get_email(invalid: bool = False, **kwargs: Any) -> str:
     """Prompt for valid email address.
 
     :param bool invalid: True if an invalid address was provided by the user
-    :param bool optional: True if the user can use
-        --register-unsafely-without-email to avoid providing an e-mail
 
     :returns: e-mail address
     :rtype: str
@@ -32,45 +30,22 @@ def get_email(invalid: bool = False, optional: bool = True) -> str:
     :raises errors.Error: if the user cancels
 
     """
-    invalid_prefix = "There seem to be problems with that address. "
-    msg = "Enter email address (used for urgent renewal and security notices)\n"
-    unsafe_suggestion = ("\n\nIf you really want to skip this, you can run "
-                         "the client with --register-unsafely-without-email "
-                         "but you will then be unable to receive notice about "
-                         "impending expiration or revocation of your "
-                         "certificates or problems with your Certbot "
-                         "installation that will lead to failure to renew.\n\n")
-    if optional:
-        if invalid:
-            msg += unsafe_suggestion
-            suggest_unsafe = False
-        else:
-            suggest_unsafe = True
-    else:
-        suggest_unsafe = False
+    # pylint: disable=unused-argument
+    invalid_prefix = ""
+    if invalid:
+        invalid_prefix = "The server reported a problem with your email address. "
+    msg = "Enter email address or hit Enter to skip.\n"
 
     while True:
-        try:
-            code, email = display_util.input_text(invalid_prefix + msg if invalid else msg,
-                                                  force_interactive=True)
-        except errors.MissingCommandlineFlag:
-            msg = ("You should register before running non-interactively, "
-                   "or provide --agree-tos and --email <email_address> flags.")
-            raise errors.MissingCommandlineFlag(msg)
+        code, email = display_util.input_text(invalid_prefix + msg, default="")
 
         if code != display_util.OK:
-            if optional:
-                raise errors.Error(
-                    "An e-mail address or "
-                    "--register-unsafely-without-email must be provided.")
-            raise errors.Error("An e-mail address must be provided.")
+            raise errors.Error("Error getting email address.")
+        if email == "":
+            return ""
         if util.safe_email(email):
             return email
-        if suggest_unsafe:
-            msg = unsafe_suggestion + msg
-            suggest_unsafe = False  # add this message at most once
-
-        invalid = bool(email)
+        invalid_prefix = "There is a problem with your email address. "
 
 
 def choose_account(accounts: List[account.Account]) -> Optional[account.Account]:

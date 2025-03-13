@@ -186,15 +186,9 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
     # Log non-standard actions, potentially wrong API calls
     if account_storage.find_all():
         logger.info("There are already existing accounts for %s", config.server)
-    if config.email is None:
-        if not config.register_unsafely_without_email:
-            msg = ("No email was provided and "
-                   "--register-unsafely-without-email was not present.")
-            logger.error(msg)
-            raise errors.Error(msg)
-        if not config.dry_run:
-            logger.debug("Registering without email!")
 
+    if config.email == "":
+        config.email = None
     # If --dry-run is used, and there is no staging account, create one with no email.
     if config.dry_run:
         config.email = None
