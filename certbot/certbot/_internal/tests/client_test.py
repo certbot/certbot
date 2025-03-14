@@ -383,6 +383,92 @@ class ClientTest(ClientTestCommon):
             self.eg_order.fullchain_pem)
 
     @mock.patch("certbot._internal.client.crypto_util")
+    def test_obtain_certificate_no_profile_preference(self, mock_crypto_util):
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = mock.sentinel.key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self.client.config.required_profile = None
+        self.client.config.preferred_profile = None
+
+        self._test_obtain_certificate_common(mock.sentinel.key, csr)
+        self.acme.new_order.assert_called_once_with(mock.ANY, profile=None)
+
+    @mock.patch("certbot._internal.client.crypto_util")
+    def test_obtain_certificate_required_profile(self, mock_crypto_util):
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = mock.sentinel.key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self.client.config.required_profile = "exampleProfile"
+        self.client.config.preferred_profile = None
+
+        self._test_obtain_certificate_common(mock.sentinel.key, csr)
+        self.acme.new_order.assert_called_once_with(mock.ANY, profile="exampleProfile")
+
+    @mock.patch("certbot._internal.client.crypto_util")
+    def test_obtain_certificate_preferred_profile_exists(self, mock_crypto_util):
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = mock.sentinel.key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self.client.config.required_profile = None
+        self.client.config.preferred_profile = "exampleProfile"
+
+        from acme.messages import Directory
+        self.acme.directory = Directory.from_json({
+            'meta': {
+                'profiles': {
+                    'exampleProfile': 'here is some descriptive text, very informative',
+                }
+            }
+        })
+
+        self._test_obtain_certificate_common(mock.sentinel.key, csr)
+        self.acme.new_order.assert_called_once_with(mock.ANY, profile="exampleProfile")
+
+    @mock.patch("certbot._internal.client.crypto_util")
+    def test_obtain_certificate_preferred_profile_does_not_exist(self, mock_crypto_util):
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = mock.sentinel.key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self.client.config.required_profile = None
+        self.client.config.preferred_profile = "thisProfileDoesNotExist"
+
+        from acme.messages import Directory
+        self.acme.directory = Directory.from_json({
+            'meta': {
+                'profiles': {
+                    'example': 'profiles!',
+                }
+            }
+        })
+
+        self._test_obtain_certificate_common(mock.sentinel.key, csr)
+        self.acme.new_order.assert_called_once_with(mock.ANY, profile=None)
+
+    @mock.patch("certbot._internal.client.crypto_util")
+    def test_obtain_certificate_preferred_profile_no_profiles_exist(self, mock_crypto_util):
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_crypto_util.generate_csr.return_value = csr
+        mock_crypto_util.generate_key.return_value = mock.sentinel.key
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
+
+        self.client.config.required_profile = None
+        self.client.config.preferred_profile = "thisProfileDoesNotExist"
+
+        from acme.messages import Directory
+        self.acme.directory = Directory.from_json({})
+
+        self._test_obtain_certificate_common(mock.sentinel.key, csr)
+        self.acme.new_order.assert_called_once_with(mock.ANY, profile=None)
+
+    @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_partial_success(self, mock_crypto_util):
         csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
         key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
