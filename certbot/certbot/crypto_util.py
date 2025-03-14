@@ -351,7 +351,7 @@ def verify_cert_matches_priv_key(cert_path: str, key_path: str) -> None:
     :raises errors.Error: If they don't match.
     """
     try:
-        context = SSL.Context(SSL.SSLv23_METHOD)
+        context = SSL.Context(SSL.TLS_METHOD)
         context.use_certificate_file(cert_path)
         context.use_privatekey_file(key_path)
         context.check_privatekey()

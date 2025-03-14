@@ -32,12 +32,12 @@ logger = logging.getLogger(__name__)
 
 # Default SSL method selected here is the most compatible, while secure
 # SSL method: TLSv1_METHOD is only compatible with
-# TLSv1_METHOD, while SSLv23_METHOD is compatible with all other
+# TLSv1_METHOD, while TLS_method is compatible with all other
 # methods, including TLSv2_METHOD (read more at
-# https://www.openssl.org/docs/ssl/SSLv23_method.html). _serve_sni
+# https://docs.openssl.org/master/man3/SSL_CTX_new/#notes). _serve_sni
 # should be changed to use "set_options" to disable SSLv2 and SSLv3,
 # in case it's used for things other than probing/serving!
-_DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD
+_DEFAULT_SSL_METHOD = SSL.TLS_METHOD
 
 
 class Format(enum.IntEnum):
@@ -133,8 +133,7 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
             return
         key, cert = pair
         new_context = SSL.Context(self.method)
-        new_context.set_options(SSL.OP_NO_SSLv2)
-        new_context.set_options(SSL.OP_NO_SSLv3)
+        new_context.set_min_proto_version(SSL.TLS1_2_VERSION)
         new_context.use_privatekey(key)
         new_context.use_certificate(cert)
         if self.alpn_selection is not None:
