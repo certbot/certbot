@@ -476,9 +476,9 @@ class Client:
         preferred_profile = self.config.preferred_profile
         if self.config.required_profile is not None:
             profile = self.config.required_profile
-        elif (preferred_profile is not None and available_profiles is not None and
+        elif (preferred_profile and available_profiles and
               preferred_profile in available_profiles):
-            profile = self.config.preferred_profile
+            profile = preferred_profile
         try:
             orderr = self.acme.new_order(csr_pem, profile=profile)
         except acme_errors.WildcardUnsupportedError:
