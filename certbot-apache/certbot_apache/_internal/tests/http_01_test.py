@@ -209,7 +209,7 @@ class ApacheHttp01Test(util.ApacheTest):
         with open(self.http.challenge_conf_post) as f:
             post_conf_contents = f.read()
 
-        assert "RewriteEngine on" in pre_conf_contents
+        assert "RewriteEngine on" in post_conf_contents
         assert "RewriteRule" in pre_conf_contents
 
         assert self.http.challenge_dir in post_conf_contents

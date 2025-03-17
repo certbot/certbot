@@ -17,7 +17,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Moved `RewriteEngine on` directive added during apache http01 authentication
+  to the end of the virtual host, so that it overwrites any `RewriteEngine off`
+  directives that already exist and allows redirection to the challenge URL.
 
 More details about these changes can be found on our GitHub repo.
 
