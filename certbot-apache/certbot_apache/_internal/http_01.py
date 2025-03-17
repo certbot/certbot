@@ -24,7 +24,6 @@ class ApacheHttp01(common.ChallengePerformer):
     """Class that performs HTTP-01 challenges within the Apache configurator."""
 
     CONFIG_TEMPLATE24_PRE = """\
-        RewriteEngine on
         RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [END]
     """
     CONFIG_TEMPLATE24_POST = """\
