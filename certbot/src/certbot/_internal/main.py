@@ -265,8 +265,14 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
 
     if not lineage.ensure_deployed():
         return "reinstall", lineage
-    if is_key_type_changing or renewal.should_renew(config, lineage):
+    if is_key_type_changing:
         return "renew", lineage
+
+    acme_client = client.acme_from_config_key(config)
+
+    if renewal.should_renew(config, lineage, acme_client):
+        return "renew", lineage
+
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
         # reinstalled without further prompting.

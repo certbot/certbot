@@ -1,8 +1,10 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 
 import copy
+import datetime
 import itertools
 import logging
+import pytz
 import random
 import sys
 import time
@@ -21,10 +23,13 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
+from acme import client as acme_client
+
 from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
+from certbot._internal import account
 from certbot._internal import cli
 from certbot._internal import client
 from certbot._internal import constants
@@ -308,12 +313,14 @@ def _restore_str(name: str, value: str) -> Optional[str]:
     return None if value == "None" else value
 
 
-def should_renew(config: configuration.NamespaceConfig, lineage: storage.RenewableCert) -> bool:
+def should_renew(config: configuration.NamespaceConfig,
+                 lineage: storage.RenewableCert,
+                 acme_client: acme_client.ClientV2) -> bool:
     """Return true if any of the circumstances for automatic renewal apply."""
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
-    if lineage.should_autorenew():
+    if should_autorenew(lineage, acme_client):
         logger.info("Certificate is due for renewal, auto-renewing...")
         return True
     if config.dry_run:
@@ -322,8 +329,7 @@ def should_renew(config: configuration.NamespaceConfig, lineage: storage.Renewab
     display_util.notify("Certificate not yet due for renewal")
     return False
 
-
-def should_autorenew(self) -> bool:
+def should_autorenew(lineage: storage.RenewableCert, acme_client: acme_client.ClientV2) -> bool:
     """Should we now try to autorenew the most recent cert version?
 
     This is a policy question and does not only depend on whether
@@ -339,25 +345,34 @@ def should_autorenew(self) -> bool:
     :rtype: bool
 
     """
-    if self.autorenewal_is_enabled():
+    if lineage.autorenewal_is_enabled():
+        cert = lineage.version("cert", lineage.latest_common_version())
+
         # Consider whether to attempt to autorenew this cert now
+        renewal_time = None
+        with open(cert, 'rb') as f:
+            cert_pem = f.read()
+        renewal_time, _ = acme_client.renewal_time(cert_pem)
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        if renewal_time and now > renewal_time:
+            return True
 
         # Renewals on the basis of revocation
-        if self.ocsp_revoked(self.latest_common_version()):
+        if lineage.ocsp_revoked(lineage.latest_common_version()):
             logger.debug("Should renew, certificate is revoked.")
             return True
 
-        cert = self.version("cert", self.latest_common_version())
         notBefore = crypto_util.notBefore(cert)
         notAfter = crypto_util.notAfter(cert)
         lifetime = notAfter - notBefore
 
-        config_interval = self.configuration.get("renew_before_expiry")
-        now = datetime.datetime.now(pytz.UTC)
-        if config_interval is not None and notAfter < add_time_interval(now, config_interval):
+        config_interval = lineage.configuration.get("renew_before_expiry")
+        if config_interval is not None and notAfter < storage.add_time_interval(now, config_interval):
             logger.debug("Should renew, less than %s before certificate "
-                         "expiry %s.", config_interval,
-                         notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
+                            "expiry %s.", config_interval,
+                            notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
             return True
 
         # No config for "renew_before_expiry", provide default behavior.
@@ -369,8 +384,8 @@ def should_autorenew(self) -> bool:
         remaining_time = notAfter - now
         if remaining_time < default_interval:
             logger.debug("Should renew, less than %ss before certificate "
-                         "expiry %s.", default_interval,
-                         notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
+                            "expiry %s.", default_interval,
+                            notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
             return True
 
     return False
@@ -551,6 +566,11 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
     # shutting down a web service) aren't prolonged unnecessarily.
     apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
 
+    # We initialize acme clients on a per-server basis, but most
+    # lineages use the same server. Memoize clients here so we can
+    # share the connection pool and reuse a single fetched directory.
+    acme_clients = {}
+
     for renewal_file in conf_files:
         display_util.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
@@ -572,10 +592,16 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
             if not renewal_candidate:
                 parse_failures.append(renewal_file)
             else:
+                server = lineage_config.server
+                if not server:
+                    raise errors.Error(f"Renewal configuration for {lineage_config.names} has no server.")
+                if server not in acme_clients:
+                    acme_clients[server] = client.acme_from_config_key(config)
+
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()
-                if should_renew(lineage_config, renewal_candidate):
+                if should_renew(lineage_config, renewal_candidate, acme_clients[server]):
                     # Apply random sleep upon first renewal if needed
                     if apply_random_sleep:
                         sleep_time = random.uniform(1, 60 * 8)

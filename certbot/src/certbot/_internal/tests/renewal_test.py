@@ -188,6 +188,22 @@ class RenewalTest(test_util.ConfigTestCase):
         renewal.reconstitute(lineage_config, rc_path)
         assert lineage_config.key_type == 'rsa'
 
+    @test_util.patch_display_util()
+    @mock.patch('certbot._internal.client.acme_from_config_key')
+    @mock.patch('certbot._internal.main.renew_cert')
+    def test_renewal_via_ari(self, mock_renew_cert, mock_acme_from_config, unused_mock_display):
+        acme_client = mock.MagicMock()
+        mock_acme_from_config.return_value = acme_client
+        import datetime
+        acme_client.renewal_time.return_value = datetime.datetime(2025, 3, 19, 0, 0, 0)
+
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
+        lineage_config = copy.deepcopy(self.config)
+        from certbot._internal import renewal
+        renewal.handle_renewal_request(lineage_config)
+
+        assert mock_renew_cert.called_once()
+
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.renewal.restore_required_config_elements."""

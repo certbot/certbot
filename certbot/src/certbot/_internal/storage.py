@@ -24,6 +24,8 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
 import pytz
 
+import josepy as jose
+
 import certbot
 from certbot import configuration
 from certbot import crypto_util
