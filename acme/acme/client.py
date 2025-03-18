@@ -4,6 +4,8 @@ import datetime
 from email.utils import parsedate_tz
 import http.client as http_client
 import logging
+import math
+import random
 import re
 import time
 from typing import Any
@@ -317,7 +319,6 @@ class ClientV2:
         end = renewal_info.suggested_window.end # type: ignore[attr-defined]
 
         delta_seconds = (end - start).total_seconds()
-        import random
         random_seconds = random.uniform(0, delta_seconds)
         random_time = start + datetime.timedelta(seconds=random_seconds)
 
@@ -802,8 +803,6 @@ class ClientNetwork:
         return response
 
 def _renewal_info_path_component(cert: x509.Certificate) -> str:
-    import math
-
     akid_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
     key_identifier = akid_ext.value.key_identifier # type: ignore[attr-defined]
 

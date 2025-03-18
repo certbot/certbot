@@ -22,6 +22,11 @@ from acme._internal.tests import test_util
 from acme.client import ClientNetwork
 from acme.client import ClientV2
 
+from cryptography import x509
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization, hashes
+from acme.client import _renewal_info_path_component
+
 CERT_SAN_PEM = test_util.load_vector('cert-san.pem')
 CSR_MIXED_PEM = test_util.load_vector('csr-mixed.pem')
 CSR_NO_SANS_PEM = test_util.load_vector('csr-nosans.pem')
@@ -448,9 +453,6 @@ class ClientV2Test(unittest.TestCase):
         assert t <= datetime.datetime(2025, 3, 17, 1, 1, 1, tzinfo=datetime.timezone.utc)
 
 def test_renewal_info_path_component():
-    from cryptography import x509
-    from acme.client import _renewal_info_path_component
-
     cert = x509.load_pem_x509_certificate(test_util.load_vector('rsa2048_cert.pem'))
 
     assert _renewal_info_path_component(cert) == "fL5sRirC8VS5AtOQh9DfoAzYNCI.ALVG_VbBb5U7"
@@ -478,9 +480,6 @@ def make_cert_for_renewal(not_before, not_after) -> bytes:
     """
     Return a PEM-encoded, self-signed certificate with the given dates.
     """
-    from cryptography import x509
-    from cryptography.hazmat.primitives.asymmetric import ec
-    from cryptography.hazmat.primitives import serialization, hashes
     # AKID and serial are the inputs to constructing the renewalInfo URL
     akid = x509.AuthorityKeyIdentifier(b"1234", None, None)
     serial = 56789
