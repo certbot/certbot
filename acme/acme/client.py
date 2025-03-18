@@ -693,7 +693,6 @@ class ClientNetwork:
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
         kwargs.setdefault('timeout', self._default_timeout)
         try:
-            print("self session", self, self.session)
             response = self.session.request(method, url, *args, **kwargs)
         except requests.exceptions.RequestException as e:
             # pylint: disable=pointless-string-statement
