@@ -26,8 +26,8 @@ RSA2048_KEY = test_util.load_vector('rsa2048_key.pem')
 RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.load_vector('cert_512.pem')
-SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
-SS_CERT = test_util.load_vector('cert_2048.pem')
+RSA2048_CERT_PATH = test_util.vector_path('cert_2048.pem')
+RSA2048_CERT = test_util.load_vector('cert_2048.pem')
 P256_KEY = test_util.load_vector('nistp256_key.pem')
 P256_KEY_PATH = test_util.vector_path('nistp256_key.pem')
 P256_CERT_PATH = test_util.vector_path('cert-nosans_nistp256.pem')
@@ -147,7 +147,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data_pem,
                       form="pem"),
-             ["Example.com"]) == \
+             ["example.com"]) == \
             self._call(csrfile, data)
 
     def test_pem_csr(self):
@@ -158,7 +158,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data,
                       form="pem"),
-             ["Example.com"],) == \
+             ["example.com"],) == \
             self._call(csrfile, data)
 
     def test_bad_csr(self):
@@ -223,15 +223,15 @@ class VerifyCertSetup(unittest.TestCase):
 
     def setUp(self):
         self.renewable_cert = mock.MagicMock()
-        self.renewable_cert.cert_path = SS_CERT_PATH
-        self.renewable_cert.chain_path = SS_CERT_PATH
+        self.renewable_cert.cert_path = RSA2048_CERT_PATH
+        self.renewable_cert.chain_path = test_util.vector_path('issuer_cert.pem')
         self.renewable_cert.key_path = RSA2048_KEY_PATH
         self.renewable_cert.fullchain_path = test_util.vector_path('cert_fullchain_2048.pem')
 
         self.bad_renewable_cert = mock.MagicMock()
-        self.bad_renewable_cert.chain_path = SS_CERT_PATH
-        self.bad_renewable_cert.cert_path = SS_CERT_PATH
-        self.bad_renewable_cert.fullchain_path = SS_CERT_PATH
+        self.bad_renewable_cert.chain_path = RSA2048_CERT_PATH
+        self.bad_renewable_cert.cert_path = RSA2048_CERT_PATH
+        self.bad_renewable_cert.fullchain_path = RSA2048_CERT_PATH
 
 
 class VerifyRenewableCertTest(VerifyCertSetup):
@@ -263,7 +263,7 @@ class VerifyRenewableCertSigTest(VerifyCertSetup):
     def test_cert_sig_match_ec(self):
         renewable_cert = mock.MagicMock()
         renewable_cert.cert_path = P256_CERT_PATH
-        renewable_cert.chain_path = P256_CERT_PATH
+        renewable_cert.chain_path = test_util.vector_path('issuer_cert.pem')
         renewable_cert.key_path = P256_KEY
         assert self._call(renewable_cert) is None
 
@@ -301,13 +301,13 @@ class VerifyCertMatchesPrivKeyTest(VerifyCertSetup):
         return verify_cert_matches_priv_key(renewable_cert.cert, renewable_cert.privkey)
 
     def test_cert_priv_key_match(self):
-        self.renewable_cert.cert = SS_CERT_PATH
+        self.renewable_cert.cert = RSA2048_CERT_PATH
         self.renewable_cert.privkey = RSA2048_KEY_PATH
         assert self._call(self.renewable_cert) is None
 
     def test_cert_priv_key_mismatch(self):
         self.bad_renewable_cert.privkey = P256_KEY_PATH
-        self.bad_renewable_cert.cert = SS_CERT_PATH
+        self.bad_renewable_cert.cert = RSA2048_CERT_PATH
 
         with pytest.raises(errors.Error):
             self._call(self.bad_renewable_cert)
@@ -340,7 +340,7 @@ class GetSANsFromCertTest(unittest.TestCase):
         return get_sans_from_cert(*args, **kwargs)
 
     def test_single(self):
-        assert [] == self._call(test_util.load_vector('cert_512.pem'))
+        assert ['example.com'] == self._call(test_util.load_vector('cert_512.pem'))
 
     def test_san(self):
         assert ['example.com', 'www.example.com'] == \
@@ -397,7 +397,7 @@ class GetNamesFromReqTest(unittest.TestCase):
 
     def test_der(self):
         from OpenSSL.crypto import FILETYPE_ASN1
-        assert ['Example.com'] == \
+        assert ['example.com'] == \
             self._call(test_util.load_vector('csr_512.der'), typ=FILETYPE_ASN1)
 
 
@@ -453,8 +453,11 @@ class Sha256sumTest(unittest.TestCase):
     """Tests for certbot.crypto_util.notAfter"""
     def test_sha256sum(self):
         from certbot.crypto_util import sha256sum
-        assert sha256sum(CERT_PATH) == \
-            '914ffed8daf9e2c99d90ac95c77d54f32cbd556672facac380f0c063498df84e'
+        import tempfile
+        with tempfile.NamedTemporaryFile() as f:
+            f.write(b"hello\n")
+            assert sha256sum(f.name) == \
+               'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
 
 class CertAndChainFromFullchainTest(unittest.TestCase):
@@ -467,7 +470,7 @@ class CertAndChainFromFullchainTest(unittest.TestCase):
 
     def test_cert_and_chain_from_fullchain(self):
         cert_pem = CERT.decode()
-        chain_pem = cert_pem + SS_CERT.decode()
+        chain_pem = cert_pem + RSA2048_CERT.decode()
         fullchain_pem = cert_pem + chain_pem
         spacey_fullchain_pem = cert_pem + u'\n' + chain_pem
         crlf_fullchain_pem = fullchain_pem.replace(u'\n', u'\r\n')
@@ -476,7 +479,7 @@ class CertAndChainFromFullchainTest(unittest.TestCase):
         # and using OpenSSL to dump them, so here we confirm that OpenSSL is producing certs
         # that will be parseable by cert_and_chain_from_fullchain.
         acmev1_fullchain_pem = self._parse_and_reencode_pem(cert_pem) + \
-            self._parse_and_reencode_pem(cert_pem) + self._parse_and_reencode_pem(SS_CERT.decode())
+            self._parse_and_reencode_pem(cert_pem) + self._parse_and_reencode_pem(RSA2048_CERT.decode())
 
         from certbot.crypto_util import cert_and_chain_from_fullchain
         for fullchain in (fullchain_pem, spacey_fullchain_pem, crlf_fullchain_pem,
