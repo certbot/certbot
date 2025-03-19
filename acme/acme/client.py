@@ -226,6 +226,11 @@ class ClientV2:
 
         :returns: updated order
         :rtype: messages.OrderResource
+
+        :raises .messages.Error: If server indicates order is not yet in ready state,
+            it will return a 403 (Forbidden) error with a problem document/error code of type
+            "orderNotReady"
+
         """
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
@@ -282,7 +287,11 @@ class ClientV2:
         :rtype: messages.OrderResource
 
         """
-        self.begin_finalization(orderr)
+        try:
+            self.begin_finalization(orderr)
+        except messages.Error as e:
+            if e.code != 'orderNotReady':
+                raise e
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
 
     def revoke(self, cert: jose.ComparableX509, rsn: int) -> None:
