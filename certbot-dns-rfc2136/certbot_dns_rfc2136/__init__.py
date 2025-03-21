@@ -46,6 +46,8 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==
    dns_rfc2136_algorithm = HMAC-SHA512
    # TSIG sign SOA query (optional, default: false)
    dns_rfc2136_sign_query = false
+   # Optional validation target
+   dns_rfc2136_validation_target = acme.example.com
 
 
 The path to this file can be provided interactively or using the
