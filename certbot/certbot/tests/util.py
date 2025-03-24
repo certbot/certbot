@@ -121,7 +121,8 @@ def load_jose_rsa_private_key_pem(*names: str) -> jose.ComparableRSAKey:
     return jose.ComparableRSAKey(load_rsa_private_key_pem(*names))
 
 
-def _guess_loader__pyopenssl(filename: str, loader_pem: int, loader_der: int) -> int:
+def _guess_loader_pyopenssl(filename: str, loader_pem: int, loader_der: int) -> int:
+    # note: used by `load_rsa_private_key_pem`
     _, ext = os.path.splitext(filename)
     if ext.lower() == '.pem':
         return loader_pem
@@ -132,7 +133,7 @@ def _guess_loader__pyopenssl(filename: str, loader_pem: int, loader_der: int) ->
 
 def load_rsa_private_key_pem(*names: str) -> RSAPrivateKey:
     """Load RSA private key."""
-    loader = _guess_loader__pyopenssl(names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    loader = _guess_loader_pyopenssl(names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
     loader_fn: Callable[..., Any]
     if loader == crypto.FILETYPE_PEM:
         loader_fn = serialization.load_pem_private_key

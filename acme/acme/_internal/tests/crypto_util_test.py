@@ -11,7 +11,6 @@ import unittest
 from unittest import mock
 import warnings
 
-import OpenSSL
 import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
@@ -108,7 +107,6 @@ class MiscTests(unittest.TestCase):
 
         # default is PEM encoding Encoding.PEM
         assert isinstance(dumped, bytes)
-
 
 
 class CryptographyCertOrReqSANTest(unittest.TestCase):
@@ -263,41 +261,6 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
             extensions=[extension]
         )
         self.assertIn(extension, cert.extensions)
-
-
-class GenSsCertTest(unittest.TestCase):
-    """Test for gen_ss_cert (generation of self-signed cert)."""
-
-
-    def setUp(self):
-        self.cert_count = 5
-        self.serial_num: List[int] = []
-        self.key = OpenSSL.crypto.PKey()
-        self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
-
-    def test_sn_collisions(self):
-        from acme.crypto_util import gen_ss_cert
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            for _ in range(self.cert_count):
-                cert = gen_ss_cert(self.key, ['dummy'], force_san=True,
-                                ips=[ipaddress.ip_address("10.10.10.10")])
-                self.serial_num.append(cert.get_serial_number())
-            assert len(set(self.serial_num)) >= self.cert_count
-
-    def test_no_name(self):
-        from acme.crypto_util import gen_ss_cert
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            with pytest.raises(AssertionError):
-                gen_ss_cert(self.key, ips=[ipaddress.ip_address("1.1.1.1")])
-                gen_ss_cert(self.key)
-
-    def test_no_ips(self):
-        from acme.crypto_util import gen_ss_cert
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            gen_ss_cert(self.key, ['dummy'])
 
 
 class MakeCSRTest(unittest.TestCase):

@@ -1,11 +1,9 @@
 """Crypto utilities."""
-import binascii
 import contextlib
 import enum
 from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
-import os
 import socket
 import typing
 from typing import Any
@@ -27,7 +25,6 @@ from OpenSSL import crypto
 from OpenSSL import SSL
 
 from acme import errors
-import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +71,7 @@ class _DefaultCertSelection:
         if server_name:
             return self.certs.get(server_name, None)
         return None # pragma: no cover
+
 
 class SSLSocket:  # pylint: disable=too-few-public-methods
     """SSL wrapper for sockets.
@@ -477,79 +475,6 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
     public_key = private_key.public_key()
     builder = builder.public_key(public_key)
     return builder.sign(private_key, hashes.SHA256())
-
-
-def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
-                not_before: Optional[int] = None,
-                validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
-                extensions: Optional[List[crypto.X509Extension]] = None,
-                ips: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None
-                ) -> crypto.X509:
-    """Generate new self-signed certificate.
-
-    :type domains: `list` of `str`
-    :param OpenSSL.crypto.PKey key:
-    :param bool force_san:
-    :param extensions: List of additional extensions to include in the cert.
-    :type extensions: `list` of `OpenSSL.crypto.X509Extension`
-    :type ips: `list` of (`ipaddress.IPv4Address` or `ipaddress.IPv6Address`)
-
-    If more than one domain is provided, all of the domains are put into
-    ``subjectAltName`` X.509 extension and first domain is set as the
-    subject CN. If only one domain is provided no ``subjectAltName``
-    extension is used, unless `force_san` is ``True``.
-
-    .. deprecated: 2.10.0
-    """
-    warnings.warn(
-        "acme.crypto_util.gen_ss_cert is deprecated and will be removed in the "
-        "next major release of Certbot. Please use "
-        "acme.crypto_util.make_self_signed_cert instead.", DeprecationWarning,
-        stacklevel=2
-    )
-    assert domains or ips, "Must provide one or more hostnames or IPs for the cert."
-
-    cert = crypto.X509()
-    cert.set_serial_number(int(binascii.hexlify(os.urandom(16)), 16))
-    cert.set_version(2)
-
-    if extensions is None:
-        extensions = []
-    if domains is None:
-        domains = []
-    if ips is None:
-        ips = []
-    extensions.append(
-        crypto.X509Extension(
-            b"basicConstraints", True, b"CA:TRUE, pathlen:0"),
-    )
-
-    if len(domains) > 0:
-        cert.get_subject().CN = domains[0]
-    # TODO: what to put into cert.get_subject()?
-    cert.set_issuer(cert.get_subject())
-
-    sanlist = []
-    for address in domains:
-        sanlist.append('DNS:' + address)
-    for ip in ips:
-        sanlist.append('IP:' + ip.exploded)
-    san_string = ', '.join(sanlist).encode('ascii')
-    if force_san or len(domains) > 1 or len(ips) > 0:
-        extensions.append(crypto.X509Extension(
-            b"subjectAltName",
-            critical=False,
-            value=san_string
-        ))
-
-    cert.add_extensions(extensions)
-
-    cert.gmtime_adj_notBefore(0 if not_before is None else not_before)
-    cert.gmtime_adj_notAfter(validity)
-
-    cert.set_pubkey(key)
-    cert.sign(key, "sha256")
-    return cert
 
 
 def dump_cryptography_chain(

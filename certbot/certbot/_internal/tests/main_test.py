@@ -14,7 +14,6 @@ import traceback
 from typing import List
 import unittest
 from unittest import mock
-import warnings
 
 import configobj
 from cryptography import x509
@@ -23,7 +22,6 @@ import pytest
 import pytz
 
 from acme.messages import Error as acme_error
-from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -219,6 +217,7 @@ class RunTest(test_util.ConfigTestCase):
         self.config.must_staple = True
         with pytest.raises(errors.NotSupportedError):
             main.run(self.config, plugins)
+
 
 class CertonlyTest(unittest.TestCase):
     """Tests for certbot._internal.main.certonly."""
@@ -437,12 +436,7 @@ class RevokeTest(test_util.TempDirTestCase):
         config = cli.prepare_and_parse_args(plugins, args)
 
         from certbot._internal.main import revoke
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                'ignore',
-                message='certbot.crypto_util.pyopenssl_load_certificate is *'
-            )
-            revoke(config, plugins)
+        revoke(config, plugins)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.main.client.acme_client')

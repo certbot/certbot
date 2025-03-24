@@ -42,19 +42,6 @@ def _guess_pyopenssl_loader(filename: str, loader_pem: int, loader_der: int) -> 
         raise ValueError("Loader could not be recognized based on extension")
 
 
-def load_pyopenssl_cert(*names) -> crypto.X509:
-    """Load certificate."""
-    loader = _guess_pyopenssl_loader(
-        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
-    return crypto.load_certificate(loader, load_vector(*names))
-
-
-def load_pyopenssl_csr(*names) -> crypto.X509Req:
-    """Load certificate request."""
-    loader = _guess_pyopenssl_loader(
-        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
-    return crypto.load_certificate_request(loader, load_vector(*names))
-
 def load_cert(*names: str) -> x509.Certificate:
     """Load certificate."""
     loader = _guess_loader(

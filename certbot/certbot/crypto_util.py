@@ -14,7 +14,6 @@ from typing import Set
 from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
-import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -32,7 +31,6 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
-from OpenSSL import crypto
 from OpenSSL import SSL
 
 from acme import crypto_util as acme_crypto_util
@@ -388,32 +386,6 @@ def verify_fullchain(renewable_cert: interfaces.RenewableCert) -> None:
         raise errors.Error(error_str)
     except errors.Error as e:
         raise e
-
-
-def pyopenssl_load_certificate(data: bytes) -> Tuple[crypto.X509, int]:
-    """Load PEM/DER certificate.
-
-    :raises errors.Error:
-
-    Deprecated
-    .. deprecated: 3.2.1
-    """
-    warnings.warn(
-        "certbot.crypto_util.pyopenssl_load_certificate is deprecated and "
-        "will be removed in the next major release of Certbot.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-
-    openssl_errors = []
-
-    for file_type in (crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1):
-        try:
-            return crypto.load_certificate(file_type, data), file_type
-        except crypto.Error as error:  # TODO: other errors?
-            openssl_errors.append(error)
-    raise errors.Error("Unable to load: {0}".format(",".join(
-        str(error) for error in openssl_errors)))
 
 
 def get_sans_from_cert(
