@@ -427,16 +427,16 @@ class Sha256sumTest(unittest.TestCase):
 class CertAndChainFromFullchainTest(unittest.TestCase):
     """Tests for certbot.crypto_util.cert_and_chain_from_fullchain"""
 
-    def _parse_and_reencode_pem(self, cert_pem):
-        cert = x509.load_pem_x509_certificate(cert_pem)
+    def _parse_and_reencode_pem(self, cert_pem:str)->str:
+        cert = x509.load_pem_x509_certificate(cert_pem.encode())
         return cert.public_bytes(Encoding.PEM).decode()
 
     def test_cert_and_chain_from_fullchain(self):
-        cert_pem = CERT.decode()
-        chain_pem = cert_pem + SS_CERT.decode()
-        fullchain_pem = cert_pem + chain_pem
-        spacey_fullchain_pem = cert_pem + u'\n' + chain_pem
-        crlf_fullchain_pem = fullchain_pem.replace(u'\n', u'\r\n')
+        cert_pem: str = CERT.decode()
+        chain_pem: str = cert_pem + SS_CERT.decode()
+        fullchain_pem: str = cert_pem + chain_pem
+        spacey_fullchain_pem: str = cert_pem + u'\n' + chain_pem
+        crlf_fullchain_pem: str = fullchain_pem.replace(u'\n', u'\r\n')
 
         # In the ACME v1 code path, the fullchain is constructed by loading cert+chain DERs
         # and using OpenSSL to dump them, so here we confirm that cryptography is producing certs
