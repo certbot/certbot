@@ -36,8 +36,8 @@ def _guess_pyopenssl_loader(filename: str, loader_pem: int, loader_der: int) -> 
     _, ext = os.path.splitext(filename)
     if ext.lower() == ".pem":
         return loader_pem
-    elif ext.lower() == ".der":
-        return loader_der
+    # elif ext.lower() == ".der":
+    #    return loader_der
     else:  # pragma: no cover
         raise ValueError("Loader could not be recognized based on extension")
 
