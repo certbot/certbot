@@ -1,7 +1,7 @@
 name: Feature Request
 description: Suggest a new feature or improvement to Certbot
 title: "[Feature Request]: "
-labels: ["feature request"]
+type: Feature
 body:
   - type: textarea
     id: problem
@@ -25,4 +25,3 @@ body:
       label: Alternatives Considered
       description: Have you considered any alternative solutions?
       placeholder: For example, "We considered Y, but Z is a better approach because..."
-      
