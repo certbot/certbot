@@ -251,18 +251,6 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
     return cert
 
 
-# Annoyingly, we can't directly use cryptography's equivalent Union[] type for
-# our type signatures since they're only public API in 40.0.x+, which is too new
-# for some Certbot # distribution channels. Once we bump our oldest cryptography
-# version past 40.0.x, usage of this type can be replaced with:
-# cryptography.hazmat.primitives.asymmetric.types.CertificateIssuerPrivateKeyTypes
-CertificateIssuerPrivateKeyTypes = Union[
-    dsa.DSAPrivateKey,
-    rsa.RSAPrivateKey,
-    ec.EllipticCurvePrivateKey,
-    ed25519.Ed25519PrivateKey,
-    ed448.Ed448PrivateKey,
-]
 # Even *more* annoyingly, due to a mypy bug, we can't use Union[] types in
 # isinstance expressions without causing false mypy errors. So we have to
 # recreate the type collection as a tuple here. And no, typing.get_args doesn't
@@ -423,7 +411,7 @@ def _now() -> datetime:
     return datetime.now(tz=timezone.utc)
 
 
-def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
+def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
                           domains: Optional[List[str]] = None,
                           not_before: Optional[datetime] = None,
                           validity: Optional[timedelta] = None, force_san: bool = True,
@@ -440,7 +428,8 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
     :param validity: Duration for which the cert will be valid. Defaults to 1
     week
     :type validity: `datetime.timedelta`
-    :param buffer private_key_pem: One of `CertificateIssuerPrivateKeyTypes`
+    :param buffer private_key_pem: One of
+    `cryptography.hazmat.primitives.asymmetric.types.CertificateIssuerPrivateKeyTypes`
     :param bool force_san:
     :param extensions: List of additional extensions to include in the cert.
     :type extensions: `list` of `x509.Extension[x509.ExtensionType]`
