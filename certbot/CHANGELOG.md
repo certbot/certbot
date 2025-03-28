@@ -15,6 +15,14 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   renewal at 30 days before expiration. The config field renew_before_expiry
   still overrides this default.
 
+* removed `acme.crypto_util._pyopenssl_cert_or_req_all_names`
+* removed `acme.crypto_util._pyopenssl_cert_or_req_san`
+* removed `acme.crypto_util.dump_pyopenssl_chain`
+* removed `acme.crypto_util.gen_ss_cert`
+* removed `certbot.crypto_util.dump_pyopenssl_chain`
+* removed `certbot.crypto_util.pyopenssl_load_certificate`
+
+
 ### Fixed
 
 * Moved `RewriteEngine on` directive added during apache http01 authentication
@@ -33,9 +41,9 @@ More details about these changes can be found on our GitHub repo.
 
 * The --register-unsafely-without-email flag is no longer needed in non-interactive mode.
 * In interactive mode, pressing Enter at the email prompt will register without an email.
-* deprecated `acme.crypto_util.dump_pyopenssl_chain`
 * deprecated `acme.crypto_util._pyopenssl_cert_or_req_all_names`
 * deprecated `acme.crypto_util._pyopenssl_cert_or_req_san`
+* deprecated `acme.crypto_util.dump_pyopenssl_chain`
 * deprecated `certbot.crypto_util.dump_pyopenssl_chain`
 * deprecated `certbot.crypto_util.pyopenssl_load_certificate`
 

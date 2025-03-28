@@ -12,7 +12,8 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
-import warnings
+
+from cryptography import x509
 
 import josepy as jose
 
@@ -580,45 +581,33 @@ class AuthorizationResource(ResourceWithURI):
 class CertificateRequest(jose.JSONObjectWithFields):
     """ACME newOrder request.
 
-    :ivar jose.ComparableX509 csr:
-        `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
+    :ivar x509.CertificateSigningRequest csr: `x509.CertificateSigningRequest`
 
     """
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore',
-            message='The next major version of josepy will remove josepy.util.ComparableX509')
-        csr: jose.ComparableX509 = jose.field(
-            'csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
+    csr: x509.CertificateSigningRequest = jose.field(
+        'csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
 
 
 class CertificateResource(ResourceWithURI):
     """Certificate Resource.
 
-    :ivar josepy.util.ComparableX509 body:
-        `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
+    :ivar x509.Certificate body: `x509.Certificate`
     :ivar str cert_chain_uri: URI found in the 'up' ``Link`` header
     :ivar tuple authzrs: `tuple` of `AuthorizationResource`.
 
     """
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore',
-            message='The next major version of josepy will remove josepy.util.ComparableX509')
-        cert_chain_uri: str = jose.field('cert_chain_uri')
+    cert_chain_uri: str = jose.field('cert_chain_uri')
     authzrs: Tuple[AuthorizationResource, ...] = jose.field('authzrs')
 
 
 class Revocation(jose.JSONObjectWithFields):
     """Revocation message.
 
-    :ivar jose.ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
-        `jose.ComparableX509`
+    :ivar x509.Certificate certificate: `x509.Certificate`
 
     """
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore',
-            message='The next major version of josepy will remove josepy.util.ComparableX509')
-        certificate: jose.ComparableX509 = jose.field(
-            'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
+    certificate: x509.Certificate = jose.field(
+        'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
     reason: int = jose.field('reason')
 
 

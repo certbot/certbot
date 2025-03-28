@@ -14,15 +14,14 @@ import traceback
 from typing import List
 import unittest
 from unittest import mock
-import warnings
 
 import configobj
+from cryptography import x509
 import josepy as jose
 import pytest
 import pytz
 
 from acme.messages import Error as acme_error
-from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -218,6 +217,7 @@ class RunTest(test_util.ConfigTestCase):
         self.config.must_staple = True
         with pytest.raises(errors.NotSupportedError):
             main.run(self.config, plugins)
+
 
 class CertonlyTest(unittest.TestCase):
     """Tests for certbot._internal.main.certonly."""
@@ -436,12 +436,7 @@ class RevokeTest(test_util.TempDirTestCase):
         config = cli.prepare_and_parse_args(plugins, args)
 
         from certbot._internal.main import revoke
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                'ignore',
-                message='certbot.crypto_util.pyopenssl_load_certificate is *'
-            )
-            revoke(config, plugins)
+        revoke(config, plugins)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.main.client.acme_client')
@@ -1801,23 +1796,16 @@ class MainTest(test_util.ConfigTestCase):
             mock_delete_if_appropriate):
         mock_delete_if_appropriate.return_value = False
         server = 'foo.bar'
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                'ignore',
-                message='certbot.crypto_util.pyopenssl_load_certificate is *'
-            )
-            self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
-                                     '--server', server, 'revoke'])
-            with open(RSA2048_KEY_PATH, 'rb') as f:
-                assert mock_acme_client.ClientV2.call_count == 1
-                assert mock_acme_client.ClientNetwork.call_args[0][0] == \
-                                 jose.JWK.load(f.read())
-            with open(SS_CERT_PATH, 'rb') as f:
-                cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
-                mock_revoke = mock_acme_client.ClientV2().revoke
-                mock_revoke.assert_called_once_with(
-                        jose.ComparableX509(cert),
-                        mock.ANY)
+        self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
+                                 '--server', server, 'revoke'])
+        with open(RSA2048_KEY_PATH, 'rb') as f:
+            assert mock_acme_client.ClientV2.call_count == 1
+            assert mock_acme_client.ClientNetwork.call_args[0][0] == \
+                             jose.JWK.load(f.read())
+        with open(SS_CERT_PATH, 'rb') as f:
+            cert = x509.load_pem_x509_certificate(f.read())
+            mock_revoke = mock_acme_client.ClientV2().revoke
+            mock_revoke.assert_called_once_with(cert, mock.ANY)
 
     def test_revoke_with_key_mismatch(self):
         server = 'foo.bar'
@@ -1831,18 +1819,11 @@ class MainTest(test_util.ConfigTestCase):
             mock_delete_if_appropriate):
         mock_delete_if_appropriate.return_value = False
         mock_determine_account.return_value = (mock.MagicMock(), None)
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                'ignore',
-                message='certbot.crypto_util.pyopenssl_load_certificate is *'
-            )
-            _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
-            with open(CERT) as f:
-                cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
-                mock_revoke = client.acme_from_config_key().revoke
-                mock_revoke.assert_called_once_with(
-                        jose.ComparableX509(cert),
-                        mock.ANY)
+        _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
+        with open(CERT, 'rb') as f:
+            cert = x509.load_pem_x509_certificate(f.read())
+            mock_revoke = client.acme_from_config_key().revoke
+            mock_revoke.assert_called_once_with(cert, mock.ANY)
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')
     def test_register(self, _):
