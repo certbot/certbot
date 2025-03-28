@@ -29,7 +29,7 @@ def call_with_print(command, env):
 
 
 def pip_install_with_print(args_str, env):
-    command = ['"', sys.executable, '" -m pip install --disable-pip-version-check --use-pep517 --config-setting editable_mode=compat ', args_str]
+    command = ['"', sys.executable, '" -m pip install --disable-pip-version-check --use-pep517 --config-setting editable_mode=compat --no-build-isolation ', args_str]
     call_with_print(''.join(command), env=env)
 
 
