@@ -54,10 +54,11 @@ class Authenticator(dns_common.DNSAuthenticator):
                              default_propagation_seconds: int = 60) -> None:
         super().add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials', help='RFC 2136 credentials INI file.')
+        add('validation-target', help='Target domain for validation records', default=None)
 
     def more_info(self) -> str:
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
-               'RFC 2136 Dynamic Updates.'
+            'RFC 2136 Dynamic Updates.'
 
     def _validate_credentials(self, credentials: CredentialsConfiguration) -> None:
         server = cast(str, credentials.conf('server'))
@@ -76,15 +77,32 @@ class Authenticator(dns_common.DNSAuthenticator):
             {
                 'name': 'TSIG key name',
                 'secret': 'TSIG key secret',
-                'server': 'The target DNS server'
+                'server': 'The target DNS server',
+                'validation_target': 'Target domain for validation records'
             },
             self._validate_credentials
         )
 
     def _perform(self, _domain: str, validation_name: str, validation: str) -> None:
+        validation_target = self.credentials.conf('validation_target')
+        if validation_target:
+            # Replace the original validation name with one under the target domain
+            new_validation_name = f"{_domain}.{validation_target}"
+            logger.debug('Using validation target: %s instead of %s', new_validation_name,
+                         validation_name)
+            validation_name = new_validation_name
+
         self._get_rfc2136_client().add_txt_record(validation_name, validation, self.ttl)
 
     def _cleanup(self, _domain: str, validation_name: str, validation: str) -> None:
+        validation_target = self.credentials.conf('validation_target')
+        if validation_target:
+            # Use the same transformation as in _perform
+            new_validation_name = f"{_domain}.{validation_target}"
+            logger.debug('Using validation target: %s instead of %s', new_validation_name,
+                         validation_name)
+            validation_name = new_validation_name
+
         self._get_rfc2136_client().del_txt_record(validation_name, validation)
 
     def _get_rfc2136_client(self) -> "_RFC2136Client":
@@ -105,6 +123,7 @@ class _RFC2136Client:
     """
     Encapsulates all communication with the target DNS server.
     """
+
     def __init__(self, server: str, port: int, key_name: str, key_secret: str,
                  key_algorithm: dns.name.Name, sign_query: bool,
                  timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
@@ -236,9 +255,9 @@ class _RFC2136Client:
 
             # Authoritative Answer bit should be set
             if (rcode == dns.rcode.NOERROR
-                    and response.get_rrset(response.answer,
-                                           domain, dns.rdataclass.IN, dns.rdatatype.SOA)
-                    and response.flags & dns.flags.AA):
+                and response.get_rrset(response.answer,
+                                       domain, dns.rdataclass.IN, dns.rdatatype.SOA)
+                and response.flags & dns.flags.AA):
                 logger.debug('Received authoritative SOA response for %s', domain_name)
                 return True
 
