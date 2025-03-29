@@ -344,13 +344,14 @@ class Client:
         cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, domains: List[str], old_keypath: Optional[str] = None
-                           ) -> Tuple[bytes, bytes, util.Key, util.CSR]:
+    def obtain_certificate(self, domains: List[str], old_keypath: Optional[str] = None,
+                           certid: str = '') -> Tuple[bytes, bytes, util.Key, util.CSR]:
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
 
         :param list domains: domains to get a certificate
+        :param str certid: draft-ietf-acme-ari identifier for cert replaced
 
         :returns: certificate as PEM string, chain as PEM string,
             newly generated private key (`.util.Key`), and DER-encoded
@@ -420,7 +421,8 @@ class Client:
                 key, domains, None, self.config.must_staple, self.config.strict_permissions)
 
         try:
-            orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
+            orderr = self._get_order_and_authorizations(csr.data,
+                                                        self.config.allow_subset_of_names, certid)
         except messages.Error as error:
             # Some domains may be rejected during order creation.
             # Certbot can retry the operation without the rejected
@@ -457,7 +459,8 @@ class Client:
                 raise
 
     def _get_order_and_authorizations(self, csr_pem: bytes,
-                                      best_effort: bool) -> messages.OrderResource:
+                                      best_effort: bool,
+                                      certid: str = '') -> messages.OrderResource:
         """Request a new order and complete its authorizations.
 
         :param bytes csr_pem: A CSR in PEM format.
@@ -471,7 +474,7 @@ class Client:
         if not self.acme:
             raise errors.Error("ACME client is not set.")
         try:
-            orderr = self.acme.new_order(csr_pem)
+            orderr = self.acme.new_order(csr_pem, certid = certid)
         except acme_errors.WildcardUnsupportedError:
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")

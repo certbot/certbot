@@ -57,7 +57,10 @@ class _ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
             now = datetime.datetime.now(pytz.UTC)
             cert = x509.load_pem_x509_certificate(data['Certificate'].encode(), default_backend())
-            if data['Status'] != 'Revoked':
+            san = cert.extensions.get_extension_for_class(x509.SubjectAlternativeName)
+            dns_names = san.value.get_values_for_type(x509.DNSName)
+            if data['Status'] != 'Revoked' or dns_names[0].startswith('aritest.'):
+                #lie aritest subdomains so we can change ari window while not triggering OCSP logic
                 ocsp_status = ocsp.OCSPCertStatus.GOOD
                 revocation_time = None
                 revocation_reason = None
