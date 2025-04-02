@@ -17,6 +17,7 @@ from typing import TypeVar
 from typing import Union
 
 import configobj
+from cryptography import x509
 import josepy as jose
 from josepy import b64
 
@@ -1364,10 +1365,10 @@ def revoke(config: configuration.NamespaceConfig,
         acme = client.acme_from_config_key(config, acc.key, acc.regr)
 
     with open(config.cert_path, 'rb') as f:
-        cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+        cert = x509.load_pem_x509_certificate(f.read())
     logger.debug("Reason code for revocation: %s", config.reason)
     try:
-        acme.revoke(jose.ComparableX509(cert), config.reason)
+        acme.revoke(cert, config.reason)
         _delete_if_appropriate(config)
     except acme_errors.ClientError as e:
         return str(e)
