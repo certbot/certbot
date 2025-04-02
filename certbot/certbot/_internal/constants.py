@@ -70,6 +70,8 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     uir=None, # listed as False in help output
     staple=None, # listed as False in help output
     strict_permissions=False,
+    required_profile=None,
+    preferred_profile=None,
     preferred_chain=None,
     pref_challs=[],
     validate_hooks=True,
