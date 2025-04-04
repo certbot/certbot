@@ -330,6 +330,7 @@ dns-stackit_       Y    N    DNS Authentication using STACKIT DNS
 dns-ionos_         Y    N    DNS Authentication using IONOS Cloud DNS
 dns-mijn-host_     Y    N    DNS Authentication using mijn.host DNS
 nginx-unit_        Y    Y    Automates obtaining and installing a certificate with Nginx Unit
+dns-cdmon_         Y    N    DNS Authentication using cdmon's API
 ================== ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -361,6 +362,7 @@ nginx-unit_        Y    Y    Automates obtaining and installing a certificate wi
 .. _dns-ionos: https://github.com/ionos-cloud/certbot-dns-ionos-cloud
 .. _dns-mijn-host: https://github.com/mijnhost/certbot-dns-mijn-host
 .. _nginx-unit: https://github.com/kea/certbot-nginx-unit
+.. _dns-cdmon: https://github.com/rascazzione/certbot-dns-cdmon
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
