@@ -1,19 +1,17 @@
 """Tests for certbot.crypto_util."""
-import binascii
 import logging
 import re
 import sys
 import unittest
 from unittest import mock
-import warnings
 
-import OpenSSL
 import pytest
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.serialization import Encoding
 
+from acme import crypto_util as acme_crypto_util
 from certbot import errors
 from certbot import util
 from certbot.compat import filesystem
@@ -143,7 +141,7 @@ class ImportCSRFileTest(unittest.TestCase):
         data = test_util.load_vector('csr_512.der')
         data_pem = test_util.load_vector('csr_512.pem')
 
-        assert (OpenSSL.crypto.FILETYPE_PEM,
+        assert (acme_crypto_util.Format.PEM,
              util.CSR(file=csrfile,
                       data=data_pem,
                       form="pem"),
@@ -154,7 +152,7 @@ class ImportCSRFileTest(unittest.TestCase):
         csrfile = test_util.vector_path('csr_512.pem')
         data = test_util.load_vector('csr_512.pem')
 
-        assert (OpenSSL.crypto.FILETYPE_PEM,
+        assert (acme_crypto_util.Format.PEM,
              util.CSR(file=csrfile,
                       data=data,
                       form="pem"),
@@ -396,39 +394,8 @@ class GetNamesFromReqTest(unittest.TestCase):
             self._call(test_util.load_vector('csr-6sans_512.pem'))
 
     def test_der(self):
-        from OpenSSL.crypto import FILETYPE_ASN1
         assert ['Example.com'] == \
-            self._call(test_util.load_vector('csr_512.der'), typ=FILETYPE_ASN1)
-
-
-class CertLoaderTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.pyopenssl_load_certificate"""
-
-    def test_load_valid_cert(self):
-        from certbot.crypto_util import pyopenssl_load_certificate
-
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                'ignore',
-                message='certbot.crypto_util.pyopenssl_load_certificate is *'
-            )
-            cert, file_type = pyopenssl_load_certificate(CERT)
-
-        assert file_type == OpenSSL.crypto.FILETYPE_PEM
-        assert binascii.unhexlify(
-            cert.digest("sha256").replace(b":", b"")
-        ) == x509.load_pem_x509_certificate(CERT).fingerprint(hashes.SHA256())
-
-    def test_load_invalid_cert(self):
-        from certbot.crypto_util import pyopenssl_load_certificate
-        bad_cert_data = CERT.replace(b"BEGIN CERTIFICATE", b"ASDFASDFASDF!!!")
-        with pytest.raises(errors.Error):
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    'ignore',
-                    message='certbot.crypto_util.pyopenssl_load_certificate is *'
-                )
-                pyopenssl_load_certificate(bad_cert_data)
+            self._call(test_util.load_vector('csr_512.der'), typ=acme_crypto_util.Format.DER)
 
 
 class NotBeforeTest(unittest.TestCase):
@@ -466,20 +433,19 @@ class Sha256sumTest(unittest.TestCase):
 class CertAndChainFromFullchainTest(unittest.TestCase):
     """Tests for certbot.crypto_util.cert_and_chain_from_fullchain"""
 
-    def _parse_and_reencode_pem(self, cert_pem):
-        from OpenSSL import crypto
-        return crypto.dump_certificate(crypto.FILETYPE_PEM,
-            crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem)).decode()
+    def _parse_and_reencode_pem(self, cert_pem:str)->str:
+        cert = x509.load_pem_x509_certificate(cert_pem.encode())
+        return cert.public_bytes(Encoding.PEM).decode()
 
     def test_cert_and_chain_from_fullchain(self):
-        cert_pem = CERT.decode()
-        chain_pem = cert_pem + SS_CERT.decode()
-        fullchain_pem = cert_pem + chain_pem
-        spacey_fullchain_pem = cert_pem + u'\n' + chain_pem
-        crlf_fullchain_pem = fullchain_pem.replace(u'\n', u'\r\n')
+        cert_pem: str = CERT.decode()
+        chain_pem: str = cert_pem + SS_CERT.decode()
+        fullchain_pem: str = cert_pem + chain_pem
+        spacey_fullchain_pem: str = cert_pem + u'\n' + chain_pem
+        crlf_fullchain_pem: str = fullchain_pem.replace(u'\n', u'\r\n')
 
         # In the ACME v1 code path, the fullchain is constructed by loading cert+chain DERs
-        # and using OpenSSL to dump them, so here we confirm that OpenSSL is producing certs
+        # and using OpenSSL to dump them, so here we confirm that cryptography is producing certs
         # that will be parseable by cert_and_chain_from_fullchain.
         acmev1_fullchain_pem = self._parse_and_reencode_pem(cert_pem) + \
             self._parse_and_reencode_pem(cert_pem) + self._parse_and_reencode_pem(SS_CERT.decode())

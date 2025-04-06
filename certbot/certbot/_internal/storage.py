@@ -1193,8 +1193,7 @@ class RenewableCert(interfaces.RenewableCert):
             logger.debug("Writing chain to %s.", target["chain"])
             f_b.write(chain)
         with open(target["fullchain"], "wb") as f_b:
-            # assumes that OpenSSL.crypto.dump_certificate includes
-            # ending newline character
+            # assumes the cert includes ending newline character
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f_b.write(cert + chain)
 

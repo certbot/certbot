@@ -1,17 +1,16 @@
 """Crypto utilities."""
 from base64 import urlsafe_b64encode
-import binascii
 import contextlib
 import enum
 from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
-import os
 import socket
 import typing
 from typing import Any
 from typing import Callable
 from typing import List
+from typing import Literal
 from typing import Mapping
 from typing import Optional
 from typing import Sequence
@@ -22,12 +21,11 @@ from typing import Union
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448, types
-import josepy as jose
+from cryptography.hazmat.primitives.serialization import Encoding
 from OpenSSL import crypto
 from OpenSSL import SSL
 
 from acme import errors
-import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +48,13 @@ class Format(enum.IntEnum):
     DER = crypto.FILETYPE_ASN1
     PEM = crypto.FILETYPE_PEM
 
-    def to_cryptography_encoding(self) -> serialization.Encoding:
+    def to_cryptography_encoding(self) -> Encoding:
         """Converts the Format to the corresponding cryptography `Encoding`.
         """
         if self == Format.DER:
-            return serialization.Encoding.DER
+            return Encoding.DER
         else:
-            return serialization.Encoding.PEM
+            return Encoding.PEM
 
 
 _KeyAndCert = Union[
@@ -74,6 +72,7 @@ class _DefaultCertSelection:
         if server_name:
             return self.certs.get(server_name, None)
         return None # pragma: no cover
+
 
 class SSLSocket:  # pylint: disable=too-few-public-methods
     """SSL wrapper for sockets.
@@ -136,6 +135,8 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
         new_context = SSL.Context(self.method)
         new_context.set_min_proto_version(SSL.TLS1_2_VERSION)
         new_context.use_privatekey(key)
+        if isinstance(cert, x509.Certificate):
+            cert = crypto.X509.from_cryptography(cert)
         new_context.use_certificate(cert)
         if self.alpn_selection is not None:
             new_context.set_alpn_select_callback(self.alpn_selection)
@@ -197,7 +198,7 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
 
 def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # pylint: disable=too-many-arguments
               method: int = _DEFAULT_SSL_METHOD, source_address: Tuple[str, int] = ('', 0),
-              alpn_protocols: Optional[Sequence[bytes]] = None) -> crypto.X509:
+              alpn_protocols: Optional[Sequence[bytes]] = None) -> x509.Certificate:
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the
@@ -215,7 +216,7 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
     :raises acme.errors.Error: In case of any problems.
 
     :returns: SSL certificate presented by the server.
-    :rtype: OpenSSL.crypto.X509
+    :rtype: cryptography.x509.Certificate
 
     """
     context = SSL.Context(method)
@@ -249,21 +250,9 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
             raise errors.Error(error)
     cert = client_ssl.get_peer_certificate()
     assert cert # Appease mypy. We would have crashed out by now if there was no certificate.
-    return cert
+    return cert.to_cryptography()
 
 
-# Annoyingly, we can't directly use cryptography's equivalent Union[] type for
-# our type signatures since they're only public API in 40.0.x+, which is too new
-# for some Certbot # distribution channels. Once we bump our oldest cryptography
-# version past 40.0.x, usage of this type can be replaced with:
-# cryptography.hazmat.primitives.asymmetric.types.CertificateIssuerPrivateKeyTypes
-CertificateIssuerPrivateKeyTypes = Union[
-    dsa.DSAPrivateKey,
-    rsa.RSAPrivateKey,
-    ec.EllipticCurvePrivateKey,
-    ed25519.Ed25519PrivateKey,
-    ed448.Ed448PrivateKey,
-]
 # Even *more* annoyingly, due to a mypy bug, we can't use Union[] types in
 # isinstance expressions without causing false mypy errors. So we have to
 # recreate the type collection as a tuple here. And no, typing.get_args doesn't
@@ -334,7 +323,7 @@ def make_csr(
         )
 
     csr = builder.sign(private_key, hashes.SHA256())
-    return csr.public_bytes(serialization.Encoding.PEM)
+    return csr.public_bytes(Encoding.PEM)
 
 
 def get_names_from_subject_and_extensions(
@@ -371,32 +360,16 @@ def get_names_from_subject_and_extensions(
         return [cns[0]] + [d for d in dns_names if d != cns[0]]
 
 
-def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req: Union[crypto.X509, crypto.X509Req]
-                                     ) -> List[str]:
-    """
-    Deprecated
-    .. deprecated: 3.2.1
-    """
-    warnings.warn(
-        "acme.crypto_util._pyopenssl_cert_or_req_all_names is deprecated and "
-        "will be removed in the next major release of Certbot.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    cert_or_req = loaded_cert_or_req.to_cryptography()
-    return get_names_from_subject_and_extensions(
-        cert_or_req.subject, cert_or_req.extensions
-    )
-
-
-def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) -> List[str]:
+def _cryptography_cert_or_req_san(
+    cert_or_req: Union[x509.Certificate, x509.CertificateSigningRequest],
+) -> List[str]:
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
 
     .. note:: Although this is `acme` internal API, it is used by
         `letsencrypt`.
 
     :param cert_or_req: Certificate or CSR.
-    :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
+    :type cert_or_req: `x509.Certificate` or `x509.CertificateSigningRequest`.
 
     :returns: A list of Subject Alternative Names that is DNS.
     :rtype: `list` of `str`
@@ -404,13 +377,8 @@ def _pyopenssl_cert_or_req_san(cert_or_req: Union[crypto.X509, crypto.X509Req]) 
     Deprecated
     .. deprecated: 3.2.1
     """
-    warnings.warn(
-        "acme.crypto_util._pyopenssl_cert_or_req_san is deprecated and "
-        "will be removed in the next major release of Certbot.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    exts = cert_or_req.to_cryptography().extensions
+    # ???: is this translation needed?
+    exts = cert_or_req.extensions
     try:
         san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
     except x509.ExtensionNotFound:
@@ -424,7 +392,7 @@ def _now() -> datetime:
     return datetime.now(tz=timezone.utc)
 
 
-def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
+def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
                           domains: Optional[List[str]] = None,
                           not_before: Optional[datetime] = None,
                           validity: Optional[timedelta] = None, force_san: bool = True,
@@ -441,7 +409,8 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
     :param validity: Duration for which the cert will be valid. Defaults to 1
     week
     :type validity: `datetime.timedelta`
-    :param buffer private_key_pem: One of `CertificateIssuerPrivateKeyTypes`
+    :param buffer private_key_pem: One of
+    `cryptography.hazmat.primitives.asymmetric.types.CertificateIssuerPrivateKeyTypes`
     :param bool force_san:
     :param extensions: List of additional extensions to include in the cert.
     :type extensions: `list` of `x509.Extension[x509.ExtensionType]`
@@ -498,85 +467,13 @@ def make_self_signed_cert(private_key: CertificateIssuerPrivateKeyTypes,
     return builder.sign(private_key, hashes.SHA256())
 
 
-def gen_ss_cert(key: crypto.PKey, domains: Optional[List[str]] = None,
-                not_before: Optional[int] = None,
-                validity: int = (7 * 24 * 60 * 60), force_san: bool = True,
-                extensions: Optional[List[crypto.X509Extension]] = None,
-                ips: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None
-                ) -> crypto.X509:
-    """Generate new self-signed certificate.
-
-    :type domains: `list` of `str`
-    :param OpenSSL.crypto.PKey key:
-    :param bool force_san:
-    :param extensions: List of additional extensions to include in the cert.
-    :type extensions: `list` of `OpenSSL.crypto.X509Extension`
-    :type ips: `list` of (`ipaddress.IPv4Address` or `ipaddress.IPv6Address`)
-
-    If more than one domain is provided, all of the domains are put into
-    ``subjectAltName`` X.509 extension and first domain is set as the
-    subject CN. If only one domain is provided no ``subjectAltName``
-    extension is used, unless `force_san` is ``True``.
-
-    .. deprecated: 2.10.0
-    """
-    warnings.warn(
-        "acme.crypto_util.gen_ss_cert is deprecated and will be removed in the "
-        "next major release of Certbot. Please use "
-        "acme.crypto_util.make_self_signed_cert instead.", DeprecationWarning,
-        stacklevel=2
-    )
-    assert domains or ips, "Must provide one or more hostnames or IPs for the cert."
-
-    cert = crypto.X509()
-    cert.set_serial_number(int(binascii.hexlify(os.urandom(16)), 16))
-    cert.set_version(2)
-
-    if extensions is None:
-        extensions = []
-    if domains is None:
-        domains = []
-    if ips is None:
-        ips = []
-    extensions.append(
-        crypto.X509Extension(
-            b"basicConstraints", True, b"CA:TRUE, pathlen:0"),
-    )
-
-    if len(domains) > 0:
-        cert.get_subject().CN = domains[0]
-    # TODO: what to put into cert.get_subject()?
-    cert.set_issuer(cert.get_subject())
-
-    sanlist = []
-    for address in domains:
-        sanlist.append('DNS:' + address)
-    for ip in ips:
-        sanlist.append('IP:' + ip.exploded)
-    san_string = ', '.join(sanlist).encode('ascii')
-    if force_san or len(domains) > 1 or len(ips) > 0:
-        extensions.append(crypto.X509Extension(
-            b"subjectAltName",
-            critical=False,
-            value=san_string
-        ))
-
-    cert.add_extensions(extensions)
-
-    cert.gmtime_adj_notBefore(0 if not_before is None else not_before)
-    cert.gmtime_adj_notAfter(validity)
-
-    cert.set_pubkey(key)
-    cert.sign(key, "sha256")
-    return cert
-
-
-def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X509]],
-                         filetype: Union[Format, int] = Format.PEM) -> bytes:
+def dump_cryptography_chain(
+    chain: List[x509.Certificate],
+    encoding: Literal[Encoding.PEM, Encoding.DER] = Encoding.PEM,
+) -> bytes:
     """Dump certificate chain into a bundle.
 
-    :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
-        :class:`josepy.util.ComparableX509`).
+    :param list chain: List of `cryptography.x509.Certificate`.
 
     :returns: certificate chain bundle
     :rtype: bytes
@@ -584,25 +481,13 @@ def dump_pyopenssl_chain(chain: Union[List[jose.ComparableX509], List[crypto.X50
     Deprecated
     .. deprecated: 3.2.1
     """
-    warnings.warn(
-        "acme.crypto_util.dump_pyopenssl_chain is deprecated and "
-        "will be removed in the next major release of Certbot.",
-        DeprecationWarning,
-        stacklevel=2
-    )
     # XXX: returns empty string when no chain is available, which
     # shuts up RenewableCert, but might not be the best solution...
 
-    filetype = Format(filetype)
-    def _dump_cert(cert: Union[jose.ComparableX509, crypto.X509]) -> bytes:
-        if isinstance(cert, jose.ComparableX509):
-            if isinstance(cert.wrapped, crypto.X509Req):
-                raise errors.Error("Unexpected CSR provided.")  # pragma: no cover
-            cert = cert.wrapped
+    def _dump_cert(cert: x509.Certificate) -> bytes:
+        return cert.public_bytes(encoding)
 
-        return cert.to_cryptography().public_bytes(filetype.to_cryptography_encoding())
-
-    # assumes that OpenSSL.crypto.dump_certificate includes ending
+    # assumes that x509.Certificate.public_bytes includes ending
     # newline character
     return b"".join(_dump_cert(cert) for cert in chain)
 

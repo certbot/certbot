@@ -5,6 +5,7 @@ import re
 from setuptools import find_packages
 from setuptools import setup
 
+
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
     with codecs.open(filename, encoding=encoding) as fd:
@@ -33,9 +34,7 @@ install_requires = [
     'cryptography>=43.0.0',
     'distro>=1.0.1',
     'importlib_metadata>=4.6; python_version < "3.10"',
-    # Josepy 2+ may introduce backward incompatible changes by droping usage of
-    # deprecated PyOpenSSL APIs.
-    'josepy>=1.13.0, <2',
+    'josepy>=2.0.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
     'pytz>=2019.3',

@@ -15,7 +15,6 @@ from typing import Set
 from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
-import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -33,8 +32,6 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
-import josepy
-from OpenSSL import crypto
 from OpenSSL import SSL
 
 from acme import crypto_util as acme_crypto_util
@@ -392,32 +389,6 @@ def verify_fullchain(renewable_cert: interfaces.RenewableCert) -> None:
         raise e
 
 
-def pyopenssl_load_certificate(data: bytes) -> Tuple[crypto.X509, int]:
-    """Load PEM/DER certificate.
-
-    :raises errors.Error:
-
-    Deprecated
-    .. deprecated: 3.2.1
-    """
-    warnings.warn(
-        "certbot.crypto_util.pyopenssl_load_certificate is deprecated and "
-        "will be removed in the next major release of Certbot.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-
-    openssl_errors = []
-
-    for file_type in (crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1):
-        try:
-            return crypto.load_certificate(file_type, data), file_type
-        except crypto.Error as error:  # TODO: other errors?
-            openssl_errors.append(error)
-    raise errors.Error("Unable to load: {0}".format(",".join(
-        str(error) for error in openssl_errors)))
-
-
 def get_sans_from_cert(
     cert: bytes, typ: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM
 ) -> List[str]:
@@ -490,29 +461,6 @@ def get_names_from_req(
     return acme_crypto_util.get_names_from_subject_and_extensions(
         x509_req.subject, x509_req.extensions
     )
-
-
-def dump_pyopenssl_chain(
-    chain: Union[List[crypto.X509], List[josepy.ComparableX509]],
-    filetype: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM,
-) -> bytes:
-    """Dump certificate chain into a bundle.
-
-    :param list chain: List of `crypto.X509` (or wrapped in
-        :class:`josepy.util.ComparableX509`).
-
-    Deprecated
-    .. deprecated: 3.2.1
-    """
-    warnings.warn(
-        "certbot.crypto_util.dump_pyopenssl_chain is deprecated and "
-        "will be removed in the next major release of Certbot.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    # XXX: returns empty string when no chain is available, which
-    # shuts up RenewableCert, but might not be the best solution...
-    return acme_crypto_util.dump_pyopenssl_chain(chain, filetype)
 
 
 def notBefore(cert_path: str) -> datetime.datetime:

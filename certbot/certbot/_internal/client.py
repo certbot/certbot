@@ -48,8 +48,9 @@ from certbot.interfaces import AccountStorage
 logger = logging.getLogger(__name__)
 
 
-def acme_from_config_key(config: configuration.NamespaceConfig, key: jose.JWK,
-                         regr: Optional[messages.RegistrationResource] = None
+def acme_from_config_key(config: configuration.NamespaceConfig,
+                         key: jose.JWK,
+                         regr: Optional[messages.RegistrationResource] = None,
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
     if key.typ == 'EC':
@@ -473,8 +474,17 @@ class Client:
         """
         if not self.acme:
             raise errors.Error("ACME client is not set.")
+
+        profile = None
+        available_profiles = self.acme.directory.meta.profiles
+        preferred_profile = self.config.preferred_profile
+        if self.config.required_profile is not None:
+            profile = self.config.required_profile
+        elif (preferred_profile and available_profiles and
+              preferred_profile in available_profiles):
+            profile = preferred_profile
         try:
-            orderr = self.acme.new_order(csr_pem, certid = certid)
+            orderr = self.acme.new_order(csr_pem, profile=profile, certid = certid)
         except acme_errors.WildcardUnsupportedError:
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")
@@ -487,7 +497,7 @@ class Client:
             deactivated, failed = self.auth_handler.deactivate_valid_authorizations(orderr)
             if deactivated:
                 logger.debug("Recreating order after authz deactivations")
-                orderr = self.acme.new_order(csr_pem)
+                orderr = self.acme.new_order(csr_pem, profile=profile)
             if failed:
                 logger.warning("Certbot was unable to obtain fresh authorizations for every domain"
                                ". The dry run will continue, but results may not be accurate.")
