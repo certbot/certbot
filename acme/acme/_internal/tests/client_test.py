@@ -261,6 +261,33 @@ class ClientV2Test(unittest.TestCase):
         with pytest.raises(errors.Error, match="The certificate order failed"):
             self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
 
+    def test_finalize_order_orderNotReady(self):
+        # https://github.com/certbot/certbot/issues/9766
+        updated_order = self.order.update(
+            certificate='https://www.letsencrypt-demo.org/acme/cert/',
+            status=messages.STATUS_VALID)
+        updated_orderr = self.orderr.update(body=updated_order, fullchain_pem=CERT_SAN_PEM)
+        self.response.json.return_value = updated_order.to_json()
+        self.response.text = CERT_SAN_PEM
+
+        post = mock.MagicMock()
+        post.side_effect = [messages.Error.with_code('orderNotReady'),
+                            self.response, self.response]
+        # pylint: disable=protected-access
+        self.net.post = post
+
+        self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
+        assert self.net.post.call_count == 3
+
+    def test_finalize_order_otherErrorCode(self):
+        post = mock.MagicMock()
+        post.side_effect = [messages.Error.with_code('serverInternal')]
+        # pylint: disable=protected-access
+        self.net.post = post
+
+        with pytest.raises(messages.Error):
+            self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
+
     def test_finalize_order_timeout(self):
         deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
         with pytest.raises(errors.TimeoutError):
