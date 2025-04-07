@@ -96,6 +96,23 @@ optional arguments:
                         before submitting to CA. When used in combination with
                         the `-v` option, the challenge URLs or FQDNs and their
                         expected return values are shown. (default: False)
+  --required-profile REQUIRED_PROFILE
+                        Request the given profile name from the ACME server.
+                        If the ACME server returns an error, issuance (or
+                        renewal) will fail. For long-term reliability, setting
+                        preferred_profile instead may be preferable because it
+                        allows fallback to a default. Use this setting when
+                        renewal failure is preferable to fallback. (default:
+                        None)
+  --preferred-profile PREFERRED_PROFILE
+                        Request the given profile name from the ACME server,
+                        or fallback to default. If the given profile name
+                        exists in the ACME directory, use it to request a a
+                        certificate. Otherwise, fall back to requesting a
+                        certificate without a profile (which means the CA will
+                        use its default profile). This allows renewals to
+                        succeed even if the CA deprecates and removes a given
+                        profile. (default: None)
   --preferred-chain PREFERRED_CHAIN
                         Set the preferred certificate chain. If the CA offers
                         multiple certificate chains, prefer the chain whose
@@ -122,7 +139,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/3.3.0 (certbot;
+                        "". (default: CertbotACMEClient/4.0.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
