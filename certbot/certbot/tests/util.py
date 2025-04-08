@@ -22,6 +22,7 @@ from typing import Union
 import unittest
 from unittest import mock
 
+from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
@@ -98,7 +99,7 @@ def load_vector(*names: str) -> bytes:
         return data
 
 
-def _guess_loader(filename: str, loader_pem: int, loader_der: int) -> int:
+def _guess_loader(filename: str, loader_pem: Callable, loader_der: Callable) -> Callable:
     _, ext = os.path.splitext(filename)
     if ext.lower() == '.pem':
         return loader_pem
@@ -107,23 +108,12 @@ def _guess_loader(filename: str, loader_pem: int, loader_der: int) -> int:
     raise ValueError("Loader could not be recognized based on extension")  # pragma: no cover
 
 
-def load_cert(*names: str) -> crypto.X509:
+def load_cert(*names: str) -> x509.Certificate:
     """Load certificate."""
     loader = _guess_loader(
-        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
-    return crypto.load_certificate(loader, load_vector(*names))
-
-
-def load_csr(*names: str) -> crypto.X509Req:
-    """Load certificate request."""
-    loader = _guess_loader(
-        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
-    return crypto.load_certificate_request(loader, load_vector(*names))
-
-
-def load_comparable_csr(*names: str) -> jose.ComparableX509:
-    """Load ComparableX509 certificate request."""
-    return jose.ComparableX509(load_csr(*names))
+        names[-1], x509.load_pem_x509_certificate, x509.load_der_x509_certificate
+    )
+    return loader(load_vector(*names))
 
 
 def load_jose_rsa_private_key_pem(*names: str) -> jose.ComparableRSAKey:
@@ -131,9 +121,19 @@ def load_jose_rsa_private_key_pem(*names: str) -> jose.ComparableRSAKey:
     return jose.ComparableRSAKey(load_rsa_private_key_pem(*names))
 
 
+def _guess_loader_pyopenssl(filename: str, loader_pem: int, loader_der: int) -> int:
+    # note: used by `load_rsa_private_key_pem`
+    _, ext = os.path.splitext(filename)
+    if ext.lower() == '.pem':
+        return loader_pem
+    elif ext.lower() == '.der':
+        return loader_der
+    raise ValueError("Loader could not be recognized based on extension")  # pragma: no cover
+
+
 def load_rsa_private_key_pem(*names: str) -> RSAPrivateKey:
     """Load RSA private key."""
-    loader = _guess_loader(names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    loader = _guess_loader_pyopenssl(names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
     loader_fn: Callable[..., Any]
     if loader == crypto.FILETYPE_PEM:
         loader_fn = serialization.load_pem_private_key
