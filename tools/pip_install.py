@@ -29,7 +29,7 @@ def call_with_print(command, env):
 
 
 def pip_install_with_print(args_str, env):
-    command = ['"', sys.executable, '" -m pip install --disable-pip-version-check --use-pep517 --config-settings editable_mode=compat ', args_str]
+    command = ['"', sys.executable, '" -m pip install --disable-pip-version-check --use-pep517 ', args_str]
     call_with_print(''.join(command), env=env)
 
 
@@ -61,7 +61,7 @@ def pipstrap(env=None):
 def main(args):
     env = pip_constrained_environ()
     pipstrap(env)
-    pip_install_with_print(' '.join(args), env=env)
+    pip_install_with_print('--config-settings editable_mode=compat ' + ' '.join(args), env=env)
 
 
 if __name__ == '__main__':
