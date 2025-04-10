@@ -116,8 +116,7 @@ setup(
         'Topic :: System :: Systems Administration',
         'Topic :: Utilities',
     ],
-
-    packages=find_packages(where='src'),
+    packages=find_packages(where='src', exclude=['docs', 'examples', 'tests', 'venv']),
     package_dir={'': 'src'},
     include_package_data=True,
 
