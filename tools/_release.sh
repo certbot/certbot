@@ -119,7 +119,7 @@ SetVersion() {
       fi
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
-    init_file="certbot/certbot/__init__.py"
+    init_file="certbot/src/certbot/__init__.py"
     if [ $(grep -c '^__version' "$init_file") != 1 ]; then
       echo "Unexpected count of __version variables in $init_file"
       exit 1
