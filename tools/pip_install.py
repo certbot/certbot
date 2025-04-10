@@ -61,7 +61,7 @@ def pipstrap(env=None):
 def main(args):
     env = pip_constrained_environ()
     pipstrap(env)
-    pip_install_with_print('--config-settings editable_mode=strict ' + ' '.join(args), env=env)
+    pip_install_with_print(' '.join(args), env=env)
 
 
 if __name__ == '__main__':
