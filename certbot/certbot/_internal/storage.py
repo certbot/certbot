@@ -6,6 +6,8 @@ import logging
 import re
 import shutil
 import stat
+from random import random
+import requests
 from typing import Any
 from typing import cast
 from typing import Dict
@@ -23,6 +25,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
 import pytz
+import pyrfc3339
 
 import certbot
 from certbot import configuration
@@ -95,7 +98,7 @@ def config_with_defaults(config: Optional[configuration.NamespaceConfig] = None
 
 
 def add_time_interval(base_time: datetime.datetime, interval: str,
-                      textparser: parsedatetime.Calendar = parsedatetime.Calendar()
+                      textparser: parsedatetime.Calendar = parsedatetime.Calendar(version=2)
                       ) -> datetime.datetime:
     """Parse the time specified time interval, and add it to the base_time
 
@@ -118,6 +121,15 @@ def add_time_interval(base_time: datetime.datetime, interval: str,
     tzinfo = base_time.tzinfo or pytz.UTC
 
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
+
+def parse_rfc3399_time(instr: str) -> datetime.datetime:
+    """try rfc3399 specific parser first, 
+    if its malformed try generic python time parser"""
+    try:
+        return pyrfc3339.parse(instr, utc = True)
+    except ValueError:
+        lctime = datetime.datetime.fromisoformat(instr.replace('Z',"+00:00"))
+        return lctime.astimezone(datetime.timezone.utc)
 
 
 def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
@@ -965,6 +977,59 @@ class RenewableCert(interfaces.RenewableCert):
             logger.debug(str(e))
             return False
 
+    def get_renewalinfo(self, version:int, verify_ssl: bool, ua:str) -> Optional[dict]:
+        # pragma: no cover
+        """from server in config try to get renewalinfo of certificate
+        if it sees error it will return datetime 1-01-01
+
+        :returns: dict from request.json() if request succeed, None if not
+        :rtype: Optional[dict]
+        """
+        #if it's unittest it doesn't have any server
+        try:
+            serverurl = self.configuration["renewalparams"]["server"]
+        except KeyError:
+            return None
+
+        if serverurl is None:
+            return None
+        try:
+            suffix = crypto_util.ariCertIdent(self.version('cert', version))
+            session = requests.session()
+            session.verify = verify_ssl
+            session.headers.update({'User-Agent': f'{ua}'})
+            r = session.get(serverurl, timeout = 1)
+            if r.status_code != 200:
+                return None
+            endpoint = r.json()["renewalInfo"]
+            r = session.get(f"{endpoint}/{suffix}", timeout = 1)
+            if r.status_code != 200:
+                return None
+            return r.json()
+        except (KeyError, requests.exceptions.RequestException) as e:
+            logger.debug("%s",e)
+            return None
+
+    def parse_renewalinfo(self, inputjson: dict) -> \
+        Tuple[Optional[datetime.datetime], Optional[datetime.datetime]]:
+        """parse Ari result json if make sense, raise valueerror if not
+        this accepts parse json object with load, so 
+        :returns: dict from request.json() if request succeed, None if not
+        :rtype: Tuple[Optional(datetime.datetime), Optional(datetime.datetime)]
+        """
+        try:
+            suggestedWindow = inputjson["suggestedWindow"]
+            start = parse_rfc3399_time(suggestedWindow['start'])
+            end = parse_rfc3399_time(suggestedWindow['end'])
+        except (KeyError, ValueError):
+            return None, None
+        logger.debug("Accquired renewalinfo for %s: window starts at %s",
+                        self.lineagename, start.date())
+        reason = getattr(inputjson, "explanationURL", None)
+        if reason is not None:
+            logger.info("renewalwindow adjusted because of: %s", reason)
+        return start, end
+
     def autorenewal_is_enabled(self) -> bool:
         """Is automatic renewal enabled for this cert?
 
@@ -977,7 +1042,7 @@ class RenewableCert(interfaces.RenewableCert):
         return ("autorenew" not in self.configuration["renewalparams"] or
                 self.configuration["renewalparams"].as_bool("autorenew"))
 
-    def should_autorenew(self) -> bool:
+    def should_autorenew(self, verify_ssl: bool = False, useragent: str = 'certbot-ari') -> bool:
         """Should we now try to autorenew the most recent cert version?
 
         This is a policy question and does not only depend on whether
@@ -1000,6 +1065,29 @@ class RenewableCert(interfaces.RenewableCert):
             if self.ocsp_revoked(self.latest_common_version()):
                 logger.debug("Should renew, certificate is revoked.")
                 return True
+
+            now = datetime.datetime.now(pytz.UTC)
+
+            # Try draft-ietf-acme-ari endpoint if server has it
+            ariinfo = self.get_renewalinfo(self.latest_common_version(),
+                                                       verify_ssl, useragent)
+            if ariinfo is not None:
+                # Server have ari endpoint
+                start, end = self.parse_renewalinfo(ariinfo)
+                if start is None or end is None:
+                    logger.debug('server gave result but malformed')
+                else:
+                    rtime = start + random()*(end-start)
+                    # If random time is before next wakeup we'll do renewal this time
+                    # Todo: actually detect cron frequency
+                    if rtime < now + datetime.timedelta(hours=12):
+                        logger.debug("Should renew, inside ARI renewal window")
+                        return True
+
+            else:
+                # Renewal info for this cert not exsit or not supported version
+                # server not support ari or asking on wrong server
+                logger.debug("ARI infomation is not avabliable for this cert")
 
             cert = self.version("cert", self.latest_common_version())
             notBefore = crypto_util.notBefore(cert)
@@ -1026,7 +1114,6 @@ class RenewableCert(interfaces.RenewableCert):
                              "expiry %s.", default_interval,
                              notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
                 return True
-
         return False
 
     @classmethod
