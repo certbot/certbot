@@ -140,13 +140,13 @@ If you're working on a specific test and would like to run just that one:
 
 .. code-block:: shell
 
-    pytest acme/acme/_internal/tests/messages_test.py # Use the test file you're working on
+    pytest acme/src/acme/_internal/tests/messages_test.py # Use the test file you're working on
 
 To run a specific test case within a file:
 
 .. code-block:: shell
 
-    pytest acme/acme/_internal/tests/messages_test.py -k test_to_partial_json
+    pytest acme/src/acme/_internal/tests/messages_test.py -k test_to_partial_json
 
 For debugging, we recommend putting
 ``import ipdb; ipdb.set_trace()`` statements inside the source code, which will require

@@ -138,7 +138,7 @@ class Addr(common.Addr):
 
     def __hash__(self) -> int:  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__
-        # See certbot-apache/certbot_apache/_internal/obj.py for more information
+        # See certbot-apache/src/certbot_apache/_internal/obj.py for more information
         return super().__hash__()
 
     def super_eq(self, other: "Addr") -> bool:
