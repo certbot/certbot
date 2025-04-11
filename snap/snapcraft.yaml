@@ -117,7 +117,7 @@ parts:
     override-pull: |
       craftctl default
       grep -v python-augeas "${CRAFT_PART_SRC}/tools/requirements.txt" >> "${CRAFT_PART_SRC}/snap-constraints.txt"
-      craftctl set version=$(grep -oP "__version__ = '\K.*(?=')" "${CRAFT_PART_SRC}/certbot/certbot/__init__.py")
+      craftctl set version=$(grep -oP "__version__ = '\K.*(?=')" "${CRAFT_PART_SRC}/certbot/src/certbot/__init__.py")
     build-attributes:
       - enable-patchelf
   shared-metadata:
@@ -126,7 +126,7 @@ parts:
     override-pull: |
       craftctl default
       mkdir -p certbot-metadata
-      grep -oP "__version__ = '\K.*(?=')" $CRAFT_PART_SRC/certbot/certbot/__init__.py > certbot-metadata/certbot-version.txt
+      grep -oP "__version__ = '\K.*(?=')" $CRAFT_PART_SRC/certbot/src/certbot/__init__.py > certbot-metadata/certbot-version.txt
     stage: [certbot-metadata/certbot-version.txt]
 
 plugs:

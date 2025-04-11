@@ -67,7 +67,7 @@ def _prepare_environ(workspace: str) -> Dict[str, str]:
     # if PYTHONPATH is set, it does not contain the path to the root of the codebase.
     if new_environ.get('PYTHONPATH'):
         # certbot_integration_tests.__file__ is:
-        # '/path/to/certbot/certbot-ci/certbot_integration_tests/__init__.pyc'
+        # '/path/to/certbot/certbot-ci/src/certbot_integration_tests/__init__.pyc'
         # ... and we want '/path/to/certbot'
         certbot_root = os.path.dirname(os.path.dirname(
             os.path.dirname(certbot_integration_tests.__file__))
