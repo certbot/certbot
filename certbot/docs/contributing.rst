@@ -261,8 +261,8 @@ certificate once it is issued. Some plugins, like the built-in Apache and Nginx
 plugins, implement both interfaces and perform both tasks. Others, like the
 built-in Standalone authenticator, implement just one interface.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/main/certbot/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/main/certbot/certbot/plugins/common.py#L45
+.. _interfaces.py: https://github.com/certbot/certbot/blob/main/certbot/src/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/main/certbot/src/certbot/plugins/common.py#L45
 
 
 Authenticators
