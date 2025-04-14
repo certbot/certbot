@@ -374,6 +374,49 @@ class TestRawNginxParser(unittest.TestCase):
         """
         loads(test)
 
+    def test_location_comment_issue(self):
+        # See discussion at https://github.com/certbot/certbot/issues/10264
+        already_good = '''
+        location = /resume
+        # x
+        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+        '''
+        loads(already_good)
+        already_good = '''
+        location = /resume
+        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+        # {
+        '''
+        loads(already_good)
+        needs_fixing = '''
+        location = /resume
+        # {
+        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+        '''
+        with pytest.raises(ParseException):
+            loads(needs_fixing) # fails
+        needs_fixing = '''
+        location = /resume
+        # x{
+        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+        '''
+        with pytest.raises(ParseException):
+            loads(needs_fixing) # fails
+        needs_fixing = '''
+        location = /resume
+        #{
+        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+        '''
+        with pytest.raises(ParseException):
+            loads(needs_fixing) # fails
+        needs_fixing = '''
+        location = /resume
+        # {x
+        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+        '''
+        with pytest.raises(ParseException):
+            loads(needs_fixing) # fails
+
 
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""
