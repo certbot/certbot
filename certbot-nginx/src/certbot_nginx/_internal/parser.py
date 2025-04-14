@@ -233,7 +233,7 @@ class NginxParser:
                 logger.warning("Could not read file: %s due to invalid "
                                "character. Only UTF-8 encoding is "
                                "supported.", filename)
-            except pyparsing.ParseException as err:
+            except pyparsing.ParseException:
                 logger.warning("Could not parse file: %s. This is usually due to a comment that "
                     "certbot cannot parse, such as between a block's name and definition or "
                     "within a string literal. Moving the comment to another location in the file "
