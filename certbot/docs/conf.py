@@ -22,7 +22,7 @@ import sphinx
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
-init_fn = os.path.join(here, '..', 'certbot', '__init__.py')
+init_fn = os.path.join(here, '..', 'src', 'certbot', '__init__.py')
 with codecs.open(init_fn, encoding='utf8') as fd:
     meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", fd.read()))
 

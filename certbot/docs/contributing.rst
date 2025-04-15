@@ -140,13 +140,13 @@ If you're working on a specific test and would like to run just that one:
 
 .. code-block:: shell
 
-    pytest acme/acme/_internal/tests/messages_test.py # Use the test file you're working on
+    pytest acme/src/acme/_internal/tests/messages_test.py # Use the test file you're working on
 
 To run a specific test case within a file:
 
 .. code-block:: shell
 
-    pytest acme/acme/_internal/tests/messages_test.py -k test_to_partial_json
+    pytest acme/src/acme/_internal/tests/messages_test.py -k test_to_partial_json
 
 For debugging, we recommend putting
 ``import ipdb; ipdb.set_trace()`` statements inside the source code, which will require
@@ -261,8 +261,8 @@ certificate once it is issued. Some plugins, like the built-in Apache and Nginx
 plugins, implement both interfaces and perform both tasks. Others, like the
 built-in Standalone authenticator, implement just one interface.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/main/certbot/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/main/certbot/certbot/plugins/common.py#L45
+.. _interfaces.py: https://github.com/certbot/certbot/blob/main/certbot/src/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/main/certbot/src/certbot/plugins/common.py#L45
 
 
 Authenticators

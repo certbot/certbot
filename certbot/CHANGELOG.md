@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Switched to src-layout from flat-layout to accommodate PEP 517 pip editable installs
 
 ### Fixed
 

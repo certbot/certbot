@@ -15,7 +15,7 @@ def read_file(filename, encoding='utf8'):
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
-init_fn = os.path.join(here, 'certbot', '__init__.py')
+init_fn = os.path.join(here, 'src', 'certbot', '__init__.py')
 meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", read_file(init_fn)))
 
 readme = read_file(os.path.join(here, 'README.rst'))
@@ -33,7 +33,7 @@ install_requires = [
     'configobj>=5.0.6',
     'cryptography>=43.0.0',
     'distro>=1.0.1',
-    'importlib_metadata>=4.6; python_version < "3.10"',
+    'importlib_metadata>=8.6.1; python_version < "3.10"',
     'josepy>=2.0.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
@@ -117,7 +117,8 @@ setup(
         'Topic :: Utilities',
     ],
 
-    packages=find_packages(exclude=['docs', 'examples', 'tests', 'venv']),
+    packages=find_packages(where='src', exclude=['docs', 'examples', 'tests', 'venv']),
+    package_dir={'': 'src'},
     include_package_data=True,
 
     install_requires=install_requires,

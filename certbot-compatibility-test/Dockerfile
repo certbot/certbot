@@ -20,4 +20,4 @@ ENV PATH /opt/certbot/src/venv/bin:$PATH
 # this might also help in debugging: you can "docker run --entrypoint
 # bash" and investigate, apply patches, etc.
 
-WORKDIR /opt/certbot/src/certbot-compatibility-test/certbot_compatibility_test/testdata
+WORKDIR /opt/certbot/src/certbot-compatibility-test/src/certbot_compatibility_test/testdata

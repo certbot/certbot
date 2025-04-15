@@ -99,7 +99,7 @@ Apache
 ------
 
 The Apache plugin currently `supports
-<https://github.com/certbot/certbot/blob/main/certbot-apache/certbot_apache/_internal/entrypoint.py>`_
+<https://github.com/certbot/certbot/blob/main/certbot-apache/src/certbot_apache/_internal/entrypoint.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo, CentOS and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include

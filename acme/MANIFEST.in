@@ -3,7 +3,7 @@ include README.rst
 include pytest.ini
 recursive-include docs *
 recursive-include examples *
-recursive-include acme/_internal/tests/testdata *
-include acme/py.typed
+recursive-include src/acme/_internal/tests/testdata *
+include src/acme/py.typed
 global-exclude __pycache__
 global-exclude *.py[cod]
