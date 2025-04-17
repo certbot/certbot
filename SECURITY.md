@@ -6,9 +6,9 @@ Explanation on supported versions [here](https://github.com/certbot/certbot/wiki
 
 | Major Version | Supported          |
 | ------- | ------------------ |
-| >= 3.0.0   | :white_check_mark: |
+| >= 4.0.0   | :white_check_mark: |
 | Backported Version | Supported          |
-| < 2.11.1 | :x:                |
+| none - based on team discretion | :x:                |
 
 
 ## Reporting a Vulnerability
