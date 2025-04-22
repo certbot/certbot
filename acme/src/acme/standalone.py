@@ -15,6 +15,7 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Type
+import warnings
 
 from OpenSSL import SSL
 
@@ -39,10 +40,15 @@ class TLSServer(socketserver.TCPServer):
         super().__init__(*args, **kwargs)
 
     def _wrap_sock(self) -> None:
-        self.socket = cast(socket.socket, crypto_util.SSLSocket(
-            self.socket, cert_selection=self._cert_selection,
-            alpn_selection=getattr(self, '_alpn_selection', None),
-            method=self.method))
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='alpn_selection ivar is deprecated'
+            )
+            self.socket = cast(socket.socket, crypto_util.SSLSocket(
+                self.socket, cert_selection=self._cert_selection,
+                alpn_selection=getattr(self, '_alpn_selection', None),
+                method=self.method))
 
     def _cert_selection(self, connection: SSL.Connection
                         ) -> Optional[crypto_util._KeyAndCert]:  # pragma: no cover

@@ -13,6 +13,7 @@ from typing import Tuple
 from typing import Type
 from typing import TypeVar
 from typing import Union
+import warnings
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -467,7 +468,12 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         if port is None:
             port = self.PORT
 
-        return crypto_util.probe_sni(host=host.encode(), port=port, name=domain.encode(),
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='alpn_protocols parameter is deprecated'
+            )
+            return crypto_util.probe_sni(host=host.encode(), port=port, name=domain.encode(),
                                      alpn_protocols=[self.ACME_TLS_1_PROTOCOL])
 
     def verify_cert(self, domain: str, cert: x509.Certificate, ) -> bool:
