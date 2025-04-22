@@ -418,10 +418,10 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
     ID_PE_ACME_IDENTIFIER_V1 = b"1.3.6.1.5.5.7.1.30.1"
     ACME_TLS_1_PROTOCOL = b"acme-tls/1"
 
-    def __init__(self) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         warnings.warn("TLSALPN01Response is deprecated and will be removed in an "
             "upcoming certbot major version update", DeprecationWarning)
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
     @property
     def h(self) -> bytes:
@@ -563,10 +563,10 @@ class TLSALPN01(KeyAuthorizationChallenge):
     response_cls = TLSALPN01Response
     typ = response_cls.typ
 
-    def __init__(self) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         warnings.warn("TLSALPN01 is deprecated and will be removed in an "
             "upcoming certbot major version update", DeprecationWarning)
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
     def validation(self, account_key: jose.JWK,
                    **kwargs: Any) -> Tuple[x509.Certificate, crypto.PKey]:
