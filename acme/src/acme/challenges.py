@@ -400,7 +400,11 @@ class HTTP01(KeyAuthorizationChallenge):
 
 @ChallengeResponse.register
 class TLSALPN01Response(KeyAuthorizationChallengeResponse):
-    """ACME tls-alpn-01 challenge response."""
+    """ACME tls-alpn-01 challenge response.
+
+    .. deprecated:: 4.1.0
+
+    """
     typ = "tls-alpn-01"
 
     PORT = 443
@@ -413,6 +417,11 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
 
     ID_PE_ACME_IDENTIFIER_V1 = b"1.3.6.1.5.5.7.1.30.1"
     ACME_TLS_1_PROTOCOL = b"acme-tls/1"
+
+    def __init__(self) -> None:
+        warnings.warn("TLSALPN01Response is deprecated and will be removed in an "
+            "upcoming certbot major version update", DeprecationWarning)
+        super().__init__()
 
     @property
     def h(self) -> bytes:
@@ -546,9 +555,18 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
 
 @Challenge.register  # pylint: disable=too-many-ancestors
 class TLSALPN01(KeyAuthorizationChallenge):
-    """ACME tls-alpn-01 challenge."""
+    """ACME tls-alpn-01 challenge.
+
+    .. deprecated:: 4.1.0
+
+    """
     response_cls = TLSALPN01Response
     typ = response_cls.typ
+
+    def __init__(self) -> None:
+        warnings.warn("TLSALPN01 is deprecated and will be removed in an "
+            "upcoming certbot major version update", DeprecationWarning)
+        super().__init__()
 
     def validation(self, account_key: jose.JWK,
                    **kwargs: Any) -> Tuple[x509.Certificate, crypto.PKey]:
@@ -579,6 +597,8 @@ class TLSALPN01(KeyAuthorizationChallenge):
         :rtype: bool
 
         """
+        warnings.warn("TLSALPN01 is deprecated and will be removed in an "
+            "upcoming certbot major version update", DeprecationWarning)
         return (hasattr(SSL.Connection, "set_alpn_protos")
                 and hasattr(SSL.Context, "set_alpn_select_callback"))
 

@@ -152,7 +152,11 @@ class BaseDualNetworkedServers:
 
 
 class TLSALPN01Server(TLSServer, ACMEServerMixin):
-    """TLSALPN01 Server."""
+    """TLSALPN01 Server.
+
+    .. deprecated:: 4.1.0
+
+    """
 
     ACME_TLS_1_PROTOCOL = b"acme-tls/1"
 
@@ -160,6 +164,8 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
                  certs: List[crypto_util._KeyAndCert],
                  challenge_certs: Mapping[bytes, crypto_util._KeyAndCert],
                  ipv6: bool = False) -> None:
+        warnings.warn("TLSALPN01Server is deprecated and will be removed in an "
+            "upcoming certbot major version update", DeprecationWarning)
         # We don't need to implement a request handler here because the work
         # (including logging) is being done by wrapped socket set up in the
         # parent TLSServer class.
