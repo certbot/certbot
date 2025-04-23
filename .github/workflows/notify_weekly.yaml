@@ -19,6 +19,8 @@ jobs:
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
         MATTERMOST_CHANNEL: private-certbot
+        MATTERMOST_USERNAME: MeetingBot
+        MATTERMOST_ICON_URL: https://avatars.githubusercontent.com/u/17889013
         TEXT: |
           ## Updates In the Past Week
           - Most commented in the last week: [link](${{ env.UPDATED_URL }})

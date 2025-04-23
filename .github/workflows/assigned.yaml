@@ -13,5 +13,7 @@ jobs:
     - uses: mattermost/action-mattermost-notify@master
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_ASSIGN_WEBHOOK }}
+        MATTERMOST_USERNAME: ${{ github.actor }}
+        MATTERMOST_ICON_URL: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
         TEXT: >
             ${{ github.event.issue.assignee.login || github.event.pull_request.assignee.login }} assigned to "${{ github.event.issue.title || github.event.pull_request.title }}": ${{ github.event.issue.html_url || github.event.pull_request.html_url }}

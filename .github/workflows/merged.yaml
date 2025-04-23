@@ -13,6 +13,8 @@ jobs:
     - uses: mattermost/action-mattermost-notify@master
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_MERGE_WEBHOOK }}
+        MATTERMOST_USERNAME: ${{ github.actor }}
+        MATTERMOST_ICON_URL: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
         TEXT: >
           [${{ github.repository }}] |
           [${{ github.event.pull_request.title }}
