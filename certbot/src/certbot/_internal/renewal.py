@@ -323,6 +323,59 @@ def should_renew(config: configuration.NamespaceConfig, lineage: storage.Renewab
     return False
 
 
+def should_autorenew(self) -> bool:
+    """Should we now try to autorenew the most recent cert version?
+
+    This is a policy question and does not only depend on whether
+    the cert is expired. (This considers whether autorenewal is
+    enabled, whether the cert is revoked, and whether the time
+    interval for autorenewal has been reached.)
+
+    Note that this examines the numerically most recent cert version,
+    not the currently deployed version.
+
+    :returns: whether an attempt should now be made to autorenew the
+        most current cert version in this lineage
+    :rtype: bool
+
+    """
+    if self.autorenewal_is_enabled():
+        # Consider whether to attempt to autorenew this cert now
+
+        # Renewals on the basis of revocation
+        if self.ocsp_revoked(self.latest_common_version()):
+            logger.debug("Should renew, certificate is revoked.")
+            return True
+
+        cert = self.version("cert", self.latest_common_version())
+        notBefore = crypto_util.notBefore(cert)
+        notAfter = crypto_util.notAfter(cert)
+        lifetime = notAfter - notBefore
+
+        config_interval = self.configuration.get("renew_before_expiry")
+        now = datetime.datetime.now(pytz.UTC)
+        if config_interval is not None and notAfter < add_time_interval(now, config_interval):
+            logger.debug("Should renew, less than %s before certificate "
+                         "expiry %s.", config_interval,
+                         notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
+            return True
+
+        # No config for "renew_before_expiry", provide default behavior.
+        # For most certs, renew with 1/3 of certificate lifetime remaining.
+        # For short lived certificates, renew at 1/2 of certificate lifetime.
+        default_interval = lifetime / 3
+        if lifetime.total_seconds() < 10 * 86400:
+            default_interval = lifetime / 2
+        remaining_time = notAfter - now
+        if remaining_time < default_interval:
+            logger.debug("Should renew, less than %ss before certificate "
+                         "expiry %s.", default_interval,
+                         notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
+            return True
+
+    return False
+
+
 def _avoid_invalidating_lineage(config: configuration.NamespaceConfig,
                                 lineage: storage.RenewableCert, original_server: str) -> None:
     """Do not renew a valid cert with one from a staging server!"""
