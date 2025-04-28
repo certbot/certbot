@@ -16,6 +16,7 @@ from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
+import warnings
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -101,6 +102,9 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
     ) -> None:
         self.sock = sock
         self.alpn_selection = alpn_selection
+        if alpn_selection:
+            warnings.warn("alpn_selection ivar is deprecated and will be removed in an "
+                "upcoming certbot major version update", DeprecationWarning)
         self.method = method
         if not cert_selection and not certs:
             raise ValueError("Neither cert_selection or certs specified.")
@@ -242,6 +246,8 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
         client_ssl.set_tlsext_host_name(name)  # pyOpenSSL>=0.13
         if alpn_protocols is not None:
             client_ssl.set_alpn_protos(list(alpn_protocols))
+            warnings.warn("alpn_protocols parameter is deprecated and will be removed in an "
+                "upcoming certbot major version update", DeprecationWarning)
         try:
             client_ssl.do_handshake()
             client_ssl.shutdown()

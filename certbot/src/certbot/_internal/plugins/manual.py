@@ -139,7 +139,6 @@ permitted by DNS standards.)
         resource_names = {
             challenges.DNS01: 'DNS TXT records',
             challenges.HTTP01: 'challenge files',
-            challenges.TLSALPN01: 'TLS-ALPN certificates'
         }
         resources = ' and '.join(sorted([v for k, v in resource_names.items() if has_chall(k)]))
 
