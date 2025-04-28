@@ -254,6 +254,26 @@ class ClientV2Test(unittest.TestCase):
         with pytest.raises(errors.IssuanceError):
             self.client.finalize_order(self.orderr, deadline)
 
+    @mock.patch('acme.client.ClientV2.begin_finalization')
+    def test_finalize_order_ready(self, mock_begin):
+        # https://github.com/certbot/certbot/issues/9766
+        updated_order_ready = self.order.update(status=messages.STATUS_READY)
+
+        updated_order_valid = self.order.update(
+            certificate='https://www.letsencrypt-demo.org/acme/cert/',
+            status=messages.STATUS_VALID)
+        updated_orderr = self.orderr.update(body=updated_order_valid, fullchain_pem=CERT_SAN_PEM)
+
+        self.response.text = CERT_SAN_PEM
+
+        self.response.json.side_effect = [updated_order_ready.to_json(),
+                                           updated_order_valid.to_json()]
+
+        deadline = datetime.datetime(9999, 9, 9)
+        assert self.client.finalize_order(self.orderr, deadline) == updated_orderr
+        assert self.response.json.call_count == 2
+        assert mock_begin.call_count == 2
+
     def test_finalize_order_invalid_status(self):
         # https://github.com/certbot/certbot/issues/9296
         order = self.order.update(error=None, status=messages.STATUS_INVALID)
