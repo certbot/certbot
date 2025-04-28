@@ -48,7 +48,8 @@ setup(
         'Topic :: Security',
     ],
 
-    packages=find_packages(),
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
     include_package_data=True,
     install_requires=install_requires,
 

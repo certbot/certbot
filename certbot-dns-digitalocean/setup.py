@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '4.0.0.dev0'
+version = '4.1.0.dev0'
 
 install_requires = [
     'python-digitalocean>=1.11', # 1.15.0 or newer is recommended for TTL support
@@ -60,7 +60,8 @@ setup(
         'Topic :: Utilities',
     ],
 
-    packages=find_packages(),
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
     include_package_data=True,
     install_requires=install_requires,
     extras_require={

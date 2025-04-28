@@ -155,5 +155,5 @@ jobs:
         displayName: Prepare Certbot-CI
       - script: |
           set -e
-          sudo -E venv/bin/pytest certbot-ci/snap_integration_tests/dns_tests --allow-persistent-changes --snap-folder $(Build.SourcesDirectory)/snap --snap-arch amd64
+          sudo -E venv/bin/pytest certbot-ci/src/snap_integration_tests/dns_tests --allow-persistent-changes --snap-folder $(Build.SourcesDirectory)/snap --snap-arch amd64
         displayName: Test DNS plugins snaps

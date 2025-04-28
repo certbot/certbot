@@ -1,15 +1,11 @@
-import sys
-
 from setuptools import find_packages
 from setuptools import setup
 
-version = '4.0.0.dev0'
+version = '4.1.0.dev0'
 
 install_requires = [
     'cryptography>=43.0.0',
-    # Josepy 2+ may introduce backward incompatible changes by droping usage of
-    # deprecated PyOpenSSL APIs.
-    'josepy>=1.13.0, <2',
+    'josepy>=2.0.0',
     # PyOpenSSL>=25.0.0 is just needed to satisfy mypy right now so this dependency can probably be
     # relaxed to >=24.0.0 if needed.
     'PyOpenSSL>=25.0.0',
@@ -53,7 +49,8 @@ setup(
         'Topic :: Security',
     ],
 
-    packages=find_packages(),
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
