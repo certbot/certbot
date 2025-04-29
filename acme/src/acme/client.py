@@ -526,17 +526,18 @@ class ClientNetwork:
 
     """Initialize.
 
-    :param josepy.JWK key: Account private key
+    :param josepy.JWK key: Account private key. Required to use .post().
     :param messages.RegistrationResource account: Account object. Required if you are
             planning to use .post() for anything other than creating a new account;
             may be set later after registering.
-    :param josepy.JWASignature alg: Algorithm to use in signing JWS.
+    :param josepy.JWASignature alg: Algorithm to use in signing JWS. Required to use .post().
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param int timeout: Timeout for requests.
     """
-    def __init__(self, key: jose.JWK, account: Optional[messages.RegistrationResource] = None,
-                 alg: jose.JWASignature = jose.RS256, verify_ssl: bool = True,
+    def __init__(self, key: Optional[jose.JWK] = None,
+                 account: Optional[messages.RegistrationResource] = None,
+                 alg: Optional[jose.JWASignature] = None, verify_ssl: bool = True,
                  user_agent: str = 'acme-python', timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
         self.key = key
         self.account = account
@@ -572,16 +573,17 @@ class ClientNetwork:
         """
         jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
+        assert self.key
         kwargs = {
             "alg": self.alg,
             "nonce": nonce,
-            "url": url
+            "url": url,
+            "key": self.key
         }
         # newAccount and revokeCert work without the kid
         # newAccount must not have kid
         if self.account is not None:
             kwargs["kid"] = self.account["uri"]
-        kwargs["key"] = self.key
         return jws.JWS.sign(jobj, **cast(Mapping[str, Any], kwargs)).json_dumps(indent=2)
 
     @classmethod
@@ -771,6 +773,8 @@ class ClientNetwork:
     def _post_once(self, url: str, obj: jose.JSONDeSerializable,
                    content_type: str = JOSE_CONTENT_TYPE, **kwargs: Any) -> requests.Response:
         new_nonce_url = kwargs.pop('new_nonce_url', None)
+        if not self.key:
+            raise errors.Error("acme.ClientNetwork with no private key can't POST.")
         data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)

@@ -693,12 +693,11 @@ class ClientNetworkTest(unittest.TestCase):
         except requests.exceptions.ConnectionError as z: #pragma: no cover
             assert "'Connection aborted.'" in str(z) or "[WinError 10061]" in str(z)
 
-
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
 
     def setUp(self):
-        self.net = ClientNetwork(key=None, alg=None)
+        self.net = ClientNetwork(key='fake', alg=None)
 
         self.response = mock.MagicMock(ok=True, status_code=http_client.OK)
         self.response.headers = {}
@@ -850,6 +849,16 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     def test_new_nonce_uri_removed(self):
         self.content_type = None
         self.net.post('uri', self.obj, content_type=None, new_nonce_url='new_nonce_uri')
+
+    def test_no_key_error(self):
+        "A ClientNetwork with no key should error on POST but succeed on GET"
+        self.net = ClientNetwork()
+        self.net._send_request = mock.MagicMock()
+        self.net._send_request.return_value = self.response
+        with pytest.raises(errors.Error):
+            self.net.post('uri', "body")
+        assert self.response == self.net.get(
+            'uri', content_type=self.content_type, bar='baz')
 
 
 if __name__ == '__main__':
