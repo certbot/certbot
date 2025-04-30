@@ -63,11 +63,6 @@ pylint = "3.3.3"
 # compatible version here.
 mypy = "1.9.0"
 
-# Bug in poetry, where still installes yanked versions from pypi (source: https://github.com/python-poetry/poetry/issues/2453)
-# this version of cryptography introduced a security vulnrability.
-# Making sure that it would not get installed (Fixing https://github.com/certbot/certbot/issues/9336)
-cryptography = "!= 37.0.3"
-
 # Branch 4.x of tox introduces backward incompatibility changes, so require a newer
 # version of tox to keep deterministic builds.
 tox = ">=4"
