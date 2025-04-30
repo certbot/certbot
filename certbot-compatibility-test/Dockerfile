@@ -4,7 +4,7 @@ LABEL org.opencontainers.image.authors="certbot-dev@eff.org"
 # This does not include the dependencies needed to build cryptography. See
 # https://cryptography.io/en/latest/installation/#building-cryptography-on-linux
 RUN apt-get update && \
-    apt install python3-venv libaugeas0 -y
+    apt install python3-venv libaugeas-dev -y
 
 WORKDIR /opt/certbot/src
 
