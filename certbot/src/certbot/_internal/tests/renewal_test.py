@@ -1,10 +1,12 @@
 """Tests for certbot._internal.renewal"""
 import copy
+import datetime
 import sys
 import unittest
 from unittest import mock
 
 import pytest
+import pytz
 
 from acme import challenges
 from certbot import configuration
@@ -12,6 +14,30 @@ from certbot import errors
 from certbot._internal import storage
 import certbot.tests.util as test_util
 
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography import x509
+from cryptography.x509 import Certificate
+
+def make_cert_with_lifetime(not_before: datetime.datetime, lifetime_days: int) -> bytes:
+    """Return PEM of a self-signed certificate with the given notBefore and lifetime."""
+    key = ec.generate_private_key(ec.SECP256R1())
+    not_after=not_before + datetime.timedelta(days=lifetime_days)
+    cert = x509.CertificateBuilder(
+        issuer_name=x509.Name([]),
+        subject_name=x509.Name([]),
+        public_key=key.public_key(),
+        serial_number=x509.random_serial_number(),
+        not_valid_before=not_before,
+        not_valid_after=not_after,
+    ).add_extension(
+        x509.SubjectAlternativeName([x509.DNSName("example.com")]),
+        critical=False,
+    ).sign(
+        private_key=key,
+        algorithm=hashes.SHA256(),
+    )
+    return cert.public_bytes(serialization.Encoding.PEM)
 
 class RenewalTest(test_util.ConfigTestCase):
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
@@ -203,6 +229,103 @@ class RenewalTest(test_util.ConfigTestCase):
         renewal.handle_renewal_request(lineage_config)
 
         assert mock_renew_cert.called_once()
+
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    @mock.patch("certbot._internal.storage.datetime")
+    def test_time_interval_judgments(self, mock_datetime, mock_set_by_user):
+        """Test should_autorenew() on the basis of expiry time windows."""
+        # Note: this certificate happens to have a lifetime of 7 days,
+        # and the tests below that use a "None" interval (i.e. choose a
+        # default) rely on that fact.
+        #
+        # Not Before: Dec 11 22:34:45 2014 GMT
+        # Not After : Dec 18 22:34:45 2014 GMT
+        not_before = datetime.datetime(2014, 12, 11, 22, 34, 45)
+        short_cert = make_cert_with_lifetime(not_before, 7)
+
+        self._write_out_ex_kinds()
+
+        self.test_rc.update_all_links_to(12)
+        with open(self.test_rc.cert, "wb") as f:
+            f.write(short_cert)
+        self.test_rc.update_all_links_to(11)
+        with open(self.test_rc.cert, "wb") as f:
+            f.write(short_cert)
+
+        mock_datetime.timedelta = datetime.timedelta
+        mock_set_by_user.return_value = False
+        self.test_rc.configuration["renewalparams"] = {}
+
+        for (current_time, interval, result) in [
+                # 2014-12-13 12:00 (about 5 days prior to expiry)
+                # Times that should result in autorenewal/autodeployment
+                (1418472000, "2 months", True), (1418472000, "1 week", True),
+                # With the "default" logic, this 7-day certificate should autorenew
+                # at 3.5 days prior to expiry. We haven't reached that yet,
+                # so don't renew.
+                (1418472000, None, False),
+                # 2014-12-16 03:20, a little less than 3.5 days to expiry.
+                (1418700000, None, True),
+                # Times that should not renew
+                (1418472000, "4 days", False), (1418472000, "2 days", False),
+                # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
+                # Times that should result in autorenewal/autodeployment
+                (1241179200, "7 years", True),
+                (1241179200, "11 years 2 months", True),
+                # Times that should not renew
+                (1241179200, "8 hours", False), (1241179200, "2 days", False),
+                (1241179200, "40 days", False), (1241179200, "9 months", False),
+                # 2015-01-01 (after expiry has already happened, so all
+                #            intervals should cause autorenewal/autodeployment)
+                (1420070400, "0 seconds", True),
+                (1420070400, "10 seconds", True),
+                (1420070400, "10 minutes", True),
+                (1420070400, "10 weeks", True), (1420070400, "10 months", True),
+                (1420070400, "10 years", True), (1420070400, "99 months", True),
+                (1420070400, None, True)
+        ]:
+            sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
+            mock_datetime.datetime.now.return_value = sometime
+            self.test_rc.configuration["renew_before_expiry"] = interval
+            assert self.test_rc.should_autorenew() == result
+
+        # Lifetime: 31 years
+        # Default renewal: about 10 years from expiry
+        # Not Before: May 29 07:42:01 2017 GMT
+        # Not After : Mar 30 07:42:01 2048 GMT
+        not_before=datetime.datetime(2017, 5, 29, 7, 42, 1)
+        long_cert = make_cert_with_lifetime(not_before, 31 * 365)
+        self.test_rc.update_all_links_to(12)
+        with open(self.test_rc.cert, "wb") as f:
+            f.write(long_cert)
+        self.test_rc.update_all_links_to(11)
+        with open(self.test_rc.cert, "wb") as f:
+            f.write(long_cert)
+        for (current_time, result) in [
+            (2114380800, False), # 2037-01-01
+            (2148000000, True), # 2038-01-25
+        ]:
+            sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
+            mock_datetime.datetime.now.return_value = sometime
+            self.test_rc.configuration["renew_before_expiry"] = interval
+            assert self.test_rc.should_autorenew() == result
+
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    @mock.patch("certbot._internal.storage.RenewableCert.ocsp_revoked")
+    def test_should_autorenew(self, mock_ocsp, mock_set_by_user):
+        """Test should_autorenew on the basis of reasons other than
+        expiry time window."""
+        mock_set_by_user.return_value = False
+        # Autorenewal turned off
+        self.test_rc.configuration["renewalparams"] = {"autorenew": "False"}
+        assert not self.test_rc.should_autorenew()
+        self.test_rc.configuration["renewalparams"]["autorenew"] = "True"
+        for kind in ALL_FOUR:
+            self._write_out_kind(kind, 12)
+        # Mandatory renewal on the basis of OCSP revocation
+        mock_ocsp.return_value = True
+        assert self.test_rc.should_autorenew()
+        mock_ocsp.return_value = False
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
