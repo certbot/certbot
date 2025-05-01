@@ -21,8 +21,7 @@ if [ -f /etc/debian_version ]; then
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y $ALL_DEPS
 elif [ -f /etc/redhat-release ]; then
   # the "codeready builder" repository must be enabled to install the
-  # augeas-devel package which is needed to compile newer versions of
-  # python-augeas
+  # augeas-devel package needed to compile newer versions of python-augeas
   sudo yum config-manager --set-enabled crb
   PYENV_DEPS="gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel \
               tk-devel libffi-devel xz-devel git"
