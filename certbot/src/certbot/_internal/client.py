@@ -53,23 +53,19 @@ def acme_from_config_key(config: configuration.NamespaceConfig,
                          regr: Optional[messages.RegistrationResource] = None,
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
-    if key:
-        if key.typ == 'EC':
-            public_key = key.key
-            if public_key.key_size == 256:
-                alg = ES256
-            elif public_key.key_size == 384:
-                alg = ES384
-            elif public_key.key_size == 521:
-                alg = ES512
-            else:
-                raise errors.NotSupportedError(
-                    "No matching signing algorithm can be found for the key"
-                )
+    alg = RS256
+    if key and key.typ == 'EC':
+        public_key = key.key
+        if public_key.key_size == 256:
+            alg = ES256
+        elif public_key.key_size == 384:
+            alg = ES384
+        elif public_key.key_size == 521:
+            alg = ES512
         else:
-            alg = RS256
-    else:
-        alg = None
+            raise errors.NotSupportedError(
+                "No matching signing algorithm can be found for the key"
+            )
     net = acme_client.ClientNetwork(key, alg=alg, account=regr,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))

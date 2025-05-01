@@ -530,14 +530,14 @@ class ClientNetwork:
     :param messages.RegistrationResource account: Account object. Required if you are
             planning to use .post() for anything other than creating a new account;
             may be set later after registering.
-    :param josepy.JWASignature alg: Algorithm to use in signing JWS. Required to use .post().
+    :param josepy.JWASignature alg: Algorithm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param int timeout: Timeout for requests.
     """
     def __init__(self, key: Optional[jose.JWK] = None,
                  account: Optional[messages.RegistrationResource] = None,
-                 alg: Optional[jose.JWASignature] = None, verify_ssl: bool = True,
+                 alg: jose.JWASignature = jose.RS256, verify_ssl: bool = True,
                  user_agent: str = 'acme-python', timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
         self.key = key
         self.account = account
