@@ -11,6 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Switched to src-layout from flat-layout to accommodate PEP 517 pip editable installs
+* acme.client.ClientNetwork now makes the "key" parameter optional.
 * Deprecated `acme.challenges.TLSALPN01Response`
 * Deprecated `acme.challenges.TLSALPN01`
 * Deprecated ivar `alpn_selection` from `acme.crypto_util.SSLSocket`
