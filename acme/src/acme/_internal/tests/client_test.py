@@ -283,20 +283,32 @@ class ClientV2Test(unittest.TestCase):
 
     def test_finalize_order_orderNotReady(self):
         # https://github.com/certbot/certbot/issues/9766
-        updated_order = self.order.update(
+        updated_order_processing = self.order.update(status=messages.STATUS_PROCESSING)
+        updated_order_ready = self.order.update(status=messages.STATUS_READY)
+
+        updated_order_valid = self.order.update(
             certificate='https://www.letsencrypt-demo.org/acme/cert/',
             status=messages.STATUS_VALID)
-        updated_orderr = self.orderr.update(body=updated_order, fullchain_pem=CERT_SAN_PEM)
-        self.response.json.return_value = updated_order.to_json()
+        updated_orderr = self.orderr.update(body=updated_order_valid, fullchain_pem=CERT_SAN_PEM)
+
         self.response.text = CERT_SAN_PEM
 
+        self.response.json.side_effect = [updated_order_processing.to_json(),
+                                          updated_order_ready.to_json(),
+                                          updated_order_valid.to_json()]
+
         post = mock.MagicMock()
-        post.side_effect = [messages.Error.with_code('orderNotReady'),
-                            self.response, self.response]
+        post.side_effect = [messages.Error.with_code('orderNotReady'), # first begin_finalization
+                            self.response, # first poll_finalization poll --> still returns pending
+                            self.response, # second poll_finalization poll --> returns ready
+                            mock.MagicMock(), # second begin_finalization
+                            self.response, # third poll_finalization poll --> returns valid
+                            self.response # fetch cert
+                            ]
         self.net.post = post
 
         self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
-        assert self.net.post.call_count == 3
+        assert self.net.post.call_count == 6
 
     def test_finalize_order_otherErrorCode(self):
         post = mock.MagicMock()
