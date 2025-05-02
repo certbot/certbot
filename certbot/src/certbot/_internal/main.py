@@ -268,9 +268,9 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     if is_key_type_changing:
         return "renew", lineage
 
-    acme_client = client.acme_from_config_key(config)
+    acme = client.acme_from_config_key(config)
 
-    if renewal.should_renew(config, lineage, acme_client):
+    if renewal.should_renew(config, lineage, acme):
         return "renew", lineage
 
     if config.reinstall:

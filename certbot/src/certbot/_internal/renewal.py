@@ -28,7 +28,6 @@ from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
-from certbot._internal import account
 from certbot._internal import cli
 from certbot._internal import client
 from certbot._internal import constants
@@ -314,12 +313,12 @@ def _restore_str(name: str, value: str) -> Optional[str]:
 
 def should_renew(config: configuration.NamespaceConfig,
                  lineage: storage.RenewableCert,
-                 acme_client: acme_client.ClientV2) -> bool:
+                 acme: acme_client.ClientV2) -> bool:
     """Return true if any of the circumstances for automatic renewal apply."""
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
-    if should_autorenew(lineage, acme_client):
+    if should_autorenew(lineage, acme):
         logger.info("Certificate is due for renewal, auto-renewing...")
         return True
     if config.dry_run:
@@ -328,7 +327,7 @@ def should_renew(config: configuration.NamespaceConfig,
     display_util.notify("Certificate not yet due for renewal")
     return False
 
-def should_autorenew(lineage: storage.RenewableCert, acme_client: acme_client.ClientV2) -> bool:
+def should_autorenew(lineage: storage.RenewableCert, acme: acme_client.ClientV2) -> bool:
     """Should we now try to autorenew the most recent cert version?
 
     This is a policy question and does not only depend on whether
@@ -351,7 +350,7 @@ def should_autorenew(lineage: storage.RenewableCert, acme_client: acme_client.Cl
         renewal_time = None
         with open(cert, 'rb') as f:
             cert_pem = f.read()
-        renewal_time, _ = acme_client.renewal_time(cert_pem)
+        renewal_time, _ = acme.renewal_time(cert_pem)
 
         now = datetime.datetime.now(datetime.timezone.utc)
 
@@ -594,7 +593,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
             else:
                 server = lineage_config.server
                 if not server:
-                    raise errors.Error(f"Renewal configuration for {lineage_config.names} has no server.")
+                    raise errors.Error(f"Renewal config for {lineage_config.names} has no server.")
                 if server not in acme_clients:
                     acme_clients[server] = client.acme_from_config_key(config)
 
