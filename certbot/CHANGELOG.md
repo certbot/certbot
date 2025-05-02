@@ -14,7 +14,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Order finalization now catches `orderNotReady` response, polls until order status is
+  `ready`, and resubmits finalization request before polling for `valid` to download
+  certificate. This conforms to RFC 8555 more accurately and avoids race conditions where
+  all authorizations are fulfilled but order has not yet transitioned to ready state on
+  the server when the finalization request is sent.
 
 More details about these changes can be found on our GitHub repo.
 
