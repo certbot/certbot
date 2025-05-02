@@ -293,7 +293,6 @@ class ClientV2Test(unittest.TestCase):
         post = mock.MagicMock()
         post.side_effect = [messages.Error.with_code('orderNotReady'),
                             self.response, self.response]
-        # pylint: disable=protected-access
         self.net.post = post
 
         self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
@@ -302,7 +301,6 @@ class ClientV2Test(unittest.TestCase):
     def test_finalize_order_otherErrorCode(self):
         post = mock.MagicMock()
         post.side_effect = [messages.Error.with_code('serverInternal')]
-        # pylint: disable=protected-access
         self.net.post = post
 
         with pytest.raises(messages.Error):
@@ -389,7 +387,7 @@ class ClientV2Test(unittest.TestCase):
         with mock.patch('acme.client.ClientV2._authzr_from_response') as mock_client:
             mock_client.return_value = self.authzr2
 
-            self.client.poll(self.authzr2)  # pylint: disable=protected-access
+            self.client.poll(self.authzr2)
 
             self.client.net.post.assert_called_once_with(
                 self.authzr2.uri, None,
@@ -763,7 +761,6 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         assert self.response.checked
 
     def test_post(self):
-        # pylint: disable=protected-access
         assert self.response == self.net.post(
             'uri', self.obj, content_type=self.content_type)
         assert self.response.checked
@@ -792,7 +789,6 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         check_response = mock.MagicMock()
         check_response.side_effect = messages.Error.with_code('badNonce')
 
-        # pylint: disable=protected-access
         self.net._check_response = check_response
         with pytest.raises(messages.Error):
             self.net.post('uri',
@@ -803,7 +799,6 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         check_response.side_effect = [messages.Error.with_code('malformed'),
                                       self.response]
 
-        # pylint: disable=protected-access
         self.net._check_response = check_response
         with pytest.raises(messages.Error):
             self.net.post('uri',
@@ -814,7 +809,6 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         post_once.side_effect = [messages.Error.with_code('badNonce'),
                                       self.response]
 
-        # pylint: disable=protected-access
         assert self.response == self.net.post(
             'uri', self.obj, content_type=self.content_type)
 
