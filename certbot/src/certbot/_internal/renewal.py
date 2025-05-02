@@ -4,7 +4,6 @@ import copy
 import datetime
 import itertools
 import logging
-import pytz
 import random
 import sys
 import time
@@ -369,7 +368,8 @@ def should_autorenew(lineage: storage.RenewableCert, acme_client: acme_client.Cl
         lifetime = notAfter - notBefore
 
         config_interval = lineage.configuration.get("renew_before_expiry")
-        if config_interval is not None and notAfter < storage.add_time_interval(now, config_interval):
+        if (config_interval is not None and
+            notAfter < storage.add_time_interval(now, config_interval)):
             logger.debug("Should renew, less than %s before certificate "
                             "expiry %s.", config_interval,
                             notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
