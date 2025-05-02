@@ -254,11 +254,68 @@ class ClientV2Test(unittest.TestCase):
         with pytest.raises(errors.IssuanceError):
             self.client.finalize_order(self.orderr, deadline)
 
+    @mock.patch('acme.client.ClientV2.begin_finalization')
+    def test_finalize_order_ready(self, mock_begin):
+        # https://github.com/certbot/certbot/issues/9766
+        updated_order_ready = self.order.update(status=messages.STATUS_READY)
+
+        updated_order_valid = self.order.update(
+            certificate='https://www.letsencrypt-demo.org/acme/cert/',
+            status=messages.STATUS_VALID)
+        updated_orderr = self.orderr.update(body=updated_order_valid, fullchain_pem=CERT_SAN_PEM)
+
+        self.response.text = CERT_SAN_PEM
+
+        self.response.json.side_effect = [updated_order_ready.to_json(),
+                                           updated_order_valid.to_json()]
+
+        deadline = datetime.datetime(9999, 9, 9)
+        assert self.client.finalize_order(self.orderr, deadline) == updated_orderr
+        assert self.response.json.call_count == 2
+        assert mock_begin.call_count == 2
+
     def test_finalize_order_invalid_status(self):
         # https://github.com/certbot/certbot/issues/9296
         order = self.order.update(error=None, status=messages.STATUS_INVALID)
         self.response.json.return_value = order.to_json()
         with pytest.raises(errors.Error, match="The certificate order failed"):
+            self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
+
+    def test_finalize_order_orderNotReady(self):
+        # https://github.com/certbot/certbot/issues/9766
+        updated_order_processing = self.order.update(status=messages.STATUS_PROCESSING)
+        updated_order_ready = self.order.update(status=messages.STATUS_READY)
+
+        updated_order_valid = self.order.update(
+            certificate='https://www.letsencrypt-demo.org/acme/cert/',
+            status=messages.STATUS_VALID)
+        updated_orderr = self.orderr.update(body=updated_order_valid, fullchain_pem=CERT_SAN_PEM)
+
+        self.response.text = CERT_SAN_PEM
+
+        self.response.json.side_effect = [updated_order_processing.to_json(),
+                                          updated_order_ready.to_json(),
+                                          updated_order_valid.to_json()]
+
+        post = mock.MagicMock()
+        post.side_effect = [messages.Error.with_code('orderNotReady'), # first begin_finalization
+                            self.response, # first poll_finalization poll --> still returns pending
+                            self.response, # second poll_finalization poll --> returns ready
+                            mock.MagicMock(), # second begin_finalization
+                            self.response, # third poll_finalization poll --> returns valid
+                            self.response # fetch cert
+                            ]
+        self.net.post = post
+
+        self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
+        assert self.net.post.call_count == 6
+
+    def test_finalize_order_otherErrorCode(self):
+        post = mock.MagicMock()
+        post.side_effect = [messages.Error.with_code('serverInternal')]
+        self.net.post = post
+
+        with pytest.raises(messages.Error):
             self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
 
     def test_finalize_order_timeout(self):
@@ -342,7 +399,7 @@ class ClientV2Test(unittest.TestCase):
         with mock.patch('acme.client.ClientV2._authzr_from_response') as mock_client:
             mock_client.return_value = self.authzr2
 
-            self.client.poll(self.authzr2)  # pylint: disable=protected-access
+            self.client.poll(self.authzr2)
 
             self.client.net.post.assert_called_once_with(
                 self.authzr2.uri, None,
@@ -716,7 +773,6 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         assert self.response.checked
 
     def test_post(self):
-        # pylint: disable=protected-access
         assert self.response == self.net.post(
             'uri', self.obj, content_type=self.content_type)
         assert self.response.checked
@@ -745,7 +801,6 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         check_response = mock.MagicMock()
         check_response.side_effect = messages.Error.with_code('badNonce')
 
-        # pylint: disable=protected-access
         self.net._check_response = check_response
         with pytest.raises(messages.Error):
             self.net.post('uri',
@@ -756,7 +811,6 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         check_response.side_effect = [messages.Error.with_code('malformed'),
                                       self.response]
 
-        # pylint: disable=protected-access
         self.net._check_response = check_response
         with pytest.raises(messages.Error):
             self.net.post('uri',
@@ -767,7 +821,6 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         post_once.side_effect = [messages.Error.with_code('badNonce'),
                                       self.response]
 
-        # pylint: disable=protected-access
         assert self.response == self.net.post(
             'uri', self.obj, content_type=self.content_type)
 

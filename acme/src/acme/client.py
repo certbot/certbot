@@ -224,6 +224,11 @@ class ClientV2:
 
         :returns: updated order
         :rtype: messages.OrderResource
+
+        :raises .messages.Error: If server indicates order is not yet in ready state,
+            it will return a 403 (Forbidden) error with a problem document/error code of type
+            "orderNotReady"
+
         """
         csr = x509.load_pem_x509_csr(orderr.csr_pem)
         wrapped_csr = messages.CertificateRequest(csr=csr)
@@ -239,6 +244,10 @@ class ClientV2:
         Poll an order that has been finalized for its status.
         If it becomes valid, obtain the certificate.
 
+        If a finalization request previously returned `orderNotReady`,
+        poll until ready, send a new finalization request, and continue
+        polling until valid as above.
+
         :returns: finalized order (with certificate)
         :rtype: messages.OrderResource
         """
@@ -248,12 +257,22 @@ class ClientV2:
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.status == messages.STATUS_INVALID:
+                # "invalid": The certificate will not be issued.  Consider this
+                # order process abandoned.
                 if body.error is not None:
                     raise errors.IssuanceError(body.error)
                 raise errors.Error(
                     "The certificate order failed. No further information was provided "
                     "by the server.")
+            elif body.status == messages.STATUS_READY:
+                # "ready": The server agrees that the requirements have been
+                # fulfilled, and is awaiting finalization.  Submit a finalization
+                # request.
+                self.begin_finalization(orderr)
             elif body.status == messages.STATUS_VALID and body.certificate is not None:
+                # "valid": The server has issued the certificate and provisioned its
+                # URL to the "certificate" field of the order.  Download the
+                # certificate.
                 certificate_response = self._post_as_get(body.certificate)
                 orderr = orderr.update(body=body, fullchain_pem=certificate_response.text)
                 if fetch_alternative_chains:
@@ -276,7 +295,11 @@ class ClientV2:
         :rtype: messages.OrderResource
 
         """
-        self.begin_finalization(orderr)
+        try:
+            self.begin_finalization(orderr)
+        except messages.Error as e:
+            if e.code != 'orderNotReady':
+                raise e
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
 
     def revoke(self, cert: x509.Certificate, rsn: int) -> None:
