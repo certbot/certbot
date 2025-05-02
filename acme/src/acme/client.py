@@ -244,6 +244,10 @@ class ClientV2:
         Poll an order that has been finalized for its status.
         If it becomes valid, obtain the certificate.
 
+        If a finalization request previously returned `orderNotReady`,
+        poll until ready, send a new finalization request, and continue
+        polling until valid as above.
+
         :returns: finalized order (with certificate)
         :rtype: messages.OrderResource
         """
