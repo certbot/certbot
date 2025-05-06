@@ -49,11 +49,12 @@ logger = logging.getLogger(__name__)
 
 
 def acme_from_config_key(config: configuration.NamespaceConfig,
-                         key: jose.JWK,
+                         key: Optional[jose.JWK] = None,
                          regr: Optional[messages.RegistrationResource] = None,
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
-    if key.typ == 'EC':
+    alg = RS256
+    if key and key.typ == 'EC':
         public_key = key.key
         if public_key.key_size == 256:
             alg = ES256
@@ -65,8 +66,6 @@ def acme_from_config_key(config: configuration.NamespaceConfig,
             raise errors.NotSupportedError(
                 "No matching signing algorithm can be found for the key"
             )
-    else:
-        alg = RS256
     net = acme_client.ClientNetwork(key, alg=alg, account=regr,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
@@ -225,6 +224,8 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
     :returns: Registration Resource.
     :rtype: `acme.messages.RegistrationResource`
     """
+    if not acme.net.key:
+        raise errors.Error("acme client with no private key cannot register account.")
 
     eab_credentials_supplied = config.eab_kid and config.eab_hmac_key
     eab: Optional[Dict[str, Any]]
