@@ -1,5 +1,5 @@
 FROM certbot-compatibility-test
-MAINTAINER Brad Warren <bmw@eff.org>
+LABEL org.opencontainers.image.authors="certbot-dev@eff.org"
 
 RUN apt-get install apache2 -y
 
