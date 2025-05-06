@@ -24,6 +24,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   certificate. This conforms to RFC 8555 more accurately and avoids race conditions where
   all authorizations are fulfilled but order has not yet transitioned to ready state on
   the server when the finalization request is sent.
+* The --preferred-profile and --required-profile flags now have their values stored in
+  the renewal configuration so the same setting will be used on renewal.
 
 More details about these changes can be found on our GitHub repo.
 

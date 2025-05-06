@@ -122,16 +122,22 @@ class RelevantValuesTest(unittest.TestCase):
         namespace = cli.prepare_and_parse_args(PLUGINS, [
             '--allow-subset-of-names',
             '--authenticator', 'apache',
+            '--preferred-profile', 'fancyprofile',
         ])
         expected_relevant_values = {
             'server': constants.CLI_DEFAULTS['server'],
             'key_type': 'ecdsa',
             'allow_subset_of_names': True,
             'authenticator': 'apache',
+            'preferred_profile': 'fancyprofile',
         }
 
         assert relevant_values(namespace) == expected_relevant_values
 
+    def test_with_required_profile(self):
+        self.values["required_profile"] = "shortlived"
+        expected_relevant_values = self.values.copy()
+        assert self._call(self.values) == expected_relevant_values
 
 class BaseRenewableCertTest(test_util.ConfigTestCase):
     """Base class for setting up Renewable Cert tests.
