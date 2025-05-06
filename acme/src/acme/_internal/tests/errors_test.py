@@ -56,25 +56,21 @@ class ValidationErrorTest(unittest.TestCase):
 
     def setUp(self):
         from acme.errors import ValidationError
+        from acme.messages import Error
         failed_authzr = mock.MagicMock()
         failed_authzr.body.identifier = 'example.com'
         challenge = mock.MagicMock()
         challenge.chall.typ = 'dns-01'
-        challenge.error.typ = 'generic error'
-        challenge.error.detail = 'detail message'
+        self.challenge_error = Error(typ='custom', detail='bar')
+        challenge.error = self.challenge_error
         failed_authzr.body.challenges = [challenge]
         self.error = ValidationError([failed_authzr])
 
     def test_repr(self):
-        self.assertEqual(
-            '\n Authorization for identifier example.com failed.'
-            '\n Here are the challenges that were not fulfilled:'
-            '\n Challenge Type: dns-01'
-            '\n Error information: '
-            '\n Type: generic error'
-            '\n Details: detail message \n\n',
-            str(self.error),
-        )
+        err_message = str(self.error)
+        assert 'Authorization for example.com failed' in err_message
+        assert 'Challenge dns-01 failed' in err_message
+        assert str(self.challenge_error) in err_message
 
 
 if __name__ == "__main__":

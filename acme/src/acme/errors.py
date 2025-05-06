@@ -107,23 +107,15 @@ class ValidationError(Error):
         self.failed_authzrs = failed_authzrs
         super().__init__()
 
-    def __str__(self):
-        msg = ''
+    def __str__(self) -> str:
+        msg = []
         for authzr in self.failed_authzrs:
-            msg += '\n Authorization for identifier %s failed.' % (
-                authzr.body.identifier)
-            msg += '\n Here are the challenges that were not fulfilled:'
+            msg.append(f'Authorization for {authzr.body.identifier} ' \
+                'failed due to one or more failed challenges:')
             for challenge in authzr.body.challenges:
-                msg += \
-                    '\n Challenge Type: %s' \
-                    '\n Error information: ' \
-                    '\n Type: %s' \
-                    '\n Details: %s \n\n' % (
-                        challenge.chall.typ,
-                        challenge.error.typ if challenge.error else '',
-                        challenge.error.detail if challenge.error else '',
-                    )
-        return msg
+                msg.append(f'  Challenge {challenge.chall.typ} failed ' \
+                    f'with error  {str(challenge.error)}')
+        return '\n'.join(msg)
 
 
 class TimeoutError(Error):  # pylint: disable=redefined-builtin
