@@ -4,11 +4,11 @@
 
 Explanation on supported versions [here](https://github.com/certbot/certbot/wiki/Architectural-Decision-Records#-update-to-certbots-version-policy-and-end-of-life-support-on-previous-major-versions)
 
-| Major Version | Supported          |
+| Major Version | Support Level |
 | ------- | ------------------ |
-| >= 4.0.0   | :white_check_mark: |
-| Backported Version | Supported          |
-| none - based on team discretion | :x:                |
+| >= 4.0  | Full Support |
+| 3.x     | Discretionary Backports |
+| <=2.x   | None |
 
 
 ## Reporting a Vulnerability
