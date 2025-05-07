@@ -114,7 +114,7 @@ class ValidationError(Error):
                 'failed due to one or more failed challenges:')
             for challenge in authzr.body.challenges:
                 msg.append(f'  Challenge {challenge.chall.typ} failed ' \
-                    f'with error  {str(challenge.error)}')
+                    f'with error {str(challenge.error)}')
         return '\n'.join(msg)
 
 
