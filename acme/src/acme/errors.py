@@ -110,7 +110,7 @@ class ValidationError(Error):
     def __str__(self) -> str:
         msg = []
         for authzr in self.failed_authzrs:
-            msg.append(f'Authorization for {authzr.body.identifier} ' \
+            msg.append(f'Authorization for {authzr.body.identifier.value} ' \
                 'failed due to one or more failed challenges:')
             for challenge in authzr.body.challenges:
                 msg.append(f'  Challenge {challenge.chall.typ} failed ' \
