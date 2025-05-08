@@ -51,5 +51,36 @@ class PollErrorTest(unittest.TestCase):
                          'sentinel.AR2})' % repr(set()) == repr(self.invalid)
 
 
+class ValidationErrorTest(unittest.TestCase):
+    """Tests for acme.errors.ValidationError"""
+
+    def setUp(self):
+        from acme.errors import ValidationError
+        from acme.challenges import DNS01
+        from acme.messages import Error
+        from acme.messages import Authorization
+        from acme.messages import AuthorizationResource
+        from acme.messages import IDENTIFIER_FQDN
+        from acme.messages import ChallengeBody
+        from acme.messages import Identifier
+        self.challenge_error = Error(typ='custom', detail='bar')
+        failed_authzr = AuthorizationResource(
+            body=Authorization(
+                identifier=Identifier(typ=IDENTIFIER_FQDN, value="example.com"),
+                challenges=[ChallengeBody(
+                    chall=DNS01(),
+                    error=self.challenge_error,
+                )]
+            )
+        )
+        self.error = ValidationError([failed_authzr])
+
+    def test_repr(self):
+        err_message = str(self.error)
+        assert 'Authorization for example.com failed' in err_message
+        assert 'Challenge dns-01 failed' in err_message
+        assert str(self.challenge_error) in err_message
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

@@ -107,6 +107,16 @@ class ValidationError(Error):
         self.failed_authzrs = failed_authzrs
         super().__init__()
 
+    def __str__(self) -> str:
+        msg = []
+        for authzr in self.failed_authzrs:
+            msg.append(f'Authorization for {authzr.body.identifier.value} ' \
+                'failed due to one or more failed challenges:')
+            for challenge in authzr.body.challenges:
+                msg.append(f'  Challenge {challenge.chall.typ} failed ' \
+                    f'with error {str(challenge.error)}')
+        return '\n'.join(msg)
+
 
 class TimeoutError(Error):  # pylint: disable=redefined-builtin
     """Error for when polling an authorization or an order times out."""
