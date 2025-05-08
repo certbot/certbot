@@ -56,14 +56,23 @@ class ValidationErrorTest(unittest.TestCase):
 
     def setUp(self):
         from acme.errors import ValidationError
+        from acme.challenges import DNS01
         from acme.messages import Error
-        failed_authzr = mock.MagicMock()
-        failed_authzr.body.identifier = 'example.com'
-        challenge = mock.MagicMock()
-        challenge.chall.typ = 'dns-01'
+        from acme.messages import Authorization
+        from acme.messages import AuthorizationResource
+        from acme.messages import IDENTIFIER_FQDN
+        from acme.messages import ChallengeBody
+        from acme.messages import Identifier
         self.challenge_error = Error(typ='custom', detail='bar')
-        challenge.error = self.challenge_error
-        failed_authzr.body.challenges = [challenge]
+        failed_authzr = AuthorizationResource(
+            body=Authorization(
+                identifier=Identifier(typ=IDENTIFIER_FQDN, value="example.com"),
+                challenges=[ChallengeBody(
+                    chall=DNS01(),
+                    error=self.challenge_error,
+                )]
+            )
+        )
         self.error = ValidationError([failed_authzr])
 
     def test_repr(self):
