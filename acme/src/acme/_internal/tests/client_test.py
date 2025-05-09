@@ -318,6 +318,9 @@ class ClientV2Test(unittest.TestCase):
         with pytest.raises(messages.Error):
             self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
 
+    def test_finalize_order_retry_after(self):
+        pass
+
     def test_finalize_order_timeout(self):
         deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
         with pytest.raises(errors.TimeoutError):

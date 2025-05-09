@@ -251,9 +251,10 @@ class ClientV2:
         :returns: finalized order (with certificate)
         :rtype: messages.OrderResource
         """
-
+        sleep_seconds: float = 1
         while datetime.datetime.now() < deadline:
-            time.sleep(1)
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.status == messages.STATUS_INVALID:
@@ -280,6 +281,15 @@ class ClientV2:
                     alt_chains = [self._post_as_get(url).text for url in alt_chains_urls]
                     orderr = orderr.update(alternative_fullchains_pem=alt_chains)
                 return orderr
+            else:
+                assert body.status == messages.STATUS_PROCESSING
+                # the only other option is messages.STATUS_PENDING, which we should never hit here
+                # because we've already checked for it earlier
+                retry_after = self.retry_after(response, 1)
+                # Whatever Retry-After the ACME server requests, the polling must not take
+                # longer than the overall deadline
+                retry_after = min(retry_after, deadline)
+                sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
         raise errors.TimeoutError()
 
     def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
