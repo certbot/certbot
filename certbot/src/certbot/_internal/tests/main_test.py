@@ -1419,7 +1419,6 @@ class MainTest(test_util.ConfigTestCase):
                                                    'live/foo.bar/fullchain.pem'))
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
                                       cert_path=cert_path, fullchain_path=chain_path)
-        mock_lineage.should_autorenew.return_value = due_for_renewal
         mock_lineage.has_pending_deployment.return_value = False
         mock_lineage.names.return_value = ['isnot.org']
         mock_lineage.private_key_type = 'ecdsa'
@@ -1448,21 +1447,23 @@ class MainTest(test_util.ConfigTestCase):
                             as mock_crypto_util:
                             mock_crypto_util.notAfter.return_value = expiry_date
                             with mock.patch('certbot._internal.eff.handle_subscription'):
-                                if not args:
-                                    args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
-                                if extra_args:
-                                    args += extra_args
-                                try:
-                                    ret, stdout, _, _ = self._call(args, stdout)
-                                    if ret:
-                                        print("Returned", ret)
-                                        raise AssertionError(ret)
-                                    assert not error_expected, "renewal should have errored"
-                                except: # pylint: disable=bare-except
-                                    if not error_expected:
-                                        raise AssertionError(
-                                            "Unexpected renewal error:\n" +
-                                            traceback.format_exc())
+                                with mock.patch('certbot._internal.renewal.should_autorenew') as should_autorenew:
+                                    should_autorenew.return_value = due_for_renewal
+                                    if not args:
+                                        args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
+                                    if extra_args:
+                                        args += extra_args
+                                    try:
+                                        ret, stdout, _, _ = self._call(args, stdout)
+                                        if ret:
+                                            print("Returned", ret)
+                                            raise AssertionError(ret)
+                                        assert not error_expected, "renewal should have errored"
+                                    except: # pylint: disable=bare-except
+                                        if not error_expected:
+                                            raise AssertionError(
+                                                "Unexpected renewal error:\n" +
+                                                traceback.format_exc())
 
             if should_renew:
                 if reuse_key and not new_key:

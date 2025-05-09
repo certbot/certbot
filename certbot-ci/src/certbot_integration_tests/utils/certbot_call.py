@@ -135,7 +135,7 @@ def main() -> None:
 
     # Invoke certbot in test mode, without capturing output so users see directly the outcome.
     command, env = _prepare_args_env(args, directory_url, http_01_port, tls_alpn_01_port,
-                                     config_dir, workspace, True)
+                                     config_dir, workspace, False)
     subprocess.check_call(command, universal_newlines=True, cwd=workspace, env=env)
 
 
