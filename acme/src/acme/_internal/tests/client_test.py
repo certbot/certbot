@@ -413,6 +413,8 @@ class ClientV2Test(unittest.TestCase):
         assert t == datetime.datetime(2025, 3, 24, 00, 00, 00, tzinfo=datetime.timezone.utc)
 
     def test_renewal_time_with_renewal_info(self):
+        from cryptography import x509
+        from acme.client import _renewal_info_path_component
         cert_pem = make_cert_for_renewal(
             not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
             not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
@@ -430,7 +432,11 @@ class ClientV2Test(unittest.TestCase):
             "message": "Keep those certs fresh"
         }
         t, _ = self.client.renewal_time(cert_pem)
-        self.net.get.assert_called_once_with("https://www.letsencrypt-demo.org/acme/renewal-info/MTIzNA.AN3V", content_type='application/json')
+        cert_parsed = x509.load_pem_x509_certificate(cert_pem)
+        ari_path_component = _renewal_info_path_component(cert_parsed)
+        self.net.get.assert_called_once_with("https://www.letsencrypt-demo.org/acme/renewal-info/" +
+                                             ari_path_component,
+                                             content_type='application/json')
         assert t == datetime.datetime(2025, 3, 14, 1, 1, 1, tzinfo=datetime.timezone.utc)
 
         self.net.reset_mock()
@@ -443,7 +449,9 @@ class ClientV2Test(unittest.TestCase):
             "message": "Keep those certs fresh"
         }
         t, _ = self.client.renewal_time(cert_pem)
-        self.net.get.assert_called_once_with("https://www.letsencrypt-demo.org/acme/renewal-info/MTIzNA.AN3V", content_type='application/json')
+        self.net.get.assert_called_once_with("https://www.letsencrypt-demo.org/acme/renewal-info/" +
+                                             ari_path_component,
+                                             content_type='application/json')
         assert t >= datetime.datetime(2025, 3, 16, 1, 1, 1, tzinfo=datetime.timezone.utc)
         assert t <= datetime.datetime(2025, 3, 17, 1, 1, 1, tzinfo=datetime.timezone.utc)
 
