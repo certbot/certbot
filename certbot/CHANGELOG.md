@@ -27,7 +27,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `ready`, and resubmits finalization request before polling for `valid` to download
   certificate. This conforms to RFC 8555 more accurately and avoids race conditions where
   all authorizations are fulfilled but order has not yet transitioned to ready state on
-  the server when the finalization request is sent.
+  the server when the finalization request is sent. It also respects retry-after when
+  polling for finalization readiness.
 * The --preferred-profile and --required-profile flags now have their values stored in
   the renewal configuration so the same setting will be used on renewal.
 
