@@ -330,10 +330,14 @@ def should_renew(config: configuration.NamespaceConfig,
 def should_autorenew(lineage: storage.RenewableCert, acme: acme_client.ClientV2) -> bool:
     """Should we now try to autorenew the most recent cert version?
 
-    This is a policy question and does not only depend on whether
-    the cert is expired. (This considers whether autorenewal is
-    enabled, whether the cert is revoked, and whether the time
-    interval for autorenewal has been reached.)
+    If ACME Renewal Info (ARI) is available in the directory, check that first,
+    and renew if ARI indicates it is time, or if we are within the default
+    renweal window.
+
+    If the certificate has an OCSP URL, renew if it is revoked.
+
+    If neither of the above is true, but the "renew_before_expiry" config
+    indicates it is time, renew. Otherwise, don't.
 
     Note that this examines the numerically most recent cert version,
     not the currently deployed version.
@@ -362,28 +366,14 @@ def should_autorenew(lineage: storage.RenewableCert, acme: acme_client.ClientV2)
             logger.debug("Should renew, certificate is revoked.")
             return True
 
-        notBefore = crypto_util.notBefore(cert)
-        notAfter = crypto_util.notAfter(cert)
-        lifetime = notAfter - notBefore
-
+        # The "renew_before_expiry" config field can make us renew earlier
+        # than the default.
         config_interval = lineage.configuration.get("renew_before_expiry")
+        notAfter = crypto_util.notAfter(cert)
         if (config_interval is not None and
             notAfter < storage.add_time_interval(now, config_interval)):
             logger.debug("Should renew, less than %s before certificate "
                             "expiry %s.", config_interval,
-                            notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
-            return True
-
-        # No config for "renew_before_expiry", provide default behavior.
-        # For most certs, renew with 1/3 of certificate lifetime remaining.
-        # For short lived certificates, renew at 1/2 of certificate lifetime.
-        default_interval = lifetime / 3
-        if lifetime.total_seconds() < 10 * 86400:
-            default_interval = lifetime / 2
-        remaining_time = notAfter - now
-        if remaining_time < default_interval:
-            logger.debug("Should renew, less than %ss before certificate "
-                            "expiry %s.", default_interval,
                             notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
             return True
 
