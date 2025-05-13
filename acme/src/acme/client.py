@@ -282,10 +282,7 @@ class ClientV2:
                     alt_chains = [self._post_as_get(url).text for url in alt_chains_urls]
                     orderr = orderr.update(alternative_fullchains_pem=alt_chains)
                 return orderr
-            else:
-                assert body.status == messages.STATUS_PROCESSING
-                # the only other option is messages.STATUS_PENDING, which we should never hit here
-                # because we've already checked for it earlier
+            elif body.status == messages.STATUS_PROCESSING:
                 retry_after = self.retry_after(response, 1)
                 # Whatever Retry-After the ACME server requests, the polling must not take
                 # longer than the overall deadline
