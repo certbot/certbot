@@ -29,6 +29,7 @@ tags
 .vscode
 *.sublime-project
 *.sublime-workspace
+pyrightconfig.json
 
 # auth --cert-path --chain-path
 /*.pem
