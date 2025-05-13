@@ -55,7 +55,6 @@ parts:
     plugin: python
     source: .
     python-packages:
-      - git+https://github.com/certbot/python-augeas.git@certbot-patched
       - ./acme
       - ./certbot
       - ./certbot-apache
@@ -63,13 +62,6 @@ parts:
     stage:
       - -usr/lib/python3.12/sitecustomize.py # maybe unnecessary
       - -pyvenv.cfg
-      # Old versions of this file used to unstage
-      # lib/python3.8/site-packages/augeas.py to avoid conflicts between
-      # python-augeas 0.5.0 which was pinned in snap-constraints.txt and
-      # our python-augeas fork which creates an auto-generated cffi file at
-      # the same path. Since we've combined things in one part and removed the
-      # python-augeas pinning, unstaging this file had a different, unintended
-      # effect so we now stage the file to keep the auto-generated cffi file.
     stage-packages:
       - libaugeas0
       - libpython3.12-dev
@@ -116,7 +108,6 @@ parts:
       craftctl default
     override-pull: |
       craftctl default
-      grep -v python-augeas "${CRAFT_PART_SRC}/tools/requirements.txt" >> "${CRAFT_PART_SRC}/snap-constraints.txt"
       craftctl set version=$(grep -oP "__version__ = '\K.*(?=')" "${CRAFT_PART_SRC}/certbot/src/certbot/__init__.py")
     build-attributes:
       - enable-patchelf
