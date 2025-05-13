@@ -108,6 +108,7 @@ parts:
       craftctl default
     override-pull: |
       craftctl default
+      cat "${CRAFT_PART_SRC}/tools/requirements.txt" >> "${CRAFT_PART_SRC}/snap-constraints.txt"
       craftctl set version=$(grep -oP "__version__ = '\K.*(?=')" "${CRAFT_PART_SRC}/certbot/src/certbot/__init__.py")
     build-attributes:
       - enable-patchelf
