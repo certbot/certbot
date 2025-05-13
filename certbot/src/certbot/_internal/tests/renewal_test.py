@@ -239,8 +239,10 @@ class RenewalTest(test_util.ConfigTestCase):
 
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
     @mock.patch("certbot._internal.renewal.datetime")
-    def test_time_interval_judgments(self, mock_datetime, mock_set_by_user):
-        """Test should_autorenew() on the basis of expiry time windows."""
+    def test_renew_before_expiry(self, mock_datetime, mock_set_by_user):
+        """When neither OCSP nor the ACME client indicate it's time to renew,
+           obey the renew_before_expiry config.
+        """
         from certbot._internal import renewal
 
         # This certificate has a lifetime of 7 days, and the tests below
@@ -278,8 +280,6 @@ class RenewalTest(test_util.ConfigTestCase):
                     # at 3.5 days prior to expiry. We haven't reached that yet,
                     # so don't renew.
                     (1418472000, None, False),
-                    # 2014-12-16 03:20, a little less than 3.5 days to expiry.
-                    (1418700000, None, True),
                     # Times that should not renew
                     (1418472000, "4 days", False), (1418472000, "2 days", False),
                     # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
@@ -296,35 +296,11 @@ class RenewalTest(test_util.ConfigTestCase):
                     (1420070400, "10 minutes", True),
                     (1420070400, "10 weeks", True), (1420070400, "10 months", True),
                     (1420070400, "10 years", True), (1420070400, "99 months", True),
-                    (1420070400, None, True)
             ]:
                 sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
                 mock_datetime.datetime.now.return_value = sometime
                 mock_renewable_cert.configuration = {"renew_before_expiry": interval}
                 assert renewal.should_autorenew(mock_renewable_cert, mock_acme) == result, f"at {current_time}, with config '{interval}', expected {result}"
-
-        # Lifetime: 31 years
-        # Default renewal: about 10 years from expiry
-        # Not Before: May 29 07:42:01 2017 GMT
-        # Not After : Mar 30 07:42:01 2048 GMT
-        not_before=datetime.datetime(2017, 5, 29, 7, 42, 1)
-        long_cert = make_cert_with_lifetime(not_before, 31 * 365)
-        with tempfile.NamedTemporaryFile() as zmp_cert:
-            zmp_cert.close()  # close now because of compatibility issues on Windows
-            with open(zmp_cert.name, 'wb') as c:
-                print(f"long_cert: {long_cert}")
-                c.write(long_cert)
-
-            mock_renewable_cert.version.return_value = zmp_cert.name
-
-            for (current_time, result) in [
-                (2114380800, False), # 2037-01-01
-                (2148000000, True), # 2038-01-25
-            ]:
-                sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
-                mock_datetime.datetime.now.return_value = sometime
-                mock_renewable_cert.configuration = {"renew_before_expiry": interval}
-                assert renewal.should_autorenew(mock_renewable_cert, mock_acme) == result, f"for long_cert, at {current_time}, with config '{interval}', expected {result}"
 
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
     @mock.patch("certbot._internal.storage.RenewableCert.ocsp_revoked")
