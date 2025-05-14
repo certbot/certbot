@@ -14,8 +14,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * acme.client.ClientNetwork now makes the "key" parameter optional.
 * Deprecated `acme.challenges.TLSALPN01Response`
 * Deprecated `acme.challenges.TLSALPN01`
-* Deprecated ivar `alpn_selection` from `acme.crypto_util.SSLSocket`
 * Deprecated parameter `alpn_protocols` from `acme.crypto_util.probe_sni`
+* Deprecated `acme.crypto_util.SSLSocket`
+* Deprecated `acme.standalone.TLSServer`
 * Deprecated `acme.standalone.TLSALPN01Server`
 * Dropped support for Python 3.9.0 and 3.9.1 for compatibility with newer
   versions of the cryptography Python package. Python 3.9.2+ is still
