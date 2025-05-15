@@ -281,7 +281,9 @@ class ClientV2Test(unittest.TestCase):
         with pytest.raises(errors.Error, match="The certificate order failed"):
             self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
 
-    def test_finalize_order_orderNotReady(self):
+    @mock.patch('acme.client.time.sleep')
+    @mock.patch('acme.client.datetime')
+    def test_finalize_order_orderNotReady(self, dt_mock, mock_sleep):
         # https://github.com/certbot/certbot/issues/9766
         updated_order_processing = self.order.update(status=messages.STATUS_PROCESSING)
         updated_order_ready = self.order.update(status=messages.STATUS_READY)
@@ -297,11 +299,18 @@ class ClientV2Test(unittest.TestCase):
                                           updated_order_ready.to_json(),
                                           updated_order_valid.to_json()]
 
+        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
+        dt_mock.timedelta = datetime.timedelta
+        self.response.headers['Retry-After'] = '50'
+
         post = mock.MagicMock()
         post.side_effect = [messages.Error.with_code('orderNotReady'), # first begin_finalization
-                            self.response, # first poll_finalization poll --> still returns pending
+                            # sleep 1
+                            self.response, # first poll_finalization poll --> returns processing
+                            # retry-after sleep here
                             self.response, # second poll_finalization poll --> returns ready
                             mock.MagicMock(), # second begin_finalization
+                            # sleep 1
                             self.response, # third poll_finalization poll --> returns valid
                             self.response # fetch cert
                             ]
@@ -309,6 +318,7 @@ class ClientV2Test(unittest.TestCase):
 
         self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
         assert self.net.post.call_count == 6
+        assert mock_sleep.call_args_list == [((1,),), ((50,),), ((1,),)]
 
     def test_finalize_order_otherErrorCode(self):
         post = mock.MagicMock()
