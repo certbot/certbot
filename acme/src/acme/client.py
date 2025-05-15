@@ -283,6 +283,8 @@ class ClientV2:
                     orderr = orderr.update(alternative_fullchains_pem=alt_chains)
                 return orderr
             elif body.status == messages.STATUS_PROCESSING:
+                # "processing": The certificate is being issued.  Send a POST-as-GET request after
+                # the time given in the Retry-After header field of the response, if any.
                 retry_after = self.retry_after(response, 1)
                 # Whatever Retry-After the ACME server requests, the polling must not take
                 # longer than the overall deadline
