@@ -8,11 +8,9 @@ from typing import DefaultDict
 from typing import Dict
 from typing import Iterable
 from typing import List
-from typing import Mapping
 from typing import Set
 from typing import Tuple
 from typing import Type
-from typing import Union
 from typing import TYPE_CHECKING
 
 from acme import challenges
@@ -23,10 +21,6 @@ from certbot import interfaces
 from certbot.display import util as display_util
 from certbot.plugins import common
 
-from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import types
-from OpenSSL import crypto
-
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
@@ -35,30 +29,14 @@ if TYPE_CHECKING:
         Set[achallenges.AnnotatedChallenge]
     ]
 
-_KeyAndCert = Union[
-    Tuple[crypto.PKey, crypto.X509],
-    Tuple[types.CertificateIssuerPrivateKeyTypes, x509.Certificate],
-]
-
 
 class ServerManager:
-    """Standalone servers manager.
+    """Manager for HTTP-01 standalone server instances."""
 
-    Manager for `ACMEServer` and `ACMETLSServer` instances.
-
-    `certs` and `http_01_resources` correspond to
-    `acme.crypto_util.SSLSocket.certs` and
-    `acme.crypto_util.SSLSocket.http_01_resources` respectively. All
-    created servers share the same certificates and resources, so if
-    you're running both TLS and non-TLS instances, HTTP01 handlers
-    will serve the same URLs!
-
-    """
-    def __init__(self, certs: Mapping[bytes, _KeyAndCert],
+    def __init__(self,
                  http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
                  ) -> None:
         self._instances: Dict[int, acme_standalone.HTTP01DualNetworkedServers] = {}
-        self.certs = certs
         self.http_01_resources = http_01_resources
 
     def run(self, port: int, challenge_type: Type[challenges.Challenge],
@@ -144,10 +122,9 @@ running. HTTP challenge only (wildcards not supported)."""
         # values, main thread writes). Due to the nature of CPython's
         # GIL, the operations are safe, c.f.
         # https://docs.python.org/2/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
-        self.certs: Mapping[bytes, _KeyAndCert] = {}
         self.http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = set()
 
-        self.servers = ServerManager(self.certs, self.http_01_resources)
+        self.servers = ServerManager(self.http_01_resources)
 
     @classmethod
     def add_parser_arguments(cls, add: Callable[..., None]) -> None:

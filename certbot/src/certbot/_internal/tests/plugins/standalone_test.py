@@ -23,13 +23,11 @@ class ServerManagerTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.standalone.ServerManager."""
 
     def setUp(self):
-        from certbot._internal.plugins.standalone import ServerManager, _KeyAndCert
-        self.certs: Dict[bytes, _KeyAndCert] = {}
+        from certbot._internal.plugins.standalone import ServerManager
         self.http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = {}
-        self.mgr = ServerManager(self.certs, self.http_01_resources)
+        self.mgr = ServerManager(self.http_01_resources)
 
     def test_init(self):
-        assert self.mgr.certs is self.certs
         assert self.mgr.http_01_resources is self.http_01_resources
 
     def _test_run_stop(self, challenge_type):
