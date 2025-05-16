@@ -2,9 +2,6 @@
 from datetime import datetime
 from datetime import timedelta
 import logging
-import re
-import subprocess
-from subprocess import PIPE
 from typing import Optional
 from typing import Tuple
 
@@ -20,8 +17,6 @@ import requests
 
 from certbot import crypto_util
 from certbot import errors
-from certbot import util
-from certbot.compat.os import getenv
 from certbot.interfaces import RenewableCert
 
 logger = logging.getLogger(__name__)
@@ -29,26 +24,6 @@ logger = logging.getLogger(__name__)
 
 class RevocationChecker:
     """This class figures out OCSP checking on this system, and performs it."""
-
-    def __init__(self, enforce_openssl_binary_usage: bool = False) -> None:
-        self.broken = False
-        self.use_openssl_binary = enforce_openssl_binary_usage
-
-        if self.use_openssl_binary:
-            if not util.exe_exists("openssl"):
-                logger.info("openssl not installed, can't check revocation")
-                self.broken = True
-                return
-
-            # New versions of openssl want -header var=val, old ones want -header var val
-            test_host_format = subprocess.run(["openssl", "ocsp", "-header", "var", "val"],
-                                     stdout=PIPE, stderr=PIPE, universal_newlines=True,
-                                     check=False, env=util.env_no_snap_for_external_calls())
-            if "Missing =" in test_host_format.stderr:
-                self.host_args = lambda host: ["Host=" + host]
-            else:
-                self.host_args = lambda host: ["Host", host]
-
     def ocsp_revoked(self, cert: RenewableCert) -> bool:
         """Get revoked status for a particular cert version.
 
@@ -72,9 +47,6 @@ class RevocationChecker:
         :rtype: bool
 
         """
-        if self.broken:
-            return False
-
         # Let's Encrypt doesn't update OCSP for expired certificates,
         # so don't check OCSP if the cert is expired.
         # https://github.com/certbot/certbot/issues/7152
@@ -86,47 +58,7 @@ class RevocationChecker:
         if not host or not url:
             return False
 
-        if self.use_openssl_binary:
-            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url, timeout)
         return _check_ocsp_cryptography(cert_path, chain_path, url, timeout)
-
-    def _check_ocsp_openssl_bin(self, cert_path: str, chain_path: str,
-                                host: str, url: str, timeout: int) -> bool:
-        # Minimal implementation of proxy selection logic as seen in, e.g., cURL
-        # Some things that won't work, but may well be in use somewhere:
-        # - username and password for proxy authentication
-        # - proxies accepting TLS connections
-        # - proxy exclusion through NO_PROXY
-        env_http_proxy = getenv('http_proxy')
-        env_HTTP_PROXY = getenv('HTTP_PROXY')
-        proxy_host = None
-        if env_http_proxy is not None or env_HTTP_PROXY is not None:
-            proxy_host = env_http_proxy if env_http_proxy is not None else env_HTTP_PROXY
-        if proxy_host is None:
-            url_opts = ["-url", url]
-        else:
-            if proxy_host.startswith('http://'):
-                proxy_host = proxy_host[len('http://'):]
-            url_opts = ["-host", proxy_host, "-path", url]
-        # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
-        cmd = ["openssl", "ocsp",
-               "-no_nonce",
-               "-issuer", chain_path,
-               "-cert", cert_path,
-               "-CAfile", chain_path,
-               "-verify_other", chain_path,
-               "-trust_other",
-               "-timeout", str(timeout),
-               "-header"] + self.host_args(host) + url_opts
-        logger.debug("Querying OCSP for %s", cert_path)
-        logger.debug(" ".join(cmd))
-        try:
-            output, err = util.run_script(cmd, log=logger.debug)
-        except errors.SubprocessError:
-            logger.info("OCSP check failed for %s (are we offline?)", cert_path)
-            return False
-        return _translate_ocsp_query(cert_path, output, err)
-
 
 def _determine_ocsp_server(cert_path: str) -> Tuple[Optional[str], Optional[str]]:
     """Extract the OCSP server host from a certificate.
@@ -299,29 +231,3 @@ def _check_ocsp_response_signature(response_ocsp: 'ocsp.OCSPResponse',
         raise AssertionError("no signature hash algorithm defined")
     crypto_util.verify_signed_payload(responder_cert.public_key(), response_ocsp.signature,
                                       response_ocsp.tbs_response_bytes, chosen_response_hash)
-
-
-def _translate_ocsp_query(cert_path: str, ocsp_output: str, ocsp_errors: str) -> bool:
-    """Parse openssl's weird output to work out what it means."""
-
-    states = ("good", "revoked", "unknown")
-    patterns = [r"{0}: (WARNING.*)?{1}".format(cert_path, s) for s in states]
-    good, revoked, unknown = (re.search(p, ocsp_output, flags=re.DOTALL) for p in patterns)
-
-    warning = good.group(1) if good else None
-
-    if ("Response verify OK" not in ocsp_errors) or (good and warning) or unknown:
-        logger.info("Revocation status for %s is unknown", cert_path)
-        logger.debug("Uncertain output:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
-        return False
-    elif good and not warning:
-        return False
-    elif revoked:
-        warning = revoked.group(1)
-        if warning:
-            logger.info("OCSP revocation warning: %s", warning)
-        return True
-    else:
-        logger.warning("Unable to properly parse OCSP output: %s\nstderr:%s",
-                       ocsp_output, ocsp_errors)
-        return False
