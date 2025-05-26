@@ -241,7 +241,7 @@ class HelpfulArgumentParser:
         # can either be preceded by hyphens (as on the command line) or not (as
         # in config files)
 
-        # if the argument doesn't have leading hypens, prefix it so it can be
+        # if the argument doesn't have leading hyphens, prefix it so it can be
         # compared directly w/ action option strings
         if arg[0] != '-':
             arg = '--' + arg

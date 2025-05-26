@@ -860,7 +860,7 @@ whether your system has a pre-installed scheduled task for Certbot, it is safe t
 instructions to create one.
 
 .. note::
-   If you're using Windows, these instructions are not neccessary as Certbot on Windows comes with
+   If you're using Windows, these instructions are not necessary as Certbot on Windows comes with
    a scheduled task for automated renewal pre-installed.
 
    If you are using macOS and installed Certbot using Homebrew, follow the instructions at
