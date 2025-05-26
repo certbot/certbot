@@ -1,6 +1,6 @@
 [codespell]
 # Ref: https://github.com/codespell-project/codespell#using-a-config-file
-skip = .git*,venv,.tox,*.lock,*.css,*.min.*,.codespellrc,*.pem,invalid_unicode_comments.conf,letsencrypt-auto.sig
+skip = .git*,venv,.tox,*.lock,*.css,*.min.*,.codespellrc,*.pem,invalid_unicode_comments.conf,letsencrypt-auto.sig,cli-help.txt
 check-hidden = true
 ignore-regex = \b(OT|SectionIn)\b
 ignore-words-list = anc,ans,anull,bloc,hashin,astroid
