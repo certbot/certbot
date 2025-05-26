@@ -165,7 +165,7 @@ zone option.  The zone will be then visible in both zones with exactly the same 
 
 .. note::
    Order matters in BIND views: the ``in-view`` zone option must refer to a
-   view defined preceeding it.  It cannot refer to a view defined later in the configuration file.
+   view defined preceding it.  It cannot refer to a view defined later in the configuration file.
 
 .. code-block:: none
    :caption: Split-view BIND configuration
