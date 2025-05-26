@@ -418,7 +418,7 @@ class ApacheParser:
     def add_dir(
         self, aug_conf_path: Optional[str], directive: Optional[str], args: Union[List[str], str]
     ) -> None:
-        """Appends directive to the end fo the file given by aug_conf_path.
+        """Appends directive to the end of the file given by aug_conf_path.
 
         .. note:: Not added to AugeasConfigurator because it may depend
             on the lens

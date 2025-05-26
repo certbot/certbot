@@ -86,13 +86,13 @@ class LooseVersion:
         an exception is raised.
 
         Comparison is performed element-wise. If the version components being compared are of
-        different types, the two versions are considered incomparible. Otherwise, if either of the
+        different types, the two versions are considered incompatible. Otherwise, if either of the
         components is not equal to the other, less or greater is returned based on the comparison's
         result. In case the two versions are of different lengths, some elements in the longer
         version have not yet been compared. If these are all equal to zero, the two versions are
         equal. Otherwise, the longer version is greater.
 
-        If the two versions are incomparible, an exception is raised. Otherwise, the returned
+        If the two versions are incompatible, an exception is raised. Otherwise, the returned
         integer indicates the result of the comparison. If self == other, 0 is returned.
         If self > other, 1 is returned. If self < other -1 is returned.
 
