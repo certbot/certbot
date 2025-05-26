@@ -157,7 +157,7 @@ let argv (l:lens) = l . (sep_spc . l)*
  * not need to have space between them, but bare arguments do.
  *
  * Apache apparently is also happy if the last argument starts with a double
- * quote, but has no corresponding closing duoble quote, which is what
+ * quote, but has no corresponding closing double quote, which is what
  * arg_dir_msg handles
  *)
 let dir_args =

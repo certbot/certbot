@@ -147,8 +147,8 @@ Special considerations for multiple views in BIND
 
 If your BIND configuration leverages multiple views, Certbot may fail with an
 ``Unable to determine base domain for _acme-challenge.example.com`` error.
-This error occurs when Certbot isn't able to communicate with an authorative
-nameserver for the zone, one that answers with the AA (Authorative Answer) flag
+This error occurs when Certbot isn't able to communicate with an authoritative
+nameserver for the zone, one that answers with the AA (Authoritative Answer) flag
 set in the response.
 
 A common multiple view configuration with two views, external and internal,

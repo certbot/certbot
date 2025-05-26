@@ -26,7 +26,7 @@
 #
 # The following two options provide the default virtual host for the HTTP and
 # HTTPS protocol. YOU NEED TO ENABLE AT LEAST ONE OF THEM, otherwise apache
-# will not listen for incomming connections on the approriate port.
+# will not listen for incoming connections on the appropriate port.
 #
 #  DEFAULT_VHOST      Enables name-based virtual hosts, with the default
 #                     virtual host being in /var/www/localhost/htdocs

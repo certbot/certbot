@@ -555,7 +555,7 @@ class ParseTest(unittest.TestCase):
     def test_abbreviated_arguments(self):
         # Argparse's "allow_abbrev" option (which is True by default) allows
         # for unambiguous partial arguments (e.g. "--preferred-chal dns" will be
-        # interepreted the same as "--preferred-challenges dns")
+        # interpreted the same as "--preferred-challenges dns")
         namespace = self.parse('--preferred-chal dns --no-dir')
         assert_set_by_user_with_value(namespace, 'pref_challs', ['dns-01'])
         assert_set_by_user_with_value(namespace, 'directory_hooks', False)

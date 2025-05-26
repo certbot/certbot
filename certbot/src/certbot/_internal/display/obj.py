@@ -328,7 +328,7 @@ class FileDisplay:
         except ValueError:
             return []
 
-        # Remove duplicates. dict is used instead of set, since dict perserves
+        # Remove duplicates. dict is used instead of set, since dict preserves
         # insertion order as of Python 3.7
         indices_int = list(dict.fromkeys(indices_int).keys())
 
