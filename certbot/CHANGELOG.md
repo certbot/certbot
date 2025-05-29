@@ -18,6 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Deprecated `acme.crypto_util.SSLSocket`
 * Deprecated `acme.standalone.TLSServer`
 * Deprecated `acme.standalone.TLSALPN01Server`
+* Deprecated parameter `enforce_openssl_binary_usage` from certbot.ocsp.RevocationChecker.
 * Dropped support for Python 3.9.0 and 3.9.1 for compatibility with newer
   versions of the cryptography Python package. Python 3.9.2+ is still
   supported.
