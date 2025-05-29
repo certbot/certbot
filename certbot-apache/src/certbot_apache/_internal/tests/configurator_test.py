@@ -1091,7 +1091,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         http_vhost = self.config._get_http_vhost(ssl_vhost)
 
-        # Create an old (previously suppoorted) https redirectoin rewrite rule
+        # Create an old (previously supported) https redirectoin rewrite rule
         self.config.parser.add_dir(
             http_vhost.path, "RewriteRule",
             ["^",

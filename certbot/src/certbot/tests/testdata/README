@@ -25,7 +25,7 @@ and for the certificate:
 	)
 	csr = (
 	    x509.CertificateSigningRequestBuilder().add_extension(
-	        x509.SubjectAlternativeName([x509.DNSName('a.exemple.com'), x509.IPAddress(ipaddress.ipaddr('192.0.2.111'))]),
+	        x509.SubjectAlternativeName([x509.DNSName('a.example.com'), x509.IPAddress(ipaddress.ipaddr('192.0.2.111'))]),
 	        critical=False
 	    ).subject_name(
 	        x509.Name([])

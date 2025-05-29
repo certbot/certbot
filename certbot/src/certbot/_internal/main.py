@@ -1096,7 +1096,7 @@ def install(config: configuration.NamespaceConfig,
             custom_prompt=certname_question)[0]
 
     if not enhancements.are_supported(config, installer):
-        raise errors.NotSupportedError("One ore more of the requested enhancements "
+        raise errors.NotSupportedError("One or more of the requested enhancements "
                                        "are not supported by the selected installer")
     # If cert-path is defined, populate missing (ie. not overridden) values.
     # Unfortunately this can't be done in argument parser, as certificate
@@ -1220,7 +1220,7 @@ def enhance(config: configuration.NamespaceConfig,
         return str(e)
 
     if not enhancements.are_supported(config, installer):
-        raise errors.NotSupportedError("One ore more of the requested enhancements "
+        raise errors.NotSupportedError("One or more of the requested enhancements "
                                        "are not supported by the selected installer")
 
     certname_question = ("Which certificate would you like to use to enhance "
@@ -1420,7 +1420,7 @@ def run(config: configuration.NamespaceConfig,
 
     # Preflight check for enhancement support by the selected installer
     if not enhancements.are_supported(config, installer):
-        raise errors.NotSupportedError("One ore more of the requested enhancements "
+        raise errors.NotSupportedError("One or more of the requested enhancements "
                                        "are not supported by the selected installer")
 
     # TODO: Handle errors from _init_le_client?
