@@ -351,24 +351,10 @@ def should_autorenew(lineage: storage.RenewableCert, acme: acme_client.ClientV2)
     if lineage.autorenewal_is_enabled():
         cert = lineage.version("cert", lineage.latest_common_version())
 
-        # Consider whether to attempt to autorenew this cert now
-        renewal_time = None
-        with open(cert, 'rb') as f:
-            cert_pem = f.read()
-        renewal_time, _ = acme.renewal_time(cert_pem)
-
         now = datetime.datetime.now(datetime.timezone.utc)
 
-        if renewal_time and now > renewal_time:
-            return True
-
-        # Renewals on the basis of revocation
-        if lineage.ocsp_revoked(lineage.latest_common_version()):
-            logger.debug("Should renew, certificate is revoked.")
-            return True
-
         # The "renew_before_expiry" config field can make us renew earlier
-        # than the default.
+        # than the default or ARI response.
         config_interval = lineage.configuration.get("renew_before_expiry")
         notAfter = crypto_util.notAfter(cert)
         if (config_interval is not None and
@@ -376,6 +362,20 @@ def should_autorenew(lineage: storage.RenewableCert, acme: acme_client.ClientV2)
             logger.debug("Should renew, less than %s before certificate "
                             "expiry %s.", config_interval,
                             notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
+            return True
+
+        # Consider whether to attempt to autorenew this cert now
+        renewal_time = None
+        with open(cert, 'rb') as f:
+            cert_pem = f.read()
+        renewal_time, _ = acme.renewal_time(cert_pem)
+
+        if renewal_time and now > renewal_time:
+            return True
+
+        # Renewals on the basis of revocation
+        if lineage.ocsp_revoked(lineage.latest_common_version()):
+            logger.debug("Should renew, certificate is revoked.")
             return True
 
     return False
