@@ -361,7 +361,6 @@ def should_autorenew(lineage: storage.RenewableCert, acme: acme_client.ClientV2)
             if config_interval else None)
 
         # check ARI, falling back to calculated default or renew_before_expiry if it's set
-        renewal_time = None
         with open(cert, 'rb') as f:
             cert_pem = f.read()
         renewal_time, _ = acme.renewal_time(cert_pem, expiry_flag_renewal_time)
