@@ -356,8 +356,8 @@ def should_autorenew(lineage: storage.RenewableCert, acme: acme_client.ClientV2)
         # The "renew_before_expiry" config field can make us renew earlier than the default
         # or ARI response, or delay renewal if there is no ARI response
         config_interval = lineage.configuration.get("renew_before_expiry")
-        notAfter = crypto_util.notAfter(cert)
-        expiry_flag_renewal_time = (storage.subtract_time_interval(notAfter, config_interval)
+        expiry_flag_renewal_time = (storage.subtract_time_interval(crypto_util.notAfter(cert),
+            config_interval)
             if config_interval else None)
 
         # check ARI, falling back to calculated default or renew_before_expiry if it's set
@@ -378,9 +378,6 @@ def should_autorenew(lineage: storage.RenewableCert, acme: acme_client.ClientV2)
         # if we're already past renew_before_expiry, renew now
         if (expiry_flag_renewal_time is not None and
             now > expiry_flag_renewal_time):
-            logger.debug("Should renew, less than %s before certificate "
-                            "expiry %s.", config_interval,
-                            notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
             return True
 
     return False
