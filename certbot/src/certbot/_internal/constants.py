@@ -153,11 +153,6 @@ QUIET_LOGGING_LEVEL = logging.ERROR
 DEFAULT_LOGGING_LEVEL = logging.WARNING
 """Default logging level to use when not in quiet mode."""
 
-RENEWER_DEFAULTS = {
-    "renew_before_expiry": "30 days",
-}
-"""Defaults for `certbot renew`."""
-
 ARCHIVE_DIR = "archive"
 """Archive directory, relative to `certbot.configuration.NamespaceConfig.config_dir`."""
 
