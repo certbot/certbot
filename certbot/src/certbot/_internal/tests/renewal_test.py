@@ -314,6 +314,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         # Autorenewal turned off
         mock_rc = mock.MagicMock()
+        mock_rc.configuration = {'renew_before_expiry': None}
         mock_rc.autorenewal_is_enabled.return_value = False
         assert not renewal.should_autorenew(mock_rc, mock_acme)
 
