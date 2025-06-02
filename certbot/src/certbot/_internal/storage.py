@@ -83,7 +83,7 @@ def cert_path_for_cert_name(config: configuration.NamespaceConfig, cert_name: st
         cert_name_implied_conf, encoding='utf-8', default_encoding='utf-8')["fullchain"]
 
 
-def add_time_interval(base_time: datetime.datetime, interval: str,
+def subtract_time_interval(base_time: datetime.datetime, interval: str,
                       textparser: parsedatetime.Calendar = parsedatetime.Calendar()
                       ) -> datetime.datetime:
     """Parse the time specified time interval, and add it to the base_time
@@ -94,10 +94,10 @@ def add_time_interval(base_time: datetime.datetime, interval: str,
     hours'. If an integer is found with no associated unit, it is
     interpreted by default as a number of days.
 
-    :param datetime.datetime base_time: The time to be added with the interval.
+    :param datetime.datetime base_time: The time to the interval is subtracted from.
     :param str interval: The time interval to parse.
 
-    :returns: The base_time plus the interpretation of the time interval.
+    :returns: The base_time minus the interpretation of the time interval.
     :rtype: :class:`datetime.datetime`"""
 
     if interval.strip().isdigit():
@@ -106,7 +106,7 @@ def add_time_interval(base_time: datetime.datetime, interval: str,
     # try to use the same timezone, but fallback to UTC
     tzinfo = base_time.tzinfo or pytz.UTC
 
-    return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
+    return textparser.parseDT(interval + " before", base_time, tzinfo=tzinfo)[0]
 
 
 def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,

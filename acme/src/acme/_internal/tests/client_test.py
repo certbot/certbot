@@ -479,6 +479,28 @@ class ClientV2Test(unittest.TestCase):
         t, _ = self.client.renewal_time(cert_pem)
         assert t == datetime.datetime(2025, 3, 24, 00, 00, 00, tzinfo=datetime.timezone.utc)
 
+    def test_renewal_time_no_renewal_info_user_set_default(self):
+        # A directory with no 'renewalInfo' should result in default renewal periods,
+        # with the user-set value overriding the calculated default
+        self.client.directory = messages.Directory({})
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
+        )
+        expiry_flag_renewal_time = datetime.datetime(2025, 3, 18, 00, 00, 00,
+            tzinfo=datetime.timezone.utc)
+        t, _ = self.client.renewal_time(cert_pem, expiry_flag_renewal_time)
+        assert t == datetime.datetime(2025, 3, 18, 00, 00, 00, tzinfo=datetime.timezone.utc)
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
+        )
+        expiry_flag_renewal_time = datetime.datetime(2025, 3, 14, 00, 00, 00,
+            tzinfo=datetime.timezone.utc)
+        t, _ = self.client.renewal_time(cert_pem, expiry_flag_renewal_time)
+        assert t == datetime.datetime(2025, 3, 14, 00, 00, 00, tzinfo=datetime.timezone.utc)
+
     def test_renewal_time_with_renewal_info(self):
         from cryptography import x509
         from acme.client import _renewal_info_path_component
