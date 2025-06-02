@@ -48,7 +48,7 @@ More details about these changes can be found on our GitHub repo.
 * Certificates now renew with 1/3rd of lifetime left (or 1/2 of lifetime left,
   if the lifetime is shorter than 10 days). This is a change from a hardcoded
   renewal at 30 days before expiration. The config field renew_before_expiry
-  still overrides this default.
+  can now make a certificate renew earlier than the default but not later.
 
 * removed `acme.crypto_util._pyopenssl_cert_or_req_all_names`
 * removed `acme.crypto_util._pyopenssl_cert_or_req_san`
