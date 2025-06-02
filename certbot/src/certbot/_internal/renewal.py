@@ -614,7 +614,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
                 if not server:
                     raise errors.Error(f"Renewal config for {lineage_config.names} has no server.")
                 if server not in acme_clients:
-                    acme_clients[server] = client.acme_from_config_key(config)
+                    acme_clients[server] = client.acme_from_config_key(lineage_config)
 
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
