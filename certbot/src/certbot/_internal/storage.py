@@ -153,10 +153,6 @@ def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
         if k not in relevant_data:
             del config["renewalparams"][k]
 
-    if "renew_before_expiry" not in config:
-        default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
-        config.initial_comment = ["renew_before_expiry = " + default_interval]
-
     # TODO: add human-readable comments explaining other available
     #       parameters
     logger.debug("Writing new config %s.", n_filename)
