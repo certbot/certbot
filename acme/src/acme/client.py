@@ -314,7 +314,9 @@ class ClientV2:
                 raise e
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
 
-    def renewal_time(self, cert_pem: bytes) -> Tuple[datetime.datetime, datetime.datetime]:
+    def renewal_time(self, cert_pem: bytes,
+                     expiry_flag_renewal_time: datetime.datetime | None = None
+                     ) -> Tuple[datetime.datetime, datetime.datetime]:
         """Return an appropriate time to attempt renewal of the certificate,
         and the next time to ask the ACME server for renewal info.
 
@@ -327,6 +329,13 @@ class ClientV2:
 
         This function may make other network calls in the future (e.g., OCSP
         or CRL).
+
+        :param bytes cert_pem: cert as pem file
+        :param datetime.datetime expiry_flag_renewal_time: config field used instead
+            of default, if set
+
+        :returns: Tuple of time to attempt renewal, next time to ask for renewal info
+        :rtype: (`datetime.datetime`, `datetime.datetime`)
         """
         now = datetime.datetime.now()
         # https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3.3
@@ -334,12 +343,15 @@ class ClientV2:
 
         cert = x509.load_pem_x509_certificate(cert_pem)
 
-        not_before = cert.not_valid_before_utc
-        lifetime = cert.not_valid_after_utc - not_before
-        if lifetime.total_seconds() < 10 * 86400:
-            default_renewal_time = not_before + lifetime / 2
+        if expiry_flag_renewal_time:
+            default_renewal_time = expiry_flag_renewal_time
         else:
-            default_renewal_time = not_before + lifetime * 2 / 3
+            not_before = cert.not_valid_before_utc
+            lifetime = cert.not_valid_after_utc - not_before
+            if lifetime.total_seconds() < 10 * 86400:
+                default_renewal_time = not_before + lifetime / 2
+            else:
+                default_renewal_time = not_before + lifetime * 2 / 3
 
         try:
             renewal_info_base_url = self.directory['renewalInfo']
