@@ -285,7 +285,7 @@ class RenewalTest(test_util.ConfigTestCase):
                     # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
                     # Times that should result in autorenewal/autodeployment
                     (1241179200, "7 years", True),
-                    (1241179200, "11 years 2 months", True),
+                    (1241179200, "11 years", True),
                     # Times that should not renew
                     (1241179200, "8 hours", False), (1241179200, "2 days", False),
                     (1241179200, "40 days", False), (1241179200, "9 months", False),
