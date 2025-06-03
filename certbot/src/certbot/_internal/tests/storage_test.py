@@ -679,14 +679,14 @@ class RenewableCertTests(BaseRenewableCertTest):
         log_msg = logger.call_args[0][0]
         assert "An error occurred determining the OCSP status" in log_msg
 
-    def test_add_time_interval(self):
+    def test_subtract_time_interval(self):
         from certbot._internal import storage
 
-        # this month has 30 days, and the next year is a leap year
-        time_1 = datetime.datetime(2003, 11, 20, 11, 59, 21, tzinfo=pytz.UTC)
+        # this month has 30 days, and the current year is a leap year
+        time_1 = datetime.datetime(2004, 11, 20, 11, 59, 21, tzinfo=pytz.UTC)
 
-        # this month has 31 days, and the next year is not a leap year
-        time_2 = datetime.datetime(2012, 10, 18, 21, 31, 16, tzinfo=pytz.UTC)
+        # this month has 31 days, and the current year is not a leap year
+        time_2 = datetime.datetime(2009, 10, 18, 21, 31, 16, tzinfo=pytz.UTC)
 
         # in different time zone (GMT+8)
         time_3 = pytz.timezone('Asia/Shanghai').fromutc(
@@ -696,30 +696,26 @@ class RenewableCertTests(BaseRenewableCertTest):
             (time_1, ""): time_1,
             (time_2, ""): time_2,
             (time_3, ""): time_3,
-            (time_1, "17 days"): time_1 + datetime.timedelta(17),
-            (time_2, "17 days"): time_2 + datetime.timedelta(17),
-            (time_1, "30"): time_1 + datetime.timedelta(30),
-            (time_2, "30"): time_2 + datetime.timedelta(30),
-            (time_1, "7 weeks"): time_1 + datetime.timedelta(49),
-            (time_2, "7 weeks"): time_2 + datetime.timedelta(49),
+            (time_1, "17 days"): time_1 - datetime.timedelta(17),
+            (time_2, "17 days"): time_2 - datetime.timedelta(17),
+            (time_1, "30"): time_1 - datetime.timedelta(30),
+            (time_2, "30"): time_2 - datetime.timedelta(30),
+            (time_1, "7 weeks"): time_1 - datetime.timedelta(49),
+            (time_2, "7 weeks"): time_2 - datetime.timedelta(49),
             # 1 month is always 30 days, no matter which month it is
-            (time_1, "1 month"): time_1 + datetime.timedelta(30),
-            (time_2, "1 month"): time_2 + datetime.timedelta(31),
+            (time_1, "1 month"): time_1 - datetime.timedelta(31),
+            (time_2, "1 month"): time_2 - datetime.timedelta(30),
             # 1 year could be 365 or 366 days, depends on the year
-            (time_1, "1 year"): time_1 + datetime.timedelta(366),
-            (time_2, "1 year"): time_2 + datetime.timedelta(365),
-            (time_1, "1 year 1 day"): time_1 + datetime.timedelta(367),
-            (time_2, "1 year 1 day"): time_2 + datetime.timedelta(366),
-            (time_1, "1 year-1 day"): time_1 + datetime.timedelta(365),
-            (time_2, "1 year-1 day"): time_2 + datetime.timedelta(364),
-            (time_1, "4 years"): time_1 + datetime.timedelta(1461),
-            (time_2, "4 years"): time_2 + datetime.timedelta(1461),
+            (time_1, "1 year"): time_1 - datetime.timedelta(366),
+            (time_2, "1 year"): time_2 - datetime.timedelta(365),
+            (time_1, "4 years"): time_1 - datetime.timedelta(1461),
+            (time_2, "4 years"): time_2 - datetime.timedelta(1461),
         }
 
-        for parameters, excepted in intended.items():
+        for parameters, expected in intended.items():
             base_time, interval = parameters
-            assert storage.add_time_interval(base_time, interval) == \
-                             excepted
+            assert storage.subtract_time_interval(base_time, interval) == \
+                             expected, f"base time: {base_time} interval: {interval}"
 
     def test_server(self):
         self.test_rc.configuration["renewalparams"] = {}
