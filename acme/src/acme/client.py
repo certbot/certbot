@@ -315,7 +315,7 @@ class ClientV2:
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
 
     def renewal_time(self, cert_pem: bytes,
-                     expiry_flag_renewal_time: datetime.datetime | None = None
+                     expiry_flag_renewal_time: Optional[datetime.datetime] = None
                      ) -> Tuple[datetime.datetime, datetime.datetime]:
         """Return an appropriate time to attempt renewal of the certificate,
         and the next time to ask the ACME server for renewal info.
