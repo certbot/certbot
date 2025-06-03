@@ -6,7 +6,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* ACME Renewal Info (ARI) support. https://datatracker.ietf.org/doc/draft-ietf-acme-ari/
+  `certbot renew` will automatically check ARI when using an ACME server that supports it,
+  and may renew early based on the ARI information.
 
 ### Changed
 
@@ -33,8 +35,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   polling for finalization readiness.
 * The --preferred-profile and --required-profile flags now have their values stored in
   the renewal configuration so the same setting will be used on renewal.
-* Checks for ACME Renewal Info (ARI) now use the ACME server URL configured for each
-  certificate, instead of the global default server.
 
 More details about these changes can be found on our GitHub repo.
 
