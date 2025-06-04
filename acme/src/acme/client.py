@@ -332,7 +332,6 @@ class ClientV2:
         :param bytes cert_pem: cert as pem file
 
         :returns: Tuple of time to attempt renewal, next time to ask for renewal info
-        :rtype: (Optional[`datetime.datetime`], `datetime.datetime`)
         """
         now = datetime.datetime.now()
         # https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3.3
