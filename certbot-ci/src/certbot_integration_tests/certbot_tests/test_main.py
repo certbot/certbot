@@ -1,4 +1,5 @@
 """Module executing integration tests against certbot core."""
+import json
 import os
 from os.path import exists
 from os.path import join
@@ -15,6 +16,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
 from cryptography.hazmat.primitives.asymmetric.ec import SECP384R1
 from cryptography.hazmat.primitives.asymmetric.ec import SECP521R1
 from cryptography.x509 import NameOID
+import requests
 import pytest
 
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
@@ -30,6 +32,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_world_no_p
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
 from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
+from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
 from certbot_integration_tests.utils import misc
 
 
@@ -302,6 +305,47 @@ def test_graceful_renew_it_is_time(context: IntegrationTestsContext) -> None:
     lines.insert(4, 'renew_before_expiry = 100 years{0}'.format(os.linesep))
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
+
+    context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
+                    force_renew=False)
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+    assert_hook_execution(context.hook_probe, 'deploy')
+
+
+def test_renew_when_ari_says_its_time(context: IntegrationTestsContext) -> None:
+    """Test graceful renew is done when it is due time."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
+    # Tell Pebble to make ARI look urgent
+    with open(join(context.config_dir, 'live/{0}/cert.pem').format(certname), "r") as c:
+        certificate_pem = c.read()
+
+    ari_response = json.dumps({
+        "suggestedWindow": {
+           "start": "2020-01-01T00:00:00Z",
+           "end": "2020-01-01T00:00:00Z"
+        }
+    })
+
+    set_renewal_info_body = json.dumps(
+    {
+        "certificate": certificate_pem,
+        "ariResponse": ari_response
+    })
+
+    # POST to Pebble
+    misc.suppress_x509_verification_warnings()
+    url = PEBBLE_MANAGEMENT_URL + '/set-renewal-info/'
+    print(f"sending to {url}: {set_renewal_info_body}")
+    resp = requests.post(url, verify=False, timeout=10, data=set_renewal_info_body)
+    if resp.status_code != 200:
+        print(f"setting renewal info: {resp.status_code} {resp.text}")
+
+    assert resp.status_code == 200
 
     context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
                     force_renew=False)

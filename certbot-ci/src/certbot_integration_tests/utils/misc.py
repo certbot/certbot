@@ -44,7 +44,7 @@ RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
 
 
-def _suppress_x509_verification_warnings() -> None:
+def suppress_x509_verification_warnings() -> None:
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -57,7 +57,7 @@ def check_until_timeout(url: str, attempts: int = 30) -> None:
     :param int attempts: the number of times to try to connect to the URL
     :raise ValueError: exception raised if unable to reach the URL
     """
-    _suppress_x509_verification_warnings()
+    suppress_x509_verification_warnings()
     for _ in range(attempts):
         time.sleep(1)
         try:
@@ -308,7 +308,7 @@ def get_acme_issuers() -> List[Certificate]:
     :param context: the testing context.
     :return: the `list of x509.Certificate` representing the list of issuers.
     """
-    _suppress_x509_verification_warnings()
+    suppress_x509_verification_warnings()
 
     issuers = []
     for i in range(PEBBLE_ALTERNATE_ROOTS + 1):

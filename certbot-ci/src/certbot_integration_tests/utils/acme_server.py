@@ -123,6 +123,7 @@ class ACMEServer:
         print('=> Starting pebble instance deployment...')
         pebble_artifacts_rv = pebble_artifacts.fetch(self._workspace, self._http_01_port)
         pebble_path, challtestsrv_path, pebble_config_path = pebble_artifacts_rv
+        pebble_path = "/tmp/pebble"
 
         # Configure Pebble at full speed (PEBBLE_VA_NOSLEEP=1) and not randomly refusing valid
         # nonce (PEBBLE_WFE_NONCEREJECT=0) to have a stable test environment.
