@@ -237,9 +237,18 @@ class RenewalTest(test_util.ConfigTestCase):
 
         mock_renew_cert.assert_called_once()
 
-    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
+    def test_default_renewal_time(self):
+        from certbot._internal import renewal
+        cert_pem = make_cert_with_lifetime(datetime.datetime(2025, 3, 12, 00, 00, 00), 8)
+        t = renewal._default_renewal_time(cert_pem)
+        assert t == datetime.datetime(2025, 3, 16, 00, 00, 00, tzinfo=datetime.timezone.utc)
+
+        cert_pem = make_cert_with_lifetime(datetime.datetime(2025, 3, 12, 00, 00, 00), 18)
+        t = renewal._default_renewal_time(cert_pem)
+        assert t == datetime.datetime(2025, 3, 24, 00, 00, 00, tzinfo=datetime.timezone.utc)
+
     @mock.patch("certbot._internal.renewal.datetime")
-    def test_renew_before_expiry(self, mock_datetime, mock_set_by_user):
+    def test_renew_before_expiry(self, mock_datetime):
         """When neither OCSP nor the ACME client indicate it's time to renew,
            obey the renew_before_expiry config.
         """
@@ -263,7 +272,6 @@ class RenewalTest(test_util.ConfigTestCase):
         mock_renewable_cert.ocsp_revoked.return_value = False
 
         mock_datetime.timedelta = datetime.timedelta
-        mock_set_by_user.return_value = False
 
         with tempfile.NamedTemporaryFile() as tmp_cert:
             tmp_cert.close()  # close now because of compatibility issues on Windows
@@ -282,6 +290,10 @@ class RenewalTest(test_util.ConfigTestCase):
                     (1418472000, None, False),
                     # Times that should not renew
                     (1418472000, "4 days", False), (1418472000, "2 days", False),
+                    # 2014-12-16 20:00 (after the default renewal time but before expiry)
+                    # Times that should not renew
+                    (1418760000, None, False),
+                    (1418760000, "1 day", False),
                     # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
                     # Times that should result in autorenewal/autodeployment
                     (1241179200, "7 years", True),
@@ -300,7 +312,43 @@ class RenewalTest(test_util.ConfigTestCase):
                 sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
                 mock_datetime.datetime.now.return_value = sometime
                 mock_renewable_cert.configuration = {"renew_before_expiry": interval}
-                assert renewal.should_autorenew(mock_renewable_cert, mock_acme) == result, f"at {current_time}, with config '{interval}', expected {result}"
+                assert renewal.should_autorenew(mock_renewable_cert, mock_acme) == result, f"at {current_time}, with config '{interval}', ari response in future, expected {result}"
+
+            mock_acme.renewal_time.return_value = (None, future)
+            for (current_time, interval, result) in [
+                    # 2014-12-13 12:00 (about 5 days prior to expiry)
+                    # Times that should result in autorenewal/autodeployment
+                    (1418472000, "2 months", True), (1418472000, "1 week", True),
+                    # With the "default" logic, this 7-day certificate should autorenew
+                    # at 3.5 days prior to expiry. We haven't reached that yet,
+                    # so don't renew.
+                    (1418472000, None, False),
+                    # Times that should not renew
+                    (1418472000, "4 days", False), (1418472000, "2 days", False),
+                    # 2014-12-16 20:00 (after the default renewal time but before expiry)
+                    # Times that should result in autorenewal/autodeployment
+                    (1418760000, None, True), # Note that this result is different from the above
+                    # Times that should not renew
+                    (1418760000, "1 day", False),
+                    # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
+                    # Times that should result in autorenewal/autodeployment
+                    (1241179200, "7 years", True),
+                    (1241179200, "11 years 2 months", True),
+                    # Times that should not renew
+                    (1241179200, "8 hours", False), (1241179200, "2 days", False),
+                    (1241179200, "40 days", False), (1241179200, "9 months", False),
+                    # 2015-01-01 (after expiry has already happened, so all
+                    #            intervals should cause autorenewal/autodeployment)
+                    (1420070400, "0 seconds", True),
+                    (1420070400, "10 seconds", True),
+                    (1420070400, "10 minutes", True),
+                    (1420070400, "10 weeks", True), (1420070400, "10 months", True),
+                    (1420070400, "10 years", True), (1420070400, "99 months", True),
+            ]:
+                sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
+                mock_datetime.datetime.now.return_value = sometime
+                mock_renewable_cert.configuration = {"renew_before_expiry": interval}
+                assert renewal.should_autorenew(mock_renewable_cert, mock_acme) == result, f"at {current_time}, with config '{interval}', no ari response, expected {result}"
 
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
     @mock.patch("certbot._internal.storage.RenewableCert.ocsp_revoked")

@@ -21,6 +21,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography import x509
 
 from acme import client as acme_client
 
@@ -328,6 +329,27 @@ def should_renew(config: configuration.NamespaceConfig,
     display_util.notify("Certificate not yet due for renewal")
     return False
 
+
+def _default_renewal_time(cert_pem: bytes) -> datetime.datetime:
+    """Return an reasonable default time to attempt renewal of the certificate
+    based on the certificate lifetime.
+
+    :param bytes cert_pem: cert as pem file
+
+    :returns: Time to attempt renewal
+    :rtype: `datetime.datetime`
+    """
+    cert = x509.load_pem_x509_certificate(cert_pem)
+
+    not_before = cert.not_valid_before_utc
+    lifetime = cert.not_valid_after_utc - not_before
+    if lifetime.total_seconds() < 10 * 86400:
+        default_rt = not_before + lifetime / 2
+    else:
+        default_rt = not_before + lifetime * 2 / 3
+
+    return default_rt
+
 def should_autorenew(lineage: storage.RenewableCert, acme: acme_client.ClientV2) -> bool:
     """Should we now try to autorenew the most recent cert version?
 
@@ -368,15 +390,21 @@ def should_autorenew(lineage: storage.RenewableCert, acme: acme_client.ClientV2)
             return True
 
         # The "renew_before_expiry" config field can make us renew earlier
-        # than the default.
+        # than the default. If ARI response was None and no "renew_before_expiry"
+        # is set, check against the default.
         config_interval = lineage.configuration.get("renew_before_expiry")
-        notAfter = crypto_util.notAfter(cert)
-        if (config_interval is not None and
-            notAfter < storage.add_time_interval(now, config_interval)):
-            logger.debug("Should renew, less than %s before certificate "
-                            "expiry %s.", config_interval,
-                            notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
-            return True
+        if config_interval is not None:
+            notAfter = crypto_util.notAfter(cert)
+            if notAfter < storage.add_time_interval(now, config_interval):
+                logger.debug("Should renew, less than %s before certificate "
+                                "expiry %s.", config_interval,
+                                notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
+                return True
+        # Only use the default if we don't have an ARI response
+        elif renewal_time is None:
+            default_renewal_time = _default_renewal_time(cert_pem)
+            if now > default_renewal_time:
+                return True
 
     return False
 
