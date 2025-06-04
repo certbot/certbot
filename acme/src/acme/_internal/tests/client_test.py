@@ -463,21 +463,21 @@ class ClientV2Test(unittest.TestCase):
             ClientV2.get_directory('https://example.com/dir', self.net).to_partial_json()
 
     def test_renewal_time_no_renewal_info(self):
-        # A directory with no 'renewalInfo' should result in default renewal periods.
+        # A directory with no 'renewalInfo' should result in None.
         self.client.directory = messages.Directory({})
         cert_pem = make_cert_for_renewal(
             not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
             not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
         )
         t, _ = self.client.renewal_time(cert_pem)
-        assert t == datetime.datetime(2025, 3, 16, 00, 00, 00, tzinfo=datetime.timezone.utc)
+        assert t == None
 
         cert_pem = make_cert_for_renewal(
             not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
             not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
         )
         t, _ = self.client.renewal_time(cert_pem)
-        assert t == datetime.datetime(2025, 3, 24, 00, 00, 00, tzinfo=datetime.timezone.utc)
+        assert t == None
 
     def test_renewal_time_with_renewal_info(self):
         from cryptography import x509
@@ -526,7 +526,7 @@ class ClientV2Test(unittest.TestCase):
         self.client.directory = messages.Directory({
             'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
         })
-        # Failure to fetch the 'renewalInfo' URL should return default timings
+        # Failure to fetch the 'renewalInfo' URL should return None
         self.net.get.side_effect = requests.exceptions.RequestException
 
         cert_pem = make_cert_for_renewal(
@@ -534,14 +534,14 @@ class ClientV2Test(unittest.TestCase):
             not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
         )
         t, _ = self.client.renewal_time(cert_pem)
-        assert t == datetime.datetime(2025, 3, 16, 00, 00, 00, tzinfo=datetime.timezone.utc)
+        assert t == None
 
         cert_pem = make_cert_for_renewal(
             not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
             not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
         )
         t, _ = self.client.renewal_time(cert_pem)
-        assert t == datetime.datetime(2025, 3, 24, 00, 00, 00, tzinfo=datetime.timezone.utc)
+        assert t == None
 
     @mock.patch('acme.client.datetime')
     def test_renewal_time_returns_retry_after(self, dt_mock):

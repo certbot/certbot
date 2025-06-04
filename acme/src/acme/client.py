@@ -314,7 +314,8 @@ class ClientV2:
                 raise e
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
 
-    def renewal_time(self, cert_pem: bytes) -> Tuple[datetime.datetime, datetime.datetime]:
+    def renewal_time(self, cert_pem: bytes
+        ) -> Tuple[Optional[datetime.datetime], datetime.datetime]:
         """Return an appropriate time to attempt renewal of the certificate,
         and the next time to ask the ACME server for renewal info.
 
@@ -322,11 +323,15 @@ class ClientV2:
         based on a fetch of the renewal info resource for the certificate
         (https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html).
 
-        If there is no "renewalInfo" field, this function will fall back to
-        reasonable defaults based on the certificate lifetime.
+        If there is no "renewalInfo" field, this function will return a tuple of
+        None, and the next time to ask the ACME server for renewal info.
 
         This function may make other network calls in the future (e.g., OCSP
         or CRL).
+
+        :param bytes cert_pem: cert as pem file
+
+        :returns: Tuple of time to attempt renewal, next time to ask for renewal info
         """
         now = datetime.datetime.now()
         # https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3.3
@@ -334,24 +339,17 @@ class ClientV2:
 
         cert = x509.load_pem_x509_certificate(cert_pem)
 
-        not_before = cert.not_valid_before_utc
-        lifetime = cert.not_valid_after_utc - not_before
-        if lifetime.total_seconds() < 10 * 86400:
-            default_renewal_time = not_before + lifetime / 2
-        else:
-            default_renewal_time = not_before + lifetime * 2 / 3
-
         try:
             renewal_info_base_url = self.directory['renewalInfo']
         except KeyError:
-            return default_renewal_time, now + default_retry_after
+            return None, now + default_retry_after
 
         ari_url = renewal_info_base_url + '/' + _renewal_info_path_component(cert)
         try:
             resp = self.net.get(ari_url, content_type='application/json')
         except (requests.exceptions.RequestException, messages.Error) as error:
             logger.warning("failed to fetch renewal_info URL (%s): %s", ari_url, error)
-            return default_renewal_time, now + default_retry_after
+            return None, now + default_retry_after
 
         renewal_info: messages.RenewalInfo = messages.RenewalInfo.from_json(resp.json())
 
