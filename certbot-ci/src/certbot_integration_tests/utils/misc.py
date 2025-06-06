@@ -320,7 +320,7 @@ def get_acme_issuers() -> List[Certificate]:
 
     return issuers
 
-def set_ari_response(certificate_pem: str, response_json: str):
+def set_ari_response(certificate_pem: str, response_json: str) -> None:
     """POST to an endpoint on the Pebble server setting the ARI response
     for the given certificate."""
     set_renewal_info_body = json.dumps(
