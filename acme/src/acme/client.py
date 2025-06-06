@@ -319,6 +319,10 @@ class ClientV2:
         """Return an appropriate time to attempt renewal of the certificate,
         and the next time to ask the ACME server for renewal info.
 
+        If the certificate has already expired, renewal info isn't checked.
+        Instead, the certificate's notAfter time is returned and the certificate
+        should be immediately renewed.
+
         If the ACME directory has a "renewalInfo" field, the response will be
         based on a fetch of the renewal info resource for the certificate
         (https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html).
@@ -338,6 +342,14 @@ class ClientV2:
         default_retry_after = datetime.timedelta(seconds=6 * 60 * 60)
 
         cert = x509.load_pem_x509_certificate(cert_pem)
+
+        # from https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3, "Clients
+        # MUST NOT check a certificate's RenewalInfo after the certificate has expired."
+        #
+        # we call datetime.datetime.now here with the UTC argument to create a timezone aware
+        # datetime object that can be compared with the UTC notAfter from cryptography
+        if cert.not_valid_after_utc < datetime.datetime.now(datetime.timezone.utc):
+            return cert.not_valid_after_utc, now + default_retry_after
 
         try:
             renewal_info_base_url = self.directory['renewalInfo']

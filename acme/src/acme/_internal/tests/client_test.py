@@ -9,6 +9,8 @@ from typing import Dict
 import unittest
 from unittest import mock
 
+from cryptography import x509
+
 import josepy as jose
 import pytest
 import requests
@@ -462,7 +464,24 @@ class ClientV2Test(unittest.TestCase):
         assert DIRECTORY_V2.to_partial_json() == \
             ClientV2.get_directory('https://example.com/dir', self.net).to_partial_json()
 
-    def test_renewal_time_no_renewal_info(self):
+    @mock.patch('acme.client.datetime')
+    def test_renewal_time_expired_cert(self, dt_mock):
+        utc_now = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+        dt_mock.datetime.now.return_value = utc_now
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
+        )
+        cert = x509.load_pem_x509_certificate(cert_pem)
+
+        t, _ = self.client.renewal_time(cert_pem)
+        assert t == cert.not_valid_after_utc
+
+    @mock.patch('acme.client.datetime')
+    def test_renewal_time_no_renewal_info(self, dt_mock):
+        utc_now = datetime.datetime(2025, 3, 15, tzinfo=datetime.timezone.utc)
+        dt_mock.datetime.now.return_value = utc_now
         # A directory with no 'renewalInfo' should result in None.
         self.client.directory = messages.Directory({})
         cert_pem = make_cert_for_renewal(
@@ -479,9 +498,14 @@ class ClientV2Test(unittest.TestCase):
         t, _ = self.client.renewal_time(cert_pem)
         assert t == None
 
-    def test_renewal_time_with_renewal_info(self):
+    @mock.patch('acme.client.datetime')
+    def test_renewal_time_with_renewal_info(self, dt_mock):
         from cryptography import x509
         from acme.client import _renewal_info_path_component
+        utc_now = datetime.datetime(2025, 3, 15, tzinfo=datetime.timezone.utc)
+        dt_mock.datetime.now.return_value = utc_now
+        dt_mock.timedelta = datetime.timedelta
+
         cert_pem = make_cert_for_renewal(
             not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
             not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
@@ -522,7 +546,10 @@ class ClientV2Test(unittest.TestCase):
         assert t >= datetime.datetime(2025, 3, 16, 1, 1, 1, tzinfo=datetime.timezone.utc)
         assert t <= datetime.datetime(2025, 3, 17, 1, 1, 1, tzinfo=datetime.timezone.utc)
 
-    def test_renewal_time_renewal_info_errors(self):
+    @mock.patch('acme.client.datetime')
+    def test_renewal_time_renewal_info_errors(self, dt_mock):
+        utc_now = datetime.datetime(2025, 3, 15, tzinfo=datetime.timezone.utc)
+        dt_mock.datetime.now.return_value = utc_now
         self.client.directory = messages.Directory({
             'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
         })
@@ -545,8 +572,11 @@ class ClientV2Test(unittest.TestCase):
 
     @mock.patch('acme.client.datetime')
     def test_renewal_time_returns_retry_after(self, dt_mock):
-        dt_mock.datetime.now.return_value = datetime.datetime(2025, 5, 12, 0, 0, 0)
+        def now(tzinfo=None):
+            return datetime.datetime(2025, 3, 15, tzinfo=tzinfo)
+        dt_mock.datetime.now.side_effect = now
         dt_mock.timedelta = datetime.timedelta
+        dt_mock.timezone = datetime.timezone
 
         self.client.directory = messages.Directory({
             'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
@@ -565,12 +595,12 @@ class ClientV2Test(unittest.TestCase):
 
         # With no explicit Retry-After in header, default to six hours
         _, retry_after = self.client.renewal_time(cert_pem)
-        assert retry_after == datetime.datetime(2025, 5, 12, 6, 0, 0)
+        assert retry_after == datetime.datetime(2025, 3, 15, 6, 0, 0)
 
         # With an explicit Retry-After in header, use that
         self.response.headers['Retry-After'] = '100'
         _, retry_after = self.client.renewal_time(cert_pem)
-        assert retry_after == datetime.datetime(2025, 5, 12, 00, 1, 40)
+        assert retry_after == datetime.datetime(2025, 3, 15, 00, 1, 40)
 
 def test_renewal_info_path_component():
     from cryptography import x509
