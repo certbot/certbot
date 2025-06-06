@@ -16,7 +16,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
 from cryptography.hazmat.primitives.asymmetric.ec import SECP384R1
 from cryptography.hazmat.primitives.asymmetric.ec import SECP521R1
 from cryptography.x509 import NameOID
-import requests
 import pytest
 
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
@@ -32,7 +31,6 @@ from certbot_integration_tests.certbot_tests.assertions import assert_world_no_p
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
 from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
-from certbot_integration_tests.utils.constants import PEBBLE_MANAGEMENT_URL
 from certbot_integration_tests.utils import misc
 
 
@@ -324,28 +322,12 @@ def test_renew_when_ari_says_its_time(context: IntegrationTestsContext) -> None:
     with open(join(context.config_dir, 'live/{0}/cert.pem').format(certname), "r") as c:
         certificate_pem = c.read()
 
-    ari_response = json.dumps({
+    misc.set_ari_response(certificate_pem, json.dumps({
         "suggestedWindow": {
-           "start": "2020-01-01T00:00:00Z",
-           "end": "2020-01-01T00:00:00Z"
+            "start": "2020-01-01T00:00:00Z",
+            "end": "2020-01-01T00:00:00Z"
         }
-    })
-
-    set_renewal_info_body = json.dumps(
-    {
-        "certificate": certificate_pem,
-        "ariResponse": ari_response
-    })
-
-    # POST to Pebble
-    misc.suppress_x509_verification_warnings()
-    url = PEBBLE_MANAGEMENT_URL + '/set-renewal-info/'
-    print(f"sending to {url}: {set_renewal_info_body}")
-    resp = requests.post(url, verify=False, timeout=10, data=set_renewal_info_body)
-    if resp.status_code != 200:
-        print(f"setting renewal info: {resp.status_code} {resp.text}")
-
-    assert resp.status_code == 200
+    }))
 
     context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
                     force_renew=False)

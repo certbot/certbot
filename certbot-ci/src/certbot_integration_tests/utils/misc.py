@@ -8,6 +8,7 @@ import errno
 import functools
 import http.server as SimpleHTTPServer
 import importlib.resources
+import json
 import os
 import re
 import shutil
@@ -44,7 +45,7 @@ RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
 
 
-def suppress_x509_verification_warnings() -> None:
+def _suppress_x509_verification_warnings() -> None:
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -57,7 +58,7 @@ def check_until_timeout(url: str, attempts: int = 30) -> None:
     :param int attempts: the number of times to try to connect to the URL
     :raise ValueError: exception raised if unable to reach the URL
     """
-    suppress_x509_verification_warnings()
+    _suppress_x509_verification_warnings()
     for _ in range(attempts):
         time.sleep(1)
         try:
@@ -308,7 +309,7 @@ def get_acme_issuers() -> List[Certificate]:
     :param context: the testing context.
     :return: the `list of x509.Certificate` representing the list of issuers.
     """
-    suppress_x509_verification_warnings()
+    _suppress_x509_verification_warnings()
 
     issuers = []
     for i in range(PEBBLE_ALTERNATE_ROOTS + 1):
@@ -318,3 +319,20 @@ def get_acme_issuers() -> List[Certificate]:
         issuers.append(load_pem_x509_certificate(request.content, default_backend()))
 
     return issuers
+
+def set_ari_response(certificate_pem: str, response_json: str):
+    """POST to an endpoint on the Pebble server setting the ARI response
+    for the given certificate."""
+    set_renewal_info_body = json.dumps(
+        {
+            "certificate": certificate_pem,
+            "ariResponse": response_json,
+        })
+
+    _suppress_x509_verification_warnings()
+    url = PEBBLE_MANAGEMENT_URL + '/set-renewal-info/'
+    print(f"sending to {url}: {set_renewal_info_body}")
+    resp = requests.post(url, verify=False, timeout=10, data=set_renewal_info_body)
+    if resp.status_code != 200:
+        print(f"setting renewal info: {resp.status_code} {resp.text}")
+    assert resp.status_code == 200
