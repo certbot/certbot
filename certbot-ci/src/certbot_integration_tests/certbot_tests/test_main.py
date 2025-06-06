@@ -1,4 +1,5 @@
 """Module executing integration tests against certbot core."""
+import json
 import os
 from os.path import exists
 from os.path import join
