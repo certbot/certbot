@@ -90,9 +90,12 @@ def _prepare_args_env(certbot_args: List[str], directory_url: str, http_01_port:
     if force_renew:
         additional_args.append('--renew-by-default')
 
+    if directory_url != "":
+        additional_args.extend(['--server', directory_url])
+
+
     command = [
         'certbot',
-        '--server', directory_url,
         '--no-verify-ssl',
         '--http-01-port', str(http_01_port),
         '--https-port', str(tls_alpn_01_port),
