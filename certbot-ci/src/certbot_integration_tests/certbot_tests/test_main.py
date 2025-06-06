@@ -319,13 +319,13 @@ def test_renew_when_ari_says_its_time(context: IntegrationTestsContext) -> None:
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
     # Tell Pebble to make ARI look urgent
-    with open(join(context.config_dir, 'live/{0}/cert.pem').format(certname), "r") as c:
+    with open(join(context.config_dir, 'live', certname, 'cert.pem'), 'r') as c:
         certificate_pem = c.read()
 
     misc.set_ari_response(certificate_pem, json.dumps({
-        "suggestedWindow": {
-            "start": "2020-01-01T00:00:00Z",
-            "end": "2020-01-01T00:00:00Z"
+        'suggestedWindow': {
+            'start': '2020-01-01T00:00:00Z',
+            'end': '2020-01-01T00:00:00Z'
         }
     }))
 

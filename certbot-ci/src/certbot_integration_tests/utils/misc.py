@@ -325,14 +325,14 @@ def set_ari_response(certificate_pem: str, response_json: str) -> None:
     for the given certificate."""
     set_renewal_info_body = json.dumps(
         {
-            "certificate": certificate_pem,
-            "ariResponse": response_json,
+            'certificate': certificate_pem,
+            'ariResponse': response_json,
         })
 
     _suppress_x509_verification_warnings()
     url = PEBBLE_MANAGEMENT_URL + '/set-renewal-info/'
-    print(f"sending to {url}: {set_renewal_info_body}")
+    print(f'sending to {url}: {set_renewal_info_body}')
     resp = requests.post(url, verify=False, timeout=10, data=set_renewal_info_body)
     if resp.status_code != 200:
-        print(f"setting renewal info: {resp.status_code} {resp.text}")
+        print(f'setting renewal info: {resp.status_code} {resp.text}')
     assert resp.status_code == 200
