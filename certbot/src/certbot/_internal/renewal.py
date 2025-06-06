@@ -610,6 +610,10 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
             if not renewal_candidate:
                 parse_failures.append(renewal_file)
             else:
+                # We check ARI against the server stored in the lineage config even if the user
+                # specified a different `--server` on the command line. That's the server that
+                # issued the existing certificate, so it's the only server that can respond to
+                # ARI requests for it.
                 server = lineage_config.server
                 if not server:
                     raise errors.Error(f"Renewal config for {lineage_config.names} has no server.")
