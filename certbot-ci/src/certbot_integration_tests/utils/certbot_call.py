@@ -6,6 +6,7 @@ import subprocess
 import sys
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 import certbot_integration_tests
@@ -13,7 +14,7 @@ import certbot_integration_tests
 from certbot_integration_tests.utils.constants import *
 
 
-def certbot_test(certbot_args: List[str], directory_url: str, http_01_port: int,
+def certbot_test(certbot_args: List[str], directory_url: Optional[str], http_01_port: int,
                  tls_alpn_01_port: int, config_dir: str, workspace: str,
                  force_renew: bool = True) -> Tuple[str, str]:
     """
@@ -81,7 +82,7 @@ def _prepare_environ(workspace: str) -> Dict[str, str]:
     return new_environ
 
 
-def _prepare_args_env(certbot_args: List[str], directory_url: str, http_01_port: int,
+def _prepare_args_env(certbot_args: List[str], directory_url: Optional[str], http_01_port: int,
                       tls_alpn_01_port: int, config_dir: str, workspace: str,
                       force_renew: bool) -> Tuple[List[str], Dict[str, str]]:
 
@@ -90,7 +91,7 @@ def _prepare_args_env(certbot_args: List[str], directory_url: str, http_01_port:
     if force_renew:
         additional_args.append('--renew-by-default')
 
-    if directory_url != "":
+    if directory_url:
         additional_args.extend(['--server', directory_url])
 
 

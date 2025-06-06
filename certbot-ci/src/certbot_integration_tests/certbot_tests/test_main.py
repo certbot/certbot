@@ -335,7 +335,7 @@ def test_renew_when_ari_says_its_time(context: IntegrationTestsContext) -> None:
     # URL in its config from the issuance earlier in this test case. If there's a bug
     # an ARI _is_ called against that URL it will fail because Let's Encrypt doesn't
     # know about certificates issued by Pebble.
-    context.directory_url = ""
+    context.directory_url = None
     context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
                     force_renew=False)
 
