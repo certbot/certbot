@@ -1,4 +1,5 @@
 """Module executing integration tests against certbot core."""
+import json
 import os
 from os.path import exists
 from os.path import join
@@ -302,6 +303,31 @@ def test_graceful_renew_it_is_time(context: IntegrationTestsContext) -> None:
     lines.insert(4, 'renew_before_expiry = 100 years{0}'.format(os.linesep))
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
+
+    context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
+                    force_renew=False)
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+    assert_hook_execution(context.hook_probe, 'deploy')
+
+
+def test_renew_when_ari_says_its_time(context: IntegrationTestsContext) -> None:
+    """Test graceful renew is done when it is due time."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
+    # Tell Pebble to make ARI look urgent
+    with open(join(context.config_dir, 'live', certname, 'cert.pem'), 'r') as c:
+        certificate_pem = c.read()
+
+    misc.set_ari_response(certificate_pem, json.dumps({
+        'suggestedWindow': {
+            'start': '2020-01-01T00:00:00Z',
+            'end': '2020-01-01T00:00:00Z'
+        }
+    }))
 
     context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
                     force_renew=False)

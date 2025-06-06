@@ -8,6 +8,7 @@ import errno
 import functools
 import http.server as SimpleHTTPServer
 import importlib.resources
+import json
 import os
 import re
 import shutil
@@ -318,3 +319,20 @@ def get_acme_issuers() -> List[Certificate]:
         issuers.append(load_pem_x509_certificate(request.content, default_backend()))
 
     return issuers
+
+def set_ari_response(certificate_pem: str, response_json: str) -> None:
+    """POST to an endpoint on the Pebble server setting the ARI response
+    for the given certificate."""
+    set_renewal_info_body = json.dumps(
+        {
+            'certificate': certificate_pem,
+            'ariResponse': response_json,
+        })
+
+    _suppress_x509_verification_warnings()
+    url = PEBBLE_MANAGEMENT_URL + '/set-renewal-info/'
+    print(f'sending to {url}: {set_renewal_info_body}')
+    resp = requests.post(url, verify=False, timeout=10, data=set_renewal_info_body)
+    if resp.status_code != 200:
+        print(f'setting renewal info: {resp.status_code} {resp.text}')
+    assert resp.status_code == 200
