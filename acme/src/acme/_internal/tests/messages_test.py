@@ -218,16 +218,26 @@ class ExternalAccountBindingTest(unittest.TestCase):
         self.key = jose.jwk.JWKRSA(key=KEY.public_key())
         self.kid = "kid-for-testing"
         self.hmac_key = "hmac-key-for-testing"
+        self.hmac_alg = "HS256"
         self.dir = Directory({
             'newAccount': 'http://url/acme/new-account',
         })
 
     def test_from_data(self):
         from acme.messages import ExternalAccountBinding
-        eab = ExternalAccountBinding.from_data(self.key, self.kid, self.hmac_key, self.dir)
+        eab = ExternalAccountBinding.from_data(self.key, self.kid, self.hmac_key, self.hmac_alg, self.dir)
 
         assert len(eab) == 3
         assert sorted(eab.keys()) == sorted(['protected', 'payload', 'signature'])
+
+    def test_from_data_invalid_hmac_alg(self):
+        from acme.messages import ExternalAccountBinding
+        invalid_alg = "HS9999"
+        with pytest.raises(ValueError) as info:
+            ExternalAccountBinding.from_data(self.key, self.kid, self.hmac_key, invalid_alg, self.dir)
+
+        assert "Invalid value for hmac_alg" in str(info.value)
+
 
 
 class RegistrationTest(unittest.TestCase):
@@ -268,10 +278,11 @@ class RegistrationTest(unittest.TestCase):
         key = jose.jwk.JWKRSA(key=KEY.public_key())
         kid = "kid-for-testing"
         hmac_key = "hmac-key-for-testing"
+        hmac_alg = "HS256"
         directory = Directory({
             'newAccount': 'http://url/acme/new-account',
         })
-        eab = ExternalAccountBinding.from_data(key, kid, hmac_key, directory)
+        eab = ExternalAccountBinding.from_data(key, kid, hmac_key, hmac_alg, directory)
         reg = NewRegistration.from_data(email='admin@foo.com', external_account_binding=eab)
         assert reg.contact == (
             'mailto:admin@foo.com',

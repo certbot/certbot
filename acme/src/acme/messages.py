@@ -303,7 +303,7 @@ class ExternalAccountBinding:
     """ACME External Account Binding"""
 
     @classmethod
-    def from_data(cls, account_public_key: jose.JWK, kid: str, hmac_key: str,
+    def from_data(cls, account_public_key: jose.JWK, kid: str, hmac_key: str, hmac_alg: str,
                   directory: Directory) -> Dict[str, Any]:
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
@@ -311,8 +311,19 @@ class ExternalAccountBinding:
         decoded_hmac_key = jose.b64.b64decode(hmac_key)
         url = directory["newAccount"]
 
+        hmac_alg_map = {
+            "HS256": jose.jwa.HS256,
+            "HS384": jose.jwa.HS384,
+            "HS512": jose.jwa.HS512,
+        }
+        alg = hmac_alg_map.get(hmac_alg)
+        if alg is None:
+            supported = ", ".join(hmac_alg_map.keys())
+            raise ValueError(f"Invalid value for hmac_alg: {hmac_alg}. "
+                             f"Expected one of: {supported}.")
+
         eab = jws.JWS.sign(key_json, jose.jwk.JWKOct(key=decoded_hmac_key),
-                           jose.jwa.HS256, None,
+                           alg, None,
                            url, kid)
 
         return eab.to_partial_json()
