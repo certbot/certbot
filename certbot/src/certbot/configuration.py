@@ -297,7 +297,7 @@ class NamespaceConfig:
     def no_verify_ssl(self) -> bool:
         """Disable verification of the ACME server's certificate.
 
-        The root certificates trusted by Certbot can be overriden by setting the
+        The root certificates trusted by Certbot can be overridden by setting the
         REQUESTS_CA_BUNDLE environment variable.
         """
         return self.namespace.no_verify_ssl

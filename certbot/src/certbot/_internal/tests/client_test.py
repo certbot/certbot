@@ -946,7 +946,7 @@ class ClientTest(ClientTestCommon):
             self.client._choose_lineagename(valid_domains, invalid_certname)
         with pytest.raises(errors.Error):
             self.client._choose_lineagename(invalid_wildcard_domain, None)
-        # Verify no error is raised when invalid domain is overriden by valid certname.
+        # Verify no error is raised when invalid domain is overridden by valid certname.
         self.client._choose_lineagename(invalid_domains, valid_certname)
 
 
