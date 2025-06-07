@@ -6,7 +6,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* ACME Renewal Info (ARI) support. https://datatracker.ietf.org/doc/draft-ietf-acme-ari/
+  `certbot renew` will automatically check ARI when using an ACME server that supports it,
+  and may renew early based on the ARI information. For Let's Encrypt certificates this
+  will typically cause renewal at around 2/3rds of the certificate's lifetime, even if
+  the renew_before_expiry field of a lineage renewal config is set a later date.
 
 ### Changed
 
