@@ -150,7 +150,7 @@ class VirtualHostTest(unittest.TestCase):
             ['server_name', 'return.com']
         ]
         self.vhost4 = VirtualHost(
-            "filp",  # codespell:ignore filp
+            "filp",
             {Addr.fromstring("localhost")}, False, False,
             {'localhost'}, raw4, [])
         raw_has_hsts = [
@@ -159,7 +159,7 @@ class VirtualHostTest(unittest.TestCase):
             ['add_header', 'always', 'set', 'Strict-Transport-Security', '\"max-age=31536000\"'],
         ]
         self.vhost_has_hsts = VirtualHost(
-            "filep",  # codespell:ignore filep
+            "filep",
             {Addr.fromstring("localhost")}, False, False,
             {'localhost'}, raw_has_hsts, [])
 
@@ -207,7 +207,7 @@ class VirtualHostTest(unittest.TestCase):
             ['return', '301', 'https://$host$request_uri'],
             ['#', ' managed by Certbot'], []]
         vhost_haystack = VirtualHost(
-            "filp",  # codespell:ignore filp
+            "filp",
             {Addr.fromstring("localhost")}, False, False,
             {'localhost'}, test_haystack, [])
         test_bad_haystack = [['listen', '80'], ['root', '/var/www/html'],
@@ -223,7 +223,7 @@ class VirtualHostTest(unittest.TestCase):
             ],
             ['#', ' managed by Certbot'], []]
         vhost_bad_haystack = VirtualHost(
-            "filp",  # codespell:ignore filp
+            "filp",
             {Addr.fromstring("localhost")}, False, False,
             {'localhost'}, test_bad_haystack, [])
         assert vhost_haystack.contains_list(test_needle)

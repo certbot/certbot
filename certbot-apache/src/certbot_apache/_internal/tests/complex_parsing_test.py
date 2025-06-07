@@ -101,7 +101,7 @@ class ComplexParserTest(util.ParserTest):
         self.verify_fnmatch("test_fnmatch.?onf")
 
     def test_include_complex(self):
-        self.verify_fnmatch("../complex_parsing/[te][te]st_*.?onf")  # codespell:ignore
+        self.verify_fnmatch("../complex_parsing/[te][te]st_*.?onf")
 
     def test_include_fullpath(self):
         self.verify_fnmatch(os.path.join(self.config_path,
