@@ -37,6 +37,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   polling for finalization readiness.
 * The --preferred-profile and --required-profile flags now have their values stored in
   the renewal configuration so the same setting will be used on renewal.
+* Fixed an unintended change introduced in 4.0.0 where `renew_before_expiry` could not be
+  shorter than certbot's default renewal time. If the server does not provide an ARI
+  response, `renew_before_expiry` will continue to override certbot's default. However,
+  an early ARI response will override a later `renew_before_expiry` time, to account for
+  notifications in case of certificate revocation, especially with the impending deprecation
+  of OCSP (https://letsencrypt.org/2024/12/05/ending-ocsp/). To force a later date, users
+  can replace certbot's default cron job and/or systemd timer with one of their own timing.
 
 More details about these changes can be found on our GitHub repo.
 
