@@ -216,10 +216,12 @@ class RenewalTest(test_util.ConfigTestCase):
         assert lineage_config.key_type == 'rsa'
 
     @test_util.patch_display_util()
+    @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
     @mock.patch('certbot._internal.client.acme_from_config_key')
     @mock.patch('certbot._internal.main.renew_cert')
     @mock.patch("certbot._internal.renewal.datetime")
-    def test_renewal_via_ari(self, mock_datetime, mock_renew_cert, mock_acme_from_config, unused_mock_display):
+    def test_renewal_via_ari(self, mock_datetime, mock_renew_cert, mock_acme_from_config, mock_set_by_user, unused_mock_display):
+        mock_set_by_user.return_value = False
         from certbot._internal import renewal
         acme_client = mock.MagicMock()
         mock_acme_from_config.return_value = acme_client
@@ -230,12 +232,17 @@ class RenewalTest(test_util.ConfigTestCase):
         acme_client.renewal_time.return_value = past, future
 
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
-        lineage_config = copy.deepcopy(self.config)
+        config = configuration.NamespaceConfig(self.config)
 
         with mock.patch('time.sleep') as sleep:
-            renewal.handle_renewal_request(lineage_config)
+            renewal.handle_renewal_request(config)
 
         mock_renew_cert.assert_called_once()
+        # This value comes from `sample-renewal.conf` and is different than
+        # the global default.
+        expected_server = "https://acme-staging-v02.api.letsencrypt.org/directory"
+        assert expected_server != config.server
+        assert mock_acme_from_config.call_args[0][0].server == expected_server
 
     def test_default_renewal_time(self):
         from certbot._internal import renewal
