@@ -43,7 +43,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   an early ARI response will override a later `renew_before_expiry` time, to account for
   notifications in case of certificate revocation, especially with the impending deprecation
   of OCSP (https://letsencrypt.org/2024/12/05/ending-ocsp/). To force a later date, users
-  should remove the cron job installed by default and replace it with one of their own timing.
+  can replace certbot's default cron job and/or systemd timer with one of their own timing.
 
 More details about these changes can be found on our GitHub repo.
 
