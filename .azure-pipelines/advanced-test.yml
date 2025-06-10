@@ -12,4 +12,4 @@ variables:
   snapBuildTimeout: 5400
 
 stages:
-  - template: templates/stages/test-and-package-stage.yml
+  - template: templates/stages/changelog-stage.yml
