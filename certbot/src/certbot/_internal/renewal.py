@@ -320,11 +320,11 @@ def should_renew(config: configuration.NamespaceConfig,
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
-    if should_autorenew(lineage, acme):
-        logger.info("Certificate is due for renewal, auto-renewing...")
-        return True
     if config.dry_run:
         logger.info("Certificate not due for renewal, but simulating renewal for dry run")
+        return True
+    if should_autorenew(lineage, acme):
+        logger.info("Certificate is due for renewal, auto-renewing...")
         return True
     display_util.notify("Certificate not yet due for renewal")
     return False
