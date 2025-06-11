@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-* Fixed a bug where issuance error details where not printed
+* When a CA fails to issue a certificate after finalization, print the ACME error from the order
 
 More details about these changes can be found on our GitHub repo.
 
