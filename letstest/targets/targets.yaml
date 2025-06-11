@@ -6,25 +6,20 @@
 targets:
   #-----------------------------------------------------------------------------
   # Ubuntu
-  # These AMI were found onhttps://cloud-images.ubuntu.com/locator/ec2/.
-  - ami: ami-0fc5d935ebf8bc3bc
-    name: ubuntu22.04
+  # These AMI were found on https://cloud-images.ubuntu.com/locator/ec2/.
+  - ami: ami-045a47a3b15302634
+    name: ubuntu24.04
     type: ubuntu
     virt: hvm
     user: ubuntu
-  - ami: ami-0fe0238291c8e3f07
-    name: ubuntu20.04
+  - ami: ami-0fc5d935ebf8bc3bc
+    name: ubuntu22.04
     type: ubuntu
     virt: hvm
     user: ubuntu
   #-----------------------------------------------------------------------------
   # Debian
   # These AMI were found on https://wiki.debian.org/Cloud/AmazonEC2Image.
-  - ami: ami-0c20d96b50ac700e3
-    name: debian11
-    type: ubuntu
-    virt: hvm
-    user: admin
   - ami: ami-0f238cd7c96d866ad
     name: debian12
     type: ubuntu
@@ -33,12 +28,7 @@ targets:
   #-----------------------------------------------------------------------------
   # CentOS
   # These AMI were found on https://centos.org/download/aws-images/.
-  - ami: ami-0aedf6b1cb669b4c7
-    name: centos7
-    type: centos
-    virt: hvm
-    user: centos
-  - ami: ami-0d5144f02e4eb6f05
+  - ami: ami-0685bf135ad24747f
     name: centos9stream
     type: centos
     virt: hvm

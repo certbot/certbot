@@ -39,7 +39,7 @@ if [ "$RELEASE_GPG_KEY" = "" ]; then
         F2871B4152AE13C49519111F447BF683AA3B26C3
     "
     for key in $TRUSTED_KEYS; do
-        if gpg2 --with-colons --card-status | grep -q "$key"; then
+        if gpg --with-colons --card-status | grep -q "$key"; then
             RELEASE_GPG_KEY="$key"
             break
         fi
@@ -70,7 +70,12 @@ SUBPKGS="certbot $SUBPKGS_NO_CERTBOT"
 #   there
 
 tag="v$version"
-mv "dist.$version" "dist.$version.$(date +%s).bak" || true
+built_package_dir="packages"
+if [ -d "$built_package_dir" ]; then
+    echo "there shouldn't already be a $built_package_dir directory!"
+    echo "if it's not important, maybe delete it and try running the script again?"
+    exit 1
+fi
 git tag --delete "$tag" || true
 
 tmpvenv=$(mktemp -d)
@@ -92,7 +97,7 @@ fi
 git checkout "$RELEASE_BRANCH"
 
 # Update changelog
-sed -i "s/master/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
+sed -i "0,/main/ s/main/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
 git add certbot/CHANGELOG.md
 git commit -m "Update changelog for $version release"
 
@@ -114,7 +119,7 @@ SetVersion() {
       fi
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
-    init_file="certbot/certbot/__init__.py"
+    init_file="certbot/src/certbot/__init__.py"
     if [ $(grep -c '^__version' "$init_file") != 1 ]; then
       echo "Unexpected count of __version variables in $init_file"
       exit 1
@@ -139,24 +144,23 @@ do
   python setup.py sdist
   python setup.py bdist_wheel
 
-  echo "Signing ($pkg_dir)"
-  for x in dist/*.tar.gz dist/*.whl
-  do
-      gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 $x
-  done
-
   cd -
 done
 
-
-mkdir "dist.$version"
+mkdir "$built_package_dir"
 for pkg_dir in $SUBPKGS
 do
-  mv $pkg_dir/dist/* "dist.$version"
+  mv "$pkg_dir"/dist/* "$built_package_dir"
 done
 
-echo "Testing packages"
-cd "dist.$version"
+
+cd "$built_package_dir"
+echo "Generating checksum file and signing it"
+sha256sum *.tar.gz > SHA256SUMS
+gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 SHA256SUMS
+git add *.tar.gz SHA256SUMS*
+
+echo "Installing packages to generate documentation"
 # cd .. is NOT done on purpose: we make sure that all subpackages are
 # installed from local archives rather than current directory (repo root)
 VIRTUALENV_NO_DOWNLOAD=1 virtualenv ../venv
@@ -192,13 +196,16 @@ deactivate
 git add certbot/docs/cli-help.txt
 while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
     echo "Unable to sign the release commit using git."
-    echo "You may have to configure git to use gpg2 by running:"
-    echo 'git config --global gpg.program $(command -v gpg2)'
+    echo "You may have to configure git to use gpg by running:"
+    echo 'git config --global gpg.program $(command -v gpg)'
     read -p "Press enter to try signing again."
 done
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
 
-# Add master section to CHANGELOG.md
+git rm --cached -r "$built_package_dir"
+git commit -m "Remove built packages from git"
+
+# Add main section to CHANGELOG.md
 header=$(head -n 4 certbot/CHANGELOG.md)
 body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
 footer=$(tail -n +5 certbot/CHANGELOG.md)

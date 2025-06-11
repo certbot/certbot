@@ -3,6 +3,7 @@ on:
   schedule:
     # Run 1:24AM every night
     - cron: '24 1 * * *'
+  workflow_dispatch:
 permissions:
   issues: write
 jobs:
@@ -27,7 +28,10 @@ jobs:
           exempt-all-issue-assignees: true
 
           # Label to use when marking as stale
-          stale-issue-label: needs-update
+          stale-issue-label: stale-needs-update
+
+          # Label to use when issue is automatically closed
+          close-issue-label: auto-closed
 
           stale-issue-message: >
             We've made a lot of changes to Certbot since this issue was opened. If you

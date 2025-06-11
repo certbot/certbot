@@ -36,7 +36,7 @@ manage your account:
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
@@ -96,6 +96,23 @@ optional arguments:
                         before submitting to CA. When used in combination with
                         the `-v` option, the challenge URLs or FQDNs and their
                         expected return values are shown. (default: False)
+  --required-profile REQUIRED_PROFILE
+                        Request the given profile name from the ACME server.
+                        If the ACME server returns an error, issuance (or
+                        renewal) will fail. For long-term reliability, setting
+                        preferred_profile instead may be preferable because it
+                        allows fallback to a default. Use this setting when
+                        renewal failure is preferable to fallback. (default:
+                        None)
+  --preferred-profile PREFERRED_PROFILE
+                        Request the given profile name from the ACME server,
+                        or fallback to default. If the given profile name
+                        exists in the ACME directory, use it to request a a
+                        certificate. Otherwise, fall back to requesting a
+                        certificate without a profile (which means the CA will
+                        use its default profile). This allows renewals to
+                        succeed even if the CA deprecates and removes a given
+                        profile. (default: None)
   --preferred-chain PREFERRED_CHAIN
                         Set the preferred certificate chain. If the CA offers
                         multiple certificate chains, prefer the chain whose
@@ -122,7 +139,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/2.7.1 (certbot;
+                        "". (default: CertbotACMEClient/4.1.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -208,14 +225,15 @@ security:
                         enhance)
   --hsts                Add the Strict-Transport-Security header to every HTTP
                         response. Forcing browser to always use SSL for the
-                        domain. Defends against SSL Stripping. (default: None)
+                        domain. Defends against SSL Stripping. (default:
+                        False)
   --uir                 Add the "Content-Security-Policy: upgrade-insecure-
                         requests" header to every HTTP response. Forcing the
                         browser to use https:// for every http:// resource.
-                        (default: None)
+                        (default: False)
   --staple-ocsp         Enables OCSP Stapling. A valid OCSP response is
                         stapled to the certificate that the server offers
-                        during TLS. (default: None)
+                        during TLS. (default: False)
   --strict-permissions  Require that all configuration files are owned by the
                         current user; only needed if your config is somewhere
                         unsafe like /tmp/ (default: False)
@@ -362,7 +380,7 @@ renew:
                         shell constructs, so you can use this switch to
                         disable it. (default: False)
   --no-directory-hooks  Disable running executables found in Certbot's hook
-                        directories during renewal. (default: False)
+                        directories. (default: False)
   --disable-renew-updates
                         Disable automatic updates to your server configuration
                         that would otherwise be done by the selected installer
@@ -387,31 +405,23 @@ revoke:
   --delete-after-revoke
                         Delete certificates after revoking them, along with
                         all previous and later versions of those certificates.
-                        (default: None)
+                        (default: Ask)
   --no-delete-after-revoke
                         Do not delete certificates after revoking them. This
                         option should be used with caution because the 'renew'
                         subcommand will attempt to renew undeleted revoked
-                        certificates. (default: None)
+                        certificates. (default: Ask)
 
 register:
   Options for account registration
 
-  --register-unsafely-without-email
-                        Specifying this flag enables registering an account
-                        with no email address. This is strongly discouraged,
-                        because you will be unable to receive notice about
-                        impending expiration or revocation of your
-                        certificates or problems with your Certbot
-                        installation that will lead to failure to renew.
-                        (default: False)
   -m EMAIL, --email EMAIL
                         Email used for registration and recovery contact. Use
                         comma to register multiple emails, ex:
                         u1@example.com,u2@example.com. (default: Ask).
-  --eff-email           Share your e-mail address with EFF (default: None)
+  --eff-email           Share your e-mail address with EFF (default: Ask)
   --no-eff-email        Don't share your e-mail address with EFF (default:
-                        None)
+                        Ask)
 
 update_account:
   Options for account modification
@@ -734,7 +744,7 @@ standalone:
 
 webroot:
   Saves the necessary validation files to a .well-known/acme-challenge/
-  directory within the nominated webroot path. A seperate HTTP server must
+  directory within the nominated webroot path. A separate HTTP server must
   be running and serving files from the webroot path. HTTP challenge only
   (wildcards not supported).
 

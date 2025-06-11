@@ -1,32 +1,20 @@
 name: Merge Event
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - closed
 
 jobs:
   if_merged:
-    # Forked repos can not access Mattermost secret.
-    if: github.event.pull_request.merged == true && !github.event.pull_request.head.repo.fork 
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-    - name: Create Mattermost Message
-      # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#example-of-a-script-injection-attack
-      env: 
-        NUMBER: ${{ github.event.number }}
-        PR_URL: https://github.com/${{ github.repository }}/pull/${{ github.event.number }}
-        REPO: ${{ github.repository }}
-        USER: ${{ github.actor }}
-        TITLE: ${{ github.event.pull_request.title }}
-      run: |
-        jq --null-input \
-                --arg number "$NUMBER" \
-                --arg pr_url "$PR_URL" \
-                --arg repo "$REPO" \
-                --arg user "$USER" \
-                --arg title "$TITLE" \
-        '{ "text": "[\($repo)] | [\($title) #\($number)](\($pr_url)) was merged into master by \($user)" }' > mattermost.json
     - uses: mattermost/action-mattermost-notify@master
-      env:
+      with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_MERGE_WEBHOOK }}
+        TEXT: >
+          [${{ github.repository }}] |
+          [${{ github.event.pull_request.title }}
+          #${{ github.event.number }}](https://github.com/${{ github.repository }}/pull/${{ github.event.number }})
+          was merged into main by ${{ github.actor }}

@@ -17,8 +17,11 @@ its dependencies, Certbot needs to be run on a UNIX-like OS so if you're using
 Windows, you'll need to set up a (virtual) machine running an OS such as Linux
 and continue with these instructions on that UNIX-like OS.
 
+If you're using macOS, it is recommended to first check out the `macOS
+suggestions`_ section before continuing with the installation instructions
+below.
+
 .. _local copy:
-.. _prerequisites:
 
 Running a local copy of the client
 ----------------------------------
@@ -41,19 +44,23 @@ Install and configure the OS system dependencies required to run Certbot.
 
    # For APT-based distributions (e.g. Debian, Ubuntu ...)
    sudo apt update
-   sudo apt install python3-venv libaugeas0
+   sudo apt install python3-dev python3-venv libaugeas-dev gcc
    # For RPM-based distributions (e.g. Fedora, CentOS ...)
    # NB1: old distributions will use yum instead of dnf
    # NB2: RHEL-based distributions use python3X instead of python3 (e.g. python38)
-   sudo dnf install python3 augeas-libs
+   sudo dnf install python3 python3-devel augeas-devel gcc
    # For macOS installations with Homebrew already installed and configured
-   # NB: If you also run `brew install python` you don't need the ~/lib
-   #     directory created below, however, Certbot's Apache plugin won't work
-   #     if you use Python installed from other sources such as pyenv or the
-   #     version provided by Apple.
-   brew install augeas
-   mkdir ~/lib
-   ln -s $(brew --prefix)/lib/libaugeas* ~/lib
+   # NB: CFLAGS are needed to compile and link to Augeas installed through
+   #     Homebrew and some of our developer scripts expect GNU coreutils be first in
+   #     your PATH. The commands below set this up for bash and zsh, but your
+   #     instructions may be slightly different if you use an alternate shell.
+   brew install augeas coreutils gnu-sed
+   BREW_PREFIX=$(brew --prefix)
+   RC_LINES="export CFLAGS=\"\$CFLAGS -I$BREW_PREFIX/include -L$BREW_PREFIX/lib\"\n"
+   RC_LINES+="export PATH=\"$BREW_PREFIX/opt/coreutils/libexec/gnubin:"
+   RC_LINES+="$BREW_PREFIX/opt/gnu-sed/libexec/gnubin:\$PATH\"\n"
+   printf "$RC_LINES" >> ~/.bashrc  # for bash
+   printf "$RC_LINES" >> ~/.zshrc  # for zsh
 
 .. note:: If you have trouble creating the virtual environment below, you may
    need to install additional dependencies. See the `cryptography project's
@@ -66,7 +73,7 @@ Set up the Python virtual environment that will host your Certbot local instance
 .. code-block:: shell
 
    cd certbot
-   python tools/venv.py
+   python3 tools/venv.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
@@ -92,17 +99,15 @@ found in the `virtualenv docs`_.
 Find issues to work on
 ----------------------
 
-You can find the open issues in the `github issue tracker`_.  Comparatively
-easy ones are marked `good first issue`_.  If you're starting work on
-something, post a comment to let others know and seek feedback on your plan
-where appropriate.
+You can find the open issues in the `github issue tracker`_. If you're starting
+work on something, post a comment to let others know and seek feedback on your
+plan where appropriate.
 
 Once you've got a working branch, you can open a pull request.  All changes in
 your pull request must have thorough unit test coverage, pass our
 tests, and be compliant with the :ref:`coding style <coding-style>`.
 
 .. _github issue tracker: https://github.com/certbot/certbot/issues
-.. _good first issue: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 
 .. _testing:
 
@@ -115,33 +120,32 @@ You can test your code in several ways:
 - running the `automated integration`_ tests
 - running an *ad hoc* `manual integration`_ test
 
-.. note:: Running integration tests does not currently work on macOS. See
-   https://github.com/certbot/certbot/issues/6959. In the meantime, we
-   recommend developers on macOS open a PR to run integration tests.
-
 .. _automated unit:
 
 Running automated unit tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When you are working in a file ``foo.py``, there should also be a file ``foo_test.py``
-either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
-(if there isn't, make one). While you are working on your code and tests, run
-``python foo_test.py`` to run the relevant tests.
+To run all unittests, mypy, and lint:
+
+.. code-block:: shell
+
+    tox
+
+If you're working on a specific test and would like to run just that one:
+
+.. code-block:: shell
+
+    pytest acme/src/acme/_internal/tests/messages_test.py # Use the test file you're working on
+
+To run a specific test case within a file:
+
+.. code-block:: shell
+
+    pytest acme/src/acme/_internal/tests/messages_test.py -k test_to_partial_json
 
 For debugging, we recommend putting
-``import ipdb; ipdb.set_trace()`` statements inside the source code.
-
-Once you are done with your code changes, and the tests in ``foo_test.py``
-pass, run all of the unit tests for Certbot and check for coverage with ``tox
--e cover``. You should then check for code style with ``tox -e lint`` (all
-files) or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a
-time).
-
-Once all of the above is successful, you may run the full test suite using
-``tox --skip-missing-interpreters``. We recommend running the commands above
-first, because running all tests like this is very slow, and the large amount
-of output can make it hard to find specific failures when they happen.
+``import ipdb; ipdb.set_trace()`` statements inside the source code, which will require
+adding the `-s` flag to `pytest` invocations.
 
 .. warning:: The full test suite may attempt to modify your system's Apache
   config if your user has sudo permissions, so it should not be run on a
@@ -154,7 +158,7 @@ Running automated integration tests
 
 Generally it is sufficient to open a pull request and let Github and Azure Pipelines run
 integration tests for you. However, you may want to run them locally before submitting
-your pull request. You need Docker and docker-compose installed and working.
+your pull request. You need Docker installed and working.
 
 The tox environment `integration` will setup `Pebble`_, the Let's Encrypt ACME CA server
 for integration testing, then launch the Certbot integration tests.
@@ -163,7 +167,7 @@ With a user allowed to access your local Docker daemon, run:
 
 .. code-block:: shell
 
-  tox -e integration
+  tox run -e integration
 
 Tests will be run using pytest. A test report and a code coverage report will be
 displayed at the end of the integration tests execution.
@@ -183,7 +187,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv.py` contains two CLI tools
+The virtual environment set up with `python3 tools/venv.py` contains two CLI tools
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -211,7 +215,7 @@ using an HTTP-01 challenge on a machine with Python 3:
 
 .. code-block:: shell
 
-    python tools/venv.py
+    python3 tools/venv.py
     source venv/bin/activate
     run_acme_server &
     certbot_test certonly --standalone -d test.example.com
@@ -236,8 +240,6 @@ certbot-apache and certbot-nginx
   client code to configure specific web servers
 certbot-dns-*
   client code to configure DNS providers
-windows installer
-  Installs Certbot on Windows and is built using the files in windows-installer/
 
 Plugin-architecture
 -------------------
@@ -254,16 +256,16 @@ certificate once it is issued. Some plugins, like the built-in Apache and Nginx
 plugins, implement both interfaces and perform both tasks. Others, like the
 built-in Standalone authenticator, implement just one interface.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/certbot/plugins/common.py#L45
+.. _interfaces.py: https://github.com/certbot/certbot/blob/main/certbot/src/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/main/certbot/src/certbot/plugins/common.py#L45
 
 
 Authenticators
 --------------
 
 Authenticators are plugins that prove control of a domain name by solving a
-challenge provided by the ACME server. ACME currently defines several types of
-challenges: HTTP, TLS-ALPN, and DNS, represented by classes in `acme.challenges`.
+challenge provided by the ACME server. ACME currently defines two types of
+challenges: HTTP and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
@@ -328,8 +330,8 @@ Writing your own plugin
     for one example of that.
 
 Certbot client supports dynamic discovery of plugins through the
-`setuptools entry points`_ using the `certbot.plugins` group. This
-way you can, for example, create a custom implementation of
+`importlib.metadata entry points`_ using the `certbot.plugins` group.
+This way you can, for example, create a custom implementation of
 `~certbot.interfaces.Authenticator` or the
 `~certbot.interfaces.Installer` without having to merge it
 with the core upstream source code. An example is provided in
@@ -352,8 +354,8 @@ users install it system-wide with `pip install`. Note that this will
 only work for users who have Certbot installed from OS packages or via
 pip.
 
-.. _`setuptools entry points`:
-    https://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
+.. _`importlib.metadata entry points`:
+    https://importlib-metadata.readthedocs.io/en/latest/using.html#entry-points
 
 Writing your own plugin snap
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -375,8 +377,8 @@ Certbot plugin snaps expose their Python modules to the Certbot snap via a
 `snap content interface`_ where ``certbot-1`` is the value for the ``content``
 attribute. The Certbot snap only uses this to find the names of connected
 plugin snaps and it expects to find the Python modules to be loaded under
-``lib/python3.8/site-packages/`` in the plugin snap. This location is the
-default when using the ``core20`` `base snap`_ and the `python snapcraft
+``lib/python3.12/site-packages/`` in the plugin snap. This location is the
+default when using the ``core24`` `base snap`_ and the `python snapcraft
 plugin`_.
 
 The Certbot snap also provides a separate content interface which
@@ -385,7 +387,7 @@ identifier ``metadata-1``.
 
 The script used to generate the snapcraft.yaml files for our own externally
 snapped plugins can be found at
-https://github.com/certbot/certbot/blob/master/tools/snap/generate_dnsplugins_snapcraft.sh.
+https://github.com/certbot/certbot/blob/main/tools/snap/generate_dnsplugins_snapcraft.sh.
 
 For more information on building externally snapped plugins, see the section on
 :ref:`Building snaps`.
@@ -485,7 +487,7 @@ annotations; we can find bugs in Certbot even without a fully annotated codebase
 Zulip wrote a `great guide`_ to using mypy. It’s useful, but you don’t have to read the whole thing
 to start contributing to Certbot.
 
-To run mypy on Certbot, use ``tox -e mypy`` on a machine that has Python 3 installed.
+To run mypy on Certbot, use ``tox run -e mypy`` on a machine that has Python 3 installed.
 
 Also note that OpenSSL, which we rely on, has type definitions for crypto but not SSL. We use both.
 Those imports should look like this:
@@ -509,12 +511,12 @@ Steps:
    something we have the time and interest to review.
 1. Write your code! When doing this, you should add :ref:`mypy type annotations
    <type annotations>` for any functions you add or modify. You can check that
-   you've done this correctly by running ``tox -e mypy`` on a machine that has
+   you've done this correctly by running ``tox run -e mypy`` on a machine that has
    Python 3 installed.
 2. Make sure your environment is set up properly and that you're in your
    virtualenv. You can do this by following the instructions in the
    :ref:`Getting Started <getting_started>` section.
-3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
+3. Run ``tox run -e lint`` to check for pylint errors. Fix any errors.
 4. Run ``tox --skip-missing-interpreters`` to run all the tests we recommend
    developers run locally. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
@@ -558,7 +560,7 @@ Building the Certbot and DNS plugin snaps
 
 Instructions for how to manually build and run the Certbot snap and the externally
 snapped DNS plugins that the Certbot project supplies are located in the README
-file at https://github.com/certbot/certbot/tree/master/tools/snap.
+file at https://github.com/certbot/certbot/tree/main/tools/snap.
 
 Updating the documentation
 ==========================
@@ -585,8 +587,7 @@ Certbot's dependencies
 
 We attempt to pin all of Certbot's dependencies whenever we can for reliability
 and consistency. Some of the places we have Certbot's dependencies pinned
-include our snaps, Docker images, Windows installer, CI, and our development
-environments.
+include our snaps, Docker images, CI, and our development environments.
 
 In most cases, the file where dependency versions are specified is
 ``tools/requirements.txt``. The one exception to this is our "oldest" tests
@@ -625,25 +626,42 @@ If you want to learn more about the design used here, see
 Choosing dependency versions
 ----------------------------
 
-A number of Unix distributions create third-party Certbot packages for their users.
-Where feasible, the Certbot project tries to manage its dependencies in a way that
-does not create avoidable work for packagers.
+When choosing dependency versions, we should choose whatever minimum versions
+simplify development of Certbot and our own distribution methods such as snaps,
+pip, and docker. Since these approaches have full access to PyPI, it's OK if
+the required packages declared in ``setup.py`` are quite new.
 
-Avoiding adding new dependencies is a good way to help with this.
+If this approach to development creates significant trouble for some of our users, we
+can revisit this decision and weigh their trouble against the difficulties
+involved in maintaining support for a wider range of package versions. When
+doing this, we should also be sure to consider the feasibility of users getting
+access to these newer packages on their system rather than changing our own
+approach here. Their OS distribution may be able to package it, especially in
+an alternate repository and/or for a different version of Python to help avoid
+conflicts with other packages on their system.
 
-When adding new or upgrading existing Python dependencies, Certbot developers should
-pay attention to which distributions are actively packaging Certbot. In particular:
+macOS suggestions
+=================
 
-- EPEL (used by RHEL/CentOS/Fedora) updates Certbot regularly. At the time of writing,
-  EPEL9 is the release of EPEL where Certbot is being updated, but check the `EPEL
-  home page <https://docs.fedoraproject.org/en-US/epel/>`_ and `pkgs.org
-  <https://pkgs.org/search/?q=python3-certbot>`_ for the latest release.
-- Debian and Ubuntu only package Certbot when making new releases of their distros.
-  Checking the available version of dependencies in Debian "sid" and "unstable" can help
-  to identify dependencies that are likely to be available in the next stable release of
-  these distros.
+If you're developing on macOS, before :ref:`setting up your Certbot development
+environment <local copy>`, it is recommended you perform the following steps.
+None of this is required, but it is the approach used by all/most of the
+current Certbot developers on macOS as of writing this:
 
-If a dependency is already packaged in these distros and is acceptable for use in Certbot,
-the oldest packaged version of that dependency should be chosen and set as the minimum
-version in ``setup.py``.
+0. Install `Homebrew <https://brew.sh/>`_. It is the most popular package
+   manager on macOS by a wide margin and works well enough.
+1. Install `pyenv <https://github.com/pyenv/pyenv>`_, ideally through Homebrew
+   by running ``brew install pyenv``. Using Homebrew's Python for Certbot
+   development is annoying because it regularly updates and every time it does
+   it breaks your virtual environments. Using Python from ``pyenv`` avoids this
+   problem and gives you easy access to all versions of Python.
+2. If you're using ``pyenv``, make sure you've set up your shell for it by
+   following instructions like
+   https://github.com/pyenv/pyenv?tab=readme-ov-file#set-up-your-shell-environment-for-pyenv.
+3. Configure ``git`` to ignore the ``.DS_Store`` files that are created by
+   macOS's file manager Finder by running something like:
 
+.. code-block:: shell
+
+   mkdir -p ~/.config/git
+   echo '.DS_Store' >> ~/.config/git/ignore

@@ -49,26 +49,32 @@ def _snap_log_name(target: str, arch: str):
 def _execute_build(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         workspace: str, output_lock: Lock) -> Tuple[int, List[str]]:
-
-    # snapcraft remote-build accepts a --build-id flag with snapcraft version
-    # 5.0+. We make use of this feature to set a unique build ID so a fresh
-    # build is started for each run instead of potentially reusing an old
-    # build. See https://github.com/certbot/certbot/pull/8719 and
-    # https://github.com/snapcore/snapcraft/pull/3554 for more info.
+    # The implementation of remote-build recovery has changed over time.
+    # Currently, you cannot set a build-id, and the build-id is instead derived
+    # from a hash of the contents of the files in the directory:
+    # https://github.com/canonical/craft-application/blob/5b09ab3d9152a2b61ffcdf57691289023ed6ba26/craft_application/remote/utils.py#L64
     #
-    # This random string was chosen because snapcraft uses a MD5 hash
-    # represented as a 32 character hex string by default, so we use the same
-    # length but from a larger character set just because we can.
+    # We want a unique build ID so a fresh build is started for each run instead
+    # of potentially reusing an old build. See https://github.com/certbot/certbot/pull/8719
+    # and https://github.com/snapcore/snapcraft/pull/3554 for more info.
+    #
+    # In the hope that one day you can again set a build ID, we will modify
+    # the directory by creating a file containing a build ID that conforms
+    # to the shape of snapcraft's build ID: using a MD5 hash represented as a
+    # 32 character hex string (we use a larger character set).
+
     random_string = ''.join(random.choice(string.ascii_lowercase + string.digits)
                             for _ in range(32))
-    build_id = f'snapcraft-{target}-{random_string}'
+    # place random string in build_id file inside `workspace` directory
+    with open(join(workspace, 'build_id'), 'w') as build_id_file:
+        build_id_file.write(random_string)
 
     with tempfile.TemporaryDirectory() as tempdir:
         environ = os.environ.copy()
         environ['XDG_CACHE_HOME'] = tempdir
         process = subprocess.Popen([
             'snapcraft', 'remote-build', '--launchpad-accept-public-upload',
-            '--build-for', ','.join(archs), '--build-id', build_id],
+            '--build-for', ','.join(archs)],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             universal_newlines=True, env=environ, cwd=workspace)
 
@@ -103,6 +109,10 @@ def _build_snap(
         workspace = CERTBOT_DIR
     else:
         workspace = join(CERTBOT_DIR, target)
+        # init and commit git repo in workspace
+        subprocess.run(['git', 'init'], capture_output=True, check=True, cwd=workspace)
+        subprocess.run(['git', 'add', '-A'], capture_output=True, check=True, cwd=workspace)
+        subprocess.run(['git', 'commit', '-m', 'init'], capture_output=True, check=True, cwd=workspace)
 
     build_success = False
     retry = 3
@@ -115,7 +125,7 @@ def _build_snap(
             print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
                   f'exit code {exit_code}.')
 
-            failed_archs = [arch for arch in archs if status[target][arch] != 'Successfully built']
+            failed_archs = [arch for arch in archs if status[target][arch] != 'Succeeded']
             # If the command failed or any architecture wasn't built
             # successfully, let's try to print all the output about the problem
             # that we can.
@@ -147,17 +157,17 @@ def _build_snap(
 def _extract_state(project: str, output: str, status: Dict[str, Dict[str, str]]) -> None:
     state = status[project]
 
-    if "Sending build data to Launchpad..." in output:
+    if "Starting new build" in output:
         for arch in state.keys():
-            state[arch] = "Sending build data"
+            state[arch] = "Starting new build"
 
-    match = re.match(r'^.*arch=(\w+)\s+state=([\w ]+).*$', output)
+    match = re.match(r'^(\w+): (\w+)$', output)
     if match:
-        arch = match.group(1)
-        state[arch] = match.group(2)
+        arch = match.group(2)
+        state[arch] = match.group(1)
 
     # You need to reassign the value of status[project] here (rather than doing
-    # something like status[project][arch] = match.group(2)) for the state change
+    # something like status[project][arch] = match.group(1)) for the state change
     # to propagate to other processes. See
     # https://docs.python.org/3.8/library/multiprocessing.html#proxy-objects for
     # more info.
@@ -187,18 +197,18 @@ def _dump_status(
 def _dump_failed_build_logs(
         target: str, archs: Set[str], status: Dict[str, Dict[str, str]],
         workspace: str) -> None:
+    logs_list = glob.glob(join(workspace, f'snapcraft-{target}-*.txt'))
     for arch in archs:
         result = status[target][arch]
 
-        if result != 'Successfully built':
+        if result != 'Succeeded':
             failures = True
 
-            build_output_name = _snap_log_name(target, arch)
-            build_output_path = join(workspace, build_output_name)
-            if not exists(build_output_path):
-                build_output = f'No output has been dumped by snapcraft remote-build.'
+            build_output_path = [log_name for log_name in logs_list if arch in log_name]
+            if not build_output_path:
+                build_output = 'No output has been dumped by snapcraft remote-build.'
             else:
-                with open(build_output_path) as file_h:
+                with open(build_output_path[0]) as file_h:
                     build_output = file_h.read()
 
             print(f'Output for failed build target={target} arch={arch}')

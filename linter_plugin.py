@@ -10,11 +10,10 @@ import os.path
 import re
 
 from pylint.checkers import BaseChecker
-from pylint.interfaces import IAstroidChecker
 
 # Modules whose file is matching one of these paths can import the os module.
-WHITELIST_PATHS = [
-    '/acme/acme/',
+ALLOWLIST_PATHS = [
+    '/acme/src/acme/',
     '/certbot-ci/',
     '/certbot-compatibility-test/',
 ]
@@ -25,7 +24,6 @@ class ForbidStandardOsModule(BaseChecker):
     This checker ensures that standard os module (and submodules) is not imported by certbot
     modules. Otherwise an 'os-module-forbidden' error will be registered for the faulty lines.
     """
-    __implements__ = IAstroidChecker
 
     name = 'forbid-os-module'
     msgs = {
@@ -55,5 +53,5 @@ def register(linter):
 
 def _check_disabled(node):
     module = node.root()
-    return any(path for path in WHITELIST_PATHS
+    return any(path for path in ALLOWLIST_PATHS
                if os.path.normpath(path) in os.path.normpath(module.file))
