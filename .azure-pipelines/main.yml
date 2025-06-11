@@ -1,9 +1,9 @@
-# We run the test suite on commits to master so codecov gets coverage data
-# about the master branch and can use it to track coverage changes.
+# We run the test suite on commits to main so codecov gets coverage data
+# about the main branch and can use it to track coverage changes.
 trigger:
-  - master
+  - main
 pr:
-  - master
+  - main
   - '*.x'
 
 variables:

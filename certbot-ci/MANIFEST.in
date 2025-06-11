@@ -1,4 +1,3 @@
-recursive-include certbot_integration_tests/assets *
-include certbot_integration_tests/py.typed
-include snap_integration_tests/py.typed
-include windows_installer_integration_tests/py.typed
+recursive-include src/certbot_integration_tests/assets *
+include src/certbot_integration_tests/py.typed
+include src/snap_integration_tests/py.typed

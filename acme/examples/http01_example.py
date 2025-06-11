@@ -27,10 +27,11 @@ Workflow:
 """
 from contextlib import contextmanager
 
+from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 import josepy as jose
-import OpenSSL
 
 from acme import challenges
 from acme import client
@@ -68,10 +69,11 @@ def new_csr_comp(domain_name, pkey_pem=None):
     """Create certificate signing request."""
     if pkey_pem is None:
         # Create private key.
-        pkey = OpenSSL.crypto.PKey()
-        pkey.generate_key(OpenSSL.crypto.TYPE_RSA, CERT_PKEY_BITS)
-        pkey_pem = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM,
-                                                  pkey)
+        pkey = rsa.generate_private_key(public_exponent=65537, key_size=CERT_PKEY_BITS)
+        pkey_pem = pkey.private_bytes(encoding=serialization.Encoding.PEM,
+                                      format=serialization.PrivateFormat.PKCS8,
+                                      encryption_algorithm=serialization.NoEncryption())
+
     csr_pem = crypto_util.make_csr(pkey_pem, [domain_name])
     return pkey_pem, csr_pem
 
@@ -168,11 +170,8 @@ def example_http():
 
     # Terms of Service URL is in client_acme.directory.meta.terms_of_service
     # Registration Resource: regr
-    # Creates account with contact information.
-    email = ('fake@example.com')
     regr = client_acme.new_account(
-        messages.NewRegistration.from_data(
-            email=email, terms_of_service_agreed=True))
+        messages.NewRegistration.from_data(terms_of_service_agreed=True))
 
     # Create domain private key and CSR
     pkey_pem, csr_pem = new_csr_comp(DOMAIN)
@@ -200,9 +199,7 @@ def example_http():
 
     # Revoke certificate
 
-    fullchain_com = jose.ComparableX509(
-        OpenSSL.crypto.load_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, fullchain_pem))
+    fullchain_com = x509.load_pem_x509_certificate(fullchain_pem.encode())
 
     try:
         client_acme.revoke(fullchain_com, 0)  # revocation reason = 0

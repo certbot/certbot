@@ -6,7 +6,11 @@ authors = ["Certbot Project"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+# python 3.9.2 is used as a lower bound here because newer versions of
+# cryptography dropped support for python 3.9.0 and 3.9.1. see
+# https://github.com/pyca/cryptography/pull/12045. when we drop support for
+# python 3.9 altogether, this line can be changed to the simpler 'python = "^3.10"'.
+python = ">=3.9.2,<4.0"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -32,7 +36,6 @@ certbot-apache = {path = "../../../certbot-apache", extras = ["dev"]}
 certbot = {path = "../../../certbot", extras = ["all"]}
 acme = {path = "../../../acme", extras = ["docs", "test"]}
 letstest = {path = "../../../letstest"}
-windows-installer = {path = "../../../windows-installer"}
 
 # Extra dependencies
 # As of writing this, cython is a build dependency of pyyaml. Since there
@@ -58,30 +61,15 @@ setuptools-rust = "*"
 #
 # If this pinning is removed, we may still need to add a lower bound for the
 # pylint version. See https://github.com/certbot/certbot/pull/9229.
-pylint = "2.15.5"
+pylint = "3.3.3"
+# mypy often adds new checks that we need to conform our code to when updating
+# dependencies. To help control when this needs to be done, we pin mypy to a
+# compatible version here.
+mypy = "1.9.0"
 
-# Bug in poetry, where still installes yanked versions from pypi (source: https://github.com/python-poetry/poetry/issues/2453)
-# this version of cryptography introduced a security vulnrability.
-# Making sure that it would not get installed (Fixing https://github.com/certbot/certbot/issues/9336)
-cryptography = "!= 37.0.3"
-
-# If poetry>=1.3.0 is selected, multiple versions of virtualenv are selected
-# causing problems when exporting dependencies so let's pin poetry back until
-# https://github.com/python-poetry/poetry-plugin-export/issues/168 is resolved.
-poetry = "<1.3.0"
-
-# setuptools 67.5.0 deprecated pkg_resources which we still use. Let's pin it
-# back until this is fixed. Doing this work is being tracked by
-# https://github.com/certbot/certbot/issues/9606.
-setuptools = "<67.5.0"
-
-# Branch 4.x of tox introduces backward incompatibility changes. The tox.ini
-# file in the project must be adapted accordingly before moving out of the 3.x
-# branch. Once done, the following constraint should become tox >= 4 to keep
-# deterministic builds.
-tox = "<4"
-
-[tool.poetry.dev-dependencies]
+# Branch 4.x of tox introduces backward incompatibility changes, so require a newer
+# version of tox to keep deterministic builds.
+tox = ">=4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

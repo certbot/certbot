@@ -14,14 +14,14 @@ build:
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
-  configuration: docs/conf.py
+  configuration: certbot-dns-google/docs/conf.py
   # You can configure Sphinx to use a different builder, for instance use the dirhtml builder for simpler URLs
   # builder: "dirhtml"
   # Fail on all warnings to avoid broken references
   fail_on_warning: true
 
 # Optionally build your docs in additional formats such as PDF and ePub
-# formats:
+formats:
    - pdf
    - epub
 
@@ -30,4 +30,4 @@ sphinx:
 # See https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
 python:
    install:
-   - requirements: ../tools/requirements.txt
+   - requirements: certbot-dns-google/readthedocs.org.requirements.txt

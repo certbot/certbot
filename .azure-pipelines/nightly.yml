@@ -1,4 +1,4 @@
-# Nightly pipeline running each day for master.
+# Nightly pipeline running each day for main.
 trigger: none
 pr: none
 schedules:
@@ -6,7 +6,7 @@ schedules:
     displayName: Nightly build
     branches:
       include:
-      - master
+      - main
     always: true
 
 variables:
@@ -15,5 +15,5 @@ variables:
 
 stages:
   - template: templates/stages/test-and-package-stage.yml
-  - template: templates/stages/deploy-stage.yml
+  - template: templates/stages/nightly-deploy-stage.yml
   - template: templates/stages/notify-failure-stage.yml

@@ -1,42 +1,26 @@
 jobs:
   - job: test
     variables:
-      PYTHON_VERSION: 3.11
+      PYTHON_VERSION: 3.13
     strategy:
       matrix:
-        macos-py38-cover:
-          IMAGE_NAME: macOS-12
-          PYTHON_VERSION: 3.8
+        macos-cover:
+          IMAGE_NAME: macOS-15
           TOXENV: cover
           # As of pip 23.1.0, builds started failing on macOS unless this flag was set.
           # See https://github.com/certbot/certbot/pull/9717#issuecomment-1610861794.
           PIP_USE_PEP517: "true"
-        macos-cover:
-          IMAGE_NAME: macOS-12
-          TOXENV: cover
-          # See explanation under macos-py38-cover.
-          PIP_USE_PEP517: "true"
-        windows-py38:
-          IMAGE_NAME: windows-2019
-          PYTHON_VERSION: 3.8
-          TOXENV: py-win
-        windows-py39-cover:
-          IMAGE_NAME: windows-2019
-          PYTHON_VERSION: 3.9
-          TOXENV: cover-win
-        windows-integration-certbot:
-          IMAGE_NAME: windows-2019
-          PYTHON_VERSION: 3.9
-          TOXENV: integration-certbot
         linux-oldest:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.8
+          PYTHON_VERSION: 3.9
           TOXENV: oldest
-        linux-py38:
+        linux-py39:
+          # linux unit tests with the oldest python we support
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.8
-          TOXENV: py38
+          PYTHON_VERSION: 3.9
+          TOXENV: py39
         linux-cover:
+          # linux unit+cover tests with the newest python we support
           IMAGE_NAME: ubuntu-22.04
           TOXENV: cover
         linux-lint:
@@ -47,9 +31,7 @@ jobs:
           TOXENV: mypy
         linux-integration:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.8
           TOXENV: integration
-          ACME_SERVER: pebble
         apache-compat:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: apache_compat
@@ -65,6 +47,6 @@ jobs:
       - template: ../steps/tox-steps.yml
   - job: test_sphinx_builds
     pool:
-      vmImage: ubuntu-20.04
+      vmImage: ubuntu-22.04
     steps:
       - template: ../steps/sphinx-steps.yml

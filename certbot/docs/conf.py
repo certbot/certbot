@@ -22,7 +22,7 @@ import sphinx
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
-init_fn = os.path.join(here, '..', 'certbot', '__init__.py')
+init_fn = os.path.join(here, '..', 'src', 'certbot', '__init__.py')
 with codecs.open(init_fn, encoding='utf8') as fd:
     meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", fd.read()))
 
@@ -69,7 +69,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'Certbot'
 # this is now overridden by the footer.html template
-#copyright = u'2014-2018 - The Certbot software and documentation are licensed under the Apache 2.0 license as described at https://eff.org/cb-license.'
+copyright = u'2014-2018 - The Certbot software and documentation are licensed under the Apache 2.0 license as described at https://eff.org/cb-license.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -314,5 +314,5 @@ texinfo_documents = [
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
-    'acme': ('https://acme-python.readthedocs.org/en/latest/', None),
+    'acme': ('https://acme-python.readthedocs.io/en/latest/', None),
 }

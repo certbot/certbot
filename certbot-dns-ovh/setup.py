@@ -4,11 +4,10 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.8.0.dev0'
+version = '5.0.0.dev0'
 
 install_requires = [
-    'dns-lexicon>=3.14.1',
-    'setuptools>=41.6.0',
+    'dns-lexicon>=3.15.1',
 ]
 
 if os.environ.get('SNAP_BUILD'):
@@ -39,7 +38,7 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.8',
+    python_requires='>=3.9.2',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
@@ -48,10 +47,11 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
@@ -60,7 +60,8 @@ setup(
         'Topic :: Utilities',
     ],
 
-    packages=find_packages(),
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
     include_package_data=True,
     install_requires=install_requires,
     extras_require={

@@ -13,7 +13,5 @@ variables:
 stages:
   - template: templates/stages/test-and-package-stage.yml
   - template: templates/stages/changelog-stage.yml
-  - template: templates/stages/deploy-stage.yml
-    parameters:
-      snapReleaseChannel: beta
+  - template: templates/stages/release-deploy-stage.yml
   - template: templates/stages/notify-failure-stage.yml

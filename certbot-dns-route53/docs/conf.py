@@ -170,6 +170,6 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
-    'acme': ('https://acme-python.readthedocs.org/en/latest/', None),
+    'acme': ('https://acme-python.readthedocs.io/en/latest/', None),
     'certbot': ('https://eff-certbot.readthedocs.io/en/stable/', None),
 }

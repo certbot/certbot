@@ -20,7 +20,7 @@ steps:
       set -e
       sudo apt-get update
       sudo apt-get install -y --no-install-recommends \
-        libaugeas0 \
+        libaugeas-dev \
         nginx-light
       sudo systemctl stop nginx
       sudo sysctl net.ipv4.ip_unprivileged_port_start=0
@@ -44,7 +44,7 @@ steps:
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
       [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
       env
-      python3 -m tox
+      python3 -m tox run
     env:
       AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
       AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
