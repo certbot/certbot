@@ -244,6 +244,22 @@ class RenewalTest(test_util.ConfigTestCase):
         assert expected_server != config.server
         assert mock_acme_from_config.call_args[0][0].server == expected_server
 
+    @test_util.patch_display_util()
+    @mock.patch('acme.client.ClientNetwork.get')
+    @mock.patch('certbot._internal.storage.RenewableCert.autorenewal_is_enabled')
+    def test_no_network_if_no_autorenew(self, mock_autorenewal_enabled,
+            mock_client_network_get, unused_mock_display):
+        from certbot._internal import renewal
+        mock_autorenewal_enabled.return_value = False
+
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
+
+        with mock.patch('time.sleep') as sleep:
+            renewal.handle_renewal_request(self.config)
+
+        assert mock_client_network_get.call_count == 0
+
+
     @mock.patch('acme.client.ClientV2')
     def test_dry_run_no_ari_call(self, mock_acme):
         from certbot._internal import renewal
