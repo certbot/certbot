@@ -350,6 +350,7 @@ def _default_renewal_time(cert_pem: bytes) -> datetime.datetime:
 
     return default_rt
 
+
 def should_autorenew(config: configuration.NamespaceConfig,
                      lineage: storage.RenewableCert,
                      acme_clients: Dict[str, acme_client.ClientV2]) -> bool:
@@ -373,11 +374,12 @@ def should_autorenew(config: configuration.NamespaceConfig,
 
     """
     if lineage.autorenewal_is_enabled():
+        assert lineage.server is not None
         # Don't initialize the acme client (making a network request) until
         # we know we're actually going to have to check ARI
-        if config.server not in acme_clients:
-            acme_clients[config.server] = client.acme_from_config_key(config)
-        acme = acme_clients[config.server]
+        if lineage.server not in acme_clients:
+            acme_clients[lineage.server] = client.acme_from_config_key(config, server=lineage.server)
+        acme = acme_clients[lineage.server]
 
         cert = lineage.version("cert", lineage.latest_common_version())
 

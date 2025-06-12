@@ -51,6 +51,7 @@ logger = logging.getLogger(__name__)
 def acme_from_config_key(config: configuration.NamespaceConfig,
                          key: Optional[jose.JWK] = None,
                          regr: Optional[messages.RegistrationResource] = None,
+                         server: Optional[str] = None,
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
     alg = RS256
@@ -70,7 +71,7 @@ def acme_from_config_key(config: configuration.NamespaceConfig,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
 
-    directory = acme_client.ClientV2.get_directory(config.server, net)
+    directory = acme_client.ClientV2.get_directory(server if server else config.server, net)
     return acme_client.ClientV2(directory, net)
 
 
