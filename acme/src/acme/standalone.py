@@ -1,4 +1,6 @@
 """Support for standalone client challenge solvers. """
+from __future__ import annotations
+
 import collections
 import functools
 import http.client as http_client
@@ -219,7 +221,8 @@ class HTTPServer(BaseHTTPServer.HTTPServer):
 class HTTP01Server(HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
 
-    def __init__(self, server_address: Tuple[str, int], resources: Set[challenges.HTTP01],
+    def __init__(self, server_address: Tuple[str, int],
+                 resources: Set[HTTP01RequestHandler.HTTP01Resource],
                  ipv6: bool = False, timeout: int = 30) -> None:
         super().__init__(
             server_address, HTTP01RequestHandler.partial_init(
@@ -314,8 +317,8 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                          self.path)
 
     @classmethod
-    def partial_init(cls, simple_http_resources: Set[challenges.HTTP01],
-                     timeout: int) -> 'functools.partial[HTTP01RequestHandler]':
+    def partial_init(cls, simple_http_resources: Set[HTTP01RequestHandler.HTTP01Resource],
+                     timeout: int) -> functools.partial[HTTP01RequestHandler]:
         """Partially initialize this handler.
 
         This is useful because `socketserver.BaseServer` takes
