@@ -360,7 +360,7 @@ class ClientV2:
         try:
             resp = self.net.get(ari_url, content_type='application/json')
         except (requests.exceptions.RequestException, messages.Error) as error:
-            logger.warning("failed to fetch renewal_info URL (%s): %s", ari_url, error)
+            logger.info("failed to fetch renewal_info URL (%s): %s", ari_url, error)
             return None, now + default_retry_after
 
         renewal_info: messages.RenewalInfo = messages.RenewalInfo.from_json(resp.json())
