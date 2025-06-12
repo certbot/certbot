@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-* Fixed a bug where issuance error details where not printed
+* When a CA fails to issue a certificate after finalization, print the ACME error from the order
 * No longer checks ARI during certbot --dry-run, because --dry-run uses staging when used
   with let's encrypt but the cert was issued against the default server. This would emit
   a scary warning, even though the cert would renew successfully.
