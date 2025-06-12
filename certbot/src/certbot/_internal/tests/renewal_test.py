@@ -244,6 +244,14 @@ class RenewalTest(test_util.ConfigTestCase):
         assert expected_server != config.server
         assert mock_acme_from_config.call_args[0][0].server == expected_server
 
+    @mock.patch('acme.client.ClientV2')
+    def test_dry_run_no_ari_call(self, mock_acme):
+        from certbot._internal import renewal
+        self.config.dry_run = True
+        with mock.patch('time.sleep') as sleep:
+            renewal.should_renew(self.config, mock.Mock(), mock_acme)
+        assert mock_acme.renewal_time.call_count == 0
+
     def test_default_renewal_time(self):
         from certbot._internal import renewal
         cert_pem = make_cert_with_lifetime(datetime.datetime(2025, 3, 12, 00, 00, 00), 8)
