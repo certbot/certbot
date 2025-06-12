@@ -16,4 +16,3 @@ variables:
 stages:
   - template: templates/stages/test-and-package-stage.yml
   - template: templates/stages/nightly-deploy-stage.yml
-  - template: templates/stages/notify-failure-stage.yml
