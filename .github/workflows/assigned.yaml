@@ -11,4 +11,4 @@ jobs:
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_ASSIGN_WEBHOOK }}
         TEXT: >
-            ${{ github.event.issue.assignee.login }} assigned to "${{ github.event.issue.title }}": ${{ github.event.issue.html_url }}
+            ${{ github.event.assignee.login }} assigned to "${{ github.event.issue.title }}": ${{ github.event.issue.html_url }}
