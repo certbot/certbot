@@ -5,6 +5,7 @@ on:
     types: [review_requested]
 jobs:
   send-mattermost-message:
+    if: ${{ github.event.requested_reviewer.login != ''}}
     runs-on: ubuntu-latest
     steps:
     - uses: mattermost/action-mattermost-notify@master
