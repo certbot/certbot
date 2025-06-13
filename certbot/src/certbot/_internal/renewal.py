@@ -298,13 +298,9 @@ def _restore_str(name: str, value: str) -> Optional[str]:
     :rtype: str or None
 
     """
-    # Previous to v0.5.0, Certbot always stored the `server` URL in the renewal config,
-    # resulting in configs which explicitly use the deprecated ACMEv1 URL, today
-    # preventing an automatic transition to the default modern ACME URL.
-    # (https://github.com/certbot/certbot/issues/7978#issuecomment-625442870)
-    # As a mitigation, this function reinterprets the value of the `server` parameter if
-    # necessary, replacing the ACMEv1 URL with the default ACME URL. It is still possible
-    # to override this choice with the explicit `--server` CLI flag.
+    # To automatically migrate users from Let's Encrypt's old ACMEv1 URL, we replace the it here
+    # with the default ACME URL. It is still possible to override this choice with the explicit
+    # `--server` CLI flag.
     if name == "server" and value == constants.V1_URI:
         logger.info("Using server %s instead of legacy %s",
                     constants.CLI_DEFAULTS["server"], value)
