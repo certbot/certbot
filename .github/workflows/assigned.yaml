@@ -3,9 +3,6 @@ name: Issue Assigned
 on:
   issues:
     types: [assigned]
-
-  pull_request_target:
-     types: [assigned]
 jobs:
   send-mattermost-message:
     runs-on: ubuntu-latest
@@ -14,4 +11,4 @@ jobs:
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_ASSIGN_WEBHOOK }}
         TEXT: >
-            ${{ github.event.issue.assignee.login || github.event.pull_request.assignee.login }} assigned to "${{ github.event.issue.title || github.event.pull_request.title }}": ${{ github.event.issue.html_url || github.event.pull_request.html_url }}
+            ${{ github.event.issue.assignee.login }} assigned to "${{ github.event.issue.title }}": ${{ github.event.issue.html_url }}
