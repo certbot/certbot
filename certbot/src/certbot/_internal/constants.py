@@ -82,6 +82,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     random_sleep_on_renew=True,
     eab_hmac_key=None,
     eab_kid=None,
+    eab_hmac_alg="HS256",
     issuance_timeout=90,
     run_deploy_hooks=False,
 
