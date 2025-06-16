@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Previously, we claimed to set FAILED_DOMAINS and RENEWED_DOMAINS env variables for use by
+  post-hooks when certificate renewals fail, but we were not actually setting them. Now, we are.
 
 More details about these changes can be found on our GitHub repo.
 
