@@ -12,6 +12,8 @@ NEW_SECTION_PATTERN = re.compile(r'^##\s*[\d.]+\s*-\s*[\d-]+$')
 
 def main():
     version = sys.argv[1]
+    if version.endswith('.dev0'):
+        version = version[:-5]
 
     section_pattern = re.compile(r'^##\s*{0}\s*-\s*.*$'
                                  .format(version.replace('.', '\\.')))
