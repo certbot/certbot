@@ -595,6 +595,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
     for renewal_file in conf_files:
         display_util.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
+        assert renewal_file.endswith(".conf") # make sure lineagename_for_filename will not error
         lineagename = storage.lineagename_for_filename(renewal_file)
 
         # Note that this modifies config (to add back the configuration
