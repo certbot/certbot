@@ -14,7 +14,6 @@ from typing import Iterable
 from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 from cryptography.hazmat.backends import default_backend
@@ -553,7 +552,7 @@ def _renew_describe_results(config: configuration.NamespaceConfig, renew_success
     notify(display_obj.SIDE_FRAME)
 
 
-def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list, list]:
+def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -596,6 +595,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
     for renewal_file in conf_files:
         display_util.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
+        assert renewal_file.endswith(".conf") # make sure lineagename_for_filename will not error
         lineagename = storage.lineagename_for_filename(renewal_file)
 
         # Note that this modifies config (to add back the configuration
@@ -659,13 +659,13 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
     _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures)
 
+    hooks.run_saved_post_hooks(renewed_domains, failed_domains)
+
     if renew_failures or parse_failures:
         raise errors.Error(
             f"{len(renew_failures)} renew failure(s), {len(parse_failures)} parse failure(s)")
 
     logger.debug("no renewal failures")
-
-    return (renewed_domains, failed_domains)
 
 
 def _update_renewal_params_from_key(key_path: str, config: configuration.NamespaceConfig) -> None:

@@ -442,6 +442,40 @@ def test_renew_hook_override(context: IntegrationTestsContext) -> None:
     assert_hook_execution(context.hook_probe, 'deploy_override')
 
 
+def test_renew_hook_env_vars(context: IntegrationTestsContext) -> None:
+    fail_domain = context.get_domain('fail-env')
+    context.certbot([
+        'certonly', '-d', fail_domain,
+        '--preferred-challenges', 'http-01'
+    ])
+
+    context.certbot([
+        'renew',
+        '--post-hook', f'printenv RENEWED_DOMAINS >> {context.hook_probe}'
+    ])
+
+    assert_hook_execution(context.hook_probe, fail_domain)
+
+    # Clear probe
+    with open(context.hook_probe, 'w'):
+        pass
+
+    # now renew using manual dns, which will fail on renew
+    # manual_dns_auth_hook from misc is designed to fail if the domain contains 'fail-*'.
+    with pytest.raises(subprocess.CalledProcessError):
+        context.certbot([
+            'renew', '--cert-name', fail_domain,
+            '--preferred-challenges', 'dns',
+            '--manual-auth-hook', context.manual_dns_auth_hook,
+            '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
+            '-a', 'manual',
+            '--post-hook', f'printenv FAILED_DOMAINS >> {context.hook_probe}',
+            '--dry-run', # use dry run here to deactivate previous authz, or this will pass
+        ])
+
+    assert_hook_execution(context.hook_probe, fail_domain)
+
+
 def test_invalid_domain_with_dns_challenge(context: IntegrationTestsContext) -> None:
     """Test certificate issuance failure with DNS-01 challenge."""
     # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
