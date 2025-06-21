@@ -135,6 +135,13 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
         help="HMAC key for External Account Binding"
     )
     helpful.add(
+        [None, "run", "certonly", "register"],
+        "--eab-hmac-alg", dest="eab_hmac_alg",
+        metavar="EAB_HMAC_ALG",
+        default=flag_default("eab_hmac_alg"),
+        help="HMAC algorithm for External Account Binding"
+    )
+    helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates",
          "renew", "enhance", "reconfigure"], "--cert-name", dest="certname",
         metavar="CERTNAME", default=flag_default("certname"),
