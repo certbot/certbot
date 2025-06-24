@@ -6,10 +6,10 @@ import stat
 import sys
 import unittest
 from unittest import mock
+import zoneinfo
 
 import configobj
 import pytest
-import pytz
 
 import certbot
 from certbot import configuration
@@ -19,7 +19,6 @@ from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 
-import datetime
 from typing import Optional, Any
 
 def unlink_all(rc_object):
@@ -683,14 +682,13 @@ class RenewableCertTests(BaseRenewableCertTest):
         from certbot._internal import storage
 
         # this month has 30 days, and the next year is a leap year
-        time_1 = datetime.datetime(2003, 11, 20, 11, 59, 21, tzinfo=pytz.UTC)
+        time_1 = datetime.datetime(2003, 11, 20, 11, 59, 21, tzinfo=datetime.timezone.utc)
 
         # this month has 31 days, and the next year is not a leap year
-        time_2 = datetime.datetime(2012, 10, 18, 21, 31, 16, tzinfo=pytz.UTC)
+        time_2 = datetime.datetime(2012, 10, 18, 21, 31, 16, tzinfo=datetime.timezone.utc)
 
         # in different time zone (GMT+8)
-        time_3 = pytz.timezone('Asia/Shanghai').fromutc(
-            datetime.datetime(2015, 10, 26, 22, 25, 41))
+        time_3 = datetime.datetime(2015, 10, 26, 22, 25, 41, tzinfo=zoneinfo.ZoneInfo('Asia/Shanghai'))
 
         intended = {
             (time_1, ""): time_1,

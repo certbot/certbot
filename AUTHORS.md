@@ -246,6 +246,7 @@ Authors
 * [Sagi Kedmi](https://github.com/sagi)
 * [Sam Lanning](https://github.com/samlanning)
 * [sapics](https://github.com/sapics)
+* [SATOH Fumiyasu](https://github.com/fumiyas)
 * [Scott Barr](https://github.com/scottjbarr)
 * [Scott Merrill](https://github.com/skpy)
 * [Sebastian Bögl](https://github.com/TheBoegl)
