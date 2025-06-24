@@ -22,7 +22,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
-import pytz
 
 import certbot
 from certbot import configuration
@@ -104,7 +103,7 @@ def add_time_interval(base_time: datetime.datetime, interval: str,
         interval += " days"
 
     # try to use the same timezone, but fallback to UTC
-    tzinfo = base_time.tzinfo or pytz.UTC
+    tzinfo = base_time.tzinfo or datetime.timezone.utc
 
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 

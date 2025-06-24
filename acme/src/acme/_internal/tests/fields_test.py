@@ -6,7 +6,6 @@ import warnings
 
 import josepy as jose
 import pytest
-import pytz
 
 
 class FixedTest(unittest.TestCase):
@@ -34,7 +33,7 @@ class RFC3339FieldTest(unittest.TestCase):
     """Tests for acme.fields.RFC3339Field."""
 
     def setUp(self):
-        self.decoded = datetime.datetime(2015, 3, 27, tzinfo=pytz.UTC)
+        self.decoded = datetime.datetime(2015, 3, 27, tzinfo=datetime.timezone.utc)
         self.encoded = '2015-03-27T00:00:00Z'
 
     def test_default_encoder(self):
