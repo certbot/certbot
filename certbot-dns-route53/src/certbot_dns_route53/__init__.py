@@ -10,7 +10,7 @@ subsequently removing, TXT records using the Amazon Web Services Route 53 API.
 
 Credentials
 -----------
-Use of this plugin requires a configuration file containing Amazon Web Sevices
+Use of this plugin requires a configuration file containing Amazon Web Services
 API credentials for an account with the following permissions:
 
 * ``route53:ListHostedZones``

@@ -38,7 +38,7 @@ class Parsable:
 
     @classmethod
     def parsing_hooks(cls) -> Tuple[Type["Block"], Type["Sentence"], Type["Statements"]]:
-        """Returns object types that this class should be able to `parse` recusrively.
+        """Returns object types that this class should be able to `parse` recursively.
         The order of the objects indicates the order in which the parser should
         try to parse each subitem.
         :returns: A list of Parsable classes.
