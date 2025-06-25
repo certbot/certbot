@@ -368,13 +368,16 @@ def should_autorenew(config: configuration.NamespaceConfig,
 
     """
     if lineage.autorenewal_is_enabled():
-        # For ARI requests, we want to use the ACME directory URL from which
-        # the cert was originally requested. Since `config.server` can be
-        # overridden in cases like a dry-run, we're using the server stored
-        # in the cert's renewal conf, i.e. `lineage.server`
+        # For ARI requests, we want to use the ACME directory URL from which the
+        # cert was originally requested. Since `config.server` can be overridden
+        # in cases like a dry-run, we're using the server stored in the cert's
+        # renewal conf, i.e. `lineage.server` unless it doesn't exist
         #
         # Fixes https://github.com/certbot/certbot/issues/10339
         ari_server = lineage.server
+        if not ari_server:
+            ari_server = config.server
+
         if ari_server not in acme_clients:
             acme_clients[ari_server] = \
                 client.create_acme_client(config, directory_override=ari_server)

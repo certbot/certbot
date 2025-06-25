@@ -410,6 +410,31 @@ class RenewalTest(test_util.ConfigTestCase):
         assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
         mock_ocsp.return_value = False
 
+    @mock.patch('certbot._internal.client.create_acme_client')
+    def test_creates_proper_acme_client(self, mock_create_acme):
+        from unittest.mock import patch, mock_open
+        from certbot._internal import renewal
+
+        mock_acme = mock.MagicMock()
+        mock_create_acme.return_value = mock_acme
+        future = datetime.datetime.now(pytz.UTC) + datetime.timedelta(seconds=1000)
+        mock_acme.renewal_time.return_value = (future, future)
+
+        mock_rc = mock.MagicMock()
+        mock_rc.autorenewal_is_enabled.return_value = True
+
+        acme_clients = {}
+        mock_rc.server = "http://ari"
+        with patch('builtins.open', mock_open(read_data=b'')):
+            renewal.should_autorenew(self.config, mock_rc, acme_clients)
+        assert mock_create_acme.call_args.kwargs['directory_override'] == mock_rc.server
+
+        acme_clients = {}
+        mock_rc.server = None
+        with patch('builtins.open', mock_open(read_data=b'')):
+            renewal.should_autorenew(self.config, mock_rc, acme_clients)
+        assert mock_create_acme.call_args.kwargs['directory_override'] == self.config.server
+
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.renewal.restore_required_config_elements."""
