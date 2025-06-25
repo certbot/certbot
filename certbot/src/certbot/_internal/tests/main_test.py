@@ -458,25 +458,25 @@ class RevokeTest(test_util.TempDirTestCase):
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    @mock.patch('certbot._internal.client.acme_from_config_key')
-    def test_revoke_by_certname(self, mock_acme_from_config,
+    @mock.patch('certbot._internal.client.create_acme_client')
+    def test_revoke_by_certname(self, mock_create_acme,
                                 unused_mock_renewal_file_for_certname, mock_cert,
                                 mock_delete_if_appropriate):
-        mock_acme_from_config.return_value = self.mock_acme_client
+        mock_create_acme.return_value = self.mock_acme_client
         mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
                                                 server="https://acme.example")
         args = 'revoke --cert-name=example.com'.split()
         mock_delete_if_appropriate.return_value = False
         self._call(args)
-        assert mock_acme_from_config.call_args_list[0][0][0].server == \
+        assert mock_create_acme.call_args_list[0][0][0].server == \
                          'https://acme.example'
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    @mock.patch('certbot._internal.client.acme_from_config_key')
-    def test_revoke_by_certname_and_server(self, mock_acme_from_config,
+    @mock.patch('certbot._internal.client.create_acme_client')
+    def test_revoke_by_certname_and_server(self, mock_create_acme,
                                            unused_mock_renewal_file_for_certname, mock_cert,
                                            mock_delete_if_appropriate):
         """Revoking with --server should use the server from the CLI"""
@@ -485,15 +485,15 @@ class RevokeTest(test_util.TempDirTestCase):
         args = 'revoke --cert-name=example.com --server https://other.example'.split()
         mock_delete_if_appropriate.return_value = False
         self._call(args)
-        assert mock_acme_from_config.call_args_list[0][0][0].server == \
+        assert mock_create_acme.call_args_list[0][0][0].server == \
                          'https://other.example'
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    @mock.patch('certbot._internal.client.acme_from_config_key')
-    def test_revoke_by_certname_empty_server(self, mock_acme_from_config,
+    @mock.patch('certbot._internal.client.create_acme_client')
+    def test_revoke_by_certname_empty_server(self, mock_create_acme,
                                              unused_mock_renewal_file_for_certname,
                                              mock_cert, mock_delete_if_appropriate):
         """Revoking with --cert-name where the lineage server is empty shouldn't crash """
@@ -501,7 +501,7 @@ class RevokeTest(test_util.TempDirTestCase):
         args = 'revoke --cert-name=example.com'.split()
         mock_delete_if_appropriate.return_value = False
         self._call(args)
-        assert mock_acme_from_config.call_args_list[0][0][0].server == \
+        assert mock_create_acme.call_args_list[0][0][0].server == \
                          constants.CLI_DEFAULTS['server']
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
@@ -1823,7 +1823,7 @@ class MainTest(test_util.ConfigTestCase):
         _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
         with open(CERT, 'rb') as f:
             cert = x509.load_pem_x509_certificate(f.read())
-            mock_revoke = client.acme_from_config_key().revoke
+            mock_revoke = client.create_acme_client().revoke
             mock_revoke.assert_called_once_with(cert, mock.ANY)
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')

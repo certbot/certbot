@@ -269,7 +269,7 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
         return "renew", lineage
 
     acme_clients = {}
-    acme_clients[config.server] = client.acme_from_config_key(config)
+    acme_clients[config.server] = client.create_acme_client(config)
 
     if renewal.should_renew(config, lineage, acme_clients):
         return "renew", lineage
@@ -1365,11 +1365,11 @@ def revoke(config: configuration.NamespaceConfig,
         crypto_util.verify_cert_matches_priv_key(config.cert_path, config.key_path)
         with open(config.key_path, 'rb') as f:
             key = jose.JWK.load(f.read())
-        acme = client.acme_from_config_key(config, key)
+        acme = client.create_acme_client(config, key)
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", config.cert_path)
         acc, _ = _determine_account(config)
-        acme = client.acme_from_config_key(config, acc.key, acc.regr)
+        acme = client.create_acme_client(config, acc.key, acc.regr)
 
     with open(config.cert_path, 'rb') as f:
         cert = x509.load_pem_x509_certificate(f.read())

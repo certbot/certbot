@@ -48,9 +48,10 @@ from certbot.interfaces import AccountStorage
 logger = logging.getLogger(__name__)
 
 
-def acme_from_config_key(config: configuration.NamespaceConfig,
+def create_acme_client(config: configuration.NamespaceConfig,
                          key: Optional[jose.JWK] = None,
                          regr: Optional[messages.RegistrationResource] = None,
+                         override_directory: Optional[str] = None,
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
     alg = RS256
@@ -70,7 +71,10 @@ def acme_from_config_key(config: configuration.NamespaceConfig,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
 
-    directory = acme_client.ClientV2.get_directory(config.server, net)
+    server = config.server
+    if override_directory:
+        server = override_directory
+    directory = acme_client.ClientV2.get_directory(server, net)
     return acme_client.ClientV2(directory, net)
 
 
@@ -199,7 +203,7 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
             key_size=config.rsa_key_size,
             backend=default_backend())
     key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
-    acme = acme_from_config_key(config, key)
+    acme = create_acme_client(config, key)
     # TODO: add phone?
     regr = perform_registration(acme, config, tos_cb)
 
@@ -291,7 +295,7 @@ class Client:
 
         # Initialize ACME if account is provided
         if acme is None and self.account is not None:
-            acme = acme_from_config_key(config, self.account.key, self.account.regr)
+            acme = create_acme_client(config, self.account.key, self.account.regr)
         self.acme = acme
 
         self.auth_handler: Optional[auth_handler.AuthHandler]

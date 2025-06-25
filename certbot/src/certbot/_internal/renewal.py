@@ -371,7 +371,7 @@ def should_autorenew(config: configuration.NamespaceConfig,
         # Don't initialize the acme client (making a network request) until
         # we know we're actually going to have to check ARI
         if config.server not in acme_clients:
-            acme_clients[config.server] = client.acme_from_config_key(config)
+            acme_clients[config.server] = client.create_acme_client(config)
         acme = acme_clients[config.server]
 
         cert = lineage.version("cert", lineage.latest_common_version())

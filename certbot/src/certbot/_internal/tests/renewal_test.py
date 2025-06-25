@@ -217,7 +217,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
     @test_util.patch_display_util()
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
-    @mock.patch('certbot._internal.client.acme_from_config_key')
+    @mock.patch('certbot._internal.client.create_acme_client')
     @mock.patch('certbot._internal.main.renew_cert')
     @mock.patch("certbot._internal.renewal.datetime")
     def test_renewal_via_ari(self, mock_datetime, mock_renew_cert, mock_acme_from_config, mock_set_by_user, unused_mock_display):
