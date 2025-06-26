@@ -380,7 +380,7 @@ def should_autorenew(config: configuration.NamespaceConfig,
 
         if ari_server not in acme_clients:
             acme_clients[ari_server] = \
-                client.create_acme_client(config, directory_override=ari_server)
+                client.create_acme_client(config, server_override=ari_server)
         acme = acme_clients[ari_server]
 
         cert = lineage.version("cert", lineage.latest_common_version())

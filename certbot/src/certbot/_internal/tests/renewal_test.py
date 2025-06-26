@@ -427,13 +427,13 @@ class RenewalTest(test_util.ConfigTestCase):
         mock_rc.server = "http://ari"
         with patch('builtins.open', mock_open(read_data=b'')):
             renewal.should_autorenew(self.config, mock_rc, acme_clients)
-        assert mock_create_acme.call_args.kwargs['directory_override'] == mock_rc.server
+        assert mock_create_acme.call_args.kwargs['server_override'] == mock_rc.server
 
         acme_clients = {}
         mock_rc.server = None
         with patch('builtins.open', mock_open(read_data=b'')):
             renewal.should_autorenew(self.config, mock_rc, acme_clients)
-        assert mock_create_acme.call_args.kwargs['directory_override'] == self.config.server
+        assert mock_create_acme.call_args.kwargs['server_override'] == self.config.server
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):

@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 def create_acme_client(config: configuration.NamespaceConfig,
                          key: Optional[jose.JWK] = None,
                          regr: Optional[messages.RegistrationResource] = None,
-                         directory_override: Optional[str] = None,
+                         server_override: Optional[str] = None,
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
     alg = RS256
@@ -72,8 +72,8 @@ def create_acme_client(config: configuration.NamespaceConfig,
                                     user_agent=determine_user_agent(config))
 
     server = config.server
-    if directory_override:
-        server = directory_override
+    if server_override:
+        server = server_override
     directory = acme_client.ClientV2.get_directory(server, net)
     return acme_client.ClientV2(directory, net)
 
