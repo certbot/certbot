@@ -10,7 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* To prevent users from overriding the server ARI requests are made to, it now
+use the certificate's configured `server` value rather than Certbot's configured
+`server`.
 
 ### Fixed
 
