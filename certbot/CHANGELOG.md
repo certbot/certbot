@@ -23,6 +23,12 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 More details about these changes can be found on our GitHub repo.
 
+## 4.2.0
+
+### Added
+
+* Added `--eab-hmac-alg` parameter to support custom HMAC algorithm for External Account Binding.
+
 ## 4.1.1 - 2025-06-12
 
 ### Fixed
