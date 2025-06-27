@@ -359,7 +359,7 @@ class ClientV2:
         ari_url = renewal_info_base_url + '/' + _renewal_info_path_component(cert)
         try:
             resp = self.net.get(ari_url, content_type='application/json')
-        except (requests.exceptions.RequestException, messages.Error) as error:
+        except (requests.exceptions.RequestException, messages.Error, errors.ClientError) as error:
             logger.info("failed to fetch renewal_info URL (%s): %s", ari_url, error)
             return None, now + default_retry_after
 
