@@ -367,47 +367,60 @@ def should_autorenew(config: configuration.NamespaceConfig,
     :rtype: bool
 
     """
-    if lineage.autorenewal_is_enabled():
-        # Don't initialize the acme client (making a network request) until
-        # we know we're actually going to have to check ARI
-        if config.server not in acme_clients:
-            acme_clients[config.server] = client.acme_from_config_key(config)
-        acme = acme_clients[config.server]
+    if not lineage.autorenewal_is_enabled():
+        return False
 
-        cert = lineage.version("cert", lineage.latest_common_version())
+    cert = lineage.version("cert", lineage.latest_common_version())
+    with open(cert, 'rb') as f:
+        cert_pem = f.read()
 
-        # Consider whether to attempt to autorenew this cert now
-        renewal_time = None
-        with open(cert, 'rb') as f:
-            cert_pem = f.read()
+    renewal_time = None
+    # For ARI requests, we want to use the ACME directory URL from which the
+    # cert was originally requested. Since `config.server` can be overridden on
+    # the command line, we're using the server stored in the cert's renewal
+    # conf, i.e. `lineage.server`
+    #
+    # Fixes https://github.com/certbot/certbot/issues/10339
+    if lineage.server:
+        # Creating a new ACME client makes a network request, so check if we have
+        # one cached for this cert's server already
+        if lineage.server not in acme_clients:
+            acme_clients[lineage.server] = \
+                client.create_acme_client(config, server_override=lineage.server)
+        acme = acme_clients[lineage.server]
+
+        # Attempt to get the ARI-defined renewal time
         renewal_time, _ = acme.renewal_time(cert_pem)
+    else:
+        logger.info("Certificate has no 'server' field configured, unable to "
+                    "perform ACME Renewal Information (ARI) request.")
 
-        now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.timezone.utc)
 
-        if renewal_time and now > renewal_time:
+    if renewal_time and now > renewal_time:
+        return True
+
+    # Renewals on the basis of revocation
+    if lineage.ocsp_revoked(lineage.latest_common_version()):
+        logger.debug("Should renew, certificate is revoked.")
+        return True
+
+    # The "renew_before_expiry" config field can make us renew earlier than the
+    # default. If ARI response was None and no "renew_before_expiry" is set,
+    # check against the default.
+    config_interval = lineage.configuration.get("renew_before_expiry")
+    if config_interval is not None:
+        notAfter = crypto_util.notAfter(cert)
+        if notAfter < storage.add_time_interval(now, config_interval):
+            logger.debug("Should renew, less than %s before certificate "
+                            "expiry %s.", config_interval,
+                            notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
             return True
-
-        # Renewals on the basis of revocation
-        if lineage.ocsp_revoked(lineage.latest_common_version()):
-            logger.debug("Should renew, certificate is revoked.")
+    # Only use the default if we don't have an ARI response
+    elif renewal_time is None:
+        default_renewal_time = _default_renewal_time(cert_pem)
+        if now > default_renewal_time:
             return True
-
-        # The "renew_before_expiry" config field can make us renew earlier
-        # than the default. If ARI response was None and no "renew_before_expiry"
-        # is set, check against the default.
-        config_interval = lineage.configuration.get("renew_before_expiry")
-        if config_interval is not None:
-            notAfter = crypto_util.notAfter(cert)
-            if notAfter < storage.add_time_interval(now, config_interval):
-                logger.debug("Should renew, less than %s before certificate "
-                                "expiry %s.", config_interval,
-                                notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
-                return True
-        # Only use the default if we don't have an ARI response
-        elif renewal_time is None:
-            default_renewal_time = _default_renewal_time(cert_pem)
-            if now > default_renewal_time:
-                return True
 
     return False
 
