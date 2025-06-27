@@ -1,4 +1,4 @@
-usage:
+usage: 
   certbot [SUBCOMMAND] [options] [-d DOMAIN] [-d DOMAIN] ...
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
@@ -72,8 +72,6 @@ optional arguments:
                         None)
   --eab-hmac-key EAB_HMAC_KEY
                         HMAC key for External Account Binding (default: None)
-  --eab-hmac-alg EAB_HMAC_ALG
-                        HMAC algorithm for External Account Binding (default: HS256)
   --cert-name CERTNAME  Certificate name to apply. This name is used by
                         Certbot for housekeeping and in file paths; it doesn't
                         affect the content of the certificate itself.
