@@ -238,8 +238,8 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
         eab = messages.ExternalAccountBinding.from_data(account_public_key=account_public_key,
                                                         kid=config.eab_kid,
                                                         hmac_key=config.eab_hmac_key,
-                                                        hmac_alg=config.eab_hmac_alg,
-                                                        directory=acme.directory)
+                                                        directory=acme.directory,
+                                                        hmac_alg=config.eab_hmac_alg)
     else:
         eab = None
 

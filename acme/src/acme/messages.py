@@ -303,8 +303,8 @@ class ExternalAccountBinding:
     """ACME External Account Binding"""
 
     @classmethod
-    def from_data(cls, account_public_key: jose.JWK, kid: str, hmac_key: str, hmac_alg: str,
-                  directory: Directory) -> Dict[str, Any]:
+    def from_data(cls, account_public_key: jose.JWK, kid: str, hmac_key: str,
+                  directory: Directory, hmac_alg: str = "HS256") -> Dict[str, Any]:
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
         key_json = json.dumps(account_public_key.to_partial_json()).encode()
