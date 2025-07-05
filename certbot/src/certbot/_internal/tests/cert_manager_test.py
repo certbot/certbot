@@ -213,10 +213,8 @@ class CertificatesTest(BaseCertManagerTest):
         mock_serial.return_value = 1234567890
         import datetime
 
-        import pytz
-
         from certbot._internal import cert_manager
-        expiry = datetime.datetime.now(pytz.UTC)
+        expiry = datetime.datetime.now(datetime.timezone.utc)
 
         cert = mock.MagicMock(lineagename="nameone")
         cert.target_expiry = expiry
