@@ -10,13 +10,14 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Catches and ignores errors during the directory fetch for ARI checking so that these
+  errors do not hinder the actual certificate issuance
 
 ### Fixed
 
-* Certbot now always uses the server value from the renewal configuration file                               
-  for ARI checks instead of the server value from the current invocation of                                                                                       
-  Certbot. This helps prevent ARI requests from going to the wrong server if        
+* Certbot now always uses the server value from the renewal configuration file
+  for ARI checks instead of the server value from the current invocation of
+  Certbot. This helps prevent ARI requests from going to the wrong server if
   the user changes CAs.
 * Previously, we claimed to set FAILED_DOMAINS and RENEWED_DOMAINS env variables for use by
   post-hooks when certificate renewals fail, but we were not actually setting them. Now, we are.
