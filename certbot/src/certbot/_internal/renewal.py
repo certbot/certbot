@@ -21,11 +21,8 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography import x509
-import requests
 
 from acme import client as acme_client
-from acme import messages
-from acme import errors as acme_errors
 
 from certbot import configuration
 from certbot import crypto_util
@@ -388,11 +385,11 @@ def should_autorenew(config: configuration.NamespaceConfig,
         # Creating a new ACME client makes a network request, so check if we have
         # one cached for this cert's server already
         if lineage.server not in acme_clients:
-            try:    
-                acme_clients[lineage.server] = \                       
-                    client.create_acme_client(config, server_override=lineage.server)    
-            except Exception as error:  # pylint: disable=broad-except      
-                logger.info("Unable to connect to %s to request ACME Renewal Information (ARI). "    
+            try:
+                acme_clients[lineage.server] = \
+                    client.create_acme_client(config, server_override=lineage.server)
+            except Exception as error:  # pylint: disable=broad-except
+                logger.info("Unable to connect to %s to request ACME Renewal Information (ARI). "
                             "Error was: %s", lineage.server, error)    
         acme = acme_clients.get(lineage.server, None)
 
