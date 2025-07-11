@@ -6,7 +6,6 @@ import http.client as http_client
 import logging
 import math
 import random
-import re
 import time
 from typing import Any
 from typing import cast
@@ -745,30 +744,7 @@ class ClientNetwork:
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
         kwargs.setdefault('timeout', self._default_timeout)
-        try:
-            response = self.session.request(method, url, *args, **kwargs)
-        except requests.exceptions.RequestException as e:
-            # pylint: disable=pointless-string-statement
-            """Requests response parsing
-
-            The requests library emits exceptions with a lot of extra text.
-            We parse them with a regexp to raise a more readable exceptions.
-
-            Example:
-            HTTPSConnectionPool(host='acme-v01.api.letsencrypt.org',
-            port=443): Max retries exceeded with url: /directory
-            (Caused by NewConnectionError('
-            <requests.packages.urllib3.connection.VerifiedHTTPSConnection
-            object at 0x108356c50>: Failed to establish a new connection:
-            [Errno 65] No route to host',))"""
-
-            # pylint: disable=line-too-long
-            err_regex = r".*host='(\S*)'.*Max retries exceeded with url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
-            m = re.match(err_regex, str(e))
-            if m is None:
-                raise  # pragma: no cover
-            host, path, _err_no, err_msg = m.groups()
-            raise ValueError(f"Requesting {host}{path}:{err_msg}")
+        response = self.session.request(method, url, *args, **kwargs)
 
         # If an Accept header was sent in the request, the response may not be
         # UTF-8 encoded. In this case, we don't set response.encoding and log
