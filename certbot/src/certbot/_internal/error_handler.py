@@ -33,7 +33,7 @@ if os.name != "nt":
             _SIGNALS.append(signal_code)
 else:
     # POSIX signals are not implemented natively in Windows, but emulated from the C runtime.
-    # As consumed by CPython, most of handlers on theses signals are useless, in particular
+    # As consumed by CPython, most of handlers on these signals are useless, in particular
     # SIGTERM: for instance, os.kill(pid, signal.SIGTERM) will call TerminateProcess, that stops
     # immediately the process without calling the attached handler. Besides, non-POSIX signals
     # (CTRL_C_EVENT and CTRL_BREAK_EVENT) are implemented in a console context to handle the

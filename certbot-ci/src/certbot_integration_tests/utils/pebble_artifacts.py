@@ -15,7 +15,7 @@ import requests
 from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
-PEBBLE_VERSION = 'v2.7.0'
+PEBBLE_VERSION = 'v2.8.0'
 
 
 def fetch(workspace: str, http_01_port: int = DEFAULT_HTTP_01_PORT) -> Tuple[str, str, str]:

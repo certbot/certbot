@@ -19,33 +19,8 @@ from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography import x509
-from cryptography.x509 import Certificate
-
 import datetime
 from typing import Optional, Any
-
-def make_cert_with_lifetime(not_before: datetime.datetime, lifetime_days: int) -> bytes:
-    """Return PEM of a self-signed certificate with the given notBefore and lifetime."""
-    key = ec.generate_private_key(ec.SECP256R1())
-    not_after=not_before + datetime.timedelta(days=lifetime_days)
-    cert = x509.CertificateBuilder(
-        issuer_name=x509.Name([]),
-        subject_name=x509.Name([]),
-        public_key=key.public_key(),
-        serial_number=x509.random_serial_number(),
-        not_valid_before=not_before,
-        not_valid_after=not_after,
-    ).add_extension(
-        x509.SubjectAlternativeName([x509.DNSName("example.com")]),
-        critical=False,
-    ).sign(
-        private_key=key,
-        algorithm=hashes.SHA256(),
-    )
-    return cert.public_bytes(serialization.Encoding.PEM)
 
 def unlink_all(rc_object):
     """Unlink all four items associated with this RenewableCert."""
@@ -122,16 +97,22 @@ class RelevantValuesTest(unittest.TestCase):
         namespace = cli.prepare_and_parse_args(PLUGINS, [
             '--allow-subset-of-names',
             '--authenticator', 'apache',
+            '--preferred-profile', 'fancyprofile',
         ])
         expected_relevant_values = {
             'server': constants.CLI_DEFAULTS['server'],
             'key_type': 'ecdsa',
             'allow_subset_of_names': True,
             'authenticator': 'apache',
+            'preferred_profile': 'fancyprofile',
         }
 
         assert relevant_values(namespace) == expected_relevant_values
 
+    def test_with_required_profile(self):
+        self.values["required_profile"] = "shortlived"
+        expected_relevant_values = self.values.copy()
+        assert self._call(self.values) == expected_relevant_values
 
 class BaseRenewableCertTest(test_util.ConfigTestCase):
     """Base class for setting up Renewable Cert tests.
@@ -576,6 +557,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         self.test_rc.configuration["renewalparams"]["autorenew"] = "False"
         assert not self.test_rc.autorenewal_is_enabled()
+
 
     @mock.patch("certbot._internal.storage.RenewableCert.get_renewalinfo")
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')

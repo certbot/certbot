@@ -1,6 +1,5 @@
 include LICENSE.txt
 include README.rst
-include pytest.ini
 recursive-include docs *
 recursive-include examples *
 recursive-include src/acme/_internal/tests/testdata *

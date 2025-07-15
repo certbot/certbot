@@ -233,8 +233,11 @@ class NginxParser:
                 logger.warning("Could not read file: %s due to invalid "
                                "character. Only UTF-8 encoding is "
                                "supported.", filename)
-            except pyparsing.ParseException as err:
-                logger.warning("Could not parse file: %s due to %s", filename, err)
+            except pyparsing.ParseException:
+                logger.warning("Could not parse file: %s. This is usually due to a comment that "
+                    "certbot cannot parse, such as between a block's name and definition or "
+                    "within a string literal. Moving the comment to another location in the file "
+                    "or deleting it may resolve the issue.", filename)
         return trees
 
     def _find_config_root(self) -> str:

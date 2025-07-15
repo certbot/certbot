@@ -306,15 +306,26 @@ class ExternalAccountBinding:
 
     @classmethod
     def from_data(cls, account_public_key: jose.JWK, kid: str, hmac_key: str,
-                  directory: Directory) -> Dict[str, Any]:
+                  directory: Directory, hmac_alg: str = "HS256") -> Dict[str, Any]:
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
         key_json = json.dumps(account_public_key.to_partial_json()).encode()
         decoded_hmac_key = jose.b64.b64decode(hmac_key)
         url = directory["newAccount"]
 
+        hmac_alg_map = {
+            "HS256": jose.jwa.HS256,
+            "HS384": jose.jwa.HS384,
+            "HS512": jose.jwa.HS512,
+        }
+        alg = hmac_alg_map.get(hmac_alg)
+        if alg is None:
+            supported = ", ".join(hmac_alg_map.keys())
+            raise ValueError(f"Invalid value for hmac_alg: {hmac_alg}. "
+                             f"Expected one of: {supported}.")
+
         eab = jws.JWS.sign(key_json, jose.jwk.JWKOct(key=decoded_hmac_key),
-                           jose.jwa.HS256, None,
+                           alg, None,
                            url, kid)
 
         return eab.to_partial_json()
@@ -690,3 +701,18 @@ class NewOrder(Order):
     :vartype: str
     """
     replaces: str = jose.field("replaces", omitempty= True)
+
+class RenewalInfo(ResourceBody):
+    """Renewal Info Resource Body.
+    :ivar acme.messages.SuggestedWindow window: The suggested renewal window.
+    """
+    class SuggestedWindow(jose.JSONObjectWithFields):
+        """Suggested Renewal Window, sub-resource of Renewal Info Resource.
+        :ivar datetime.datetime start: Beginning of suggested renewal window
+        :ivar datetime.datetime end: End of suggested renewal window (inclusive)
+        """
+        start: datetime.datetime = fields.rfc3339('start', omitempty=True)
+        end: datetime.datetime = fields.rfc3339('end', omitempty=True)
+
+    suggested_window: SuggestedWindow = jose.field('suggestedWindow',
+                                                   decoder=SuggestedWindow.from_json)

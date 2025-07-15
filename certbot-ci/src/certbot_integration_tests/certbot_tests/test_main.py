@@ -1,4 +1,5 @@
 """Module executing integration tests against certbot core."""
+import json
 import os
 from os.path import exists
 from os.path import join
@@ -326,6 +327,38 @@ def test_renew_ari(context: IntegrationTestsContext) -> None:
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
 
 
+def test_renew_when_ari_says_its_time(context: IntegrationTestsContext) -> None:
+    """Test graceful renew is done when it is due time."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
+    # Tell Pebble to make ARI look urgent
+    with open(join(context.config_dir, 'live', certname, 'cert.pem'), 'r') as c:
+        certificate_pem = c.read()
+
+    misc.set_ari_response(certificate_pem, json.dumps({
+        'suggestedWindow': {
+            'start': '2020-01-01T00:00:00Z',
+            'end': '2020-01-01T00:00:00Z'
+        }
+    }))
+
+    # For the renew call only, avoid passing `--server` to the `certbot` command, so
+    # we fall back on the hardcoded default of `https://acme-v02.api.letsencrypt.org`.
+    # No requests should be made to that URL because the lineage has a baked-in Pebble
+    # URL in its config from the issuance earlier in this test case. If there's a bug
+    # an ARI _is_ called against that URL it will fail because Let's Encrypt doesn't
+    # know about certificates issued by Pebble.
+    context.directory_url = None
+    context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
+                    force_renew=False)
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+    assert_hook_execution(context.hook_probe, 'deploy')
+
+
 def test_renew_with_changed_private_key_complexity(context: IntegrationTestsContext) -> None:
     """Test proper renew with updated private key complexity."""
     certname = context.get_domain('renew')
@@ -423,6 +456,40 @@ def test_renew_hook_override(context: IntegrationTestsContext) -> None:
     assert_hook_execution(context.hook_probe, 'pre_override')
     assert_hook_execution(context.hook_probe, 'post_override')
     assert_hook_execution(context.hook_probe, 'deploy_override')
+
+
+def test_renew_hook_env_vars(context: IntegrationTestsContext) -> None:
+    fail_domain = context.get_domain('fail-env')
+    context.certbot([
+        'certonly', '-d', fail_domain,
+        '--preferred-challenges', 'http-01'
+    ])
+
+    context.certbot([
+        'renew',
+        '--post-hook', f'printenv RENEWED_DOMAINS >> {context.hook_probe}'
+    ])
+
+    assert_hook_execution(context.hook_probe, fail_domain)
+
+    # Clear probe
+    with open(context.hook_probe, 'w'):
+        pass
+
+    # now renew using manual dns, which will fail on renew
+    # manual_dns_auth_hook from misc is designed to fail if the domain contains 'fail-*'.
+    with pytest.raises(subprocess.CalledProcessError):
+        context.certbot([
+            'renew', '--cert-name', fail_domain,
+            '--preferred-challenges', 'dns',
+            '--manual-auth-hook', context.manual_dns_auth_hook,
+            '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
+            '-a', 'manual',
+            '--post-hook', f'printenv FAILED_DOMAINS >> {context.hook_probe}',
+            '--dry-run', # use dry run here to deactivate previous authz, or this will pass
+        ])
+
+    assert_hook_execution(context.hook_probe, fail_domain)
 
 
 def test_invalid_domain_with_dns_challenge(context: IntegrationTestsContext) -> None:

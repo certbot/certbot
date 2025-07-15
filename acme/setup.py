@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-version = '4.1.0.dev0'
+version = '5.0.0.dev0'
 
 install_requires = [
     'cryptography>=43.0.0',
@@ -33,7 +33,7 @@ setup(
     author="Certbot Project",
     author_email='certbot-dev@eff.org',
     license='Apache License 2.0',
-    python_requires='>=3.9',
+    python_requires='>=3.9.2',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',

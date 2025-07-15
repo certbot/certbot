@@ -48,12 +48,14 @@ from certbot.interfaces import AccountStorage
 logger = logging.getLogger(__name__)
 
 
-def acme_from_config_key(config: configuration.NamespaceConfig,
-                         key: jose.JWK,
+def create_acme_client(config: configuration.NamespaceConfig,
+                         key: Optional[jose.JWK] = None,
                          regr: Optional[messages.RegistrationResource] = None,
+                         server_override: Optional[str] = None,
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
-    if key.typ == 'EC':
+    alg = RS256
+    if key and key.typ == 'EC':
         public_key = key.key
         if public_key.key_size == 256:
             alg = ES256
@@ -65,13 +67,14 @@ def acme_from_config_key(config: configuration.NamespaceConfig,
             raise errors.NotSupportedError(
                 "No matching signing algorithm can be found for the key"
             )
-    else:
-        alg = RS256
     net = acme_client.ClientNetwork(key, alg=alg, account=regr,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
 
-    directory = acme_client.ClientV2.get_directory(config.server, net)
+    server = config.server
+    if server_override:
+        server = server_override
+    directory = acme_client.ClientV2.get_directory(server, net)
     return acme_client.ClientV2(directory, net)
 
 
@@ -200,7 +203,7 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
             key_size=config.rsa_key_size,
             backend=default_backend())
     key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
-    acme = acme_from_config_key(config, key)
+    acme = create_acme_client(config, key)
     # TODO: add phone?
     regr = perform_registration(acme, config, tos_cb)
 
@@ -225,6 +228,8 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
     :returns: Registration Resource.
     :rtype: `acme.messages.RegistrationResource`
     """
+    if not acme.net.key:
+        raise errors.Error("acme client with no private key cannot register account.")
 
     eab_credentials_supplied = config.eab_kid and config.eab_hmac_key
     eab: Optional[Dict[str, Any]]
@@ -233,7 +238,8 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
         eab = messages.ExternalAccountBinding.from_data(account_public_key=account_public_key,
                                                         kid=config.eab_kid,
                                                         hmac_key=config.eab_hmac_key,
-                                                        directory=acme.directory)
+                                                        directory=acme.directory,
+                                                        hmac_alg=config.eab_hmac_alg)
     else:
         eab = None
 
@@ -290,7 +296,7 @@ class Client:
 
         # Initialize ACME if account is provided
         if acme is None and self.account is not None:
-            acme = acme_from_config_key(config, self.account.key, self.account.regr)
+            acme = create_acme_client(config, self.account.key, self.account.regr)
         self.acme = acme
 
         self.auth_handler: Optional[auth_handler.AuthHandler]

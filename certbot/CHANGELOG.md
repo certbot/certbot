@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 4.1.0 - main
+## 5.0.0 - main
 
 ### Added
 
@@ -10,11 +10,80 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* Switched to src-layout from flat-layout to accommodate PEP 517 pip editable installs
+*
 
 ### Fixed
 
-*
+* Certbot now always uses the server value from the renewal configuration file                               
+  for ARI checks instead of the server value from the current invocation of                                                                                       
+  Certbot. This helps prevent ARI requests from going to the wrong server if        
+  the user changes CAs.
+* Previously, we claimed to set FAILED_DOMAINS and RENEWED_DOMAINS env variables for use by
+  post-hooks when certificate renewals fail, but we were not actually setting them. Now, we are.
+
+More details about these changes can be found on our GitHub repo.
+
+## 4.2.0
+
+### Added
+
+* Added `--eab-hmac-alg` parameter to support custom HMAC algorithm for External Account Binding.
+
+## 4.1.1 - 2025-06-12
+
+### Fixed
+
+* When a CA fails to issue a certificate after finalization, print the ACME error from the order
+* No longer checks ARI during certbot --dry-run, because --dry-run uses staging when used
+  with let's encrypt but the cert was issued against the default server. This would emit
+  a scary warning, even though the cert would renew successfully.
+* Contacting the CA to check ARI is now skipped for certificate lineages that
+  have autorenew set to False.
+
+More details about these changes can be found on our GitHub repo.
+
+## 4.1.0 - 2025-06-10
+
+### Added
+
+* ACME Renewal Info (ARI) support. https://datatracker.ietf.org/doc/draft-ietf-acme-ari/
+  `certbot renew` will automatically check ARI when using an ACME server that supports it,
+  and may renew early based on the ARI information. For Let's Encrypt certificates this
+  will typically cause renewal at around 2/3rds of the certificate's lifetime, even if
+  the renew_before_expiry field of a lineage renewal config is set a later date.
+
+### Changed
+
+* Switched to src-layout from flat-layout to accommodate PEP 517 pip editable installs
+* acme.client.ClientNetwork now makes the "key" parameter optional.
+* Deprecated `acme.challenges.TLSALPN01Response`
+* Deprecated `acme.challenges.TLSALPN01`
+* Deprecated parameter `alpn_protocols` from `acme.crypto_util.probe_sni`
+* Deprecated `acme.crypto_util.SSLSocket`
+* Deprecated `acme.standalone.TLSServer`
+* Deprecated `acme.standalone.TLSALPN01Server`
+* Deprecated parameter `enforce_openssl_binary_usage` from certbot.ocsp.RevocationChecker.
+* Dropped support for Python 3.9.0 and 3.9.1 for compatibility with newer
+  versions of the cryptography Python package. Python 3.9.2+ is still
+  supported.
+
+### Fixed
+
+* Order finalization now catches `orderNotReady` response, polls until order status is
+  `ready`, and resubmits finalization request before polling for `valid` to download
+  certificate. This conforms to RFC 8555 more accurately and avoids race conditions where
+  all authorizations are fulfilled but order has not yet transitioned to ready state on
+  the server when the finalization request is sent. It also respects retry-after when
+  polling for finalization readiness.
+* The --preferred-profile and --required-profile flags now have their values stored in
+  the renewal configuration so the same setting will be used on renewal.
+* Fixed an unintended change introduced in 4.0.0 where `renew_before_expiry` could not be
+  shorter than certbot's default renewal time. If the server does not provide an ARI
+  response, `renew_before_expiry` will continue to override certbot's default. However,
+  an early ARI response will override a later `renew_before_expiry` time, to account for
+  notifications in case of certificate revocation, especially with the impending deprecation
+  of OCSP (https://letsencrypt.org/2024/12/05/ending-ocsp/). To force a later date, users
+  can replace certbot's default cron job and/or systemd timer with one of their own timing.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -1091,7 +1160,7 @@ More details about these changes can be found on our GitHub repo.
 * CLI flag `--key-type` has been added to specify 'rsa' or 'ecdsa' (default 'rsa').
 * CLI flag `--elliptic-curve` has been added which takes an NIST/SECG elliptic curve. Any of
   `secp256r1`, `secp384r1` and `secp521r1` are accepted values.
-* The command `certbot certficates` lists the which type of the private key that was used
+* The command `certbot certificates` lists the which type of the private key that was used
   for the private key.
 * Support for Python 3.9 was added to Certbot and all of its components.
 

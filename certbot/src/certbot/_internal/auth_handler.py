@@ -119,7 +119,7 @@ class AuthHandler:
 
     def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> Tuple[List, List]:
         """
-        Deactivate all `valid` authorizations in the order, so that they cannot be re-used
+        Deactivate all `valid` authorizations in the order, so that they cannot be reused
         in subsequent orders.
         :param messages.OrderResource orderr: must have authorizations filled in
         :returns: tuple of list of successfully deactivated authorizations, and

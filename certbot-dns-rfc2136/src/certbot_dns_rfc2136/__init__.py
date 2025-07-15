@@ -147,8 +147,8 @@ Special considerations for multiple views in BIND
 
 If your BIND configuration leverages multiple views, Certbot may fail with an
 ``Unable to determine base domain for _acme-challenge.example.com`` error.
-This error occurs when Certbot isn't able to communicate with an authorative
-nameserver for the zone, one that answers with the AA (Authorative Answer) flag
+This error occurs when Certbot isn't able to communicate with an authoritative
+nameserver for the zone, one that answers with the AA (Authoritative Answer) flag
 set in the response.
 
 A common multiple view configuration with two views, external and internal,
@@ -165,7 +165,7 @@ zone option.  The zone will be then visible in both zones with exactly the same 
 
 .. note::
    Order matters in BIND views: the ``in-view`` zone option must refer to a
-   view defined preceeding it.  It cannot refer to a view defined later in the configuration file.
+   view defined preceding it.  It cannot refer to a view defined later in the configuration file.
 
 .. code-block:: none
    :caption: Split-view BIND configuration

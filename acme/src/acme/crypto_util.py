@@ -17,6 +17,7 @@ from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
+import warnings
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -100,6 +101,8 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
             ]
         ] = None,
     ) -> None:
+        warnings.warn("SSLSocket is deprecated and will be removed in an upcoming release",
+                      DeprecationWarning)
         self.sock = sock
         self.alpn_selection = alpn_selection
         self.method = method
@@ -157,11 +160,15 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
             # OpenSSL.SSL.Connection.shutdown doesn't accept any args
             try:
                 return self._wrapped.shutdown()
-            except SSL.Error as error:
+            except SSL.Error as error:  # pragma: no cover
                 # We wrap the error so we raise the same error type as sockets
                 # in the standard library. This is useful when this object is
                 # used by code which expects a standard socket such as
                 # socketserver in the standard library.
+                #
+                # We don't track code coverage in this "except" branch to avoid spurious CI failures
+                # caused by missing test coverage. These aren't worth fixing because this entire
+                # class has been deprecated. See https://github.com/certbot/certbot/issues/10284.
                 raise OSError(error)
 
     def accept(self) -> Tuple[FakeConnection, Any]:  # pylint: disable=missing-function-docstring
@@ -243,6 +250,8 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
         client_ssl.set_tlsext_host_name(name)  # pyOpenSSL>=0.13
         if alpn_protocols is not None:
             client_ssl.set_alpn_protos(list(alpn_protocols))
+            warnings.warn("alpn_protocols parameter is deprecated and will be removed in an "
+                "upcoming certbot major version update", DeprecationWarning)
         try:
             client_ssl.do_handshake()
             client_ssl.shutdown()

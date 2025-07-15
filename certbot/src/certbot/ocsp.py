@@ -7,6 +7,7 @@ import subprocess
 from subprocess import PIPE
 from typing import Optional
 from typing import Tuple
+import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -32,6 +33,10 @@ class RevocationChecker:
 
     def __init__(self, enforce_openssl_binary_usage: bool = False) -> None:
         self.broken = False
+        if enforce_openssl_binary_usage:
+            warnings.warn("enforce_openssl_binary_usage parameter is deprecated "
+                "and will be removed in an upcoming certbot major version update",
+                DeprecationWarning)
         self.use_openssl_binary = enforce_openssl_binary_usage
 
         if self.use_openssl_binary:

@@ -6,7 +6,11 @@ authors = ["Certbot Project"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+# python 3.9.2 is used as a lower bound here because newer versions of
+# cryptography dropped support for python 3.9.0 and 3.9.1. see
+# https://github.com/pyca/cryptography/pull/12045. when we drop support for
+# python 3.9 altogether, this line can be changed to the simpler 'python = "^3.10"'.
+python = ">=3.9.2,<4.0"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -62,11 +66,6 @@ pylint = "3.3.3"
 # dependencies. To help control when this needs to be done, we pin mypy to a
 # compatible version here.
 mypy = "1.9.0"
-
-# Bug in poetry, where still installes yanked versions from pypi (source: https://github.com/python-poetry/poetry/issues/2453)
-# this version of cryptography introduced a security vulnrability.
-# Making sure that it would not get installed (Fixing https://github.com/certbot/certbot/issues/9336)
-cryptography = "!= 37.0.3"
 
 # Branch 4.x of tox introduces backward incompatibility changes, so require a newer
 # version of tox to keep deterministic builds.

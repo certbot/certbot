@@ -458,25 +458,25 @@ class RevokeTest(test_util.TempDirTestCase):
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    @mock.patch('certbot._internal.client.acme_from_config_key')
-    def test_revoke_by_certname(self, mock_acme_from_config,
+    @mock.patch('certbot._internal.client.create_acme_client')
+    def test_revoke_by_certname(self, mock_create_acme,
                                 unused_mock_renewal_file_for_certname, mock_cert,
                                 mock_delete_if_appropriate):
-        mock_acme_from_config.return_value = self.mock_acme_client
+        mock_create_acme.return_value = self.mock_acme_client
         mock_cert.return_value = mock.MagicMock(cert_path=self.tmp_cert_path,
                                                 server="https://acme.example")
         args = 'revoke --cert-name=example.com'.split()
         mock_delete_if_appropriate.return_value = False
         self._call(args)
-        assert mock_acme_from_config.call_args_list[0][0][0].server == \
+        assert mock_create_acme.call_args_list[0][0][0].server == \
                          'https://acme.example'
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    @mock.patch('certbot._internal.client.acme_from_config_key')
-    def test_revoke_by_certname_and_server(self, mock_acme_from_config,
+    @mock.patch('certbot._internal.client.create_acme_client')
+    def test_revoke_by_certname_and_server(self, mock_create_acme,
                                            unused_mock_renewal_file_for_certname, mock_cert,
                                            mock_delete_if_appropriate):
         """Revoking with --server should use the server from the CLI"""
@@ -485,15 +485,15 @@ class RevokeTest(test_util.TempDirTestCase):
         args = 'revoke --cert-name=example.com --server https://other.example'.split()
         mock_delete_if_appropriate.return_value = False
         self._call(args)
-        assert mock_acme_from_config.call_args_list[0][0][0].server == \
+        assert mock_create_acme.call_args_list[0][0][0].server == \
                          'https://other.example'
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot._internal.main._delete_if_appropriate')
     @mock.patch('certbot._internal.storage.RenewableCert')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
-    @mock.patch('certbot._internal.client.acme_from_config_key')
-    def test_revoke_by_certname_empty_server(self, mock_acme_from_config,
+    @mock.patch('certbot._internal.client.create_acme_client')
+    def test_revoke_by_certname_empty_server(self, mock_create_acme,
                                              unused_mock_renewal_file_for_certname,
                                              mock_cert, mock_delete_if_appropriate):
         """Revoking with --cert-name where the lineage server is empty shouldn't crash """
@@ -501,7 +501,7 @@ class RevokeTest(test_util.TempDirTestCase):
         args = 'revoke --cert-name=example.com'.split()
         mock_delete_if_appropriate.return_value = False
         self._call(args)
-        assert mock_acme_from_config.call_args_list[0][0][0].server == \
+        assert mock_create_acme.call_args_list[0][0][0].server == \
                          constants.CLI_DEFAULTS['server']
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
@@ -1419,7 +1419,6 @@ class MainTest(test_util.ConfigTestCase):
                                                    'live/foo.bar/fullchain.pem'))
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
                                       cert_path=cert_path, fullchain_path=chain_path)
-        mock_lineage.should_autorenew.return_value = due_for_renewal
         mock_lineage.has_pending_deployment.return_value = False
         mock_lineage.names.return_value = ['isnot.org']
         mock_lineage.private_key_type = 'ecdsa'
@@ -1446,28 +1445,32 @@ class MainTest(test_util.ConfigTestCase):
                 mock.patch('certbot._internal.storage.RenewableCert.get_renewalinfo') as mock_renewalinfo:
 
                 mock_fdc.return_value = (mock_lineage, None)
-                mock_init.return_value = mock_client
-                if not quiet_mode:
-                    mock_display().notification.side_effect = write_msg
-                mock_crypto_util.notAfter.return_value = expiry_date
-                mock_renewalinfo.return_value = None
-                # Mocking functions needed
-
-                if not args:
-                    args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
-                if extra_args:
-                    args += extra_args
-                try:
-                    ret, stdout, _, _ = self._call(args, stdout)
-                    if ret:
-                        print("Returned", ret)
-                        raise AssertionError(ret)
-                    assert not error_expected, "renewal should have errored"
-                except: # pylint: disable=bare-except
-                    if not error_expected:
-                        raise AssertionError(
-                            "Unexpected renewal error:\n" +
-                            traceback.format_exc())
+                with mock.patch('certbot._internal.main._init_le_client') as mock_init:
+                    mock_init.return_value = mock_client
+                    with mock.patch('certbot._internal.display.obj.get_display') as mock_display:
+                        if not quiet_mode:
+                            mock_display().notification.side_effect = write_msg
+                        with mock.patch('certbot._internal.main.renewal.crypto_util') \
+                            as mock_crypto_util:
+                            mock_crypto_util.notAfter.return_value = expiry_date
+                            with mock.patch('certbot._internal.eff.handle_subscription'):
+                                with mock.patch('certbot._internal.renewal.should_autorenew') as should_autorenew:
+                                    should_autorenew.return_value = due_for_renewal
+                                    if not args:
+                                        args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
+                                    if extra_args:
+                                        args += extra_args
+                                    try:
+                                        ret, stdout, _, _ = self._call(args, stdout)
+                                        if ret:
+                                            print("Returned", ret)
+                                            raise AssertionError(ret)
+                                        assert not error_expected, "renewal should have errored"
+                                    except: # pylint: disable=bare-except
+                                        if not error_expected:
+                                            raise AssertionError(
+                                                "Unexpected renewal error:\n" +
+                                                traceback.format_exc())
 
             if should_renew:
                 if reuse_key and not new_key:
@@ -1829,7 +1832,7 @@ class MainTest(test_util.ConfigTestCase):
         _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
         with open(CERT, 'rb') as f:
             cert = x509.load_pem_x509_certificate(f.read())
-            mock_revoke = client.acme_from_config_key().revoke
+            mock_revoke = client.create_acme_client().revoke
             mock_revoke.assert_called_once_with(cert, mock.ANY)
 
     @mock.patch('certbot._internal.log.post_arg_parse_setup')

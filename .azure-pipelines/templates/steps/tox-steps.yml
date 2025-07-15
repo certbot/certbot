@@ -20,7 +20,7 @@ steps:
       set -e
       sudo apt-get update
       sudo apt-get install -y --no-install-recommends \
-        libaugeas0 \
+        libaugeas-dev \
         nginx-light
       sudo systemctl stop nginx
       sudo sysctl net.ipv4.ip_unprivileged_port_start=0

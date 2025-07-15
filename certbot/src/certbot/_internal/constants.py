@@ -82,6 +82,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     random_sleep_on_renew=True,
     eab_hmac_key=None,
     eab_kid=None,
+    eab_hmac_alg="HS256",
     issuance_timeout=90,
     run_deploy_hooks=False,
 
@@ -152,11 +153,6 @@ QUIET_LOGGING_LEVEL = logging.ERROR
 
 DEFAULT_LOGGING_LEVEL = logging.WARNING
 """Default logging level to use when not in quiet mode."""
-
-RENEWER_DEFAULTS = {
-    "renew_before_expiry": "30 days",
-}
-"""Defaults for `certbot renew`."""
 
 ARCHIVE_DIR = "archive"
 """Archive directory, relative to `certbot.configuration.NamespaceConfig.config_dir`."""

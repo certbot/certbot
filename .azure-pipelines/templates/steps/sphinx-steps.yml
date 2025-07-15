@@ -2,7 +2,7 @@ steps:
   - bash: |
       set -e
       sudo apt-get update
-      sudo apt-get install -y --no-install-recommends libaugeas0
+      sudo apt-get install -y --no-install-recommends libaugeas-dev
       FINAL_STATUS=0
       declare -a FAILED_BUILDS
       tools/venv.py

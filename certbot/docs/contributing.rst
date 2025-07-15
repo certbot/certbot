@@ -44,28 +44,23 @@ Install and configure the OS system dependencies required to run Certbot.
 
    # For APT-based distributions (e.g. Debian, Ubuntu ...)
    sudo apt update
-   sudo apt install python3-venv libaugeas0
+   sudo apt install python3-dev python3-venv libaugeas-dev gcc
    # For RPM-based distributions (e.g. Fedora, CentOS ...)
    # NB1: old distributions will use yum instead of dnf
    # NB2: RHEL-based distributions use python3X instead of python3 (e.g. python38)
-   sudo dnf install python3 augeas-libs
+   sudo dnf install python3 python3-devel augeas-devel gcc
    # For macOS installations with Homebrew already installed and configured
-   # NB1: If you also run `brew install python` you don't need the ~/lib
-   #      directory created below, however, without this directory and symlinks
-   #      to augeas, Certbot's Apache plugin won't work if you use Python
-   #      installed from other sources such as pyenv or the version provided by
-   #      Apple.
-   # NB2: Some of our developer scripts expect GNU coreutils be first in your
-   #      PATH. The commands below set this up for bash and zsh, but your
-   #      instructions may be slightly different if you use an alternate shell.
+   # NB: CFLAGS are needed to compile and link to Augeas installed through
+   #     Homebrew and some of our developer scripts expect GNU coreutils be first in
+   #     your PATH. The commands below set this up for bash and zsh, but your
+   #     instructions may be slightly different if you use an alternate shell.
    brew install augeas coreutils gnu-sed
-   mkdir ~/lib
    BREW_PREFIX=$(brew --prefix)
-   ln -s "$BREW_PREFIX"/lib/libaugeas* ~/lib
-   RC_LINE="export PATH=\"$BREW_PREFIX/opt/coreutils/libexec/gnubin:"
-   RC_LINE+="$BREW_PREFIX/opt/gnu-sed/libexec/gnubin:\$PATH\""
-   echo "$RC_LINE" >> ~/.bashrc  # for bash
-   echo "$RC_LINE" >> ~/.zshrc  # for zsh
+   RC_LINES="export CFLAGS=\"\$CFLAGS -I$BREW_PREFIX/include -L$BREW_PREFIX/lib\"\n"
+   RC_LINES+="export PATH=\"$BREW_PREFIX/opt/coreutils/libexec/gnubin:"
+   RC_LINES+="$BREW_PREFIX/opt/gnu-sed/libexec/gnubin:\$PATH\"\n"
+   printf "$RC_LINES" >> ~/.bashrc  # for bash
+   printf "$RC_LINES" >> ~/.zshrc  # for zsh
 
 .. note:: If you have trouble creating the virtual environment below, you may
    need to install additional dependencies. See the `cryptography project's
@@ -269,8 +264,8 @@ Authenticators
 --------------
 
 Authenticators are plugins that prove control of a domain name by solving a
-challenge provided by the ACME server. ACME currently defines several types of
-challenges: HTTP, TLS-ALPN, and DNS, represented by classes in `acme.challenges`.
+challenge provided by the ACME server. ACME currently defines two types of
+challenges: HTTP and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing

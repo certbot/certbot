@@ -4,6 +4,8 @@ import datetime
 from email.utils import parsedate_tz
 import http.client as http_client
 import logging
+import math
+import random
 import re
 import time
 from typing import Any
@@ -241,6 +243,11 @@ class ClientV2:
 
         :returns: updated order
         :rtype: messages.OrderResource
+
+        :raises .messages.Error: If server indicates order is not yet in ready state,
+            it will return a 403 (Forbidden) error with a problem document/error code of type
+            "orderNotReady"
+
         """
         csr = x509.load_pem_x509_csr(orderr.csr_pem)
         wrapped_csr = messages.CertificateRequest(csr=csr)
@@ -256,21 +263,37 @@ class ClientV2:
         Poll an order that has been finalized for its status.
         If it becomes valid, obtain the certificate.
 
+        If a finalization request previously returned `orderNotReady`,
+        poll until ready, send a new finalization request, and continue
+        polling until valid as above.
+
         :returns: finalized order (with certificate)
         :rtype: messages.OrderResource
         """
-
+        sleep_seconds: float = 1
         while datetime.datetime.now() < deadline:
-            time.sleep(1)
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.status == messages.STATUS_INVALID:
+                # "invalid": The certificate will not be issued.  Consider this
+                # order process abandoned.
                 if body.error is not None:
                     raise errors.IssuanceError(body.error)
                 raise errors.Error(
                     "The certificate order failed. No further information was provided "
                     "by the server.")
+            elif body.status == messages.STATUS_READY:
+                # "ready": The server agrees that the requirements have been
+                # fulfilled, and is awaiting finalization.  Submit a finalization
+                # request.
+                self.begin_finalization(orderr)
+                sleep_seconds = 1
             elif body.status == messages.STATUS_VALID and body.certificate is not None:
+                # "valid": The server has issued the certificate and provisioned its
+                # URL to the "certificate" field of the order.  Download the
+                # certificate.
                 certificate_response = self._post_as_get(body.certificate)
                 orderr = orderr.update(body=body, fullchain_pem=certificate_response.text)
                 if fetch_alternative_chains:
@@ -278,6 +301,14 @@ class ClientV2:
                     alt_chains = [self._post_as_get(url).text for url in alt_chains_urls]
                     orderr = orderr.update(alternative_fullchains_pem=alt_chains)
                 return orderr
+            elif body.status == messages.STATUS_PROCESSING:
+                # "processing": The certificate is being issued.  Send a POST-as-GET request after
+                # the time given in the Retry-After header field of the response, if any.
+                retry_after = self.retry_after(response, 1)
+                # Whatever Retry-After the ACME server requests, the polling must not take
+                # longer than the overall deadline
+                retry_after = min(retry_after, deadline)
+                sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
         raise errors.TimeoutError()
 
     def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
@@ -293,8 +324,74 @@ class ClientV2:
         :rtype: messages.OrderResource
 
         """
-        self.begin_finalization(orderr)
+        try:
+            self.begin_finalization(orderr)
+        except messages.Error as e:
+            if e.code != 'orderNotReady':
+                raise e
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
+
+    def renewal_time(self, cert_pem: bytes
+        ) -> Tuple[Optional[datetime.datetime], datetime.datetime]:
+        """Return an appropriate time to attempt renewal of the certificate,
+        and the next time to ask the ACME server for renewal info.
+
+        If the certificate has already expired, renewal info isn't checked.
+        Instead, the certificate's notAfter time is returned and the certificate
+        should be immediately renewed.
+
+        If the ACME directory has a "renewalInfo" field, the response will be
+        based on a fetch of the renewal info resource for the certificate
+        (https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html).
+
+        If there is no "renewalInfo" field, this function will return a tuple of
+        None, and the next time to ask the ACME server for renewal info.
+
+        This function may make other network calls in the future (e.g., OCSP
+        or CRL).
+
+        :param bytes cert_pem: cert as pem file
+
+        :returns: Tuple of time to attempt renewal, next time to ask for renewal info
+        """
+        now = datetime.datetime.now()
+        # https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3.3
+        default_retry_after = datetime.timedelta(seconds=6 * 60 * 60)
+
+        cert = x509.load_pem_x509_certificate(cert_pem)
+
+        # from https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3, "Clients
+        # MUST NOT check a certificate's RenewalInfo after the certificate has expired."
+        #
+        # we call datetime.datetime.now here with the UTC argument to create a timezone aware
+        # datetime object that can be compared with the UTC notAfter from cryptography
+        if cert.not_valid_after_utc < datetime.datetime.now(datetime.timezone.utc):
+            return cert.not_valid_after_utc, now + default_retry_after
+
+        try:
+            renewal_info_base_url = self.directory['renewalInfo']
+        except KeyError:
+            return None, now + default_retry_after
+
+        ari_url = renewal_info_base_url + '/' + _renewal_info_path_component(cert)
+        try:
+            resp = self.net.get(ari_url, content_type='application/json')
+        except (requests.exceptions.RequestException, messages.Error) as error:
+            logger.info("failed to fetch renewal_info URL (%s): %s", ari_url, error)
+            return None, now + default_retry_after
+
+        renewal_info: messages.RenewalInfo = messages.RenewalInfo.from_json(resp.json())
+
+        start = renewal_info.suggested_window.start # pylint: disable=no-member
+        end = renewal_info.suggested_window.end # pylint: disable=no-member
+
+        delta_seconds = (end - start).total_seconds()
+        random_seconds = random.uniform(0, delta_seconds)
+        random_time = start + datetime.timedelta(seconds=random_seconds)
+
+        retry_after = self.retry_after(resp, default_retry_after.seconds)
+        return random_time, retry_after
+
 
     def revoke(self, cert: x509.Certificate, rsn: int) -> None:
         """Revoke certificate.
@@ -520,7 +617,7 @@ class ClientNetwork:
 
     """Initialize.
 
-    :param josepy.JWK key: Account private key
+    :param josepy.JWK key: Account private key. Required to use .post().
     :param messages.RegistrationResource account: Account object. Required if you are
             planning to use .post() for anything other than creating a new account;
             may be set later after registering.
@@ -529,7 +626,8 @@ class ClientNetwork:
     :param str user_agent: String to send as User-Agent header.
     :param int timeout: Timeout for requests.
     """
-    def __init__(self, key: jose.JWK, account: Optional[messages.RegistrationResource] = None,
+    def __init__(self, key: Optional[jose.JWK] = None,
+                 account: Optional[messages.RegistrationResource] = None,
                  alg: jose.JWASignature = jose.RS256, verify_ssl: bool = True,
                  user_agent: str = 'acme-python', timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
         self.key = key
@@ -566,16 +664,17 @@ class ClientNetwork:
         """
         jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
+        assert self.key
         kwargs = {
             "alg": self.alg,
             "nonce": nonce,
-            "url": url
+            "url": url,
+            "key": self.key
         }
         # newAccount and revokeCert work without the kid
         # newAccount must not have kid
         if self.account is not None:
             kwargs["kid"] = self.account["uri"]
-        kwargs["key"] = self.key
         return jws.JWS.sign(jobj, **cast(Mapping[str, Any], kwargs)).json_dumps(indent=2)
 
     @classmethod
@@ -765,9 +864,30 @@ class ClientNetwork:
     def _post_once(self, url: str, obj: jose.JSONDeSerializable,
                    content_type: str = JOSE_CONTENT_TYPE, **kwargs: Any) -> requests.Response:
         new_nonce_url = kwargs.pop('new_nonce_url', None)
+        if not self.key:
+            raise errors.Error("acme.ClientNetwork with no private key can't POST.")
         data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
         response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
         return response
+
+def _renewal_info_path_component(cert: x509.Certificate) -> str:
+    akid_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
+    key_identifier = akid_ext.value.key_identifier # type: ignore[attr-defined]
+
+    akid_encoded = base64.urlsafe_b64encode(key_identifier).decode('ascii').replace("=", "")
+
+    # We add one to the reported bit_length so there is room for the sign bit.
+    # https://docs.python.org/3/library/stdtypes.html#int.bit_length
+    # "Return the number of bits necessary to represent an integer in binary, excluding
+    # the sign and leading zeros"
+    serial = cert.serial_number
+    encoded_serial_len = math.ceil((serial.bit_length()+1)/8)
+    # Serials are encoded as ASN.1 INTEGERS, which means big endian and signed (two's complement).
+    # https://letsencrypt.org/docs/a-warm-welcome-to-asn1-and-der/#integer-encoding
+    serial_bytes = serial.to_bytes(encoded_serial_len, byteorder='big', signed=True)
+    serial_encoded = base64.urlsafe_b64encode(serial_bytes).decode('ascii').replace("=", "")
+
+    return f"{akid_encoded}.{serial_encoded}"
