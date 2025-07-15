@@ -6,7 +6,6 @@ import logging
 import re
 import shutil
 import stat
-from random import random
 import requests
 from typing import Any
 from typing import cast

@@ -501,7 +501,7 @@ class ClientV2Test(unittest.TestCase):
     @mock.patch('acme.client.datetime')
     def test_renewal_time_with_renewal_info(self, dt_mock):
         from cryptography import x509
-        from acme.client import _renewal_info_path_component
+        from acme.crypto_util import ari_cert_ident
         utc_now = datetime.datetime(2025, 3, 15, tzinfo=datetime.timezone.utc)
         dt_mock.datetime.now.return_value = utc_now
         dt_mock.timedelta = datetime.timedelta
@@ -524,7 +524,7 @@ class ClientV2Test(unittest.TestCase):
         }
         t, _ = self.client.renewal_time(cert_pem)
         cert_parsed = x509.load_pem_x509_certificate(cert_pem)
-        ari_path_component = _renewal_info_path_component(cert_parsed)
+        ari_path_component = ari_cert_ident(cert_parsed)
         self.net.get.assert_called_once_with("https://www.letsencrypt-demo.org/acme/renewal-info/" +
                                              ari_path_component,
                                              content_type='application/json')
@@ -601,33 +601,6 @@ class ClientV2Test(unittest.TestCase):
         self.response.headers['Retry-After'] = '100'
         _, retry_after = self.client.renewal_time(cert_pem)
         assert retry_after == datetime.datetime(2025, 3, 15, 00, 1, 40)
-
-def test_renewal_info_path_component():
-    from cryptography import x509
-    from acme.client import _renewal_info_path_component
-
-    cert = x509.load_pem_x509_certificate(test_util.load_vector('rsa2048_cert.pem'))
-
-    assert _renewal_info_path_component(cert) == "fL5sRirC8VS5AtOQh9DfoAzYNCI.ALVG_VbBb5U7"
-
-    # From https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html appendix A.
-    ARI_TEST_CERT = b"""
------BEGIN CERTIFICATE-----
-MIIBQzCB66ADAgECAgUAh2VDITAKBggqhkjOPQQDAjAVMRMwEQYDVQQDEwpFeGFt
-cGxlIENBMCIYDzAwMDEwMTAxMDAwMDAwWhgPMDAwMTAxMDEwMDAwMDBaMBYxFDAS
-BgNVBAMTC2V4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEeBZu
-7cbpAYNXZLbbh8rNIzuOoqOOtmxA1v7cRm//AwyMwWxyHz4zfwmBhcSrf47NUAFf
-qzLQ2PPQxdTXREYEnKMjMCEwHwYDVR0jBBgwFoAUaYhba4dGQEHhs3uEe6CuLN4B
-yNQwCgYIKoZIzj0EAwIDRwAwRAIge09+S5TZAlw5tgtiVvuERV6cT4mfutXIlwTb
-+FYN/8oCIClDsqBklhB9KAelFiYt9+6FDj3z4KGVelYM5MdsO3pK
------END CERTIFICATE-----
-"""
-
-    cert = x509.load_pem_x509_certificate(ARI_TEST_CERT)
-    assert _renewal_info_path_component(cert) == "aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE"
-
-if __name__ == '__main__':
-    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
 
 def make_cert_for_renewal(not_before, not_after) -> bytes:
     """

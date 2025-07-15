@@ -4,7 +4,6 @@ import datetime
 from email.utils import parsedate_tz
 import http.client as http_client
 import logging
-import math
 import random
 import re
 import time
@@ -373,7 +372,7 @@ class ClientV2:
         except KeyError:
             return None, now + default_retry_after
 
-        ari_url = renewal_info_base_url + '/' + _renewal_info_path_component(cert)
+        ari_url = renewal_info_base_url + '/' + crypto_util.ari_cert_ident(cert)
         try:
             resp = self.net.get(ari_url, content_type='application/json')
         except (requests.exceptions.RequestException, messages.Error) as error:
@@ -872,22 +871,3 @@ class ClientNetwork:
         response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
         return response
-
-def _renewal_info_path_component(cert: x509.Certificate) -> str:
-    akid_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
-    key_identifier = akid_ext.value.key_identifier # type: ignore[attr-defined]
-
-    akid_encoded = base64.urlsafe_b64encode(key_identifier).decode('ascii').replace("=", "")
-
-    # We add one to the reported bit_length so there is room for the sign bit.
-    # https://docs.python.org/3/library/stdtypes.html#int.bit_length
-    # "Return the number of bits necessary to represent an integer in binary, excluding
-    # the sign and leading zeros"
-    serial = cert.serial_number
-    encoded_serial_len = math.ceil((serial.bit_length()+1)/8)
-    # Serials are encoded as ASN.1 INTEGERS, which means big endian and signed (two's complement).
-    # https://letsencrypt.org/docs/a-warm-welcome-to-asn1-and-der/#integer-encoding
-    serial_bytes = serial.to_bytes(encoded_serial_len, byteorder='big', signed=True)
-    serial_encoded = base64.urlsafe_b64encode(serial_bytes).decode('ascii').replace("=", "")
-
-    return f"{akid_encoded}.{serial_encoded}"

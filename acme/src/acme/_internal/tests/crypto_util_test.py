@@ -342,18 +342,38 @@ class AriCertIdentTest(unittest.TestCase):
 
     def test_ari_cert_ident(self):
         #normal case
-        tcert = test_util.load_cert_cryptograpy("cert-nocn.der")
-        from acme.crypto_util import ariCertIdent
-        assert ariCertIdent(tcert) == \
+        cert = test_util.load_cert_cryptograpy("cert-nocn.der")
+        from acme.crypto_util import ari_cert_ident
+        assert ari_cert_ident(cert) == \
             "mvMr2s-tT7YvuypISCoStxtCwSQ.b2K_ExoExTaU4F70HuUTJQ"
         
         #complex akid that holds other things too in akid extension
-        tcert2 = test_util.load_cert_cryptograpy("cert-complexakid.pem")
-        assert ariCertIdent(tcert2) == "aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE"
+        cert = test_util.load_cert_cryptograpy("cert-complexakid.pem")
+        assert ari_cert_ident(cert) == "aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE"
 
         #cert that doesn't have akid at all
-        tcert3 = test_util.load_cert_cryptograpy("no-akid.pem")
-        assert ariCertIdent(tcert3) == ""
+        cert = test_util.load_cert_cryptograpy("no-akid.pem")
+        assert ari_cert_ident(cert) == ""
+
+        cert = x509.load_pem_x509_certificate(test_util.load_vector('rsa2048_cert.pem'))
+
+        assert ari_cert_ident(cert) == "fL5sRirC8VS5AtOQh9DfoAzYNCI.ALVG_VbBb5U7"
+
+        # From https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html appendix A.
+        ARI_TEST_CERT = b"""
+    -----BEGIN CERTIFICATE-----
+    MIIBQzCB66ADAgECAgUAh2VDITAKBggqhkjOPQQDAjAVMRMwEQYDVQQDEwpFeGFt
+    cGxlIENBMCIYDzAwMDEwMTAxMDAwMDAwWhgPMDAwMTAxMDEwMDAwMDBaMBYxFDAS
+    BgNVBAMTC2V4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEeBZu
+    7cbpAYNXZLbbh8rNIzuOoqOOtmxA1v7cRm//AwyMwWxyHz4zfwmBhcSrf47NUAFf
+    qzLQ2PPQxdTXREYEnKMjMCEwHwYDVR0jBBgwFoAUaYhba4dGQEHhs3uEe6CuLN4B
+    yNQwCgYIKoZIzj0EAwIDRwAwRAIge09+S5TZAlw5tgtiVvuERV6cT4mfutXIlwTb
+    +FYN/8oCIClDsqBklhB9KAelFiYt9+6FDj3z4KGVelYM5MdsO3pK
+    -----END CERTIFICATE-----
+    """
+
+        cert = x509.load_pem_x509_certificate(ARI_TEST_CERT)
+        assert ari_cert_ident(cert) == "aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE"
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

@@ -1,10 +1,11 @@
 """Crypto utilities."""
-from base64 import urlsafe_b64encode
+import base64
 import contextlib
 import enum
 from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
+import math
 import socket
 import typing
 from typing import Any
@@ -500,8 +501,9 @@ def dump_cryptography_chain(
     # newline character
     return b"".join(_dump_cert(cert) for cert in chain)
 
-def ariCertIdent(crypto_cert: x509.Certificate) -> str:
-    """Make draft-ietf-acme-ari identifier of a certificate
+def ari_cert_ident(cert: x509.Certificate) -> str:
+    """Make RFC9773 ari identifier of a certificate.
+       used for both renewalinfo path and make cert as renewaled.
     :param cert: Certificate.
     :type cert: `OpenSSL.crypto.X509`.
 
@@ -510,24 +512,22 @@ def ariCertIdent(crypto_cert: x509.Certificate) -> str:
     :rtype: str
     """
 
-    akid = None
     try:
-        ext = crypto_cert.extensions.get_extension_for_class(
-            x509.AuthorityKeyIdentifier
-        )
-        akid = ext.value.key_identifier
-        if akid is None: # pragma: no cover
-            return ''
-    except x509.ExtensionNotFound:
-        #return empty string as ident if akid doesn't exsit
-        return ''
-    p1 = urlsafe_b64encode(akid).decode('ascii').replace("=", "")
+        akid_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
+        key_identifier = akid_ext.value.key_identifier
+    except (x509.ExtensionNotFound , AttributeError):
+        return ""
 
-    #p2 after period : base64url of serial
-    serial = crypto_cert.serial_number
-    # we need one more byte when aligend due to sign padding
-    p2b = urlsafe_b64encode(serial.to_bytes((serial.bit_length() +8) // 8, 'big'))
-    p2 = p2b.decode('ascii').replace("=", "")
+    akid_encoded = base64.urlsafe_b64encode(key_identifier).decode('ascii').replace("=", "")
 
-    #build certificate
-    return f"{p1}.{p2}"
+    # We add one to the reported bit_length so there is room for the sign bit.
+    # https://docs.python.org/3/library/stdtypes.html#int.bit_length
+    # "Return the number of bits necessary to represent an integer in binary, excluding
+    # the sign and leading zeros"
+    serial = cert.serial_number
+    encoded_serial_len = math.ceil((serial.bit_length()+1)/8)
+    # Serials are encoded as ASN.1 INTEGERS, which means big endian and signed (two's complement).
+    # https://letsencrypt.org/docs/a-warm-welcome-to-asn1-and-der/#integer-encoding
+    serial_bytes = serial.to_bytes(encoded_serial_len, byteorder='big', signed=True)
+    serial_encoded = base64.urlsafe_b64encode(serial_bytes).decode('ascii').replace("=", "")
+    return f"{akid_encoded}.{serial_encoded}"
