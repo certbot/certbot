@@ -23,7 +23,6 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
 import pytz
-import pyrfc3339
 
 import certbot
 from certbot import configuration
@@ -108,15 +107,6 @@ def add_time_interval(base_time: datetime.datetime, interval: str,
     tzinfo = base_time.tzinfo or pytz.UTC
 
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
-
-def parse_rfc3399_time(instr: str) -> datetime.datetime:
-    """try rfc3399 specific parser first, 
-    if its malformed try generic python time parser"""
-    try:
-        return pyrfc3339.parse(instr, utc = True)
-    except ValueError:
-        lctime = datetime.datetime.fromisoformat(instr.replace('Z',"+00:00"))
-        return lctime.astimezone(datetime.timezone.utc)
 
 
 def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
