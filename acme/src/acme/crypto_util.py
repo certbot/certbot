@@ -504,6 +504,7 @@ def dump_cryptography_chain(
 def ari_cert_ident(cert: x509.Certificate) -> str:
     """Make RFC9773 ari identifier of a certificate.
        used for both renewalinfo path and make cert as renewaled.
+
     :param cert: Certificate.
     :type cert: `OpenSSL.crypto.X509`.
 
