@@ -1441,8 +1441,7 @@ class MainTest(test_util.ConfigTestCase):
                 mock.patch('certbot._internal.main._init_le_client') as mock_init, \
                 mock.patch('certbot._internal.display.obj.get_display') as mock_display, \
                 mock.patch('certbot._internal.main.renewal.crypto_util') as mock_crypto_util, \
-                mock.patch('certbot._internal.eff.handle_subscription'), \
-                mock.patch('certbot._internal.storage.RenewableCert.get_renewalinfo') as mock_renewalinfo:
+                mock.patch('certbot._internal.eff.handle_subscription'):
 
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot._internal.main._init_le_client') as mock_init:
@@ -2574,10 +2573,8 @@ class TestLockOrder:
 
     def test_lock_order(self, args_and_lock_order, mock_lock_dir):
         args, lock_order = args_and_lock_order
-        with mock.patch('certbot._internal.storage.RenewableCert.get_renewalinfo') as mock_renewalinfo:
-            mock_renewalinfo.return_value = None
-            with pytest.raises(self.EXPECTED_ERROR_TYPE, match=self.EXPECTED_ERROR_STR_REGEX):
-                main.main(args)
+        with pytest.raises(self.EXPECTED_ERROR_TYPE, match=self.EXPECTED_ERROR_STR_REGEX):
+            main.main(args)
         assert mock_lock_dir.call_count == len(lock_order)
         for call, locked_dir in zip(mock_lock_dir.call_args_list, lock_order):
             assert call[0][0] == locked_dir

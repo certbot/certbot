@@ -514,7 +514,7 @@ def ari_cert_ident(cert: x509.Certificate) -> str:
 
     try:
         akid_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
-        key_identifier = akid_ext.value.key_identifier
+        key_identifier = akid_ext.value.key_identifier # type: ignore[attr-defined]
     except (x509.ExtensionNotFound , AttributeError):
         return ""
 

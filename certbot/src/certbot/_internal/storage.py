@@ -6,7 +6,6 @@ import logging
 import re
 import shutil
 import stat
-import requests
 from typing import Any
 from typing import cast
 from typing import Dict
@@ -960,58 +959,6 @@ class RenewableCert(interfaces.RenewableCert):
             logger.debug(str(e))
             return False
 
-    def get_renewalinfo(self, version:int, verify_ssl: bool, ua:str) -> Optional[dict]:
-        # pragma: no cover
-        """from server in config try to get renewalinfo of certificate
-        if it sees error it will return datetime 1-01-01
-
-        :returns: dict from request.json() if request succeed, None if not
-        :rtype: Optional[dict]
-        """
-        #if it's unittest it doesn't have any server
-        try:
-            serverurl = self.configuration["renewalparams"]["server"]
-        except KeyError:
-            return None
-
-        if serverurl is None:
-            return None
-        try:
-            suffix = crypto_util.ariCertIdent(self.version('cert', version))
-            session = requests.session()
-            session.verify = verify_ssl
-            session.headers.update({'User-Agent': f'{ua}'})
-            r = session.get(serverurl, timeout = 1)
-            if r.status_code != 200:
-                return None
-            endpoint = r.json()["renewalInfo"]
-            r = session.get(f"{endpoint}/{suffix}", timeout = 1)
-            if r.status_code != 200:
-                return None
-            return r.json()
-        except (KeyError, requests.exceptions.RequestException) as e:
-            logger.debug("%s",e)
-            return None
-
-    def parse_renewalinfo(self, inputjson: dict) -> \
-        Tuple[Optional[datetime.datetime], Optional[datetime.datetime]]:
-        """parse Ari result json if make sense, raise valueerror if not
-        this accepts parse json object with load, so 
-        :returns: dict from request.json() if request succeed, None if not
-        :rtype: Tuple[Optional(datetime.datetime), Optional(datetime.datetime)]
-        """
-        try:
-            suggestedWindow = inputjson["suggestedWindow"]
-            start = parse_rfc3399_time(suggestedWindow['start'])
-            end = parse_rfc3399_time(suggestedWindow['end'])
-        except (KeyError, ValueError):
-            return None, None
-        logger.debug("Accquired renewalinfo for %s: window starts at %s",
-                        self.lineagename, start.date())
-        reason = getattr(inputjson, "explanationURL", None)
-        if reason is not None:
-            logger.info("renewalwindow adjusted because of: %s", reason)
-        return start, end
 
     def autorenewal_is_enabled(self) -> bool:
         """Is automatic renewal enabled for this cert?
