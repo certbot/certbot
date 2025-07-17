@@ -394,7 +394,7 @@ def should_autorenew(config: configuration.NamespaceConfig,
     else:
         renewal_conf_file = storage.renewal_filename_for_lineagename(config, lineage.lineagename)
         logger.warning("Skipping ARI check because %s has no 'server' field. This issue will not "
-                       "prevent certificate renewal.", renewal_conf_file)
+                       "prevent certificate renewal", renewal_conf_file)
 
     now = datetime.datetime.now(datetime.timezone.utc)
 
