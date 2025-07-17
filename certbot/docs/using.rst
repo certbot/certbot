@@ -331,7 +331,7 @@ dns-ionos_         Y    N    DNS Authentication using IONOS Cloud DNS
 dns-mijn-host_     Y    N    DNS Authentication using mijn.host DNS
 nginx-unit_        Y    Y    Automates obtaining and installing a certificate with Nginx Unit
 dns-cdmon_         Y    N    DNS Authentication using cdmon's API
-dns-synergy-wholesale Y N    DNS Authentication using Synergy Wholesale DNS
+dns-synergy-wholesale_ Y N    DNS Authentication using Synergy Wholesale DNS
 ================== ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
