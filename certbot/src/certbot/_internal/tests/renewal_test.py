@@ -418,7 +418,11 @@ class RenewalTest(test_util.ConfigTestCase):
             mock_ocsp.return_value = True
             assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
             mock_rc.server = None
-            assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
+            with mock.patch('certbot._internal.renewal.logger.warning') as mock_warning:
+                assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
+            # Ensure we warned about skipping ARI checks when server is None
+            assert any(call.args[0].startswith('Skipping ARI') for call in
+                       mock_warning.call_args_list)
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
