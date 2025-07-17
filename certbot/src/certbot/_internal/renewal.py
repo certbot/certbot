@@ -392,8 +392,9 @@ def should_autorenew(config: configuration.NamespaceConfig,
         # Attempt to get the ARI-defined renewal time
         renewal_time, _ = acme.renewal_time(cert_pem)
     else:
-        logger.info("Certificate has no 'server' field configured, unable to "
-                    "perform ACME Renewal Information (ARI) request.")
+        renewal_conf_file = storage.renewal_filename_for_lineagename(config, lineage.lineagename)
+        logger.warning("Skipping ARI check because {renewal_conf_file} has no 'server' field. "
+                       "This issue will not prevent certificate renewal.")
 
     now = datetime.datetime.now(datetime.timezone.utc)
 
