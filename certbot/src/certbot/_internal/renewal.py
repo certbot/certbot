@@ -385,12 +385,17 @@ def should_autorenew(config: configuration.NamespaceConfig,
         # Creating a new ACME client makes a network request, so check if we have
         # one cached for this cert's server already
         if lineage.server not in acme_clients:
-            acme_clients[lineage.server] = \
-                client.create_acme_client(config, server_override=lineage.server)
-        acme = acme_clients[lineage.server]
+            try:
+                acme_clients[lineage.server] = \
+                    client.create_acme_client(config, server_override=lineage.server)
+            except Exception as error:  # pylint: disable=broad-except
+                logger.info("Unable to connect to %s to request ACME Renewal Information (ARI). "
+                            "Error was: %s", lineage.server, error)    
+        acme = acme_clients.get(lineage.server, None)
 
         # Attempt to get the ARI-defined renewal time
-        renewal_time, _ = acme.renewal_time(cert_pem)
+        if acme:
+            renewal_time, _ = acme.renewal_time(cert_pem)
     else:
         logger.info("Certificate has no 'server' field configured, unable to "
                     "perform ACME Renewal Information (ARI) request.")

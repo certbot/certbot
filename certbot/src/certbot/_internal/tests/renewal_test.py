@@ -420,6 +420,25 @@ class RenewalTest(test_util.ConfigTestCase):
             mock_rc.server = None
             assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
 
+    @mock.patch('certbot._internal.client.create_acme_client')
+    @mock.patch('certbot._internal.storage.RenewableCert.ocsp_revoked')
+    @mock.patch('acme.client.ClientV2.renewal_time')
+    def test_resilient_ari_directory_fetches(self, mock_renewal_time, mock_ocsp, mock_create_acme):
+        from certbot._internal import renewal
+        from acme import messages
+
+        ari_server = 'http://ari'
+        acme_clients = {}
+        mock_rc = mock.MagicMock()
+        mock_rc.server = ari_server
+        mock_rc.autorenewal_is_enabled.return_value = True
+        mock_create_acme.side_effect = messages.Error()
+        mock_ocsp.return_value = True
+
+        with mock.patch('certbot._internal.renewal.open', mock.mock_open(read_data=b'')):
+            assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
+            assert mock_renewal_time.call_count == 0
+
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.renewal.restore_required_config_elements."""
