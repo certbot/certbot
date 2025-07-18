@@ -12,8 +12,6 @@ from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
-import pytz
-
 from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
@@ -285,7 +283,7 @@ def human_readable_cert_info(config: configuration.NamespaceConfig, cert: storag
         return None
     if config.domains and not set(config.domains).issubset(cert.names()):
         return None
-    now = datetime.datetime.now(pytz.UTC)
+    now = datetime.datetime.now(datetime.timezone.utc)
 
     reasons = []
     if cert.is_test_cert:

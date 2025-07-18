@@ -10,7 +10,6 @@ install_requires = [
     # relaxed to >=24.0.0 if needed.
     'PyOpenSSL>=25.0.0',
     'pyrfc3339',
-    'pytz>=2019.3',
     'requests>=2.20.0',
 ]
 
