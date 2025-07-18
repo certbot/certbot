@@ -8,6 +8,8 @@ from typing import Optional
 from typing import cast
 
 import CloudFlare
+import dns.resolver
+import dns.exception
 
 from certbot import errors
 from certbot.plugins import dns_common
@@ -83,9 +85,25 @@ class Authenticator(dns_common.DNSAuthenticator):
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         if self.credentials.conf('api-token'):
-            return _CloudflareClient(api_token = self.credentials.conf('api-token'))
+            return _CloudflareClient(api_token = self.credentials.conf('api-token'),
+                                     check_cname = self.credentials.conf('check-cname')
+                                     )
         return _CloudflareClient(email = self.credentials.conf('email'),
-                                 api_key = self.credentials.conf('api-key'))
+                                 api_key = self.credentials.conf('api-key'),
+                                 check_cname = self.credentials.conf('check-cname')
+                                 )
+
+
+class _CloudflareClientTarget:
+    def __init__(self, zone_id: str, record_name: str) -> None:
+        self.zone_id = zone_id
+        self.record_name = record_name
+
+    def __str__(self) -> str:
+        return str(self.zone_id)
+
+    def __bool__(self) -> bool:
+        return bool(self.zone_id)
 
 
 class _CloudflareClient:
@@ -94,7 +112,8 @@ class _CloudflareClient:
     """
 
     def __init__(self, email: Optional[str] = None, api_key: Optional[str] = None,
-                 api_token: Optional[str] = None) -> None:
+                 api_token: Optional[str] = None, check_cname: Optional[str] = None) -> None:
+        self.check_cname = bool(check_cname) and str(check_cname).lower() == 'true'
         if email:
             # If an email was specified, we're using an email/key combination and not a token.
             # We can't use named arguments in this case, as it would break compatibility with
@@ -119,16 +138,16 @@ class _CloudflareClient:
         :raises certbot.errors.PluginError: if an error occurs communicating with the Cloudflare API
         """
 
-        zone_id = self._find_zone_id(domain)
+        target = self._find_target(domain, record_name)
 
         data = {'type': 'TXT',
-                'name': record_name,
+                'name': target.record_name,
                 'content': record_content,
                 'ttl': record_ttl}
 
         try:
-            logger.debug('Attempting to add record to zone %s: %s', zone_id, data)
-            self.cf.zones.dns_records.post(zone_id, data=data)  # zones | pylint: disable=no-member
+            logger.debug('Attempting to add record to zone %s: %s', target, data)
+            self.cf.zones.dns_records.post(target.zone_id, data=data)  # zones | pylint: disable=no-member
         except CloudFlare.exceptions.CloudFlareAPIError as e:
             code = int(e)
             hint = None
@@ -140,7 +159,7 @@ class _CloudflareClient:
             raise errors.PluginError('Error communicating with the Cloudflare API: {0}{1}'
                                      .format(e, ' ({0})'.format(hint) if hint else ''))
 
-        record_id = self._find_txt_record_id(zone_id, record_name, record_content)
+        record_id = self._find_txt_record_id(target, record_content)
         logger.debug('Successfully added TXT record with record_id: %s', record_id)
 
     def del_txt_record(self, domain: str, record_name: str, record_content: str) -> None:
@@ -158,17 +177,17 @@ class _CloudflareClient:
         """
 
         try:
-            zone_id = self._find_zone_id(domain)
+            target = self._find_target(domain, record_name)
         except errors.PluginError as e:
             logger.debug('Encountered error finding zone_id during deletion: %s', e)
             return
 
-        if zone_id:
-            record_id = self._find_txt_record_id(zone_id, record_name, record_content)
+        if target:
+            record_id = self._find_txt_record_id(target, record_content)
             if record_id:
                 try:
                     # zones | pylint: disable=no-member
-                    self.cf.zones.dns_records.delete(zone_id, record_id)
+                    self.cf.zones.dns_records.delete(target.zone_id, record_id)
                     logger.debug('Successfully deleted TXT record.')
                 except CloudFlare.exceptions.CloudFlareAPIError as e:
                     logger.warning('Encountered CloudFlareAPIError deleting TXT record: %s', e)
@@ -177,17 +196,31 @@ class _CloudflareClient:
         else:
             logger.debug('Zone not found; no cleanup needed.')
 
-    def _find_zone_id(self, domain: str) -> str:
+    def _find_target(self, domain: str, record_name: str) -> _CloudflareClientTarget:
         """
-        Find the zone_id for a given domain.
+        Find the target of apply changes for a given domain.
 
         :param str domain: The domain for which to find the zone_id.
-        :returns: The zone_id, if found.
+        :param str record_name: The record name (typically beginning with '_acme-challenge.').
+        :returns: The _CloudflareClientTarget, if zone id found.
         :rtype: str
         :raises certbot.errors.PluginError: if no zone_id is found.
         """
 
+        logger.debug('Try to find Zone ID for %s (%s)', record_name, domain)
+
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
+        target_record_name = record_name
+
+        if self.check_cname:
+            try:
+                target = str(dns.resolver.resolve(record_name, 'CNAME')[0].target)
+                if target:
+                    zone_name_guesses = dns_common.base_domain_name_guesses(target)
+                    target_record_name = target
+            except dns.exception.DNSException:
+                logger.warning('CNAME record not found, use %s for Zone', domain)
+
         zones: List[Dict[str, Any]] = []
         code = msg = None
 
@@ -223,7 +256,7 @@ class _CloudflareClient:
             if zones:
                 zone_id: str = zones[0]['id']
                 logger.debug('Found zone_id of %s for %s using name %s', zone_id, domain, zone_name)
-                return zone_id
+                return _CloudflareClientTarget(zone_id, target_record_name)
 
         if msg is not None:
             if 'com.cloudflare.api.account.zone.list' in msg:
@@ -242,25 +275,24 @@ class _CloudflareClient:
                                      'supplied Cloudflare account.'
                                      .format(domain, zone_name_guesses))
 
-    def _find_txt_record_id(self, zone_id: str, record_name: str,
+    def _find_txt_record_id(self, target: _CloudflareClientTarget,
                             record_content: str) -> Optional[str]:
         """
         Find the record_id for a TXT record with the given name and content.
 
-        :param str zone_id: The zone_id which contains the record.
-        :param str record_name: The record name (typically beginning with '_acme-challenge.').
+        :param _CloudflareClientTarget target: The change target which contains the record.
         :param str record_content: The record content (typically the challenge validation).
         :returns: The record_id, if found.
         :rtype: str
         """
 
         params = {'type': 'TXT',
-                  'name': record_name,
+                  'name': target.record_name,
                   'content': record_content,
                   'per_page': 1}
         try:
             # zones | pylint: disable=no-member
-            records = self.cf.zones.dns_records.get(zone_id, params=params)
+            records = self.cf.zones.dns_records.get(target.zone_id, params=params)
         except CloudFlare.exceptions.CloudFlareAPIError as e:
             logger.debug('Encountered CloudFlareAPIError getting TXT record_id: %s', e)
             records = []
