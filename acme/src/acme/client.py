@@ -4,6 +4,7 @@ import datetime
 from email.utils import parsedate_tz
 import http.client as http_client
 import logging
+import ipaddress
 import math
 import random
 import re
@@ -133,12 +134,20 @@ class ClientV2:
         else:
             ipNames = san_ext.value.get_values_for_type(x509.IPAddress)
         identifiers = []
-        for name in dnsNames:
-            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
-                value=name))
+        added_ips = set()
         for ip in ipNames:
-            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
-                value=str(ip)))
+            ip_str = str(ip)
+            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP, value=ip_str))
+            added_ips.add(ip_str)
+        for name in dnsNames:
+            try:
+                ip_addr = ipaddress.ip_address(name)
+                ip_str = str(ip_addr)
+                if ip_str not in added_ips:
+                    identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP, value=ip_str))
+                    added_ips.add(ip_str)
+            except ValueError:
+                identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=name))
         if profile is None:
             profile = ""
         order = messages.NewOrder(identifiers=identifiers, profile=profile)
