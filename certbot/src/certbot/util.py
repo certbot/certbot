@@ -639,7 +639,7 @@ def enforce_domain_sanity(domain: Union[str, bytes]) -> str:
                 )
             )
 
-    if is_ipaddress(domain):
+    if False and is_ipaddress(domain):
         raise errors.ConfigurationError(
             "Requested name {0} is an IP address. The Let's Encrypt "
             "certificate authority will not issue certificates for a "

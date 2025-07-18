@@ -1,6 +1,7 @@
 """Certbot client API."""
 import datetime
 import logging
+import ipaddress
 import platform
 from typing import Any
 from typing import Callable
@@ -397,6 +398,14 @@ class Client:
             key_size = self.config.rsa_key_size
 
         # Create CSR from names
+        dns_domains = []
+        ip_addrs = []
+        for domain in domains:
+            try:
+                ip_addrs.append(ipaddress.ip_address(domain))
+            except ValueError:
+                dns_domains.append(domain)
+
         if self.config.dry_run:
             key = key or util.Key(
                 file=None,
@@ -409,7 +418,7 @@ class Client:
             )
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
-                               key.pem, domains, self.config.must_staple))
+                               key.pem, dns_domains, self.config.must_staple, ipaddrs=ip_addrs))
         else:
             key = key or crypto_util.generate_key(
                 key_size=key_size,
@@ -419,7 +428,7 @@ class Client:
                 strict_permissions=self.config.strict_permissions,
             )
             csr = crypto_util.generate_csr(
-                key, domains, None, self.config.must_staple, self.config.strict_permissions)
+                key, dns_domains, None, self.config.must_staple, self.config.strict_permissions, ipaddrs=ip_addrs)
 
         try:
             orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
