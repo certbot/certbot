@@ -298,41 +298,41 @@ There are also a number of third-party plugins for the client, provided by
 other developers. Many are beta/experimental, but some are already in
 widespread use:
 
-================== ==== ==== =================================================================
-Plugin             Auth Inst Notes
-================== ==== ==== =================================================================
-haproxy_           Y    Y    Integration with the HAProxy load balancer
-s3front_           Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
-gandi_             Y    N    Obtain certificates via the Gandi LiveDNS API
-varnish_           Y    N    Obtain certificates via a Varnish server
-external-auth_     Y    Y    A plugin for convenient scripting
-pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN servers
-proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
-dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
-dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
-dns-cloudns_       Y    N    DNS Authentication using ClouDNS API
-dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
-dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
-dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
-dns-azure_         Y    N    DNS Authentication using Azure DNS
-dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
-dns-yandexcloud_   Y    N    DNS Authentication using Yandex Cloud DNS
-dns-bunny_         Y    N    DNS Authentication using BunnyDNS
-njalla_            Y    N    DNS Authentication for njalla
-DuckDNS_           Y    N    DNS Authentication for DuckDNS
-Porkbun_           Y    N    DNS Authentication for Porkbun
-Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
-dns-multi_         Y    N    DNS authentication of 100+ providers using go-acme/lego
-dns-dnsmanager_    Y    N    DNS Authentication for dnsmanager.io
-standalone-nfq_    Y    N    HTTP Authentication that works with any webserver (Linux only)
-dns-solidserver_   Y    N    DNS Authentication using SOLIDserver (EfficientIP)
-dns-stackit_       Y    N    DNS Authentication using STACKIT DNS
-dns-ionos_         Y    N    DNS Authentication using IONOS Cloud DNS
-dns-mijn-host_     Y    N    DNS Authentication using mijn.host DNS
-nginx-unit_        Y    Y    Automates obtaining and installing a certificate with Nginx Unit
-dns-cdmon_         Y    N    DNS Authentication using cdmon's API
-dns-synergy-wholesale_ Y N    DNS Authentication using Synergy Wholesale DNS
-================== ==== ==== =================================================================
+======================= ==== ==== =================================================================
+Plugin                  Auth Inst Notes
+======================= ==== ==== =================================================================
+haproxy_                Y    Y    Integration with the HAProxy load balancer
+s3front_                Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
+gandi_                  Y    N    Obtain certificates via the Gandi LiveDNS API
+varnish_                Y    N    Obtain certificates via a Varnish server
+external-auth_          Y    Y    A plugin for convenient scripting
+pritunl_                N    Y    Install certificates in pritunl distributed OpenVPN servers
+proxmox_                N    Y    Install certificates in Proxmox Virtualization servers
+dns-standalone_         Y    N    Obtain certificates via an integrated DNS server
+dns-ispconfig_          Y    N    DNS Authentication using ISPConfig as DNS server
+dns-cloudns_            Y    N    DNS Authentication using ClouDNS API
+dns-clouddns_           Y    N    DNS Authentication using CloudDNS API
+dns-lightsail_          Y    N    DNS Authentication using Amazon Lightsail DNS API
+dns-inwx_               Y    Y    DNS Authentication for INWX through the XML API
+dns-azure_              Y    N    DNS Authentication using Azure DNS
+dns-godaddy_            Y    N    DNS Authentication using Godaddy DNS
+dns-yandexcloud_        Y    N    DNS Authentication using Yandex Cloud DNS
+dns-bunny_              Y    N    DNS Authentication using BunnyDNS
+njalla_                 Y    N    DNS Authentication for njalla
+DuckDNS_                Y    N    DNS Authentication for DuckDNS
+Porkbun_                Y    N    DNS Authentication for Porkbun
+Infomaniak_             Y    N    DNS Authentication using Infomaniak Domains API
+dns-multi_              Y    N    DNS authentication of 100+ providers using go-acme/lego
+dns-dnsmanager_         Y    N    DNS Authentication for dnsmanager.io
+standalone-nfq_         Y    N    HTTP Authentication that works with any webserver (Linux only)
+dns-solidserver_        Y    N    DNS Authentication using SOLIDserver (EfficientIP)
+dns-stackit_            Y    N    DNS Authentication using STACKIT DNS
+dns-ionos_              Y    N    DNS Authentication using IONOS Cloud DNS
+dns-mijn-host_          Y    N    DNS Authentication using mijn.host DNS
+nginx-unit_             Y    Y    Automates obtaining and installing a certificate with Nginx Unit
+dns-cdmon_              Y    N    DNS Authentication using cdmon's API
+dns-synergy-wholesale_  Y    N    DNS Authentication using Synergy Wholesale DNS
+======================= ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
