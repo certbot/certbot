@@ -504,7 +504,8 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str
         _update_renewal_params_from_key(new_key, config)
     else:
         new_key = None
-    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
+    ari = crypto_util.ariCertIdent(lineage.cert_path)
+    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key, certid = ari)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s", os.path.dirname(lineage.cert))
     else:

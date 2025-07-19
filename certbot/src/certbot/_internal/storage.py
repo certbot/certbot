@@ -84,7 +84,7 @@ def cert_path_for_cert_name(config: configuration.NamespaceConfig, cert_name: st
 
 
 def add_time_interval(base_time: datetime.datetime, interval: str,
-                      textparser: parsedatetime.Calendar = parsedatetime.Calendar()
+                      textparser: parsedatetime.Calendar = parsedatetime.Calendar(version=2)
                       ) -> datetime.datetime:
     """Parse the time specified time interval, and add it to the base_time
 
@@ -948,6 +948,7 @@ class RenewableCert(interfaces.RenewableCert):
                 cert_path)
             logger.debug(str(e))
             return False
+
 
     def autorenewal_is_enabled(self) -> bool:
         """Is automatic renewal enabled for this cert?

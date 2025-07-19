@@ -10,6 +10,7 @@ from typing import Callable
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from cryptography import x509
 import josepy as jose
 from josepy.util import ComparableECKey
 from OpenSSL import crypto
@@ -47,6 +48,11 @@ def load_cert(*names: str) -> x509.Certificate:
     )
     return loader(load_vector(*names))
 
+def load_cert_cryptograpy(*names):
+    """Load certificate as cryptograpy format"""
+    loader = _guess_loader(
+        names[-1], x509.load_pem_x509_certificate, x509.load_der_x509_certificate)
+    return loader(load_vector(*names))
 
 def load_csr(*names: str) -> x509.CertificateSigningRequest:
     """Load certificate request."""
