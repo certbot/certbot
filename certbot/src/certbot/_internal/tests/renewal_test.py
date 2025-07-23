@@ -444,6 +444,30 @@ class RenewalTest(test_util.ConfigTestCase):
             assert mock_renewal_time.call_count == 0
 
 
+    @mock.patch('certbot._internal.storage.RenewableCert.ocsp_revoked')
+    def test_resilient_ari_check(self, mock_ocsp):
+        from certbot._internal import renewal
+
+        mock_acme = mock.MagicMock()
+        ari_server = 'http://ari'
+        future = datetime.datetime.now(pytz.UTC) + datetime.timedelta(seconds=1000)
+        mock_acme.renewal_time.side_effect = ValueError
+        acme_clients = {}
+        acme_clients[ari_server] = mock_acme
+        mock_rc = mock.MagicMock()
+        mock_rc.server = ari_server
+        mock_rc.autorenewal_is_enabled.return_value = True
+        mock_ocsp.return_value = True
+
+        with mock.patch('certbot._internal.renewal.open', mock.mock_open(read_data=b'')):
+            with mock.patch('certbot._internal.renewal.logger') as mock_logger:
+                assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
+        # Ensure we logged about skipping the ARI check and the underlying exception when fetching
+        # ARI fails
+        assert any('ARI' in call.args[0] for call in mock_logger.warning.call_args_list)
+        assert any(call.kwargs.get('exc_info') == True for call in mock_logger.debug.call_args_list)
+
+
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot._internal.renewal.restore_required_config_elements."""
     @classmethod

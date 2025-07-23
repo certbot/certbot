@@ -325,6 +325,45 @@ def should_renew(config: configuration.NamespaceConfig,
     return False
 
 
+def _ari_renewal_time(config: configuration.NamespaceConfig,
+                      lineage: storage.RenewableCert,
+                      acme_clients: Dict[str, acme_client.ClientV2],
+                      cert_pem: bytes,
+                      )-> Optional[datetime.datetime]:
+    """Return the ARI suggested renewal time if it's available."""
+    # For ARI requests, we want to use the ACME directory URL from which the
+    # cert was originally requested. Since `config.server` can be overridden on
+    # the command line, we're using the server stored in the cert's renewal
+    # conf, i.e. `lineage.server`
+    #
+    # Fixes https://github.com/certbot/certbot/issues/10339
+    if lineage.server:
+        try:
+            # Creating a new ACME client makes a network request, so check if we have
+            # one cached for this cert's server already
+            if lineage.server not in acme_clients:
+                acme_clients[lineage.server] = \
+                    client.create_acme_client(config, server_override=lineage.server)
+            acme = acme_clients.get(lineage.server, None)
+
+            # Attempt to get the ARI-defined renewal time
+            if acme:
+                return acme.renewal_time(cert_pem)[0]
+        except Exception:  # pylint: disable=broad-except
+            # We want to stop errors around ARI preventing renewal so we catch all exceptions here
+            # with a warning asking users to tell us about any problems they are experiencing
+            logger.warning("An error occurred requesting ACME Renewal Information (ARI). If this "
+                           "problem persists and you think it's a bug in Certbot, please open an "
+                           "issue at https://github.com/certbot/certbot/issues/new/choose.")
+            logger.debug("Error was:", exc_info=True)
+    else:
+        renewal_conf_file = storage.renewal_filename_for_lineagename(config, lineage.lineagename)
+        logger.warning("Skipping ARI check because %s has no 'server' field. This issue will not "
+                       "prevent certificate renewal", renewal_conf_file)
+
+    return None
+
+
 def _default_renewal_time(cert_pem: bytes) -> datetime.datetime:
     """Return an reasonable default time to attempt renewal of the certificate
     based on the certificate lifetime.
@@ -374,32 +413,7 @@ def should_autorenew(config: configuration.NamespaceConfig,
     with open(cert, 'rb') as f:
         cert_pem = f.read()
 
-    renewal_time = None
-    # For ARI requests, we want to use the ACME directory URL from which the
-    # cert was originally requested. Since `config.server` can be overridden on
-    # the command line, we're using the server stored in the cert's renewal
-    # conf, i.e. `lineage.server`
-    #
-    # Fixes https://github.com/certbot/certbot/issues/10339
-    if lineage.server:
-        # Creating a new ACME client makes a network request, so check if we have
-        # one cached for this cert's server already
-        if lineage.server not in acme_clients:
-            try:
-                acme_clients[lineage.server] = \
-                    client.create_acme_client(config, server_override=lineage.server)
-            except Exception as error:  # pylint: disable=broad-except
-                logger.info("Unable to connect to %s to request ACME Renewal Information (ARI). "
-                            "Error was: %s", lineage.server, error)    
-        acme = acme_clients.get(lineage.server, None)
-
-        # Attempt to get the ARI-defined renewal time
-        if acme:
-            renewal_time, _ = acme.renewal_time(cert_pem)
-    else:
-        renewal_conf_file = storage.renewal_filename_for_lineagename(config, lineage.lineagename)
-        logger.warning("Skipping ARI check because %s has no 'server' field. This issue will not "
-                       "prevent certificate renewal", renewal_conf_file)
+    renewal_time = _ari_renewal_time(config, lineage, acme_clients, cert_pem)
 
     now = datetime.datetime.now(datetime.timezone.utc)
 

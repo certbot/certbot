@@ -356,12 +356,7 @@ class ClientV2:
             return None, now + default_retry_after
 
         ari_url = renewal_info_base_url + '/' + _renewal_info_path_component(cert)
-        try:
-            resp = self.net.get(ari_url, content_type='application/json')
-        except (requests.exceptions.RequestException, messages.Error) as error:
-            logger.info("failed to fetch renewal_info URL (%s): %s", ari_url, error)
-            return None, now + default_retry_after
-
+        resp = self.net.get(ari_url, content_type='application/json')
         renewal_info: messages.RenewalInfo = messages.RenewalInfo.from_json(resp.json())
 
         start = renewal_info.suggested_window.start # pylint: disable=no-member
