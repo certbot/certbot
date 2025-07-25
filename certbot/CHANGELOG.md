@@ -12,6 +12,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Catches and ignores errors during the directory fetch for ARI checking so that these
   errors do not hinder the actual certificate issuance
+* Removed the dependency on `pytz`.
 
 ### Fixed
 

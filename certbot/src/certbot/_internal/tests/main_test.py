@@ -19,7 +19,6 @@ import configobj
 from cryptography import x509
 import josepy as jose
 import pytest
-import pytz
 
 from acme.messages import Error as acme_error
 from certbot import errors
@@ -423,7 +422,7 @@ class RevokeTest(test_util.TempDirTestCase):
         self.meta = Account.Meta(
             creation_host="test.certbot.org",
             creation_dt=datetime.datetime(
-                2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
+                2015, 7, 4, 14, 4, 10, tzinfo=datetime.timezone.utc))
         self.acc = Account(self.regr, JWK, self.meta)
 
         self.mock_determine_account.return_value = (self.acc, None)
