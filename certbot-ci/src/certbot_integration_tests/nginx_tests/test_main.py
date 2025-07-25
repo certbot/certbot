@@ -44,7 +44,7 @@ def test_certificate_deployment(certname_pattern: str, params: List[str],
     context.certbot_test_nginx(command)
 
     lineage = domains.split(',')[0]
-    server_cert = ssl.get_server_certificate(('localhost', context.tls_alpn_01_port))
+    server_cert = ssl.get_server_certificate(('localhost', context.https_port))
     with open(os.path.join(
         context.workspace, 'conf/live/{0}/cert.pem'.format(lineage)), 'r'
     ) as file:
