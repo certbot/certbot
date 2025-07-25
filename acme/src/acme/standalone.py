@@ -10,62 +10,15 @@ import socket
 import socketserver
 import threading
 from typing import Any
-from typing import cast
 from typing import List
-from typing import Mapping
 from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Type
-import warnings
-
-from OpenSSL import SSL
 
 from acme import challenges
-from acme import crypto_util
 
 logger = logging.getLogger(__name__)
-
-
-class TLSServer(socketserver.TCPServer):
-    """Generic TLS Server
-
-    .. deprecated:: 4.1.0
-
-    """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        warnings.warn("TLSServer is deprecated and will be removed in an upcoming release",
-                      DeprecationWarning)
-        self.ipv6 = kwargs.pop("ipv6", False)
-        if self.ipv6:
-            self.address_family = socket.AF_INET6
-        else:
-            self.address_family = socket.AF_INET
-        self.certs = kwargs.pop("certs", {})
-        self.method = kwargs.pop("method", crypto_util._DEFAULT_SSL_METHOD)
-        self.allow_reuse_address = kwargs.pop("allow_reuse_address", True)
-        super().__init__(*args, **kwargs)
-
-    def _wrap_sock(self) -> None:
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', 'SSLSocket is deprecated')
-            self.socket = cast(socket.socket, crypto_util.SSLSocket(
-                self.socket, cert_selection=self._cert_selection,
-                alpn_selection=getattr(self, '_alpn_selection', None),
-                method=self.method))
-
-    def _cert_selection(self, connection: SSL.Connection
-                        ) -> Optional[crypto_util._KeyAndCert]:  # pragma: no cover
-        """Callback selecting certificate for connection."""
-        server_name = connection.get_servername()
-        if server_name:
-            return self.certs.get(server_name, None)
-        return None
-
-    def server_bind(self) -> None:
-        self._wrap_sock()
-        return socketserver.TCPServer.server_bind(self)
 
 
 class ACMEServerMixin:
@@ -154,56 +107,6 @@ class BaseDualNetworkedServers:
         for thread in self.threads:
             thread.join()
         self.threads = []
-
-
-class TLSALPN01Server(TLSServer, ACMEServerMixin):
-    """TLSALPN01 Server.
-
-    .. deprecated:: 4.1.0
-
-    """
-
-    ACME_TLS_1_PROTOCOL = b"acme-tls/1"
-
-    def __init__(self, server_address: Tuple[str, int],
-                 certs: List[crypto_util._KeyAndCert],
-                 challenge_certs: Mapping[bytes, crypto_util._KeyAndCert],
-                 ipv6: bool = False) -> None:
-        warnings.warn("TLSALPN01Server is deprecated and will be removed in an "
-            "upcoming certbot major version update", DeprecationWarning)
-        # We don't need to implement a request handler here because the work
-        # (including logging) is being done by wrapped socket set up in the
-        # parent TLSServer class.
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", "TLSServer is deprecated")
-            TLSServer.__init__(
-                self, server_address, socketserver.BaseRequestHandler, certs=certs,
-                ipv6=ipv6)
-        self.challenge_certs = challenge_certs
-
-    def _cert_selection(self, connection: SSL.Connection) -> Optional[crypto_util._KeyAndCert]:
-        # TODO: We would like to serve challenge cert only if asked for it via
-        # ALPN. To do this, we need to retrieve the list of protos from client
-        # hello, but this is currently impossible with openssl [0], and ALPN
-        # negotiation is done after cert selection.
-        # Therefore, currently we always return challenge cert, and terminate
-        # handshake in alpn_selection() if ALPN protos are not what we expect.
-        # [0] https://github.com/openssl/openssl/issues/4952
-        server_name = connection.get_servername()
-        if server_name:
-            logger.debug("Serving challenge cert for server name %s", server_name)
-            return self.challenge_certs[server_name]
-        return None # pragma: no cover
-
-    def _alpn_selection(self, _connection: SSL.Connection, alpn_protos: List[bytes]) -> bytes:
-        """Callback to select alpn protocol."""
-        if len(alpn_protos) == 1 and alpn_protos[0] == self.ACME_TLS_1_PROTOCOL:
-            logger.debug("Agreed on %s ALPN", self.ACME_TLS_1_PROTOCOL)
-            return self.ACME_TLS_1_PROTOCOL
-        logger.debug("Cannot agree on ALPN proto. Got: %s", str(alpn_protos))
-        # Explicitly close the connection now, by returning an empty string.
-        # See https://www.pyopenssl.org/en/stable/api/ssl.html#OpenSSL.SSL.Context.set_alpn_select_callback  # pylint: disable=line-too-long
-        return b""
 
 
 class HTTPServer(BaseHTTPServer.HTTPServer):
