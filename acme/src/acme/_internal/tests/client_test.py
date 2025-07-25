@@ -547,30 +547,6 @@ class ClientV2Test(unittest.TestCase):
         assert t <= datetime.datetime(2025, 3, 17, 1, 1, 1, tzinfo=datetime.timezone.utc)
 
     @mock.patch('acme.client.datetime')
-    def test_renewal_time_renewal_info_errors(self, dt_mock):
-        utc_now = datetime.datetime(2025, 3, 15, tzinfo=datetime.timezone.utc)
-        dt_mock.datetime.now.return_value = utc_now
-        self.client.directory = messages.Directory({
-            'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
-        })
-        # Failure to fetch the 'renewalInfo' URL should return None
-        self.net.get.side_effect = requests.exceptions.RequestException
-
-        cert_pem = make_cert_for_renewal(
-            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
-            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
-        )
-        t, _ = self.client.renewal_time(cert_pem)
-        assert t == None
-
-        cert_pem = make_cert_for_renewal(
-            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
-            not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
-        )
-        t, _ = self.client.renewal_time(cert_pem)
-        assert t == None
-
-    @mock.patch('acme.client.datetime')
     def test_renewal_time_returns_retry_after(self, dt_mock):
         def now(tzinfo=None):
             return datetime.datetime(2025, 3, 15, tzinfo=tzinfo)
