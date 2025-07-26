@@ -393,7 +393,7 @@ class ClientTest(ClientTestCommon):
         self.client.config.preferred_profile = None
 
         self._test_obtain_certificate_common(mock.sentinel.key, csr)
-        self.acme.new_order.assert_called_once_with(mock.ANY, profile=None)
+        self.acme.new_order.assert_called_once_with(mock.ANY, profile=None, certid='')
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_required_profile(self, mock_crypto_util):
@@ -406,7 +406,7 @@ class ClientTest(ClientTestCommon):
         self.client.config.preferred_profile = None
 
         self._test_obtain_certificate_common(mock.sentinel.key, csr)
-        self.acme.new_order.assert_called_once_with(mock.ANY, profile="exampleProfile")
+        self.acme.new_order.assert_called_once_with(mock.ANY, profile="exampleProfile", certid='')
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_preferred_profile_exists(self, mock_crypto_util):
@@ -428,7 +428,7 @@ class ClientTest(ClientTestCommon):
         })
 
         self._test_obtain_certificate_common(mock.sentinel.key, csr)
-        self.acme.new_order.assert_called_once_with(mock.ANY, profile="exampleProfile")
+        self.acme.new_order.assert_called_once_with(mock.ANY, profile="exampleProfile", certid='')
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_preferred_profile_does_not_exist(self, mock_crypto_util):
@@ -450,7 +450,7 @@ class ClientTest(ClientTestCommon):
         })
 
         self._test_obtain_certificate_common(mock.sentinel.key, csr)
-        self.acme.new_order.assert_called_once_with(mock.ANY, profile=None)
+        self.acme.new_order.assert_called_once_with(mock.ANY, profile=None, certid='')
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_preferred_profile_no_profiles_exist(self, mock_crypto_util):
@@ -466,7 +466,7 @@ class ClientTest(ClientTestCommon):
         self.acme.directory = Directory.from_json({})
 
         self._test_obtain_certificate_common(mock.sentinel.key, csr)
-        self.acme.new_order.assert_called_once_with(mock.ANY, profile=None)
+        self.acme.new_order.assert_called_once_with(mock.ANY, profile=None, certid='')
 
     @mock.patch("certbot._internal.client.crypto_util")
     def test_obtain_certificate_partial_success(self, mock_crypto_util):

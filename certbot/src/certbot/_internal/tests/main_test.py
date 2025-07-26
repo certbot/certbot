@@ -1436,7 +1436,13 @@ class MainTest(test_util.ConfigTestCase):
             stdout.write(message)
 
         try:
-            with mock.patch('certbot._internal.cert_manager.find_duplicative_certs') as mock_fdc:
+            with \
+                mock.patch('certbot._internal.cert_manager.find_duplicative_certs') as mock_fdc, \
+                mock.patch('certbot._internal.main._init_le_client') as mock_init, \
+                mock.patch('certbot._internal.display.obj.get_display') as mock_display, \
+                mock.patch('certbot._internal.main.renewal.crypto_util') as mock_crypto_util, \
+                mock.patch('certbot._internal.eff.handle_subscription'):
+
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot._internal.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
@@ -1471,9 +1477,10 @@ class MainTest(test_util.ConfigTestCase):
                     # to obtain_certificate
                     mock_client.obtain_certificate.assert_called_once_with([mock.ANY],
                         os.path.normpath(os.path.join(
-                            self.config.config_dir, "live/sample-renewal/privkey.pem")))
+                            self.config.config_dir, "live/sample-renewal/privkey.pem")),
+                            certid=mock.ANY)
                 else:
-                    mock_client.obtain_certificate.assert_called_once_with([mock.ANY], None)
+                    mock_client.obtain_certificate.assert_called_once_with([mock.ANY], None, certid=mock.ANY)
             else:
                 assert mock_client.obtain_certificate.call_count == 0
         except:
@@ -1562,6 +1569,7 @@ class MainTest(test_util.ConfigTestCase):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
+        print(self.mock_sleep.call_args)
         assert self.mock_sleep.call_count == 0
 
     @mock.patch('certbot._internal.renewal.should_renew')
