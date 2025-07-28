@@ -154,6 +154,6 @@ class WildcardUnsupportedError(Error):
 
 class ARIError(ClientError):
     """An error occurred during an ARI request and we want to suggest a Retry-After time."""
-    def __init__(self, retry_after: datetime.datetime, *args: Any) -> None:
-        super().__init__(*args)
+    def __init__(self, message: str, retry_after: datetime.datetime) -> None:
+        super().__init__(message, retry_after)
         self.retry_after = retry_after

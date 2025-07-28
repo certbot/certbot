@@ -365,7 +365,8 @@ class ClientV2:
         try:
             resp = self.net.get(ari_url, content_type='application/json')
         except Exception as e:  # pylint: disable=broad-except
-            raise errors.ARIError(now + default_retry_after) from e
+            error_msg = f'failed to fetch renewal_info URL {ari_url}'
+            raise errors.ARIError(error_msg, now + default_retry_after) from e
         renewal_info: messages.RenewalInfo = messages.RenewalInfo.from_json(resp.json())
 
         start = renewal_info.suggested_window.start # pylint: disable=no-member

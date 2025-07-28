@@ -547,6 +547,41 @@ class ClientV2Test(unittest.TestCase):
         assert t <= datetime.datetime(2025, 3, 17, 1, 1, 1, tzinfo=datetime.timezone.utc)
 
     @mock.patch('acme.client.datetime')
+    def test_renewal_time_renewal_info_errors(self, dt_mock):
+        def now(tzinfo=None):
+            return datetime.datetime(2025, 3, 15, tzinfo=tzinfo)
+        dt_mock.datetime.now.side_effect = now
+        dt_mock.timedelta = datetime.timedelta
+        dt_mock.timezone = datetime.timezone
+
+        self.client.directory = messages.Directory({
+            'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
+        })
+        # Failure to fetch the 'renewalInfo' URL should raise an ARIError with the exception raised
+        # by self.net.get as the __cause__ and a Retry-After 6 hours in the future
+        expected_cause = requests.exceptions.RequestException
+        expected_retry_after = now() + datetime.timedelta(seconds=6 * 60 * 60)
+        self.net.get.side_effect = expected_cause
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
+        )
+        with pytest.raises(errors.ARIError) as exception_info:
+            self.client.renewal_time(cert_pem)
+        assert isinstance(exception_info.value.__cause__, expected_cause)
+        assert exception_info.value.retry_after == expected_retry_after
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
+        )
+        with pytest.raises(errors.ARIError) as exception_info:
+            self.client.renewal_time(cert_pem)
+        assert isinstance(exception_info.value.__cause__, expected_cause)
+        assert exception_info.value.retry_after == expected_retry_after
+
+    @mock.patch('acme.client.datetime')
     def test_renewal_time_returns_retry_after(self, dt_mock):
         def now(tzinfo=None):
             return datetime.datetime(2025, 3, 15, tzinfo=tzinfo)
