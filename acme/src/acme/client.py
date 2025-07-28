@@ -335,6 +335,12 @@ class ClientV2:
         :param bytes cert_pem: cert as pem file
 
         :returns: Tuple of time to attempt renewal, next time to ask for renewal info
+
+        :raises errors.ARIError: If an error occurs fetching ARI from the
+            server. Explicit exception chaining is used so the original error
+            can be accessed through the __cause__ attribute on the ARIError if
+            desired.
+
         """
         now = datetime.datetime.now()
         # https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3.3
@@ -356,7 +362,10 @@ class ClientV2:
             return None, now + default_retry_after
 
         ari_url = renewal_info_base_url + '/' + _renewal_info_path_component(cert)
-        resp = self.net.get(ari_url, content_type='application/json')
+        try:
+            resp = self.net.get(ari_url, content_type='application/json')
+        except Exception as e:  # pylint: disable=broad-except
+            raise errors.ARIError(now + default_retry_after) from e
         renewal_info: messages.RenewalInfo = messages.RenewalInfo.from_json(resp.json())
 
         start = renewal_info.suggested_window.start # pylint: disable=no-member
