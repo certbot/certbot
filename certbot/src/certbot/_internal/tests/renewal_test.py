@@ -7,7 +7,6 @@ import unittest
 from unittest import mock
 
 import pytest
-import pytz
 
 from acme import challenges
 from certbot import configuration
@@ -225,9 +224,9 @@ class RenewalTest(test_util.ConfigTestCase):
         from certbot._internal import renewal
         acme_client = mock.MagicMock()
         mock_acme_from_config.return_value = acme_client
-        past = datetime.datetime(2025, 3, 19, 0, 0, 0, tzinfo=pytz.UTC)
-        now = datetime.datetime(2025, 4, 19, 0, 0, 0, tzinfo=pytz.UTC)
-        future = datetime.datetime(2025, 4, 19, 12, 0, 0, tzinfo=pytz.UTC)
+        past = datetime.datetime(2025, 3, 19, 0, 0, 0, tzinfo=datetime.timezone.utc)
+        now = datetime.datetime(2025, 4, 19, 0, 0, 0, tzinfo=datetime.timezone.utc)
+        future = datetime.datetime(2025, 4, 19, 12, 0, 0, tzinfo=datetime.timezone.utc)
         mock_datetime.datetime.now.return_value = now
         acme_client.renewal_time.return_value = past, future
 
@@ -296,7 +295,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         ari_server = "http://ari"
         mock_acme = mock.MagicMock()
-        future = datetime.datetime.now(pytz.UTC) + datetime.timedelta(days=100000)
+        future = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=100000)
         mock_acme.renewal_time.return_value = (future, future)
         acme_clients = {}
         acme_clients[ari_server] = mock_acme
@@ -346,7 +345,7 @@ class RenewalTest(test_util.ConfigTestCase):
                     (1420070400, "10 weeks", True), (1420070400, "10 months", True),
                     (1420070400, "10 years", True), (1420070400, "99 months", True),
             ]:
-                sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
+                sometime = datetime.datetime.fromtimestamp(current_time, datetime.timezone.utc)
                 mock_datetime.datetime.now.return_value = sometime
                 mock_renewable_cert.configuration = {"renew_before_expiry": interval}
                 assert renewal.should_autorenew(self.config, mock_renewable_cert, acme_clients) == result, f"at {current_time}, with config '{interval}', ari response in future, expected {result}"
@@ -384,7 +383,7 @@ class RenewalTest(test_util.ConfigTestCase):
                     (1420070400, "10 weeks", True), (1420070400, "10 months", True),
                     (1420070400, "10 years", True), (1420070400, "99 months", True),
             ]:
-                sometime = datetime.datetime.fromtimestamp(current_time, pytz.UTC)
+                sometime = datetime.datetime.fromtimestamp(current_time, datetime.timezone.utc)
                 mock_datetime.datetime.now.return_value = sometime
                 mock_renewable_cert.configuration = {"renew_before_expiry": interval}
                 mock_renewable_cert.server = ari_server
@@ -398,7 +397,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         mock_acme = mock.MagicMock()
         ari_server = "http://ari"
-        future = datetime.datetime.now(pytz.UTC) + datetime.timedelta(seconds=1000)
+        future = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=1000)
         mock_acme.renewal_time.return_value = (future, future)
         acme_clients = {}
         acme_clients[ari_server] = mock_acme

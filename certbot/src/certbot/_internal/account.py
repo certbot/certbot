@@ -16,7 +16,6 @@ from typing import Optional
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import pyrfc3339
-import pytz
 
 from acme import fields as acme_fields
 from acme import messages
@@ -64,7 +63,7 @@ class Account:
         self.regr = regr
         self.meta = self.Meta(
             # pyrfc3339 drops microseconds, make sure __eq__ is sane
-            creation_dt=datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0),
+            creation_dt=datetime.datetime.now(tz=datetime.timezone.utc).replace(microsecond=0),
             creation_host=socket.getfqdn(),
             register_to_eff=None) if meta is None else meta
 

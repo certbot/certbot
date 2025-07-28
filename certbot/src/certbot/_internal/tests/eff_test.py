@@ -6,7 +6,6 @@ from unittest import mock
 
 import josepy
 import pytest
-import pytz
 import requests
 
 from acme import messages
@@ -29,7 +28,7 @@ class SubscriptionTest(test_util.ConfigTestCase):
             meta=account.Account.Meta(
                 creation_host='test.certbot.org',
                 creation_dt=datetime.datetime(
-                    2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC)))
+                    2015, 7, 4, 14, 4, 10, tzinfo=datetime.timezone.utc)))
         self.config.email = 'certbot@example.org'
         self.config.eff_email = None
 
