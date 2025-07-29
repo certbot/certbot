@@ -1,0 +1,25 @@
+[tool.towncrier]
+package = "certbot"
+directory = "newsfragments"
+filename = "certbot/CHANGELOG.md"
+title_format = "## {version} - {project_date}"
+start_string = "Certbot adheres to [Semantic Versioning](https://semver.org/).\n"
+issue_format = "[#{issue}](https://github.com/certbot/certbot/issues/{issue})"
+
+# Our three custom news fragment types, declared in order of how we'd like them
+# to appear in the changelog
+[[tool.towncrier.type]]
+directory = "added"
+name = "Added"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "changed"
+name = "Changed"
+showcontent = true
+
+
+[[tool.towncrier.type]]
+directory = "fixed"
+name = "Fixed"
+showcontent = true
