@@ -50,6 +50,7 @@ dev_extras = [
     'poetry>=1.2.0',
     # allows us to use newer urllib3 https://github.com/python-poetry/poetry-plugin-export/issues/183
     'poetry-plugin-export>=1.9.0',
+    'towncrier',
     'twine',
 ]
 
