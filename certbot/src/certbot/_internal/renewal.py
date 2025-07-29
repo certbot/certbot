@@ -356,11 +356,13 @@ def _ari_renewal_time(config: configuration.NamespaceConfig,
             logger.warning("An error occurred requesting ACME Renewal Information (ARI). If this "
                            "problem persists and you think it's a bug in Certbot, please open an "
                            "issue at https://github.com/certbot/certbot/issues/new/choose.")
+            # While not strictly necessary, we unwrap any ARIErrors here to create slightly
+            # cleaner and easier to read logs
             if isinstance(exception, acme_errors.ARIError) and exception.__cause__ is not None:
-                # While not strictly necessary, we unwrap any ARIErrors here to create slightly
-                # cleaner and easier to read logs
-                exception = exception.__cause__
-            logger.debug("Error while requesting ARI was:", exc_info=exception)
+                exception_for_logs = exception.__cause__
+            else:
+                exception_for_logs = exception
+            logger.debug("Error while requesting ARI was:", exc_info=exception_for_logs)
     else:
         renewal_conf_file = storage.renewal_filename_for_lineagename(config, lineage.lineagename)
         logger.warning("Skipping ARI check because %s has no 'server' field. This issue will not "
