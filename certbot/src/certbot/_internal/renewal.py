@@ -23,7 +23,6 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography import x509
 
 from acme import client as acme_client
-from acme import errors as acme_errors
 
 from certbot import configuration
 from certbot import crypto_util
@@ -350,19 +349,13 @@ def _ari_renewal_time(config: configuration.NamespaceConfig,
             # Attempt to get the ARI-defined renewal time
             if acme:
                 return acme.renewal_time(cert_pem)[0]
-        except Exception as exception:  # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             # We want to stop errors around ARI preventing renewal so we catch all exceptions here
             # with a warning asking users to tell us about any problems they are experiencing
             logger.warning("An error occurred requesting ACME Renewal Information (ARI). If this "
                            "problem persists and you think it's a bug in Certbot, please open an "
                            "issue at https://github.com/certbot/certbot/issues/new/choose.")
-            # While not strictly necessary, we unwrap any ARIErrors here to create slightly
-            # cleaner and easier to read logs
-            if isinstance(exception, acme_errors.ARIError) and exception.__cause__ is not None:
-                exception_for_logs = exception.__cause__
-            else:
-                exception_for_logs = exception
-            logger.debug("Error while requesting ARI was:", exc_info=exception_for_logs)
+            logger.debug("Error while requesting ARI was:", exc_info=True)
     else:
         renewal_conf_file = storage.renewal_filename_for_lineagename(config, lineage.lineagename)
         logger.warning("Skipping ARI check because %s has no 'server' field. This issue will not "

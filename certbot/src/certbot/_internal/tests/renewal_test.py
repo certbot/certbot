@@ -437,18 +437,16 @@ class RenewalTest(test_util.ConfigTestCase):
         mock_rc = mock.MagicMock()
         mock_rc.server = ari_server
         mock_rc.autorenewal_is_enabled.return_value = True
-        expected_error = messages.Error()
-        mock_create_acme.side_effect = expected_error
+        mock_create_acme.side_effect = messages.Error()
         mock_ocsp.return_value = True
 
         with mock.patch('certbot._internal.renewal.open', mock.mock_open(read_data=b'')):
             with mock.patch('certbot._internal.renewal.logger') as mock_logger:
                 assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
         assert mock_renewal_time.call_count == 0
-        # Ensure we logged about skipping the ARI check and what the underlying exception was
+        # Ensure we logged about skipping the ARI check and the underlying exception
         assert any('ARI' in call.args[0] for call in mock_logger.warning.call_args_list)
-        assert any(call.kwargs.get('exc_info') is expected_error
-                   for call in mock_logger.debug.call_args_list)
+        assert any(call.kwargs.get('exc_info') for call in mock_logger.debug.call_args_list)
 
 
     @mock.patch('certbot._internal.storage.RenewableCert.ocsp_revoked')
@@ -457,8 +455,6 @@ class RenewalTest(test_util.ConfigTestCase):
 
         mock_acme = mock.MagicMock()
         ari_error = acme_errors.ARIError('some error', datetime.datetime.now())
-        underlying_error = ValueError()
-        ari_error.__cause__ = underlying_error
         ari_server = 'http://ari'
         mock_acme.renewal_time.side_effect = ari_error
         acme_clients = {}
@@ -468,14 +464,12 @@ class RenewalTest(test_util.ConfigTestCase):
         mock_rc.autorenewal_is_enabled.return_value = True
         mock_ocsp.return_value = True
 
-
         with mock.patch('certbot._internal.renewal.open', mock.mock_open(read_data=b'')):
             with mock.patch('certbot._internal.renewal.logger') as mock_logger:
                 assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
-        # Ensure we logged about skipping the ARI check and what the underlying exception was
+        # Ensure we logged about skipping the ARI check and the underlying exception
         assert any('ARI' in call.args[0] for call in mock_logger.warning.call_args_list)
-        assert any(call.kwargs.get('exc_info') is underlying_error
-                   for call in mock_logger.debug.call_args_list)
+        assert any(call.kwargs.get('exc_info') for call in mock_logger.debug.call_args_list)
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
