@@ -25,7 +25,7 @@ def certbot_test(certbot_args: List[str], directory_url: Optional[str], http_01_
     :param list certbot_args: the arguments to pass to the certbot executable
     :param str directory_url: URL of the ACME directory server to use
     :param int http_01_port: port for the HTTP-01 challenges
-    :param int https_port: port Nginx expects will serving is HTTPS
+    :param int https_port: port Nginx expects will serve HTTPS
     :param str config_dir: certbot configuration directory to use
     :param str workspace: certbot current directory to use
     :param bool force_renew: set False to not force renew existing certificates (default: True)
