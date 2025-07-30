@@ -82,7 +82,7 @@ tmpvenv=$(mktemp -d)
 python3 -m venv "$tmpvenv"
 . $tmpvenv/bin/activate
 # update packaging tools to their pinned versions
-tools/pip_install.py virtualenv
+tools/pip_install.py towncrier virtualenv
 
 root_without_le="$version.$$"
 root="$RELEASE_DIR/le.$root_without_le"
@@ -98,7 +98,7 @@ git checkout "$RELEASE_BRANCH"
 
 # Update changelog. `--yes` automatically clears out older newsfragments,
 # and all of towncrier's changes are staged for commit when it's done
-../../venv/bin/towncrier build --version "$version" --yes
+towncrier build --version "$version" --yes
 git commit -m "Update changelog for $version release"
 
 for pkg_dir in $SUBPKGS certbot-compatibility-test
