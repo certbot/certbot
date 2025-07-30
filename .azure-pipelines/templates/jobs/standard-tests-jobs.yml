@@ -41,6 +41,9 @@ jobs:
         nginxroundtrip:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: nginxroundtrip
+        validate-changelog:
+          IMAGE_NAME: ubuntu-22.04
+          TOXENV: validate-changelog
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
