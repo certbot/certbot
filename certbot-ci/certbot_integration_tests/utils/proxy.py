@@ -9,7 +9,7 @@ from typing import Mapping
 from typing import Type
 
 import requests
-
+import urllib.parse
 from certbot_integration_tests.utils.misc import GracefulTCPServer
 
 
@@ -21,7 +21,15 @@ def _create_proxy(mapping: Mapping[str, str]) -> Type[BaseHTTPServer.BaseHTTPReq
             headers = {key.lower(): value for key, value in self.headers.items()}
             backend = [backend for pattern, backend in mapping.items()
                        if re.match(pattern, headers['host'])][0]
-            response = requests.get(backend + self.path, headers=headers, timeout=10)
+             # Validate that self.path is a safe path (starts with /, no .., no spaces, etc.)
+            if not re.match(r'^/[a-zA-Z0-9_\-./]*$', self.path) or '..' in self.path:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(b'Invalid path')
+                return
+            # Safely join backend and path
+            url = urllib.parse.urljoin(backend, self.path)
+            response = requests.get(url, headers=headers, timeout=10)
 
             self.send_response(response.status_code)
             for key, value in response.headers.items():
