@@ -1,0 +1,1 @@
+Certbot now always uses the server value from the renewal configuration file for ARI checks instead of the server value from the current invocation of Certbot. This helps prevent ARI requests from going to the wrong server if the user changes CAs.
