@@ -5,6 +5,8 @@ filename = "certbot/CHANGELOG.md"
 title_format = "## {version} - {project_date}"
 start_string = "Certbot adheres to [Semantic Versioning](https://semver.org/).\n"
 issue_format = "[#{issue}](https://github.com/certbot/certbot/issues/{issue})"
+issue_pattern = "\\d+"
+ignore = []
 
 # Our three custom news fragment types, declared in order of how we'd like them
 # to appear in the changelog
