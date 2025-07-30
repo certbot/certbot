@@ -1,4 +1,5 @@
 """ACME errors."""
+import datetime
 import typing
 from typing import Any
 from typing import List
@@ -149,3 +150,10 @@ class ConflictError(ClientError):
 
 class WildcardUnsupportedError(Error):
     """Error for when a wildcard is requested but is unsupported by ACME CA."""
+
+
+class ARIError(ClientError):
+    """An error occurred during an ARI request and we want to suggest a Retry-After time."""
+    def __init__(self, message: str, retry_after: datetime.datetime) -> None:
+        super().__init__(message, retry_after)
+        self.retry_after = retry_after
