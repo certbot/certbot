@@ -1,1 +1,2 @@
-Catches and ignores errors during the directory fetch for ARI checking so that these errors do not hinder the actual certificate issuance.
+Catches and ignores errors during the directory fetch for ARI checking so that
+these errors do not hinder the actual certificate issuance.
