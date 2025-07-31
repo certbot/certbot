@@ -116,6 +116,8 @@ parts:
       python3 -m venv "${CRAFT_PART_INSTALL}"
       "${CRAFT_PART_INSTALL}/bin/python3" "${CRAFT_PART_SRC}/tools/pipstrap.py"
       craftctl default
+      # Workaround for misconfigured pyvenv.cfg; see discussion on snapcraft forum for more info
+      # https://forum.snapcraft.io/t/upgrading-classic-snap-to-core24-using-snapcraft-8-3-causes-python-3-12-errors-at-runtime/
       sed -i "${CRAFT_PART_INSTALL}/pyvenv.cfg" \
           -e 's@^home = '"${CRAFT_PART_INSTALL}"'/usr/bin$@home = /snap/certbot/current/usr/bin@g'
     override-pull: |
