@@ -32,7 +32,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         command = ['--authenticator', 'dns-rfc2136', '--dns-rfc2136-propagation-seconds', '2']
         command.extend(args)
         return certbot_call.certbot_test(
-            command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
+            command, self.directory_url, self.http_01_port, self.https_port,
             self.config_dir, self.workspace, force_renew=True)
 
     @contextmanager

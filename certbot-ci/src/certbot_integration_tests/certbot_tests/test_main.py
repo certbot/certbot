@@ -96,17 +96,14 @@ def test_prepare_plugins(context: IntegrationTestsContext) -> None:
 
 def test_http_01(context: IntegrationTestsContext) -> None:
     """Test the HTTP-01 challenge using standalone plugin."""
-    # We start a server listening on the port for the
-    # TLS-SNI challenge to prevent regressions in #3601.
-    with misc.create_http_server(context.tls_alpn_01_port):
-        certname = context.get_domain('le2')
-        context.certbot([
-            '--domains', certname, '--preferred-challenges', 'http-01', 'run',
-            '--cert-name', certname,
-            '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
-            '--post-hook', misc.echo('wtf_post', context.hook_probe),
-            '--deploy-hook', misc.echo('deploy', context.hook_probe),
-        ])
+    certname = context.get_domain('le2')
+    context.certbot([
+        '--domains', certname, '--preferred-challenges', 'http-01', 'run',
+        '--cert-name', certname,
+        '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
+        '--post-hook', misc.echo('wtf_post', context.hook_probe),
+        '--deploy-hook', misc.echo('deploy', context.hook_probe),
+    ])
 
     assert_hook_execution(context.hook_probe, 'deploy')
     assert_saved_renew_hook(context.config_dir, certname)

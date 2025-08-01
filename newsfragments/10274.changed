@@ -1,0 +1,6 @@
+Removed a number of deprecated classes/interfaces
+* Removed `acme.challenges.TLSALPN01Response`
+* Removed `acme.challenges.TLSALPN01`
+* Removed parameter `alpn_protocols` from `acme.crypto_util.probe_sni`
+* Removed `acme.standalone.TLSServer`
+* Removed `acme.standalone.TLSALPN01Server`
