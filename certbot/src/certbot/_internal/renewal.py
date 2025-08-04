@@ -360,7 +360,8 @@ def _ari_renewal_time(config: configuration.NamespaceConfig,
                        "problem persists and you think it's a bug in Certbot, please open an "
                        "issue at https://github.com/certbot/certbot/issues/new/choose.")
         logger.debug("Error while requesting ARI was:", exc_info=True)
-        return None
+
+    return None
 
 
 def _default_renewal_time(cert_pem: bytes) -> datetime.datetime:
