@@ -225,6 +225,8 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
     :rtype: cryptography.x509.Certificate
 
     """
+    warnings.warn("probe_sni is deprecated and will be removed in an upcoming release",
+                      DeprecationWarning)
     context = SSL.Context(method)
     context.set_timeout(timeout)
 
