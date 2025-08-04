@@ -389,14 +389,15 @@ def should_autorenew(config: configuration.NamespaceConfig,
                      acme_clients: Dict[str, acme_client.ClientV2]) -> bool:
     """Should we now try to autorenew the most recent cert version?
 
-    If ACME Renewal Info (ARI) is available in the directory, check that first,
-    and renew if ARI indicates it is time, or if we are within the default
-    renweal window.
+    If automatic renewal is disabled for the lineage, this function
+    immediately returns False.
 
-    If the certificate has an OCSP URL, renew if it is revoked.
-
-    If neither of the above is true, but the "renew_before_expiry" config
-    indicates it is time, renew. Otherwise, don't.
+    Otherwise, if any of ACME Renewal Info (ARI), OCSP, or the
+    renew_before_expiry config option indicates we should renew, we
+    return True. If none of those values say we should renew and at
+    least one of ARI or renew_before_expiry has an available value, we
+    return False. We otherwise decide whether to renew based on the
+    certificate's remaining lifetime.
 
     Note that this examines the numerically most recent cert version,
     not the currently deployed version.
@@ -425,9 +426,7 @@ def should_autorenew(config: configuration.NamespaceConfig,
         logger.debug("Should renew, certificate is revoked.")
         return True
 
-    # The "renew_before_expiry" config field can make us renew earlier than the
-    # default. If ARI response was None and no "renew_before_expiry" is set,
-    # check against the default.
+    # If the renew_before_expiry config field is set, check if it says we should renew
     config_interval = lineage.configuration.get("renew_before_expiry")
     if config_interval is not None:
         notAfter = crypto_util.notAfter(cert)
@@ -436,7 +435,7 @@ def should_autorenew(config: configuration.NamespaceConfig,
                             "expiry %s.", config_interval,
                             notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
             return True
-    # Only use the default if we don't have an ARI response
+    # Only use the default if we don't have an ARI or renew_before_expiry value
     elif renewal_time is None:
         default_renewal_time = _default_renewal_time(cert_pem)
         if now > default_renewal_time:
