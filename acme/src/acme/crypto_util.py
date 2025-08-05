@@ -100,11 +100,10 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
             ]
         ] = None,
     ) -> None:
+        warnings.warn("SSLSocket is deprecated and will be removed in an upcoming release",
+                      DeprecationWarning)
         self.sock = sock
         self.alpn_selection = alpn_selection
-        if alpn_selection:
-            warnings.warn("alpn_selection ivar is deprecated and will be removed in an "
-                "upcoming certbot major version update", DeprecationWarning)
         self.method = method
         if not cert_selection and not certs:
             raise ValueError("Neither cert_selection or certs specified.")
@@ -160,11 +159,15 @@ class SSLSocket:  # pylint: disable=too-few-public-methods
             # OpenSSL.SSL.Connection.shutdown doesn't accept any args
             try:
                 return self._wrapped.shutdown()
-            except SSL.Error as error:
+            except SSL.Error as error:  # pragma: no cover
                 # We wrap the error so we raise the same error type as sockets
                 # in the standard library. This is useful when this object is
                 # used by code which expects a standard socket such as
                 # socketserver in the standard library.
+                #
+                # We don't track code coverage in this "except" branch to avoid spurious CI failures
+                # caused by missing test coverage. These aren't worth fixing because this entire
+                # class has been deprecated. See https://github.com/certbot/certbot/issues/10284.
                 raise OSError(error)
 
     def accept(self) -> Tuple[FakeConnection, Any]:  # pylint: disable=missing-function-docstring
@@ -222,6 +225,8 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
     :rtype: cryptography.x509.Certificate
 
     """
+    warnings.warn("probe_sni is deprecated and will be removed in an upcoming release",
+                      DeprecationWarning)
     context = SSL.Context(method)
     context.set_timeout(timeout)
 

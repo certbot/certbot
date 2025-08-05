@@ -265,8 +265,15 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
 
     if not lineage.ensure_deployed():
         return "reinstall", lineage
-    if is_key_type_changing or renewal.should_renew(config, lineage):
+    if is_key_type_changing:
         return "renew", lineage
+
+    acme_clients = {}
+    acme_clients[config.server] = client.create_acme_client(config)
+
+    if renewal.should_renew(config, lineage, acme_clients):
+        return "renew", lineage
+
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
         # reinstalled without further prompting.
@@ -1090,7 +1097,7 @@ def install(config: configuration.NamespaceConfig,
             custom_prompt=certname_question)[0]
 
     if not enhancements.are_supported(config, installer):
-        raise errors.NotSupportedError("One ore more of the requested enhancements "
+        raise errors.NotSupportedError("One or more of the requested enhancements "
                                        "are not supported by the selected installer")
     # If cert-path is defined, populate missing (ie. not overridden) values.
     # Unfortunately this can't be done in argument parser, as certificate
@@ -1214,7 +1221,7 @@ def enhance(config: configuration.NamespaceConfig,
         return str(e)
 
     if not enhancements.are_supported(config, installer):
-        raise errors.NotSupportedError("One ore more of the requested enhancements "
+        raise errors.NotSupportedError("One or more of the requested enhancements "
                                        "are not supported by the selected installer")
 
     certname_question = ("Which certificate would you like to use to enhance "
@@ -1358,11 +1365,11 @@ def revoke(config: configuration.NamespaceConfig,
         crypto_util.verify_cert_matches_priv_key(config.cert_path, config.key_path)
         with open(config.key_path, 'rb') as f:
             key = jose.JWK.load(f.read())
-        acme = client.acme_from_config_key(config, key)
+        acme = client.create_acme_client(config, key)
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", config.cert_path)
         acc, _ = _determine_account(config)
-        acme = client.acme_from_config_key(config, acc.key, acc.regr)
+        acme = client.create_acme_client(config, acc.key, acc.regr)
 
     with open(config.cert_path, 'rb') as f:
         cert = x509.load_pem_x509_certificate(f.read())
@@ -1414,7 +1421,7 @@ def run(config: configuration.NamespaceConfig,
 
     # Preflight check for enhancement support by the selected installer
     if not enhancements.are_supported(config, installer):
-        raise errors.NotSupportedError("One ore more of the requested enhancements "
+        raise errors.NotSupportedError("One or more of the requested enhancements "
                                        "are not supported by the selected installer")
 
     # TODO: Handle errors from _init_le_client?
@@ -1613,13 +1620,7 @@ def renew(config: configuration.NamespaceConfig,
     :rtype: None
 
     """
-
-    renewed_domains: List[str] = []
-    failed_domains: List[str] = []
-    try:
-        renewed_domains, failed_domains = renewal.handle_renewal_request(config)
-    finally:
-        hooks.run_saved_post_hooks(renewed_domains, failed_domains)
+    renewal.handle_renewal_request(config)
 
 
 def make_or_verify_needed_dirs(config: configuration.NamespaceConfig) -> None:
@@ -1865,6 +1866,10 @@ def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
+
+    if sys.version_info[:2] == (3, 9):
+        logger.warning("Python 3.9 support will be dropped in the next planned release "
+                       "of Certbot - please upgrade your Python version.")
 
     with make_displayer(config) as displayer:
         display_obj.set_display(displayer)

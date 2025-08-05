@@ -1,4 +1,6 @@
 """Support for standalone client challenge solvers. """
+from __future__ import annotations
+
 import collections
 import functools
 import http.client as http_client
@@ -26,9 +28,15 @@ logger = logging.getLogger(__name__)
 
 
 class TLSServer(socketserver.TCPServer):
-    """Generic TLS Server."""
+    """Generic TLS Server
+
+    .. deprecated:: 4.1.0
+
+    """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        warnings.warn("TLSServer is deprecated and will be removed in an upcoming release",
+                      DeprecationWarning)
         self.ipv6 = kwargs.pop("ipv6", False)
         if self.ipv6:
             self.address_family = socket.AF_INET6
@@ -41,10 +49,7 @@ class TLSServer(socketserver.TCPServer):
 
     def _wrap_sock(self) -> None:
         with warnings.catch_warnings():
-            warnings.filterwarnings(
-                'ignore',
-                message='alpn_selection ivar is deprecated'
-            )
+            warnings.filterwarnings('ignore', 'SSLSocket is deprecated')
             self.socket = cast(socket.socket, crypto_util.SSLSocket(
                 self.socket, cert_selection=self._cert_selection,
                 alpn_selection=getattr(self, '_alpn_selection', None),
@@ -169,9 +174,11 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
         # We don't need to implement a request handler here because the work
         # (including logging) is being done by wrapped socket set up in the
         # parent TLSServer class.
-        TLSServer.__init__(
-            self, server_address, socketserver.BaseRequestHandler, certs=certs,
-            ipv6=ipv6)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "TLSServer is deprecated")
+            TLSServer.__init__(
+                self, server_address, socketserver.BaseRequestHandler, certs=certs,
+                ipv6=ipv6)
         self.challenge_certs = challenge_certs
 
     def _cert_selection(self, connection: SSL.Connection) -> Optional[crypto_util._KeyAndCert]:
@@ -214,7 +221,8 @@ class HTTPServer(BaseHTTPServer.HTTPServer):
 class HTTP01Server(HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
 
-    def __init__(self, server_address: Tuple[str, int], resources: Set[challenges.HTTP01],
+    def __init__(self, server_address: Tuple[str, int],
+                 resources: Set[HTTP01RequestHandler.HTTP01Resource],
                  ipv6: bool = False, timeout: int = 30) -> None:
         super().__init__(
             server_address, HTTP01RequestHandler.partial_init(
@@ -309,8 +317,8 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                          self.path)
 
     @classmethod
-    def partial_init(cls, simple_http_resources: Set[challenges.HTTP01],
-                     timeout: int) -> 'functools.partial[HTTP01RequestHandler]':
+    def partial_init(cls, simple_http_resources: Set[HTTP01RequestHandler.HTTP01Resource],
+                     timeout: int) -> functools.partial[HTTP01RequestHandler]:
         """Partially initialize this handler.
 
         This is useful because `socketserver.BaseServer` takes

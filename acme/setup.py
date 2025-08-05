@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-version = '4.1.0.dev0'
+version = '5.0.0.dev0'
 
 install_requires = [
     'cryptography>=43.0.0',
@@ -10,7 +10,6 @@ install_requires = [
     # relaxed to >=24.0.0 if needed.
     'PyOpenSSL>=25.0.0',
     'pyrfc3339',
-    'pytz>=2019.3',
     'requests>=2.20.0',
 ]
 

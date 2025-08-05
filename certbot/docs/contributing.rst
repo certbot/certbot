@@ -44,11 +44,11 @@ Install and configure the OS system dependencies required to run Certbot.
 
    # For APT-based distributions (e.g. Debian, Ubuntu ...)
    sudo apt update
-   sudo apt install python3-venv libaugeas-dev
+   sudo apt install python3-dev python3-venv libaugeas-dev gcc
    # For RPM-based distributions (e.g. Fedora, CentOS ...)
    # NB1: old distributions will use yum instead of dnf
    # NB2: RHEL-based distributions use python3X instead of python3 (e.g. python38)
-   sudo dnf install python3 augeas-devel
+   sudo dnf install python3 python3-devel augeas-devel gcc
    # For macOS installations with Homebrew already installed and configured
    # NB: CFLAGS are needed to compile and link to Augeas installed through
    #     Homebrew and some of our developer scripts expect GNU coreutils be first in

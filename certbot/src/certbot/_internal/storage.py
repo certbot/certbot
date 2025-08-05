@@ -22,7 +22,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
-import pytz
 
 import certbot
 from certbot import configuration
@@ -31,7 +30,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot import ocsp
 from certbot import util
-from certbot._internal import constants
 from certbot._internal import error_handler
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import filesystem
@@ -84,16 +82,6 @@ def cert_path_for_cert_name(config: configuration.NamespaceConfig, cert_name: st
         cert_name_implied_conf, encoding='utf-8', default_encoding='utf-8')["fullchain"]
 
 
-def config_with_defaults(config: Optional[configuration.NamespaceConfig] = None
-                         ) -> configobj.ConfigObj:
-    """Merge supplied config, if provided, on top of builtin defaults."""
-    defaults_copy = configobj.ConfigObj(
-        constants.RENEWER_DEFAULTS, encoding='utf-8', default_encoding='utf-8')
-    defaults_copy.merge(config if config is not None else configobj.ConfigObj(
-        encoding='utf-8', default_encoding='utf-8'))
-    return defaults_copy
-
-
 def add_time_interval(base_time: datetime.datetime, interval: str,
                       textparser: parsedatetime.Calendar = parsedatetime.Calendar()
                       ) -> datetime.datetime:
@@ -115,7 +103,7 @@ def add_time_interval(base_time: datetime.datetime, interval: str,
         interval += " days"
 
     # try to use the same timezone, but fallback to UTC
-    tzinfo = base_time.tzinfo or pytz.UTC
+    tzinfo = base_time.tzinfo or datetime.timezone.utc
 
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
@@ -152,10 +140,6 @@ def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
     for k in config["renewalparams"]:
         if k not in relevant_data:
             del config["renewalparams"][k]
-
-    if "renew_before_expiry" not in config:
-        default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
-        config.initial_comment = ["renew_before_expiry = " + default_interval]
 
     # TODO: add human-readable comments explaining other available
     #       parameters
@@ -469,20 +453,19 @@ class RenewableCert(interfaces.RenewableCert):
         self.cli_config = cli_config
         self._lineagename = lineagename_for_filename(config_filename)
 
-        # self.configuration should be used to read parameters that
-        # may have been chosen based on default values from the
-        # systemwide renewal configuration; self.configfile should be
-        # used to make and save changes.
         try:
             self.configfile = configobj.ConfigObj(
                 config_filename, encoding='utf-8', default_encoding='utf-8')
         except configobj.ConfigObjError:
             raise errors.CertStorageError(
                 "error parsing {0}".format(config_filename))
-        # TODO: Do we actually use anything from defaults and do we want to
-        #       read further defaults from the systemwide renewal configuration
-        #       file at this stage?
-        self.configuration = config_with_defaults(self.configfile)
+
+        # These are equivalent. Previously we were adding the unused default
+        # value of renew_before_expiry. Keeping both names because cleaning
+        # out the variables from callers is annoying. Ideally new code should
+        # use self.configfile so we can remove self.configuration at some point,
+        # but either should work currently.
+        self.configuration = self.configfile
 
         if not all(x in self.configuration for x in ALL_FOUR):
             raise errors.CertStorageError(
@@ -977,58 +960,6 @@ class RenewableCert(interfaces.RenewableCert):
         return ("autorenew" not in self.configuration["renewalparams"] or
                 self.configuration["renewalparams"].as_bool("autorenew"))
 
-    def should_autorenew(self) -> bool:
-        """Should we now try to autorenew the most recent cert version?
-
-        This is a policy question and does not only depend on whether
-        the cert is expired. (This considers whether autorenewal is
-        enabled, whether the cert is revoked, and whether the time
-        interval for autorenewal has been reached.)
-
-        Note that this examines the numerically most recent cert version,
-        not the currently deployed version.
-
-        :returns: whether an attempt should now be made to autorenew the
-            most current cert version in this lineage
-        :rtype: bool
-
-        """
-        if self.autorenewal_is_enabled():
-            # Consider whether to attempt to autorenew this cert now
-
-            # Renewals on the basis of revocation
-            if self.ocsp_revoked(self.latest_common_version()):
-                logger.debug("Should renew, certificate is revoked.")
-                return True
-
-            cert = self.version("cert", self.latest_common_version())
-            notBefore = crypto_util.notBefore(cert)
-            notAfter = crypto_util.notAfter(cert)
-            lifetime = notAfter - notBefore
-
-            config_interval = self.configuration.get("renew_before_expiry")
-            now = datetime.datetime.now(pytz.UTC)
-            if config_interval is not None and notAfter < add_time_interval(now, config_interval):
-                logger.debug("Should renew, less than %s before certificate "
-                             "expiry %s.", config_interval,
-                             notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
-                return True
-
-            # No config for "renew_before_expiry", provide default behavior.
-            # For most certs, renew with 1/3 of certificate lifetime remaining.
-            # For short lived certificates, renew at 1/2 of certificate lifetime.
-            default_interval = lifetime / 3
-            if lifetime.total_seconds() < 10 * 86400:
-                default_interval = lifetime / 2
-            remaining_time = notAfter - now
-            if remaining_time < default_interval:
-                logger.debug("Should renew, less than %ss before certificate "
-                             "expiry %s.", default_interval,
-                             notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
-                return True
-
-        return False
-
     @classmethod
     def new_lineage(cls, lineagename: str, cert: bytes, privkey: bytes, chain: bytes,
                     cli_config: configuration.NamespaceConfig) -> "RenewableCert":
@@ -1241,7 +1172,7 @@ class RenewableCert(interfaces.RenewableCert):
         # Update renewal config file
         self.configfile = update_configuration(
             self.lineagename, self.archive_dir, symlinks, cli_config)
-        self.configuration = config_with_defaults(self.configfile)
+        self.configuration = self.configfile
 
         return target_version
 
@@ -1256,7 +1187,7 @@ class RenewableCert(interfaces.RenewableCert):
         # Update renewal config file
         self.configfile = update_configuration(
             self.lineagename, self.archive_dir, symlinks, cli_config)
-        self.configuration = config_with_defaults(self.configfile)
+        self.configuration = self.configfile
 
     def truncate(self, num_prior_certs_to_keep: int = 5) -> None:
         """Delete unused historical certificate, chain and key items from the lineage.

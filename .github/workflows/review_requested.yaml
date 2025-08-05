@@ -1,0 +1,16 @@
+name: Review Requested
+
+on:
+  pull_request_target:
+    types: [review_requested]
+jobs:
+  send-mattermost-message:
+    # Don't notify for the interim step of certbot/eff-devs being assigned
+    if: ${{ github.event.requested_reviewer.login != ''}}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: mattermost/action-mattermost-notify@master
+      with:
+        MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_ASSIGN_WEBHOOK }}
+        TEXT: >
+            Review requested from ${{ github.event.requested_reviewer.login }} for "${{ github.event.pull_request.title }}": ${{ github.event.pull_request.html_url }}

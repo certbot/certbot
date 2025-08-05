@@ -6,7 +6,6 @@ from unittest import mock
 
 import josepy as jose
 import pytest
-import pytz
 
 from acme import messages
 from certbot import errors
@@ -27,7 +26,7 @@ class AccountTest(unittest.TestCase):
         self.meta = Account.Meta(
             creation_host="test.certbot.org",
             creation_dt=datetime.datetime(
-                2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
+                2015, 7, 4, 14, 4, 10, tzinfo=datetime.timezone.utc))
         self.acc = Account(self.regr, KEY, self.meta)
         self.regr.__repr__ = mock.MagicMock(return_value="i_am_a_regr")
 
@@ -111,7 +110,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         meta = Account.Meta(
             creation_host="test.example.org",
             creation_dt=datetime.datetime(
-                2021, 1, 5, 14, 4, 10, tzinfo=pytz.UTC))
+                2021, 1, 5, 14, 4, 10, tzinfo=datetime.timezone.utc))
         self.acc = Account(
             regr=messages.RegistrationResource(
                 uri=None, body=messages.Registration()),

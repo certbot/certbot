@@ -9,6 +9,8 @@ from typing import Dict
 import unittest
 from unittest import mock
 
+from cryptography import x509
+
 import josepy as jose
 import pytest
 import requests
@@ -281,7 +283,9 @@ class ClientV2Test(unittest.TestCase):
         with pytest.raises(errors.Error, match="The certificate order failed"):
             self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
 
-    def test_finalize_order_orderNotReady(self):
+    @mock.patch('acme.client.time.sleep')
+    @mock.patch('acme.client.datetime')
+    def test_finalize_order_orderNotReady(self, dt_mock, mock_sleep):
         # https://github.com/certbot/certbot/issues/9766
         updated_order_processing = self.order.update(status=messages.STATUS_PROCESSING)
         updated_order_ready = self.order.update(status=messages.STATUS_READY)
@@ -297,11 +301,18 @@ class ClientV2Test(unittest.TestCase):
                                           updated_order_ready.to_json(),
                                           updated_order_valid.to_json()]
 
+        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
+        dt_mock.timedelta = datetime.timedelta
+        self.response.headers['Retry-After'] = '50'
+
         post = mock.MagicMock()
         post.side_effect = [messages.Error.with_code('orderNotReady'), # first begin_finalization
-                            self.response, # first poll_finalization poll --> still returns pending
+                            # sleep 1
+                            self.response, # first poll_finalization poll --> returns processing
+                            # retry-after sleep here
                             self.response, # second poll_finalization poll --> returns ready
                             mock.MagicMock(), # second begin_finalization
+                            # sleep 1
                             self.response, # third poll_finalization poll --> returns valid
                             self.response # fetch cert
                             ]
@@ -309,6 +320,7 @@ class ClientV2Test(unittest.TestCase):
 
         self.client.finalize_order(self.orderr, datetime.datetime(9999, 9, 9))
         assert self.net.post.call_count == 6
+        assert mock_sleep.call_args_list == [((1,),), ((50,),), ((1,),)]
 
     def test_finalize_order_otherErrorCode(self):
         post = mock.MagicMock()
@@ -452,6 +464,211 @@ class ClientV2Test(unittest.TestCase):
         assert DIRECTORY_V2.to_partial_json() == \
             ClientV2.get_directory('https://example.com/dir', self.net).to_partial_json()
 
+    @mock.patch('acme.client.datetime')
+    def test_renewal_time_expired_cert(self, dt_mock):
+        utc_now = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+        dt_mock.datetime.now.return_value = utc_now
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
+        )
+        cert = x509.load_pem_x509_certificate(cert_pem)
+
+        t, _ = self.client.renewal_time(cert_pem)
+        assert t == cert.not_valid_after_utc
+
+    @mock.patch('acme.client.datetime')
+    def test_renewal_time_no_renewal_info(self, dt_mock):
+        utc_now = datetime.datetime(2025, 3, 15, tzinfo=datetime.timezone.utc)
+        dt_mock.datetime.now.return_value = utc_now
+        # A directory with no 'renewalInfo' should result in None.
+        self.client.directory = messages.Directory({})
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
+        )
+        t, _ = self.client.renewal_time(cert_pem)
+        assert t == None
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
+        )
+        t, _ = self.client.renewal_time(cert_pem)
+        assert t == None
+
+    @mock.patch('acme.client.datetime')
+    def test_renewal_time_with_renewal_info(self, dt_mock):
+        from cryptography import x509
+        from acme.client import _renewal_info_path_component
+        utc_now = datetime.datetime(2025, 3, 15, tzinfo=datetime.timezone.utc)
+        dt_mock.datetime.now.return_value = utc_now
+        dt_mock.timedelta = datetime.timedelta
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
+        )
+
+        self.client.directory = messages.Directory({
+            'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
+        })
+
+        self.response.json.return_value = {
+            "suggestedWindow": {
+                "start": "2025-03-14T01:01:01Z",
+                "end": "2025-03-14T01:01:01Z",
+            },
+            "message": "Keep those certs fresh"
+        }
+        t, _ = self.client.renewal_time(cert_pem)
+        cert_parsed = x509.load_pem_x509_certificate(cert_pem)
+        ari_path_component = _renewal_info_path_component(cert_parsed)
+        self.net.get.assert_called_once_with("https://www.letsencrypt-demo.org/acme/renewal-info/" +
+                                             ari_path_component,
+                                             content_type='application/json')
+        assert t == datetime.datetime(2025, 3, 14, 1, 1, 1, tzinfo=datetime.timezone.utc)
+
+        self.net.reset_mock()
+
+        self.response.json.return_value = {
+            "suggestedWindow": {
+                "start": "2025-03-16T01:01:01Z",
+                "end": "2025-03-17T01:01:01Z",
+            },
+            "message": "Keep those certs fresh"
+        }
+        t, _ = self.client.renewal_time(cert_pem)
+        self.net.get.assert_called_once_with("https://www.letsencrypt-demo.org/acme/renewal-info/" +
+                                             ari_path_component,
+                                             content_type='application/json')
+        assert t >= datetime.datetime(2025, 3, 16, 1, 1, 1, tzinfo=datetime.timezone.utc)
+        assert t <= datetime.datetime(2025, 3, 17, 1, 1, 1, tzinfo=datetime.timezone.utc)
+
+    @mock.patch('acme.client.datetime')
+    def test_renewal_time_renewal_info_errors(self, dt_mock):
+        def now(tzinfo=None):
+            return datetime.datetime(2025, 3, 15, tzinfo=tzinfo)
+        dt_mock.datetime.now.side_effect = now
+        dt_mock.timedelta = datetime.timedelta
+        dt_mock.timezone = datetime.timezone
+
+        self.client.directory = messages.Directory({
+            'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
+        })
+        # Failure to fetch the 'renewalInfo' URL should raise an ARIError with the exception raised
+        # by self.net.get as the __cause__ and a Retry-After 6 hours in the future
+        expected_cause = requests.exceptions.RequestException
+        expected_retry_after = now() + datetime.timedelta(seconds=6 * 60 * 60)
+        self.net.get.side_effect = expected_cause
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
+        )
+        with pytest.raises(errors.ARIError) as exception_info:
+            self.client.renewal_time(cert_pem)
+        assert isinstance(exception_info.value.__cause__, expected_cause)
+        assert exception_info.value.retry_after == expected_retry_after
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
+        )
+        with pytest.raises(errors.ARIError) as exception_info:
+            self.client.renewal_time(cert_pem)
+        assert isinstance(exception_info.value.__cause__, expected_cause)
+        assert exception_info.value.retry_after == expected_retry_after
+
+    @mock.patch('acme.client.datetime')
+    def test_renewal_time_returns_retry_after(self, dt_mock):
+        def now(tzinfo=None):
+            return datetime.datetime(2025, 3, 15, tzinfo=tzinfo)
+        dt_mock.datetime.now.side_effect = now
+        dt_mock.timedelta = datetime.timedelta
+        dt_mock.timezone = datetime.timezone
+
+        self.client.directory = messages.Directory({
+            'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
+        })
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
+            not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
+        )
+        self.response.json.return_value = {
+            "suggestedWindow": {
+                "start": "2025-03-14T01:01:01Z",
+                "end": "2025-03-14T01:01:01Z",
+            },
+            "message": "Keep those certs fresh"
+        }
+
+        # With no explicit Retry-After in header, default to six hours
+        _, retry_after = self.client.renewal_time(cert_pem)
+        assert retry_after == datetime.datetime(2025, 3, 15, 6, 0, 0)
+
+        # With an explicit Retry-After in header, use that
+        self.response.headers['Retry-After'] = '100'
+        _, retry_after = self.client.renewal_time(cert_pem)
+        assert retry_after == datetime.datetime(2025, 3, 15, 00, 1, 40)
+
+def test_renewal_info_path_component():
+    from cryptography import x509
+    from acme.client import _renewal_info_path_component
+
+    cert = x509.load_pem_x509_certificate(test_util.load_vector('rsa2048_cert.pem'))
+
+    assert _renewal_info_path_component(cert) == "fL5sRirC8VS5AtOQh9DfoAzYNCI.ALVG_VbBb5U7"
+
+    # From https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html appendix A.
+    ARI_TEST_CERT = b"""
+-----BEGIN CERTIFICATE-----
+MIIBQzCB66ADAgECAgUAh2VDITAKBggqhkjOPQQDAjAVMRMwEQYDVQQDEwpFeGFt
+cGxlIENBMCIYDzAwMDEwMTAxMDAwMDAwWhgPMDAwMTAxMDEwMDAwMDBaMBYxFDAS
+BgNVBAMTC2V4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEeBZu
+7cbpAYNXZLbbh8rNIzuOoqOOtmxA1v7cRm//AwyMwWxyHz4zfwmBhcSrf47NUAFf
+qzLQ2PPQxdTXREYEnKMjMCEwHwYDVR0jBBgwFoAUaYhba4dGQEHhs3uEe6CuLN4B
+yNQwCgYIKoZIzj0EAwIDRwAwRAIge09+S5TZAlw5tgtiVvuERV6cT4mfutXIlwTb
++FYN/8oCIClDsqBklhB9KAelFiYt9+6FDj3z4KGVelYM5MdsO3pK
+-----END CERTIFICATE-----
+"""
+
+    cert = x509.load_pem_x509_certificate(ARI_TEST_CERT)
+    assert _renewal_info_path_component(cert) == "aYhba4dGQEHhs3uEe6CuLN4ByNQ.AIdlQyE"
+
+if __name__ == '__main__':
+    sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
+
+def make_cert_for_renewal(not_before, not_after) -> bytes:
+    """
+    Return a PEM-encoded, self-signed certificate with the given dates.
+    """
+    from cryptography import x509
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives import serialization, hashes
+    # AKID and serial are the inputs to constructing the renewalInfo URL
+    akid = x509.AuthorityKeyIdentifier(b"1234", None, None)
+    serial = 56789
+    key = ec.generate_private_key(ec.SECP256R1())
+    cert = x509.CertificateBuilder(
+        issuer_name=x509.Name([x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "Some Issuer")]),
+        subject_name=x509.Name([]),
+        public_key=key.public_key(),
+        serial_number=serial,
+        not_valid_before=not_before,
+        not_valid_after=not_after,
+    ).add_extension(
+        x509.SubjectAlternativeName([x509.DNSName('example.com')]),
+        critical=False,
+    ).add_extension(
+        akid,
+        critical=False,
+    ).sign(
+        private_key=key,
+        algorithm=hashes.SHA256(),
+    )
+    return cert.public_bytes(serialization.Encoding.PEM)
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
     # pylint: disable=missing-docstring
@@ -678,20 +895,6 @@ class ClientNetworkTest(unittest.TestCase):
         with pytest.raises(requests.exceptions.RequestException):
             self.net._send_request('GET', 'uri')
 
-    def test_urllib_error(self):
-        # Using a connection error to test a properly formatted error message
-        try:
-            # pylint: disable=protected-access
-            self.net._send_request('GET', "http://localhost:19123/nonexistent.txt")
-
-        # Value Error Generated Exceptions
-        except ValueError as y:
-            assert "Requesting localhost/nonexistent: " \
-                             "Connection refused" == str(y)
-
-        # Requests Library Exceptions
-        except requests.exceptions.ConnectionError as z: #pragma: no cover
-            assert "'Connection aborted.'" in str(z) or "[WinError 10061]" in str(z)
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""

@@ -37,7 +37,6 @@ install_requires = [
     'josepy>=2.0.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
-    'pytz>=2019.3',
     # This dependency needs to be added using environment markers to avoid its
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
@@ -51,6 +50,7 @@ dev_extras = [
     'poetry>=1.2.0',
     # allows us to use newer urllib3 https://github.com/python-poetry/poetry-plugin-export/issues/183
     'poetry-plugin-export>=1.9.0',
+    'towncrier',
     'twine',
 ]
 
@@ -75,7 +75,6 @@ test_extras = [
     'tox',
     'types-httplib2',
     'types-pyRFC3339',
-    'types-pytz',
     'types-pywin32',
     'types-requests',
     'types-setuptools',
