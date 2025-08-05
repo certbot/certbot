@@ -6,10 +6,8 @@ import logging
 import typing
 from typing import List
 from typing import Literal
-from typing import Mapping
 from typing import Optional
 from typing import Set
-from typing import Tuple
 from typing import Union
 
 from cryptography import x509
@@ -17,18 +15,8 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448, types
 from cryptography.hazmat.primitives.serialization import Encoding
 from OpenSSL import crypto
-from OpenSSL import SSL
 
 logger = logging.getLogger(__name__)
-
-# Default SSL method selected here is the most compatible, while secure
-# SSL method: TLSv1_METHOD is only compatible with
-# TLSv1_METHOD, while TLS_method is compatible with all other
-# methods, including TLSv2_METHOD (read more at
-# https://docs.openssl.org/master/man3/SSL_CTX_new/#notes). _serve_sni
-# should be changed to use "set_options" to disable SSLv2 and SSLv3,
-# in case it's used for things other than probing/serving!
-_DEFAULT_SSL_METHOD = SSL.TLS_METHOD
 
 
 class Format(enum.IntEnum):
@@ -47,23 +35,6 @@ class Format(enum.IntEnum):
             return Encoding.DER
         else:
             return Encoding.PEM
-
-
-_KeyAndCert = Union[
-    Tuple[crypto.PKey, crypto.X509],
-    Tuple[types.CertificateIssuerPrivateKeyTypes, x509.Certificate],
-]
-
-
-class _DefaultCertSelection:
-    def __init__(self, certs: Mapping[bytes, _KeyAndCert]):
-        self.certs = certs
-
-    def __call__(self, connection: SSL.Connection) -> Optional[_KeyAndCert]:
-        server_name = connection.get_servername()
-        if server_name:
-            return self.certs.get(server_name, None)
-        return None # pragma: no cover
 
 
 # Even *more* annoyingly, due to a mypy bug, we can't use Union[] types in
@@ -169,14 +140,14 @@ def get_names_from_subject_and_extensions(
         return dns_names
     else:
         # We only include the first CN, if there are multiple. This matches
-        # the behavior of the previously implementation using pyOpenSSL.
+        # the behavior of the previous implementation using pyOpenSSL.
         return [cns[0]] + [d for d in dns_names if d != cns[0]]
 
 
 def _cryptography_cert_or_req_san(
     cert_or_req: Union[x509.Certificate, x509.CertificateSigningRequest],
 ) -> List[str]:
-    """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
+    """Get Subject Alternative Names from certificate or CSR using cryptography.
 
     .. note:: Although this is `acme` internal API, it is used by
         `letsencrypt`.
