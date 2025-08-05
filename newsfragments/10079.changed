@@ -1,0 +1,3 @@
+Removed final instances of pyopenssl x509 and PKey objects
+* Removed `acme.crypto_util.SSLSocket`
+* Removed `acme.crypto_util.probe_sni`
