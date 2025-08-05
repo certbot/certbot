@@ -20,24 +20,6 @@ from acme import errors
 from acme._internal.tests import test_util
 
 
-class TLSServerTest(unittest.TestCase):
-    """Tests for acme.standalone.TLSServer."""
-
-
-    def test_bind(self):  # pylint: disable=no-self-use
-        from acme.standalone import TLSServer
-        server = TLSServer(
-            ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True)
-        server.server_close()
-
-    def test_ipv6(self):
-        if socket.has_ipv6:
-            from acme.standalone import TLSServer
-            server = TLSServer(
-                ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True, ipv6=True)
-            server.server_close()
-
-
 class HTTP01ServerTest(unittest.TestCase):
     """Tests for acme.standalone.HTTP01Server."""
 
@@ -110,57 +92,6 @@ class HTTP01ServerTest(unittest.TestCase):
                     pass
 
                 assert not is_hung, 'Server shutdown should not be hung'
-
-
-@unittest.skipIf(not challenges.TLSALPN01.is_supported(), "pyOpenSSL too old")
-class TLSALPN01ServerTest(unittest.TestCase):
-    """Test for acme.standalone.TLSALPN01Server."""
-
-    def setUp(self):
-        self.certs = {b'localhost': (
-            serialization.load_pem_private_key(test_util.load_vector('rsa2048_key.pem'), password=None),
-            x509.load_pem_x509_certificate(test_util.load_vector('rsa2048_cert.pem')),
-        )}
-        # Use different certificate for challenge.
-        self.challenge_certs = {b'localhost': (
-            serialization.load_pem_private_key(test_util.load_vector('rsa4096_key.pem'), password=None),
-            x509.load_pem_x509_certificate(test_util.load_vector('rsa4096_cert.pem')),
-        )}
-        from acme.standalone import TLSALPN01Server
-        self.server = TLSALPN01Server(("localhost", 0), certs=self.certs,
-                challenge_certs=self.challenge_certs)
-        # pylint: disable=no-member
-        self.thread = threading.Thread(target=self.server.serve_forever)
-        self.thread.start()
-
-    def tearDown(self):
-        self.server.shutdown()  # pylint: disable=no-member
-        self.thread.join()
-        self.server.server_close()
-
-    # TODO: This is not implemented yet, see comments in standalone.py
-    # def test_certs(self):
-    #    host, port = self.server.socket.getsockname()[:2]
-    #    cert = crypto_util.probe_sni(
-    #        b'localhost', host=host, port=port, timeout=1)
-    #    # Expect normal cert when connecting without ALPN.
-    #    self.assertEqual(cert,
-    #                     self.certs[b'localhost'][1])
-
-    def test_challenge_certs(self):
-        host, port = self.server.socket.getsockname()[:2]
-        cert = crypto_util.probe_sni(
-            b'localhost', host=host, port=port, timeout=1,
-            alpn_protocols=[b"acme-tls/1"])
-        #  Expect challenge cert when connecting with ALPN.
-        assert cert == self.challenge_certs[b'localhost'][1]
-
-    def test_bad_alpn(self):
-        host, port = self.server.socket.getsockname()[:2]
-        with pytest.raises(errors.Error):
-            crypto_util.probe_sni(
-                b'localhost', host=host, port=port, timeout=1,
-                alpn_protocols=[b"bad-alpn"])
 
 
 class BaseDualNetworkedServersTest(unittest.TestCase):

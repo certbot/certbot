@@ -3,7 +3,6 @@ import abc
 import functools
 import hashlib
 import logging
-import socket
 from typing import Any
 from typing import cast
 from typing import Dict
@@ -13,17 +12,10 @@ from typing import Tuple
 from typing import Type
 from typing import TypeVar
 from typing import Union
-import warnings
 
-from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 import josepy as jose
-from OpenSSL import crypto
-from OpenSSL import SSL
 import requests
-
-from acme import crypto_util
-from acme import errors
 
 logger = logging.getLogger(__name__)
 
@@ -396,211 +388,6 @@ class HTTP01(KeyAuthorizationChallenge):
 
         """
         return self.key_authorization(account_key)
-
-
-@ChallengeResponse.register
-class TLSALPN01Response(KeyAuthorizationChallengeResponse):
-    """ACME tls-alpn-01 challenge response.
-
-    .. deprecated:: 4.1.0
-
-    """
-    typ = "tls-alpn-01"
-
-    PORT = 443
-    """Verification port as defined by the protocol.
-
-    You can override it (e.g. for testing) by passing ``port`` to
-    `simple_verify`.
-
-    """
-
-    ID_PE_ACME_IDENTIFIER_V1 = b"1.3.6.1.5.5.7.1.30.1"
-    ACME_TLS_1_PROTOCOL = b"acme-tls/1"
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        warnings.warn("TLSALPN01Response is deprecated and will be removed in an "
-            "upcoming certbot major version update", DeprecationWarning)
-        super().__init__(*args, **kwargs)
-
-    @property
-    def h(self) -> bytes:
-        """Hash value stored in challenge certificate"""
-        return hashlib.sha256(self.key_authorization.encode('utf-8')).digest()
-
-    def gen_cert(self, domain: str, key: Optional[crypto.PKey] = None, bits: int = 2048
-                 ) -> Tuple[x509.Certificate, crypto.PKey]:
-        """Generate tls-alpn-01 certificate.
-
-        :param str domain: Domain verified by the challenge.
-        :param OpenSSL.crypto.PKey key: Optional private key used in
-            certificate generation. If not provided (``None``), then
-            fresh key will be generated.
-        :param int bits: Number of bits for newly generated key.
-
-        :rtype: `tuple` of `x509.Certificate` and `OpenSSL.crypto.PKey`
-
-        """
-        if key is None:
-            key = crypto.PKey()
-            key.generate_key(crypto.TYPE_RSA, bits)
-
-        oid = x509.ObjectIdentifier(self.ID_PE_ACME_IDENTIFIER_V1.decode())
-        acme_extension = x509.Extension(
-            oid,
-            critical=True,
-            value=x509.UnrecognizedExtension(oid, self.h)
-        )
-
-        cryptography_key = key.to_cryptography_key()
-        assert isinstance(cryptography_key, crypto_util.CertificateIssuerPrivateKeyTypesTpl)
-        cert = crypto_util.make_self_signed_cert(
-            cryptography_key,
-            [domain],
-            force_san=True,
-            extensions=[acme_extension]
-        )
-        return cert, key
-
-    def probe_cert(self, domain: str, host: Optional[str] = None,
-                   port: Optional[int] = None) -> x509.Certificate:
-        """Probe tls-alpn-01 challenge certificate.
-
-        :param str domain: domain being validated, required.
-        :param str host: IP address used to probe the certificate.
-        :param int port: Port used to probe the certificate.
-
-        """
-        if host is None:
-            host = socket.gethostbyname(domain)
-            logger.debug('%s resolved to %s', domain, host)
-        if port is None:
-            port = self.PORT
-
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                'ignore',
-                message='alpn_protocols parameter is deprecated'
-            )
-            return crypto_util.probe_sni(host=host.encode(), port=port, name=domain.encode(),
-                                     alpn_protocols=[self.ACME_TLS_1_PROTOCOL])
-
-    def verify_cert(self, domain: str, cert: x509.Certificate, ) -> bool:
-        """Verify tls-alpn-01 challenge certificate.
-
-        :param str domain: Domain name being validated.
-        :param cert: Challenge certificate.
-        :type cert: `cryptography.x509.Certificate`
-
-        :returns: Whether the certificate was successfully verified.
-        :rtype: bool
-
-        """
-        names = crypto_util.get_names_from_subject_and_extensions(
-            cert.subject, cert.extensions
-        )
-        logger.debug(
-            "Certificate %s. SANs: %s", cert.fingerprint(hashes.SHA256()), names
-        )
-        if len(names) != 1 or names[0].lower() != domain.lower():
-            return False
-
-        try:
-            ext = cert.extensions.get_extension_for_oid(
-                x509.ObjectIdentifier(self.ID_PE_ACME_IDENTIFIER_V1.decode())
-            )
-        except x509.ExtensionNotFound:
-            return False
-
-        # This is for the type checker.
-        assert isinstance(ext.value, x509.UnrecognizedExtension)
-        return ext.value.value == self.h
-
-    # pylint: disable=too-many-arguments
-    def simple_verify(self, chall: 'TLSALPN01', domain: str, account_public_key: jose.JWK,
-                      cert: Optional[x509.Certificate] = None, host: Optional[str] = None,
-                      port: Optional[int] = None) -> bool:
-        """Simple verify.
-
-        Verify ``validation`` using ``account_public_key``, optionally
-        probe tls-alpn-01 certificate and check using `verify_cert`.
-
-        :param .challenges.TLSALPN01 chall: Corresponding challenge.
-        :param str domain: Domain name being validated.
-        :param JWK account_public_key:
-        :param x509.Certificate cert: Optional certificate. If not
-            provided (``None``) certificate will be retrieved using
-            `probe_cert`.
-        :param string host: IP address used to probe the certificate.
-        :param int port: Port used to probe the certificate.
-
-
-        :returns: ``True`` if and only if client's control of the domain has been verified.
-        :rtype: bool
-
-        """
-        if not self.verify(chall, account_public_key):
-            logger.debug("Verification of key authorization in response failed")
-            return False
-
-        if cert is None:
-            try:
-                cert = self.probe_cert(domain=domain, host=host, port=port)
-            except errors.Error as error:
-                logger.debug(str(error), exc_info=True)
-                return False
-
-        return self.verify_cert(domain, cert)
-
-
-@Challenge.register  # pylint: disable=too-many-ancestors
-class TLSALPN01(KeyAuthorizationChallenge):
-    """ACME tls-alpn-01 challenge.
-
-    .. deprecated:: 4.1.0
-
-    """
-    response_cls = TLSALPN01Response
-    typ = response_cls.typ
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        warnings.warn("TLSALPN01 is deprecated and will be removed in an "
-            "upcoming certbot major version update", DeprecationWarning)
-        super().__init__(*args, **kwargs)
-
-    def validation(self, account_key: jose.JWK,
-                   **kwargs: Any) -> Tuple[x509.Certificate, crypto.PKey]:
-        """Generate validation.
-
-        :param JWK account_key:
-        :param str domain: Domain verified by the challenge.
-        :param OpenSSL.crypto.PKey cert_key: Optional private key used
-            in certificate generation. If not provided (``None``), then
-            fresh key will be generated.
-
-        :rtype: `tuple` of `x509.Certificate` and `OpenSSL.crypto.PKey`
-
-        """
-        # TODO: Remove cast when response() is generic.
-        return cast(TLSALPN01Response, self.response(account_key)).gen_cert(
-            key=kwargs.get('cert_key'),
-            domain=cast(str, kwargs.get('domain')))
-
-    @staticmethod
-    def is_supported() -> bool:
-        """
-        Check if TLS-ALPN-01 challenge is supported on this machine.
-        This implies that a recent version of OpenSSL is installed (>= 1.0.2),
-        or a recent cryptography version shipped with the OpenSSL library is installed.
-
-        :returns: ``True`` if TLS-ALPN-01 is supported on this machine, ``False`` otherwise.
-        :rtype: bool
-
-        """
-        warnings.warn("TLSALPN01 is deprecated and will be removed in an "
-            "upcoming certbot major version update", DeprecationWarning)
-        return (hasattr(SSL.Connection, "set_alpn_protos")
-                and hasattr(SSL.Context, "set_alpn_select_callback"))
 
 
 @Challenge.register
