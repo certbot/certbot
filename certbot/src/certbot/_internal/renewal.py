@@ -369,8 +369,8 @@ def _ari_renewal_time(lineage: storage.RenewableCert,
     #
     # Fixes https://github.com/certbot/certbot/issues/10339
     if not lineage.server:
-        logger.warning("Skipping ARI check because config has no 'server' field. This issue will not "
-                       "prevent certificate renewal")
+        logger.warning("Skipping ARI check because %s has no 'server' field. This issue will not "
+                       "prevent certificate renewal", lineage.configfile.filename)
         return None
     try:
         ari_client = ari_clients.get(lineage.server)

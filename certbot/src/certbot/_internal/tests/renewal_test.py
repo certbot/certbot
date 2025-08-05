@@ -352,7 +352,6 @@ class RenewalTest(test_util.ConfigTestCase):
                 sometime = datetime.datetime.fromtimestamp(current_time, datetime.timezone.utc)
                 mock_datetime.datetime.now.return_value = sometime
                 mock_renewable_cert.configuration = {"renew_before_expiry": interval}
-                mock_renewable_cert.configfile = {"renew_before_expiry": interval}
                 assert renewal.should_autorenew(mock_renewable_cert, acme_clients) == result, f"at {current_time}, with config '{interval}', ari response in future, expected {result}"
 
             # Now, test cases where ARI either fails (returns `(None, _)`) or
@@ -439,7 +438,6 @@ class RenewalTest(test_util.ConfigTestCase):
         ari_client_pool.get.side_effect = messages.Error()
         mock_rc = mock.MagicMock()
         mock_rc.server = ari_server
-        mock_rc.configfile = {}
         mock_rc.autorenewal_is_enabled.return_value = True
         mock_ocsp.return_value = True
 
