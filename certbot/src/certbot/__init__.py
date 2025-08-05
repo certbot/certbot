@@ -3,7 +3,7 @@ import sys
 import warnings
 
 # version number like 1.2.3a0, must have at least 2 parts, like 1.2
-__version__ = '4.2.0.dev0'
+__version__ = '4.2.0'
 
 
 if sys.version_info[:2] == (3, 9):
