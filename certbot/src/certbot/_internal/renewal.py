@@ -69,7 +69,7 @@ class AriClientPool:
     """
     def __init__(self, cli_config: configuration.NamespaceConfig):
         self._verify_ssl = not cli_config.no_verify_ssl
-        self._user_agent = f"CertbotACMEClient/{certbot_version}"
+        self._user_agent = client.determine_user_agent(cli_config)
         self._pool: Dict[str, acme_client.ClientV2] = {}
 
     def get(self, server: str) -> acme_client.ClientV2:
