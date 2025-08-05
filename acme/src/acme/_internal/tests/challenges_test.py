@@ -6,7 +6,6 @@ import urllib.parse as urllib_parse
 
 import josepy as jose
 from josepy.jwk import JWKEC
-import OpenSSL
 import pytest
 import requests
 
