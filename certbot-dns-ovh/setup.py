@@ -4,7 +4,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '4.2.0'
+version = '5.0.0.dev0'
 
 install_requires = [
     'dns-lexicon>=3.15.1',
