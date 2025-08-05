@@ -1,1 +1,0 @@
-The Certbot snap no longer sets the environment variable PYTHONPATH stopping it from picking up Python files in the current directory and polluting the environment for Certbot hooks written in Python.
