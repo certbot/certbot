@@ -1,1 +1,0 @@
-Added `--eab-hmac-alg` parameter to support custom HMAC algorithm for External Account Binding.
