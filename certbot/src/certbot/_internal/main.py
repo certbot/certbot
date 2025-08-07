@@ -268,10 +268,9 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     if is_key_type_changing:
         return "renew", lineage
 
-    acme_clients = {}
-    acme_clients[config.server] = client.create_acme_client(config)
+    ari_clients = renewal.AriClientPool(config)
 
-    if renewal.should_renew(config, lineage, acme_clients):
+    if renewal.should_renew(config, lineage, ari_clients):
         return "renew", lineage
 
     if config.reinstall:
