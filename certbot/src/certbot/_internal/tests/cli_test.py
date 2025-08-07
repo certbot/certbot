@@ -117,11 +117,10 @@ class ParseTest(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as tmp_config:
             tmp_config.close()  # close now because of compatibility issues on Windows
             # use a shim to get ConfigArgParse to pick up tmp_config
-            shim = (
-                    lambda v: copy.deepcopy(constants.CLI_DEFAULTS[v])
-                    if v != "config_files"
-                    else [tmp_config.name]
-                    )
+            def shim(v):
+                return (copy.deepcopy(constants.CLI_DEFAULTS[v])
+                                if v != "config_files"
+                                else [tmp_config.name])
             mock_flag_default.side_effect = shim
 
             namespace = self.parse(["certonly"])

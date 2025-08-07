@@ -293,7 +293,7 @@ class ClientV2Test(unittest.TestCase):
         updated_order_valid = self.order.update(
             certificate='https://www.letsencrypt-demo.org/acme/cert/',
             status=messages.STATUS_VALID)
-        updated_orderr = self.orderr.update(body=updated_order_valid, fullchain_pem=CERT_SAN_PEM)
+        self.orderr.update(body=updated_order_valid, fullchain_pem=CERT_SAN_PEM)
 
         self.response.text = CERT_SAN_PEM
 
@@ -489,14 +489,14 @@ class ClientV2Test(unittest.TestCase):
             not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
         )
         t, _ = self.client.renewal_time(cert_pem)
-        assert t == None
+        assert t is None
 
         cert_pem = make_cert_for_renewal(
             not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
             not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
         )
         t, _ = self.client.renewal_time(cert_pem)
-        assert t == None
+        assert t is None
 
     @mock.patch('acme.client.datetime')
     def test_renewal_time_with_renewal_info(self, dt_mock):
