@@ -22,13 +22,29 @@ def _create_proxy(mapping: Mapping[str, str]) -> Type[BaseHTTPServer.BaseHTTPReq
             backend = [backend for pattern, backend in mapping.items()
                        if re.match(pattern, headers['host'])][0]
              # Validate that self.path is a safe path (starts with /, no .., no spaces, etc.)
-            if not re.match(r'^/[a-zA-Z0-9_\-./]*$', self.path) or '..' in self.path:
+             # Disallow absolute URLs and dangerous characters in self.path
+            if (
+                not re.match(r'^/[a-zA-Z0-9_\-./]*$', self.path) or
+                '..' in self.path or
+                self.path.startswith('//') or
+                re.match(r'^[a-zA-Z]+://', self.path)
+            ):
                 self.send_response(400)
                 self.end_headers()
                 self.wfile.write(b'Invalid path')
                 return
             # Safely join backend and path
-            url = urllib.parse.urljoin(backend, self.path)
+            # Ensure backend ends with '/' for correct joining
+            backend_url = backend if backend.endswith('/') else backend + '/'
+            url = urllib.parse.urljoin(backend_url, self.path.lstrip('/'))
+            # Ensure the joined URL is still under the intended backend
+            backend_parsed = urllib.parse.urlparse(backend_url)
+            url_parsed = urllib.parse.urlparse(url)
+            if url_parsed.scheme != backend_parsed.scheme or url_parsed.netloc != backend_parsed.netloc:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(b'Path escapes backend')
+                return
             response = requests.get(url, headers=headers, timeout=10)
 
             self.send_response(response.status_code)
