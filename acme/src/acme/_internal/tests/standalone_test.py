@@ -11,12 +11,8 @@ from unittest import mock
 import josepy as jose
 import pytest
 import requests
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
 
 from acme import challenges
-from acme import crypto_util
-from acme import errors
 from acme._internal.tests import test_util
 
 

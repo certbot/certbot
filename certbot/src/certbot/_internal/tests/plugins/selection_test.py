@@ -220,7 +220,6 @@ class TestChooseConfiguratorPlugins(unittest.TestCase):
         return mock_ep
 
     def _parseArgs(self, args):
-        from certbot import configuration
         from certbot._internal import cli
         return cli.prepare_and_parse_args(self.plugins, args.split())
 

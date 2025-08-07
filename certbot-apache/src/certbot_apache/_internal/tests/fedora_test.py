@@ -1,6 +1,5 @@
 """Test for certbot_apache._internal.configurator for Fedora 29+ overrides"""
 import sys
-import unittest
 from unittest import mock
 
 import pytest

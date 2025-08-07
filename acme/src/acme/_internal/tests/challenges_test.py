@@ -9,7 +9,6 @@ from josepy.jwk import JWKEC
 import pytest
 import requests
 
-from acme import errors
 from acme._internal.tests import test_util
 
 CERT = test_util.load_cert('cert.pem')

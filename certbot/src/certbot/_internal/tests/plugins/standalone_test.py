@@ -2,9 +2,7 @@
 import errno
 import socket
 import sys
-from typing import Dict
 from typing import Set
-from typing import Tuple
 import unittest
 from unittest import mock
 

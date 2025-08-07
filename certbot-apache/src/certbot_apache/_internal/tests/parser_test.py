@@ -1,7 +1,6 @@
 """Tests for certbot_apache._internal.parser."""
 import shutil
 import sys
-import unittest
 from unittest import mock
 
 import pytest

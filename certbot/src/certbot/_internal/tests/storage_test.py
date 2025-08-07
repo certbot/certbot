@@ -12,14 +12,12 @@ import configobj
 import pytest
 
 import certbot
-from certbot import configuration
 from certbot import errors
 from certbot._internal.storage import ALL_FOUR
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
 
-from typing import Optional, Any
 
 def unlink_all(rc_object):
     """Unlink all four items associated with this RenewableCert."""
