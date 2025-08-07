@@ -6,7 +6,6 @@ import tempfile
 import unittest
 from unittest import mock
 
-import argparse
 import configobj
 import pytest
 
@@ -304,10 +303,9 @@ class RenewalTest(test_util.ConfigTestCase):
         mock_renewable_cert.autorenewal_is_enabled.return_value = True
         mock_renewable_cert.version.return_value = "/tmp/abc"
         mock_renewable_cert.ocsp_revoked.return_value = False
-        mock_renewable_cert.configfile.get.return_value = None
+        mock_renewable_cert.configfile = configobj.ConfigObj()
 
         mock_datetime.timedelta = datetime.timedelta
-        mock_datetime.datetime.fromisoformat = datetime.datetime.fromisoformat
 
         with tempfile.NamedTemporaryFile() as tmp_cert:
             tmp_cert.close()  # close now because of compatibility issues on Windows
@@ -435,7 +433,7 @@ class RenewalTest(test_util.ConfigTestCase):
         ari_client_pool.get.side_effect = messages.Error()
         mock_rc = mock.MagicMock()
         mock_rc.server = ari_server
-        mock_rc.configfile = {}
+        mock_rc.configfile = configobj.ConfigObj()
         mock_rc.autorenewal_is_enabled.return_value = True
         mock_ocsp.return_value = True
 
@@ -467,14 +465,6 @@ class RenewalTest(test_util.ConfigTestCase):
         # Ensure we logged about skipping the ARI check and the underlying exception
         assert any('ARI' in call.args[0] for call in mock_logger.warning.call_args_list)
         assert any(call.kwargs.get('exc_info') for call in mock_logger.debug.call_args_list)
-
-        # ARI shouldn't be checked at all because retry after is in the future.
-        mock_ari_client_pool = MockAriClientPool(None, None)
-        mock_ari_client_pool.mock_acme.renewal_time.side_effect = errors.Error("Shouldn't be called")
-
-        # Check for renewal. All we care about here is that renewal_time is not called; if it were,
-        # an exception would be raised.
-        renewal.should_autorenew(renewable_cert, mock_ari_client_pool)
 
     def test_stores_ari_retry_after(self):
         from certbot._internal import renewal
