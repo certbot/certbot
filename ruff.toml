@@ -1,0 +1,3 @@
+line-length = 100
+
+extend-exclude = ['tools', 'letstest']
