@@ -57,6 +57,8 @@ BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
 CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
 
+ARI_RETRY_AFTER_CONFIG_ITEM = "ari_retry_after"
+
 class AriClientPool:
     """A cache of ACME clients for using in performing ACME Renewal Info (ARI) requests.
 
@@ -372,12 +374,23 @@ def _ari_renewal_time(lineage: storage.RenewableCert,
         logger.warning("Skipping ARI check because %s has no 'server' field. This issue will not "
                        "prevent certificate renewal", lineage.configfile.filename)
         return None
+
+    renewal_params = lineage.configfile.get("renewalparams")
+    if renewal_params:
+        retry_after = renewal_params.get(ARI_RETRY_AFTER_CONFIG_ITEM, None)
+        if retry_after:
+            retry_after_datetime = datetime.datetime.fromisoformat(retry_after)
+            now = datetime.datetime.now()
+            if now < retry_after_datetime:
+                logger.debug("Skipped ACME Renewal Info check because ari_retry_after %s is in "
+                             "the future",
+                             retry_after)
+                return None
+
+    renewal_time = None
     try:
         ari_client = ari_clients.get(lineage.server)
-
-        # Attempt to get the ARI-defined renewal time
-        if ari_client:
-            return ari_client.renewal_time(cert_pem)[0]
+        renewal_time, retry_after = ari_client.renewal_time(cert_pem)
     except Exception:  # pylint: disable=broad-except
         # We want to stop errors around ARI preventing renewal so we catch all exceptions here
         # with a warning asking users to tell us about any problems they are experiencing
@@ -385,8 +398,13 @@ def _ari_renewal_time(lineage: storage.RenewableCert,
                        "problem persists and you think it's a bug in Certbot, please open an "
                        "issue at https://github.com/certbot/certbot/issues/new/choose.")
         logger.debug("Error while requesting ARI was:", exc_info=True)
+        retry_after = datetime.datetime.now() + datetime.timedelta(seconds=60 * 60 * 6)
 
-    return None
+    # Note: the ACME client returns naive (no timezone) datetimes for retry_after, and that
+    # is what we serialize here.
+    lineage.save_renewal_param(ARI_RETRY_AFTER_CONFIG_ITEM,
+                               retry_after.isoformat(timespec='seconds'))
+    return renewal_time
 
 
 def _default_renewal_time(cert_pem: bytes) -> datetime.datetime:
