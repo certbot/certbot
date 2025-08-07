@@ -71,6 +71,7 @@ test_extras = [
     'pytest',
     'pytest-cov',
     'pytest-xdist',
+    'ruff',
     'setuptools',
     'tox',
     'types-httplib2',
