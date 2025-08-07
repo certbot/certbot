@@ -1,11 +1,7 @@
 """Tests for acme.crypto_util."""
 import ipaddress
 import itertools
-import socket
-import socketserver
 import sys
-import threading
-import time
 from typing import List
 import unittest
 from unittest import mock
@@ -16,7 +12,6 @@ from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, x25519
 
-from acme import errors
 from acme._internal.tests import test_util
 
 

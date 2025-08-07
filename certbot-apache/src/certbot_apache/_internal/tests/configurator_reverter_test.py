@@ -1,7 +1,6 @@
 """Test for certbot_apache._internal.configurator implementations of reverter"""
 import shutil
 import sys
-import unittest
 from unittest import mock
 
 import pytest

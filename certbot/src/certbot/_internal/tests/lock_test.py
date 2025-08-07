@@ -2,7 +2,6 @@
 import functools
 import multiprocessing
 import sys
-import unittest
 from unittest import mock
 
 import pytest

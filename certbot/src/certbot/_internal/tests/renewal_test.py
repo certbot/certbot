@@ -18,7 +18,6 @@ import certbot.tests.util as test_util
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography import x509
-from cryptography.x509 import Certificate
 
 def make_cert_with_lifetime(not_before: datetime.datetime, lifetime_days: int) -> bytes:
     """Return PEM of a self-signed certificate with the given notBefore and lifetime."""
@@ -451,7 +450,6 @@ class RenewalTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.storage.RenewableCert.ocsp_revoked')
     def test_resilient_ari_check(self, mock_ocsp):
         from certbot._internal import renewal
-        from acme import messages
 
         rc_path = test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         renewable_cert = storage.RenewableCert(rc_path, self.config)

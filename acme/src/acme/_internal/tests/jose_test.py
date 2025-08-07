@@ -20,9 +20,7 @@ def _test_it(submodule, attribute):
 
     # We use the imports below with eval, but pylint doesn't
     # understand that.
-    import josepy  # pylint: disable=unused-import
 
-    import acme  # pylint: disable=unused-import
     acme_jose_mod = eval(acme_jose_path)  # pylint: disable=eval-used
     josepy_mod = eval(josepy_path)  # pylint: disable=eval-used
     assert acme_jose_mod is josepy_mod

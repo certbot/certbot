@@ -1,12 +1,10 @@
 """Tests for certbot_dns_linode._internal.dns_linode."""
 
 import sys
-import unittest
 from unittest import mock
 
 import pytest
 
-from certbot import errors
 from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins import dns_test_common_lexicon
