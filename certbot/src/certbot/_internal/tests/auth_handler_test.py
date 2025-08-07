@@ -51,7 +51,7 @@ class ChallengeFactoryTest(unittest.TestCase):
             [messages.STATUS_PENDING])
 
         achalls = self.handler._challenge_factory(authzr, [0])
-        assert type(achalls[0]) == achallenges.Other
+        assert type(achalls[0]) is achallenges.Other
 
 
 class HandleAuthorizationsTest(unittest.TestCase):

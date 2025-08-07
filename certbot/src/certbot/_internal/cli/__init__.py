@@ -1,5 +1,6 @@
 """Certbot command line argument & config processing."""
 # pylint: disable=too-many-lines
+# ruff: noqa: F401
 import argparse
 import logging
 import logging.handlers

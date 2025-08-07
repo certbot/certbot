@@ -419,8 +419,8 @@ class ClientV2:
         if 'Link' not in response.headers:
             return []
         links = parse_header_links(response.headers['Link'])
-        return [l['url'] for l in links
-                if 'rel' in l and 'url' in l and l['rel'] == relation_type]
+        return [link['url'] for link in links
+                if 'rel' in link and 'url' in link and link['rel'] == relation_type]
 
     @classmethod
     def get_directory(cls, url: str, net: 'ClientNetwork') -> messages.Directory:

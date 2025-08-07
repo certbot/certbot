@@ -17,7 +17,6 @@ from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
-DOMAIN = 'example.com'
 KEY = jose.jwk.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 

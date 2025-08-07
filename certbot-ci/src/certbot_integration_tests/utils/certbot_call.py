@@ -10,8 +10,9 @@ from typing import Optional
 from typing import Tuple
 
 import certbot_integration_tests
-# pylint: disable=wildcard-import,unused-wildcard-import
-from certbot_integration_tests.utils.constants import *
+from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
+from certbot_integration_tests.utils.constants import HTTPS_PORT
+from certbot_integration_tests.utils.constants import PEBBLE_DIRECTORY_URL
 
 
 def certbot_test(certbot_args: List[str], directory_url: Optional[str], http_01_port: int,
