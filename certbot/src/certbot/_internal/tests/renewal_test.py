@@ -6,8 +6,6 @@ import tempfile
 import unittest
 from unittest import mock
 
-import argparse
-import configobj
 import pytest
 
 from acme import challenges

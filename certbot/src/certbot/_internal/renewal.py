@@ -28,7 +28,6 @@ from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
-from certbot import __version__ as certbot_version
 from certbot._internal import cli
 from certbot._internal import client
 from certbot._internal import constants
@@ -65,7 +64,8 @@ class AriClientPool:
     are all issued by the same server. To avoid redundant directory fetches, we create
     one acme.ClientV2 per server.
 
-    This takes a command line configuration object so it can observe the --no-verify-ssl flag.
+    This takes a command line configuration object so it can set the User-Agent header and
+    observe the --no-verify-ssl flag.
     """
     def __init__(self, cli_config: configuration.NamespaceConfig):
         self._verify_ssl = not cli_config.no_verify_ssl
