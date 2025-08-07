@@ -4,7 +4,6 @@
 import argparse
 import logging
 import logging.handlers
-import sys
 from typing import Any
 from typing import List
 from typing import Optional
