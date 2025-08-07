@@ -3,7 +3,7 @@ import logging
 from textwrap import indent
 from typing import Any
 from typing import Callable
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -189,8 +189,8 @@ def _choose_names_manually(prompt_prefix: str = "") -> List[str]:
             domain_list = []
             retry_message = (
                 "Internationalized domain names are not presently "
-                "supported.{0}{0}Would you like to re-enter the "
-                "names?{0}").format(os.linesep)
+                f"supported.{os.linesep}{os.linesep}Would you like to re-enter the "
+                f"names?{os.linesep}")
 
         for i, domain in enumerate(domain_list):
             try:
@@ -201,13 +201,11 @@ def _choose_names_manually(prompt_prefix: str = "") -> List[str]:
         if invalid_domains:
             retry_message = (
                 "One or more of the entered domain names was not valid:"
-                "{0}{0}").format(os.linesep)
+                f"{os.linesep}{os.linesep}")
             for invalid_domain, err in invalid_domains.items():
-                retry_message = retry_message + "{1}: {2}{0}".format(
-                    os.linesep, invalid_domain, err)
+                retry_message = retry_message + f"{invalid_domain}: {err}{os.linesep}"
             retry_message = retry_message + (
-                "{0}Would you like to re-enter the names?{0}").format(
-                    os.linesep)
+                f"{os.linesep}Would you like to re-enter the names?{os.linesep}")
 
         if retry_message:
             # We had error in input
@@ -226,8 +224,8 @@ def success_installation(domains: List[str]) -> None:
 
     """
     display_util.notify(
-        "Congratulations! You have successfully enabled HTTPS on {0}"
-        .format(_gen_https_names(domains))
+        f"Congratulations! You have successfully enabled HTTPS on {_gen_https_names(domains)}"
+        
     )
 
 
@@ -251,7 +249,7 @@ def success_revocation(cert_path: str) -> None:
     """
     display_util.notify(
         "Congratulations! You have successfully revoked the certificate "
-        "that was located at {0}.".format(cert_path)
+        f"that was located at {cert_path}."
     )
 
 
@@ -282,9 +280,9 @@ def _gen_https_names(domains: List[str]) -> str:
 
     """
     if len(domains) == 1:
-        return "https://{0}".format(domains[0])
+        return f"https://{domains[0]}"
     elif len(domains) == 2:
-        return "https://{dom[0]} and https://{dom[1]}".format(dom=domains)
+        return f"https://{domains[0]} and https://{domains[1]}"
     elif len(domains) > 2:
         return "{0}{1}{2}".format(
             ", ".join("https://%s" % dom for dom in domains[:-1]),
@@ -305,7 +303,7 @@ def _get_validated(method: Callable[..., Tuple[str, str]],
                          default,
                          message,
                          exc_info=True)
-            raise AssertionError('Invalid default "{0}"'.format(default))
+            raise AssertionError(f'Invalid default "{default}"')
 
     while True:
         code, raw = method(message, default=default, **kwargs)

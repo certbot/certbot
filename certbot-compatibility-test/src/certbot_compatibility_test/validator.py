@@ -3,7 +3,7 @@ import contextlib
 import logging
 import socket
 from typing import cast
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -46,7 +46,7 @@ class Validator:
     def redirect(self, name: str, port: int = 80,
                  headers: Optional[Mapping[str, str]] = None) -> bool:
         """Test whether webserver redirects to secure connection."""
-        url = "http://{0}:{1}".format(name, port)
+        url = f"http://{name}:{port}"
         if headers:
             response = requests.get(url, headers=headers,
                                     allow_redirects=False,
@@ -71,7 +71,7 @@ class Validator:
     def any_redirect(self, name: str, port: int = 80,
                      headers: Optional[Mapping[str, str]] = None) -> bool:
         """Test whether webserver redirects."""
-        url = "http://{0}:{1}".format(name, port)
+        url = f"http://{name}:{port}"
         if headers:
             response = requests.get(url, headers=headers,
                                     allow_redirects=False,
@@ -152,10 +152,7 @@ def _probe_sni(name: bytes, host: bytes, port: int = 443) -> x509.Certificate:
     try:
         logger.debug(
             "Attempting to connect to %s:%d%s.", host, port,
-            " from {0}:{1}".format(
-                source_address[0],
-                source_address[1]
-            ) if any(source_address) else ""
+            f" from {source_address[0]}:{source_address[1]}" if any(source_address) else ""
         )
         socket_tuple: Tuple[bytes, int] = (host, port)
         sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore[arg-type]

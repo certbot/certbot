@@ -483,7 +483,7 @@ def _check_config_sanity(config: NamespaceConfig) -> None:
     if config.http01_port == config.https_port:
         raise errors.ConfigurationError(
             "Trying to run http-01 and https-port "
-            "on the same port ({0})".format(config.https_port))
+            f"on the same port ({config.https_port})")
 
     # Domain checks
     if config.namespace.domains is not None:

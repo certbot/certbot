@@ -2,7 +2,7 @@
 import logging
 import sys
 from typing import Any
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import TextIO
@@ -181,14 +181,11 @@ class FileDisplay:
 
         message = util.wrap_lines(message)
 
-        self.outfile.write("{0}{frame}{msg}{0}{frame}".format(
-            os.linesep, frame=SIDE_FRAME + os.linesep, msg=message))
+        self.outfile.write(f"{os.linesep}{SIDE_FRAME + os.linesep}{message}{os.linesep}{SIDE_FRAME + os.linesep}")
         self.outfile.flush()
 
         while True:
-            ans = util.input_with_timeout("{yes}/{no}: ".format(
-                yes=util.parens_around_char(yes_label),
-                no=util.parens_around_char(no_label)))
+            ans = util.input_with_timeout(f"{util.parens_around_char(yes_label)}/{util.parens_around_char(no_label)}: ")
 
             # Couldn't get pylint indentation right with elif
             # elif doesn't matter in this situation
@@ -260,11 +257,11 @@ class FileDisplay:
         if self._can_interact(force_interactive):
             return None
         if default is None:
-            msg = "Unable to get an answer for the question:\n{0}".format(prompt)
+            msg = f"Unable to get an answer for the question:\n{prompt}"
             if cli_flag:
                 msg += (
                     "\nYou can provide an answer on the "
-                    "command line with the {0} flag.".format(cli_flag))
+                    f"command line with the {cli_flag} flag.")
             raise errors.Error(msg)
         logger.debug(
             "Falling back to default %s for the prompt:\n%s",
@@ -382,8 +379,8 @@ class FileDisplay:
         selection = -1
         if max_ > 1:
             input_msg = ("Select the appropriate number "
-                         "[1-{max_}] then [enter] (press 'c' to "
-                         "cancel): ".format(max_=max_))
+                         f"[1-{max_}] then [enter] (press 'c' to "
+                         "cancel): ")
         else:
             input_msg = ("Press 1 [enter] to confirm the selection "
                          "(press 'c' to cancel): ")
@@ -399,7 +396,7 @@ class FileDisplay:
 
             except ValueError:
                 self.outfile.write(
-                    "{0}** Invalid input **{0}".format(os.linesep))
+                    f"{os.linesep}** Invalid input **{os.linesep}")
                 self.outfile.flush()
 
         return OK, selection
@@ -420,7 +417,7 @@ class NoninteractiveDisplay:
         if extra:
             msg += "\n" + extra
         if cli_flag:
-            msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
+            msg += f"\n\n(You can set this with the {cli_flag} flag)"
         return errors.MissingCommandlineFlag(msg)
 
     def notification(self, message: str, pause: bool = False, wrap: bool = True,  # pylint: disable=unused-argument

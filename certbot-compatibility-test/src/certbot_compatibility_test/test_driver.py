@@ -11,8 +11,8 @@ import tempfile
 import time
 from typing import Any
 from typing import Dict
-from typing import Generator
-from typing import Iterable
+from collections.abc import Generator
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -349,7 +349,7 @@ def main() -> None:
     setup_display()
 
     if args.plugin not in PLUGINS:
-        raise errors.Error("Unknown plugin {0}".format(args.plugin))
+        raise errors.Error(f"Unknown plugin {args.plugin}")
 
     temp_dir = tempfile.mkdtemp()
     plugin = PLUGINS[args.plugin](args)

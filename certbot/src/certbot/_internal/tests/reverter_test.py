@@ -44,7 +44,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         self.reverter.finalize_checkpoint("blah")
         path = os.listdir(self.reverter.config.backup_dir)[0]
         no_change = os.path.join(self.reverter.config.backup_dir, path, "CHANGES_SINCE")
-        with open(no_change, "r") as f:
+        with open(no_change) as f:
             x = f.read()
         assert "No changes" in x
 
@@ -60,7 +60,7 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
             os.path.join(self.config.temp_checkpoint_dir, "NEW_FILES"))
 
         assert get_filepaths(self.config.temp_checkpoint_dir) == \
-            "{0}\n{1}\n".format(self.config1, self.config2)
+            f"{self.config1}\n{self.config2}\n"
 
     def test_add_to_checkpoint_copy_failure(self):
         with mock.patch("certbot.reverter.shutil.copy2") as mock_copy2:
@@ -440,7 +440,7 @@ def get_undo_commands(dire):
 
 def read_in(path):
     """Read in a file, return the str"""
-    with open(path, "r") as file_fd:
+    with open(path) as file_fd:
         return file_fd.read()
 
 

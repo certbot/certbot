@@ -9,11 +9,11 @@ from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
-from typing import Sequence
+from collections.abc import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -223,7 +223,7 @@ class NginxParser:
             if filename in self.parsed and not override:
                 continue
             try:
-                with open(filename, "r", encoding="utf-8") as _file:
+                with open(filename, encoding="utf-8") as _file:
                     parsed = nginxparser.load(_file)
                     self.parsed[filename] = parsed
                     trees[filename] = parsed
@@ -446,7 +446,7 @@ class NginxParser:
 def _parse_ssl_options(ssl_options: Optional[str]) -> List[UnspacedList]:
     if ssl_options is not None:
         try:
-            with open(ssl_options, "r", encoding="utf-8") as _file:
+            with open(ssl_options, encoding="utf-8") as _file:
                 return nginxparser.load(_file)
         except OSError:
             logger.warning("Missing NGINX TLS options file: %s", ssl_options)
@@ -641,7 +641,7 @@ def comment_directive(block: UnspacedList, location: int) -> None:
 
 def _comment_out_directive(block: UnspacedList, location: int, include_location: str) -> None:
     """Comment out the line at location, with a note of explanation."""
-    comment_message = ' duplicated in {0}'.format(include_location)
+    comment_message = f' duplicated in {include_location}'
     # add the end comment
     # create a dumpable object out of block[location] (so it includes the ;)
     directive = block[location]

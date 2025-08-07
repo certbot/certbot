@@ -400,35 +400,35 @@ class EnforceLeValidity(unittest.TestCase):
 
     def test_sanity(self):
         with pytest.raises(errors.ConfigurationError):
-            self._call(u"..")
+            self._call("..")
 
     def test_invalid_chars(self):
         with pytest.raises(errors.ConfigurationError):
-            self._call(u"hello_world.example.com")
+            self._call("hello_world.example.com")
 
     def test_leading_hyphen(self):
         with pytest.raises(errors.ConfigurationError):
-            self._call(u"-a.example.com")
+            self._call("-a.example.com")
 
     def test_trailing_hyphen(self):
         with pytest.raises(errors.ConfigurationError):
-            self._call(u"a-.example.com")
+            self._call("a-.example.com")
 
     def test_one_label(self):
         with pytest.raises(errors.ConfigurationError):
-            self._call(u"com")
+            self._call("com")
 
     def test_valid_domain(self):
-        assert self._call(u"example.com") == u"example.com"
+        assert self._call("example.com") == "example.com"
 
     def test_input_with_scheme(self):
         with pytest.raises(errors.ConfigurationError):
-            self._call(u"http://example.com")
+            self._call("http://example.com")
         with pytest.raises(errors.ConfigurationError):
-            self._call(u"https://example.com")
+            self._call("https://example.com")
 
     def test_valid_input_with_scheme_name(self):
-        assert self._call(u"http.example.com") == u"http.example.com"
+        assert self._call("http.example.com") == "http.example.com"
 
 
 class EnforceDomainSanityTest(unittest.TestCase):
@@ -440,47 +440,47 @@ class EnforceDomainSanityTest(unittest.TestCase):
 
     def test_nonascii_str(self):
         with pytest.raises(errors.ConfigurationError):
-            self._call(u"eichh\u00f6rnchen.example.com".encode("utf-8"))
+            self._call("eichh\u00f6rnchen.example.com".encode())
 
     def test_nonascii_unicode(self):
         with pytest.raises(errors.ConfigurationError):
-            self._call(u"eichh\u00f6rnchen.example.com")
+            self._call("eichh\u00f6rnchen.example.com")
 
     def test_too_long(self):
-        long_domain = u"a"*256
+        long_domain = "a"*256
         with pytest.raises(errors.ConfigurationError):
             self._call(long_domain)
 
     def test_not_too_long(self):
-        not_too_long_domain = u"{0}.{1}.{2}.{3}".format("a"*63, "b"*63, "c"*63, "d"*63)
+        not_too_long_domain = "{0}.{1}.{2}.{3}".format("a"*63, "b"*63, "c"*63, "d"*63)
         self._call(not_too_long_domain)
 
     def test_empty_label(self):
-        empty_label_domain = u"fizz..example.com"
+        empty_label_domain = "fizz..example.com"
         with pytest.raises(errors.ConfigurationError):
             self._call(empty_label_domain)
 
     def test_empty_trailing_label(self):
-        empty_trailing_label_domain = u"example.com.."
+        empty_trailing_label_domain = "example.com.."
         with pytest.raises(errors.ConfigurationError):
             self._call(empty_trailing_label_domain)
 
     def test_long_label_1(self):
-        long_label_domain = u"a"*64
+        long_label_domain = "a"*64
         with pytest.raises(errors.ConfigurationError):
             self._call(long_label_domain)
 
     def test_long_label_2(self):
-        long_label_domain = u"{0}.{1}.com".format(u"a"*64, u"b"*63)
+        long_label_domain = "{0}.{1}.com".format("a"*64, "b"*63)
         with pytest.raises(errors.ConfigurationError):
             self._call(long_label_domain)
 
     def test_not_long_label(self):
-        not_too_long_label_domain = u"{0}.{1}.com".format(u"a"*63, u"b"*63)
+        not_too_long_label_domain = "{0}.{1}.com".format("a"*63, "b"*63)
         self._call(not_too_long_label_domain)
 
     def test_empty_domain(self):
-        empty_domain = u""
+        empty_domain = ""
         with pytest.raises(errors.ConfigurationError):
             self._call(empty_domain)
 
@@ -494,8 +494,8 @@ class IsWildcardDomainTest(unittest.TestCase):
     """Tests for is_wildcard_domain."""
 
     def setUp(self):
-        self.wildcard = u"*.example.org"
-        self.no_wildcard = u"example.org"
+        self.wildcard = "*.example.org"
+        self.no_wildcard = "example.org"
 
     def _call(self, domain):
         from certbot.util import is_wildcard_domain

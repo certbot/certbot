@@ -3,8 +3,8 @@ import abc
 from typing import Any
 from typing import Callable
 from typing import Dict
-from typing import Generator
-from typing import Iterable
+from collections.abc import Generator
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 
@@ -105,7 +105,7 @@ def populate_cli(add: Callable[..., None]) -> None:
             help=enh["cli_help"])
 
 
-class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
+class AutoHSTSEnhancement(metaclass=abc.ABCMeta):
     """
     Enhancement interface that installer plugins can implement in order to
     provide functionality that configures the software to have a

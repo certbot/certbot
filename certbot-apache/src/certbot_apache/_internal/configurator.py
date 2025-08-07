@@ -12,10 +12,10 @@ from typing import Callable
 from typing import cast
 from typing import DefaultDict
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
-from typing import Sequence
+from collections.abc import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Type
@@ -371,7 +371,7 @@ class ApacheConfigurator(common.Configurator):
                          '.'.join(str(i) for i in self.version))
         if self.version < (2, 4):
             raise errors.NotSupportedError(
-                "Apache Version {0} not supported.".format(str(self.version)))
+                f"Apache Version {str(self.version)} not supported.")
 
         # Recover from previous crash before Augeas initialization to have the
         # correct parse tree from the get go.
@@ -407,9 +407,9 @@ class ApacheConfigurator(common.Configurator):
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
-                "Unable to create a lock file in {0}. Are you running"
+                f"Unable to create a lock file in {self.options.server_root}. Are you running"
                 " Certbot with sufficient privileges to modify your"
-                " Apache configuration?".format(self.options.server_root))
+                " Apache configuration?")
         self._prepared = True
 
     def save(self, title: Optional[str] = None, temporary: bool = False) -> None:
@@ -478,7 +478,7 @@ class ApacheConfigurator(common.Configurator):
         if not util.exe_exists(exe):
             if not path_surgery(exe):
                 raise errors.NoInstallationError(
-                    'Cannot find Apache executable {0}'.format(exe))
+                    f'Cannot find Apache executable {exe}')
 
     def get_parser(self) -> parser.ApacheParser:
         """Initializes the ApacheParser"""
@@ -532,8 +532,8 @@ class ApacheConfigurator(common.Configurator):
         vhosts = self.choose_vhosts(domain)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
-            display_util.notify("Successfully deployed certificate for {} to {}"
-                                .format(domain, vhost.filep))
+            display_util.notify(f"Successfully deployed certificate for {domain} to {vhost.filep}"
+                                )
 
     def choose_vhosts(self, domain: str, create_if_no_ssl: bool = True) -> List[obj.VirtualHost]:
         """
@@ -581,9 +581,9 @@ class ApacheConfigurator(common.Configurator):
         :rtype: errors.PluginError
         """
         return errors.PluginError(
-            "Certbot could not find a VirtualHost for {0} in the Apache "
+            f"Certbot could not find a VirtualHost for {target_name} in the Apache "
             "configuration. Please create a VirtualHost with a ServerName "
-            "matching {0} and try again.".format(target_name)
+            f"matching {target_name} and try again."
         )
 
     def _in_wildcard_scope(self, name: str, domain: str) -> Optional[bool]:
@@ -1044,7 +1044,7 @@ class ApacheConfigurator(common.Configurator):
                         found = True
                         break
                 if not found:
-                    raise AssertionError("Equivalent for {} was not found".format(v1_vh.path))
+                    raise AssertionError(f"Equivalent for {v1_vh.path} was not found")
 
             return v2_vhosts
         return v1_vhosts
@@ -1065,8 +1065,8 @@ class ApacheConfigurator(common.Configurator):
         # dictionary may be modified during the loop.
         for vhost_path in list(self.parser.parser_paths):
             paths = self.parser.aug.match(
-                ("/files%s//*[label()=~regexp('%s')]" %
-                 (vhost_path, parser.case_i("VirtualHost"))))
+                "/files%s//*[label()=~regexp('%s')]" %
+                 (vhost_path, parser.case_i("VirtualHost")))
             paths = [path for path in paths if
                      "virtualhost" in os.path.basename(path).lower()]
             for path in paths:
@@ -1614,7 +1614,7 @@ class ApacheConfigurator(common.Configurator):
         span_filep = span_val[0]
         span_start = span_val[5]
         span_end = span_val[6]
-        with open(span_filep, 'r') as fh:
+        with open(span_filep) as fh:
             fh.seek(span_start)
             vh_contents = fh.read(span_end-span_start).split("\n")
         self._remove_closing_vhost_tag(vh_contents)
@@ -1730,7 +1730,7 @@ class ApacheConfigurator(common.Configurator):
         for vh in self.vhosts:
             if self._find_vhost_id(vh) == id_str:
                 return vh
-        msg = "No VirtualHost with ID {} was found.".format(id_str)
+        msg = f"No VirtualHost with ID {id_str} was found."
         logger.warning(msg)
         raise errors.PluginError(msg)
 
@@ -1813,7 +1813,7 @@ class ApacheConfigurator(common.Configurator):
             func = self._enhance_func[enhancement]
         except KeyError:
             raise errors.PluginError(
-                "Unsupported enhancement: {0}".format(enhancement))
+                f"Unsupported enhancement: {enhancement}")
 
         matched_vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
         # We should be handling only SSL vhosts for enhancements
@@ -1867,19 +1867,19 @@ class ApacheConfigurator(common.Configurator):
                     hsts_dirpath = match
         if not hsts_dirpath:
             err_msg = ("Certbot was unable to find the existing HSTS header "
-                       "from the VirtualHost at path {0}.").format(vhost.filep)
+                       f"from the VirtualHost at path {vhost.filep}.")
             raise errors.PluginError(err_msg)
 
         # Prepare the HSTS header value
-        hsts_maxage = "\"max-age={0}\"".format(nextstep_value)
+        hsts_maxage = f"\"max-age={nextstep_value}\""
 
         # Update the header
         # Our match statement was for string strict-transport-security, but
         # we need to update the value instead. The next index is for the value
         hsts_dirpath = hsts_dirpath.replace("arg[3]", "arg[4]")
         self.parser.aug.set(hsts_dirpath, hsts_maxage)
-        note_msg = ("Increasing HSTS max-age value to {0} for VirtualHost "
-                    "in {1}\n".format(nextstep_value, vhost.filep))
+        note_msg = (f"Increasing HSTS max-age value to {nextstep_value} for VirtualHost "
+                    f"in {vhost.filep}\n")
         logger.debug(note_msg)
         self.save_notes += note_msg
         self.save(note_msg)
@@ -2094,7 +2094,7 @@ class ApacheConfigurator(common.Configurator):
 
             names = ssl_vhost.get_names()
             for idx, name in enumerate(names):
-                args = ["%{SERVER_NAME}", "={0}".format(name), "[OR]"]
+                args = ["%{SERVER_NAME}", f"={name}", "[OR]"]
                 if idx == len(names) - 1:
                     args.pop()
                 self.parser.add_dir(general_vh.path, "RewriteCond", args)
@@ -2584,19 +2584,17 @@ class ApacheConfigurator(common.Configurator):
         # Prepare the HSTS header value
         hsts_header = constants.HEADER_ARGS["Strict-Transport-Security"][:-1]
         initial_maxage = constants.AUTOHSTS_STEPS[0]
-        hsts_header.append("\"max-age={0}\"".format(initial_maxage))
+        hsts_header.append(f"\"max-age={initial_maxage}\"")
 
         # Add ID to the VirtualHost for mapping back to it later
         uniq_id = self.add_vhost_id(ssl_vhost)
         if uniq_id is None:
             raise errors.Error("Could not generate a unique id")  # pragma: no cover
-        self.save_notes += "Adding unique ID {0} to VirtualHost in {1}\n".format(
-            uniq_id, ssl_vhost.filep)
+        self.save_notes += f"Adding unique ID {uniq_id} to VirtualHost in {ssl_vhost.filep}\n"
         # Add the actual HSTS header
         self.parser.add_dir(ssl_vhost.path, "Header", hsts_header)
         note_msg = ("Adding gradually increasing HSTS header with initial value "
-                    "of {0} to VirtualHost in {1}\n".format(
-            initial_maxage, ssl_vhost.filep))
+                    f"of {initial_maxage} to VirtualHost in {ssl_vhost.filep}\n")
         self.save_notes += note_msg
 
         # Save the current state to pluginstorage
@@ -2630,15 +2628,15 @@ class ApacheConfigurator(common.Configurator):
                 try:
                     vhost = self.find_vhost_by_id(id_str)
                 except errors.PluginError:
-                    msg = ("Could not find VirtualHost with ID {0}, disabling "
-                           "AutoHSTS for this VirtualHost").format(id_str)
+                    msg = (f"Could not find VirtualHost with ID {id_str}, disabling "
+                           "AutoHSTS for this VirtualHost")
                     logger.error(msg)
                     # Remove the orphaned AutoHSTS entry from pluginstorage
                     self._autohsts.pop(id_str)
                     continue
                 self._autohsts_increase(vhost, id_str, nextstep)
                 msg = ("Increasing HSTS max-age value for VirtualHost with id "
-                       "{0}").format(id_str)
+                       f"{id_str}")
                 self.save_notes += msg
                 save_and_restart = True
 
@@ -2670,8 +2668,8 @@ class ApacheConfigurator(common.Configurator):
                 try:
                     vhost: obj.VirtualHost = self.find_vhost_by_id(id_str)
                 except errors.PluginError:
-                    msg = ("VirtualHost with id {} was not found, unable to "
-                           "make HSTS max-age permanent.").format(id_str)
+                    msg = (f"VirtualHost with id {id_str} was not found, unable to "
+                           "make HSTS max-age permanent.")
                     logger.error(msg)
                     self._autohsts.pop(id_str)
                     continue
@@ -2683,7 +2681,7 @@ class ApacheConfigurator(common.Configurator):
         for vhost in vhosts:
             self._autohsts_write(vhost, constants.AUTOHSTS_PERMANENT)
             msg = ("Strict-Transport-Security max-age value for "
-                   "VirtualHost in {0} was made permanent.").format(vhost.filep)
+                   f"VirtualHost in {vhost.filep} was made permanent.")
             logger.debug(msg)
             self.save_notes += msg+"\n"
             save_and_restart = True

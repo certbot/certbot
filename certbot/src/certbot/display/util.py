@@ -176,8 +176,8 @@ def assert_valid_call(prompt: str, default: str, cli_flag: str, force_interactiv
     :param bool force_interactive: if interactivity is forced
 
     """
-    msg = "Invalid display call for this prompt:\n{0}".format(prompt)
+    msg = f"Invalid display call for this prompt:\n{prompt}"
     if cli_flag:
         msg += ("\nYou can set an answer to "
-                "this prompt with the {0} flag".format(cli_flag))
+                f"this prompt with the {cli_flag} flag")
     assert default is not None or force_interactive, msg

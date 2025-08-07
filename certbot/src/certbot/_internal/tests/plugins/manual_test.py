@@ -64,14 +64,14 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     def test_script_perform(self):
         self.config.manual_auth_hook = (
-            '{0} -c "'
+            f'{sys.executable} -c "'
             'from certbot.compat import os;'
             'print(os.environ.get(\'CERTBOT_DOMAIN\'));'
             'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
             'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));'
             'print(os.environ.get(\'CERTBOT_ALL_DOMAINS\'));'
             'print(os.environ.get(\'CERTBOT_REMAINING_CHALLENGES\'));"'
-            .format(sys.executable))
+            )
         dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
             self.dns_achall.domain, 'notoken',
             self.dns_achall.validation(self.dns_achall.account_key),
@@ -107,8 +107,8 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             assert kwargs['wrap'] is False
 
     def test_cleanup(self):
-        self.config.manual_auth_hook = ('{0} -c "import sys; sys.stdout.write(\'foo\')"'
-                                        .format(sys.executable))
+        self.config.manual_auth_hook = (f'{sys.executable} -c "import sys; sys.stdout.write(\'foo\')"'
+                                        )
         self.config.manual_cleanup_hook = '# cleanup'
         self.auth.perform(self.achalls)
 

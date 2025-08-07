@@ -9,7 +9,7 @@ import shutil
 import tempfile
 from typing import Any
 from typing import Callable
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Set
@@ -80,7 +80,7 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):
         # dummy function, doesn't check if dest.startswith(self.dest_namespace)
         def add(arg_name_no_prefix: str, *args: Any, **kwargs: Any) -> None:
             parser.add_argument(
-                "--{0}{1}".format(option_namespace(name), arg_name_no_prefix),
+                f"--{option_namespace(name)}{arg_name_no_prefix}",
                 *args, **kwargs)
         return cls.add_parser_arguments(add)
 
@@ -129,10 +129,10 @@ class Plugin(AbstractPlugin, metaclass=ABCMeta):
         # This is a fallback hint. Authenticators should implement their own auth_hint that
         # addresses the specific mechanics of that authenticator.
         challs = " and ".join(sorted({achall.typ for achall in failed_achalls}))
-        return ("The Certificate Authority couldn't externally verify that the {name} plugin "
-                "completed the required {challs} challenges. Ensure the plugin is configured "
+        return (f"The Certificate Authority couldn't externally verify that the {self.name} plugin "
+                f"completed the required {challs} challenges. Ensure the plugin is configured "
                 "correctly and that the changes it makes are accessible from the internet."
-                .format(name=self.name, challs=challs))
+                )
 
 
 class Installer(AbstractInstaller, Plugin, metaclass=ABCMeta):
@@ -422,7 +422,7 @@ def install_version_controlled_file(dest_path: str, digest_path: str, src_path: 
     else:  # has been manually modified, not safe to update
         # did they modify the current version or an old version?
         if os.path.isfile(digest_path):
-            with open(digest_path, "r") as f:
+            with open(digest_path) as f:
                 saved_digest = f.read()
             # they modified it after we either installed or told them about this version, so return
             if saved_digest == current_hash:

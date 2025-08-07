@@ -1,7 +1,7 @@
 """Module to handle the context of nginx integration tests."""
 import os
 import subprocess
-from typing import Iterable
+from collections.abc import Iterable
 from typing import Tuple
 
 import pytest
@@ -60,7 +60,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         process = subprocess.Popen(['nginx', '-c', self.nginx_config_path, '-g', 'daemon off;'])
 
         assert process.poll() is None
-        misc.check_until_timeout('http://localhost:{0}'.format(self.http_01_port))
+        misc.check_until_timeout(f'http://localhost:{self.http_01_port}')
         return process
 
     def _stop_nginx(self) -> None:

@@ -70,7 +70,7 @@ class CryptographyCertOrReqSANTest(unittest.TestCase):
 
     def test_cert_hundred_sans(self):
         assert self._call_cert('cert-100sans.pem') == \
-                         ['example{0}.com'.format(i) for i in range(1, 101)]
+                         [f'example{i}.com' for i in range(1, 101)]
 
     def test_cert_idn_sans(self):
         assert self._call_cert('cert-idnsans.pem') == \
@@ -94,7 +94,7 @@ class CryptographyCertOrReqSANTest(unittest.TestCase):
 
     def test_csr_hundred_sans(self):
         assert self._call_csr('csr-100sans.pem') == \
-                         ['example{0}.com'.format(i) for i in range(1, 101)]
+                         [f'example{i}.com' for i in range(1, 101)]
 
     def test_csr_idn_sans(self):
         assert self._call_csr('csr-idnsans.pem') == \

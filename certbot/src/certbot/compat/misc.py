@@ -2,7 +2,6 @@
 This compat module handles various platform specific calls that do not fall into one
 particular category.
 """
-from __future__ import absolute_import
 
 import logging
 import select
@@ -156,12 +155,12 @@ def execute_command_status(cmd_name: str, shell_cmd: str,
 
     if POSIX_MODE:
         proc = subprocess.run(shell_cmd, shell=True, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE, universal_newlines=True,
+                              stderr=subprocess.PIPE, text=True,
                               check=False, env=env)
     else:
         line = ['powershell.exe', '-Command', shell_cmd]
         proc = subprocess.run(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                              universal_newlines=True, check=False, env=env)
+                              text=True, check=False, env=env)
 
     # universal_newlines causes stdout and stderr to be str objects instead of
     # bytes in Python 3

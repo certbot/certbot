@@ -36,7 +36,7 @@ def parens_around_char(label: str) -> str:
     :param str label: Must contain at least one character
 
     """
-    return "({first}){rest}".format(first=label[0], rest=label[1:])
+    return f"({label[0]}){label[1:]}"
 
 
 def input_with_timeout(prompt: Optional[str] = None, timeout: float = 36000.0) -> str:
@@ -105,7 +105,7 @@ def summarize_domain_list(domains: List[str]) -> str:
     elif length == 2:
         return " and ".join(domains)
     else:
-        return "{0} and {1} more domains".format(domains[0], length-1)
+        return f"{domains[0]} and {length-1} more domains"
 
 
 def describe_acme_error(error: acme_messages.Error) -> str:

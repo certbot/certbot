@@ -2,7 +2,7 @@
 
 import logging
 from typing import cast
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -160,7 +160,7 @@ def choose_plugin(prepared: List[disco.PluginEntryPoint],
                 display_util.notification(
                     "The selected plugin encountered an error while parsing "
                     "your server configuration and cannot be used. The error "
-                    "was:\n\n{0}".format(plugin_ep.prepare()), pause=False)
+                    f"was:\n\n{plugin_ep.prepare()}", pause=False)
             else:
                 return plugin_ep
         else:
@@ -218,11 +218,10 @@ def choose_configurator_plugins(config: configuration.NamespaceConfig,
         need_inst = need_auth = True
         from certbot._internal.cli import cli_command
         if req_auth in noninstaller_plugins and not req_inst:
-            msg = ('With the {0} plugin, you probably want to use the "certonly" command, eg:{1}'
-                   '{1}    {2} certonly --{0}{1}{1}'
+            msg = (f'With the {req_auth} plugin, you probably want to use the "certonly" command, eg:{os.linesep}'
+                   f'{os.linesep}    {cli_command} certonly --{req_auth}{os.linesep}{os.linesep}'
                    '(Alternatively, add a --installer flag. See https://eff.org/letsencrypt-plugins'
-                   '{1} and "--help plugins" for more information.)'.format(
-                       req_auth, os.linesep, cli_command))
+                   f'{os.linesep} and "--help plugins" for more information.)')
 
             raise errors.MissingCommandlineFlag(msg)
     else:
@@ -357,18 +356,18 @@ def diagnose_configurator_problem(cfg_type: str, requested: Optional[str],
 
     if requested:
         if requested not in plugins:
-            msg = "The requested {0} plugin does not appear to be installed".format(requested)
+            msg = f"The requested {requested} plugin does not appear to be installed"
         else:
-            msg = ("The {0} plugin is not working; there may be problems with "
-                   "your existing configuration.\nThe error was: {1!r}"
-                   .format(requested, plugins[requested].problem))
+            msg = (f"The {requested} plugin is not working; there may be problems with "
+                   f"your existing configuration.\nThe error was: {plugins[requested].problem!r}"
+                   )
     elif cfg_type == "installer":
         from certbot._internal.cli import cli_command
         msg = ('Certbot doesn\'t know how to automatically configure the web '
           'server on this system. However, it can still get a certificate for '
-          'you. Please run "{0} certonly" to do so. You\'ll need to '
+          f'you. Please run "{cli_command} certonly" to do so. You\'ll need to '
           'manually configure your web server to use the resulting '
-          'certificate.').format(cli_command)
+          'certificate.')
     else:
-        msg = "{0} could not be determined or is not installed".format(cfg_type)
+        msg = f"{cfg_type} could not be determined or is not installed"
     raise errors.PluginSelectionError(msg)

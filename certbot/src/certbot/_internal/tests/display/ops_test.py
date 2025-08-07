@@ -1,4 +1,3 @@
-# coding=utf-8
 """Test certbot.display.ops."""
 import sys
 import unittest
@@ -147,19 +146,18 @@ class GenHttpsNamesTest(unittest.TestCase):
         ]
         for doms in domains_list:
             assert self._call(doms) == \
-                "https://{dom[0]} and https://{dom[1]}".format(dom=doms)
+                f"https://{doms[0]} and https://{doms[1]}"
 
     def test_three(self):
         doms = ["a.org", "b.org", "c.org"]
         # We use an oxford comma
         assert self._call(doms) == \
-            "https://{dom[0]}, https://{dom[1]}, and https://{dom[2]}".format(
-                dom=doms)
+            f"https://{doms[0]}, https://{doms[1]}, and https://{doms[2]}"
 
     def test_four(self):
         doms = ["a.org", "b.org", "c.org", "d.org"]
-        exp = ("https://{dom[0]}, https://{dom[1]}, https://{dom[2]}, "
-               "and https://{dom[3]}".format(dom=doms))
+        exp = (f"https://{doms[0]}, https://{doms[1]}, https://{doms[2]}, "
+               f"and https://{doms[3]}")
 
         assert self._call(doms) == exp
 
@@ -292,7 +290,7 @@ class ChooseNamesTest(unittest.TestCase):
         with mock.patch(
                 "certbot.display.ops.internal_display_util.separate_list_input"
         ) as mock_sli:
-            unicode_error = UnicodeEncodeError('mock', u'', 0, 1, 'mock')
+            unicode_error = UnicodeEncodeError('mock', '', 0, 1, 'mock')
             mock_sli.side_effect = unicode_error
             assert _choose_names_manually() == []
         # Valid domains
@@ -371,7 +369,7 @@ class SuccessRevocationTest(unittest.TestCase):
         self._call(path)
         mock_notify.assert_called_once_with(
             "Congratulations! You have successfully revoked the certificate "
-            "that was located at {0}.".format(path)
+            f"that was located at {path}."
         )
 
 

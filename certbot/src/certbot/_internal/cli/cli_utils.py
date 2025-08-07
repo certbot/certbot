@@ -4,10 +4,10 @@ import copy
 import glob
 import inspect
 from typing import Any
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
-from typing import Sequence
+from collections.abc import Sequence
 from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
@@ -184,7 +184,7 @@ def parse_preferred_challenges(pref_challs: Iterable[str]) -> List[str]:
                              if name not in challenges.Challenge.TYPES)
     if unrecognized:
         raise errors.Error(
-            "Unrecognized challenges: {0}".format(unrecognized))
+            f"Unrecognized challenges: {unrecognized}")
     return challs
 
 

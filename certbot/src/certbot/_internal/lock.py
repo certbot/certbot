@@ -45,7 +45,7 @@ class LockFile:
         self.acquire()
 
     def __repr__(self) -> str:
-        repr_str = '{0}({1}) <'.format(self.__class__.__name__, self._path)
+        repr_str = f'{self.__class__.__name__}({self._path}) <'
         if self.is_locked():
             repr_str += 'acquired>'
         else:

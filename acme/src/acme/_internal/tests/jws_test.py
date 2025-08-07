@@ -14,7 +14,7 @@ class HeaderTest(unittest.TestCase):
     """Tests for acme.jws.Header."""
 
     good_nonce = jose.encode_b64jose(b'foo')
-    wrong_nonce = u'F'
+    wrong_nonce = 'F'
     # Following just makes sure wrong_nonce is wrong
     try:
         jose.b64decode(wrong_nonce)

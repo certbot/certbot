@@ -10,7 +10,7 @@ import time
 from typing import Any
 from typing import cast
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Set
 from typing import Tuple
@@ -766,7 +766,7 @@ class ClientNetwork:
             debug_content = response.text
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
-                     "\n".join("{0}: {1}".format(k, v)
+                     "\n".join(f"{k}: {v}"
                                 for k, v in response.headers.items()),
                      debug_content)
         return response

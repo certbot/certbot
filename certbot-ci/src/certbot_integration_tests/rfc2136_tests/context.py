@@ -2,8 +2,8 @@
 from contextlib import contextmanager
 import importlib.resources
 import tempfile
-from typing import Generator
-from typing import Iterable
+from collections.abc import Generator
+from collections.abc import Iterable
 from typing import Tuple
 
 import pytest
@@ -46,13 +46,13 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         src_ref_file = (importlib.resources.files('certbot_integration_tests').joinpath('assets')
                         .joinpath('bind-config').joinpath(f'rfc2136-credentials-{label}.ini.tpl'))
         with importlib.resources.as_file(src_ref_file) as src_file:
-            with open(src_file, 'r') as f:
+            with open(src_file) as f:
                 contents = f.read().format(
                     server_address=self._dns_xdist['address'],
                     server_port=self._dns_xdist['port']
                 )
 
-        with tempfile.NamedTemporaryFile('w+', prefix='rfc2136-creds-{}'.format(label),
+        with tempfile.NamedTemporaryFile('w+', prefix=f'rfc2136-creds-{label}',
                                          suffix='.ini', dir=self.workspace) as fp:
             fp.write(contents)
             fp.flush()

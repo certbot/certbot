@@ -3,9 +3,9 @@ import abc
 import logging
 from time import sleep
 from typing import Callable
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Type
 
@@ -217,16 +217,16 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
 
         def __validator(i: str) -> None:  # pylint: disable=unused-private-member
             if not i:
-                raise errors.PluginError('Please enter your {0}.'.format(label))
+                raise errors.PluginError(f'Please enter your {label}.')
 
         code, response = ops.validated_input(
             __validator,
-            'Input your {0}'.format(label),
+            f'Input your {label}',
             force_interactive=True)
 
         if code == display_util.OK:
             return response
-        raise errors.PluginError('{0} required to proceed.'.format(label))
+        raise errors.PluginError(f'{label} required to proceed.')
 
     @staticmethod
     def _prompt_for_file(label: str, validator: Optional[Callable[[str], None]] = None) -> str:
@@ -243,7 +243,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
 
         def __validator(filename: str) -> None:  # pylint: disable=unused-private-member
             if not filename:
-                raise errors.PluginError('Please enter a valid path to your {0}.'.format(label))
+                raise errors.PluginError(f'Please enter a valid path to your {label}.')
 
             filename = os.path.expanduser(filename)
 
@@ -254,12 +254,12 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
 
         code, response = ops.validated_directory(
             __validator,
-            'Input the path to your {0}'.format(label),
+            f'Input the path to your {label}',
             force_interactive=True)
 
         if code == display_util.OK:
             return response
-        raise errors.PluginError('{0} required to proceed.'.format(label))
+        raise errors.PluginError(f'{label} required to proceed.')
 
 
 class CredentialsConfiguration:
@@ -283,10 +283,7 @@ class CredentialsConfiguration:
                 exc_info=True
             )
             raise errors.PluginError(
-                "Error parsing credentials configuration '{}': {}".format(
-                    filename,
-                    e
-                )
+                f"Error parsing credentials configuration '{filename}': {e}"
             )
 
         self.mapper = mapper
@@ -301,11 +298,11 @@ class CredentialsConfiguration:
 
         for var in required_variables:
             if not self._has(var):
-                messages.append('Property "{0}" not found (should be {1}).'
-                                .format(self.mapper(var), required_variables[var]))
+                messages.append(f'Property "{self.mapper(var)}" not found (should be {required_variables[var]}).'
+                                )
             elif not self._get(var):
-                messages.append('Property "{0}" not set (should be {1}).'
-                                .format(self.mapper(var), required_variables[var]))
+                messages.append(f'Property "{self.mapper(var)}" not set (should be {required_variables[var]}).'
+                                )
 
         if messages:
             raise errors.PluginError(
@@ -337,10 +334,10 @@ def validate_file(filename: str) -> None:
     """Ensure that the specified file exists."""
 
     if not os.path.exists(filename):
-        raise errors.PluginError('File not found: {0}'.format(filename))
+        raise errors.PluginError(f'File not found: {filename}')
 
     if os.path.isdir(filename):
-        raise errors.PluginError('Path is a directory: {0}'.format(filename))
+        raise errors.PluginError(f'Path is a directory: {filename}')
 
 
 def validate_file_permissions(filename: str) -> None:

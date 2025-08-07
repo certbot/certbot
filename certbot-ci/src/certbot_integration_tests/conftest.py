@@ -77,7 +77,7 @@ def _setup_primary_node(config):
     """
     # Parameter numprocesses is added to option by pytest-xdist
     workers = ['primary'] if not config.option.numprocesses\
-        else ['gw{0}'.format(i) for i in range(config.option.numprocesses)]
+        else [f'gw{i}' for i in range(config.option.numprocesses)]
 
     # If a non-default DNS server is configured, start it and feed it to the ACME server
     dns_server = None
@@ -85,7 +85,7 @@ def _setup_primary_node(config):
     if config.option.dns_server == 'bind':
         dns_server = dns_lib.DNSServer(workers)
         config.add_cleanup(dns_server.stop)
-        print('DNS xdist config:\n{0}'.format(dns_server.dns_xdist))
+        print(f'DNS xdist config:\n{dns_server.dns_xdist}')
         dns_server.start()
         acme_dns_server = '{}:{}'.format(
             dns_server.dns_xdist['address'],
@@ -96,7 +96,7 @@ def _setup_primary_node(config):
     # fully started. This runtime is reflected by the acme_xdist returned.
     acme_server = acme_lib.ACMEServer(workers, dns_server=acme_dns_server)
     config.add_cleanup(acme_server.stop)
-    print('ACME xdist config:\n{0}'.format(acme_server.acme_xdist))
+    print(f'ACME xdist config:\n{acme_server.acme_xdist}')
     acme_server.start()
 
     config.acme_xdist = acme_server.acme_xdist

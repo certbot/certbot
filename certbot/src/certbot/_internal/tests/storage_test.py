@@ -162,7 +162,7 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
         if os.path.lexists(link):
             os.unlink(link)
         os.symlink(os.path.join(os.path.pardir, os.path.pardir, "archive",
-                                "example.org", "{0}{1}.pem".format(kind, ver)),
+                                "example.org", f"{kind}{ver}.pem"),
                    link)
         with open(link, "wb") as f:
             f.write(kind.encode('ascii') if value is None else value)
@@ -764,7 +764,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         from certbot._internal import storage
         storage.write_renewal_config(temp, temp2, archive_dir, target, relevant_data)
 
-        with open(temp2, "r") as f:
+        with open(temp2) as f:
             content = f.read()
         # useful value was updated
         assert "useful = new_value" in content
@@ -773,7 +773,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # useless value was deleted
         assert "useless" not in content
         # check version was stored
-        assert "version = {0}".format(certbot.__version__) in content
+        assert f"version = {certbot.__version__}" in content
         # ensure permissions are copied
         assert stat.S_IMODE(os.lstat(temp).st_mode) == \
                          stat.S_IMODE(os.lstat(temp2).st_mode)

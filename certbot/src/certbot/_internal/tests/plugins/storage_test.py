@@ -106,7 +106,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
         assert another.storage.fetch("testkey") == "testvalue"
 
         with open(os.path.join(self.config.config_dir,
-                               ".pluginstorage.json"), 'r') as fh:
+                               ".pluginstorage.json")) as fh:
             psdata = fh.read()
         psjson = json.loads(psdata)
         assert "mockplugin" in psjson.keys()

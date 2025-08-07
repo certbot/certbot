@@ -36,7 +36,7 @@ def certbot_test(certbot_args: List[str], directory_url: Optional[str], http_01_
                                      config_dir, workspace, force_renew)
 
     proc = subprocess.run(command, stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE, check=False, universal_newlines=True,
+                          stderr=subprocess.PIPE, check=False, text=True,
                           cwd=workspace, env=env)
     print('--> Certbot log output was:')
     print(proc.stderr)
@@ -114,7 +114,7 @@ def _prepare_args_env(certbot_args: List[str], directory_url: Optional[str], htt
     command.extend(certbot_args)
     command.extend(additional_args)
 
-    print('--> Invoke command:\n=====\n{0}\n====='.format(subprocess.list2cmdline(command)))
+    print(f'--> Invoke command:\n=====\n{subprocess.list2cmdline(command)}\n=====')
 
     return command, new_environ
 
@@ -131,10 +131,10 @@ def main() -> None:
     # Execution of certbot in a self-contained workspace
     workspace = os.environ.get('WORKSPACE', os.path.join(os.getcwd(), '.certbot_test_workspace'))
     if not os.path.exists(workspace):
-        print('--> Creating a workspace for certbot_test: {0}'.format(workspace))
+        print(f'--> Creating a workspace for certbot_test: {workspace}')
         os.mkdir(workspace)
     else:
-        print('--> Using an existing workspace for certbot_test: {0}'.format(workspace))
+        print(f'--> Using an existing workspace for certbot_test: {workspace}')
     config_dir = os.path.join(workspace, 'conf')
 
     # Invoke certbot in test mode, without capturing output so users see directly the outcome.

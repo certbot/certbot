@@ -84,7 +84,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         directives = self.config.parser_root.find_directives("Listen")
         assert len(directives) == 1
         assert directives[0].filepath.endswith("/apache2/ports.conf") is True
-        assert directives[0].parameters == (u'80',)
+        assert directives[0].parameters == ('80',)
 
     def test_find_directive_notfound(self):
         directives = self.config.parser_root.find_directives("Nonexistent")
@@ -204,7 +204,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         parser = self.config.parser_root.parser
         root_path = self.config.parser_root.metadata["augeaspath"]
         # Get first child
-        first = parser.aug.match("{}/*[1]".format(root_path))
+        first = parser.aug.match(f"{root_path}/*[1]")
         assert first[0].endswith("Beginning") is True
 
     def test_add_child_block_append(self):
@@ -214,7 +214,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         parser = self.config.parser_root.parser
         root_path = self.config.parser_root.metadata["augeaspath"]
         # Get last child
-        last = parser.aug.match("{}/*[last()]".format(root_path))
+        last = parser.aug.match(f"{root_path}/*[last()]")
         assert last[0].endswith("VeryLast") is True
 
     def test_add_child_block_append_alt(self):
@@ -225,7 +225,7 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         parser = self.config.parser_root.parser
         root_path = self.config.parser_root.metadata["augeaspath"]
         # Get last child
-        last = parser.aug.match("{}/*[last()]".format(root_path))
+        last = parser.aug.match(f"{root_path}/*[last()]")
         assert last[0].endswith("VeryLastAlt") is True
 
     def test_add_child_block_middle(self):
@@ -236,19 +236,19 @@ class AugeasParserNodeTest(util.ApacheTest):  # pylint: disable=too-many-public-
         parser = self.config.parser_root.parser
         root_path = self.config.parser_root.metadata["augeaspath"]
         # Augeas indices start at 1 :(
-        middle = parser.aug.match("{}/*[6]".format(root_path))
+        middle = parser.aug.match(f"{root_path}/*[6]")
         assert middle[0].endswith("Middle") is True
 
     def test_add_child_block_existing_name(self):
         parser = self.config.parser_root.parser
         root_path = self.config.parser_root.metadata["augeaspath"]
         # There already exists a single VirtualHost in the base config
-        new_block = parser.aug.match("{}/VirtualHost[2]".format(root_path))
+        new_block = parser.aug.match(f"{root_path}/VirtualHost[2]")
         assert len(new_block) == 0
         vh = self.config.parser_root.add_child_block(
             "VirtualHost",
         )
-        new_block = parser.aug.match("{}/VirtualHost[2]".format(root_path))
+        new_block = parser.aug.match(f"{root_path}/VirtualHost[2]")
         assert len(new_block) == 1
         assert vh.metadata["augeaspath"].endswith("VirtualHost[2]") is True
 

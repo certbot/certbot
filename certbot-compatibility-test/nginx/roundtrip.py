@@ -12,14 +12,14 @@ def roundtrip(stuff):
         print(t)
         if not os.path.isfile(t):
             continue
-        with open(t, "r") as f:
+        with open(t) as f:
             config = f.read()
             try:
                 if nginxparser.dumps(nginxparser.loads(config)) != config:
-                    print("Failed parsing round-trip for {0}".format(t))
+                    print(f"Failed parsing round-trip for {t}")
                     success = False
             except Exception as e:
-                print("Failed parsing {0} ({1})".format(t, e))
+                print(f"Failed parsing {t} ({e})")
                 success = False
     return success
 

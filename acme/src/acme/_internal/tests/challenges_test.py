@@ -78,11 +78,11 @@ class DNS01ResponseTest(unittest.TestCase):
 
     def setUp(self):
         from acme.challenges import DNS01Response
-        self.msg = DNS01Response(key_authorization=u'foo')
+        self.msg = DNS01Response(key_authorization='foo')
         self.jmsg = {
             'resource': 'challenge',
             'type': 'dns-01',
-            'keyAuthorization': u'foo',
+            'keyAuthorization': 'foo',
         }
 
         from acme.challenges import DNS01
@@ -147,11 +147,11 @@ class HTTP01ResponseTest(unittest.TestCase):
 
     def setUp(self):
         from acme.challenges import HTTP01Response
-        self.msg = HTTP01Response(key_authorization=u'foo')
+        self.msg = HTTP01Response(key_authorization='foo')
         self.jmsg = {
             'resource': 'challenge',
             'type': 'http-01',
-            'keyAuthorization': u'foo',
+            'keyAuthorization': 'foo',
         }
 
         from acme.challenges import HTTP01

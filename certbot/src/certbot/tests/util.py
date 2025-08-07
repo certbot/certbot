@@ -15,7 +15,7 @@ from typing import Any
 from typing import Callable
 from typing import cast
 from typing import IO
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Union
@@ -177,8 +177,8 @@ def make_lineage(config_dir: str, testfile: str, ec: bool = True) -> str:
                         os.path.join(archive_dir, kind))
 
     for kind in storage.ALL_FOUR:
-        os.symlink(os.path.join(archive_dir, '{0}1.pem'.format(kind)),
-                   os.path.join(live_dir, '{0}.pem'.format(kind)))
+        os.symlink(os.path.join(archive_dir, f'{kind}1.pem'),
+                   os.path.join(live_dir, f'{kind}.pem'))
 
     conf_path = os.path.join(config_dir, conf_dir, testfile)
     with open(vector_path(testfile)) as src:

@@ -59,7 +59,7 @@ def assert_hook_execution(probe_path: str, probe_content: str) -> None:
     :param str probe_content: content expected when the hook is executed
     """
     encoding = 'utf-8' if POSIX_MODE else 'utf-16'
-    with open(probe_path, 'rt', encoding=encoding) as file:
+    with open(probe_path, encoding=encoding) as file:
         data = file.read()
 
     lines = [line.strip() for line in data.splitlines()]

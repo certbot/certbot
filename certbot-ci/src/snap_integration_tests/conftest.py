@@ -44,5 +44,5 @@ def pytest_generate_tests(metafunc):
         snap_arch = metafunc.config.getoption('snap_arch')
         snap_folder = metafunc.config.getoption('snap_folder')
         snap_dns_path_list = glob.glob(os.path.join(snap_folder,
-                                                    'certbot-dns-*_{0}.snap'.format(snap_arch)))
+                                                    f'certbot-dns-*_{snap_arch}.snap'))
         metafunc.parametrize("dns_snap_path", snap_dns_path_list)

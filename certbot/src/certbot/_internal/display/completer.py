@@ -2,7 +2,7 @@
 import glob
 from types import TracebackType
 from typing import Callable
-from typing import Iterator
+from collections.abc import Iterator
 from typing import Literal
 from typing import Optional
 from typing import Type

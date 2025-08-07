@@ -5,7 +5,7 @@ import re
 import traceback
 from typing import Any
 from typing import Callable
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -40,7 +40,7 @@ def rename_lineage(config: configuration.NamespaceConfig) -> None:
     new_certname = config.new_certname
     if not new_certname:
         code, new_certname = display_util.input_text(
-            "Enter the new name for certificate {0}".format(certname),
+            f"Enter the new name for certificate {certname}",
             force_interactive=True)
         if code != display_util.OK or not new_certname:
             raise errors.Error("User ended interaction.")
@@ -48,10 +48,10 @@ def rename_lineage(config: configuration.NamespaceConfig) -> None:
     lineage = lineage_for_certname(config, certname)
     if not lineage:
         raise errors.ConfigurationError("No existing certificate with name "
-            "{0} found.".format(certname))
+            f"{certname} found.")
     storage.rename_renewal_config(certname, new_certname, config)
-    display_util.notification("Successfully renamed {0} to {1}."
-                                 .format(certname, new_certname), pause=False)
+    display_util.notification(f"Successfully renamed {certname} to {new_certname}."
+                                 , pause=False)
 
 
 def certificates(config: configuration.NamespaceConfig) -> None:
@@ -95,8 +95,8 @@ def delete(config: configuration.NamespaceConfig) -> None:
         return
     for certname in certnames:
         storage.delete_files(config, certname)
-        display_util.notify("Deleted all files relating to certificate {0}."
-                            .format(certname))
+        display_util.notify(f"Deleted all files relating to certificate {certname}."
+                            )
 
 ###################
 # Public Helpers
@@ -197,7 +197,7 @@ def _archive_files(candidate_lineage: storage.RenewableCert, filetype: str) -> O
     """
     archive_dir = candidate_lineage.archive_dir
     pattern = [os.path.join(archive_dir, f) for f in os.listdir(archive_dir)
-                    if re.match("{0}[0-9]*.pem".format(filetype), f)]
+                    if re.match(f"{filetype}[0-9]*.pem", f)]
     if pattern:
         return pattern
     return None
@@ -304,7 +304,7 @@ def human_readable_cert_info(config: configuration.NamespaceConfig, cert: storag
         else:
             status = f"VALID: {diff.days} days"
 
-    valid_string = "{0} ({1})".format(cert.target_expiry, status)
+    valid_string = f"{cert.target_expiry} ({status})"
     serial = format(crypto_util.get_serial_from_cert(cert.cert_path), 'x')
     certinfo.append(f"  Certificate Name: {cert.lineagename}\n"
                     f"    Serial Number: {serial}\n"
@@ -329,7 +329,7 @@ def get_certnames(config: configuration.NamespaceConfig, verb: str, allow_multip
             raise errors.Error("No existing certificates found.")
         if allow_multiple:
             if not custom_prompt:
-                prompt = "Which certificate(s) would you like to {0}?".format(verb)
+                prompt = f"Which certificate(s) would you like to {verb}?"
             else:
                 prompt = custom_prompt
             code, certnames = display_util.checklist(
@@ -338,7 +338,7 @@ def get_certnames(config: configuration.NamespaceConfig, verb: str, allow_multip
                 raise errors.Error("User ended interaction.")
         else:
             if not custom_prompt:
-                prompt = "Which certificate would you like to {0}?".format(verb)
+                prompt = f"Which certificate would you like to {verb}?"
             else:
                 prompt = custom_prompt
 
@@ -384,7 +384,7 @@ def _describe_certs(config: configuration.NamespaceConfig,
     else:
         if parsed_certs:
             match = "matching " if config.certname or config.domains else ""
-            notify("Found the following {0}certs:".format(match))
+            notify(f"Found the following {match}certs:")
             notify(_report_human_readable(config, parsed_certs))
         if parse_failures:
             notify("\nThe following renewal configurations "

@@ -2,7 +2,7 @@
 import datetime
 from typing import Any
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 
 import josepy as jose
 

@@ -445,7 +445,7 @@ class RenameLineageTest(BaseCertManagerTest):
         with pytest.raises(errors.ConfigurationError):
             self._call(self.config)
 
-        self.config.new_certname = "one{0}two".format(os.path.sep)
+        self.config.new_certname = f"one{os.path.sep}two"
         with pytest.raises(errors.ConfigurationError):
             self._call(self.config)
 

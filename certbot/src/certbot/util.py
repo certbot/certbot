@@ -117,9 +117,9 @@ class LooseVersion:
                     return 1
             return 0
         except TypeError:
-            raise ValueError("Cannot meaningfully compare LooseVersion {} with LooseVersion {} "
+            raise ValueError(f"Cannot meaningfully compare LooseVersion {self.version_components} with LooseVersion {other.version_components} "
                              "due to comparison of version components with different types."
-                             .format(self.version_components, other.version_components))
+                             )
 
 
 # ANSI SGR escape codes
@@ -189,7 +189,7 @@ def run_script(params: List[str], log: Callable[[str], None]=logger.error) -> Tu
                               check=False,
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,
-                              universal_newlines=True,
+                              text=True,
                               env=env_no_snap_for_external_calls())
 
     except (OSError, ValueError):
@@ -246,7 +246,7 @@ def _release_locks() -> None:
         try:
             dir_lock.release()
         except:  # pylint: disable=bare-except
-            msg = 'Exception occurred releasing lock: {0!r}'.format(dir_lock)
+            msg = f'Exception occurred releasing lock: {dir_lock!r}'
             logger.debug(msg, exc_info=True)
     _LOCKS.clear()
 
@@ -451,7 +451,7 @@ def get_var_from_file(varname: str, filepath: str = "/etc/os-release") -> str:
     var_string = varname+"="
     if not os.path.isfile(filepath):
         return ""
-    with open(filepath, 'r') as fh:
+    with open(filepath) as fh:
         contents = fh.readlines()
 
     for line in contents:
@@ -498,14 +498,14 @@ def get_python_os_info(pretty: bool = False) -> Tuple[str, str]:
             proc = subprocess.run(
                 ["/usr/bin/sw_vers", "-productVersion"],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                check=False, universal_newlines=True,
+                check=False, text=True,
                 env=env_no_snap_for_external_calls(),
             )
         except OSError:
             proc = subprocess.run(
                 ["sw_vers", "-productVersion"],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                check=False, universal_newlines=True,
+                check=False, text=True,
                 env=env_no_snap_for_external_calls(),
             )
         os_ver = proc.stdout.rstrip('\n')
@@ -583,22 +583,20 @@ def enforce_le_validity(domain: str) -> str:
     domain = enforce_domain_sanity(domain)
     if not re.match("^[A-Za-z0-9.-]*$", domain):
         raise errors.ConfigurationError(
-            "{0} contains an invalid character. "
-            "Valid characters are A-Z, a-z, 0-9, ., and -.".format(domain))
+            f"{domain} contains an invalid character. "
+            "Valid characters are A-Z, a-z, 0-9, ., and -.")
 
     labels = domain.split(".")
     if len(labels) < 2:
         raise errors.ConfigurationError(
-            "{0} needs at least two labels".format(domain))
+            f"{domain} needs at least two labels")
     for label in labels:
         if label.startswith("-"):
             raise errors.ConfigurationError(
-                'label "{0}" in domain "{1}" cannot start with "-"'.format(
-                    label, domain))
+                f'label "{label}" in domain "{domain}" cannot start with "-"')
         if label.endswith("-"):
             raise errors.ConfigurationError(
-                'label "{0}" in domain "{1}" cannot end with "-"'.format(
-                    label, domain))
+                f'label "{label}" in domain "{domain}" cannot end with "-"')
     return domain
 
 
@@ -631,32 +629,30 @@ def enforce_domain_sanity(domain: Union[str, bytes]) -> str:
     # Separately check for odd "domains" like "http://example.com" to fail
     # fast and provide a clear error message
     for scheme in ["http", "https"]:  # Other schemes seem unlikely
-        if domain.startswith("{0}://".format(scheme)):
+        if domain.startswith(f"{scheme}://"):
             raise errors.ConfigurationError(
-                "Requested name {0} appears to be a URL, not a FQDN. "
-                "Try again without the leading \"{1}://\".".format(
-                    domain, scheme
-                )
+                f"Requested name {domain} appears to be a URL, not a FQDN. "
+                f"Try again without the leading \"{scheme}://\"."
             )
 
     if is_ipaddress(domain):
         raise errors.ConfigurationError(
-            "Requested name {0} is an IP address. The Let's Encrypt "
+            f"Requested name {domain} is an IP address. The Let's Encrypt "
             "certificate authority will not issue certificates for a "
-            "bare IP address.".format(domain))
+            "bare IP address.")
 
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
     # https://tools.ietf.org/html/rfc2181#section-11
-    msg = "Requested domain {0} is not a FQDN because".format(domain)
+    msg = f"Requested domain {domain} is not a FQDN because"
     if len(domain) > 255:
-        raise errors.ConfigurationError("{0} it is too long.".format(msg))
+        raise errors.ConfigurationError(f"{msg} it is too long.")
     labels = domain.split('.')
     for l in labels:
         if not l:
-            raise errors.ConfigurationError("{0} it contains an empty label.".format(msg))
+            raise errors.ConfigurationError(f"{msg} it contains an empty label.")
         if len(l) > 63:
-            raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
+            raise errors.ConfigurationError(f"{msg} label {l} is too long.")
 
     return domain
 

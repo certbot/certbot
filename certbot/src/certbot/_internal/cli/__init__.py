@@ -202,7 +202,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
              "always expand and replace it with the additional names. (default: Ask)")
     helpful.add(
         "automation", "--version", action="version",
-        version="%(prog)s {0}".format(certbot.__version__),
+        version=f"%(prog)s {certbot.__version__}",
         help="show program's version number and exit")
     helpful.add(
         ["automation", "renew"],

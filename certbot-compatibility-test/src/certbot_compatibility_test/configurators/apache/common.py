@@ -46,8 +46,7 @@ class Proxy(configurators_common.Proxy):
             subprocess.check_call("apachectl -k restart".split())
         except errors.Error:
             raise errors.Error(
-                "Apache failed to load {0} before tests started".format(
-                    config))
+                f"Apache failed to load {config} before tests started")
 
         return config
 
@@ -75,7 +74,7 @@ def _get_server_root(config: str) -> str:
         if os.path.isdir(os.path.join(config, name))]
 
     if len(subdirs) != 1:
-        raise errors.Error("Malformed configuration directory {0}".format(config))
+        raise errors.Error(f"Malformed configuration directory {config}")
 
     return os.path.join(config, subdirs[0].rstrip())
 

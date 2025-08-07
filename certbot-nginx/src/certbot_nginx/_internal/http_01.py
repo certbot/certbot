@@ -43,7 +43,7 @@ class NginxHttp01(common.ChallengePerformer):
 
     def __init__(self, configurator: "NginxConfigurator") -> None:
         super().__init__(configurator)
-        self.configurator: "NginxConfigurator"
+        self.configurator: NginxConfigurator
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
 
@@ -149,8 +149,7 @@ class NginxHttp01(common.ChallengePerformer):
         """
         addresses: List[Addr] = []
         default_addr = "%s" % self.configurator.config.http01_port
-        ipv6_addr = "[::]:{0}".format(
-            self.configurator.config.http01_port)
+        ipv6_addr = f"[::]:{self.configurator.config.http01_port}"
         port = self.configurator.config.http01_port
 
         ipv6, ipv6only = self.configurator.ipv6_info("[::]", str(port))

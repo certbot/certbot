@@ -6,8 +6,8 @@ import operator
 import typing
 from typing import Any
 from typing import IO
-from typing import Iterable
-from typing import Iterator
+from collections.abc import Iterable
+from collections.abc import Iterator
 from typing import List
 from typing import overload
 from typing import SupportsIndex
@@ -242,7 +242,7 @@ class UnspacedList(List[Any]):
         """Recurse through the parse tree to figure out if any sublists are dirty"""
         if self.dirty:
             return True
-        return any((isinstance(x, UnspacedList) and x.is_dirty() for x in self))
+        return any(isinstance(x, UnspacedList) and x.is_dirty() for x in self)
 
     def _spaced_position(self, idx: "SupportsIndex") -> int:
         """Convert from indexes in the unspaced list to positions in the spaced one"""

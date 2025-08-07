@@ -12,11 +12,11 @@ import time
 from typing import Any
 from typing import Callable
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
-from typing import Sequence
+from collections.abc import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Type
@@ -247,8 +247,8 @@ class NginxConfigurator(common.Configurator):
         vhosts = self.choose_vhosts(domain, create_if_no_match=True)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
-            display_util.notify("Successfully deployed certificate for {} to {}"
-                                .format(domain, vhost.filep))
+            display_util.notify(f"Successfully deployed certificate for {domain} to {vhost.filep}"
+                                )
 
     def _deploy_cert(self, vhost: obj.VirtualHost, _cert_path: str, key_path: str,
                      _chain_path: str, fullchain_path: str) -> None:
@@ -814,7 +814,7 @@ class NginxConfigurator(common.Configurator):
             self._enhance_func[enhancement](domain, options)
         except (KeyError, ValueError):
             raise errors.PluginError(
-                "Unsupported enhancement: {0}".format(enhancement))
+                f"Unsupported enhancement: {enhancement}")
 
     def _has_certbot_redirect(self, vhost: obj.VirtualHost, domain: str) -> bool:
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
@@ -1006,11 +1006,11 @@ class NginxConfigurator(common.Configurator):
         except errors.MisconfigurationError as error:
             logger.debug(str(error))
             raise errors.PluginError("An error occurred while enabling OCSP "
-                                     "stapling for {0}.".format(vhost.names))
+                                     f"stapling for {vhost.names}.")
 
         self.save_notes += ("OCSP Stapling was enabled "
-                            "on SSL Vhost: {0}.\n".format(vhost.filep))
-        self.save_notes += "\tssl_trusted_certificate {0}\n".format(chain_path)
+                            f"on SSL Vhost: {vhost.filep}.\n")
+        self.save_notes += f"\tssl_trusted_certificate {chain_path}\n"
         self.save_notes += "\tssl_stapling on\n"
         self.save_notes += "\tssl_stapling_verify on\n"
 
@@ -1050,7 +1050,7 @@ class NginxConfigurator(common.Configurator):
                 [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                universal_newlines=True,
+                text=True,
                 check=False,
                 env=util.env_no_snap_for_external_calls())
             text = proc.stderr  # nginx prints output to stderr

@@ -6,7 +6,7 @@ from typing import Any
 from typing import Callable
 from typing import DefaultDict
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Type
 from typing import cast
@@ -121,7 +121,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
 
         if not zones:
             raise errors.PluginError(
-                "Unable to find a Route53 hosted zone for {0}".format(domain)
+                f"Unable to find a Route53 hosted zone for {domain}"
             )
 
         # Order the zones that are suffixes for our desired to domain by
@@ -135,7 +135,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         zone_id = self._find_zone_id_for_domain(validation_domain_name)
 
         rrecords = self._resource_records[validation_domain_name]
-        challenge = {"Value": '"{0}"'.format(validation)}
+        challenge = {"Value": f'"{validation}"'}
         if action == "DELETE":
             # Remove the record being deleted from the list of tracked records
             rrecords.remove(challenge)

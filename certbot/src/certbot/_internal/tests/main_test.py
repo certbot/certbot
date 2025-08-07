@@ -1,4 +1,3 @@
-# coding=utf-8
 """Tests for certbot._internal.main."""
 # pylint: disable=too-many-lines
 import contextlib
@@ -160,7 +159,7 @@ class RunTest(test_util.ConfigTestCase):
             self.addCleanup(patch.stop)
 
     def _call(self):
-        args = '-a webroot -i null -d {0}'.format(self.domain).split()
+        args = f'-a webroot -i null -d {self.domain}'.split()
         plugins = disco.PluginsRegistry.find_all()
         config = cli.prepare_and_parse_args(plugins, args)
 
@@ -445,11 +444,10 @@ class RevokeTest(test_util.TempDirTestCase):
         mock_revoke = mock_acme_client.ClientV2().revoke
         expected = []
         for reason, code in constants.REVOCATION_REASONS.items():
-            args = 'revoke --cert-path={0} --reason {1}'.format(self.tmp_cert_path, reason).split()
+            args = f'revoke --cert-path={self.tmp_cert_path} --reason {reason}'.split()
             self._call(args)
             expected.append(mock.call(mock.ANY, code))
-            args = 'revoke --cert-path={0} --reason {1}'.format(self.tmp_cert_path,
-                    reason.upper()).split()
+            args = f'revoke --cert-path={self.tmp_cert_path} --reason {reason.upper()}'.split()
             self._call(args)
             expected.append(mock.call(mock.ANY, code))
         assert expected == mock_revoke.call_args_list
@@ -571,7 +569,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
         """
         with open(self.renewal_file, 'w') as f:
             f.write(original_config)
-        with open(self.renewal_file, 'r') as f:
+        with open(self.renewal_file) as f:
             self.original_config = configobj.ConfigObj(f,
                 encoding='utf-8', default_encoding='utf-8')
 
@@ -590,7 +588,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
         from certbot._internal.main import reconfigure
         reconfigure(config, plugins)
 
-        with open(self.renewal_file, 'r') as f:
+        with open(self.renewal_file) as f:
             updated_conf = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
 
         return updated_conf
@@ -665,7 +663,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
             assert "Using reconfigure to change the ACME account" in str(err)
 
         # check that config isn't modified
-        with open(self.renewal_file, 'r') as f:
+        with open(self.renewal_file) as f:
             new_config = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
         assert new_config['renewalparams']['account'] == orig_account_id
 
@@ -680,7 +678,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
             assert "Using reconfigure to change the ACME account" in str(err)
 
         # check that config isn't modified
-        with open(self.renewal_file, 'r') as f:
+        with open(self.renewal_file) as f:
             new_config = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
         assert new_config['renewalparams']['server'] == orig_server
 
@@ -713,7 +711,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
             pass
 
         # check that config isn't modified
-        with open(self.renewal_file, 'r') as f:
+        with open(self.renewal_file) as f:
             new_config = configobj.ConfigObj(f, encoding='utf-8', default_encoding='utf-8')
         assert new_config['renewalparams']['authenticator'] == 'nginx'
 
@@ -741,7 +739,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
         """
         with open(self.renewal_file, 'w') as f:
             f.write(original_config)
-        with open(self.renewal_file, 'r') as f:
+        with open(self.renewal_file) as f:
             self.original_config = configobj.ConfigObj(f,
                 encoding='utf-8', default_encoding='utf-8')
 
@@ -1039,7 +1037,7 @@ class MainTest(test_util.ConfigTestCase):
                     pass
                 finally:
                     output = toy_out.getvalue() or toy_err.getvalue()
-                    assert "certbot" in output, "Output is {0}".format(output)
+                    assert "certbot" in output, f"Output is {output}"
 
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
@@ -1346,7 +1344,7 @@ class MainTest(test_util.ConfigTestCase):
 
     def test_csr_with_besteffort(self):
         with pytest.raises(errors.Error):
-            self._call('certonly --csr {0} --allow-subset-of-names'.format(CSR).split())
+            self._call(f'certonly --csr {CSR} --allow-subset-of-names'.split())
 
     def test_run_with_csr(self):
         # This is an error because you can only use --csr with certonly
@@ -1364,7 +1362,7 @@ class MainTest(test_util.ConfigTestCase):
 
     def test_csr_with_inconsistent_domains(self):
         with pytest.raises(errors.Error):
-            self._call('certonly -d example.org --csr {0}'.format(CSR).split())
+            self._call(f'certonly -d example.org --csr {CSR}'.split())
 
     def _certonly_new_request_common(self, mock_client, args=None):
         with mock.patch('certbot._internal.main._find_lineage_for_domains_and_certname') \
@@ -1715,15 +1713,15 @@ class MainTest(test_util.ConfigTestCase):
     def test_renew_with_bad_cli_args(self):
         self._test_renewal_common(True, None, args='renew -d example.com'.split(),
                                   should_renew=False, error_expected=True)
-        self._test_renewal_common(True, None, args='renew --csr {0}'.format(CSR).split(),
+        self._test_renewal_common(True, None, args=f'renew --csr {CSR}'.split(),
                                   should_renew=False, error_expected=True)
 
     def test_no_renewal_with_hooks(self):
         _, _, stdout = self._test_renewal_common(
             due_for_renewal=False, extra_args=None, should_renew=False,
             args=['renew', '--post-hook',
-                  '{0} -c "print(\'hello world\');"'
-                  .format(sys.executable)])
+                  f'{sys.executable} -c "print(\'hello world\');"'
+                  ])
         assert 'No hooks were run.' in stdout.getvalue()
 
     @test_util.patch_display_util()
@@ -1758,9 +1756,8 @@ class MainTest(test_util.ConfigTestCase):
             chain_path = os.path.normpath(os.path.join(
                 self.config.config_dir,
                 'live/example.com/chain.pem'))
-            args = ('-a standalone certonly --csr {0} --cert-path {1} '
-                    '--chain-path {2} --fullchain-path {3}').format(
-                        CSR, cert_path, chain_path, full_path).split()
+            args = (f'-a standalone certonly --csr {CSR} --cert-path {cert_path} '
+                    f'--chain-path {chain_path} --fullchain-path {full_path}').split()
             if extra_args:
                 args += extra_args
             with mock.patch('certbot._internal.main.crypto_util'):

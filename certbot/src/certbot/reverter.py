@@ -5,7 +5,7 @@ import logging
 import shutil
 import time
 import traceback
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Set
 from typing import TextIO
@@ -182,7 +182,7 @@ class Reverter:
                 try:
                     shutil.copy2(filename, os.path.join(
                         cp_dir, os.path.basename(filename) + "_" + str(idx)))
-                    op_fd.write('{0}\n'.format(filename))
+                    op_fd.write(f'{filename}\n')
                 # https://stackoverflow.com/questions/4726260/effective-use-of-python-shutil-copy2
                 except OSError:
                     op_fd.close()
@@ -190,8 +190,8 @@ class Reverter:
                         "Unable to add file %s to checkpoint %s",
                         filename, cp_dir)
                     raise errors.ReverterError(
-                        "Unable to add file {0} to checkpoint "
-                        "{1}".format(filename, cp_dir))
+                        f"Unable to add file {filename} to checkpoint "
+                        f"{cp_dir}")
                 idx += 1
         op_fd.close()
 
@@ -259,7 +259,7 @@ class Reverter:
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
         kwargs = {'newline': ''}
-        with open(filepath, 'r', **kwargs) as csvfile:  # type: ignore
+        with open(filepath, **kwargs) as csvfile:  # type: ignore
             csvreader = csv.reader(csvfile)
             for command in reversed(list(csvreader)):
                 try:
@@ -282,13 +282,13 @@ class Reverter:
         # Get temp modified files
         temp_path = os.path.join(self.config.temp_checkpoint_dir, "FILEPATHS")
         if os.path.isfile(temp_path):
-            with open(temp_path, "r") as protected_fd:
+            with open(temp_path) as protected_fd:
                 protected_files.extend(protected_fd.read().splitlines())
 
         # Get temp new files
         new_path = os.path.join(self.config.temp_checkpoint_dir, "NEW_FILES")
         if os.path.isfile(new_path):
-            with open(new_path, "r") as protected_fd:
+            with open(new_path) as protected_fd:
                 protected_files.extend(protected_fd.read().splitlines())
 
         # Verify no save_file is in protected_files
@@ -326,11 +326,11 @@ class Reverter:
 
             for path in files:
                 if path not in ex_files:
-                    new_fd.write("{0}\n".format(path))
+                    new_fd.write(f"{path}\n")
         except OSError:
             logger.error("Unable to register file creation(s) - %s", files)
             raise errors.ReverterError(
-                "Unable to register file creation(s) - {0}".format(files))
+                f"Unable to register file creation(s) - {files}")
         finally:
             if new_fd is not None:
                 new_fd.close()
@@ -422,7 +422,7 @@ class Reverter:
         if not os.path.isfile(file_list):
             return False
         try:
-            with open(file_list, "r") as list_fd:
+            with open(file_list) as list_fd:
                 filepaths = list_fd.read().splitlines()
                 for path in filepaths:
                     # Files are registered before they are added... so
@@ -439,7 +439,7 @@ class Reverter:
                 "Unable to remove filepaths contained within %s", file_list)
             raise errors.ReverterError(
                 "Unable to remove filepaths contained within "
-                "{0}".format(file_list))
+                f"{file_list}")
 
         return True
 
@@ -471,7 +471,7 @@ class Reverter:
         try:
             with open(changes_since_tmp_path, "w") as changes_tmp:
                 changes_tmp.write("-- %s --\n" % title)
-                with open(changes_since_path, "r") as changes_orig:
+                with open(changes_since_path) as changes_orig:
                     changes_tmp.write(changes_orig.read())
 
         # Move self.config.in_progress_dir to Backups directory

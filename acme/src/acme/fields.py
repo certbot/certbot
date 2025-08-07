@@ -19,7 +19,7 @@ class Fixed(jose.Field):
 
     def decode(self, value: Any) -> Any:
         if value != self.value:
-            raise jose.DeserializationError('Expected {0!r}'.format(self.value))
+            raise jose.DeserializationError(f'Expected {self.value!r}')
         return self.value
 
     def encode(self, value: Any) -> Any:

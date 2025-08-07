@@ -15,7 +15,7 @@ from typing import Any
 from typing import cast
 from typing import Dict
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Type
 
@@ -137,7 +137,7 @@ class ACMEServer:
         else:
             dns_server = '127.0.0.1:8053'
             self._launch_process(
-                [challtestsrv_path, '-management', ':{0}'.format(CHALLTESTSRV_PORT),
+                [challtestsrv_path, '-management', f':{CHALLTESTSRV_PORT}',
                  '-defaultIPv6', '""', '-defaultIPv4', '127.0.0.1', '-http01', '""',
                  '-tlsalpn01', '""', '-https01', '""'])
 
@@ -157,7 +157,7 @@ class ACMEServer:
         """Configure and launch an HTTP proxy"""
         print(f'=> Configuring the HTTP proxy on port {self._http_01_port}...')
         http_port_map = cast(Dict[str, int], self.acme_xdist['http_port'])
-        mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
+        mapping = {rf'.+\.{node}\.wtf': f'http://127.0.0.1:{port}'
                    for node, port in http_port_map.items()}
         command = [sys.executable, proxy.__file__, str(self._http_01_port), json.dumps(mapping)]
         self._launch_process(command)

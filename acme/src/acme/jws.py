@@ -24,7 +24,7 @@ class Header(jose.Header):
             return jose.decode_b64jose(value)
         except jose.DeserializationError as error:
             # TODO: custom error
-            raise jose.DeserializationError("Invalid nonce: {0}".format(error))
+            raise jose.DeserializationError(f"Invalid nonce: {error}")
 
 
 class Signature(jose.Signature):

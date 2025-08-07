@@ -38,7 +38,7 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def __init__(self, configurator: "ApacheConfigurator") -> None:
         super().__init__(configurator)
-        self.configurator: "ApacheConfigurator"
+        self.configurator: ApacheConfigurator
         self.challenge_conf_pre = os.path.join(
             self.configurator.conf("challenge-location"),
             "le_http_01_challenge_pre.conf")
@@ -143,10 +143,10 @@ class ApacheHttp01(common.ChallengePerformer):
                     relevant_vhosts.append(vhost)
         if not relevant_vhosts:
             raise errors.PluginError(
-                "Unable to find a virtual host listening on port {0} which is"
+                f"Unable to find a virtual host listening on port {http01_port} which is"
                 " currently needed for Certbot to prove to the CA that you"
                 " control your domain. Please add a virtual host for port"
-                " {0}.".format(http01_port))
+                f" {http01_port}.")
 
         return relevant_vhosts
 

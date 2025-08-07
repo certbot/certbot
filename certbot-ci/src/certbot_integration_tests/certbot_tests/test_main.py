@@ -7,7 +7,7 @@ import re
 import shutil
 import subprocess
 import time
-from typing import Generator
+from collections.abc import Generator
 from typing import Tuple
 from typing import Type
 
@@ -295,10 +295,10 @@ def test_graceful_renew_it_is_time(context: IntegrationTestsContext) -> None:
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    with open(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)), 'r') as file:
+    with open(join(context.config_dir, 'renewal', f'{certname}.conf')) as file:
         lines = file.readlines()
-    lines.insert(4, 'renew_before_expiry = 100 years{0}'.format(os.linesep))
-    with open(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)), 'w') as file:
+    lines.insert(4, f'renew_before_expiry = 100 years{os.linesep}')
+    with open(join(context.config_dir, 'renewal', f'{certname}.conf'), 'w') as file:
         file.writelines(lines)
 
     context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
@@ -316,7 +316,7 @@ def test_renew_when_ari_says_its_time(context: IntegrationTestsContext) -> None:
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
     # Tell Pebble to make ARI look urgent
-    with open(join(context.config_dir, 'live', certname, 'cert.pem'), 'r') as c:
+    with open(join(context.config_dir, 'live', certname, 'cert.pem')) as c:
         certificate_pem = c.read()
 
     misc.set_ari_response(certificate_pem, json.dumps({
@@ -496,33 +496,33 @@ def test_reuse_key(context: IntegrationTestsContext) -> None:
     context.certbot(['--domains', certname, '--reuse-key'])
     context.certbot(['renew', '--cert-name', certname])
 
-    with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname)) as file:
         privkey1 = file.read()
-    with open(join(context.config_dir, 'archive/{0}/cert1.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/cert1.pem').format(certname)) as file:
         cert1 = file.read()
-    with open(join(context.config_dir, 'archive/{0}/privkey2.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/privkey2.pem').format(certname)) as file:
         privkey2 = file.read()
-    with open(join(context.config_dir, 'archive/{0}/cert2.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/cert2.pem').format(certname)) as file:
         cert2 = file.read()
     assert privkey1 == privkey2
 
     context.certbot(['--cert-name', certname, '--domains', certname, '--force-renewal'])
 
-    with open(join(context.config_dir, 'archive/{0}/privkey3.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/privkey3.pem').format(certname)) as file:
         privkey3 = file.read()
-    with open(join(context.config_dir, 'archive/{0}/cert3.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/cert3.pem').format(certname)) as file:
         cert3 = file.read()
     assert privkey2 != privkey3
 
     context.certbot(['--cert-name', certname, '--domains', certname,
                      '--reuse-key','--force-renewal'])
-    with open(join(context.config_dir, 'archive/{0}/privkey4.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/privkey4.pem').format(certname)) as file:
         privkey4 = file.read()
     context.certbot(['renew', '--cert-name', certname, '--no-reuse-key', '--force-renewal'])
-    with open(join(context.config_dir, 'archive/{0}/privkey5.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/privkey5.pem').format(certname)) as file:
         privkey5 = file.read()
     context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
-    with open(join(context.config_dir, 'archive/{0}/privkey6.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/privkey6.pem').format(certname)) as file:
         privkey6 = file.read()
 
     assert privkey3 == privkey4
@@ -561,9 +561,9 @@ def test_reuse_key_allow_subset_of_names(context: IntegrationTestsContext) -> No
     stdout, _ = context.certbot(['certificates'])
     assert context.get_domain('fail-dns1') not in stdout
 
-    with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname)) as file:
         privkey1 = file.read()
-    with open(join(context.config_dir, 'archive/{0}/privkey2.pem').format(certname), 'r') as file:
+    with open(join(context.config_dir, 'archive/{0}/privkey2.pem').format(certname)) as file:
         privkey2 = file.read()
     assert privkey1 == privkey2
 
@@ -572,7 +572,7 @@ def test_new_key(context: IntegrationTestsContext) -> None:
     """Tests --new-key and its interactions with --reuse-key"""
     def private_key(generation: int) -> Tuple[str, str]:
         pk_path = join(context.config_dir, f'archive/{certname}/privkey{generation}.pem')
-        with open(pk_path, 'r') as file:
+        with open(pk_path) as file:
             return file.read(), pk_path
 
     certname = context.get_domain('newkey')
@@ -659,7 +659,7 @@ def test_default_rsa_size(context: IntegrationTestsContext) -> None:
     context.certbot([
         '--key-type', 'rsa', '--cert-name', certname, '-d', certname
     ])
-    key1 = join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname))
+    key1 = join(context.config_dir, f'archive/{certname}/privkey1.pem')
     assert_rsa_key(key1, 2048)
 
 
@@ -763,7 +763,7 @@ def test_revoke_simple(context: IntegrationTestsContext) -> None:
 
     assert not exists(join(context.config_dir, 'archive', certname))
     assert not exists(join(context.config_dir, 'live', certname))
-    assert not exists(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)))
+    assert not exists(join(context.config_dir, 'renewal', f'{certname}.conf'))
 
     certname = context.get_domain('le2')
     key_path = join(context.config_dir, 'live', certname, 'privkey.pem')
@@ -822,7 +822,7 @@ def test_revoke_ecdsa_cert_key(
         '--no-delete-after-revoke',
     ])
     stdout, _ = context.certbot(['certificates'])
-    assert stdout.count('INVALID: REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
+    assert stdout.count('INVALID: REVOKED') == 1, f'Expected {cert} to be REVOKED'
 
 
 @pytest.mark.parametrize('curve,curve_cls', [
@@ -866,13 +866,13 @@ def test_revoke_multiple_lineages(context: IntegrationTestsContext) -> None:
     cert1 = context.get_domain('le1')
     context.certbot(['-d', cert1])
 
-    assert os.path.isfile(join(context.config_dir, 'renewal', '{0}.conf'.format(cert1)))
+    assert os.path.isfile(join(context.config_dir, 'renewal', f'{cert1}.conf'))
 
     cert2 = context.get_domain('le2')
     context.certbot(['-d', cert2])
 
     # Copy over renewal configuration of cert1 into renewal configuration of cert2.
-    with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'r') as file:
+    with open(join(context.config_dir, 'renewal', f'{cert2}.conf')) as file:
         data = file.read()
 
     data = re.sub(
@@ -882,14 +882,14 @@ def test_revoke_multiple_lineages(context: IntegrationTestsContext) -> None:
         ), data
     )
 
-    with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'w') as file:
+    with open(join(context.config_dir, 'renewal', f'{cert2}.conf'), 'w') as file:
         file.write(data)
 
     context.certbot([
         'revoke', '--cert-path', join(context.config_dir, 'live', cert1, 'cert.pem')
     ])
 
-    with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
+    with open(join(context.workspace, 'logs', 'letsencrypt.log')) as f:
         assert 'Not deleting revoked certificates due to overlapping archive dirs' in f.read()
 
 
@@ -897,12 +897,12 @@ def test_reconfigure(context: IntegrationTestsContext) -> None:
     """Test the reconfigure verb"""
     certname = context.get_domain()
     context.certbot(['-d', certname])
-    conf_path = join(context.config_dir, 'renewal', '{}.conf'.format(certname))
+    conf_path = join(context.config_dir, 'renewal', f'{certname}.conf')
 
     with misc.create_http_server(context.http_01_port) as webroot:
         context.certbot(['reconfigure', '--cert-name', certname,
                          '-a', 'webroot', '--webroot-path', webroot])
-        with open(conf_path, 'r') as f:
+        with open(conf_path) as f:
             file_contents = f.read()
             # Check changed value
             assert 'authenticator = webroot' in file_contents, \
@@ -917,7 +917,7 @@ def test_wildcard_certificates(context: IntegrationTestsContext) -> None:
     certname = context.get_domain('wild')
 
     context.certbot([
-        '-a', 'manual', '-d', '*.{0},{0}'.format(certname),
+        '-a', 'manual', '-d', f'*.{certname},{certname}',
         '--preferred-challenge', 'dns',
         '--manual-auth-hook', context.manual_dns_auth_hook,
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook
@@ -945,8 +945,8 @@ def test_ocsp_status_live(context: IntegrationTestsContext) -> None:
     context.certbot(['--domains', cert])
     stdout, _ = context.certbot(['certificates'])
 
-    assert stdout.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
-    assert stdout.count('EXPIRED') == 0, 'Did not expect {0} to be EXPIRED'.format(cert)
+    assert stdout.count('VALID') == 1, f'Expected {cert} to be VALID'
+    assert stdout.count('EXPIRED') == 0, f'Did not expect {cert} to be EXPIRED'
 
     # OSCP 2: Check live certificate OCSP status (REVOKED)
     context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
@@ -955,8 +955,8 @@ def test_ocsp_status_live(context: IntegrationTestsContext) -> None:
     time.sleep(5)
     stdout, _ = context.certbot(['certificates'])
 
-    assert stdout.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
-    assert stdout.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
+    assert stdout.count('INVALID') == 1, f'Expected {cert} to be INVALID'
+    assert stdout.count('REVOKED') == 1, f'Expected {cert} to be REVOKED'
 
 
 def test_ocsp_renew(context: IntegrationTestsContext) -> None:
@@ -985,12 +985,12 @@ def test_dry_run_deactivate_authzs(context: IntegrationTestsContext) -> None:
 
     # First order will not need deactivation
     context.certbot(args)
-    with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
+    with open(join(context.workspace, 'logs', 'letsencrypt.log')) as f:
         assert log_line not in f.read(), 'First order should not have had any authz reuse'
 
     # Second order will require deactivation
     context.certbot(args)
-    with open(join(context.workspace, 'logs', 'letsencrypt.log'), 'r') as f:
+    with open(join(context.workspace, 'logs', 'letsencrypt.log')) as f:
         assert log_line in f.read(), 'Second order should have been recreated due to authz reuse'
 
 
@@ -1006,7 +1006,7 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
 
     domain = context.get_domain('preferred-chain')
     cert_path = join(context.config_dir, 'live', domain, 'chain.pem')
-    conf_path = join(context.config_dir, 'renewal', '{}.conf'.format(domain))
+    conf_path = join(context.config_dir, 'renewal', f'{domain}.conf')
 
     for (requested, expected) in [(n, n) for n in names] + [('nonexistent', names[0])]:
         args = ['certonly', '--cert-name', domain, '-d', domain,
@@ -1017,7 +1017,7 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
         assert f'Issuer: CN={expected}'in dumped, \
                f'Expected chain issuer to be {expected} when preferring {requested}'
 
-        with open(conf_path, 'r') as f:
+        with open(conf_path) as f:
             assert f'preferred_chain = {requested}' in f.read(), \
                    'Expected preferred_chain to be set in renewal config'
 
@@ -1039,5 +1039,5 @@ def test_ancient_rsa_key_type_preserved(context: IntegrationTestsContext) -> Non
     context.certbot(['renew', '--cert-name', certname, '--force-renewal'])
 
     assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'rsa')
-    key2 = join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname))
+    key2 = join(context.config_dir, f'archive/{certname}/privkey2.pem')
     assert_rsa_key(key2, 2048)

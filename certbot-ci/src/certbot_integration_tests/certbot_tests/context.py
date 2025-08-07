@@ -3,7 +3,7 @@ import os
 import shutil
 import sys
 import tempfile
-from typing import Iterable
+from collections.abc import Iterable
 from typing import Tuple
 
 import pytest
@@ -39,29 +39,29 @@ class IntegrationTestsContext:
         self.hook_probe = probe[1]
 
         self.manual_dns_auth_hook = (
-            '{0} -c "import os; import requests; import json; '
+            f'{sys.executable} -c "import os; import requests; import json; '
             "assert not os.environ.get('CERTBOT_DOMAIN').startswith('fail'); "
-            "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN')),"
-            "'value':os.environ.get('CERTBOT_VALIDATION')}}; "
-            "request = requests.post('{1}/set-txt', data=json.dumps(data)); "
+            "data = {'host':'_acme-challenge.{0}.'.format(os.environ.get('CERTBOT_DOMAIN')),"
+            "'value':os.environ.get('CERTBOT_VALIDATION')}; "
+            f"request = requests.post('{self.challtestsrv_url}/set-txt', data=json.dumps(data)); "
             "request.raise_for_status(); "
             '"'
-        ).format(sys.executable, self.challtestsrv_url)
+        )
         self.manual_dns_auth_hook_allow_fail = (
-            '{0} -c "import os; import requests; import json; '
-            "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN')),"
-            "'value':os.environ.get('CERTBOT_VALIDATION')}}; "
-            "request = requests.post('{1}/set-txt', data=json.dumps(data)); "
+            f'{sys.executable} -c "import os; import requests; import json; '
+            "data = {'host':'_acme-challenge.{0}.'.format(os.environ.get('CERTBOT_DOMAIN')),"
+            "'value':os.environ.get('CERTBOT_VALIDATION')}; "
+            f"request = requests.post('{self.challtestsrv_url}/set-txt', data=json.dumps(data)); "
             "request.raise_for_status(); "
             '"'
-        ).format(sys.executable, self.challtestsrv_url)
+        )
         self.manual_dns_cleanup_hook = (
-            '{0} -c "import os; import requests; import json; '
-            "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN'))}}; "
-            "request = requests.post('{1}/clear-txt', data=json.dumps(data)); "
+            f'{sys.executable} -c "import os; import requests; import json; '
+            "data = {'host':'_acme-challenge.{0}.'.format(os.environ.get('CERTBOT_DOMAIN'))}; "
+            f"request = requests.post('{self.challtestsrv_url}/clear-txt', data=json.dumps(data)); "
             "request.raise_for_status(); "
             '"'
-        ).format(sys.executable, self.challtestsrv_url)
+        )
 
     def cleanup(self) -> None:
         """Cleanup the integration test context."""
@@ -92,4 +92,4 @@ class IntegrationTestsContext:
         :return: the well-formed domain suitable for redirection on
         :rtype: str
         """
-        return '{0}.{1}.wtf'.format(subdomain, self.worker_id)
+        return f'{subdomain}.{self.worker_id}.wtf'

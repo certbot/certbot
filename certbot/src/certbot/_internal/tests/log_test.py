@@ -201,7 +201,7 @@ class ColoredStreamHandlerTest(unittest.TestCase):
     def test_format(self):
         msg = 'I did a thing'
         self.logger.debug(msg)
-        assert self.stream.getvalue() == '{0}\n'.format(msg)
+        assert self.stream.getvalue() == f'{msg}\n'
 
     def test_format_and_red_level(self):
         msg = 'I did another thing'
@@ -209,9 +209,7 @@ class ColoredStreamHandlerTest(unittest.TestCase):
         self.logger.debug(msg)
 
         assert self.stream.getvalue() == \
-                         '{0}{1}{2}\n'.format(util.ANSI_SGR_RED,
-                                              msg,
-                                              util.ANSI_SGR_RESET)
+                         f'{util.ANSI_SGR_RED}{msg}{util.ANSI_SGR_RESET}\n'
 
 
 class MemoryHandlerTest(unittest.TestCase):

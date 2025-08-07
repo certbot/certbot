@@ -10,9 +10,9 @@ import time
 import traceback
 from typing import Any
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Union
 

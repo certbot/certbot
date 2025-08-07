@@ -1,6 +1,5 @@
 """Tests for certbot._internal.plugins.webroot."""
 
-from __future__ import print_function
 
 import argparse
 import errno
@@ -187,7 +186,7 @@ class AuthenticatorTest(unittest.TestCase):
             f.write("thingimy")
         filesystem.chmod(self.path, 0o000)
         try:
-            with open(permission_canary, "r"):
+            with open(permission_canary):
                 pass
             print("Warning, running tests as root skips permissions tests...")
         except OSError:
@@ -324,7 +323,7 @@ class WebrootActionTest(unittest.TestCase):
 
     def test_domain_before_webroot(self):
         args = self.parser.parse_args(
-            "-d {0} -w {1}".format(self.achall.domain, self.path).split())
+            f"-d {self.achall.domain} -w {self.path}".split())
         config = self._get_config_after_perform(args)
         assert config.webroot_map[self.achall.domain] == self.path
 
@@ -335,8 +334,7 @@ class WebrootActionTest(unittest.TestCase):
             self.parser.parse_args("-d foo -w bar -d baz -w qux".split())
 
     def test_multiwebroot(self):
-        args = self.parser.parse_args("-w {0} -d {1} -w {2} -d bar".format(
-            self.path, self.achall.domain, tempfile.mkdtemp()).split())
+        args = self.parser.parse_args(f"-w {self.path} -d {self.achall.domain} -w {tempfile.mkdtemp()} -d bar".split())
         assert args.webroot_map[self.achall.domain] == self.path
         config = self._get_config_after_perform(args)
         assert config.webroot_map[self.achall.domain] == self.path
@@ -349,8 +347,7 @@ class WebrootActionTest(unittest.TestCase):
         # certbot.tests.renewal_tests::RenewalTest::test_webroot_params_conservation
         # See https://github.com/certbot/certbot/pull/7095 for details.
         other_webroot_path = tempfile.mkdtemp()
-        args = self.parser.parse_args("-w {0} -d {1} -w {2} -d bar".format(
-            self.path, self.achall.domain, other_webroot_path).split())
+        args = self.parser.parse_args(f"-w {self.path} -d {self.achall.domain} -w {other_webroot_path} -d bar".split())
         assert args.webroot_map == {self.achall.domain: self.path}
         assert args.webroot_path == [self.path, other_webroot_path]
 

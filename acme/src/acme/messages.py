@@ -4,10 +4,10 @@ import datetime
 import json
 from typing import Any
 from typing import Dict
-from typing import Iterator
+from collections.abc import Iterator
 from typing import List
-from typing import Mapping
-from typing import MutableMapping
+from collections.abc import Mapping
+from collections.abc import MutableMapping
 from typing import Optional
 from typing import Tuple
 from typing import Type

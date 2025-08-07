@@ -7,9 +7,9 @@ import functools
 import logging.handlers
 import sys
 from typing import cast
-from typing import Generator
+from collections.abc import Generator
 from typing import IO
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -280,8 +280,8 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     question = (
         "You have an existing certificate that has exactly the same "
         "domains or certificate name you requested and isn't close to expiry."
-        "{br}(ref: {0}){br}{br}What would you like to do?"
-    ).format(lineage.configfile.filename, br=os.linesep)
+        f"{os.linesep}(ref: {lineage.configfile.filename}){os.linesep}{os.linesep}What would you like to do?"
+    )
 
     if config.verb == "run":
         keep_opt = "Attempt to reinstall this existing certificate"
@@ -409,9 +409,9 @@ def _find_lineage_for_domains_and_certname(
         return _handle_identical_cert_request(config, lineage)
     elif domains:
         return "newcert", None
-    raise errors.ConfigurationError("No certificate with name {0} found. "
+    raise errors.ConfigurationError(f"No certificate with name {certname} found. "
                                     "Use -d to specify domains, or run certbot certificates to see "
-                                    "possible certificate names.".format(certname))
+                                    "possible certificate names.")
 
 
 T = TypeVar("T")
@@ -640,7 +640,7 @@ def _report_new_cert(config: configuration.NamespaceConfig, cert_path: Optional[
         "These files will be updated when the certificate renews.{renewal_msg}{nl}").format(
             cert_path=fullchain_path,
             expiry=crypto_util.notAfter(cert_path).date(),
-            key_msg="Key is saved at:         {}\n".format(key_path) if key_path else "",
+            key_msg=f"Key is saved at:         {key_path}\n" if key_path else "",
             renewal_msg=renewal_msg,
             nl="\n" if config.verb == "run" else "" # Normalize spacing across verbs
         )
@@ -684,14 +684,11 @@ def _csr_report_new_cert(config: configuration.NamespaceConfig, cert_path: Optio
     expiry = crypto_util.notAfter(cert_path).date()
 
     display_util.notify(
-        ("\nSuccessfully received certificate.\n"
-        "Certificate is saved at:            {cert_path}\n"
-        "Intermediate CA chain is saved at:  {chain_path}\n"
-        "Full certificate chain is saved at: {fullchain_path}\n"
-        "This certificate expires on {expiry}.").format(
-            cert_path=cert_path, chain_path=chain_path,
-            fullchain_path=fullchain_path, expiry=expiry,
-        )
+        "\nSuccessfully received certificate.\n"
+        f"Certificate is saved at:            {cert_path}\n"
+        f"Intermediate CA chain is saved at:  {chain_path}\n"
+        f"Full certificate chain is saved at: {fullchain_path}\n"
+        f"This certificate expires on {expiry}."
     )
 
 
@@ -716,9 +713,9 @@ def _determine_account(config: configuration.NamespaceConfig
     def _tos_cb(terms_of_service: str) -> None:
         if config.tos:
             return
-        msg = ("Please read the Terms of Service at: {0}\n"
+        msg = (f"Please read the Terms of Service at: {terms_of_service}\n"
                "You must agree in order to register with the ACME "
-               "server. Do you agree?".format(terms_of_service))
+               "server. Do you agree?")
         result = display_util.yesno(msg, cli_flag="--agree-tos", force_interactive=True)
         if not result:
             raise errors.Error(
@@ -966,7 +963,7 @@ def update_account(config: configuration.NamespaceConfig,
                             "with this account has been removed.")
     else:
         eff.prepare_subscription(config, acc)
-        display_util.notify("Your e-mail address was updated to {0}.".format(config.email))
+        display_util.notify(f"Your e-mail address was updated to {config.email}.")
 
     return None
 
@@ -1147,10 +1144,10 @@ def _populate_from_certname(config: configuration.NamespaceConfig) -> configurat
 def _check_certificate_and_key(config: configuration.NamespaceConfig) -> None:
     if not os.path.isfile(filesystem.realpath(config.cert_path)):
         raise errors.ConfigurationError("Error while reading certificate from path "
-                                        "{0}".format(config.cert_path))
+                                        f"{config.cert_path}")
     if not os.path.isfile(filesystem.realpath(config.key_path)):
         raise errors.ConfigurationError("Error while reading private key from path "
-                                        "{0}".format(config.key_path))
+                                        f"{config.key_path}")
 
 
 def plugins_cmd(config: configuration.NamespaceConfig,

@@ -717,8 +717,8 @@ class ClientNetworkTest(unittest.TestCase):
         jws = acme_jws.JWS.json_loads(jws_dump)
         assert json.loads(jws.payload.decode()) == {'foo': 'foo'}
         assert jws.signature.combined.nonce == b'Tg'
-        assert jws.signature.combined.kid == u'acct-uri'
-        assert jws.signature.combined.url == u'url'
+        assert jws.signature.combined.kid == 'acct-uri'
+        assert jws.signature.combined.url == 'url'
 
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False

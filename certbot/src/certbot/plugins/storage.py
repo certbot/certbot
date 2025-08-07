@@ -46,11 +46,10 @@ class PluginStorage:
         data: Dict[str, Any] = {}
         filedata = ""
         try:
-            with open(self._storagepath, 'r') as fh:
+            with open(self._storagepath) as fh:
                 filedata = fh.read()
         except OSError as e:
-            errmsg = "Could not read PluginStorage data file: {0} : {1}".format(
-                self._storagepath, str(e))
+            errmsg = f"Could not read PluginStorage data file: {self._storagepath} : {str(e)}"
             if os.path.isfile(self._storagepath):
                 # Only error out if file exists, but cannot be read
                 logger.error(errmsg)
@@ -62,8 +61,7 @@ class PluginStorage:
                 logger.debug("Plugin storage file %s was empty, no values loaded",
                              self._storagepath)
             else:
-                errmsg = "PluginStorage file {0} is corrupted.".format(
-                    self._storagepath)
+                errmsg = f"PluginStorage file {self._storagepath} is corrupted."
                 logger.error(errmsg)
                 raise errors.PluginStorageError(errmsg)
         self._data = data
@@ -82,8 +80,7 @@ class PluginStorage:
         try:
             serialized = json.dumps(self._data)
         except TypeError as e:
-            errmsg = "Could not serialize PluginStorage data: {0}".format(
-                str(e))
+            errmsg = f"Could not serialize PluginStorage data: {str(e)}"
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
         try:
@@ -93,8 +90,7 @@ class PluginStorage:
                     0o600), 'w') as fh:
                 fh.write(serialized)
         except OSError as e:
-            errmsg = "Could not write PluginStorage data to file {0} : {1}".format(
-                self._storagepath, str(e))
+            errmsg = f"Could not write PluginStorage data to file {self._storagepath} : {str(e)}"
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
 

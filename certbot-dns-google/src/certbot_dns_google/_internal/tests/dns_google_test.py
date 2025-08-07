@@ -103,7 +103,7 @@ class GoogleClientTest(unittest.TestCase):
     def _setUp_client_with_mock(self,
         zone_request_side_effect: list[dict[str, list[dict[str, str]]]],
         rrs_list_side_effect: Optional[Error] = None
-        ) -> Tuple['certbot_dns_google._internal.dns_google._GoogleClient', mock.MagicMock]:
+        ) -> Tuple[certbot_dns_google._internal.dns_google._GoogleClient, mock.MagicMock]:
         from certbot_dns_google._internal.dns_google import _GoogleClient
 
         pwd = os.path.dirname(__file__)
@@ -246,18 +246,18 @@ class GoogleClientTest(unittest.TestCase):
     def test_add_txt_record_and_poll_split_horizon(self, credential_mock):
         credential_mock.return_value = (mock.MagicMock(), PROJECT_ID)
 
-        client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': '{zone}-private'.format(zone=self.zone), 'dnsName': DOMAIN, 'visibility': 'private'},{'id': '{zone}-public'.format(zone=self.zone), 'dnsName': DOMAIN, 'visibility': self.visibility}]}])
+        client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': f'{self.zone}-private', 'dnsName': DOMAIN, 'visibility': 'private'},{'id': f'{self.zone}-public', 'dnsName': DOMAIN, 'visibility': self.visibility}]}])
         changes.create.return_value.execute.return_value = {'status': 'pending', 'id': self.change}
         changes.get.return_value.execute.return_value = {'status': 'done'}
 
         client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
         changes.create.assert_called_with(body=mock.ANY,
-                                               managedZone='{zone}-public'.format(zone=self.zone),
+                                               managedZone=f'{self.zone}-public',
                                                project=PROJECT_ID)
 
         changes.get.assert_called_with(changeId=self.change,
-                                            managedZone='{zone}-public'.format(zone=self.zone),
+                                            managedZone=f'{self.zone}-public',
                                             project=PROJECT_ID)
 
     @mock.patch('google.auth.load_credentials_from_file')

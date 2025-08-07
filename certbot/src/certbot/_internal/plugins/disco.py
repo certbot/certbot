@@ -4,10 +4,10 @@ import sys
 from typing import Callable
 from typing import cast
 from typing import Dict
-from typing import Iterable
-from typing import Iterator
+from collections.abc import Iterable
+from collections.abc import Iterator
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -64,7 +64,7 @@ class PluginEntryPoint:
     @property
     def description_with_name(self) -> str:
         """Description with name. Handy for UI."""
-        return "{0} ({1})".format(self.description, self.name)
+        return f"{self.description} ({self.name})"
 
     @property
     def long_description(self) -> str:
@@ -143,23 +143,23 @@ class PluginEntryPoint:
         return self._prepared is True or self.misconfigured
 
     def __repr__(self) -> str:
-        return "PluginEntryPoint#{0}".format(self.name)
+        return f"PluginEntryPoint#{self.name}"
 
     def __str__(self) -> str:
         lines = [
-            "* {0}".format(self.name),
-            "Description: {0}".format(self.plugin_cls.description),
+            f"* {self.name}",
+            f"Description: {self.plugin_cls.description}",
             "Interfaces: {0}".format(", ".join(
                 iface.__name__ for iface in PLUGIN_INTERFACES
                 if issubclass(self.plugin_cls, iface)
             )),
-            "Entry point: {0}".format(self.entry_point),
+            f"Entry point: {self.entry_point}",
         ]
 
         if self.initialized:
-            lines.append("Initialized: {0}".format(self.init()))
+            lines.append(f"Initialized: {self.init()}")
             if self.prepared:
-                lines.append("Prep: {0}".format(self.prepare()))
+                lines.append(f"Prep: {self.prepare()}")
 
         return "\n".join(lines)
 
@@ -213,8 +213,7 @@ class PluginsRegistry(Mapping):
             plugin1 = plugin1_dist.name.lower() if plugin1_dist else "unknown"
             plugin2 = plugin2_dist.name.lower() if plugin2_dist else "unknown"
             # pylint: disable=broad-exception-raised
-            raise Exception("Duplicate plugin name {0} from {1} and {2}.".format(
-                plugin_ep.name, plugin1, plugin2))
+            raise Exception(f"Duplicate plugin name {plugin_ep.name} from {plugin1} and {plugin2}.")
         if issubclass(plugin_ep.plugin_cls, interfaces.Plugin):
             plugins[plugin_ep.name] = plugin_ep
         else:  # pragma: no cover

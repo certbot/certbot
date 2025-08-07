@@ -1,7 +1,7 @@
 """Module contains classes used by the Apache Configurator."""
 import re
 from typing import Any
-from typing import Iterable
+from collections.abc import Iterable
 from typing import Optional
 from typing import Set
 from typing import Union

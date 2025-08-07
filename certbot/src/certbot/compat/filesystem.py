@@ -1,5 +1,4 @@
 """Compat module to handle files security on Windows and Linux"""
-from __future__ import absolute_import
 
 from contextlib import contextmanager
 import errno
@@ -7,7 +6,7 @@ import os  # pylint: disable=os-module-forbidden
 import stat
 from typing import Any
 from typing import Dict
-from typing import Generator
+from collections.abc import Generator
 from typing import Optional
 
 try:
@@ -374,7 +373,7 @@ def realpath(file_path: str) -> str:
         # If path returned by realpath is still a link, it means that it failed to
         # resolve the symlink because of a loop.
         # See realpath code: https://github.com/python/cpython/blob/master/Lib/posixpath.py
-        raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
+        raise RuntimeError(f'Error, link {original_path} is a loop!')
     return path
 
 
@@ -722,7 +721,7 @@ def _get_current_user() -> Any:
     # because this function returns nonsense values when Certbot is run under NT AUTHORITY\SYSTEM.
     # To run Certbot under NT AUTHORITY\SYSTEM, you can open a shell using the instructions here:
     # https://blogs.technet.microsoft.com/ben_parker/2010/10/27/how-do-i-run-powershell-execommand-prompt-as-the-localsystem-account-on-windows-7/
-    account_name = r"{0}\{1}".format(win32api.GetDomainName(), win32api.GetUserName())
+    account_name = rf"{win32api.GetDomainName()}\{win32api.GetUserName()}"
     # LookupAccountName() expects the system name as first parameter. By passing None to it,
     # we instruct Windows to first search the matching account in the machine local accounts,
     # then into the primary domain accounts, if the machine has joined a domain, then finally

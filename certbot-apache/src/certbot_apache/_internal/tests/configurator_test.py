@@ -162,7 +162,7 @@ class MultipleVhostsTest(util.ApacheTest):
             "fp", "ap",
             {obj.Addr(("8.8.8.8", "443")),
                  obj.Addr(("zombo.com",)),
-                 obj.Addr(("192.168.1.2"))},
+                 obj.Addr("192.168.1.2")},
             True, False)
 
         self.config.vhosts.append(vhost)
@@ -762,8 +762,7 @@ class MultipleVhostsTest(util.ApacheTest):
             self.config.get_version()
 
         mock_script.return_value = (
-            "Server Version: Apache/2.3{0} Apache/2.4.7".format(
-                os.linesep), "")
+            f"Server Version: Apache/2.3{os.linesep} Apache/2.4.7", "")
         with pytest.raises(errors.PluginError):
             self.config.get_version()
 
@@ -1375,7 +1374,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_realpath_replaces_symlink(self):
         orig_match = self.config.parser.aug.match
         mock_vhost = copy.deepcopy(self.vh_truth[0])
-        mock_vhost.filep = mock_vhost.filep.replace('sites-enabled', u'sites-available')
+        mock_vhost.filep = mock_vhost.filep.replace('sites-enabled', 'sites-available')
         mock_vhost.path = mock_vhost.path.replace('sites-enabled', 'sites-available')
         mock_vhost.enabled = False
         self.config.parser.parse_file(mock_vhost.filep)

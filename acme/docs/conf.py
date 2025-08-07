@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # acme-python documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct 18 13:38:06 2015.
@@ -58,9 +57,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'acme-python'
-copyright = u'2015, Let\'s Encrypt Project'
-author = u'Let\'s Encrypt Project'
+project = 'acme-python'
+copyright = '2015, Let\'s Encrypt Project'
+author = 'Let\'s Encrypt Project'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -237,8 +236,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'acme-python.tex', u'acme-python Documentation',
-     u'Let\'s Encrypt Project', 'manual'),
+    (master_doc, 'acme-python.tex', 'acme-python Documentation',
+     'Let\'s Encrypt Project', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -267,9 +266,9 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'acme-python', u'acme-python Documentation',
+    (master_doc, 'acme-python', 'acme-python Documentation',
      [author], 1),
-    ('man/jws', 'jws', u'jws script documentation', [project], 1),
+    ('man/jws', 'jws', 'jws script documentation', [project], 1),
 ]
 
 # If true, show URL addresses after external links.
@@ -282,7 +281,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'acme-python', u'acme-python Documentation',
+    (master_doc, 'acme-python', 'acme-python Documentation',
      author, 'acme-python', 'One line description of project.',
      'Miscellaneous'),
 ]

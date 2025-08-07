@@ -1,0 +1,15 @@
+line-length = 100
+
+extend-exclude = ['tools', 'letstest']
+
+target-version = "py39"
+
+[lint]
+extend-select = [
+    # pycodestyle
+    #"E",
+    # pyupgrade
+    "UP",
+    # # isort
+    # "I",
+]

@@ -321,7 +321,7 @@ class ParseTest(unittest.TestCase):
 
     def test_dry_run_flag(self):
         config_dir = tempfile.mkdtemp()
-        short_args = '--dry-run --config-dir {0}'.format(config_dir).split()
+        short_args = f'--dry-run --config-dir {config_dir}'.split()
         with pytest.raises(errors.Error):
             self.parse(short_args)
 
@@ -362,7 +362,7 @@ class ParseTest(unittest.TestCase):
     def test_user_set_rsa_key_size(self):
         key_size_option = 'rsa_key_size'
         key_size_value = cli.flag_default(key_size_option)
-        config = self.parse('--rsa-key-size {0}'.format(key_size_value).split())
+        config = self.parse(f'--rsa-key-size {key_size_value}'.split())
 
         assert config.set_by_user(key_size_option)
 
@@ -383,13 +383,13 @@ class ParseTest(unittest.TestCase):
     def test_user_set_ecdsa_key_option(self):
         elliptic_curve_option = 'elliptic_curve'
         elliptic_curve_option_value = cli.flag_default(elliptic_curve_option)
-        config = self.parse('--elliptic-curve {0}'.format(elliptic_curve_option_value).split())
+        config = self.parse(f'--elliptic-curve {elliptic_curve_option_value}'.split())
         assert config.set_by_user(elliptic_curve_option)
 
     def test_user_set_invalid_key_type(self):
         key_type_option = 'key_type'
         key_type_value = cli.flag_default(key_type_option)
-        config = self.parse('--key-type {0}'.format(key_type_value).split())
+        config = self.parse(f'--key-type {key_type_value}'.split())
         assert config.set_by_user(key_type_option)
 
         with pytest.raises(SystemExit):

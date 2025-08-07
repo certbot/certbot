@@ -7,10 +7,10 @@ from typing import Any
 from typing import Callable
 from typing import DefaultDict
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
-from typing import Sequence
+from collections.abc import Sequence
 from typing import Set
 from typing import Type
 from typing import Union
@@ -158,7 +158,7 @@ to serve all files under specified web root ({0})."""
 
         while True:
             code, index = display_util.menu(
-                "Select the webroot for {0}:".format(domain),
+                f"Select the webroot for {domain}:",
                 ["Enter a new webroot"] + known_webroots,
                 cli_flag=path_flag, force_interactive=True)
             if code == display_util.CANCEL:
@@ -170,7 +170,7 @@ to serve all files under specified web root ({0})."""
     def _prompt_for_new_webroot(self, domain: str, allowraise: bool = False) -> Optional[str]:
         code, webroot = ops.validated_directory(
             _validate_webroot,
-            "Input the webroot for {0}:".format(domain),
+            f"Input the webroot for {domain}:",
             force_interactive=True)
         if code == display_util.CANCEL:
             if not allowraise:
@@ -219,8 +219,8 @@ to serve all files under specified web root ({0})."""
                             logger.debug("Error was: %s", exception)
                     except OSError as exception:
                         raise errors.PluginError(
-                            "Couldn't create root for {0} http-01 "
-                            "challenge responses: {1}".format(name, exception))
+                            f"Couldn't create root for {name} http-01 "
+                            f"challenge responses: {exception}")
 
             # On Windows, generate a local web.config file that allows IIS to serve expose
             # challenge files despite the fact they do not have a file extension.

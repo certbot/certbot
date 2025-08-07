@@ -2,7 +2,7 @@
 from __future__ import annotations
 import logging
 import socket
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -49,7 +49,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
     snap_arch = os.environ.get('SNAP_ARCH')
 
     if snap_arch not in _ARCH_TRIPLET_MAP:
-        raise Error('Unrecognized value of SNAP_ARCH: {0}'.format(snap_arch))
+        raise Error(f'Unrecognized value of SNAP_ARCH: {snap_arch}')
 
     os.environ['CERTBOT_AUGEAS_PATH'] = '{0}/usr/lib/{1}/libaugeas.so.0'.format(
         os.environ.get('SNAP'), _ARCH_TRIPLET_MAP[snap_arch])
@@ -89,10 +89,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
                 outdated_plugins.append(plugin_name)
                 continue
 
-            connections.append('/snap/{0}/current/lib/{1}/site-packages/'.format(
-                plugin_name,
-                CURRENT_PYTHON_VERSION_STRING
-            ))
+            connections.append(f'/snap/{plugin_name}/current/lib/{CURRENT_PYTHON_VERSION_STRING}/site-packages/')
 
     if outdated_plugins:
         LOGGER.warning('The following plugins are using an outdated python version and must be '
@@ -100,7 +97,7 @@ def prepare_env(cli_args: List[str]) -> List[str]:
                     'https://community.letsencrypt.org/t/'
                     'certbot-3-0-could-have-potential-third-party-snap-breakages/226940 '
                     'for more information:')
-        plugin_list = '\n'.join('  * {}'.format(plugin) for plugin in outdated_plugins)
+        plugin_list = '\n'.join(f'  * {plugin}' for plugin in outdated_plugins)
         LOGGER.warning(plugin_list)
 
     os.environ['CERTBOT_PLUGIN_PATH'] = ':'.join(connections)

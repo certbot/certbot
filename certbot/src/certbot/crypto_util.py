@@ -192,7 +192,7 @@ def import_csr_file(
         try:
             csr = x509.load_pem_x509_csr(data)
         except ValueError:
-            raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
+            raise errors.Error(f"Failed to parse CSR file: {csrfile}")
 
     domains = acme_crypto_util.get_names_from_subject_and_extensions(csr.subject, csr.extensions)
     # Internally we always use PEM, so re-encode as PEM before returning.
@@ -220,7 +220,7 @@ def make_key(bits: int = 2048, key_type: str = "rsa",
     key: Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
     if key_type == 'rsa':
         if bits < 2048:
-            raise errors.Error("Unsupported RSA key length: {}".format(bits))
+            raise errors.Error(f"Unsupported RSA key length: {bits}")
 
         key = rsa.generate_private_key(public_exponent=65537, key_size=bits)
     elif key_type == 'ecdsa':
@@ -237,13 +237,13 @@ def make_key(bits: int = 2048, key_type: str = "rsa",
                     backend=default_backend()
                 )
             else:
-                raise errors.Error("Unsupported elliptic curve: {}".format(elliptic_curve))
+                raise errors.Error(f"Unsupported elliptic curve: {elliptic_curve}")
         except TypeError:
-            raise errors.Error("Unsupported elliptic curve: {}".format(elliptic_curve))
+            raise errors.Error(f"Unsupported elliptic curve: {elliptic_curve}")
         except UnsupportedAlgorithm as e:
             raise e from errors.Error(str(e))
     else:
-        raise errors.Error("Invalid key_type specified: {}.  Use [rsa|ecdsa]".format(key_type))
+        raise errors.Error(f"Invalid key_type specified: {key_type}.  Use [rsa|ecdsa]")
     return key.private_bytes(
         encoding=Encoding.PEM,
         format=PrivateFormat.PKCS8,
@@ -306,8 +306,8 @@ def verify_renewable_cert_sig(renewable_cert: interfaces.RenewableCert) -> None:
         verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,
                                 cert.signature_hash_algorithm)
     except (OSError, ValueError, InvalidSignature) as e:
-        error_str = "verifying the signature of the certificate located at {0} has failed. \
-                Details: {1}".format(renewable_cert.cert_path, e)
+        error_str = f"verifying the signature of the certificate located at {renewable_cert.cert_path} has failed. \
+                Details: {e}"
         logger.exception(error_str)
         raise errors.Error(error_str)
 
@@ -353,10 +353,9 @@ def verify_cert_matches_priv_key(cert_path: str, key_path: str) -> None:
         context.use_privatekey_file(key_path)
         context.check_privatekey()
     except (OSError, SSL.Error) as e:
-        error_str = "verifying the certificate located at {0} matches the \
-                private key located at {1} has failed. \
-                Details: {2}".format(cert_path,
-                        key_path, e)
+        error_str = f"verifying the certificate located at {cert_path} matches the \
+                private key located at {key_path} has failed. \
+                Details: {e}"
         logger.exception(error_str)
         raise errors.Error(error_str)
 
@@ -381,7 +380,7 @@ def verify_fullchain(renewable_cert: interfaces.RenewableCert) -> None:
             error_str = error_str.format(renewable_cert.lineagename)
             raise errors.Error(error_str)
     except OSError as e:
-        error_str = "reading one of cert, chain, or fullchain has failed: {0}".format(e)
+        error_str = f"reading one of cert, chain, or fullchain has failed: {e}"
         logger.exception(error_str)
         raise errors.Error(error_str)
     except errors.Error as e:
@@ -502,7 +501,7 @@ def sha256sum(filename: str) -> str:
     :rtype: str
     """
     sha256 = hashlib.sha256()
-    with open(filename, 'r') as file_d:
+    with open(filename) as file_d:
         sha256.update(file_d.read().encode('UTF-8'))
     return sha256.hexdigest()
 

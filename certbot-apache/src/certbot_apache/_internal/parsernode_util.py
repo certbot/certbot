@@ -1,7 +1,7 @@
 """ParserNode utils"""
 from typing import Any
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import Optional
 from typing import Tuple
 
@@ -23,12 +23,12 @@ def validate_kwargs(kwargs: Dict[str, Any], required_names: Iterable[str]) -> Di
         try:
             validated_kwargs[name] = kwargs.pop(name)
         except KeyError:
-            raise TypeError("Required keyword argument: {} undefined.".format(name))
+            raise TypeError(f"Required keyword argument: {name} undefined.")
 
     # Raise exception if unknown key word arguments are found.
     if kwargs:
         unknown = ", ".join(kwargs.keys())
-        raise TypeError("Unknown keyword argument(s): {}".format(unknown))
+        raise TypeError(f"Unknown keyword argument(s): {unknown}")
     return validated_kwargs
 
 

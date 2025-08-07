@@ -3,11 +3,11 @@ import copy
 import fnmatch
 import logging
 import re
-from typing import Collection
+from collections.abc import Collection
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Set
 from typing import Tuple
@@ -389,8 +389,8 @@ class ApacheParser:
         :rtype: str
 
         """
-        if_mods: List[str] = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
-                                  (aug_conf_path, mod)))
+        if_mods: List[str] = self.aug.match("%s/IfModule/*[self::arg='%s']" %
+                                  (aug_conf_path, mod))
         if not if_mods:
             return self.create_ifmod(aug_conf_path, mod)
 
@@ -408,10 +408,10 @@ class ApacheParser:
         :rtype: str
 
         """
-        c_path = "{}/IfModule[last() + 1]".format(aug_conf_path)
-        c_path_arg = "{}/IfModule[last()]/arg".format(aug_conf_path)
+        c_path = f"{aug_conf_path}/IfModule[last() + 1]"
+        c_path_arg = f"{aug_conf_path}/IfModule[last()]/arg"
         self.aug.set(c_path, "")
-        retpath = "{}/IfModule[last()]/".format(aug_conf_path)
+        retpath = f"{aug_conf_path}/IfModule[last()]/"
         self.aug.set(c_path_arg, mod)
         return retpath
 

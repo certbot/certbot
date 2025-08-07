@@ -4,7 +4,7 @@ import sys
 from types import ModuleType
 from typing import Any
 from typing import cast
-from typing import Generator
+from collections.abc import Generator
 from typing import List
 from typing import Protocol
 from typing import Tuple

@@ -364,7 +364,7 @@ class TestRawNginxParser(unittest.TestCase):
 
     def test_non_breaking_spaces(self):
         # non-breaking spaces
-        test = u'\u00a0'
+        test = '\u00a0'
         loads(test)
         test = """
         map $http_upgrade $connection_upgrade {

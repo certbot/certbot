@@ -1,6 +1,6 @@
 """ apacheconfig implementation of the ParserNode interfaces """
 from typing import Any
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple

@@ -63,7 +63,7 @@ class FailedChallenges(AuthorizationError):
     def __str__(self) -> str:
         return "Failed authorization procedure. {0}".format(
             ", ".join(
-                "{0} ({1}): {2}".format(achall.domain, achall.typ, achall.error)
+                f"{achall.domain} ({achall.typ}): {achall.error}"
                 for achall in self.failed_achalls if achall.error is not None))
 
 
@@ -101,7 +101,7 @@ class StandaloneBindError(Error):
 
     def __init__(self, socket_error: OSError, port: int) -> None:
         super().__init__(
-            "Problem binding to port {0}: {1}".format(port, socket_error))
+            f"Problem binding to port {port}: {socket_error}")
         self.socket_error = socket_error
         self.port = port
 

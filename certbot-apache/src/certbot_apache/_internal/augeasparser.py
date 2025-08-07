@@ -67,7 +67,7 @@ Translates over to:
 from typing import Any
 from typing import cast
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Set
@@ -119,7 +119,7 @@ class AugeasParserNode(interfaces.ParserNode):
         :rtype: list of AugeasParserNode
         """
 
-        ancestors: List["AugeasParserNode"] = []
+        ancestors: List[AugeasParserNode] = []
 
         parent = self.metadata["augeaspath"]
         while True:
@@ -259,7 +259,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.children: Tuple["AugeasBlockNode", ...] = ()
+        self.children: Tuple[AugeasBlockNode, ...] = ()
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
@@ -365,7 +365,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
     def find_blocks(self, name: str, exclude: bool = True) -> List["AugeasBlockNode"]:
         """Recursive search of BlockNodes from the sequence of children"""
 
-        nodes: List["AugeasBlockNode"] = []
+        nodes: List[AugeasBlockNode] = []
         paths: Iterable[str] = self._aug_find_blocks(name)
         if exclude:
             paths = self.parser.exclude_dirs(paths)
@@ -400,7 +400,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         :param str comment: Comment content to search for.
         """
 
-        nodes: List["AugeasCommentNode"] = []
+        nodes: List[AugeasCommentNode] = []
         ownpath = self.metadata.get("augeaspath")
 
         comments = self.parser.find_comments(comment, start=ownpath)
@@ -485,8 +485,8 @@ class AugeasBlockNode(AugeasDirectiveNode):
         blk_paths: Set[str] = set()
         for vhost_path in list(self.parser.parser_paths):
             paths = self.parser.aug.match(
-                ("/files%s//*[label()=~regexp('%s')]" %
-                    (vhost_path, parser.case_i(name))))
+                "/files%s//*[label()=~regexp('%s')]" %
+                    (vhost_path, parser.case_i(name)))
             blk_paths.update([path for path in paths if
                               name.lower() in os.path.basename(path).lower()])
         return blk_paths

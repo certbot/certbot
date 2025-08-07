@@ -3,7 +3,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 from argparse import ArgumentParser
 from typing import Any
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Type

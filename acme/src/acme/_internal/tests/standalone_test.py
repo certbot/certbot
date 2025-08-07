@@ -39,13 +39,13 @@ class HTTP01ServerTest(unittest.TestCase):
 
     def test_index(self):
         response = requests.get(
-            'http://localhost:{0}'.format(self.port), verify=False)
+            f'http://localhost:{self.port}', verify=False)
         assert response.text == 'ACME client standalone challenge solver'
         assert response.ok
 
     def test_404(self):
         response = requests.get(
-            'http://localhost:{0}/foo'.format(self.port), verify=False)
+            f'http://localhost:{self.port}/foo', verify=False)
         assert response.status_code == http_client.NOT_FOUND
 
     def _test_http01(self, add):
@@ -167,13 +167,13 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
 
     def test_index(self):
         response = requests.get(
-            'http://localhost:{0}'.format(self.port), verify=False)
+            f'http://localhost:{self.port}', verify=False)
         assert response.text == 'ACME client standalone challenge solver'
         assert response.ok
 
     def test_404(self):
         response = requests.get(
-            'http://localhost:{0}/foo'.format(self.port), verify=False)
+            f'http://localhost:{self.port}/foo', verify=False)
         assert response.status_code == http_client.NOT_FOUND
 
     def _test_http01(self, add):

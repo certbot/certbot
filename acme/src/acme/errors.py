@@ -3,7 +3,7 @@ import datetime
 import typing
 from typing import Any
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Set
 
 from josepy import errors as jose_errors
@@ -47,7 +47,7 @@ class BadNonce(NonceError):
         self.error = error
 
     def __str__(self) -> str:
-        return 'Invalid nonce ({0!r}): {1}'.format(self.nonce, self.error)
+        return f'Invalid nonce ({self.nonce!r}): {self.error}'
 
 
 class MissingNonce(NonceError):
@@ -65,9 +65,8 @@ class MissingNonce(NonceError):
         self.response = response
 
     def __str__(self) -> str:
-        return ('Server {0} response did not include a replay '
-                'nonce, headers: {1} (This may be a service outage)'.format(
-                    self.response.request.method, self.response.headers))
+        return (f'Server {self.response.request.method} response did not include a replay '
+                f'nonce, headers: {self.response.headers} (This may be a service outage)')
 
 
 class PollError(ClientError):
@@ -96,8 +95,7 @@ class PollError(ClientError):
         return bool(self.exhausted)
 
     def __repr__(self) -> str:
-        return '{0}(exhausted={1!r}, updated={2!r})'.format(
-            self.__class__.__name__, self.exhausted, self.updated)
+        return f'{self.__class__.__name__}(exhausted={self.exhausted!r}, updated={self.updated!r})'
 
 
 class ValidationError(Error):

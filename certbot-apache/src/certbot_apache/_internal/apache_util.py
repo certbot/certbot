@@ -8,7 +8,7 @@ import re
 import subprocess
 from contextlib import ExitStack
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -220,7 +220,7 @@ def _get_runtime_cfg(command: List[str]) -> str:
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
+            text=True,
             check=False,
             env=util.env_no_snap_for_external_calls())
         stdout, stderr = proc.stdout, proc.stderr
@@ -230,8 +230,7 @@ def _get_runtime_cfg(command: List[str]) -> str:
             "Error running command %s for runtime parameters!%s",
             command, os.linesep)
         raise errors.MisconfigurationError(
-            "Error accessing loaded Apache parameters: {0}".format(
-                command))
+            f"Error accessing loaded Apache parameters: {command}")
     # Small errors that do not impede
     if proc.returncode != 0:
         logger.warning("Error in checking parameter list: %s", stderr)
@@ -252,5 +251,5 @@ def find_ssl_apache_conf(prefix: str) -> str:
     file_manager = ExitStack()
     atexit.register(file_manager.close)
     ref = (importlib.resources.files("certbot_apache").joinpath("_internal")
-           .joinpath("tls_configs").joinpath("{0}-options-ssl-apache.conf".format(prefix)))
+           .joinpath("tls_configs").joinpath(f"{prefix}-options-ssl-apache.conf"))
     return str(file_manager.enter_context(importlib.resources.as_file(ref)))

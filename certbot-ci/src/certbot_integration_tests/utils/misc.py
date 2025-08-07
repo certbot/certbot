@@ -18,8 +18,8 @@ import sys
 import tempfile
 import threading
 import time
-from typing import Generator
-from typing import Iterable
+from collections.abc import Generator
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -67,7 +67,7 @@ def check_until_timeout(url: str, attempts: int = 30) -> None:
         except requests.exceptions.RequestException:
             pass
 
-    raise ValueError('Error, url did not respond after {0} attempts: {1}'.format(attempts, url))
+    raise ValueError(f'Error, url did not respond after {attempts} attempts: {url}')
 
 
 class GracefulTCPServer(socketserver.TCPServer):
@@ -95,7 +95,7 @@ def create_http_server(port: int) -> Generator[str, None, None]:
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
         try:
-            check_until_timeout('http://localhost:{0}/'.format(port))
+            check_until_timeout(f'http://localhost:{port}/')
             yield webroot
         finally:
             server.shutdown()
@@ -141,16 +141,16 @@ def generate_test_file_hooks(config_dir: str, hook_probe: str) -> None:
 
         if os.name != 'nt':
             entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.sh')
-            entrypoint_script = '''\
+            entrypoint_script = f'''\
 #!/usr/bin/env bash
 set -e
-"{0}" "{1}" "{2}" >> "{3}"
-'''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
+"{sys.executable}" "{hook_path}" "{entrypoint_script_path}" >> "{hook_probe}"
+'''
         else:
             entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.ps1')
-            entrypoint_script = '''\
-& "{0}" "{1}" "{2}" >> "{3}"
-            '''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
+            entrypoint_script = f'''\
+& "{sys.executable}" "{hook_path}" "{entrypoint_script_path}" >> "{hook_probe}"
+            '''
 
         with open(entrypoint_script_path, 'w') as file_h:
             file_h.write(entrypoint_script)
@@ -193,8 +193,8 @@ shutil.rmtree(well_known)
 '''.format(http_server_root.replace('\\', '\\\\')))
         os.chmod(cleanup_script_path, 0o755)
 
-        yield ('{0} {1}'.format(sys.executable, auth_script_path),
-               '{0} {1}'.format(sys.executable, cleanup_script_path))
+        yield (f'{sys.executable} {auth_script_path}',
+               f'{sys.executable} {cleanup_script_path}')
     finally:
         shutil.rmtree(tempdir)
 
@@ -216,7 +216,7 @@ def generate_csr(
     elif key_type == ECDSA_KEY_TYPE:
         key = ec.generate_private_key(ec.SECP384R1())
     else:
-        raise ValueError("Invalid key type: {0}".format(key_type))
+        raise ValueError(f"Invalid key type: {key_type}")
 
     with open(key_path, "wb") as file_h:
         file_h.write(
@@ -297,10 +297,10 @@ def echo(keyword: str, path: Optional[str] = None) -> str:
     :return: the executable command
     """
     if not re.match(r'^\w+$', keyword):
-        raise ValueError('Error, keyword `{0}` is not a single keyword.'
-                         .format(keyword))
+        raise ValueError(f'Error, keyword `{keyword}` is not a single keyword.'
+                         )
     return '{0} -c "print(\'{1}\')"{2}'.format(
-        os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
+        os.path.basename(sys.executable), keyword, f' >> "{path}"' if path else '')
 
 
 def get_acme_issuers() -> List[Certificate]:
@@ -313,7 +313,7 @@ def get_acme_issuers() -> List[Certificate]:
 
     issuers = []
     for i in range(PEBBLE_ALTERNATE_ROOTS + 1):
-        request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediates/{}'.format(i),
+        request = requests.get(PEBBLE_MANAGEMENT_URL + f'/intermediates/{i}',
                                verify=False,
                                timeout=10)
         issuers.append(load_pem_x509_certificate(request.content, default_backend()))

@@ -47,7 +47,7 @@ class RevocationChecker:
 
             # New versions of openssl want -header var=val, old ones want -header var val
             test_host_format = subprocess.run(["openssl", "ocsp", "-header", "var", "val"],
-                                     stdout=PIPE, stderr=PIPE, universal_newlines=True,
+                                     stdout=PIPE, stderr=PIPE, text=True,
                                      check=False, env=util.env_no_snap_for_external_calls())
             if "Missing =" in test_host_format.stderr:
                 self.host_args = lambda host: ["Host=" + host]
@@ -310,7 +310,7 @@ def _translate_ocsp_query(cert_path: str, ocsp_output: str, ocsp_errors: str) ->
     """Parse openssl's weird output to work out what it means."""
 
     states = ("good", "revoked", "unknown")
-    patterns = [r"{0}: (WARNING.*)?{1}".format(cert_path, s) for s in states]
+    patterns = [rf"{cert_path}: (WARNING.*)?{s}" for s in states]
     good, revoked, unknown = (re.search(p, ocsp_output, flags=re.DOTALL) for p in patterns)
 
     warning = good.group(1) if good else None

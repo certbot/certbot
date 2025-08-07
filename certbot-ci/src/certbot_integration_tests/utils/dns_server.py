@@ -70,7 +70,7 @@ class DNSServer:
                 self.process.terminate()
                 self.process.wait(constants.MAX_SUBPROCESS_WAIT)
             except BaseException as e:  # pylint: disable=broad-except
-                print("BIND9 did not stop cleanly: {}".format(e), file=sys.stderr)
+                print(f"BIND9 did not stop cleanly: {e}", file=sys.stderr)
 
         shutil.rmtree(self.bind_root, ignore_errors=True)
 
@@ -88,7 +88,7 @@ class DNSServer:
 
     def _start_bind(self) -> None:
         """Launch the BIND9 server as a Docker container"""
-        addr_str = "{}:{}".format(BIND_BIND_ADDRESS[0], BIND_BIND_ADDRESS[1])
+        addr_str = f"{BIND_BIND_ADDRESS[0]}:{BIND_BIND_ADDRESS[1]}"
         # pylint: disable=consider-using-with
         self.process = subprocess.Popen(
             [
@@ -96,13 +96,13 @@ class DNSServer:
                 "run",
                 "--rm",
                 "-p",
-                "{}:53/udp".format(addr_str),
+                f"{addr_str}:53/udp",
                 "-p",
-                "{}:53/tcp".format(addr_str),
+                f"{addr_str}:53/tcp",
                 "-v",
-                "{}/conf:/etc/bind".format(self.bind_root),
+                f"{self.bind_root}/conf:/etc/bind",
                 "-v",
-                "{}/zones:/var/lib/bind".format(self.bind_root),
+                f"{self.bind_root}/zones:/var/lib/bind",
                 BIND_DOCKER_IMAGE,
             ],
             stdout=self._output,
@@ -152,7 +152,7 @@ class DNSServer:
                 sock.close()
 
         raise ValueError(
-            "Gave up waiting for DNS server {} to respond".format(BIND_BIND_ADDRESS)
+            f"Gave up waiting for DNS server {BIND_BIND_ADDRESS} to respond"
         )
 
     def __start__(self) -> Dict[str, Any]:

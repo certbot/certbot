@@ -1,7 +1,7 @@
 """Dual parser node assertions"""
 import fnmatch
 from typing import Any
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import Union

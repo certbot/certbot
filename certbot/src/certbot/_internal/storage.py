@@ -9,9 +9,9 @@ import stat
 from typing import Any
 from typing import cast
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -222,7 +222,7 @@ def get_link_target(link: str) -> str:
         target = filesystem.readlink(link)
     except OSError:
         raise errors.CertStorageError(
-            "Expected {0} to be a symlink".format(link))
+            f"Expected {link} to be a symlink")
 
     if not os.path.isabs(target):
         target = os.path.join(os.path.dirname(link), target)
@@ -236,10 +236,10 @@ def _write_live_readme_to(readme_path: str, is_base_dir: bool = False) -> None:
     with open(readme_path, "w") as f:
         logger.debug("Writing README to %s.", readme_path)
         f.write("This directory contains your keys and certificates.\n\n"
-                "`{prefix}privkey.pem`  : the private key for your certificate.\n"
-                "`{prefix}fullchain.pem`: the certificate file used in most server software.\n"
-                "`{prefix}chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
-                "`{prefix}cert.pem`     : will break many server configurations, and "
+                f"`{prefix}privkey.pem`  : the private key for your certificate.\n"
+                f"`{prefix}fullchain.pem`: the certificate file used in most server software.\n"
+                f"`{prefix}chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
+                f"`{prefix}cert.pem`     : will break many server configurations, and "
                                     "should not be used\n"
                 "                 without reading further documentation (see link below).\n\n"
                 "WARNING: DO NOT MOVE OR RENAME THESE FILES!\n"
@@ -247,7 +247,7 @@ def _write_live_readme_to(readme_path: str, is_base_dir: bool = False) -> None:
                 "         to function properly!\n\n"
                 "We recommend not moving these files. For more information, see the Certbot\n"
                 "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
-                                    "certificates.\n".format(prefix=prefix))
+                                    "certificates.\n")
 
 
 def _relevant(namespaces: Iterable[str], option: str) -> bool:
@@ -355,7 +355,7 @@ def delete_files(config: configuration.NamespaceConfig, certname: str) -> None:
             "delete the contents of %s and %s.", renewal_filename,
             full_default_live_dir, full_default_archive_dir)
         raise errors.CertStorageError(
-            "error parsing {0}".format(renewal_filename))
+            f"error parsing {renewal_filename}")
     finally:
         # we couldn't read it, but let's at least delete it
         # if this was going to fail, it already would have.
@@ -458,7 +458,7 @@ class RenewableCert(interfaces.RenewableCert):
                 config_filename, encoding='utf-8', default_encoding='utf-8')
         except configobj.ConfigObjError:
             raise errors.CertStorageError(
-                "error parsing {0}".format(config_filename))
+                f"error parsing {config_filename}")
 
         # These are equivalent. Previously we were adding the unused default
         # value of renew_before_expiry. Keeping both names because cleaning
@@ -469,8 +469,8 @@ class RenewableCert(interfaces.RenewableCert):
 
         if not all(x in self.configuration for x in ALL_FOUR):
             raise errors.CertStorageError(
-                "renewal config file {0} is missing a required "
-                "file reference".format(self.configfile))
+                f"renewal config file {self.configfile} is missing a required "
+                "file reference")
 
         conf_version = self.configuration.get("version")
         if (conf_version is not None and
@@ -567,11 +567,11 @@ class RenewableCert(interfaces.RenewableCert):
             link = getattr(self, kind)
             if not os.path.islink(link):
                 raise errors.CertStorageError(
-                    "expected {0} to be a symlink".format(link))
+                    f"expected {link} to be a symlink")
             target = get_link_target(link)
             if not os.path.exists(target):
-                raise errors.CertStorageError("target {0} of symlink {1} does "
-                                              "not exist".format(target, link))
+                raise errors.CertStorageError(f"target {target} of symlink {link} does "
+                                              "not exist")
 
     def _consistent(self) -> bool:
         """Are the files associated with this lineage self-consistent?
@@ -617,7 +617,7 @@ class RenewableCert(interfaces.RenewableCert):
 
             # The link must point to a file that follows the archive
             # naming convention
-            pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
+            pattern = re.compile(rf"^{kind}([0-9]+)\.pem$")
             if not pattern.match(os.path.basename(target)):
                 logger.debug("%s does not follow the archive naming "
                              "convention.", target)
@@ -666,7 +666,7 @@ class RenewableCert(interfaces.RenewableCert):
         previous_symlinks = []
         for kind in ALL_FOUR:
             link_dir = os.path.dirname(getattr(self, kind))
-            link_base = "previous_{0}.pem".format(kind)
+            link_base = f"previous_{kind}.pem"
             previous_symlinks.append((kind, os.path.join(link_dir, link_base)))
 
         return previous_symlinks
@@ -725,7 +725,7 @@ class RenewableCert(interfaces.RenewableCert):
         """
         if kind not in ALL_FOUR:
             raise errors.CertStorageError("unknown kind of item")
-        pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
+        pattern = re.compile(rf"^{kind}([0-9]+)\.pem$")
         target = self.current_target(kind)
         if target is None or not os.path.exists(target):
             logger.debug("Current-version target for %s "
@@ -758,7 +758,7 @@ class RenewableCert(interfaces.RenewableCert):
         if not link:
             raise errors.Error(f"Target {kind} does not exist!")
         where = os.path.dirname(link)
-        return os.path.join(where, "{0}{1}.pem".format(kind, version))
+        return os.path.join(where, f"{kind}{version}.pem")
 
     def available_versions(self, kind: str) -> List[int]:
         """Which alternative versions of the specified kind of item exist?
@@ -780,7 +780,7 @@ class RenewableCert(interfaces.RenewableCert):
             raise errors.Error(f"Target {kind} does not exist!")
         where = os.path.dirname(link)
         files = os.listdir(where)
-        pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
+        pattern = re.compile(rf"^{kind}([0-9]+)\.pem$")
         matches = [pattern.match(f) for f in files]
         return sorted([int(m.groups()[0]) for m in matches if m])
 
@@ -874,7 +874,7 @@ class RenewableCert(interfaces.RenewableCert):
         if kind not in ALL_FOUR:
             raise errors.CertStorageError("unknown kind of item")
         link = getattr(self, kind)
-        filename = "{0}{1}.pem".format(kind, version)
+        filename = f"{kind}{version}.pem"
         # Relative rather than absolute target directory
         target_directory = os.path.dirname(filesystem.readlink(link))
         # TODO: it could be safer to make the link first under a temporary
@@ -1129,11 +1129,11 @@ class RenewableCert(interfaces.RenewableCert):
 
         self.cli_config = cli_config
         target_version = self.next_free_version()
-        target = {kind: os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version))
+        target = {kind: os.path.join(self.archive_dir, f"{kind}{target_version}.pem")
                   for kind in ALL_FOUR}
 
         old_privkey = os.path.join(
-            self.archive_dir, "privkey{0}.pem".format(prior_version))
+            self.archive_dir, f"privkey{prior_version}.pem")
 
         # Distinguish the cases where the privkey has changed and where it
         # has not changed (in the latter case, making an appropriate symlink

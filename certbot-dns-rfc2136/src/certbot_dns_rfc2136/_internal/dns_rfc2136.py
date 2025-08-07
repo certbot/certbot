@@ -62,12 +62,12 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _validate_credentials(self, credentials: CredentialsConfiguration) -> None:
         server = cast(str, credentials.conf('server'))
         if not is_ipaddress(server):
-            raise errors.PluginError("The configured target DNS server ({0}) is not a valid IPv4 "
-                                     "or IPv6 address. A hostname is not allowed.".format(server))
+            raise errors.PluginError(f"The configured target DNS server ({server}) is not a valid IPv4 "
+                                     "or IPv6 address. A hostname is not allowed.")
         algorithm = credentials.conf('algorithm')
         if algorithm:
             if not self.ALGORITHMS.get(algorithm.upper()):
-                raise errors.PluginError("Unknown algorithm: {0}.".format(algorithm))
+                raise errors.PluginError(f"Unknown algorithm: {algorithm}.")
 
     def _setup_credentials(self) -> None:
         self.credentials = self._configure_credentials(
@@ -142,15 +142,15 @@ class _RFC2136Client:
         try:
             response = dns.query.tcp(update, self.server, self._default_timeout, self.port)
         except Exception as e:
-            raise errors.PluginError('Encountered error adding TXT record: {0}'
-                                     .format(e))
+            raise errors.PluginError(f'Encountered error adding TXT record: {e}'
+                                     )
         rcode = response.rcode()
 
         if rcode == dns.rcode.NOERROR:
             logger.debug('Successfully added TXT record %s', record_name)
         else:
-            raise errors.PluginError('Received response from server: {0}'
-                                     .format(dns.rcode.to_text(rcode)))
+            raise errors.PluginError(f'Received response from server: {dns.rcode.to_text(rcode)}'
+                                     )
 
     def del_txt_record(self, record_name: str, record_content: str) -> None:
         """
@@ -177,15 +177,15 @@ class _RFC2136Client:
         try:
             response = dns.query.tcp(update, self.server, self._default_timeout, self.port)
         except Exception as e:
-            raise errors.PluginError('Encountered error deleting TXT record: {0}'
-                                     .format(e))
+            raise errors.PluginError(f'Encountered error deleting TXT record: {e}'
+                                     )
         rcode = response.rcode()
 
         if rcode == dns.rcode.NOERROR:
             logger.debug('Successfully deleted TXT record %s', record_name)
         else:
-            raise errors.PluginError('Received response from server: {0}'
-                                     .format(dns.rcode.to_text(rcode)))
+            raise errors.PluginError(f'Received response from server: {dns.rcode.to_text(rcode)}'
+                                     )
 
     def _find_domain(self, record_name: str) -> str:
         """
@@ -204,8 +204,8 @@ class _RFC2136Client:
             if self._query_soa(guess):
                 return guess
 
-        raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
-                                 .format(record_name, domain_name_guesses))
+        raise errors.PluginError(f'Unable to determine base domain for {record_name} using names: {domain_name_guesses}.'
+                                 )
 
     def _query_soa(self, domain_name: str) -> bool:
         """
@@ -245,5 +245,5 @@ class _RFC2136Client:
             logger.debug('No authoritative SOA record found for %s', domain_name)
             return False
         except Exception as e:
-            raise errors.PluginError('Encountered error when making query: {0}'
-                                     .format(e))
+            raise errors.PluginError(f'Encountered error when making query: {e}'
+                                     )

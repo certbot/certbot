@@ -36,13 +36,13 @@ class ApacheHttp01Test(util.ApacheTest):
             self.achalls.append(
                 achallenges.KeyAuthorizationAnnotatedChallenge(
                     challb=acme_util.chall_to_challb(
-                        challenges.HTTP01(token=((chr(ord('a') + i).encode() * 16))),
+                        challenges.HTTP01(token=(chr(ord('a') + i).encode() * 16)),
                         "pending"),
                     domain=self.vhosts[i].name, account_key=self.account_key))
 
         modules = ["ssl", "rewrite", "authz_core", "authz_host"]
         for mod in modules:
-            self.config.parser.modules["mod_{0}.c".format(mod)] = None
+            self.config.parser.modules[f"mod_{mod}.c"] = None
             self.config.parser.modules[mod + "_module"] = None
 
         from certbot_apache._internal.http_01 import ApacheHttp01
@@ -82,12 +82,12 @@ class ApacheHttp01Test(util.ApacheTest):
         achalls = [
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
-                    challenges.HTTP01(token=((b'a' * 16))),
+                    challenges.HTTP01(token=(b'a' * 16)),
                     "pending"),
                 domain=vhost.name, account_key=self.account_key),
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
-                    challenges.HTTP01(token=((b'b' * 16))),
+                    challenges.HTTP01(token=(b'b' * 16)),
                     "pending"),
                 domain=next(iter(vhost.aliases)), account_key=self.account_key)
         ]
@@ -98,7 +98,7 @@ class ApacheHttp01Test(util.ApacheTest):
         achalls = [
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
-                    challenges.HTTP01(token=((b'a' * 16))),
+                    challenges.HTTP01(token=(b'a' * 16)),
                     "pending"),
                 domain="something.nonexistent", account_key=self.account_key)]
         self.common_perform_test(achalls, vhosts)
@@ -109,7 +109,7 @@ class ApacheHttp01Test(util.ApacheTest):
         achalls = [
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
-                    challenges.HTTP01(token=((b'a' * 16))),
+                    challenges.HTTP01(token=(b'a' * 16)),
                     "pending"),
                 domain="duplicate.example.com", account_key=self.account_key)]
         self.common_perform_test(achalls, vhosts)
@@ -120,7 +120,7 @@ class ApacheHttp01Test(util.ApacheTest):
         achalls = [
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
-                    challenges.HTTP01(token=((b'a' * 16))),
+                    challenges.HTTP01(token=(b'a' * 16)),
                     "pending"),
                 domain=domain, account_key=self.account_key),
         ]
@@ -147,7 +147,7 @@ class ApacheHttp01Test(util.ApacheTest):
         achalls = [
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
-                    challenges.HTTP01(token=((b'a' * 16))),
+                    challenges.HTTP01(token=(b'a' * 16)),
                     "pending"),
                 domain="certbot.demo", account_key=self.account_key)]
         vhosts[0].enabled = False

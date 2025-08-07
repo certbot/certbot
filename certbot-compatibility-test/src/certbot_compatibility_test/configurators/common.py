@@ -5,7 +5,7 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Optional
 from typing import overload

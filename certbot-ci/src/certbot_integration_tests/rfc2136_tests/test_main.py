@@ -1,5 +1,5 @@
 """Module executing integration tests against Certbot with the RFC2136 DNS authenticator."""
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 
@@ -24,5 +24,5 @@ def test_get_certificate(domain: str, context: IntegrationTestsContext) -> None:
     with context.rfc2136_credentials() as creds:
         context.certbot_test_rfc2136([
             'certonly', '--dns-rfc2136-credentials', creds,
-            '-d', domain, '-d', '*.{}'.format(domain)
+            '-d', domain, '-d', f'*.{domain}'
         ])

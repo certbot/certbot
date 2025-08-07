@@ -6,7 +6,7 @@ from typing import Any
 from typing import Callable
 from typing import DefaultDict
 from typing import Dict
-from typing import Iterable
+from collections.abc import Iterable
 from typing import List
 from typing import Set
 from typing import Tuple
@@ -195,16 +195,16 @@ running. HTTP challenge only (wildcards not supported)."""
 def _handle_perform_error(error: errors.StandaloneBindError) -> None:
     if error.socket_error.errno == errno.EACCES:
         raise errors.PluginError(
-            "Could not bind TCP port {0} because you don't have "
+            f"Could not bind TCP port {error.port} because you don't have "
             "the appropriate permissions (for example, you "
             "aren't running this program as "
-            "root).".format(error.port))
+            "root).")
     if error.socket_error.errno == errno.EADDRINUSE:
         msg = (
-            "Could not bind TCP port {0} because it is already in "
+            f"Could not bind TCP port {error.port} because it is already in "
             "use by another process on this system (such as a web "
             "server). Please stop the program in question and "
-            "then try again.".format(error.port))
+            "then try again.")
         should_retry = display_util.yesno(msg, "Retry", "Cancel", default=False)
         if not should_retry:
             raise errors.PluginError(msg)

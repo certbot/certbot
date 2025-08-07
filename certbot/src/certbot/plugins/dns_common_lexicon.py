@@ -7,7 +7,7 @@ from typing import Any
 from typing import cast
 from typing import Dict
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -63,7 +63,7 @@ class LexiconClient:  # pragma: no cover
             self.provider.create_record(rtype='TXT', name=record_name, content=record_content)
         except RequestException as e:
             logger.debug('Encountered error adding TXT record: %s', e, exc_info=True)
-            raise errors.PluginError('Error adding TXT record: {0}'.format(e))
+            raise errors.PluginError(f'Error adding TXT record: {e}')
 
     def del_txt_record(self, domain: str, record_name: str, record_content: str) -> None:
         """
@@ -119,17 +119,17 @@ class LexiconClient:  # pragma: no cover
                 if result2:
                     raise result2  # pylint: disable=raising-bad-type
 
-        raise errors.PluginError('Unable to determine zone identifier for {0} using zone names: {1}'
-                                 .format(domain, domain_name_guesses))
+        raise errors.PluginError(f'Unable to determine zone identifier for {domain} using zone names: {domain_name_guesses}'
+                                 )
 
     def _handle_http_error(self, e: HTTPError, domain_name: str) -> Optional[errors.PluginError]:
-        return errors.PluginError('Error determining zone identifier for {0}: {1}.'
-                                  .format(domain_name, e))
+        return errors.PluginError(f'Error determining zone identifier for {domain_name}: {e}.'
+                                  )
 
     def _handle_general_error(self, e: Exception, domain_name: str) -> Optional[errors.PluginError]:
         if not str(e).startswith('No domain found'):
-            return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
-                                      .format(domain_name, e))
+            return errors.PluginError(f'Unexpected error determining zone identifier for {domain_name}: {e}'
+                                      )
         return None
 
 
@@ -224,7 +224,7 @@ class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
                 operations.create_record(rtype='TXT', name=validation_name, content=validation)
         except RequestException as e:
             logger.debug('Encountered error adding TXT record: %s', e, exc_info=True)
-            raise errors.PluginError('Error adding TXT record: {0}'.format(e))
+            raise errors.PluginError(f'Error adding TXT record: {e}')
 
     def _cleanup(self, domain: str, validation_name: str, validation: str) -> None:
         try:
@@ -260,17 +260,17 @@ class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
                 if result2:
                     raise result2  # pylint: disable=raising-bad-type
 
-        raise errors.PluginError('Unable to determine zone identifier for {0} using zone names: {1}'
-                                 .format(domain, domain_name_guesses))
+        raise errors.PluginError(f'Unable to determine zone identifier for {domain} using zone names: {domain_name_guesses}'
+                                 )
 
     def _handle_http_error(self, e: HTTPError, domain_name: str) -> Optional[errors.PluginError]:
-        return errors.PluginError('Error determining zone identifier for {0}: {1}.'
-                                  .format(domain_name, e))
+        return errors.PluginError(f'Error determining zone identifier for {domain_name}: {e}.'
+                                  )
 
     def _handle_general_error(self, e: Exception, domain_name: str) -> Optional[errors.PluginError]:
         if not str(e).startswith('No domain found'):
-            return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
-                                      .format(domain_name, e))
+            return errors.PluginError(f'Unexpected error determining zone identifier for {domain_name}: {e}'
+                                      )
         return None
 
 

@@ -6,7 +6,7 @@ import logging
 from typing import Any
 from typing import cast
 from typing import Dict
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Type
@@ -319,7 +319,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         if port is not None and port != self.PORT:
             logger.warning(
                 "Using non-standard port for http-01 verification: %s", port)
-            domain += ":{0}".format(port)
+            domain += f":{port}"
 
         uri = chall.uri(domain)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
@@ -447,7 +447,7 @@ class DNS(_TokenChallenge):
         :param str name: Domain name being validated.
 
         """
-        return "{0}.{1}".format(self.LABEL, name)
+        return f"{self.LABEL}.{name}"
 
 
 @ChallengeResponse.register

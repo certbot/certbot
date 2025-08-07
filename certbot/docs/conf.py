@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Certbot documentation build configuration file, created by
 # sphinx-quickstart on Sun Nov 23 20:35:21 2014.
@@ -67,9 +66,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Certbot'
+project = 'Certbot'
 # this is now overridden by the footer.html template
-copyright = u'2014-2018 - The Certbot software and documentation are licensed under the Apache 2.0 license as described at https://eff.org/cb-license.'
+copyright = '2014-2018 - The Certbot software and documentation are licensed under the Apache 2.0 license as described at https://eff.org/cb-license.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -248,8 +247,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    ('index', 'Certbot.tex', u'Certbot Documentation',
-     u'Certbot Project', 'manual'),
+    ('index', 'Certbot.tex', 'Certbot Documentation',
+     'Certbot Project', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -278,9 +277,9 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'certbot', u'Certbot Documentation',
+    ('index', 'certbot', 'Certbot Documentation',
      [project], 7),
-    ('man/certbot', 'certbot', u"Automatically configure HTTPS using Let's Encrypt",
+    ('man/certbot', 'certbot', "Automatically configure HTTPS using Let's Encrypt",
      [project], 1),
 ]
 
@@ -294,8 +293,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'Certbot', u'Certbot Documentation',
-     u'Certbot Project', 'Certbot', 'One line description of project.',
+    ('index', 'Certbot', 'Certbot Documentation',
+     'Certbot Project', 'Certbot', 'One line description of project.',
      'Miscellaneous'),
 ]
 

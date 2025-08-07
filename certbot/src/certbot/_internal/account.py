@@ -10,7 +10,7 @@ from typing import Callable
 from typing import cast
 from typing import Dict
 from typing import List
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 
 from cryptography.hazmat.primitives import serialization
@@ -95,8 +95,7 @@ class Account:
             self.meta.creation_dt), self.meta.creation_host, self.id[:4])
 
     def __repr__(self) -> str:
-        return "<{0}({1}, {2}, {3})>".format(
-            self.__class__.__name__, self.regr, self.id, self.meta)
+        return f"<{self.__class__.__name__}({self.regr}, {self.id}, {self.meta})>"
 
     def __eq__(self, other: Any) -> bool:
         return (isinstance(other, self.__class__) and

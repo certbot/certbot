@@ -79,7 +79,7 @@ class ErrorTest(unittest.TestCase):
         from acme.messages import Error
         from acme.messages import is_acme_error
         arabic_error = Error.with_code(
-            'malformed', detail=u'\u0639\u062f\u0627\u0644\u0629', title='title')
+            'malformed', detail='\u0639\u062f\u0627\u0644\u0629', title='title')
         assert is_acme_error(arabic_error)
 
     def test_with_code(self):
@@ -91,11 +91,11 @@ class ErrorTest(unittest.TestCase):
 
     def test_str(self):
         assert str(self.error) == \
-            u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}" \
-            .format(self.error)
+            f"{self.error.typ} :: {self.error.description} :: {self.error.detail} :: {self.error.title}" \
+            
         assert str(self.error_with_subproblems) == \
-            (u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}\n"+
-            u"Problem for {1.identifier.value}: {1.typ} :: {1.description} :: {1.detail} :: {1.title}").format(
+            ("{0.typ} :: {0.description} :: {0.detail} :: {0.title}\n"+
+            "Problem for {1.identifier.value}: {1.typ} :: {1.description} :: {1.detail} :: {1.title}").format(
         self.error_with_subproblems, self.subproblem)
 
     # this test is based on a minimal reproduction of a contextmanager/immutable

@@ -364,7 +364,7 @@ class GetNamesFromCertTest(unittest.TestCase):
     def test_common_name_sans_order(self):
         # Tests that the common name comes first
         # followed by the SANS in alphabetical order
-        assert ['example.com'] + ['{0}.example.com'.format(c) for c in 'abcd'] == \
+        assert ['example.com'] + [f'{c}.example.com' for c in 'abcd'] == \
             self._call(test_util.load_vector('cert-5sans_512.pem'))
 
     def test_parse_non_cert(self):
@@ -435,8 +435,8 @@ class CertAndChainFromFullchainTest(unittest.TestCase):
         cert_pem: str = CERT.decode()
         chain_pem: str = cert_pem + SS_CERT.decode()
         fullchain_pem: str = cert_pem + chain_pem
-        spacey_fullchain_pem: str = cert_pem + u'\n' + chain_pem
-        crlf_fullchain_pem: str = fullchain_pem.replace(u'\n', u'\r\n')
+        spacey_fullchain_pem: str = cert_pem + '\n' + chain_pem
+        crlf_fullchain_pem: str = fullchain_pem.replace('\n', '\r\n')
 
         # In the ACME v1 code path, the fullchain is constructed by loading cert+chain DERs
         # and using OpenSSL to dump them, so here we confirm that cryptography is producing certs
