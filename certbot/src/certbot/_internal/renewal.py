@@ -41,6 +41,8 @@ from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
+ARI_RETRY_AFTER_CONFIG_ITEM = "ari_retry_after"
+
 # These are the items which get pulled out of a renewal configuration
 # file's renewalparams and actually used in the client configuration
 # during the renewal process. We have to record their types here because
@@ -49,15 +51,14 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "renew_hook", "pre_hook", "post_hook", "http01_address",
                     "preferred_chain", "key_type", "elliptic_curve",
-                    "preferred_profile", "required_profile"]
+                    "preferred_profile", "required_profile",
+                    ARI_RETRY_AFTER_CONFIG_ITEM]
 INT_CONFIG_ITEMS = ["rsa_key_size", "http01_port"]
 BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
                      "autorenew"]
 
 CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
-
-ARI_RETRY_AFTER_CONFIG_ITEM = "ari_retry_after"
 
 class AriClientPool:
     """A cache of ACME clients for using in performing ACME Renewal Info (ARI) requests.
@@ -376,16 +377,15 @@ def _ari_renewal_time(lineage: storage.RenewableCert,
         return None
 
     renewal_params = lineage.configfile.get("renewalparams")
-    if renewal_params:
-        retry_after = renewal_params.get(ARI_RETRY_AFTER_CONFIG_ITEM, None)
-        if retry_after:
-            retry_after_datetime = datetime.datetime.fromisoformat(retry_after)
-            now = datetime.datetime.now()
-            if now < retry_after_datetime:
-                logger.debug("Skipped ACME Renewal Info check because ari_retry_after %s is in "
-                             "the future",
-                             retry_after)
-                return None
+    retry_after = renewal_params.get(ARI_RETRY_AFTER_CONFIG_ITEM, None)
+    if retry_after:
+        retry_after_datetime = datetime.datetime.fromisoformat(retry_after)
+        now = datetime.datetime.now()
+        if now < retry_after_datetime:
+            logger.debug("Skipped ACME Renewal Info check because ari_retry_after %s is in "
+                         "the future",
+                         retry_after)
+            return None
 
     renewal_time = None
     try:

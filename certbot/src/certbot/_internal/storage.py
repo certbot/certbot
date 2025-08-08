@@ -1194,7 +1194,7 @@ class RenewableCert(interfaces.RenewableCert):
         """Set or update a field in the config file's 'renewalparams'.
 
         This doesn't modify any fields other than the named one, even if there are
-        command line flags affect renewal (e.g. --authenticator, --installer).
+        command line that flags affect renewal (e.g. --authenticator, --installer).
         """
         temp_filename = self.configfile.filename + ".new"
 
