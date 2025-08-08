@@ -1189,6 +1189,29 @@ class RenewableCert(interfaces.RenewableCert):
             self.lineagename, self.archive_dir, symlinks, cli_config)
         self.configuration = self.configfile
 
+
+    def save_renewal_param(self, name: str, value: str) -> None:
+        """Set or update a field in the config file's 'renewalparams'.
+
+        This doesn't modify any fields other than the named one, even if there are
+        command line flags affect renewal (e.g. --authenticator, --installer).
+        """
+        temp_filename = self.configfile.filename + ".new"
+
+        # If an existing tempfile exists, delete it
+        if os.path.exists(temp_filename):
+            os.unlink(temp_filename)
+
+        renewal_config = configobj.ConfigObj(
+            self.configfile.filename, encoding='utf-8', default_encoding='utf-8')
+        renewal_config['renewalparams'][name] = value
+        with open(temp_filename, "wb") as f:
+            renewal_config.write(outfile=f)
+
+        filesystem.replace(temp_filename, self.configfile.filename)
+        self.configfile = renewal_config
+
+
     def truncate(self, num_prior_certs_to_keep: int = 5) -> None:
         """Delete unused historical certificate, chain and key items from the lineage.
 
