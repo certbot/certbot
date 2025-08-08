@@ -110,7 +110,7 @@ def add_time_interval(base_time: datetime.datetime, interval: str,
 
 def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
                          target: Mapping[str, str],
-                         relevant_data: Mapping[str, Any]) -> configobj.ConfigObj:
+                         relevant_data: Mapping[str, Any]) -> None:
     """Writes a renewal config file with the specified name and values.
 
     :param str o_filename: Absolute path to the previous version of config file
@@ -123,7 +123,10 @@ def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
     :rtype: configobj.ConfigObj
 
     """
-    config = configobj.ConfigObj(o_filename, encoding='utf-8', default_encoding='utf-8')
+    # Read the existing values from `o_filename` if it exists. This is necessary to preserve
+    # comments. If `o_filename` doesn't exist, create an empty ConfigObj (because file_error=False).
+    config = configobj.ConfigObj(o_filename, encoding='utf-8', default_encoding='utf-8',
+                                file_error=False)
     config["version"] = certbot.__version__
     config["archive_dir"] = archive_dir
     for kind in ALL_FOUR:
@@ -156,7 +159,6 @@ def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
 
     with open(n_filename, "wb") as f:
         config.write(outfile=f)
-    return config
 
 
 def rename_renewal_config(prev_name: str, new_name: str,
@@ -1051,9 +1053,8 @@ class RenewableCert(interfaces.RenewableCert):
         # Save only the config items that are relevant to renewal
         values = relevant_values(cli_config)
 
-        new_config = write_renewal_config(config_filename, config_filename, archive,
-            target, values)
-        return cls(new_config.filename, cli_config)
+        write_renewal_config(config_filename, config_filename, archive, target, values)
+        return cls(config_filename, cli_config)
 
     def _private_key(self) -> Union[RSAPrivateKey, EllipticCurvePrivateKey]:
         with open(self.configuration["privkey"], "rb") as priv_key_file:
