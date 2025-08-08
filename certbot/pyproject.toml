@@ -1,0 +1,99 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "certbot"
+dynamic = ["version", "dependencies"]
+description = "ACME client"
+readme = "README.rst"
+license = "Apache-2.0"
+requires-python = ">=3.9.2"
+authors = [
+    { name = "Certbot Project", email = "certbot-dev@eff.org" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: Console :: Curses",
+    "Intended Audience :: System Administrators",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Security",
+    "Topic :: System :: Installation/Setup",
+    "Topic :: System :: Networking",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+
+
+[project.optional-dependencies]
+dev = [
+    "azure-devops",
+    "ipdb",
+    # allows us to use newer urllib3 https://github.com/python-poetry/poetry-plugin-export/issues/183
+    "poetry-plugin-export>=1.9.0",
+    # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
+    # https://github.com/python-poetry/poetry/issues/1584.
+    "poetry>=1.2.0",
+    "towncrier",
+    "twine",
+]
+docs = [
+    # If you have Sphinx<1.5.1, you need docutils<0.13.1
+    # https://github.com/sphinx-doc/sphinx/issues/3212
+    "Sphinx>=1.2", # Annotation support
+    "sphinx_rtd_theme",
+]
+# Tools like pip, wheel, and tox are listed here to ensure they are properly
+# pinned and installed during automated testing.
+test = [
+    "coverage",
+    "mypy",
+    "pip",
+    "pylint",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+    "ruff",
+    "setuptools",
+    "tox",
+    "types-httplib2",
+    "types-pyRFC3339",
+    "types-pywin32",
+    "types-requests",
+    "types-setuptools",
+    "wheel",
+]
+all = [
+    "certbot[dev,docs,test]"
+]
+
+[project.scripts]
+certbot = "certbot.main:main"
+
+[project.entry-points."certbot.plugins"]
+manual = "certbot._internal.plugins.manual:Authenticator"
+null = "certbot._internal.plugins.null:Installer"
+standalone = "certbot._internal.plugins.standalone:Authenticator"
+webroot = "certbot._internal.plugins.webroot:Authenticator"
+
+[project.urls]
+Homepage = "https://github.com/certbot/certbot"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]  # list of folders that contain the packages (["."] by default)
+exclude = ['docs', 'examples', 'tests', 'venv']  # exclude packages matching these glob patterns
+
+[tool.setuptools.dynamic]
+version = {attr = "certbot.__version__"}  # any module attribute compatible with ast.literal_eval
