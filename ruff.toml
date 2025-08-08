@@ -1,0 +1,8 @@
+line-length = 100
+
+extend-exclude = ['tools', 'letstest']
+
+[lint]
+# Skip bare `except` rules (`E722`).
+# Skip ambiguous variable name (`E741`).
+ignore = ["E722", "E741",]

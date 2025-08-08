@@ -123,7 +123,7 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
 
     def test_no_ips(self):
         from acme.crypto_util import make_self_signed_cert
-        cert = make_self_signed_cert(self.privkey, ['dummy'])
+        make_self_signed_cert(self.privkey, ['dummy'])
 
     @mock.patch("acme.crypto_util._now")
     def test_expiry_times(self, mock_now):

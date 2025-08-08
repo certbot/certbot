@@ -24,7 +24,12 @@ from certbot_integration_tests.utils import misc
 from certbot_integration_tests.utils import pebble_artifacts
 from certbot_integration_tests.utils import pebble_ocsp_server
 from certbot_integration_tests.utils import proxy
-from certbot_integration_tests.utils.constants import *
+from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
+from certbot_integration_tests.utils.constants import CHALLTESTSRV_PORT
+from certbot_integration_tests.utils.constants import PEBBLE_DIRECTORY_URL
+from certbot_integration_tests.utils.constants import PEBBLE_CHALLTESTSRV_URL
+from certbot_integration_tests.utils.constants import PEBBLE_ALTERNATE_ROOTS
+from certbot_integration_tests.utils.constants import MAX_SUBPROCESS_WAIT
 
 
 class ACMEServer:
