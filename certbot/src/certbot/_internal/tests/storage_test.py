@@ -745,38 +745,38 @@ class RenewableCertTests(BaseRenewableCertTest):
         with pytest.raises(errors.CertStorageError):
             storage.RenewableCert(self.config_file.filename, self.config)
 
-    def test_write_renewal_config(self):
+    def test_atomic_rewrite(self):
         # Mostly tested by the process of creating and updating lineages,
         # but we can test that this successfully creates files, removes
         # unneeded items, and preserves comments.
         temp = os.path.join(self.config.config_dir, "sample-file")
-        temp2 = os.path.join(self.config.config_dir, "sample-file.new")
         with open(temp, "w") as f:
             f.write("[renewalparams]\nuseful = value # A useful value\n"
-                    "useless = value # Not needed\n")
+                    "useless = value # Not needed, but preserved\n")
         filesystem.chmod(temp, 0o640)
-        target = {}
+        perms = stat.S_IMODE(os.lstat(temp).st_mode)
+        config = configobj.ConfigObj()
         for x in ALL_FOUR:
-            target[x] = "somewhere"
-        archive_dir = "the_archive"
-        relevant_data = {"useful": "new_value"}
+            config[x] = "somewhere"
+        config["version"] = certbot.__version__
+        config["archive_dir"] = "the_archive"
+        config["renewalparams"] = {"useful": "new_value"}
 
         from certbot._internal import storage
-        storage.write_renewal_config(temp, temp2, archive_dir, target, relevant_data)
+        storage.atomic_rewrite(temp, config)
 
-        with open(temp2, "r") as f:
+        with open(temp, "r") as f:
             content = f.read()
         # useful value was updated
         assert "useful = new_value" in content
         # associated comment was preserved
         assert "A useful value" in content
         # useless value was deleted
-        assert "useless" not in content
+        assert "useless" in content
         # check version was stored
         assert "version = {0}".format(certbot.__version__) in content
         # ensure permissions are copied
-        assert stat.S_IMODE(os.lstat(temp).st_mode) == \
-                         stat.S_IMODE(os.lstat(temp2).st_mode)
+        assert stat.S_IMODE(os.lstat(temp).st_mode) == perms
 
     def test_truncate(self):
         # It should not do anything when there's less than 5 cert history
