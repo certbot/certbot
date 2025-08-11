@@ -69,7 +69,9 @@ class RegisterTest(test_util.ConfigTestCase):
         self.tos_cb = mock.MagicMock()
         display_obj.set_display(MagicMock())
 
-    def _call(self):
+    @mock.patch('socket.getfqdn')
+    def _call(self, mock_fqdn):
+        mock_fqdn.return_value = "server_name"
         from certbot._internal.client import register
         return register(self.config, self.account_storage, self.tos_cb)
 

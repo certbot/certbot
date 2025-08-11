@@ -78,7 +78,9 @@ class GetEmailTest(unittest.TestCase):
 
 class ChooseAccountTest(test_util.TempDirTestCase):
     """Tests for certbot.display.ops.choose_account."""
-    def setUp(self):
+    @mock.patch('socket.getfqdn')
+    def setUp(self, mock_fqdn):
+        mock_fqdn.return_value = "server_name"
         super().setUp()
 
         display_obj.set_display(display_obj.FileDisplay(sys.stdout, False))

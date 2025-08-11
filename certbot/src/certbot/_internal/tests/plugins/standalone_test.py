@@ -28,7 +28,9 @@ class ServerManagerTest(unittest.TestCase):
     def test_init(self):
         assert self.mgr.http_01_resources is self.http_01_resources
 
-    def _test_run_stop(self, challenge_type):
+    @mock.patch('socket.getfqdn')
+    def _test_run_stop(self, challenge_type, mock_fdqn):
+        mock_fdqn.return_value = "server_name"
         server = self.mgr.run(port=0, challenge_type=challenge_type)
         port = server.getsocknames()[0][1]
         assert self.mgr.running() == {port: server}
@@ -38,7 +40,9 @@ class ServerManagerTest(unittest.TestCase):
     def test_run_stop_http_01(self):
         self._test_run_stop(challenges.HTTP01)
 
-    def test_run_idempotent(self):
+    @mock.patch('socket.getfqdn')
+    def test_run_idempotent(self, mock_fdqn):
+        mock_fdqn.return_value = "server_name"
         server = self.mgr.run(port=0, challenge_type=challenges.HTTP01)
         port = server.getsocknames()[0][1]
         server2 = self.mgr.run(port=port, challenge_type=challenges.HTTP01)
@@ -47,7 +51,9 @@ class ServerManagerTest(unittest.TestCase):
         self.mgr.stop(port)
         assert self.mgr.running() == {}
 
-    def test_run_bind_error(self):
+    @mock.patch('socket.getfqdn')
+    def test_run_bind_error(self, mock_fdqn):
+        mock_fdqn.return_value = "server_name"
         some_server = socket.socket(socket.AF_INET6)
         some_server.bind(("", 0))
         port = some_server.getsockname()[1]

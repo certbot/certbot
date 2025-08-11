@@ -20,7 +20,9 @@ class HTTP01ServerTest(unittest.TestCase):
     """Tests for acme.standalone.HTTP01Server."""
 
 
-    def setUp(self):
+    @mock.patch('socket.getfqdn')
+    def setUp(self, mock_fdqn):
+        mock_fdqn.return_value = "server_name"
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
         self.resources: Set = set()
@@ -67,7 +69,9 @@ class HTTP01ServerTest(unittest.TestCase):
     def test_http01_not_found(self):
         assert not self._test_http01(add=False)
 
-    def test_timely_shutdown(self):
+    @mock.patch('socket.getfqdn')
+    def test_timely_shutdown(self, mock_fdqn):
+        mock_fdqn.return_value = "server_name"
         from acme.standalone import HTTP01Server
         with HTTP01Server(('', 0), resources=set(), timeout=0.05) as server:
             server_thread = threading.Thread(target=server.serve_forever)
@@ -151,7 +155,9 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
 class HTTP01DualNetworkedServersTest(unittest.TestCase):
     """Tests for acme.standalone.HTTP01DualNetworkedServers."""
 
-    def setUp(self):
+    @mock.patch('socket.getfqdn')
+    def setUp(self, mock_fdqn):
+        mock_fdqn.return_value = "server_name"
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
         self.resources: Set = set()
