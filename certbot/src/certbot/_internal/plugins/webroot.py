@@ -96,7 +96,9 @@ to serve all files under specified web root ({0})."""
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.full_roots: dict[str, str] = {}
-        self.performed: collections.defaultdict[str, set[AnnotatedChallenge]] = collections.defaultdict(set)
+        self.performed: collections.defaultdict[str, set[AnnotatedChallenge]] = (
+            collections.defaultdict(set)
+        )
         # stack of dirs successfully created by this authenticator
         self._created_dirs: list[str] = []
 
