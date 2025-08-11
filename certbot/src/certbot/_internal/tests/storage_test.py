@@ -747,8 +747,8 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_atomic_rewrite(self):
         # Mostly tested by the process of creating and updating lineages,
-        # but we can test that this successfully creates files, removes
-        # unneeded items, and preserves comments.
+        # but we can test that this successfully creates files, preserves
+        # permissions, and preserves comments.
         temp = os.path.join(self.config.config_dir, "sample-file")
         with open(temp, "w") as f:
             f.write("[renewalparams]\nuseful = value # A useful value\n"
