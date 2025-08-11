@@ -730,7 +730,7 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
     context.certbot(['renew', '--force-renewal', '--key-type', 'ecdsa'])
     key5 = join(context.config_dir, 'archive', certname, 'privkey5.pem')
     assert 280 < os.stat(key2).st_size < 320  # ec keys of 384 bits are ~310 bytes
-    assert_elliptic_key(key5, SECP256R1)
+    assert_elliptic_key(key5, SECP384R1)
 
 
 def test_ocsp_must_staple(context: IntegrationTestsContext) -> None:
