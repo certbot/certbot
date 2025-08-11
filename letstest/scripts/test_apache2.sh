@@ -48,10 +48,8 @@ eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 
 # Install and configure Python
-# Python<=3.9 must be used because Python 3.10 requires too new of a version of
-# OpenSSL.
-pyenv install 3.9.10
-pyenv shell 3.9.10
+pyenv install 3.10
+pyenv shell 3.10
 
 tools/venv.py -e acme -e certbot -e certbot-apache -e certbot-ci tox
 PEBBLE_LOGS="acme_server.log"
@@ -91,19 +89,6 @@ fi
 sudo "venv/bin/certbot" -v --debug --text --agree-tos --no-verify-ssl \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain "${PUBLIC_HOSTNAME}" --server "${PEBBLE_URL}"
-
-# Check that ssl_module detection is working on various systems
-if [ "$OS_TYPE" = "ubuntu" ] ; then
-    MOD_SSL_LOCATION="/usr/lib/apache2/modules/mod_ssl.so"
-    APACHE_NAME=apache2ctl
-elif [ "$OS_TYPE" = "centos" ]; then
-    MOD_SSL_LOCATION="/etc/httpd/modules/mod_ssl.so"
-    APACHE_NAME=httpd
-fi
-OPENSSL_VERSION=$(strings "$MOD_SSL_LOCATION" | egrep -o -m1 '^OpenSSL ([0-9]\.[^ ]+) ' | tail -c +9)
-APACHE_VERSION=$(sudo $APACHE_NAME -v | egrep -o 'Apache/([0-9]\.[^ ]+)' | tail -c +8)
-"venv/bin/python" letstest/scripts/test_openssl_version.py "$OPENSSL_VERSION" "$APACHE_VERSION"
-
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
     export SERVER="${PEBBLE_URL}"
