@@ -9,11 +9,8 @@ import random
 import time
 from typing import Any
 from typing import cast
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Set
-from typing import Tuple
 from typing import Union
 
 from cryptography import x509
@@ -156,7 +153,7 @@ class ClientV2:
             csr_pem=csr_pem)
 
     def poll(self, authzr: messages.AuthorizationResource
-             ) -> Tuple[messages.AuthorizationResource, requests.Response]:
+             ) -> tuple[messages.AuthorizationResource, requests.Response]:
         """Poll Authorization Resource for status.
 
         :param authzr: Authorization Resource
@@ -314,7 +311,7 @@ class ClientV2:
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
 
     def renewal_time(self, cert_pem: bytes
-        ) -> Tuple[Optional[datetime.datetime], datetime.datetime]:
+        ) -> tuple[Optional[datetime.datetime], datetime.datetime]:
         """Return an appropriate time to attempt renewal of the certificate,
         and the next time to ask the ACME server for renewal info.
 
@@ -408,7 +405,7 @@ class ClientV2:
         new_args = args[:1] + (None,) + args[1:]
         return self._post(*new_args, **kwargs)
 
-    def _get_links(self, response: requests.Response, relation_type: str) -> List[str]:
+    def _get_links(self, response: requests.Response, relation_type: str) -> list[str]:
         """
         Retrieves all Link URIs of relation_type from the response.
         :param requests.Response response: The requests HTTP response.
@@ -621,7 +618,7 @@ class ClientNetwork:
         self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
-        self._nonces: Set[str] = set()
+        self._nonces: set[str] = set()
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout

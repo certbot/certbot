@@ -5,7 +5,6 @@ import datetime
 import http.client as http_client
 import json
 import sys
-from typing import Dict
 import unittest
 from unittest import mock
 
@@ -55,7 +54,7 @@ class ClientV2Test(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
-        the_arg: Dict = dict(reg)
+        the_arg: dict = dict(reg)
         self.new_reg = messages.NewRegistration(**the_arg)
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')

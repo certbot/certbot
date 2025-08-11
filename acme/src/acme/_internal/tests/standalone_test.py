@@ -4,7 +4,6 @@ import socket
 import socketserver
 import sys
 import threading
-from typing import Set
 import unittest
 from unittest import mock
 
@@ -23,7 +22,7 @@ class HTTP01ServerTest(unittest.TestCase):
     def setUp(self):
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
-        self.resources: Set = set()
+        self.resources: set = set()
 
         from acme.standalone import HTTP01Server
         self.server = HTTP01Server(('', 0), resources=self.resources)
@@ -154,7 +153,7 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
     def setUp(self):
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
-        self.resources: Set = set()
+        self.resources: set = set()
 
         from acme.standalone import HTTP01DualNetworkedServers
         self.servers = HTTP01DualNetworkedServers(('', 0), resources=self.resources)

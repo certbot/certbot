@@ -1,7 +1,6 @@
 """Tests for acme.messages."""
 import sys
 import json
-from typing import Dict
 import unittest
 from unittest import mock
 
@@ -118,7 +117,7 @@ class ConstantTest(unittest.TestCase):
         from acme.messages import _Constant
 
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
-            POSSIBLE_NAMES: Dict = {}
+            POSSIBLE_NAMES: dict = {}
 
         self.MockConstant = MockConstant  # pylint: disable=invalid-name
         self.const_a = MockConstant('a')

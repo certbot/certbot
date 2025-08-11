@@ -2,7 +2,6 @@
 import ipaddress
 import itertools
 import sys
-from typing import List
 import unittest
 from unittest import mock
 import warnings
@@ -110,7 +109,7 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
 
     def setUp(self):
         self.cert_count = 5
-        self.serial_num: List[int] = []
+        self.serial_num: list[int] = []
         self.privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     def test_sn_collisions(self):
