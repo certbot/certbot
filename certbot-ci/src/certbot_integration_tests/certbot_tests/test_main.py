@@ -725,9 +725,11 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
 
     # We expect that the previous behavior of requiring both --cert-name and
     # --key-type to be set to not apply to the renew subcommand.
+    # Note: The config `elliptic_curve = secp384r1` will have been preserved from previously
+    # issuing with `--elliptic-curve secp384r1`, so we'll issue with that curve again.
     context.certbot(['renew', '--force-renewal', '--key-type', 'ecdsa'])
     key5 = join(context.config_dir, 'archive', certname, 'privkey5.pem')
-    assert 200 < os.stat(key5).st_size < 250  # ec keys of 256 bits are ~225 bytes
+    assert 280 < os.stat(key2).st_size < 320  # ec keys of 384 bits are ~310 bytes
     assert_elliptic_key(key5, SECP256R1)
 
 
