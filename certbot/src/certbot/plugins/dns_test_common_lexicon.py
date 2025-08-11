@@ -5,9 +5,7 @@ from types import ModuleType
 from typing import Any
 from typing import cast
 from typing import Generator
-from typing import List
 from typing import Protocol
-from typing import Tuple
 from unittest import mock
 from unittest.mock import MagicMock
 import warnings
@@ -317,7 +315,7 @@ class BaseLexiconDNSAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
 
 
 @contextlib.contextmanager
-def _patch_lexicon_client() -> Generator[Tuple[MagicMock, MagicMock], None, None]:
+def _patch_lexicon_client() -> Generator[tuple[MagicMock, MagicMock], None, None]:
     with mock.patch('certbot.plugins.dns_common_lexicon.Client') as mock_client:
         mock_operations = MagicMock()
         mock_client.return_value.__enter__.return_value = mock_operations
@@ -348,7 +346,7 @@ class _DeprecationModule:
     def __delattr__(self, attr: str) -> Any:  # pragma: no cover
         delattr(self._module, attr)
 
-    def __dir__(self) -> List[str]:  # pragma: no cover
+    def __dir__(self) -> list[str]:  # pragma: no cover
         return ['_module'] + dir(self._module)
 
 

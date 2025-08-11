@@ -1,12 +1,11 @@
 """Certbot main public entry point."""
-from typing import List
 from typing import Optional
 from typing import Union
 
 from certbot._internal import main as internal_main
 
 
-def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
+def main(cli_args: Optional[list[str]] = None) -> Optional[Union[str, int]]:
     """Run Certbot.
 
     :param cli_args: command line to Certbot, defaults to ``sys.argv[1:]``

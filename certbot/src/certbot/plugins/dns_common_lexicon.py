@@ -5,11 +5,8 @@ import sys
 from types import ModuleType
 from typing import Any
 from typing import cast
-from typing import Dict
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 import warnings
 
@@ -135,7 +132,7 @@ class LexiconClient:  # pragma: no cover
 
 def build_lexicon_config(lexicon_provider_name: str,
                          lexicon_options: Mapping[str, Any], provider_options: Mapping[str, Any]
-                         ) -> Union[ConfigResolver, Dict[str, Any]]:  # pragma: no cover
+                         ) -> Union[ConfigResolver, dict[str, Any]]:  # pragma: no cover
     """
     Convenient function to build a Lexicon 2.x/3.x config object.
 
@@ -148,7 +145,7 @@ def build_lexicon_config(lexicon_provider_name: str,
     .. deprecated:: 2.7.0
        Please use certbot.plugins.dns_common_lexicon.LexiconDNSAuthenticator instead.
     """
-    config_dict: Dict[str, Any] = {'provider_name': lexicon_provider_name}
+    config_dict: dict[str, Any] = {'provider_name': lexicon_provider_name}
     config_dict.update(lexicon_options)
     if ConfigResolver is None:
         # Lexicon 2.x
@@ -156,7 +153,7 @@ def build_lexicon_config(lexicon_provider_name: str,
         return config_dict
     else:
         # Lexicon 3.x
-        provider_config: Dict[str, Any] = {}
+        provider_config: dict[str, Any] = {}
         provider_config.update(provider_options)
         config_dict[lexicon_provider_name] = provider_config
         return ConfigResolver().with_dict(config_dict).with_env()
@@ -170,7 +167,7 @@ class LexiconDNSAuthenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, config: configuration.NamespaceConfig, name: str):
         super().__init__(config, name)
-        self._provider_options: List[Tuple[str, str, str]] = []
+        self._provider_options: list[tuple[str, str, str]] = []
         self._credentials: dns_common.CredentialsConfiguration
 
     @property
@@ -298,7 +295,7 @@ class _DeprecationModule:
     def __delattr__(self, attr: str) -> Any:  # pragma: no cover
         delattr(self._module, attr)
 
-    def __dir__(self) -> List[str]:  # pragma: no cover
+    def __dir__(self) -> list[str]:  # pragma: no cover
         return ['_module'] + dir(self._module)
 
 

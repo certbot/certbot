@@ -1,5 +1,4 @@
 """Certbot client errors."""
-from typing import Set
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -55,7 +54,7 @@ class FailedChallenges(AuthorizationError):
     :ivar set failed_achalls: Failed `.AnnotatedChallenge` instances.
 
     """
-    def __init__(self, failed_achalls: Set['AnnotatedChallenge']) -> None:
+    def __init__(self, failed_achalls: set['AnnotatedChallenge']) -> None:
         assert failed_achalls
         self.failed_achalls = failed_achalls
         super().__init__()
