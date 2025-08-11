@@ -3,13 +3,10 @@ import logging
 import sys
 from typing import Callable
 from typing import cast
-from typing import Dict
 from typing import Iterable
 from typing import Iterator
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Type
 from typing import Union
 
 from certbot import configuration
@@ -39,7 +36,7 @@ class PluginEntryPoint:
 
     def __init__(self, entry_point: importlib_metadata.EntryPoint) -> None:
         self.name = self.entry_point_to_plugin_name(entry_point)
-        self.plugin_cls: Type[interfaces.Plugin] = entry_point.load()
+        self.plugin_cls: type[interfaces.Plugin] = entry_point.load()
         self.entry_point = entry_point
         self.warning_message: Optional[str] = None
         self._initialized: Optional[interfaces.Plugin] = None
@@ -76,7 +73,7 @@ class PluginEntryPoint:
         """Should this plugin be hidden from UI?"""
         return getattr(self.plugin_cls, "hidden", False)
 
-    def ifaces(self, *ifaces_groups: Iterable[Type]) -> bool:
+    def ifaces(self, *ifaces_groups: Iterable[type]) -> bool:
         """Does plugin implement specified interface groups?"""
         return not ifaces_groups or any(
             all(issubclass(self.plugin_cls, iface)
@@ -182,7 +179,7 @@ class PluginsRegistry(Mapping):
         entry points.
 
         """
-        plugins: Dict[str, PluginEntryPoint] = {}
+        plugins: dict[str, PluginEntryPoint] = {}
         plugin_paths_string = os.getenv('CERTBOT_PLUGIN_PATH')
         plugin_paths = plugin_paths_string.split(':') if plugin_paths_string else []
         # XXX should ensure this only happens once
@@ -204,7 +201,7 @@ class PluginsRegistry(Mapping):
 
     @classmethod
     def _load_entry_point(cls, entry_point: importlib_metadata.EntryPoint,
-                          plugins: Dict[str, PluginEntryPoint]) -> None:
+                          plugins: dict[str, PluginEntryPoint]) -> None:
         plugin_ep = PluginEntryPoint(entry_point)
         if plugin_ep.name in plugins:
             other_ep = plugins[plugin_ep.name]
@@ -230,7 +227,7 @@ class PluginsRegistry(Mapping):
     def __len__(self) -> int:
         return len(self._plugins)
 
-    def init(self, config: configuration.NamespaceConfig) -> List[interfaces.Plugin]:
+    def init(self, config: configuration.NamespaceConfig) -> list[interfaces.Plugin]:
         """Initialize all plugins in the registry."""
         return [plugin_ep.init(config) for plugin_ep
                 in self._plugins.values()]
@@ -244,11 +241,11 @@ class PluginsRegistry(Mapping):
         """Filter plugins based on visibility."""
         return self.filter(lambda plugin_ep: not plugin_ep.hidden)
 
-    def ifaces(self, *ifaces_groups: Iterable[Type]) -> "PluginsRegistry":
+    def ifaces(self, *ifaces_groups: Iterable[type]) -> "PluginsRegistry":
         """Filter plugins based on interfaces."""
         return self.filter(lambda p_ep: p_ep.ifaces(*ifaces_groups))
 
-    def prepare(self) -> List[Union[bool, Error]]:
+    def prepare(self) -> list[Union[bool, Error]]:
         """Prepare all plugins in the registry."""
         return [plugin_ep.prepare() for plugin_ep in self._plugins.values()]
 

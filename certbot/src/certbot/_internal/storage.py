@@ -8,12 +8,9 @@ import shutil
 import stat
 from typing import Any
 from typing import cast
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 import configobj
@@ -47,7 +44,7 @@ BASE_PRIVKEY_MODE = 0o600
 # pylint: disable=too-many-lines
 
 
-def renewal_conf_files(config: configuration.NamespaceConfig) -> List[str]:
+def renewal_conf_files(config: configuration.NamespaceConfig) -> list[str]:
     """Build a list of all renewal configuration files.
 
     :param configuration.NamespaceConfig config: Configuration object
@@ -266,7 +263,7 @@ def _relevant(namespaces: Iterable[str], option: str) -> bool:
             any(option.startswith(namespace) for namespace in namespaces))
 
 
-def relevant_values(config: configuration.NamespaceConfig) -> Dict[str, Any]:
+def relevant_values(config: configuration.NamespaceConfig) -> dict[str, Any]:
     """Return a new dict containing only items relevant for renewal.
 
     :param .NamespaceConfig config: parsed command line
@@ -656,7 +653,7 @@ class RenewableCert(interfaces.RenewableCert):
     #       happen as a result of random tampering by a sysadmin, or
     #       filesystem errors, or crashes.)
 
-    def _previous_symlinks(self) -> List[Tuple[str, str]]:
+    def _previous_symlinks(self) -> list[tuple[str, str]]:
         """Returns the kind and path of all symlinks used in recovery.
 
         :returns: list of (kind, symlink) tuples
@@ -760,7 +757,7 @@ class RenewableCert(interfaces.RenewableCert):
         where = os.path.dirname(link)
         return os.path.join(where, "{0}{1}.pem".format(kind, version))
 
-    def available_versions(self, kind: str) -> List[int]:
+    def available_versions(self, kind: str) -> list[int]:
         """Which alternative versions of the specified kind of item exist?
 
         The archive directory where the current version is stored is
@@ -849,7 +846,7 @@ class RenewableCert(interfaces.RenewableCert):
         :rtype: bool
 
         """
-        all_versions: List[int] = []
+        all_versions: list[int] = []
         for item in ALL_FOUR:
             version = self.current_version(item)
             if version is None:
@@ -906,7 +903,7 @@ class RenewableCert(interfaces.RenewableCert):
             for _, link in previous_links:
                 os.unlink(link)
 
-    def names(self) -> List[str]:
+    def names(self) -> list[str]:
         """What are the subject names of this certificate?
 
         :returns: the subject names

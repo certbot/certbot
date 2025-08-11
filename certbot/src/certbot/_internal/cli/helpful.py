@@ -4,11 +4,8 @@ import argparse
 import functools
 import sys
 from typing import Any
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 import configargparse
@@ -42,7 +39,7 @@ class HelpfulArgumentParser:
     'certbot --help security' for security options.
 
     """
-    def __init__(self, args: List[str], plugins: Iterable[str]) -> None:
+    def __init__(self, args: list[str], plugins: Iterable[str]) -> None:
         from certbot._internal import main
         self.VERBS = {
             "auth": main.certonly,
@@ -67,14 +64,14 @@ class HelpfulArgumentParser:
         # Get notification function for printing
         self.notify = display_obj.NoninteractiveDisplay(sys.stdout).notification
 
-        self.actions: List[configargparse.Action] = []
+        self.actions: list[configargparse.Action] = []
 
         # List of topics for which additional help can be provided
-        HELP_TOPICS: List[Optional[str]] = ["all", "security", "paths", "automation", "testing"]
+        HELP_TOPICS: list[Optional[str]] = ["all", "security", "paths", "automation", "testing"]
         HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
-        plugin_names: List[Optional[str]] = list(plugins)
-        self.help_topics: List[Optional[str]] = HELP_TOPICS + plugin_names + [None]
+        plugin_names: list[Optional[str]] = list(plugins)
+        self.help_topics: list[Optional[str]] = HELP_TOPICS + plugin_names + [None]
 
         self.args = args
 
@@ -95,7 +92,7 @@ class HelpfulArgumentParser:
         self.visible_topics = self.determine_help_topics(self.help_arg)
 
         # elements are added by .add_group()
-        self.groups: Dict[str, argparse._ArgumentGroup] = {}
+        self.groups: dict[str, argparse._ArgumentGroup] = {}
 
         self.parser = configargparse.ArgParser(
             prog="certbot",
@@ -168,7 +165,7 @@ class HelpfulArgumentParser:
                 self.verb == "renew"):
             config.domains = []
 
-    def _build_sources_dict(self) -> Dict[str, ArgumentSource]:
+    def _build_sources_dict(self) -> dict[str, ArgumentSource]:
         # ConfigArgparse's get_source_to_settings_dict doesn't actually create
         # default entries for each argument with a default value, omitting many
         # args we'd otherwise care about. So in general, unless an argument was
@@ -176,7 +173,7 @@ class HelpfulArgumentParser:
         # consider it as having a "default" value
         result = { action.dest: ArgumentSource.DEFAULT for action in self.actions }
 
-        source_to_settings_dict: Dict[str, Dict[str, Tuple[configargparse.Action, str]]]
+        source_to_settings_dict: dict[str, dict[str, tuple[configargparse.Action, str]]]
         source_to_settings_dict = self.parser.get_source_to_settings_dict()
 
         # We'll process the sources dict in order of each source's "priority",
@@ -187,7 +184,7 @@ class HelpfulArgumentParser:
         #   3. env vars (shouldn't be any)
         #   4. command line
 
-        def update_result(settings_dict: Dict[str, Tuple[configargparse.Action, str]],
+        def update_result(settings_dict: dict[str, tuple[configargparse.Action, str]],
                           source: ArgumentSource) -> None:
             actions = [self._find_action_for_arg(arg) if action is None else action
                        for arg, (action, _) in settings_dict.items()]
@@ -202,7 +199,7 @@ class HelpfulArgumentParser:
 
         # The command line settings dict is weird, so handle it separately
         if 'command_line' in source_to_settings_dict:
-            settings_dict: Dict[str, Tuple[None, List[str]]]
+            settings_dict: dict[str, tuple[None, list[str]]]
             settings_dict = source_to_settings_dict['command_line'] # type: ignore
             (_, unprocessed_args) = settings_dict['']
             args = []
@@ -401,7 +398,7 @@ class HelpfulArgumentParser:
             pass
         return True
 
-    def add(self, topics: Optional[Union[List[Optional[str]], str]], *args: Any,
+    def add(self, topics: Optional[Union[list[Optional[str]], str]], *args: Any,
             **kwargs: Any) -> None:
         """Add a new command line argument.
 
@@ -416,7 +413,7 @@ class HelpfulArgumentParser:
         """
         self.actions.append(self._add(topics, *args, **kwargs))
 
-    def _add(self, topics: Optional[Union[List[Optional[str]], str]], *args: Any,
+    def _add(self, topics: Optional[Union[list[Optional[str]], str]], *args: Any,
             **kwargs: Any) -> configargparse.Action:
         action = kwargs.get("action")
         if action is util.DeprecatedArgumentAction:
@@ -511,7 +508,7 @@ class HelpfulArgumentParser:
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
     def determine_help_topics(self, chosen_topic: Union[str, bool]
-                              ) -> Dict[Optional[str], bool]:
+                              ) -> dict[Optional[str], bool]:
         """
 
         The user may have requested help on a topic, return a dict of which
