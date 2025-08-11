@@ -2,11 +2,7 @@
 import logging
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import Iterable
-from typing import List
-from typing import Tuple
-from typing import Type
 
 from acme import challenges
 from certbot import achallenges
@@ -98,7 +94,7 @@ permitted by DNS standards.)
         super().__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env: Dict[achallenges.AnnotatedChallenge, Dict[str, str]] = {}
+        self.env: dict[achallenges.AnnotatedChallenge, dict[str, str]] = {}
         self.subsequent_dns_challenge = False
         self.subsequent_any_challenge = False
 
@@ -132,7 +128,7 @@ permitted by DNS standards.)
             'the user or by performing the setup manually.')
 
     def auth_hint(self, failed_achalls: Iterable[achallenges.AnnotatedChallenge]) -> str:
-        def has_chall(cls: Type[challenges.Challenge]) -> bool:
+        def has_chall(cls: type[challenges.Challenge]) -> bool:
             return any(isinstance(achall.chall, cls) for achall in failed_achalls)
 
         has_dns = has_chall(challenges.DNS01)
@@ -167,12 +163,12 @@ permitted by DNS standards.)
                 )
             )
 
-    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:
+    def get_chall_pref(self, domain: str) -> Iterable[type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01, challenges.DNS01]
 
-    def perform(self, achalls: List[achallenges.AnnotatedChallenge]
-                ) -> List[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
+    def perform(self, achalls: list[achallenges.AnnotatedChallenge]
+                ) -> list[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
         responses = []
         last_dns_achall = 0
         for i, achall in enumerate(achalls):
@@ -187,7 +183,7 @@ permitted by DNS standards.)
         return responses
 
     def _perform_achall_with_script(self, achall: achallenges.AnnotatedChallenge,
-                                    achalls: List[achallenges.AnnotatedChallenge]) -> None:
+                                    achalls: list[achallenges.AnnotatedChallenge]) -> None:
         env = {
             "CERTBOT_DOMAIN": achall.domain,
             "CERTBOT_VALIDATION": achall.validation(achall.account_key),
@@ -245,7 +241,7 @@ permitted by DNS standards.)
                 self._execute_hook('cleanup-hook', achall.domain)
         self.reverter.recovery_routine()
 
-    def _execute_hook(self, hook_name: str, achall_domain: str) -> Tuple[str, str]:
+    def _execute_hook(self, hook_name: str, achall_domain: str) -> tuple[str, str]:
         returncode, err, out = misc.execute_command_status(
             self.option_name(hook_name), self.conf(hook_name),
             env=util.env_no_snap_for_external_calls()

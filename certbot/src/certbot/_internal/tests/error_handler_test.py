@@ -3,7 +3,6 @@ import contextlib
 import signal
 import sys
 from typing import Callable
-from typing import Dict
 from typing import Union
 import unittest
 from unittest import mock
@@ -28,7 +27,7 @@ def set_signals(sig_handler_dict):
 def signal_receiver(signums):
     """Context manager to catch signals"""
     signals = []
-    prev_handlers: Dict[int, Union[int, None, Callable]] = get_signals(signums)
+    prev_handlers: dict[int, Union[int, None, Callable]] = get_signals(signums)
     set_signals({s: lambda s, _: signals.append(s) for s in signums})
     yield signals
     set_signals(prev_handlers)

@@ -4,13 +4,7 @@ import errno
 import logging
 from typing import Any
 from typing import Callable
-from typing import DefaultDict
-from typing import Dict
 from typing import Iterable
-from typing import List
-from typing import Set
-from typing import Tuple
-from typing import Type
 from typing import TYPE_CHECKING
 
 from acme import challenges
@@ -24,9 +18,9 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    ServedType = DefaultDict[
+    ServedType = collections.defaultdict[
         acme_standalone.BaseDualNetworkedServers,
-        Set[achallenges.AnnotatedChallenge]
+        set[achallenges.AnnotatedChallenge]
     ]
 
 
@@ -34,12 +28,12 @@ class ServerManager:
     """Manager for HTTP-01 standalone server instances."""
 
     def __init__(self,
-                 http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
+                 http_01_resources: set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
                  ) -> None:
-        self._instances: Dict[int, acme_standalone.HTTP01DualNetworkedServers] = {}
+        self._instances: dict[int, acme_standalone.HTTP01DualNetworkedServers] = {}
         self.http_01_resources = http_01_resources
 
-    def run(self, port: int, challenge_type: Type[challenges.Challenge],
+    def run(self, port: int, challenge_type: type[challenges.Challenge],
             listenaddr: str = "") -> acme_standalone.HTTP01DualNetworkedServers:
         """Run ACME server on specified ``port``.
 
@@ -87,7 +81,7 @@ class ServerManager:
         instance.shutdown_and_server_close()
         del self._instances[port]
 
-    def running(self) -> Dict[int, acme_standalone.HTTP01DualNetworkedServers]:
+    def running(self) -> dict[int, acme_standalone.HTTP01DualNetworkedServers]:
         """Return all running instances.
 
         Once the server is stopped using `stop`, it will not be
@@ -122,7 +116,7 @@ running. HTTP challenge only (wildcards not supported)."""
         # values, main thread writes). Due to the nature of CPython's
         # GIL, the operations are safe, c.f.
         # https://docs.python.org/2/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
-        self.http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = set()
+        self.http_01_resources: set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = set()
 
         self.servers = ServerManager(self.http_01_resources)
 
@@ -139,12 +133,12 @@ running. HTTP challenge only (wildcards not supported)."""
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
         pass
 
-    def get_chall_pref(self, domain: str) -> Iterable[Type[challenges.Challenge]]:
+    def get_chall_pref(self, domain: str) -> Iterable[type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01]
 
     def perform(self, achalls: Iterable[achallenges.AnnotatedChallenge]
-                ) -> List[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
+                ) -> list[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
         return [self._try_perform_single(achall) for achall in achalls]
 
     def _try_perform_single(self,
@@ -162,7 +156,7 @@ running. HTTP challenge only (wildcards not supported)."""
         return response
 
     def _perform_http_01(self, achall: achallenges.AnnotatedChallenge
-                         ) -> Tuple[acme_standalone.HTTP01DualNetworkedServers,
+                         ) -> tuple[acme_standalone.HTTP01DualNetworkedServers,
                                     challenges.ChallengeResponse]:
         port = self.config.http01_port
         addr = self.config.http01_address
@@ -183,7 +177,7 @@ running. HTTP challenge only (wildcards not supported)."""
             if not self.served[servers]:
                 self.servers.stop(port)
 
-    def auth_hint(self, failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
+    def auth_hint(self, failed_achalls: list[achallenges.AnnotatedChallenge]) -> str:
         port, addr = self.config.http01_port, self.config.http01_address
         neat_addr = f"{addr}:{port}" if addr else f"port {port}"
         return ("The Certificate Authority failed to download the challenge files from "

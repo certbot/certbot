@@ -9,9 +9,7 @@ import sys
 import time
 import traceback
 from typing import Any
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Union
@@ -70,7 +68,7 @@ class AriClientPool:
     def __init__(self, cli_config: configuration.NamespaceConfig):
         self._verify_ssl = not cli_config.no_verify_ssl
         self._user_agent = client.determine_user_agent(cli_config)
-        self._pool: Dict[str, acme_client.ClientV2] = {}
+        self._pool: dict[str, acme_client.ClientV2] = {}
 
     def get(self, server: str) -> acme_client.ClientV2:
         """
@@ -196,7 +194,7 @@ def _restore_plugin_configs(config: configuration.NamespaceConfig,
     #      longer defined, stored copies of that parameter will be
     #      deserialized as strings by this logic even if they were
     #      originally meant to be some other type.
-    plugin_prefixes: List[str] = []
+    plugin_prefixes: list[str] = []
     if renewalparams["authenticator"] == "webroot":
         _restore_webroot_config(config, renewalparams)
     else:
@@ -245,7 +243,7 @@ def restore_required_config_elements(config: configuration.NamespaceConfig,
         setattr(config, key, value)
 
 
-def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> Dict[str, Any]:
+def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> dict[str, Any]:
     """Removes deprecated config options from the parsed renewalparams.
 
     :param dict renewalparams: list of parsed renewalparams
@@ -258,7 +256,7 @@ def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> Dict
         if option_name not in cli.DEPRECATED_OPTIONS}
 
 
-def _restore_pref_challs(unused_name: str, value: Union[List[str], str]) -> List[str]:
+def _restore_pref_challs(unused_name: str, value: Union[list[str], str]) -> list[str]:
     """Restores preferred challenges from a renewal config file.
 
     If value is a `str`, it should be a single challenge type.
@@ -525,7 +523,7 @@ def _avoid_reuse_key_conflicts(config: configuration.NamespaceConfig,
                 "add --new-key.")
 
 
-def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str]],
+def renew_cert(config: configuration.NamespaceConfig, domains: Optional[list[str]],
                le_client: client.Client, lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
@@ -560,9 +558,9 @@ def report(msgs: Iterable[str], category: str) -> str:
     return "  " + "\n  ".join(lines)
 
 
-def _renew_describe_results(config: configuration.NamespaceConfig, renew_successes: List[str],
-                            renew_failures: List[str], renew_skipped: List[str],
-                            parse_failures: List[str]) -> None:
+def _renew_describe_results(config: configuration.NamespaceConfig, renew_successes: list[str],
+                            renew_failures: list[str], renew_skipped: list[str],
+                            parse_failures: list[str]) -> None:
     """
     Print a report to the terminal about the results of the renewal process.
 
