@@ -1866,10 +1866,6 @@ def main(cli_args: Optional[List[str]] = None) -> Optional[Union[str, int]]:
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
 
-    if sys.version_info[:2] == (3, 9):
-        logger.warning("Python 3.9 support will be dropped in the next planned release "
-                       "of Certbot - please upgrade your Python version.")
-
     with make_displayer(config) as displayer:
         display_obj.set_display(displayer)
 
