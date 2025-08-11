@@ -7,7 +7,6 @@ import re
 import subprocess
 from subprocess import PIPE
 from typing import Optional
-from typing import Tuple
 import warnings
 
 from cryptography import x509
@@ -133,7 +132,7 @@ class RevocationChecker:
         return _translate_ocsp_query(cert_path, output, err)
 
 
-def _determine_ocsp_server(cert_path: str) -> Tuple[Optional[str], Optional[str]]:
+def _determine_ocsp_server(cert_path: str) -> tuple[Optional[str], Optional[str]]:
     """Extract the OCSP server host from a certificate.
 
     :param str cert_path: Path to the cert we're checking OCSP for

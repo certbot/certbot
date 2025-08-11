@@ -8,10 +8,7 @@ import datetime
 import hashlib
 import logging
 import re
-from typing import List
 from typing import Optional
-from typing import Set
-from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -100,7 +97,7 @@ def generate_key(key_size: int, key_dir: Optional[str], key_type: str = "rsa",
     return util.Key(key_path, key_pem)
 
 
-def generate_csr(privkey: util.Key, names: Union[List[str], Set[str]], path: Optional[str],
+def generate_csr(privkey: util.Key, names: Union[list[str], set[str]], path: Optional[str],
                  must_staple: bool = False, strict_permissions: bool = True) -> util.CSR:
     """Initialize a CSR with the given private key.
 
@@ -173,7 +170,7 @@ def csr_matches_pubkey(csr: bytes, privkey: bytes) -> bool:
 
 def import_csr_file(
     csrfile: str, data: bytes
-) -> Tuple[acme_crypto_util.Format, util.CSR, List[str]]:
+) -> tuple[acme_crypto_util.Format, util.CSR, list[str]]:
     """Import a CSR file, which can be either PEM or DER.
 
     :param str csrfile: CSR filename
@@ -390,7 +387,7 @@ def verify_fullchain(renewable_cert: interfaces.RenewableCert) -> None:
 
 def get_sans_from_cert(
     cert: bytes, typ: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM
-) -> List[str]:
+) -> list[str]:
     """Get a list of Subject Alternative Names from a certificate.
 
     :param str cert: Certificate (encoded).
@@ -419,7 +416,7 @@ def get_sans_from_cert(
 
 def get_names_from_cert(
     cert: bytes, typ: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM
-) -> List[str]:
+) -> list[str]:
     """Get a list of domains from a cert, including the CN if it is set.
 
     :param str cert: Certificate (encoded).
@@ -442,7 +439,7 @@ def get_names_from_cert(
 
 def get_names_from_req(
     csr: bytes, typ: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM
-) -> List[str]:
+) -> list[str]:
     """Get a list of domains from a CSR, including the CN if it is set.
 
     :param str csr: CSR (encoded).
@@ -517,7 +514,7 @@ CERT_PEM_REGEX = re.compile(
 )
 
 
-def cert_and_chain_from_fullchain(fullchain_pem: str) -> Tuple[str, str]:
+def cert_and_chain_from_fullchain(fullchain_pem: str) -> tuple[str, str]:
     """Split fullchain_pem into cert_pem and chain_pem
 
     :param str fullchain_pem: concatenated cert + chain
@@ -538,7 +535,7 @@ def cert_and_chain_from_fullchain(fullchain_pem: str) -> Tuple[str, str]:
 
     # Second pass: for each certificate found, parse it using cryptography and re-encode it,
     # with the effect of normalizing any encoding variations (e.g. CRLF, whitespace).
-    certs_normalized: List[str] = []
+    certs_normalized: list[str] = []
     for cert_pem in certs:
         cert = x509.load_pem_x509_certificate(cert_pem)
         cert_pem = cert.public_bytes(Encoding.PEM)
@@ -561,7 +558,7 @@ def get_serial_from_cert(cert_path: str) -> int:
     return cert.serial_number
 
 
-def find_chain_with_issuer(fullchains: List[str], issuer_cn: str,
+def find_chain_with_issuer(fullchains: list[str], issuer_cn: str,
                            warn_on_no_match: bool = False) -> str:
     """Chooses the first certificate chain from fullchains whose topmost
     intermediate has an Issuer Common Name matching issuer_cn (in other words

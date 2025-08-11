@@ -11,13 +11,9 @@ import subprocess
 import sys
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import IO
-from typing import List
 from typing import NamedTuple
 from typing import Optional
-from typing import Set
-from typing import Tuple
 from typing import Union
 
 import configargparse
@@ -68,7 +64,7 @@ class LooseVersion:
 
         :param str version_string: version string
         """
-        components: List[Union[int, str]]
+        components: list[Union[int, str]]
         components = [x for x in _VERSION_COMPONENT_RE.split(version_string)
                               if x and x != '.']
         for i, obj in enumerate(components):
@@ -143,10 +139,10 @@ _INITIAL_PID = os.getpid()
 # the dict are attempted to be cleaned up at program exit. If the
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
-_LOCKS: Dict[str, lock.LockFile] = {}
+_LOCKS: dict[str, lock.LockFile] = {}
 _VERSION_COMPONENT_RE = re.compile(r'(\d+ | [a-z]+ | \.)', re.VERBOSE)
 
-def env_no_snap_for_external_calls() -> Dict[str, str]:
+def env_no_snap_for_external_calls() -> dict[str, str]:
     """
     When Certbot is run inside a Snap, certain environment variables
     are modified. But Certbot sometimes calls out to external programs,
@@ -177,7 +173,7 @@ def env_no_snap_for_external_calls() -> Dict[str, str]:
     return env
 
 
-def run_script(params: List[str], log: Callable[[str], None]=logger.error) -> Tuple[str, str]:
+def run_script(params: list[str], log: Callable[[str], None]=logger.error) -> tuple[str, str]:
     """Run the script with the given params.
 
     :param list params: List of parameters to pass to subprocess.run
@@ -306,16 +302,16 @@ def safe_open(path: str, mode: str = "w", chmod: Optional[int] = None) -> IO:
         if ``None``.
 
     """
-    open_args: Union[Tuple[()], Tuple[int]] = ()
+    open_args: Union[tuple[()], tuple[int]] = ()
     if chmod is not None:
         open_args = (chmod,)
-    fdopen_args: Union[Tuple[()], Tuple[int]] = ()
+    fdopen_args: Union[tuple[()], tuple[int]] = ()
     fd = filesystem.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
     return os.fdopen(fd, mode, *fdopen_args)
 
 
 def _unique_file(path: str, filename_pat: Callable[[int], str], count: int,
-                 chmod: int, mode: str) -> Tuple[IO, str]:
+                 chmod: int, mode: str) -> tuple[IO, str]:
     while True:
         current_path = os.path.join(path, filename_pat(count))
         try:
@@ -327,7 +323,7 @@ def _unique_file(path: str, filename_pat: Callable[[int], str], count: int,
         count += 1
 
 
-def unique_file(path: str, chmod: int = 0o777, mode: str = "w") -> Tuple[IO, str]:
+def unique_file(path: str, chmod: int = 0o777, mode: str = "w") -> tuple[IO, str]:
     """Safely finds a unique file.
 
     :param str path: path/filename.ext
@@ -344,7 +340,7 @@ def unique_file(path: str, chmod: int = 0o777, mode: str = "w") -> Tuple[IO, str
 
 
 def unique_lineage_name(path: str, filename: str, chmod: int = 0o644,
-                        mode: str = "w") -> Tuple[IO, str]:
+                        mode: str = "w") -> tuple[IO, str]:
     """Safely finds a unique file using lineage convention.
 
     :param str path: directory path
@@ -380,7 +376,7 @@ def safely_remove(path: str) -> None:
             raise
 
 
-def get_filtered_names(all_names: Set[str]) -> Set[str]:
+def get_filtered_names(all_names: set[str]) -> set[str]:
     """Removes names that aren't considered valid by Let's Encrypt.
 
     :param set all_names: all names found in the configuration
@@ -397,7 +393,7 @@ def get_filtered_names(all_names: Set[str]) -> Set[str]:
             logger.debug('Not suggesting name "%s"', name, exc_info=True)
     return filtered_names
 
-def get_os_info() -> Tuple[str, str]:
+def get_os_info() -> tuple[str, str]:
     """
     Get OS name and version
 
@@ -425,7 +421,7 @@ def get_os_info_ua() -> str:
         return " ".join(get_python_os_info(pretty=True))
     return os_info
 
-def get_systemd_os_like() -> List[str]:
+def get_systemd_os_like() -> list[str]:
     """
     Get a list of strings that indicate the distribution likeness to
     other distributions.
@@ -467,7 +463,7 @@ def _normalize_string(orig: str) -> str:
     """
     return orig.replace('"', '').replace("'", "").strip()
 
-def get_python_os_info(pretty: bool = False) -> Tuple[str, str]:
+def get_python_os_info(pretty: bool = False) -> tuple[str, str]:
     """
     Get Operating System type/distribution and major version
     using python platform module
@@ -722,7 +718,7 @@ def atexit_register(func: Callable, *args: Any, **kwargs: Any) -> None:
     atexit.register(_atexit_call, func, *args, **kwargs)
 
 
-def parse_loose_version(version_string: str) -> List[Union[int, str]]:
+def parse_loose_version(version_string: str) -> list[Union[int, str]]:
     """Parses a version string into its components.
     This code and the returned tuple is based on the now deprecated
     distutils.version.LooseVersion class from the Python standard library.

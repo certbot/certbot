@@ -1,7 +1,6 @@
 """ACME utilities for testing."""
 import datetime
 from typing import Any
-from typing import Dict
 from typing import Iterable
 
 import josepy as jose
@@ -67,7 +66,7 @@ def gen_authzr(authz_status: messages.Status, domain: str, challs: Iterable[chal
         chall_to_challb(chall, status)
         for chall, status in zip(challs, statuses)
     )
-    authz_kwargs: Dict[str, Any] = {
+    authz_kwargs: dict[str, Any] = {
         "identifier": messages.Identifier(
             typ=messages.IDENTIFIER_FQDN, value=domain),
         "challenges": challbs,
