@@ -15,7 +15,6 @@ authors = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
-    "Environment :: Console :: Curses",
     "Intended Audience :: System Administrators",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
