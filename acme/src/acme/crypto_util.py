@@ -4,10 +4,8 @@ from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
 import typing
-from typing import List
 from typing import Literal
 from typing import Optional
-from typing import Set
 from typing import Union
 
 from cryptography import x509
@@ -56,9 +54,9 @@ CertificateIssuerPrivateKeyTypesTpl = (
 
 def make_csr(
     private_key_pem: bytes,
-    domains: Optional[Union[Set[str], List[str]]] = None,
+    domains: Optional[Union[set[str], list[str]]] = None,
     must_staple: bool = False,
-    ipaddrs: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None,
+    ipaddrs: Optional[list[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None,
 ) -> bytes:
     """Generate a CSR containing domains or IPs as subjectAltNames.
 
@@ -112,7 +110,7 @@ def make_csr(
 
 def get_names_from_subject_and_extensions(
     subject: x509.Name, exts: x509.Extensions
-) -> List[str]:
+) -> list[str]:
     """Gets all DNS SAN names as well as the first Common Name from subject.
 
     :param subject: Name of the x509 object, which may include Common Name
@@ -146,7 +144,7 @@ def get_names_from_subject_and_extensions(
 
 def _cryptography_cert_or_req_san(
     cert_or_req: Union[x509.Certificate, x509.CertificateSigningRequest],
-) -> List[str]:
+) -> list[str]:
     """Get Subject Alternative Names from certificate or CSR using cryptography.
 
     .. note:: Although this is `acme` internal API, it is used by
@@ -177,11 +175,11 @@ def _now() -> datetime:
 
 
 def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
-                          domains: Optional[List[str]] = None,
+                          domains: Optional[list[str]] = None,
                           not_before: Optional[datetime] = None,
                           validity: Optional[timedelta] = None, force_san: bool = True,
-                          extensions: Optional[List[x509.Extension]] = None,
-                          ips: Optional[List[Union[ipaddress.IPv4Address,
+                          extensions: Optional[list[x509.Extension]] = None,
+                          ips: Optional[list[Union[ipaddress.IPv4Address,
                                                    ipaddress.IPv6Address]]] = None
                           ) -> x509.Certificate:
     """Generate new self-signed certificate.
@@ -228,7 +226,7 @@ def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
     builder = builder.subject_name(x509.Name(name_attrs))
     builder = builder.issuer_name(x509.Name(name_attrs))
 
-    sanlist: List[x509.GeneralName] = []
+    sanlist: list[x509.GeneralName] = []
     for address in domains:
         sanlist.append(x509.DNSName(address))
     for ip in ips:
@@ -252,7 +250,7 @@ def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
 
 
 def dump_cryptography_chain(
-    chain: List[x509.Certificate],
+    chain: list[x509.Certificate],
     encoding: Literal[Encoding.PEM, Encoding.DER] = Encoding.PEM,
 ) -> bytes:
     """Dump certificate chain into a bundle.

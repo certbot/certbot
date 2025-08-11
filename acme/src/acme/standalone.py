@@ -10,11 +10,7 @@ import socket
 import socketserver
 import threading
 from typing import Any
-from typing import List
 from typing import Optional
-from typing import Set
-from typing import Tuple
-from typing import Type
 
 from acme import challenges
 
@@ -36,11 +32,11 @@ class BaseDualNetworkedServers:
        If two servers are instantiated, they will serve on the same port.
        """
 
-    def __init__(self, ServerClass: Type[socketserver.TCPServer], server_address: Tuple[str, int],
+    def __init__(self, ServerClass: type[socketserver.TCPServer], server_address: tuple[str, int],
                  *remaining_args: Any, **kwargs: Any) -> None:
         port = server_address[1]
-        self.threads: List[threading.Thread] = []
-        self.servers: List[socketserver.BaseServer] = []
+        self.threads: list[threading.Thread] = []
+        self.servers: list[socketserver.BaseServer] = []
 
         # Preserve socket error for re-raising, if no servers can be started
         last_socket_err: Optional[socket.error] = None
@@ -94,7 +90,7 @@ class BaseDualNetworkedServers:
             thread.start()
             self.threads.append(thread)
 
-    def getsocknames(self) -> List[Tuple[str, int]]:
+    def getsocknames(self) -> list[tuple[str, int]]:
         """Wraps socketserver.TCPServer.socket.getsockname"""
         return [server.socket.getsockname() for server in self.servers]
 
@@ -124,8 +120,8 @@ class HTTPServer(BaseHTTPServer.HTTPServer):
 class HTTP01Server(HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
 
-    def __init__(self, server_address: Tuple[str, int],
-                 resources: Set[HTTP01RequestHandler.HTTP01Resource],
+    def __init__(self, server_address: tuple[str, int],
+                 resources: set[HTTP01RequestHandler.HTTP01Resource],
                  ipv6: bool = False, timeout: int = 30) -> None:
         super().__init__(
             server_address, HTTP01RequestHandler.partial_init(
@@ -220,7 +216,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                          self.path)
 
     @classmethod
-    def partial_init(cls, simple_http_resources: Set[HTTP01RequestHandler.HTTP01Resource],
+    def partial_init(cls, simple_http_resources: set[HTTP01RequestHandler.HTTP01Resource],
                      timeout: int) -> functools.partial[HTTP01RequestHandler]:
         """Partially initialize this handler.
 

@@ -5,11 +5,8 @@ import hashlib
 import logging
 from typing import Any
 from typing import cast
-from typing import Dict
 from typing import Mapping
 from typing import Optional
-from typing import Tuple
-from typing import Type
 from typing import TypeVar
 from typing import Union
 
@@ -25,10 +22,10 @@ GenericChallenge = TypeVar('GenericChallenge', bound='Challenge')
 class Challenge(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge."""
-    TYPES: Dict[str, Type['Challenge']] = {}
+    TYPES: dict[str, type['Challenge']] = {}
 
     @classmethod
-    def from_json(cls: Type[GenericChallenge],
+    def from_json(cls: type[GenericChallenge],
                   jobj: Mapping[str, Any]) -> Union[GenericChallenge, 'UnrecognizedChallenge']:
         try:
             return cast(GenericChallenge, super().from_json(jobj))
@@ -40,9 +37,9 @@ class Challenge(jose.TypedJSONObjectWithFields):
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json
     """ACME challenge response."""
-    TYPES: Dict[str, Type['ChallengeResponse']] = {}
+    TYPES: dict[str, type['ChallengeResponse']] = {}
 
-    def to_partial_json(self) -> Dict[str, Any]:
+    def to_partial_json(self) -> dict[str, Any]:
         # Removes the `type` field which is inserted by TypedJSONObjectWithFields.to_partial_json.
         # This field breaks RFC8555 compliance.
         jobj = super().to_partial_json()
@@ -62,13 +59,13 @@ class UnrecognizedChallenge(Challenge):
     :ivar jobj: Original JSON decoded object.
 
     """
-    jobj: Dict[str, Any]
+    jobj: dict[str, Any]
 
     def __init__(self, jobj: Mapping[str, Any]) -> None:
         super().__init__()
         object.__setattr__(self, "jobj", jobj)
 
-    def to_partial_json(self) -> Dict[str, Any]:
+    def to_partial_json(self) -> dict[str, Any]:
         return self.jobj  # pylint: disable=no-member
 
     @classmethod
@@ -147,7 +144,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
 
         return True
 
-    def to_partial_json(self) -> Dict[str, Any]:
+    def to_partial_json(self) -> dict[str, Any]:
         jobj = super().to_partial_json()
         jobj.pop('keyAuthorization', None)
         return jobj
@@ -164,7 +161,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
     :param str typ: type of the challenge
     """
     typ: str = NotImplemented
-    response_cls: Type[KeyAuthorizationChallengeResponse] = NotImplemented
+    response_cls: type[KeyAuthorizationChallengeResponse] = NotImplemented
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
 
@@ -207,7 +204,7 @@ class KeyAuthorizationChallenge(_TokenChallenge, metaclass=abc.ABCMeta):
         raise NotImplementedError()  # pragma: no cover
 
     def response_and_validation(self, account_key: jose.JWK, *args: Any, **kwargs: Any
-                                ) -> Tuple[KeyAuthorizationChallengeResponse, Any]:
+                                ) -> tuple[KeyAuthorizationChallengeResponse, Any]:
         """Generate response and validation.
 
         Convenience function that return results of `response` and
