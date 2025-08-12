@@ -8,8 +8,6 @@ import shutil
 import subprocess
 import time
 from typing import Generator
-from typing import Tuple
-from typing import Type
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
@@ -570,7 +568,7 @@ def test_reuse_key_allow_subset_of_names(context: IntegrationTestsContext) -> No
 
 def test_new_key(context: IntegrationTestsContext) -> None:
     """Tests --new-key and its interactions with --reuse-key"""
-    def private_key(generation: int) -> Tuple[str, str]:
+    def private_key(generation: int) -> tuple[str, str]:
         pk_path = join(context.config_dir, f'archive/{certname}/privkey{generation}.pem')
         with open(pk_path, 'r') as file:
             return file.read(), pk_path
@@ -670,7 +668,7 @@ def test_default_rsa_size(context: IntegrationTestsContext) -> None:
     ('secp521r1', SECP521R1)]
 )
 def test_ecdsa_curves(context: IntegrationTestsContext, curve: str,
-                      curve_cls: Type[EllipticCurve]) -> None:
+                      curve_cls: type[EllipticCurve]) -> None:
     """Test issuance for each supported ECDSA curve"""
     domain = context.get_domain('curve')
     context.certbot([
@@ -806,7 +804,7 @@ def test_revoke_and_unregister(context: IntegrationTestsContext) -> None:
     ('secp521r1', SECP521R1)]
 )
 def test_revoke_ecdsa_cert_key(
-    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve]) -> None:
+    context: IntegrationTestsContext, curve: str, curve_cls: type[EllipticCurve]) -> None:
     """Test revoking a certificate """
     cert: str = context.get_domain('curve')
     context.certbot([
@@ -831,7 +829,7 @@ def test_revoke_ecdsa_cert_key(
     ('secp521r1', SECP521R1)]
 )
 def test_revoke_ecdsa_cert_key_delete(
-    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve]) -> None:
+    context: IntegrationTestsContext, curve: str, curve_cls: type[EllipticCurve]) -> None:
     """Test revoke and deletion for each supported curve type"""
     cert: str = context.get_domain('curve')
     context.certbot([

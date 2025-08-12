@@ -13,11 +13,8 @@ import time
 from types import TracebackType
 from typing import Any
 from typing import cast
-from typing import Dict
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Type
 
 # pylint: disable=wildcard-import,unused-wildcard-import
 from certbot_integration_tests.utils import misc
@@ -44,7 +41,7 @@ class ACMEServer:
     ACMEServer is also a context manager, and so can be used to ensure ACME server is
     started/stopped upon context enter/exit.
     """
-    def __init__(self, nodes: List[str], http_proxy: bool = True,
+    def __init__(self, nodes: list[str], http_proxy: bool = True,
                  stdout: bool = False, dns_server: Optional[str] = None,
                  http_01_port: Optional[int] = None) -> None:
         """
@@ -60,7 +57,7 @@ class ACMEServer:
 
         self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
-        self._processes: List[subprocess.Popen[bytes]] = []
+        self._processes: list[subprocess.Popen[bytes]] = []
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w') # pylint: disable=consider-using-with
         self._dns_server = dns_server
         self._http_01_port = DEFAULT_HTTP_01_PORT
@@ -101,17 +98,17 @@ class ACMEServer:
             self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')
 
-    def __enter__(self) -> Dict[str, Any]:
+    def __enter__(self) -> dict[str, Any]:
         self.start()
         return self.acme_xdist
 
-    def __exit__(self, exc_type: Optional[Type[BaseException]], exc: Optional[BaseException],
+    def __exit__(self, exc_type: Optional[type[BaseException]], exc: Optional[BaseException],
                  traceback: Optional[TracebackType]) -> None:
         self.stop()
 
-    def _construct_acme_xdist(self, nodes: List[str]) -> None:
+    def _construct_acme_xdist(self, nodes: list[str]) -> None:
         """Generate and return the acme_xdist dict"""
-        acme_xdist: Dict[str, Any] = {}
+        acme_xdist: dict[str, Any] = {}
 
         # Directory and ACME port are set implicitly in the docker-compose.yml
         # files of Pebble.
@@ -161,14 +158,14 @@ class ACMEServer:
     def _prepare_http_proxy(self) -> None:
         """Configure and launch an HTTP proxy"""
         print(f'=> Configuring the HTTP proxy on port {self._http_01_port}...')
-        http_port_map = cast(Dict[str, int], self.acme_xdist['http_port'])
+        http_port_map = cast(dict[str, int], self.acme_xdist['http_port'])
         mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
                    for node, port in http_port_map.items()}
         command = [sys.executable, proxy.__file__, str(self._http_01_port), json.dumps(mapping)]
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')
 
-    def _launch_process(self, command: List[str], cwd: str = os.getcwd(),
+    def _launch_process(self, command: list[str], cwd: str = os.getcwd(),
                         env: Optional[Mapping[str, str]] = None,
                         force_stderr: bool = False) -> subprocess.Popen[bytes]:
         """Launch silently a subprocess OS command"""

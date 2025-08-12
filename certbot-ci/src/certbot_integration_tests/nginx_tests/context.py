@@ -2,7 +2,6 @@
 import os
 import subprocess
 from typing import Iterable
-from typing import Tuple
 
 import pytest
 
@@ -36,7 +35,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self._stop_nginx()
         super().cleanup()
 
-    def certbot_test_nginx(self, args: Iterable[str]) -> Tuple[str, str]:
+    def certbot_test_nginx(self, args: Iterable[str]) -> tuple[str, str]:
         """
         Main command to execute certbot using the nginx plugin.
         :param list args: list of arguments to pass to nginx

@@ -5,7 +5,6 @@ import socket
 from typing import cast
 from typing import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 from cryptography import x509
@@ -146,7 +145,7 @@ def _probe_sni(name: bytes, host: bytes, port: int = 443) -> x509.Certificate:
     # Enables multi-path probing (selection
     # of source interface). See `socket.creation_connection` for more
     # info. Available only in Python 2.7+.
-    source_address: Tuple[str, int] = ('', 0)
+    source_address: tuple[str, int] = ('', 0)
     socket_kwargs = {'source_address': source_address}
 
     try:
@@ -157,7 +156,7 @@ def _probe_sni(name: bytes, host: bytes, port: int = 443) -> x509.Certificate:
                 source_address[1]
             ) if any(source_address) else ""
         )
-        socket_tuple: Tuple[bytes, int] = (host, port)
+        socket_tuple: tuple[bytes, int] = (host, port)
         sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore[arg-type]
     except OSError as error:
         raise acme_errors.Error(error)
