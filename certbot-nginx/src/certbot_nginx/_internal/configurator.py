@@ -151,7 +151,7 @@ class NginxConfigurator(common.Configurator):
         # For a complete history, check out https://github.com/certbot/certbot/issues/7322
         #
         # Technically, nginx >= 1.23.2 has session tickets off by default, and therefore
-        # no longer needs it explicitly set. But since older versions then that are still
+        # no longer needs it explicitly set. But since older versions than that are still
         # around in the oldest non-deprecated rhel, debian, and ubuntu, we will keep explicitly
         # setting it for now to reduce complexity.
 
