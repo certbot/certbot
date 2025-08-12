@@ -116,6 +116,23 @@ class HTTPServer(BaseHTTPServer.HTTPServer):
             self.address_family = socket.AF_INET
         super().__init__(*args, **kwargs)
 
+    def server_bind(self) -> None:
+        """Override server_bind to store the server name.
+
+        This implementation is a combination of BaseHTTPServer.HTTPServer.server_bind and
+        socket.getfqdn(), to avoid a bug on mac where get fqdn errors after a long timeout.
+        See https://bugs.python.org/issue35164
+        """
+        socketserver.TCPServer.server_bind(self)
+        host, port = self.server_address[:2]
+        # https://docs.python.org/3/library/socketserver.html#socketserver.BaseServer.server_address
+        host_str: str = str(host)
+        host_str = host_str.strip()
+        if not host_str or host_str in ('0.0.0.0', '::'):
+            host_str = socket.gethostname()
+        self.server_name = host_str
+        self.server_port = port
+
 
 class HTTP01Server(HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
