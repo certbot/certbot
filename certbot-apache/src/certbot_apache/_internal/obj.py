@@ -3,7 +3,6 @@ import re
 from typing import Any
 from typing import Iterable
 from typing import Optional
-from typing import Set
 from typing import Union
 
 from certbot.plugins import common
@@ -127,8 +126,8 @@ class VirtualHost:
     # ?: is used for not returning enclosed characters
     strip_name: re.Pattern[str] = re.compile(r"^(?:.+://)?([^ :$]*)")
 
-    def __init__(self, filepath: str, path: str, addrs: Set["Addr"], ssl: bool,
-                 enabled: bool, name: Optional[str] = None, aliases: Optional[Set[str]] = None,
+    def __init__(self, filepath: str, path: str, addrs: set["Addr"], ssl: bool,
+                 enabled: bool, name: Optional[str] = None, aliases: Optional[set[str]] = None,
                  modmacro: bool = False, ancestor: Optional["VirtualHost"] = None,
                  node: Optional[Union[ApacheBlockNode, AugeasBlockNode, DualBlockNode]] = None
                  ) -> None:
@@ -145,9 +144,9 @@ class VirtualHost:
         self.ancestor = ancestor
         self.node = node
 
-    def get_names(self) -> Set[str]:
+    def get_names(self) -> set[str]:
         """Return a set of all names."""
-        all_names: Set[str] = set()
+        all_names: set[str] = set()
         all_names.update(self.aliases)
         # Strip out any scheme:// and <port> field from servername
         if self.name is not None:
@@ -244,7 +243,7 @@ class VirtualHost:
 
         # already_found acts to keep everything very conservative.
         # Don't allow multiple ip:ports in same set.
-        already_found: Set[str] = set()
+        already_found: set[str] = set()
 
         for addr in vhost.addrs:
             for local_addr in self.addrs:

@@ -4,13 +4,9 @@ import fnmatch
 import logging
 import re
 from typing import Collection
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Set
-from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -43,11 +39,11 @@ class ApacheParser:
 
     """
     arg_var_interpreter: re.Pattern[str] = re.compile(r"\$\{[^ \}]*}")
-    fnmatch_chars: Set[str] = {"*", "?", "\\", "[", "]"}
+    fnmatch_chars: set[str] = {"*", "?", "\\", "[", "]"}
 
     # pylint: disable=unused-argument
     def __init__(self, root: str, configurator: "ApacheConfigurator",
-                 vhostroot: str, version: Tuple[int, ...] = (2, 4)) -> None:
+                 vhostroot: str, version: tuple[int, ...] = (2, 4)) -> None:
         # Note: Order is important here.
 
         # Needed for calling save() with reverter functionality that resides in
@@ -64,13 +60,13 @@ class ApacheParser:
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        self.modules: Dict[str, Optional[str]] = {}
-        self.parser_paths: Dict[str, List[str]] = {}
-        self.variables: Dict[str, str] = {}
+        self.modules: dict[str, Optional[str]] = {}
+        self.parser_paths: dict[str, list[str]] = {}
+        self.variables: dict[str, str] = {}
 
         # Find configuration root and make sure augeas can parse it.
         self.root: str = os.path.abspath(root)
-        self.loc: Dict[str, str] = {"root": self._find_config_root()}
+        self.loc: dict[str, str] = {"root": self._find_config_root()}
         self.parse_file(self.loc["root"])
 
         # Look up variables from httpd and add to DOM if not already parsed
@@ -119,14 +115,14 @@ class ApacheParser:
                     self.aug.get(path + "/message")))
                 raise errors.PluginError(msg)
 
-    def check_aug_version(self) -> Union[bool, List[str]]:
+    def check_aug_version(self) -> Union[bool, list[str]]:
         """ Checks that we have recent enough version of libaugeas.
         If augeas version is recent enough, it will support case insensitive
         regexp matching"""
 
         self.aug.set("/test/path/testing/arg", "aRgUMeNT")
         try:
-            matches: List[str] = self.aug.match(
+            matches: list[str] = self.aug.match(
                 "/test//*[self::arg=~regexp('argument', 'i')]")
         except RuntimeError:
             self.aug.remove("/test/path")
@@ -134,7 +130,7 @@ class ApacheParser:
         self.aug.remove("/test/path")
         return matches
 
-    def unsaved_files(self) -> Set[str]:
+    def unsaved_files(self) -> set[str]:
         """Lists files that have modified Augeas DOM but the changes have not
         been written to the filesystem yet, used by `self.save()` and
         ApacheConfigurator to check the file state.
@@ -265,7 +261,7 @@ class ApacheParser:
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        mods: Dict[str, str] = {}
+        mods: dict[str, str] = {}
         matches = self.find_dir("LoadModule")
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
@@ -318,7 +314,7 @@ class ApacheParser:
         for mod in matches:
             self.add_mod(mod.strip())
 
-    def filter_args_num(self, matches: str, args: int) -> List[str]:
+    def filter_args_num(self, matches: str, args: int) -> list[str]:
         """Filter out directives with specific number of arguments.
 
         This function makes the assumption that all related arguments are given
@@ -332,7 +328,7 @@ class ApacheParser:
             (arg is stripped off)
 
         """
-        filtered: List[str] = []
+        filtered: list[str] = []
         if args == 1:
             for i, match in enumerate(matches):
                 if match.endswith("/arg"):
@@ -349,7 +345,7 @@ class ApacheParser:
 
         return filtered
 
-    def add_dir_to_ifmodssl(self, aug_conf_path: str, directive: str, args: List[str]) -> None:
+    def add_dir_to_ifmodssl(self, aug_conf_path: str, directive: str, args: list[str]) -> None:
         """Adds directive and value to IfMod ssl block.
 
         Adds given directive and value along configuration path within
@@ -389,7 +385,7 @@ class ApacheParser:
         :rtype: str
 
         """
-        if_mods: List[str] = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
+        if_mods: list[str] = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                   (aug_conf_path, mod)))
         if not if_mods:
             return self.create_ifmod(aug_conf_path, mod)
@@ -416,7 +412,7 @@ class ApacheParser:
         return retpath
 
     def add_dir(
-        self, aug_conf_path: Optional[str], directive: Optional[str], args: Union[List[str], str]
+        self, aug_conf_path: Optional[str], directive: Optional[str], args: Union[list[str], str]
     ) -> None:
         """Appends directive to the end of the file given by aug_conf_path.
 
@@ -439,7 +435,7 @@ class ApacheParser:
             self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
     def add_dir_beginning(self, aug_conf_path: Optional[str], dirname: str,
-                          args: Union[List[str], str]) -> None:
+                          args: Union[list[str], str]) -> None:
         """Adds the directive to the beginning of defined aug_conf_path.
 
         :param str aug_conf_path: Augeas configuration path to add directive
@@ -470,7 +466,7 @@ class ApacheParser:
         """
         self.aug.set(aug_conf_path + "/#comment[last() + 1]", comment)
 
-    def find_comments(self, arg: str, start: Optional[str] = None) -> List[str]:
+    def find_comments(self, arg: str, start: Optional[str] = None) -> list[str]:
         """Finds a comment with specified content from the provided DOM path
 
         :param str arg: Comment content to search
@@ -493,7 +489,7 @@ class ApacheParser:
         return results
 
     def find_dir(self, directive: str, arg: Optional[str] = None,
-                 start: Optional[str] = None, exclude: bool = True) -> List[str]:
+                 start: Optional[str] = None, exclude: bool = True) -> list[str]:
         """Finds directive in the configuration.
 
         Recursively searches through config files to find directives
@@ -554,7 +550,7 @@ class ApacheParser:
         else:
             arg_suffix = "/*[self::arg=~regexp('%s')]" % case_i(arg)
 
-        ordered_matches: List[str] = []
+        ordered_matches: list[str] = []
 
         # TODO: Wildcards should be included in alphabetical order
         # https://httpd.apache.org/docs/2.4/mod/core.html#include
@@ -606,7 +602,7 @@ class ApacheParser:
         """
         return get_aug_path(self.loc["root"])
 
-    def exclude_dirs(self, matches: Iterable[str]) -> List[str]:
+    def exclude_dirs(self, matches: Iterable[str]) -> list[str]:
         """Exclude directives that are not loaded into the configuration."""
         filters = [("ifmodule", self.modules.keys()), ("ifdefine", self.variables)]
 
@@ -620,7 +616,7 @@ class ApacheParser:
                 valid_matches.append(match)
         return valid_matches
 
-    def _pass_filter(self, match: str, filter_: Tuple[str, Collection[str]]) -> bool:
+    def _pass_filter(self, match: str, filter_: tuple[str, Collection[str]]) -> bool:
         """Determine if directive passes a filter.
 
         :param str match: Augeas path
@@ -786,7 +782,7 @@ class ApacheParser:
             return False  # pragma: no cover
         return self._parsed_by_parser_paths(filep, self.existing_paths)
 
-    def _parsed_by_parser_paths(self, filep: str, paths: Mapping[str, List[str]]) -> bool:
+    def _parsed_by_parser_paths(self, filep: str, paths: Mapping[str, list[str]]) -> bool:
         """Helper function that searches through provided paths and returns
         True if file path is found in the set"""
         for directory in paths:
@@ -795,7 +791,7 @@ class ApacheParser:
                     return True
         return False
 
-    def _check_path_actions(self, filepath: str) -> Tuple[bool, bool]:
+    def _check_path_actions(self, filepath: str) -> tuple[bool, bool]:
         """Determine actions to take with a new augeas path
 
         This helper function will return a tuple that defines
@@ -895,7 +891,7 @@ class ApacheParser:
 
         self.aug.load()
 
-    def _set_locations(self) -> Dict[str, str]:
+    def _set_locations(self) -> dict[str, str]:
         """Set default location for directives.
 
         Locations are given as file_paths

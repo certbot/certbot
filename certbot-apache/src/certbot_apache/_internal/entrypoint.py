@@ -1,6 +1,4 @@
 """ Entry point for Apache Plugin """
-from typing import Dict
-from typing import Type
 
 from certbot import util
 from certbot_apache._internal import configurator
@@ -14,7 +12,7 @@ from certbot_apache._internal import override_gentoo
 from certbot_apache._internal import override_suse
 from certbot_apache._internal import override_void
 
-OVERRIDE_CLASSES: Dict[str, Type[configurator.ApacheConfigurator]] = {
+OVERRIDE_CLASSES: dict[str, type[configurator.ApacheConfigurator]] = {
     "alpine": override_alpine.AlpineConfigurator,
     "arch": override_arch.ArchConfigurator,
     "cloudlinux": override_centos.CentOSConfigurator,
@@ -43,7 +41,7 @@ OVERRIDE_CLASSES: Dict[str, Type[configurator.ApacheConfigurator]] = {
 }
 
 
-def get_configurator() -> Type[configurator.ApacheConfigurator]:
+def get_configurator() -> type[configurator.ApacheConfigurator]:
     """ Get correct configurator class based on the OS fingerprint """
     os_name, os_version = util.get_os_info()
     os_name = os_name.lower()
