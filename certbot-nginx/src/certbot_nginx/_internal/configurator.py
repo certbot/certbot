@@ -149,15 +149,24 @@ class NginxConfigurator(common.Configurator):
         # many versions of OpenSSL. So we have to check both for the two different features,
         # leading to four different combinations of options.
         # For a complete history, check out https://github.com/certbot/certbot/issues/7322
+        #
+        # Technically, nginx >= 1.23.2 has session tickets off by default, and therefore
+        # no longer needs it explicitly set. But since older versions than that are still
+        # around in the oldest non-deprecated rhel, debian, and ubuntu, we will keep explicitly
+        # setting it for now to reduce complexity.
 
         use_tls13 = self.version >= (1, 13, 0)
         min_openssl_version = util.parse_loose_version('1.0.2l')
         session_tix_off = self.version >= (1, 5, 9) and self.openssl_version and\
             util.parse_loose_version(self.openssl_version) >= min_openssl_version
 
+        deprecated_conf = True
+
         if use_tls13:
             if session_tix_off:
+                # current version
                 config_filename = "options-ssl-nginx.conf"
+                deprecated_conf = False
             else:
                 config_filename = "options-ssl-nginx-tls13-session-tix-on.conf"
         else:
@@ -165,6 +174,12 @@ class NginxConfigurator(common.Configurator):
                 config_filename = "options-ssl-nginx-tls12-only.conf"
             else:
                 config_filename = "options-ssl-nginx-old.conf"
+
+        if deprecated_conf:
+            logger.warning('Certbot has detected that nginx version < 1.13.0 or compiled against '
+                'openssl < 1.0.2l. Since these are deprecated, the configuration file being '
+                'installed at %s will not receive future updates. To get the latest configuration '
+                'version, update nginx.', self.mod_ssl_conf)
 
         file_manager = ExitStack()
         atexit.register(file_manager.close)
