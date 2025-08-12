@@ -130,6 +130,11 @@ def atomic_rewrite(config_filename: str, new_config: configobj.ConfigObj) -> Non
     The update will be atomic: if writing fails, the original file will not be modified. The
     updated file will preserve comments from the original and will have the same permissions.
 
+    In general, fields that exist on disk but not in new_config will be preserved. As a special
+    case, fields in the 'renewalparams' section will be deleted unless they exist in new_config.
+    This deletion clears out old fields from when we used to dump _all_ flags (as opposed to
+    relevant ones).
+
     :param str config_filename: Absolute path to the configuration file
     :param configobj.ConfigObj new_config: New configuration object
     """
@@ -137,6 +142,13 @@ def atomic_rewrite(config_filename: str, new_config: configobj.ConfigObj) -> Non
     merged_config = configobj.ConfigObj(config_filename, encoding='utf-8', default_encoding='utf-8',
                                         file_error=True)
     merged_config.merge(new_config)
+
+    # We merge and then delete, rather than just replacing the 'renewalparams' section, so we can
+    # preserve comments from the on-disk config file.
+    for k in merged_config["renewalparams"]:
+        if k not in new_config["renewalparams"]:
+            print("deleting", k)
+            del merged_config["renewalparams"][k]
 
     current_permissions = stat.S_IMODE(os.lstat(config_filename).st_mode)
 

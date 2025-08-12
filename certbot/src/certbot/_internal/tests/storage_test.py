@@ -752,7 +752,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         temp = os.path.join(self.config.config_dir, "sample-file")
         with open(temp, "w") as f:
             f.write("[renewalparams]\nuseful = value # A useful value\n"
-                    "useless = value # Not needed, but preserved\n")
+                    "useless = value # Not needed\n")
         filesystem.chmod(temp, 0o640)
         perms = stat.S_IMODE(os.lstat(temp).st_mode)
         config = configobj.ConfigObj()
@@ -772,7 +772,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # associated comment was preserved
         assert "A useful value" in content
         # useless value was deleted
-        assert "useless" in content
+        assert "useless" not in content
         # check version was stored
         assert "version = {0}".format(certbot.__version__) in content
         # ensure permissions are copied
