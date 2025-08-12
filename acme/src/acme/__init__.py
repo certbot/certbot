@@ -6,7 +6,6 @@ This module is an implementation of the `ACME protocol`_.
 
 """
 import sys
-import warnings
 
 # This code exists to keep backwards compatibility with people using acme.jose
 # before it became the standalone josepy package.
@@ -20,10 +19,3 @@ for mod in list(sys.modules):
     # preserved (acme.jose.* is josepy.*)
     if mod == 'josepy' or mod.startswith('josepy.'):
         sys.modules['acme.' + mod.replace('josepy', 'jose', 1)] = sys.modules[mod]
-
-if sys.version_info[:2] == (3, 9):
-    warnings.warn(
-            "Python 3.9 support will be dropped in the next planned release of "
-            "acme. Please upgrade your Python version.",
-            DeprecationWarning,
-    )  # pragma: no cover

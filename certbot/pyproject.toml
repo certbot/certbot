@@ -8,7 +8,7 @@ dynamic = ["version", "dependencies"]
 description = "ACME client"
 readme = "README.rst"
 license = "Apache-2.0"
-requires-python = ">=3.9.2"
+requires-python = ">=3.10"
 authors = [
     { name = "Certbot Project", email = "certbot-dev@eff.org" },
 ]
@@ -19,11 +19,10 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Security",
     "Topic :: System :: Installation/Setup",
