@@ -90,6 +90,11 @@ sudo "venv/bin/certbot" -v --debug --text --agree-tos --no-verify-ssl \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain "${PUBLIC_HOSTNAME}" --server "${PEBBLE_URL}"
 
+if ! grep -q SSLSessionTickets /etc/letsencrypt/options-ssl-apache.conf; then
+    echo "modern TLS options were not used"
+    exit 1
+fi
+
 if [ "$OS_TYPE" = "ubuntu" ] ; then
     export SERVER="${PEBBLE_URL}"
     "venv/bin/tox" -e apacheconftest
