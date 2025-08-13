@@ -4,7 +4,7 @@ import copy
 import io
 import sys
 import tempfile
-from typing import Any, List
+from typing import Any
 import unittest
 from unittest import mock
 
@@ -85,17 +85,17 @@ class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
     @staticmethod
-    def _unmocked_parse(args: List[str]) -> NamespaceConfig:
+    def _unmocked_parse(args: list[str]) -> NamespaceConfig:
         """Get result of cli.prepare_and_parse_args."""
         return cli.prepare_and_parse_args(PLUGINS, args)
 
     @staticmethod
-    def parse(args: List[str]) -> NamespaceConfig:
+    def parse(args: list[str]) -> NamespaceConfig:
         """Mocks certbot._internal.display.obj.get_display and calls _unmocked_parse."""
         with test_util.patch_display_util():
             return ParseTest._unmocked_parse(args)
 
-    def _help_output(self, args: List[str]):
+    def _help_output(self, args: list[str]):
         "Run a command, and return the output string for scrutiny"
 
         output = io.StringIO()
@@ -117,11 +117,10 @@ class ParseTest(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as tmp_config:
             tmp_config.close()  # close now because of compatibility issues on Windows
             # use a shim to get ConfigArgParse to pick up tmp_config
-            shim = (
-                    lambda v: copy.deepcopy(constants.CLI_DEFAULTS[v])
-                    if v != "config_files"
-                    else [tmp_config.name]
-                    )
+            def shim(v):
+                return (copy.deepcopy(constants.CLI_DEFAULTS[v])
+                                if v != "config_files"
+                                else [tmp_config.name])
             mock_flag_default.side_effect = shim
 
             namespace = self.parse(["certonly"])

@@ -2,7 +2,6 @@
 import json
 import logging
 from typing import Any
-from typing import Dict
 
 from certbot import configuration
 from certbot import errors
@@ -27,7 +26,7 @@ class PluginStorage:
         self._config = config
         self._classkey = classkey
         self._initialized = False
-        self._data: Dict
+        self._data: dict
         self._storagepath: str
 
     def _initialize_storage(self) -> None:
@@ -43,7 +42,7 @@ class PluginStorage:
 
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         filedata = ""
         try:
             with open(self._storagepath, 'r') as fh:

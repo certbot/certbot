@@ -226,7 +226,8 @@ class CertificatesTest(BaseCertManagerTest):
         # pylint: disable=protected-access
 
         # pylint: disable=protected-access
-        get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
+        def get_report():
+            return cert_manager._report_human_readable(mock_config, parsed_certs)
 
         out = get_report()
         assert "INVALID: EXPIRED" in out

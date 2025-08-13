@@ -8,12 +8,6 @@ jobs:
       - group: certbot-common
     strategy:
       matrix:
-        linux-py39:
-          PYTHON_VERSION: 3.9
-          TOXENV: py39
-        linux-py310:
-          PYTHON_VERSION: 3.10
-          TOXENV: py310
         linux-py311:
           PYTHON_VERSION: 3.11
           TOXENV: py311
@@ -23,14 +17,11 @@ jobs:
         linux-isolated:
           TOXENV: 'isolated-acme,isolated-certbot,isolated-apache,isolated-cloudflare,isolated-digitalocean,isolated-dnsimple,isolated-dnsmadeeasy,isolated-gehirn,isolated-google,isolated-linode,isolated-luadns,isolated-nsone,isolated-ovh,isolated-rfc2136,isolated-route53,isolated-sakuracloud,isolated-nginx'
         linux-integration-certbot-oldest:
-          PYTHON_VERSION: 3.9
+          PYTHON_VERSION: 3.10
           TOXENV: integration-certbot-oldest
         linux-integration-nginx-oldest:
-          PYTHON_VERSION: 3.9
+          PYTHON_VERSION: 3.10
           TOXENV: integration-nginx-oldest
-        linux-py39-integration:
-          PYTHON_VERSION: 3.9
-          TOXENV: integration
         linux-py310-integration:
           PYTHON_VERSION: 3.10
           TOXENV: integration

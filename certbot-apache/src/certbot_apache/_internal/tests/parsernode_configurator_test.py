@@ -1,4 +1,5 @@
 """Tests for ApacheConfigurator for AugeasParserNode classes"""
+import importlib
 import sys
 import unittest
 from unittest import mock
@@ -7,10 +8,10 @@ import pytest
 
 from certbot_apache._internal.tests import util
 
-try:
-    import apacheconfig
+
+if importlib.util.find_spec('apacheconfig'):
     HAS_APACHECONFIG = True
-except ImportError:  # pragma: no cover
+else:  # pragma: no cover
     HAS_APACHECONFIG = False
 
 

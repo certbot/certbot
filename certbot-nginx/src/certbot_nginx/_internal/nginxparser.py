@@ -8,10 +8,8 @@ from typing import Any
 from typing import IO
 from typing import Iterable
 from typing import Iterator
-from typing import List
 from typing import overload
 from typing import SupportsIndex
-from typing import Tuple
 from typing import Union
 
 from pyparsing import Combine
@@ -76,17 +74,17 @@ class RawNginxParser:
         """Returns the parsed tree."""
         return self.script.parseString(self.source)
 
-    def as_list(self) -> List[Any]:
+    def as_list(self) -> list[Any]:
         """Returns the parsed tree as a list."""
         return self.parse().asList()
 
 
 class RawNginxDumper:
     """A class that dumps nginx configuration from the provided tree."""
-    def __init__(self, blocks: List[Any]) -> None:
+    def __init__(self, blocks: list[Any]) -> None:
         self.blocks = blocks
 
-    def __iter__(self, blocks: typing.Optional[List[Any]] = None) -> Iterator[str]:
+    def __iter__(self, blocks: typing.Optional[list[Any]] = None) -> Iterator[str]:
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
         for b0 in blocks:
@@ -120,7 +118,7 @@ def spacey(x: Any) -> bool:
     return (isinstance(x, str) and x.isspace()) or x == ''
 
 
-class UnspacedList(List[Any]):
+class UnspacedList(list[Any]):
     """Wrap a list [of lists], making any whitespace entries magically invisible"""
 
     def __init__(self, list_source: Iterable[Any]) -> None:
@@ -142,15 +140,15 @@ class UnspacedList(List[Any]):
                     super().__delitem__(i)
 
     @overload
-    def _coerce(self, inbound: None) -> Tuple[None, None]: ...
+    def _coerce(self, inbound: None) -> tuple[None, None]: ...
 
     @overload
-    def _coerce(self, inbound: str) -> Tuple[str, str]: ...
+    def _coerce(self, inbound: str) -> tuple[str, str]: ...
 
     @overload
-    def _coerce(self, inbound: List[Any]) -> Tuple["UnspacedList", List[Any]]: ...
+    def _coerce(self, inbound: list[Any]) -> tuple["UnspacedList", list[Any]]: ...
 
-    def _coerce(self, inbound: Any) -> Tuple[Any, Any]:
+    def _coerce(self, inbound: Any) -> tuple[Any, Any]:
         """
         Coerce some inbound object to be appropriately usable in this object
 
@@ -191,7 +189,7 @@ class UnspacedList(List[Any]):
         super().extend(item)
         self.dirty = True
 
-    def __add__(self, other: List[Any]) -> "UnspacedList":
+    def __add__(self, other: list[Any]) -> "UnspacedList":
         new_list = copy.deepcopy(self)
         new_list.extend(other)
         new_list.dirty = True

@@ -198,7 +198,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         from certbot._internal import renewal
         lineage_config = copy.deepcopy(self.config)
-        renewal_candidate = renewal.reconstitute(lineage_config, rc_path)
+        renewal.reconstitute(lineage_config, rc_path)
         # This means that manual_public_ip_logging_ok was not modified in the config based on its
         # value in the renewal conf file
         assert isinstance(lineage_config.manual_public_ip_logging_ok, mock.MagicMock)
@@ -233,7 +233,7 @@ class RenewalTest(test_util.ConfigTestCase):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
         config = configuration.NamespaceConfig(self.config)
 
-        with mock.patch('time.sleep') as sleep:
+        with mock.patch('time.sleep'):
             renewal.handle_renewal_request(config)
 
         mock_renew_cert.assert_called_once()
@@ -254,7 +254,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
 
-        with mock.patch('time.sleep') as sleep:
+        with mock.patch('time.sleep'):
             renewal.handle_renewal_request(self.config)
 
         assert mock_client_network_get.call_count == 0
@@ -265,7 +265,7 @@ class RenewalTest(test_util.ConfigTestCase):
         self.config.dry_run = True
         ari_client_pool = mock.MagicMock()
         ari_client_pool.get.return_value = mock_acme
-        with mock.patch('time.sleep') as sleep:
+        with mock.patch('time.sleep'):
             renewal.should_renew(self.config, mock.Mock(), ari_client_pool)
         assert mock_acme.renewal_time.call_count == 0
 

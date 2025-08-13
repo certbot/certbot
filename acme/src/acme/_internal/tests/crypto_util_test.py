@@ -2,7 +2,6 @@
 import ipaddress
 import itertools
 import sys
-from typing import List
 import unittest
 from unittest import mock
 import warnings
@@ -110,7 +109,7 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
 
     def setUp(self):
         self.cert_count = 5
-        self.serial_num: List[int] = []
+        self.serial_num: list[int] = []
         self.privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     def test_sn_collisions(self):
@@ -123,7 +122,7 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
 
     def test_no_ips(self):
         from acme.crypto_util import make_self_signed_cert
-        cert = make_self_signed_cert(self.privkey, ['dummy'])
+        make_self_signed_cert(self.privkey, ['dummy'])
 
     @mock.patch("acme.crypto_util._now")
     def test_expiry_times(self, mock_now):

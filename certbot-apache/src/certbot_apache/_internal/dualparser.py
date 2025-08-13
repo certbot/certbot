@@ -2,10 +2,7 @@
 from typing import Any
 from typing import Generic
 from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Set
-from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import TypeVar
 
@@ -53,12 +50,12 @@ class DualNodeBase(Generic[GenericAugeasParserNode, GenericApacheParserNode]):
             assertions.assertEqualSimple(firstval, secondval)
         return firstval
 
-    def find_ancestors(self, name: str) -> List["DualBlockNode"]:
+    def find_ancestors(self, name: str) -> list["DualBlockNode"]:
         """ Traverses the ancestor tree and returns ancestors matching name """
         return self._find_helper(DualBlockNode, "find_ancestors", name)
 
     def _find_helper(self, nodeclass: type[GenericDualNode], findfunc: str, search: str,
-                     **kwargs: Any) -> List[GenericDualNode]:
+                     **kwargs: Any) -> list[GenericDualNode]:
         """A helper for find_* functions. The function specific attributes should
         be passed as keyword arguments.
 
@@ -203,7 +200,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
 
         assertions.assertEqual(self.primary, self.secondary)
 
-    def add_child_block(self, name: str, parameters: Optional[List[str]] = None,
+    def add_child_block(self, name: str, parameters: Optional[list[str]] = None,
                         position: Optional[int] = None) -> "DualBlockNode":
         """ Creates a new child BlockNode, asserts that both implementations
         did it in a similar way, and returns a newly created DualBlockNode object
@@ -214,7 +211,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
         assertions.assertEqual(primary_new, secondary_new)
         return DualBlockNode(primary=primary_new, secondary=secondary_new)
 
-    def add_child_directive(self, name: str, parameters: Optional[List[str]] = None,
+    def add_child_directive(self, name: str, parameters: Optional[list[str]] = None,
                             position: Optional[int] = None) -> DualDirectiveNode:
         """ Creates a new child DirectiveNode, asserts that both implementations
         did it in a similar way, and returns a newly created DualDirectiveNode
@@ -238,7 +235,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
 
     def _create_matching_list(self, primary_list: Iterable[interfaces.ParserNode],
                               secondary_list: Iterable[interfaces.ParserNode]
-                              ) -> List[Tuple[interfaces.ParserNode, interfaces.ParserNode]]:
+                              ) -> list[tuple[interfaces.ParserNode, interfaces.ParserNode]]:
         """ Matches the list of primary_list to a list of secondary_list and
         returns a list of tuples. This is used to create results for find_
         methods.
@@ -265,7 +262,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
                 raise AssertionError("Could not find a matching node.")
         return matched
 
-    def find_blocks(self, name: str, exclude: bool = True) -> List["DualBlockNode"]:
+    def find_blocks(self, name: str, exclude: bool = True) -> list["DualBlockNode"]:
         """
         Performs a search for BlockNodes using both implementations and does simple
         checks for results. This is built upon the assumption that unimplemented
@@ -277,7 +274,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
         return self._find_helper(DualBlockNode, "find_blocks", name,
                                  exclude=exclude)
 
-    def find_directives(self, name: str, exclude: bool = True) -> List[DualDirectiveNode]:
+    def find_directives(self, name: str, exclude: bool = True) -> list[DualDirectiveNode]:
         """
         Performs a search for DirectiveNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented
@@ -289,7 +286,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
         return self._find_helper(DualDirectiveNode, "find_directives", name,
                                  exclude=exclude)
 
-    def find_comments(self, comment: str) -> List[DualCommentNode]:
+    def find_comments(self, comment: str) -> list[DualCommentNode]:
         """
         Performs a search for CommentNodes using both implementations and
         checks the results. This is built upon the assumption that unimplemented
@@ -308,7 +305,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
         self.primary.delete_child(child.primary)
         self.secondary.delete_child(child.secondary)
 
-    def unsaved_files(self) -> Set[str]:
+    def unsaved_files(self) -> set[str]:
         """ Fetches the list of unsaved file paths and asserts that the lists
         match """
         primary_files = self.primary.unsaved_files()
@@ -317,7 +314,7 @@ class DualBlockNode(DualNodeBase[augeasparser.AugeasBlockNode,
 
         return primary_files
 
-    def parsed_paths(self) -> List[str]:
+    def parsed_paths(self) -> list[str]:
         """
         Returns a list of file paths that have currently been parsed into the parser
         tree. The returned list may include paths with wildcard characters, for

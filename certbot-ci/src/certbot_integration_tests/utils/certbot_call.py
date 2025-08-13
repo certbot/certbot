@@ -4,19 +4,17 @@
 import os
 import subprocess
 import sys
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Tuple
 
 import certbot_integration_tests
-# pylint: disable=wildcard-import,unused-wildcard-import
-from certbot_integration_tests.utils.constants import *
+from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
+from certbot_integration_tests.utils.constants import HTTPS_PORT
+from certbot_integration_tests.utils.constants import PEBBLE_DIRECTORY_URL
 
 
-def certbot_test(certbot_args: List[str], directory_url: Optional[str], http_01_port: int,
+def certbot_test(certbot_args: list[str], directory_url: Optional[str], http_01_port: int,
                  https_port: int, config_dir: str, workspace: str,
-                 force_renew: bool = True) -> Tuple[str, str]:
+                 force_renew: bool = True) -> tuple[str, str]:
     """
     Invoke the certbot executable available in PATH in a test context for the given args.
     The test context consists in running certbot in debug mode, with various flags suitable
@@ -44,7 +42,7 @@ def certbot_test(certbot_args: List[str], directory_url: Optional[str], http_01_
     return proc.stdout, proc.stderr
 
 
-def _prepare_environ(workspace: str) -> Dict[str, str]:
+def _prepare_environ(workspace: str) -> dict[str, str]:
     # pylint: disable=missing-function-docstring
 
     new_environ = os.environ.copy()
@@ -82,9 +80,9 @@ def _prepare_environ(workspace: str) -> Dict[str, str]:
     return new_environ
 
 
-def _prepare_args_env(certbot_args: List[str], directory_url: Optional[str], http_01_port: int,
+def _prepare_args_env(certbot_args: list[str], directory_url: Optional[str], http_01_port: int,
                       https_port: int, config_dir: str, workspace: str,
-                      force_renew: bool) -> Tuple[List[str], Dict[str, str]]:
+                      force_renew: bool) -> tuple[list[str], dict[str, str]]:
 
     new_environ = _prepare_environ(workspace)
     additional_args = ['--no-random-sleep-on-renew']

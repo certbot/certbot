@@ -7,11 +7,8 @@ import logging
 import re
 import subprocess
 from contextlib import ExitStack
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Tuple
 
 from certbot import errors
 from certbot import util
@@ -20,7 +17,7 @@ from certbot.compat import os
 logger = logging.getLogger(__name__)
 
 
-def get_mod_deps(mod_name: str) -> List[str]:
+def get_mod_deps(mod_name: str) -> list[str]:
     """Get known module dependencies.
 
     .. note:: This does not need to be accurate in order for the client to
@@ -68,7 +65,7 @@ def get_internal_aug_path(vhost_path: str) -> str:
     return _split_aug_path(vhost_path)[1]
 
 
-def _split_aug_path(vhost_path: str) -> Tuple[str, str]:
+def _split_aug_path(vhost_path: str) -> tuple[str, str]:
     """Splits an Augeas path into a file path and an internal path.
 
     After removing "/files", this function splits vhost_path into the
@@ -82,7 +79,7 @@ def _split_aug_path(vhost_path: str) -> Tuple[str, str]:
     """
     # Strip off /files
     file_path = vhost_path[6:]
-    internal_path: List[str] = []
+    internal_path: list[str] = []
 
     # Remove components from the end of file_path until it becomes valid
     while not os.path.exists(file_path):
@@ -92,7 +89,7 @@ def _split_aug_path(vhost_path: str) -> Tuple[str, str]:
     return file_path, "/".join(reversed(internal_path))
 
 
-def parse_define_file(filepath: str, varname: str) -> Dict[str, str]:
+def parse_define_file(filepath: str, varname: str) -> dict[str, str]:
     """ Parses Defines from a variable in configuration file
 
     :param str filepath: Path of file to parse
@@ -102,7 +99,7 @@ def parse_define_file(filepath: str, varname: str) -> Dict[str, str]:
     :rtype: `dict`
 
     """
-    return_vars: Dict[str, str] = {}
+    return_vars: dict[str, str] = {}
     # Get list of words in the variable
     a_opts = util.get_var_from_file(varname, filepath).split()
     for i, v in enumerate(a_opts):
@@ -137,7 +134,7 @@ def included_in_paths(filepath: str, paths: Iterable[str]) -> bool:
     return any(fnmatch.fnmatch(filepath, path) for path in paths)
 
 
-def parse_defines(define_cmd: List[str]) -> Dict[str, str]:
+def parse_defines(define_cmd: list[str]) -> dict[str, str]:
     """
     Gets Defines from httpd process and returns a dictionary of
     the defined variables.
@@ -148,7 +145,7 @@ def parse_defines(define_cmd: List[str]) -> Dict[str, str]:
     :rtype: dict
     """
 
-    variables: Dict[str, str] = {}
+    variables: dict[str, str] = {}
     matches = parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
     try:
         matches.remove("DUMP_RUN_CFG")
@@ -164,7 +161,7 @@ def parse_defines(define_cmd: List[str]) -> Dict[str, str]:
     return variables
 
 
-def parse_includes(inc_cmd: List[str]) -> List[str]:
+def parse_includes(inc_cmd: list[str]) -> list[str]:
     """
     Gets Include directives from httpd process and returns a list of
     their values.
@@ -178,7 +175,7 @@ def parse_includes(inc_cmd: List[str]) -> List[str]:
     return parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
 
 
-def parse_modules(mod_cmd: List[str]) -> List[str]:
+def parse_modules(mod_cmd: list[str]) -> list[str]:
     """
     Get loaded modules from httpd process, and return the list
     of loaded module names.
@@ -192,7 +189,7 @@ def parse_modules(mod_cmd: List[str]) -> List[str]:
     return parse_from_subprocess(mod_cmd, r"(.*)_module")
 
 
-def parse_from_subprocess(command: List[str], regexp: str) -> List[str]:
+def parse_from_subprocess(command: list[str], regexp: str) -> list[str]:
     """Get values from stdout of subprocess command
 
     :param list command: Command to run
@@ -206,7 +203,7 @@ def parse_from_subprocess(command: List[str], regexp: str) -> List[str]:
     return re.compile(regexp).findall(stdout)
 
 
-def _get_runtime_cfg(command: List[str]) -> str:
+def _get_runtime_cfg(command: list[str]) -> str:
     """
     Get runtime configuration info.
 
