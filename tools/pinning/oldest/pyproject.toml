@@ -54,9 +54,10 @@ acme = {path = "../../../acme", extras = ["test"]}
 ConfigArgParse = "1.5.3"
 apacheconfig = "0.3.2"
 asn1crypto = "0.24.0"
-boto3 = "1.15.15"
-botocore = "1.18.15"
-cffi = "1.12.3"
+# we we already ignoring debian 11; this uses the versions from ubuntu 22
+boto3 = "1.20.34"
+botocore = "1.23.34"
+cffi = "1.14.1"
 chardet = "3.0.4"
 cloudflare = "2.19"
 configobj = "5.0.6"
@@ -81,9 +82,9 @@ pycparser = "2.14"
 pyparsing = "2.4.7"
 python-augeas = "0.5.0"
 python-digitalocean = "1.11"
-requests = "2.20.0"
-six = "1.11.0"
-urllib3 = "1.24.2"
+requests = "2.25.1"
+six = "1.16.0"
+urllib3 = "1.26.5"
 
 # Build dependencies
 # Since there doesn't appear to

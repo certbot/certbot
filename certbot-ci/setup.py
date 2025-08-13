@@ -19,7 +19,7 @@ install_requires = [
     'pyyaml',
     # requests unvendored its dependencies in version 2.16.0 and this code relies on that for
     # calling `urllib3.disable_warnings`.
-    'requests>=2.16.0',
+    'requests>=2.25.1',
     'types-python-dateutil',
 ]
 

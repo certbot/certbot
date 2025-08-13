@@ -10,7 +10,7 @@ install_requires = [
     # relaxed to >=24.0.0 if needed.
     'PyOpenSSL>=25.0.0',
     'pyrfc3339',
-    'requests>=2.20.0',
+    'requests>=2.25.1',
 ]
 
 docs_extras = [
