@@ -147,7 +147,6 @@ def atomic_rewrite(config_filename: str, new_config: configobj.ConfigObj) -> Non
     # preserve comments from the on-disk config file.
     for k in merged_config["renewalparams"]:
         if k not in new_config["renewalparams"]:
-            print("deleting", k)
             del merged_config["renewalparams"][k]
 
     current_permissions = stat.S_IMODE(os.lstat(config_filename).st_mode)
@@ -158,10 +157,9 @@ def atomic_rewrite(config_filename: str, new_config: configobj.ConfigObj) -> Non
     if os.path.exists(temp_filename):
         os.unlink(temp_filename)
 
-    with open(temp_filename, "wb") as f:
+    with util.safe_open(temp_filename, "wb", current_permissions) as f:
         merged_config.write(outfile=f)
 
-    filesystem.chmod(temp_filename, current_permissions)
     filesystem.replace(temp_filename, config_filename)
 
 
