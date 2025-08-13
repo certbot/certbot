@@ -62,7 +62,7 @@ class Account:
         self.meta = self.Meta(
             # pyrfc3339 drops microseconds, make sure __eq__ is sane
             creation_dt=datetime.datetime.now(tz=datetime.timezone.utc).replace(microsecond=0),
-            creation_host=socket.getfqdn(),
+            creation_host=socket.gethostname(),
             register_to_eff=None) if meta is None else meta
 
         # try MD5, else use MD5 in non-security mode (e.g. for FIPS systems / RHEL)
