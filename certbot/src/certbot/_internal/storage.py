@@ -189,7 +189,7 @@ def rename_renewal_config(prev_name: str, new_name: str,
 
 
 def update_configuration(lineagename: str, archive_dir: str, target: Mapping[str, str],
-                         cli_config: configuration.NamespaceConfig) -> None:
+                         cli_config: configuration.NamespaceConfig) -> configobj.ConfigObj:
     """Modifies lineagename's config to contain the specified values.
 
     :param str lineagename: Name of the lineage being modified
@@ -206,6 +206,8 @@ def update_configuration(lineagename: str, archive_dir: str, target: Mapping[str
     config_filename = renewal_filename_for_lineagename(cli_config, lineagename)
 
     atomic_rewrite(config_filename, config)
+
+    return configobj.ConfigObj(config_filename, encoding='utf-8', default_encoding='utf-8')
 
 
 def make_renewal_configobj(archive_dir: str, target: Mapping[str, str],
@@ -1188,7 +1190,9 @@ class RenewableCert(interfaces.RenewableCert):
 
         symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
         # Update renewal config file
-        update_configuration(self.lineagename, self.archive_dir, symlinks, cli_config)
+        self.configfile = update_configuration(
+            self.lineagename, self.archive_dir, symlinks, cli_config)
+        self.configuration = self.configfile
 
         return target_version
 
@@ -1201,8 +1205,9 @@ class RenewableCert(interfaces.RenewableCert):
         self.cli_config = cli_config
         symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
         # Update renewal config file
-        update_configuration(self.lineagename, self.archive_dir, symlinks, cli_config)
-
+        self.configfile = update_configuration(
+            self.lineagename, self.archive_dir, symlinks, cli_config)
+        self.configuration = self.configfile
 
     def truncate(self, num_prior_certs_to_keep: int = 5) -> None:
         """Delete unused historical certificate, chain and key items from the lineage.
