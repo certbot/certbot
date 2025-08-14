@@ -1,5 +1,4 @@
 """Test for certbot_apache._internal.configurator implementations of reverter"""
-import shutil
 import sys
 from unittest import mock
 
@@ -19,11 +18,6 @@ class ConfiguratorReverterTest(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
 
         self.vh_truth = util.get_vh_truth(self.temp_dir, "debian_apache_2_4/multiple_vhosts")
-
-    def tearDown(self):
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
-        shutil.rmtree(self.temp_dir)
 
     def test_bad_save_checkpoint(self):
         self.config.reverter.add_to_checkpoint = mock.Mock(side_effect=errors.ReverterError)
