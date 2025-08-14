@@ -140,11 +140,21 @@ def atomic_rewrite(config_filename: str, new_config: configobj.ConfigObj) -> Non
                                         file_error=True)
     merged_config.merge(new_config)
 
-    # We merge and then delete, rather than just replacing the 'renewalparams' section, so we can
-    # preserve comments from the on-disk config file.
-    for k in merged_config["renewalparams"]:
-        if k not in new_config["renewalparams"]:
-            del merged_config["renewalparams"][k]
+    # When updating the "renewalparams" section, only carry through fields that actually exist
+    # in the new config's "renewalparams" section. We could achieve this straightforwardly by
+    # assigning the new config's "renewalparams" section into the merged config. But then we would
+    # lose comments. Merging and then deleting allows us to preserve comments.
+    #
+    # As a concrete example, if a renewal params config has elliptic_curve=secp384r1, and the
+    # user executes a command to issue with `--key-type=rsa` instead, the old elliptic_curve value
+    # should disappear because it's not specified in the current command line.
+    #
+    # This only applies when "renewalparams" is actually being updated, because sometimes we
+    # update other sections independently (like "acme_renewal_info").
+    if "renewalparams" in new_config:
+        for k in merged_config["renewalparams"]:
+            if k not in new_config["renewalparams"]:
+                del merged_config["renewalparams"][k]
 
     current_permissions = stat.S_IMODE(os.lstat(config_filename).st_mode)
 
@@ -180,7 +190,7 @@ def rename_renewal_config(prev_name: str, new_name: str,
 
 
 def update_configuration(lineagename: str, archive_dir: str, target: Mapping[str, str],
-                         cli_config: configuration.NamespaceConfig) -> configobj.ConfigObj:
+                         cli_config: configuration.NamespaceConfig) -> None:
     """Modifies lineagename's config to contain the specified values.
 
     :param str lineagename: Name of the lineage being modified
@@ -197,8 +207,6 @@ def update_configuration(lineagename: str, archive_dir: str, target: Mapping[str
     config_filename = renewal_filename_for_lineagename(cli_config, lineagename)
 
     atomic_rewrite(config_filename, config)
-
-    return configobj.ConfigObj(config_filename, encoding='utf-8', default_encoding='utf-8')
 
 
 def make_renewal_configobj(archive_dir: str, target: Mapping[str, str],
@@ -1181,8 +1189,7 @@ class RenewableCert(interfaces.RenewableCert):
 
         symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
         # Update renewal config file
-        self.configfile = update_configuration(
-            self.lineagename, self.archive_dir, symlinks, cli_config)
+        update_configuration(self.lineagename, self.archive_dir, symlinks, cli_config)
         self.configuration = self.configfile
 
         return target_version
@@ -1196,31 +1203,7 @@ class RenewableCert(interfaces.RenewableCert):
         self.cli_config = cli_config
         symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
         # Update renewal config file
-        self.configfile = update_configuration(
-            self.lineagename, self.archive_dir, symlinks, cli_config)
-        self.configuration = self.configfile
-
-
-    def save_renewal_param(self, name: str, value: str) -> None:
-        """Set or update a field in the config file's 'renewalparams'.
-
-        This doesn't modify any fields other than the named one, even if there are
-        command line that flags affect renewal (e.g. --authenticator, --installer).
-        """
-        temp_filename = self.configfile.filename + ".new"
-
-        # If an existing tempfile exists, delete it
-        if os.path.exists(temp_filename):
-            os.unlink(temp_filename)
-
-        renewal_config = configobj.ConfigObj(
-            self.configfile.filename, encoding='utf-8', default_encoding='utf-8')
-        renewal_config['renewalparams'][name] = value
-        with open(temp_filename, "wb") as f:
-            renewal_config.write(outfile=f)
-
-        filesystem.replace(temp_filename, self.configfile.filename)
-        self.configfile = renewal_config
+        update_configuration(self.lineagename, self.archive_dir, symlinks, cli_config)
 
 
     def truncate(self, num_prior_certs_to_keep: int = 5) -> None:

@@ -279,8 +279,9 @@ class RenewalTest(test_util.ConfigTestCase):
         t = renewal._default_renewal_time(cert_pem)
         assert t == datetime.datetime(2025, 3, 24, 00, 00, 00, tzinfo=datetime.timezone.utc)
 
+    @mock.patch("certbot._internal.storage.atomic_rewrite")
     @mock.patch("certbot._internal.renewal.datetime")
-    def test_renew_before_expiry(self, mock_datetime):
+    def test_renew_before_expiry(self, mock_datetime, unused_mock_atomic_rewrite):
         """When neither OCSP nor the ACME client indicate it's time to renew,
            obey the renew_before_expiry config.
         """
@@ -422,9 +423,11 @@ class RenewalTest(test_util.ConfigTestCase):
             assert any(call.args[0].startswith('Skipping ARI check') for call in
                        mock_warning.call_args_list)
 
+    @mock.patch("certbot._internal.storage.atomic_rewrite")
     @mock.patch('certbot._internal.storage.RenewableCert.ocsp_revoked')
     @mock.patch('acme.client.ClientV2.renewal_time')
-    def test_resilient_ari_directory_fetches(self, mock_renewal_time, mock_ocsp):
+    def test_resilient_ari_directory_fetches(self, mock_renewal_time, mock_ocsp,
+                                             unused_mock_atomic_rewrite):
         from certbot._internal import renewal
         from acme import messages
 
@@ -484,7 +487,7 @@ class RenewalTest(test_util.ConfigTestCase):
         with open(renewable_cert.configfile.filename, 'r') as c:
             renewable_cert_config = configobj.ConfigObj(c)
 
-        assert renewable_cert_config['renewalparams']['ari_retry_after'] == retry_after.isoformat(
+        assert renewable_cert_config['acme_renewal_info']['ari_retry_after'] == retry_after.isoformat(
             timespec='seconds')
 
     def test_skips_ari_when_retry_after_future(self):
@@ -494,7 +497,8 @@ class RenewalTest(test_util.ConfigTestCase):
         renewable_cert = storage.RenewableCert(rc_path, self.config)
 
         future = datetime.datetime.now() + datetime.timedelta(seconds=1000)
-        renewable_cert.save_renewal_param('ari_retry_after', future.isoformat(timespec='seconds'))
+        storage.atomic_rewrite(rc_path,
+           {"acme_renewal_info": {"ari_retry_after": future.isoformat(timespec="seconds")}})
 
         # ARI shouldn't be checked at all because retry after is in the future.
         mock_ari_client_pool = MockAriClientPool(None, None)
@@ -527,7 +531,8 @@ class RenewalTest(test_util.ConfigTestCase):
         renewable_cert = storage.RenewableCert(rc_path, self.config)
 
         past = datetime.datetime.now() - datetime.timedelta(seconds=1000)
-        renewable_cert.save_renewal_param('ari_retry_after', past.isoformat(timespec='seconds'))
+        storage.atomic_rewrite(rc_path,
+                               {"acme_renewal_info": {"ari_retry_after": past.isoformat(timespec="seconds")}})
 
         renewal_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=1000)
         retry_after = datetime.datetime.now() + datetime.timedelta(seconds=1000)

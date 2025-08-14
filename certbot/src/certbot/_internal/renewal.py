@@ -1,5 +1,6 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 
+import configobj
 import copy
 import datetime
 import itertools
@@ -49,8 +50,7 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "renew_hook", "pre_hook", "post_hook", "http01_address",
                     "preferred_chain", "key_type", "elliptic_curve",
-                    "preferred_profile", "required_profile",
-                    ARI_RETRY_AFTER_CONFIG_ITEM]
+                    "preferred_profile", "required_profile"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "http01_port"]
 BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
                      "autorenew"]
@@ -374,8 +374,8 @@ def _ari_renewal_time(lineage: storage.RenewableCert,
                        "prevent certificate renewal", lineage.configfile.filename)
         return None
 
-    renewal_params = lineage.configfile.get("renewalparams")
-    retry_after = renewal_params.get(ARI_RETRY_AFTER_CONFIG_ITEM, None)
+    ari_config_section = lineage.configfile.get("acme_renewal_info", {})
+    retry_after = ari_config_section.get(ARI_RETRY_AFTER_CONFIG_ITEM, None)
     if retry_after:
         retry_after_datetime = datetime.datetime.fromisoformat(retry_after)
         now = datetime.datetime.now()
@@ -398,10 +398,14 @@ def _ari_renewal_time(lineage: storage.RenewableCert,
         logger.debug("Error while requesting ARI was:", exc_info=True)
         retry_after = datetime.datetime.now() + datetime.timedelta(seconds=60 * 60 * 6)
 
-    # Note: the ACME client returns naive (no timezone) datetimes for retry_after, and that
-    # is what we serialize here.
-    lineage.save_renewal_param(ARI_RETRY_AFTER_CONFIG_ITEM,
-                               retry_after.isoformat(timespec='seconds'))
+
+    config_update = configobj.ConfigObj()
+    config_update["acme_renewal_info"] = {
+        # Note: the ACME client returns naive (no timezone) datetimes for retry_after, and that
+        # is what we serialize here.
+        ARI_RETRY_AFTER_CONFIG_ITEM: retry_after.isoformat(timespec="seconds"),
+    }
+    storage.atomic_rewrite(lineage.configfile.filename, config_update)
     return renewal_time
 
 
