@@ -6,7 +6,7 @@ from setuptools import setup
 version = '5.0.0.dev0'
 
 install_requires = [
-    'boto3>=1.15.15',
+    'boto3>=1.20.34',
 ]
 
 if os.environ.get('SNAP_BUILD'):
