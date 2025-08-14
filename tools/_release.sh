@@ -101,7 +101,7 @@ git checkout "$RELEASE_BRANCH"
 towncrier build --version "$version" --yes
 git commit -m "Update changelog for $version release"
 
-for pkg_dir in $SUBPKGS certbot-compatibility-test
+for pkg_dir in $SUBPKGS certbot-compatibility-test certbot-ci letstest
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
   git add "$pkg_dir/setup.py"
@@ -110,7 +110,7 @@ done
 SetVersion() {
     ver="$1"
     # bumping Certbot's version number is done differently
-    for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test
+    for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test certbot-ci letstest
     do
       setup_file="$pkg_dir/setup.py"
       if [ $(grep -c '^version' "$setup_file") != 1 ]; then
@@ -126,7 +126,7 @@ SetVersion() {
     fi
     sed -i "s/^__version.*/__version__ = '$ver'/" "$init_file"
 
-    git add $SUBPKGS certbot-compatibility-test
+    git add $SUBPKGS certbot-compatibility-test certbot-ci letstest
 }
 
 SetVersion "$version"
