@@ -1190,7 +1190,6 @@ class RenewableCert(interfaces.RenewableCert):
         symlinks = {kind: self.configuration[kind] for kind in ALL_FOUR}
         # Update renewal config file
         update_configuration(self.lineagename, self.archive_dir, symlinks, cli_config)
-        self.configuration = self.configfile
 
         return target_version
 
