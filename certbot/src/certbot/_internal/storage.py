@@ -151,9 +151,10 @@ def atomic_rewrite(config_filename: str, new_config: configobj.ConfigObj) -> Non
     #
     # This only applies when "renewalparams" is actually being updated, because sometimes we
     # update other sections independently (like "acme_renewal_info").
-    for k in merged_config.get("renewalparams", {}):
-        if k not in new_config.get("renewalparams", {}):
-            del merged_config["renewalparams"][k]
+    if "renewalparams" in new_config:
+        for k in merged_config["renewalparams"]:
+            if k not in new_config["renewalparams"]:
+                del merged_config["renewalparams"][k]
 
     current_permissions = stat.S_IMODE(os.lstat(config_filename).st_mode)
 
