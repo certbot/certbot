@@ -33,7 +33,7 @@ install_requires = [
     'distro>=1.0.1',
     'importlib_metadata>=8.6.1; python_version < "3.10"',
     'josepy>=2.0.0',
-    'parsedatetime>=2.4',
+    'parsedatetime>=2.6',
     'pyrfc3339',
     # This dependency needs to be added using environment markers to avoid its
     # installation on Linux.
