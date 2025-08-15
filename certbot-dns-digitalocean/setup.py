@@ -5,7 +5,7 @@ from setuptools import setup
 version = '5.0.0.dev0'
 
 install_requires = [
-    'python-digitalocean>=1.11', # 1.15.0 or newer is recommended for TTL support
+    'python-digitalocean>=1.15.0', # 1.15.0 or newer is recommended for TTL support
 ]
 
 if os.environ.get('SNAP_BUILD'):
