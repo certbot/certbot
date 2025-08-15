@@ -7,6 +7,7 @@ from unittest import mock
 import augeas
 import josepy as jose
 
+from certbot import util
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
@@ -53,6 +54,7 @@ class ApacheTest(unittest.TestCase):
                 os.symlink(target, vhost)
 
     def tearDown(self) -> None:
+        util._release_locks()
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)

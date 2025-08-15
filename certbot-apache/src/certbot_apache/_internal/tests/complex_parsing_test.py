@@ -1,5 +1,4 @@
 """Tests for certbot_apache._internal.parser."""
-import shutil
 import sys
 
 import pytest
@@ -19,11 +18,6 @@ class ComplexParserTest(util.ParserTest):
         # This needs to happen after due to setup_variables not being run
         # until after
         self.parser.parse_modules()  # pylint: disable=protected-access
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
 
     def setup_variables(self):
         """Set up variables for parser."""
