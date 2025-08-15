@@ -39,4 +39,4 @@ letstest = "letstest.multitester:main"
 Homepage = "https://github.com/certbot/certbot"
 
 [tool.setuptools.packages.find]
-where = ["letstest"]
+include = ["letstest"]
