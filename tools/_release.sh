@@ -104,7 +104,7 @@ git commit -m "Update changelog for $version release"
 SetVersion() {
     ver="$1"
     # bumping Certbot's version number is done differently
-    for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test
+    for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test certbot-ci letstest
     do
       setup_file="$pkg_dir/setup.py"
       if [ $(grep -c '^version' "$setup_file") != 1 ]; then
@@ -120,7 +120,7 @@ SetVersion() {
     fi
     sed -i "s/^__version.*/__version__ = '$ver'/" "$init_file"
 
-    git add $SUBPKGS certbot-compatibility-test
+    git add $SUBPKGS certbot-compatibility-test certbot-ci letstest
 }
 
 SetVersion "$version"
