@@ -140,11 +140,21 @@ def atomic_rewrite(config_filename: str, new_config: configobj.ConfigObj) -> Non
                                         file_error=True)
     merged_config.merge(new_config)
 
-    # We merge and then delete, rather than just replacing the 'renewalparams' section, so we can
-    # preserve comments from the on-disk config file.
-    for k in merged_config["renewalparams"]:
-        if k not in new_config["renewalparams"]:
-            del merged_config["renewalparams"][k]
+    # When updating the "renewalparams" section, only carry through fields that actually exist
+    # in the new config's "renewalparams" section. We could achieve this straightforwardly by
+    # assigning the new config's "renewalparams" section into the merged config. But then we would
+    # lose comments. Merging and then deleting allows us to preserve comments.
+    #
+    # As a concrete example, if a renewal params config has elliptic_curve=secp384r1, and the
+    # user executes a command to issue with `--key-type=rsa` instead, the old elliptic_curve value
+    # should disappear because it's not specified in the current command line.
+    #
+    # This only applies when "renewalparams" is actually being updated, because sometimes we
+    # update other sections independently (like "acme_renewal_info").
+    if "renewalparams" in new_config:
+        for k in merged_config["renewalparams"]:
+            if k not in new_config["renewalparams"]:
+                del merged_config["renewalparams"][k]
 
     current_permissions = stat.S_IMODE(os.lstat(config_filename).st_mode)
 

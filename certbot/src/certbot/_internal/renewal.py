@@ -1,5 +1,6 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 
+import configobj
 import copy
 import datetime
 import itertools
@@ -38,6 +39,8 @@ from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
+
+ARI_RETRY_AFTER_CONFIG_ITEM = "ari_retry_after"
 
 # These are the items which get pulled out of a renewal configuration
 # file's renewalparams and actually used in the client configuration
@@ -370,12 +373,22 @@ def _ari_renewal_time(lineage: storage.RenewableCert,
         logger.warning("Skipping ARI check because %s has no 'server' field. This issue will not "
                        "prevent certificate renewal", lineage.configfile.filename)
         return None
+
+    ari_config_section = lineage.configfile.get("acme_renewal_info", {})
+    retry_after = ari_config_section.get(ARI_RETRY_AFTER_CONFIG_ITEM, None)
+    if retry_after:
+        retry_after_datetime = datetime.datetime.fromisoformat(retry_after)
+        now = datetime.datetime.now()
+        if now < retry_after_datetime:
+            logger.debug("Skipped ACME Renewal Info check because ari_retry_after %s is in "
+                         "the future",
+                         retry_after)
+            return None
+
+    renewal_time = None
     try:
         ari_client = ari_clients.get(lineage.server)
-
-        # Attempt to get the ARI-defined renewal time
-        if ari_client:
-            return ari_client.renewal_time(cert_pem)[0]
+        renewal_time, retry_after = ari_client.renewal_time(cert_pem)
     except Exception:  # pylint: disable=broad-except
         # We want to stop errors around ARI preventing renewal so we catch all exceptions here
         # with a warning asking users to tell us about any problems they are experiencing
@@ -383,8 +396,17 @@ def _ari_renewal_time(lineage: storage.RenewableCert,
                        "problem persists and you think it's a bug in Certbot, please open an "
                        "issue at https://github.com/certbot/certbot/issues/new/choose.")
         logger.debug("Error while requesting ARI was:", exc_info=True)
+        retry_after = datetime.datetime.now() + datetime.timedelta(seconds=60 * 60 * 6)
 
-    return None
+
+    config_update = configobj.ConfigObj()
+    config_update["acme_renewal_info"] = {
+        # Note: the ACME client returns naive (no timezone) datetimes for retry_after, and that
+        # is what we serialize here.
+        ARI_RETRY_AFTER_CONFIG_ITEM: retry_after.isoformat(timespec="seconds"),
+    }
+    storage.atomic_rewrite(lineage.configfile.filename, config_update)
+    return renewal_time
 
 
 def _default_renewal_time(cert_pem: bytes) -> datetime.datetime:
