@@ -11,7 +11,6 @@ import shutil
 import sys
 import tempfile
 import traceback
-from typing import List
 import unittest
 from unittest import mock
 
@@ -19,7 +18,6 @@ import configobj
 from cryptography import x509
 import josepy as jose
 import pytest
-import pytz
 
 from acme.messages import Error as acme_error
 from certbot import errors
@@ -423,7 +421,7 @@ class RevokeTest(test_util.TempDirTestCase):
         self.meta = Account.Meta(
             creation_host="test.certbot.org",
             creation_dt=datetime.datetime(
-                2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
+                2015, 7, 4, 14, 4, 10, tzinfo=datetime.timezone.utc))
         self.acc = Account(self.regr, JWK, self.meta)
 
         self.mock_determine_account.return_value = (self.acc, None)
@@ -1238,7 +1236,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args(self, _det, mock_disco):
-        ifaces: List[interfaces.Plugin] = []
+        ifaces: list[interfaces.Plugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()
@@ -1253,7 +1251,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args_unprivileged(self, _det, mock_disco):
-        ifaces: List[interfaces.Plugin] = []
+        ifaces: list[interfaces.Plugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         def throw_error(directory, mode, strict):
@@ -1275,7 +1273,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_init(self, _det, mock_disco):
-        ifaces: List[interfaces.Plugin] = []
+        ifaces: list[interfaces.Plugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()
@@ -1291,7 +1289,7 @@ class MainTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plugins_disco')
     @mock.patch('certbot._internal.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_prepare(self, _det, mock_disco):
-        ifaces: List[interfaces.Plugin] = []
+        ifaces: list[interfaces.Plugin] = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = io.StringIO()

@@ -2,33 +2,45 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 5.0.0 - main
+<!-- towncrier release notes start -->
+
+## 4.2.0 - 2025-08-05
 
 ### Added
 
-*
+- Added `--eab-hmac-alg` parameter to support custom HMAC algorithm for
+  External Account Binding.
+  ([#10281](https://github.com/certbot/certbot/issues/10281))
 
 ### Changed
 
-* Catches and ignores errors during the directory fetch for ARI checking so that these
-  errors do not hinder the actual certificate issuance
+- Catches and ignores errors during the directory fetch for ARI checking so
+  that these errors do not hinder the actual certificate issuance.
+  ([#10342](https://github.com/certbot/certbot/issues/10342))
+- Removed the dependency on `pytz`.
+  ([#10350](https://github.com/certbot/certbot/issues/10350))
+- Deprecated `acme.crypto_util.probe_sni`
+  ([#10386](https://github.com/certbot/certbot/issues/10386))
+- Support for Python 3.9 was deprecated and will be removed in our next planned
+  release. ([#10390](https://github.com/certbot/certbot/issues/10390))
 
 ### Fixed
 
-* Certbot now always uses the server value from the renewal configuration file
+- The Certbot snap no longer sets the environment variable PYTHONPATH stopping
+  it from picking up Python files in the current directory and polluting the
+  environment for Certbot hooks written in Python.
+  ([#10176](https://github.com/certbot/certbot/issues/10176),
+  [#10257](https://github.com/certbot/certbot/issues/10257))
+- Previously, we claimed to set FAILED_DOMAINS and RENEWED_DOMAINS env
+  variables for use by post-hooks when certificate renewals fail, but we were
+  not actually setting them. Now, we are.
+  ([#10259](https://github.com/certbot/certbot/issues/10259))
+- Certbot now always uses the server value from the renewal configuration file
   for ARI checks instead of the server value from the current invocation of
   Certbot. This helps prevent ARI requests from going to the wrong server if
   the user changes CAs.
-* Previously, we claimed to set FAILED_DOMAINS and RENEWED_DOMAINS env variables for use by
-  post-hooks when certificate renewals fail, but we were not actually setting them. Now, we are.
+  ([#10339](https://github.com/certbot/certbot/issues/10339))
 
-More details about these changes can be found on our GitHub repo.
-
-## 4.2.0
-
-### Added
-
-* Added `--eab-hmac-alg` parameter to support custom HMAC algorithm for External Account Binding.
 
 ## 4.1.1 - 2025-06-12
 

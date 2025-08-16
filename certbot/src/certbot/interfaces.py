@@ -4,9 +4,7 @@ from abc import abstractmethod
 from argparse import ArgumentParser
 from typing import Any
 from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Type
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -29,7 +27,7 @@ class AccountStorage(metaclass=ABCMeta):
     """Accounts storage interface."""
 
     @abstractmethod
-    def find_all(self) -> List['Account']:  # pragma: no cover
+    def find_all(self) -> list['Account']:  # pragma: no cover
         """Find all accounts.
 
         :returns: All found accounts.
@@ -164,7 +162,7 @@ class Authenticator(Plugin):
     """
 
     @abstractmethod
-    def get_chall_pref(self, domain: str) -> Iterable[Type[Challenge]]:
+    def get_chall_pref(self, domain: str) -> Iterable[type[Challenge]]:
         """Return `collections.Iterable` of challenge preferences.
 
         :param str domain: Domain for which challenge preferences are sought.
@@ -178,7 +176,7 @@ class Authenticator(Plugin):
         """
 
     @abstractmethod
-    def perform(self, achalls: List[AnnotatedChallenge]) -> List[ChallengeResponse]:
+    def perform(self, achalls: list[AnnotatedChallenge]) -> list[ChallengeResponse]:
         """Perform the given challenge.
 
         :param list achalls: Non-empty (guaranteed) list of
@@ -199,7 +197,7 @@ class Authenticator(Plugin):
         """
 
     @abstractmethod
-    def cleanup(self, achalls: List[AnnotatedChallenge]) -> None:
+    def cleanup(self, achalls: list[AnnotatedChallenge]) -> None:
         """Revert changes and shutdown after challenges complete.
 
         This method should be able to revert all changes made by
@@ -255,7 +253,7 @@ class Installer(Plugin):
 
     @abstractmethod
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[Union[List[str], str]] = None) -> None:
+                options: Optional[Union[list[str], str]] = None) -> None:
         """Perform a configuration enhancement.
 
         :param str domain: domain for which to provide enhancement
@@ -272,7 +270,7 @@ class Installer(Plugin):
         """
 
     @abstractmethod
-    def supported_enhancements(self) -> List[str]:
+    def supported_enhancements(self) -> list[str]:
         """Returns a `collections.Iterable` of supported enhancements.
 
         :returns: supported enhancements which should be a subset of
@@ -392,7 +390,7 @@ class RenewableCert(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def names(self) -> List[str]:
+    def names(self) -> list[str]:
         """What are the subject names of this certificate?
 
         :returns: the subject names

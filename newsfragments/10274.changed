@@ -1,0 +1,5 @@
+Removed a number of deprecated classes/interfaces
+* Removed `acme.challenges.TLSALPN01Response`
+* Removed `acme.challenges.TLSALPN01`
+* Removed `acme.standalone.TLSServer`
+* Removed `acme.standalone.TLSALPN01Server`

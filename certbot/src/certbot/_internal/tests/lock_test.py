@@ -1,8 +1,8 @@
 """Tests for certbot._internal.lock."""
 import functools
+import importlib
 import multiprocessing
 import sys
-import unittest
 from unittest import mock
 
 import pytest
@@ -11,13 +11,10 @@ from certbot import errors
 from certbot.compat import os
 from certbot.tests import util as test_util
 
-try:
-    import fcntl  # pylint: disable=import-error,unused-import
-except ImportError:
-    POSIX_MODE = False
-else:
+if importlib.util.find_spec('fcntl'):
     POSIX_MODE = True
-
+else:
+    POSIX_MODE = False
 
 
 

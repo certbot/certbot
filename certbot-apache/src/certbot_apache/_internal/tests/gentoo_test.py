@@ -1,6 +1,5 @@
 """Test for certbot_apache._internal.configurator for Gentoo overrides"""
 import sys
-import unittest
 from unittest import mock
 
 import pytest

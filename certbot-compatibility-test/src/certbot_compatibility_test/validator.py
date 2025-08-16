@@ -1,4 +1,5 @@
 """Validators to determine the current webserver configuration"""
+import contextlib
 import logging
 import socket
 from typing import cast
@@ -7,9 +8,9 @@ from typing import Optional
 from typing import Union
 
 from cryptography import x509
+from OpenSSL import SSL
 import requests
 
-from acme import crypto_util
 from acme import errors as acme_errors
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class Validator:
         name = name if isinstance(name, bytes) else name.encode()
 
         try:
-            presented_cert = crypto_util.probe_sni(name, host, port)
+            presented_cert = _probe_sni(name, host, port)
         except acme_errors.Error as error:
             logger.exception(str(error))
             return False
@@ -113,3 +114,62 @@ class Validator:
     def ocsp_stapling(self, name: str) -> None:
         """Verify ocsp stapling for domain."""
         raise NotImplementedError()
+
+
+
+def _probe_sni(name: bytes, host: bytes, port: int = 443) -> x509.Certificate:
+    """Probe SNI server for SSL certificate.
+
+    :param bytes name: Byte string to send as the server name in the
+        client hello message.
+    :param bytes host: Host to connect to.
+    :param int port: Port to connect to.
+
+    :raises acme.errors.Error: In case of any problems.
+
+    :returns: SSL certificate presented by the server.
+    :rtype: cryptography.x509.Certificate
+
+    """
+
+    # Default SSL method selected here is the most compatible, while secure
+    # SSL method: TLSv1_METHOD is only compatible with
+    # TLSv1_METHOD, while TLS_method is compatible with all other
+    # methods, including TLSv2_METHOD (read more at
+    # https://docs.openssl.org/master/man3/SSL_CTX_new/#notes). _serve_sni
+    # should be changed to use "set_options" to disable SSLv2 and SSLv3,
+    # in case it's used for things other than probing/serving!
+    context = SSL.Context(SSL.TLS_METHOD)
+    context.set_timeout(300) # timeout in seconds
+
+    # Enables multi-path probing (selection
+    # of source interface). See `socket.creation_connection` for more
+    # info. Available only in Python 2.7+.
+    source_address: tuple[str, int] = ('', 0)
+    socket_kwargs = {'source_address': source_address}
+
+    try:
+        logger.debug(
+            "Attempting to connect to %s:%d%s.", host, port,
+            " from {0}:{1}".format(
+                source_address[0],
+                source_address[1]
+            ) if any(source_address) else ""
+        )
+        socket_tuple: tuple[bytes, int] = (host, port)
+        sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore[arg-type]
+    except OSError as error:
+        raise acme_errors.Error(error)
+
+    with contextlib.closing(sock) as client:
+        client_ssl = SSL.Connection(context, client)
+        client_ssl.set_connect_state()
+        client_ssl.set_tlsext_host_name(name)  # pyOpenSSL>=0.13
+        try:
+            client_ssl.do_handshake()
+            client_ssl.shutdown()
+        except SSL.Error as error:
+            raise acme_errors.Error(error)
+    cert = client_ssl.get_peer_certificate()
+    assert cert # Appease mypy. We would have crashed out by now if there was no certificate.
+    return cert.to_cryptography()

@@ -2,7 +2,6 @@
 import os
 import subprocess
 from typing import Iterable
-from typing import Tuple
 
 import pytest
 
@@ -36,7 +35,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self._stop_nginx()
         super().cleanup()
 
-    def certbot_test_nginx(self, args: Iterable[str]) -> Tuple[str, str]:
+    def certbot_test_nginx(self, args: Iterable[str]) -> tuple[str, str]:
         """
         Main command to execute certbot using the nginx plugin.
         :param list args: list of arguments to pass to nginx
@@ -46,12 +45,12 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
                    '--nginx-server-root', self.nginx_root]
         command.extend(args)
         return certbot_call.certbot_test(
-            command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
+            command, self.directory_url, self.http_01_port, self.https_port,
             self.config_dir, self.workspace, force_renew=True)
 
     def _start_nginx(self, default_server: bool) -> subprocess.Popen[bytes]:
         self.nginx_config = config.construct_nginx_config(
-            self.nginx_root, self.webroot, self.http_01_port, self.tls_alpn_01_port,
+            self.nginx_root, self.webroot, self.http_01_port, self.https_port,
             self.other_port, default_server, wtf_prefix=self.worker_id)
         with open(self.nginx_config_path, 'w') as file:
             file.write(self.nginx_config)

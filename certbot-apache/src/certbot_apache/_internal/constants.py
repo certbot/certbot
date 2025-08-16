@@ -2,8 +2,6 @@
 import atexit
 import importlib.resources
 from contextlib import ExitStack
-from typing import Dict
-from typing import List
 
 
 MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
@@ -16,7 +14,7 @@ UPDATED_MOD_SSL_CONF_DIGEST = ".updated-options-ssl-apache-conf-digest.txt"
 in `certbot.configuration.NamespaceConfig.config_dir`."""
 
 # NEVER REMOVE A SINGLE HASH FROM THIS LIST UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING!
-ALL_SSL_OPTIONS_HASHES: List[str] = [
+ALL_SSL_OPTIONS_HASHES: list[str] = [
     '2086bca02db48daf93468332543c60ac6acdb6f0b58c7bfdf578a5d47092f82a',
     '4844d36c9a0f587172d9fa10f4f1c9518e3bcfa1947379f155e16a70a728c21a',
     '5a922826719981c0a234b1fbcd495f3213e49d2519e845ea0748ba513044b65b',
@@ -34,6 +32,7 @@ ALL_SSL_OPTIONS_HASHES: List[str] = [
     '34783b9e2210f5c4a23bced2dfd7ec289834716673354ed7c7abf69fe30192a3',
     '61466bc2f98a623c02be8a5ee916ead1655b0ce883bdc936692076ea499ff5ce',
     '3fd812e3e87fe5c645d3682a511b2a06c8286f19594f28e280f17cd6af1301b5',
+    '27155797e160fe43b6951354a0a0ca4d829e9e605b3b41fc223c20bf2f6cb3c6',
 ]
 """SHA256 hashes of the contents of previous versions of all versions of MOD_SSL_CONF_SRC"""
 
@@ -48,27 +47,27 @@ def _generate_augeas_lens_dir_static() -> str:
 AUGEAS_LENS_DIR = _generate_augeas_lens_dir_static()
 """Path to the Augeas lens directory"""
 
-REWRITE_HTTPS_ARGS: List[str] = [
+REWRITE_HTTPS_ARGS: list[str] = [
     "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[END,NE,R=permanent]"]
 """Apache version >= 2.3.9 rewrite rule arguments used for redirections to
     https vhost"""
 
-OLD_REWRITE_HTTPS_ARGS: List[List[str]] = [
+OLD_REWRITE_HTTPS_ARGS: list[list[str]] = [
     ["^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"],
     ["^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[END,QSA,R=permanent]"],
     ["^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,NE,R=permanent]"]]
 
-HSTS_ARGS: List[str] = ["always", "set", "Strict-Transport-Security",
+HSTS_ARGS: list[str] = ["always", "set", "Strict-Transport-Security",
              "\"max-age=31536000\""]
 """Apache header arguments for HSTS"""
 
-UIR_ARGS: List[str] = ["always", "set", "Content-Security-Policy", "upgrade-insecure-requests"]
+UIR_ARGS: list[str] = ["always", "set", "Content-Security-Policy", "upgrade-insecure-requests"]
 
-HEADER_ARGS: Dict[str, List[str]] = {
+HEADER_ARGS: dict[str, list[str]] = {
     "Strict-Transport-Security": HSTS_ARGS, "Upgrade-Insecure-Requests": UIR_ARGS,
 }
 
-AUTOHSTS_STEPS: List[int] = [60, 300, 900, 3600, 21600, 43200, 86400]
+AUTOHSTS_STEPS: list[int] = [60, 300, 900, 3600, 21600, 43200, 86400]
 """AutoHSTS increase steps: 1min, 5min, 15min, 1h, 6h, 12h, 24h"""
 
 AUTOHSTS_PERMANENT: int = 31536000

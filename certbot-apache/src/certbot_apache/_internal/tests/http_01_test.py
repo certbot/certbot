@@ -1,8 +1,6 @@
 """Test for certbot_apache._internal.http_01."""
 import errno
 import sys
-from typing import List
-import unittest
 from unittest import mock
 
 import pytest
@@ -26,7 +24,7 @@ class ApacheHttp01Test(util.ApacheTest):
         super().setUp(*args, **kwargs)
 
         self.account_key = self.rsa512jwk
-        self.achalls: List[achallenges.KeyAuthorizationAnnotatedChallenge] = []
+        self.achalls: list[achallenges.KeyAuthorizationAnnotatedChallenge] = []
         vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
         # Takes the vhosts for encryption-example.demo, certbot.demo

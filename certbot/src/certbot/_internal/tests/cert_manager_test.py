@@ -213,10 +213,8 @@ class CertificatesTest(BaseCertManagerTest):
         mock_serial.return_value = 1234567890
         import datetime
 
-        import pytz
-
         from certbot._internal import cert_manager
-        expiry = datetime.datetime.now(pytz.UTC)
+        expiry = datetime.datetime.now(datetime.timezone.utc)
 
         cert = mock.MagicMock(lineagename="nameone")
         cert.target_expiry = expiry
@@ -228,7 +226,8 @@ class CertificatesTest(BaseCertManagerTest):
         # pylint: disable=protected-access
 
         # pylint: disable=protected-access
-        get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
+        def get_report():
+            return cert_manager._report_human_readable(mock_config, parsed_certs)
 
         out = get_report()
         assert "INVALID: EXPIRED" in out

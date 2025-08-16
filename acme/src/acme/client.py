@@ -9,11 +9,8 @@ import random
 import time
 from typing import Any
 from typing import cast
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Set
-from typing import Tuple
 from typing import Union
 
 from cryptography import x509
@@ -156,7 +153,7 @@ class ClientV2:
             csr_pem=csr_pem)
 
     def poll(self, authzr: messages.AuthorizationResource
-             ) -> Tuple[messages.AuthorizationResource, requests.Response]:
+             ) -> tuple[messages.AuthorizationResource, requests.Response]:
         """Poll Authorization Resource for status.
 
         :param authzr: Authorization Resource
@@ -314,7 +311,7 @@ class ClientV2:
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
 
     def renewal_time(self, cert_pem: bytes
-        ) -> Tuple[Optional[datetime.datetime], datetime.datetime]:
+        ) -> tuple[Optional[datetime.datetime], datetime.datetime]:
         """Return an appropriate time to attempt renewal of the certificate,
         and the next time to ask the ACME server for renewal info.
 
@@ -335,6 +332,12 @@ class ClientV2:
         :param bytes cert_pem: cert as pem file
 
         :returns: Tuple of time to attempt renewal, next time to ask for renewal info
+
+        :raises errors.ARIError: If an error occurs fetching ARI from the
+            server. Explicit exception chaining is used so the original error
+            can be accessed through the __cause__ attribute on the ARIError if
+            desired.
+
         """
         now = datetime.datetime.now()
         # https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3.3
@@ -358,10 +361,9 @@ class ClientV2:
         ari_url = renewal_info_base_url + '/' + _renewal_info_path_component(cert)
         try:
             resp = self.net.get(ari_url, content_type='application/json')
-        except (requests.exceptions.RequestException, messages.Error) as error:
-            logger.info("failed to fetch renewal_info URL (%s): %s", ari_url, error)
-            return None, now + default_retry_after
-
+        except Exception as e:  # pylint: disable=broad-except
+            error_msg = f'failed to fetch renewal_info URL {ari_url}'
+            raise errors.ARIError(error_msg, now + default_retry_after) from e
         renewal_info: messages.RenewalInfo = messages.RenewalInfo.from_json(resp.json())
 
         start = renewal_info.suggested_window.start # pylint: disable=no-member
@@ -403,7 +405,7 @@ class ClientV2:
         new_args = args[:1] + (None,) + args[1:]
         return self._post(*new_args, **kwargs)
 
-    def _get_links(self, response: requests.Response, relation_type: str) -> List[str]:
+    def _get_links(self, response: requests.Response, relation_type: str) -> list[str]:
         """
         Retrieves all Link URIs of relation_type from the response.
         :param requests.Response response: The requests HTTP response.
@@ -414,8 +416,8 @@ class ClientV2:
         if 'Link' not in response.headers:
             return []
         links = parse_header_links(response.headers['Link'])
-        return [l['url'] for l in links
-                if 'rel' in l and 'url' in l and l['rel'] == relation_type]
+        return [link['url'] for link in links
+                if 'rel' in link and 'url' in link and link['rel'] == relation_type]
 
     @classmethod
     def get_directory(cls, url: str, net: 'ClientNetwork') -> messages.Directory:
@@ -616,7 +618,7 @@ class ClientNetwork:
         self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
-        self._nonces: Set[str] = set()
+        self._nonces: set[str] = set()
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout

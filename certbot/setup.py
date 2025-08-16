@@ -2,7 +2,6 @@ import codecs
 import os
 import re
 
-from setuptools import find_packages
 from setuptools import setup
 
 
@@ -18,7 +17,6 @@ here = os.path.abspath(os.path.dirname(__file__))
 init_fn = os.path.join(here, 'src', 'certbot', '__init__.py')
 meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", read_file(init_fn)))
 
-readme = read_file(os.path.join(here, 'README.rst'))
 version = meta['version']
 
 # This package relies on PyOpenSSL and requests, however, it isn't specified
@@ -37,107 +35,12 @@ install_requires = [
     'josepy>=2.0.0',
     'parsedatetime>=2.4',
     'pyrfc3339',
-    'pytz>=2019.3',
     # This dependency needs to be added using environment markers to avoid its
     # installation on Linux.
     'pywin32>=300 ; sys_platform == "win32"',
 ]
 
-dev_extras = [
-    'azure-devops',
-    'ipdb',
-    # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
-    # https://github.com/python-poetry/poetry/issues/1584.
-    'poetry>=1.2.0',
-    # allows us to use newer urllib3 https://github.com/python-poetry/poetry-plugin-export/issues/183
-    'poetry-plugin-export>=1.9.0',
-    'twine',
-]
-
-docs_extras = [
-    # If you have Sphinx<1.5.1, you need docutils<0.13.1
-    # https://github.com/sphinx-doc/sphinx/issues/3212
-    'Sphinx>=1.2',  # Annotation support
-    'sphinx_rtd_theme',
-]
-
-# Tools like pip, wheel, and tox are listed here to ensure they are properly
-# pinned and installed during automated testing.
-test_extras = [
-    'coverage',
-    'mypy',
-    'pip',
-    'pylint',
-    'pytest',
-    'pytest-cov',
-    'pytest-xdist',
-    'setuptools',
-    'tox',
-    'types-httplib2',
-    'types-pyRFC3339',
-    'types-pytz',
-    'types-pywin32',
-    'types-requests',
-    'types-setuptools',
-    'wheel',
-]
-
-
-all_extras = dev_extras + docs_extras + test_extras
 
 setup(
-    name='certbot',
-    version=version,
-    description="ACME client",
-    long_description=readme,
-    url='https://github.com/certbot/certbot',
-    author="Certbot Project",
-    author_email='certbot-dev@eff.org',
-    license='Apache License 2.0',
-    python_requires='>=3.9.2',
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Environment :: Console',
-        'Environment :: Console :: Curses',
-        'Intended Audience :: System Administrators',
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
-        'Programming Language :: Python :: 3.12',
-        'Programming Language :: Python :: 3.13',
-        'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Security',
-        'Topic :: System :: Installation/Setup',
-        'Topic :: System :: Networking',
-        'Topic :: System :: Systems Administration',
-        'Topic :: Utilities',
-    ],
-
-    packages=find_packages(where='src', exclude=['docs', 'examples', 'tests', 'venv']),
-    package_dir={'': 'src'},
-    include_package_data=True,
-
     install_requires=install_requires,
-    extras_require={
-        'all': all_extras,
-        'dev': dev_extras,
-        'docs': docs_extras,
-        'test': test_extras,
-    },
-
-    entry_points={
-        'console_scripts': [
-            'certbot = certbot.main:main',
-        ],
-        'certbot.plugins': [
-            'manual = certbot._internal.plugins.manual:Authenticator',
-            'null = certbot._internal.plugins.null:Installer',
-            'standalone = certbot._internal.plugins.standalone:Authenticator',
-            'webroot = certbot._internal.plugins.webroot:Authenticator',
-        ],
-    },
 )

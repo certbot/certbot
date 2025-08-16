@@ -3,7 +3,6 @@ import copy
 import importlib.resources
 import shutil
 import tempfile
-import sys
 from contextlib import contextmanager
 from unittest import mock
 

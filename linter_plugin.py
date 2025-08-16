@@ -7,7 +7,6 @@ See https://github.com/PyCQA/pylint/blob/b20a2984c94e2946669d727dbda78735882bf50
 See https://docs.pytest.org/en/latest/writing_plugins.html
 """
 import os.path
-import re
 
 from pylint.checkers import BaseChecker
 

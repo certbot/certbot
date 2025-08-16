@@ -66,12 +66,8 @@ Translates over to:
 """
 from typing import Any
 from typing import cast
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Set
-from typing import Tuple
 from typing import Union
 
 from certbot import errors
@@ -109,7 +105,7 @@ class AugeasParserNode(interfaces.ParserNode):
     def save(self, msg: Iterable[str]) -> None:
         self.parser.save(msg)
 
-    def find_ancestors(self, name: str) -> List["AugeasParserNode"]:
+    def find_ancestors(self, name: str) -> list["AugeasParserNode"]:
         """
         Searches for ancestor BlockNodes with a given name.
 
@@ -119,7 +115,7 @@ class AugeasParserNode(interfaces.ParserNode):
         :rtype: list of AugeasParserNode
         """
 
-        ancestors: List["AugeasParserNode"] = []
+        ancestors: list["AugeasParserNode"] = []
 
         parent = self.metadata["augeaspath"]
         while True:
@@ -143,7 +139,7 @@ class AugeasParserNode(interfaces.ParserNode):
         """
 
         name: str = self._aug_get_name(path)
-        metadata: Dict[str, Union[parser.ApacheParser, str]] = {
+        metadata: dict[str, Union[parser.ApacheParser, str]] = {
             "augeasparser": self.parser, "augeaspath": path
         }
 
@@ -236,7 +232,7 @@ class AugeasDirectiveNode(AugeasParserNode):
             self.parser.aug.set(param_path, param)
 
     @property
-    def parameters(self) -> Tuple[str, ...]:
+    def parameters(self) -> tuple[str, ...]:
         """
         Fetches the parameters from Augeas tree, ensuring that the sequence always
         represents the current state
@@ -246,7 +242,7 @@ class AugeasDirectiveNode(AugeasParserNode):
         """
         return tuple(self._aug_get_params(self.metadata["augeaspath"]))
 
-    def _aug_get_params(self, path: str) -> List[str]:
+    def _aug_get_params(self, path: str) -> list[str]:
         """Helper function to get parameters for DirectiveNodes and BlockNodes"""
 
         arg_paths = self.parser.aug.match(path + "/arg")
@@ -259,7 +255,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.children: Tuple["AugeasBlockNode", ...] = ()
+        self.children: tuple["AugeasBlockNode", ...] = ()
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
@@ -275,7 +271,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
     # pylint: disable=unused-argument
     def add_child_block(self, name: str,  # pragma: no cover
-                        parameters: Optional[List[str]] = None,
+                        parameters: Optional[list[str]] = None,
                         position: Optional[int] = None) -> "AugeasBlockNode":
         """Adds a new BlockNode to the sequence of children"""
 
@@ -283,7 +279,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
             name,
             position
         )
-        new_metadata: Dict[str, Any] = {"augeasparser": self.parser, "augeaspath": realpath}
+        new_metadata: dict[str, Any] = {"augeasparser": self.parser, "augeaspath": realpath}
 
         # Create the new block
         self.parser.aug.insert(insertpath, name, before)
@@ -305,7 +301,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
     # pylint: disable=unused-argument
     def add_child_directive(self, name: str,  # pragma: no cover
-                            parameters: Optional[List[str]] = None,
+                            parameters: Optional[list[str]] = None,
                             position: Optional[int] = None) -> AugeasDirectiveNode:
         """Adds a new DirectiveNode to the sequence of children"""
 
@@ -346,7 +342,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
             "#comment",
             position
         )
-        new_metadata: Dict[str, Any] = {
+        new_metadata: dict[str, Any] = {
             "augeasparser": self.parser, "augeaspath": realpath,
         }
 
@@ -362,10 +358,10 @@ class AugeasBlockNode(AugeasDirectiveNode):
             metadata=new_metadata,
         )
 
-    def find_blocks(self, name: str, exclude: bool = True) -> List["AugeasBlockNode"]:
+    def find_blocks(self, name: str, exclude: bool = True) -> list["AugeasBlockNode"]:
         """Recursive search of BlockNodes from the sequence of children"""
 
-        nodes: List["AugeasBlockNode"] = []
+        nodes: list["AugeasBlockNode"] = []
         paths: Iterable[str] = self._aug_find_blocks(name)
         if exclude:
             paths = self.parser.exclude_dirs(paths)
@@ -374,14 +370,14 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         return nodes
 
-    def find_directives(self, name: str, exclude: bool = True) -> List["AugeasDirectiveNode"]:
+    def find_directives(self, name: str, exclude: bool = True) -> list["AugeasDirectiveNode"]:
         """Recursive search of DirectiveNodes from the sequence of children"""
 
         nodes = []
         ownpath = self.metadata.get("augeaspath")
 
         directives = self.parser.find_dir(name, start=ownpath, exclude=exclude)
-        already_parsed: Set[str] = set()
+        already_parsed: set[str] = set()
         for directive in directives:
             # Remove the /arg part from the Augeas path
             directive = directive.partition("/arg")[0]
@@ -393,14 +389,14 @@ class AugeasBlockNode(AugeasDirectiveNode):
 
         return nodes
 
-    def find_comments(self, comment: str) -> List["AugeasCommentNode"]:
+    def find_comments(self, comment: str) -> list["AugeasCommentNode"]:
         """
         Recursive search of DirectiveNodes from the sequence of children.
 
         :param str comment: Comment content to search for.
         """
 
-        nodes: List["AugeasCommentNode"] = []
+        nodes: list["AugeasCommentNode"] = []
         ownpath = self.metadata.get("augeaspath")
 
         comments = self.parser.find_comments(comment, start=ownpath)
@@ -422,11 +418,11 @@ class AugeasBlockNode(AugeasDirectiveNode):
                  "seem to exist.").format(child.metadata["augeaspath"])
             )
 
-    def unsaved_files(self) -> Set[str]:
+    def unsaved_files(self) -> set[str]:
         """Returns a list of unsaved filepaths"""
         return self.parser.unsaved_files()
 
-    def parsed_paths(self) -> List[str]:
+    def parsed_paths(self) -> list[str]:
         """
         Returns a list of file paths that have currently been parsed into the parser
         tree. The returned list may include paths with wildcard characters, for
@@ -437,7 +433,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         :returns: list of file paths of files that have been parsed
         """
 
-        res_paths: List[str] = []
+        res_paths: list[str] = []
 
         paths = self.parser.existing_paths
         for directory in paths:
@@ -463,7 +459,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         """Helper function to create a DirectiveNode from Augeas path"""
 
         name = self.parser.get_arg(path)
-        metadata: Dict[str, Union[parser.ApacheParser, str]] = {
+        metadata: dict[str, Union[parser.ApacheParser, str]] = {
             "augeasparser": self.parser, "augeaspath": path,
         }
 
@@ -477,12 +473,12 @@ class AugeasBlockNode(AugeasDirectiveNode):
                                    filepath=apache_util.get_file_path(path),
                                    metadata=metadata)
 
-    def _aug_find_blocks(self, name: str) -> Set[str]:
+    def _aug_find_blocks(self, name: str) -> set[str]:
         """Helper function to perform a search to Augeas DOM tree to search
         configuration blocks with a given name"""
 
         # The code here is modified from configurator.get_virtual_hosts()
-        blk_paths: Set[str] = set()
+        blk_paths: set[str] = set()
         for vhost_path in list(self.parser.parser_paths):
             paths = self.parser.aug.match(
                 ("/files%s//*[label()=~regexp('%s')]" %
@@ -492,7 +488,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         return blk_paths
 
     def _aug_resolve_child_position(
-        self, name: str, position: Optional[int]) -> Tuple[str, str, bool]:
+        self, name: str, position: Optional[int]) -> tuple[str, str, bool]:
         """
         Helper function that iterates through the immediate children and figures
         out the insertion path for a new AugeasParserNode.

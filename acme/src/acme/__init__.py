@@ -12,7 +12,7 @@ import sys
 #
 # It is based on
 # https://github.com/requests/requests/blob/1278ecdf71a312dc2268f3bfc0aabfab3c006dcf/requests/packages.py
-import josepy as jose
+import josepy as jose # noqa: F401
 
 for mod in list(sys.modules):
     # This traversal is apparently necessary such that the identities are

@@ -26,7 +26,6 @@ environment:
   # https://github.com/certbot/certbot/issues/10055.
   OPENSSL_MODULES: "$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/ossl-modules"
   PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
-  PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
   # Disable FIPS mode detection. See
   # https://git.launchpad.net/ubuntu/+source/openssl/tree/debian/patches/fips/crypto-Add-kernel-FIPS-mode-detection.patch?h=applied/ubuntu/noble
   # for more on this flag, and https://github.com/certbot/certbot/issues/10044
@@ -62,7 +61,6 @@ parts:
       - ./certbot-nginx
     stage:
       - -usr/lib/python3.12/sitecustomize.py # maybe unnecessary
-      - -pyvenv.cfg
       # Old versions of this file used to unstage
       # lib/python3.8/site-packages/augeas.py to avoid conflicts between
       # python-augeas 0.5.0 which was pinned in snap-constraints.txt and
@@ -118,11 +116,16 @@ parts:
       python3 -m venv "${CRAFT_PART_INSTALL}"
       "${CRAFT_PART_INSTALL}/bin/python3" "${CRAFT_PART_SRC}/tools/pipstrap.py"
       craftctl default
+      # Workaround for misconfigured pyvenv.cfg; see discussion on snapcraft forum for more info
+      # https://forum.snapcraft.io/t/upgrading-classic-snap-to-core24-using-snapcraft-8-3-causes-python-3-12-errors-at-runtime/
+      sed -i "${CRAFT_PART_INSTALL}/pyvenv.cfg" \
+          -e 's@^home = '"${CRAFT_PART_INSTALL}"'/usr/bin$@home = /snap/certbot/current/usr/bin@g'
     override-pull: |
       craftctl default
       grep -v python-augeas "${CRAFT_PART_SRC}/tools/requirements.txt" >> "${CRAFT_PART_SRC}/snap-constraints.txt"
       craftctl set version=$(grep -oP "__version__ = '\K.*(?=')" "${CRAFT_PART_SRC}/certbot/src/certbot/__init__.py")
     build-attributes:
+      # https://snapcraft.io/docs/how-to-classic#fix-linter-warnings-by-patching-elf-binaries
       - enable-patchelf
   shared-metadata:
     plugin: dump

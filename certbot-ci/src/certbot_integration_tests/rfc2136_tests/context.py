@@ -4,7 +4,6 @@ import importlib.resources
 import tempfile
 from typing import Generator
 from typing import Iterable
-from typing import Tuple
 
 import pytest
 
@@ -24,7 +23,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         else:  # Primary node
             self._dns_xdist = request.config.dns_xdist  # type: ignore[attr-defined]
 
-    def certbot_test_rfc2136(self, args: Iterable[str]) -> Tuple[str, str]:
+    def certbot_test_rfc2136(self, args: Iterable[str]) -> tuple[str, str]:
         """
         Main command to execute certbot using the RFC2136 DNS authenticator.
         :param list args: list of arguments to pass to Certbot
@@ -32,7 +31,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         command = ['--authenticator', 'dns-rfc2136', '--dns-rfc2136-propagation-seconds', '2']
         command.extend(args)
         return certbot_call.certbot_test(
-            command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
+            command, self.directory_url, self.http_01_port, self.https_port,
             self.config_dir, self.workspace, force_renew=True)
 
     @contextmanager

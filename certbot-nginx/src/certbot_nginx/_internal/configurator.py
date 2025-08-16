@@ -11,15 +11,10 @@ import tempfile
 import time
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Sequence
-from typing import Set
-from typing import Tuple
-from typing import Type
 from typing import Union
 from typing import cast
 
@@ -119,8 +114,8 @@ class NginxConfigurator(common.Configurator):
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts: Dict[str, List[obj.VirtualHost]] = {}
-        self._wildcard_redirect_vhosts: Dict[str, List[obj.VirtualHost]] = {}
+        self._wildcard_vhosts: dict[str, list[obj.VirtualHost]] = {}
+        self._wildcard_redirect_vhosts: dict[str, list[obj.VirtualHost]] = {}
 
         # Add number of outstanding challenges
         self._chall_out = 0
@@ -149,15 +144,24 @@ class NginxConfigurator(common.Configurator):
         # many versions of OpenSSL. So we have to check both for the two different features,
         # leading to four different combinations of options.
         # For a complete history, check out https://github.com/certbot/certbot/issues/7322
+        #
+        # Technically, nginx >= 1.23.2 has session tickets off by default, and therefore
+        # no longer needs it explicitly set. But since older versions than that are still
+        # around in the oldest non-deprecated rhel, debian, and ubuntu, we will keep explicitly
+        # setting it for now to reduce complexity.
 
         use_tls13 = self.version >= (1, 13, 0)
         min_openssl_version = util.parse_loose_version('1.0.2l')
         session_tix_off = self.version >= (1, 5, 9) and self.openssl_version and\
             util.parse_loose_version(self.openssl_version) >= min_openssl_version
 
+        deprecated_conf = True
+
         if use_tls13:
             if session_tix_off:
+                # current version
                 config_filename = "options-ssl-nginx.conf"
+                deprecated_conf = False
             else:
                 config_filename = "options-ssl-nginx-tls13-session-tix-on.conf"
         else:
@@ -165,6 +169,12 @@ class NginxConfigurator(common.Configurator):
                 config_filename = "options-ssl-nginx-tls12-only.conf"
             else:
                 config_filename = "options-ssl-nginx-old.conf"
+
+        if deprecated_conf:
+            logger.warning('Certbot has detected that nginx version < 1.13.0 or compiled against '
+                'openssl < 1.0.2l. Since these are deprecated, the configuration file being '
+                'installed at %s will not receive future updates. To get the latest configuration '
+                'version, update nginx.', self.mod_ssl_conf)
 
         file_manager = ExitStack()
         atexit.register(file_manager.close)
@@ -271,7 +281,7 @@ class NginxConfigurator(common.Configurator):
         self.save_notes += "\tssl_certificate_key %s\n" % key_path
 
     def _choose_vhosts_wildcard(self, domain: str, prefer_ssl: bool,
-                                no_ssl_filter_port: Optional[str] = None) -> List[obj.VirtualHost]:
+                                no_ssl_filter_port: Optional[str] = None) -> list[obj.VirtualHost]:
         """Prompts user to choose vhosts to install a wildcard certificate for"""
         if prefer_ssl:
             vhosts_cache = self._wildcard_vhosts
@@ -322,13 +332,13 @@ class NginxConfigurator(common.Configurator):
     #######################
     # Vhost parsing methods
     #######################
-    def _choose_vhost_single(self, target_name: str) -> List[obj.VirtualHost]:
+    def _choose_vhost_single(self, target_name: str) -> list[obj.VirtualHost]:
         matches = self._get_ranked_matches(target_name)
         vhosts = [x for x in [self._select_best_name_match(matches)] if x is not None]
         return vhosts
 
     def choose_vhosts(self, target_name: str,
-                      create_if_no_match: bool = False) -> List[obj.VirtualHost]:
+                      create_if_no_match: bool = False) -> list[obj.VirtualHost]:
         """Chooses a virtual host based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
@@ -372,7 +382,7 @@ class NginxConfigurator(common.Configurator):
 
         return vhosts
 
-    def ipv6_info(self, host: str, port: str) -> Tuple[bool, bool]:
+    def ipv6_info(self, host: str, port: str) -> tuple[bool, bool]:
         """Returns tuple of booleans (ipv6_active, ipv6only_present)
         ipv6_active is true if any server block listens ipv6 address in any port
 
@@ -447,7 +457,7 @@ class NginxConfigurator(common.Configurator):
                                            f"block for {domain}. Set the `server_name` directive "
                                            "to use the Nginx installer.")
 
-    def _get_ranked_matches(self, target_name: str) -> List[Dict[str, Any]]:
+    def _get_ranked_matches(self, target_name: str) -> list[dict[str, Any]]:
         """Returns a ranked list of vhosts that match target_name.
         The ranking gives preference to SSL vhosts.
 
@@ -482,7 +492,7 @@ class NginxConfigurator(common.Configurator):
         return cast(obj.VirtualHost, matches[0]['vhost'])
 
     def _rank_matches_by_name(self, vhost_list: Iterable[obj.VirtualHost],
-                              target_name: str) -> List[Dict[str, Any]]:
+                              target_name: str) -> list[dict[str, Any]]:
         """Returns a ranked list of vhosts from vhost_list that match target_name.
         This method should always be followed by a call to _select_best_name_match.
 
@@ -520,7 +530,7 @@ class NginxConfigurator(common.Configurator):
         return sorted(matches, key=lambda x: x['rank'])
 
     def _rank_matches_by_name_and_ssl(self, vhost_list: Iterable[obj.VirtualHost],
-                                      target_name: str) -> List[Dict[str, Any]]:
+                                      target_name: str) -> list[dict[str, Any]]:
         """Returns a ranked list of vhosts from vhost_list that match target_name.
         The ranking gives preference to SSLishness before name match level.
 
@@ -537,7 +547,7 @@ class NginxConfigurator(common.Configurator):
                 match['rank'] += NO_SSL_MODIFIER
         return sorted(matches, key=lambda x: x['rank'])
 
-    def choose_redirect_vhosts(self, target_name: str, port: str) -> List[obj.VirtualHost]:
+    def choose_redirect_vhosts(self, target_name: str, port: str) -> list[obj.VirtualHost]:
         """Chooses a single virtual host for redirect enhancement.
 
         Chooses the vhost most closely matching target_name that is
@@ -565,8 +575,8 @@ class NginxConfigurator(common.Configurator):
             vhosts = [x for x in [self._select_best_name_match(matches)]if x is not None]
         return vhosts
 
-    def choose_auth_vhosts(self, target_name: str) -> Tuple[List[obj.VirtualHost],
-                                                            List[obj.VirtualHost]]:
+    def choose_auth_vhosts(self, target_name: str) -> tuple[list[obj.VirtualHost],
+                                                            list[obj.VirtualHost]]:
         """Returns a list of HTTP and HTTPS vhosts with a server_name matching target_name.
 
         If no HTTP vhost exists, one will be cloned from the default vhost. If that fails, no HTTP
@@ -634,7 +644,7 @@ class NginxConfigurator(common.Configurator):
     def _vhost_listening_on_port_no_ssl(self, vhost: obj.VirtualHost, port: str) -> bool:
         return self._vhost_listening(vhost, port, False)
 
-    def _get_redirect_ranked_matches(self, target_name: str, port: str) -> List[Dict[str, Any]]:
+    def _get_redirect_ranked_matches(self, target_name: str, port: str) -> list[dict[str, Any]]:
         """Gets a ranked list of plaintextish port-listening vhosts matching target_name
 
         Filter all hosts for those listening on port without using ssl.
@@ -656,7 +666,7 @@ class NginxConfigurator(common.Configurator):
 
         return self._rank_matches_by_name(matching_vhosts, target_name)
 
-    def get_all_names(self) -> Set[str]:
+    def get_all_names(self) -> set[str]:
         """Returns all names found in the Nginx Configuration.
 
         :returns: All ServerNames, ServerAliases, and reverse DNS entries for
@@ -664,7 +674,7 @@ class NginxConfigurator(common.Configurator):
         :rtype: set
 
         """
-        all_names: Set[str] = set()
+        all_names: set[str] = set()
 
         for vhost in self.parser.get_vhosts():
             try:
@@ -694,7 +704,7 @@ class NginxConfigurator(common.Configurator):
 
         return util.get_filtered_names(all_names)
 
-    def _get_snakeoil_paths(self) -> Tuple[str, str]:
+    def _get_snakeoil_paths(self) -> tuple[str, str]:
         """Generate invalid certs that let us create ssl directives for Nginx"""
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
@@ -730,7 +740,7 @@ class NginxConfigurator(common.Configurator):
         # no addresses should have ssl turned on here
         assert not vhost.ssl
 
-        addrs_to_insert: List[obj.Addr] = [
+        addrs_to_insert: list[obj.Addr] = [
             obj.Addr.fromstring(f'{addr.get_addr()}:{https_port} ssl')
             for addr in vhost.addrs
             if addr.get_port() == str(http_port)
@@ -749,8 +759,8 @@ class NginxConfigurator(common.Configurator):
             if vhost.ipv4_enabled():
                 addrs_to_insert += [obj.Addr.fromstring(f'{https_port} ssl')]
 
-        addr_blocks: List[List[str]] = []
-        ipv6only_set_here: Set[Tuple[str, str]] = set()
+        addr_blocks: list[list[str]] = []
+        ipv6only_set_here: set[tuple[str, str]] = set()
         for addr in addrs_to_insert:
             host = addr.get_addr()
             port = addr.get_port()
@@ -794,12 +804,12 @@ class NginxConfigurator(common.Configurator):
     ##################################
     # enhancement methods (Installer)
     ##################################
-    def supported_enhancements(self) -> List[str]:
+    def supported_enhancements(self) -> list[str]:
         """Returns currently supported enhancements."""
         return ['redirect', 'ensure-http-header', 'staple-ocsp']
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[Union[str, List[str]]] = None) -> None:
+                options: Optional[Union[str, list[str]]] = None) -> None:
         """Enhance configuration.
 
         :param str domain: domain to enhance
@@ -820,7 +830,7 @@ class NginxConfigurator(common.Configurator):
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
         return vhost.contains_list(test_redirect_block)
 
-    def _set_http_header(self, domain: str, header_substring: Union[str, List[str], None]) -> None:
+    def _set_http_header(self, domain: str, header_substring: Union[str, list[str], None]) -> None:
         """Enables header identified by header_substring on domain.
 
         If the vhost is listening plaintextishly, separates out the relevant
@@ -869,8 +879,8 @@ class NginxConfigurator(common.Configurator):
         self.parser.add_server_directives(
             vhost, redirect_block, insert_at_top=True)
 
-    def _split_block(self, vhost: obj.VirtualHost, only_directives: Optional[List[str]] = None
-                     ) -> Tuple[obj.VirtualHost, obj.VirtualHost]:
+    def _split_block(self, vhost: obj.VirtualHost, only_directives: Optional[list[str]] = None
+                     ) -> tuple[obj.VirtualHost, obj.VirtualHost]:
         """Splits this "virtual host" (i.e. this nginx server block) into
         separate HTTP and HTTPS blocks.
 
@@ -904,7 +914,7 @@ class NginxConfigurator(common.Configurator):
         return http_vhost, vhost
 
     def _enable_redirect(self, domain: str,
-                         unused_options: Optional[Union[str, List[str]]]) -> None:
+                         unused_options: Optional[Union[str, list[str]]]) -> None:
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         If the vhost is listening plaintextishly, separate out the
@@ -961,7 +971,7 @@ class NginxConfigurator(common.Configurator):
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
 
     def _enable_ocsp_stapling(self, domain: str,
-                              chain_path: Optional[Union[str, List[str]]]) -> None:
+                              chain_path: Optional[Union[str, list[str]]]) -> None:
         """Include OCSP response in TLS handshake
 
         :param str domain: domain to enable OCSP response for
@@ -1060,7 +1070,7 @@ class NginxConfigurator(common.Configurator):
                 "Unable to run %s -V" % self.conf('ctl'))
         return text
 
-    def get_version(self) -> Tuple[int, ...]:
+    def get_version(self) -> tuple[int, ...]:
         """Return version of Nginx Server.
 
         Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
@@ -1118,7 +1128,7 @@ class NginxConfigurator(common.Configurator):
         """
         text = self._nginx_version()
 
-        matches: List[str] = re.findall(r"running with OpenSSL ([^ ]+) ", text)
+        matches: list[str] = re.findall(r"running with OpenSSL ([^ ]+) ", text)
         if not matches:
             matches = re.findall(r"built with OpenSSL ([^ ]+) ", text)
             if not matches:
@@ -1210,13 +1220,13 @@ class NginxConfigurator(common.Configurator):
     ###########################################################################
     # Challenges Section for Authenticator
     ###########################################################################
-    def get_chall_pref(self, unused_domain: str) -> List[Type[challenges.Challenge]]:
+    def get_chall_pref(self, unused_domain: str) -> list[type[challenges.Challenge]]:
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 
     # Entry point in main.py for performing challenges
-    def perform(self, achalls: List[achallenges.AnnotatedChallenge]
-                ) -> List[challenges.ChallengeResponse]:
+    def perform(self, achalls: list[achallenges.AnnotatedChallenge]
+                ) -> list[challenges.ChallengeResponse]:
         """Perform the configuration related challenge.
 
         This function currently assumes all challenges will be fulfilled.
@@ -1225,7 +1235,7 @@ class NginxConfigurator(common.Configurator):
 
         """
         self._chall_out += len(achalls)
-        responses: List[Optional[challenges.ChallengeResponse]] = [None] * len(achalls)
+        responses: list[Optional[challenges.ChallengeResponse]] = [None] * len(achalls)
         http_doer = http_01.NginxHttp01(self)
 
         for i, achall in enumerate(achalls):
@@ -1251,7 +1261,7 @@ class NginxConfigurator(common.Configurator):
         return [response for response in responses if response]
 
     # called after challenges are performed
-    def cleanup(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:
+    def cleanup(self, achalls: list[achallenges.AnnotatedChallenge]) -> None:
         """Revert all challenges."""
         self._chall_out -= len(achalls)
 
@@ -1261,13 +1271,13 @@ class NginxConfigurator(common.Configurator):
             self.restart()
 
 
-def _test_block_from_block(block: List[Any]) -> List[Any]:
+def _test_block_from_block(block: list[Any]) -> list[Any]:
     test_block = nginxparser.UnspacedList(block)
     parser.comment_directive(test_block, 0)
     return test_block[:-1]
 
 
-def _redirect_block_for_domain(domain: str) -> List[Any]:
+def _redirect_block_for_domain(domain: str) -> list[Any]:
     updated_domain = domain
     match_symbol = '='
     if util.is_wildcard_domain(domain):

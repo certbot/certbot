@@ -8,12 +8,9 @@ import shutil
 import stat
 from typing import Any
 from typing import cast
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 import configobj
@@ -22,7 +19,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
-import pytz
 
 import certbot
 from certbot import configuration
@@ -48,7 +44,7 @@ BASE_PRIVKEY_MODE = 0o600
 # pylint: disable=too-many-lines
 
 
-def renewal_conf_files(config: configuration.NamespaceConfig) -> List[str]:
+def renewal_conf_files(config: configuration.NamespaceConfig) -> list[str]:
     """Build a list of all renewal configuration files.
 
     :param configuration.NamespaceConfig config: Configuration object
@@ -104,60 +100,64 @@ def add_time_interval(base_time: datetime.datetime, interval: str,
         interval += " days"
 
     # try to use the same timezone, but fallback to UTC
-    tzinfo = base_time.tzinfo or pytz.UTC
+    tzinfo = base_time.tzinfo or datetime.timezone.utc
 
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
-def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
-                         target: Mapping[str, str],
-                         relevant_data: Mapping[str, Any]) -> configobj.ConfigObj:
-    """Writes a renewal config file with the specified name and values.
+def create_renewal_config_file(filename: str, archive_dir: str,
+                               target: Mapping[str, str],
+                               cli_config: configuration.NamespaceConfig) -> None:
+    """Creates a renewal config file with the specified name and values.
 
-    :param str o_filename: Absolute path to the previous version of config file
-    :param str n_filename: Absolute path to the new destination of config file
+    :param str filename: Absolute path to the new destination of config file
     :param str archive_dir: Absolute path to the archive directory
     :param dict target: Maps ALL_FOUR to their symlink paths
-    :param dict relevant_data: Renewal configuration options to save
-
-    :returns: Configuration object for the new config file
-    :rtype: configobj.ConfigObj
-
+    :param .NamespaceConfig cli_config: parsed command line
+        arguments
     """
-    config = configobj.ConfigObj(o_filename, encoding='utf-8', default_encoding='utf-8')
-    config["version"] = certbot.__version__
-    config["archive_dir"] = archive_dir
-    for kind in ALL_FOUR:
-        config[kind] = target[kind]
-
-    if "renewalparams" not in config:
-        config["renewalparams"] = {}
-        config.comments["renewalparams"] = ["",
-                                            "Options used in "
-                                            "the renewal process"]
-
-    config["renewalparams"].update(relevant_data)
-
-    for k in config["renewalparams"]:
-        if k not in relevant_data:
-            del config["renewalparams"][k]
-
-    # TODO: add human-readable comments explaining other available
-    #       parameters
-    logger.debug("Writing new config %s.", n_filename)
-
-    # Ensure that the file exists
-    with open(n_filename, 'a'):
-        pass
-
-    # Copy permissions from the old version of the file, if it exists.
-    if os.path.exists(o_filename):
-        current_permissions = stat.S_IMODE(os.lstat(o_filename).st_mode)
-        filesystem.chmod(n_filename, current_permissions)
-
-    with open(n_filename, "wb") as f:
+    config = make_renewal_configobj(archive_dir, target, cli_config)
+    with open(filename, "wb") as f:
         config.write(outfile=f)
-    return config
+
+
+def atomic_rewrite(config_filename: str, new_config: configobj.ConfigObj) -> None:
+    """Update a config file on disk with the provided values.
+
+    The update will be atomic: if writing fails, the original file will not be modified. The
+    updated file will preserve comments from the original and will have the same permissions.
+
+    In general, fields that exist on disk but not in new_config will be preserved. As a special
+    case, fields in the 'renewalparams' section will be deleted unless they exist in new_config.
+    This deletion clears out old fields from when we used to dump _all_ flags (as opposed to
+    relevant ones).
+
+    :param str config_filename: Absolute path to the configuration file
+    :param configobj.ConfigObj new_config: New configuration object
+    """
+    # Read the existing values from `config_filename`, or error (file_error=True)
+    merged_config = configobj.ConfigObj(config_filename, encoding='utf-8', default_encoding='utf-8',
+                                        file_error=True)
+    merged_config.merge(new_config)
+
+    # We merge and then delete, rather than just replacing the 'renewalparams' section, so we can
+    # preserve comments from the on-disk config file.
+    for k in merged_config["renewalparams"]:
+        if k not in new_config["renewalparams"]:
+            del merged_config["renewalparams"][k]
+
+    current_permissions = stat.S_IMODE(os.lstat(config_filename).st_mode)
+
+    temp_filename = config_filename + ".new"
+
+    # If an existing tempfile exists, delete it
+    if os.path.exists(temp_filename):
+        os.unlink(temp_filename)
+
+    with util.safe_open(temp_filename, "wb", current_permissions) as f:
+        merged_config.write(outfile=f)
+
+    filesystem.replace(temp_filename, config_filename)
 
 
 def rename_renewal_config(prev_name: str, new_name: str,
@@ -186,26 +186,40 @@ def update_configuration(lineagename: str, archive_dir: str, target: Mapping[str
     :param str lineagename: Name of the lineage being modified
     :param str archive_dir: Absolute path to the archive directory
     :param dict target: Maps ALL_FOUR to their symlink paths
-    :param .NamespaceConfig cli_config: parsed command line
-        arguments
+    :param .NamespaceConfig cli_config: parsed command line arguments
 
     :returns: Configuration object for the updated config file
     :rtype: configobj.ConfigObj
 
     """
+    config = make_renewal_configobj(archive_dir, target, cli_config)
+
     config_filename = renewal_filename_for_lineagename(cli_config, lineagename)
-    temp_filename = config_filename + ".new"
 
-    # If an existing tempfile exists, delete it
-    if os.path.exists(temp_filename):
-        os.unlink(temp_filename)
-
-    # Save only the config items that are relevant to renewal
-    values = relevant_values(cli_config)
-    write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    filesystem.replace(temp_filename, config_filename)
+    atomic_rewrite(config_filename, config)
 
     return configobj.ConfigObj(config_filename, encoding='utf-8', default_encoding='utf-8')
+
+
+def make_renewal_configobj(archive_dir: str, target: Mapping[str, str],
+                           cli_config: configuration.NamespaceConfig) -> configobj.ConfigObj:
+    """Create a configobj.ConfigObj representing the provided values.
+
+    :param str archive_dir: Absolute path to the archive directory
+    :param dict target: Maps ALL_FOUR to their symlink paths
+    :param .NamespaceConfig cli_config: parsed command line arguments
+
+    :returns: Configuration object representing the inputs
+    :rtype: configobj.ConfigObj
+    """
+    config = configobj.ConfigObj(encoding='utf-8', default_encoding='utf-8')
+    config["version"] = certbot.__version__
+    config["archive_dir"] = archive_dir
+    for kind in ALL_FOUR:
+        config[kind] = target[kind]
+    config['renewalparams'] = {}
+    config['renewalparams'].update(relevant_values(cli_config))
+    return config
 
 
 def get_link_target(link: str) -> str:
@@ -267,7 +281,7 @@ def _relevant(namespaces: Iterable[str], option: str) -> bool:
             any(option.startswith(namespace) for namespace in namespaces))
 
 
-def relevant_values(config: configuration.NamespaceConfig) -> Dict[str, Any]:
+def relevant_values(config: configuration.NamespaceConfig) -> dict[str, Any]:
     """Return a new dict containing only items relevant for renewal.
 
     :param .NamespaceConfig config: parsed command line
@@ -657,7 +671,7 @@ class RenewableCert(interfaces.RenewableCert):
     #       happen as a result of random tampering by a sysadmin, or
     #       filesystem errors, or crashes.)
 
-    def _previous_symlinks(self) -> List[Tuple[str, str]]:
+    def _previous_symlinks(self) -> list[tuple[str, str]]:
         """Returns the kind and path of all symlinks used in recovery.
 
         :returns: list of (kind, symlink) tuples
@@ -761,7 +775,7 @@ class RenewableCert(interfaces.RenewableCert):
         where = os.path.dirname(link)
         return os.path.join(where, "{0}{1}.pem".format(kind, version))
 
-    def available_versions(self, kind: str) -> List[int]:
+    def available_versions(self, kind: str) -> list[int]:
         """Which alternative versions of the specified kind of item exist?
 
         The archive directory where the current version is stored is
@@ -850,7 +864,7 @@ class RenewableCert(interfaces.RenewableCert):
         :rtype: bool
 
         """
-        all_versions: List[int] = []
+        all_versions: list[int] = []
         for item in ALL_FOUR:
             version = self.current_version(item)
             if version is None:
@@ -907,7 +921,7 @@ class RenewableCert(interfaces.RenewableCert):
             for _, link in previous_links:
                 os.unlink(link)
 
-    def names(self) -> List[str]:
+    def names(self) -> list[str]:
         """What are the subject names of this certificate?
 
         :returns: the subject names
@@ -1049,12 +1063,8 @@ class RenewableCert(interfaces.RenewableCert):
         # Document what we've done in a new renewal config file
         config_file.close()
 
-        # Save only the config items that are relevant to renewal
-        values = relevant_values(cli_config)
-
-        new_config = write_renewal_config(config_filename, config_filename, archive,
-            target, values)
-        return cls(new_config.filename, cli_config)
+        create_renewal_config_file(config_filename, archive, target, cli_config)
+        return cls(config_filename, cli_config)
 
     def _private_key(self) -> Union[RSAPrivateKey, EllipticCurvePrivateKey]:
         with open(self.configuration["privkey"], "rb") as priv_key_file:

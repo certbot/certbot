@@ -1245,7 +1245,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_deploy_cert_no_mod_ssl(self):
         # Create
-        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
+        self.config.make_vhost_ssl(self.vh_truth[0])
         self.config.parser.modules["socache_shmcb_module"] = None
         self.config.prepare_server_https = mock.Mock()
 

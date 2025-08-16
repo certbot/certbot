@@ -1,7 +1,5 @@
 """Tests for certbot_apache._internal.parser."""
-import shutil
 import sys
-import unittest
 from unittest import mock
 
 import pytest
@@ -13,14 +11,6 @@ from certbot_apache._internal.tests import util
 
 class BasicParserTest(util.ParserTest):
     """Apache Parser Test."""
-
-    def setUp(self):  # pylint: disable=arguments-differ
-        super().setUp()
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
 
     def test_bad_parse(self):
         self.parser.parse_file(os.path.join(self.parser.root,
@@ -342,13 +332,6 @@ class BasicParserTest(util.ParserTest):
 
 
 class ParserInitTest(util.ApacheTest):
-    def setUp(self):  # pylint: disable=arguments-differ
-        super().setUp()
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
 
     @mock.patch("certbot_apache._internal.parser.init_augeas")
     def test_prepare_no_augeas(self, mock_init_augeas):

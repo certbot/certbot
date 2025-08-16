@@ -5,7 +5,6 @@ import datetime
 import http.client as http_client
 import json
 import sys
-from typing import Dict
 import unittest
 from unittest import mock
 
@@ -55,7 +54,7 @@ class ClientV2Test(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
-        the_arg: Dict = dict(reg)
+        the_arg: dict = dict(reg)
         self.new_reg = messages.NewRegistration(**the_arg)
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')
@@ -293,7 +292,7 @@ class ClientV2Test(unittest.TestCase):
         updated_order_valid = self.order.update(
             certificate='https://www.letsencrypt-demo.org/acme/cert/',
             status=messages.STATUS_VALID)
-        updated_orderr = self.orderr.update(body=updated_order_valid, fullchain_pem=CERT_SAN_PEM)
+        self.orderr.update(body=updated_order_valid, fullchain_pem=CERT_SAN_PEM)
 
         self.response.text = CERT_SAN_PEM
 
@@ -489,14 +488,14 @@ class ClientV2Test(unittest.TestCase):
             not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
         )
         t, _ = self.client.renewal_time(cert_pem)
-        assert t == None
+        assert t is None
 
         cert_pem = make_cert_for_renewal(
             not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
             not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
         )
         t, _ = self.client.renewal_time(cert_pem)
-        assert t == None
+        assert t is None
 
     @mock.patch('acme.client.datetime')
     def test_renewal_time_with_renewal_info(self, dt_mock):
@@ -548,27 +547,38 @@ class ClientV2Test(unittest.TestCase):
 
     @mock.patch('acme.client.datetime')
     def test_renewal_time_renewal_info_errors(self, dt_mock):
-        utc_now = datetime.datetime(2025, 3, 15, tzinfo=datetime.timezone.utc)
-        dt_mock.datetime.now.return_value = utc_now
+        def now(tzinfo=None):
+            return datetime.datetime(2025, 3, 15, tzinfo=tzinfo)
+        dt_mock.datetime.now.side_effect = now
+        dt_mock.timedelta = datetime.timedelta
+        dt_mock.timezone = datetime.timezone
+
         self.client.directory = messages.Directory({
             'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
         })
-        # Failure to fetch the 'renewalInfo' URL should return None
-        self.net.get.side_effect = requests.exceptions.RequestException
+        # Failure to fetch the 'renewalInfo' URL should raise an ARIError with the exception raised
+        # by self.net.get as the __cause__ and a Retry-After 6 hours in the future
+        expected_cause = requests.exceptions.RequestException
+        expected_retry_after = now() + datetime.timedelta(seconds=6 * 60 * 60)
+        self.net.get.side_effect = expected_cause
 
         cert_pem = make_cert_for_renewal(
             not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
             not_after=datetime.datetime(2025, 3, 20, 00, 00, 00),
         )
-        t, _ = self.client.renewal_time(cert_pem)
-        assert t == None
+        with pytest.raises(errors.ARIError) as exception_info:
+            self.client.renewal_time(cert_pem)
+        assert isinstance(exception_info.value.__cause__, expected_cause)
+        assert exception_info.value.retry_after == expected_retry_after
 
         cert_pem = make_cert_for_renewal(
             not_before=datetime.datetime(2025, 3, 12, 00, 00, 00),
             not_after=datetime.datetime(2025, 3, 30, 00, 00, 00),
         )
-        t, _ = self.client.renewal_time(cert_pem)
-        assert t == None
+        with pytest.raises(errors.ARIError) as exception_info:
+            self.client.renewal_time(cert_pem)
+        assert isinstance(exception_info.value.__cause__, expected_cause)
+        assert exception_info.value.retry_after == expected_retry_after
 
     @mock.patch('acme.client.datetime')
     def test_renewal_time_returns_retry_after(self, dt_mock):
