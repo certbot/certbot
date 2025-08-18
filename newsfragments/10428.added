@@ -1,0 +1,1 @@
+Added `uv` as a test dependency, and switched most `pip` invocations to `uv pip` for faster installs.
