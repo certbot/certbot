@@ -843,6 +843,7 @@ requesting a new certificate using certbot's ``--cert-name`` flag.
 
 6. Restart your webserver, if applicable.
 
+7. You can now delete the old certificate, again using the `Deleting certificates`_ section.
 
 .. _renewal-config-file:
 .. _Modifying the Renewal Configuration File:
