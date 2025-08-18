@@ -768,6 +768,82 @@ commands into your individual environment.
   you will need to use the ``--deploy-hook`` since the exit status will be 0 both on successful renewal
   and when renewal is not necessary.
 
+.. _renaming:
+
+Renaming certificates
+------------------------------------------------------------
+
+While certbot does not have an internal rename function, it is possible to rename certs by
+requesting a new certificate using certbot's ``--cert-name`` flag.
+
+1. View certificates with ``certbot certificates``
+
+   The output might be something like::
+
+    Found the following certs:
+      Certificate Name: yourdomain.com-0001
+        Serial Number: 2ce74f4e2b822211dd7648ea26c8927bdef6
+        Key Type: ECDSA
+        Domains: yourdomain.com subdomain.yourdomain.com
+        Expiry Date: 2025-11-16 20:27:27+00:00 (INVALID: TEST_CERT)
+        Certificate Path: /etc/letsencrypt/live/yourdomain.com-0001/fullchain.pem
+        Private Key Path: /etc/letsencrypt/live/yourdomain.com-0001/privkey.pem
+      Certificate Name: yourdomain.com
+        Serial Number: 2c72aa8cf58aa9fe9a33208d82304642d9ed
+        Key Type: ECDSA
+        Domains: yourdomain.com
+        Expiry Date: 2025-11-16 19:22:47+00:00 (INVALID: TEST_CERT)
+        Certificate Path: /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+        Private Key Path: /etc/letsencrypt/live/yourdomain.com/privkey.pem
+
+   In this example, we will rename certificate ``yourdomain.com-0001`` to ``yourdomain.com``.
+
+2. If the name you want is in use and you're not using that cert, delete it using the instructions
+   in the `Deleting certificates`_ section.
+
+   You'll then have::
+
+    Found the following certs:
+      Certificate Name: yourdomain.com-0001
+        Serial Number: 2ce74f4e2b822211dd7648ea26c8927bdef6
+        Key Type: ECDSA
+        Domains: yourdomain.com subdomain.yourdomain.com
+        Expiry Date: 2025-11-16 20:27:27+00:00 (INVALID: TEST_CERT)
+        Certificate Path: /etc/letsencrypt/live/yourdomain.com-0001/fullchain.pem
+        Private Key Path: /etc/letsencrypt/live/yourdomain.com-0001/privkey.pem
+
+3. If you're not sure how you set the cert up initially, note relevant configuration options by
+   inspecting ``/etc/letsencrypt/renewal/yourdomain.com-0001.conf``
+
+   It will look something like::
+
+    version = 4.2.0
+    archive_dir = /etc/letsencrypt/archive/yourdomain.com-0001
+    cert = /etc/letsencrypt/live/yourdomain.com-0001/cert.pem
+    privkey = /etc/letsencrypt/live/yourdomain.com-0001/privkey.pem
+    chain = /etc/letsencrypt/live/yourdomain.com-0001/chain.pem
+    fullchain = /etc/letsencrypt/live/yourdomain.com-0001/fullchain.pem
+    [renewalparams]
+    account = abcdef12345678910
+    server = https://acme-staging-v02.api.letsencrypt.org/directory
+    authenticator = standalone
+    key_type = ecdsa
+    post_hook = "echo 'shut down server'"
+
+   You'll want to note the authenticator, installer, server, any hooks, etc.
+
+4. Create a new cert with the options and name you want by running
+   ``certbot certonly --cert-name yourdomain.com -d yourdomain.com -d otherdomain.com --any-other-options``.
+   The value for ``--cert-name`` can be anything you want; by default it is the first domain
+   listed on the cert.
+
+5. Make sure that any links to your certificates are updated. If you're using certbot to manage
+   the installation of certs on your webserver, you can run
+   ``certbot install --cert-name yourdomain.com``.
+
+6. Restart your webserver, if applicable.
+
+
 .. _renewal-config-file:
 .. _Modifying the Renewal Configuration File:
 
