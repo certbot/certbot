@@ -170,25 +170,6 @@ def atomic_rewrite(config_filename: str, new_config: configobj.ConfigObj) -> Non
     filesystem.replace(temp_filename, config_filename)
 
 
-def rename_renewal_config(prev_name: str, new_name: str,
-                          cli_config: configuration.NamespaceConfig) -> None:
-    """Renames cli_config.certname's config to cli_config.new_certname.
-
-    :param .NamespaceConfig cli_config: parsed command line
-        arguments
-    """
-    prev_filename = renewal_filename_for_lineagename(cli_config, prev_name)
-    new_filename = renewal_filename_for_lineagename(cli_config, new_name)
-    if os.path.exists(new_filename):
-        raise errors.ConfigurationError("The new certificate name "
-            "is already in use.")
-    try:
-        filesystem.replace(prev_filename, new_filename)
-    except OSError:
-        raise errors.ConfigurationError("Please specify a valid filename "
-            "for the new certificate name.")
-
-
 def update_configuration(lineagename: str, archive_dir: str, target: Mapping[str, str],
                          cli_config: configuration.NamespaceConfig) -> configobj.ConfigObj:
     """Modifies lineagename's config to contain the specified values.

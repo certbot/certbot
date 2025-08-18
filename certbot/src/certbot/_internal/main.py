@@ -1269,26 +1269,6 @@ def rollback(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
     client.rollback(config.installer, config.checkpoints, config, plugins)
 
 
-def rename(config: configuration.NamespaceConfig,
-           unused_plugins: plugins_disco.PluginsRegistry) -> None:
-    """Rename a certificate
-
-    Use the information in the config file to rename an existing
-    lineage.
-
-    :param config: Configuration object
-    :type config: configuration.NamespaceConfig
-
-    :param unused_plugins: List of plugins (deprecated)
-    :type unused_plugins: plugins_disco.PluginsRegistry
-
-    :returns: `None`
-    :rtype: None
-
-    """
-    cert_manager.rename_lineage(config)
-
-
 def delete(config: configuration.NamespaceConfig,
            unused_plugins: plugins_disco.PluginsRegistry) -> None:
     """Delete a certificate

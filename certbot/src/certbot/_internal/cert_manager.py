@@ -26,32 +26,6 @@ logger = logging.getLogger(__name__)
 ###################
 
 
-def rename_lineage(config: configuration.NamespaceConfig) -> None:
-    """Rename the specified lineage to the new name.
-
-    :param config: Configuration.
-    :type config: :class:`certbot._internal.configuration.NamespaceConfig`
-
-    """
-    certname = get_certnames(config, "rename")[0]
-
-    new_certname = config.new_certname
-    if not new_certname:
-        code, new_certname = display_util.input_text(
-            "Enter the new name for certificate {0}".format(certname),
-            force_interactive=True)
-        if code != display_util.OK or not new_certname:
-            raise errors.Error("User ended interaction.")
-
-    lineage = lineage_for_certname(config, certname)
-    if not lineage:
-        raise errors.ConfigurationError("No existing certificate with name "
-            "{0} found.".format(certname))
-    storage.rename_renewal_config(certname, new_certname, config)
-    display_util.notification("Successfully renamed {0} to {1}."
-                                 .format(certname, new_certname), pause=False)
-
-
 def certificates(config: configuration.NamespaceConfig) -> None:
     """Display information about certs configured with Certbot
 
