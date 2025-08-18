@@ -68,6 +68,7 @@ test = [
     "types-pywin32",
     "types-requests",
     "types-setuptools",
+    "uv",
     "wheel",
 ]
 all = [
