@@ -11,5 +11,6 @@ variables:
   dockerTag: nightly
   snapBuildTimeout: 5400
 
-stages:
-  - template: templates/stages/test-and-package-stage.yml
+jobs:
+  - template: templates/jobs/extended-tests-jobs.yml
+  - template: templates/jobs/packaging-jobs.yml
