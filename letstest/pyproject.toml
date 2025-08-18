@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "letstest"
+dynamic = ["version"]
+description = "Test Certbot on different AWS images"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [
+    { name = "Certbot Project", email = "certbot-dev@eff.org" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Security",
+]
+dependencies = [
+    "boto3",
+    "botocore",
+    # The API from Fabric 2.0+ is used instead of the 1.0 API.
+    "fabric>=2",
+    "pyyaml",
+]
+
+[project.scripts]
+letstest = "letstest.multitester:main"
+
+[project.urls]
+Homepage = "https://github.com/certbot/certbot"
+
+[tool.setuptools.packages.find]
+include = ["letstest"]

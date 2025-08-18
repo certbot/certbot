@@ -1,0 +1,1 @@
+Certbot now stores the Retry-After value given by ACME Renewal Info (ARI) so the value can be respected across multiple Certbot runs.
