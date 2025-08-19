@@ -53,14 +53,14 @@ docs = [
 # Tools like pip, wheel, and tox are listed here to ensure they are properly
 # pinned and installed during automated testing.
 test = [
-    "coverage",
-    "mypy",
+    "coverage>=5.1",
+    "mypy>=0.942",
     "pip",
-    "pylint",
-    "pytest",
-    "pytest-cov",
-    "pytest-xdist",
-    "ruff",
+    "pylint>=2.16.2",
+    "pytest>=8.4.1", # https://github.com/pytest-dev/pytest/discussions/9195
+    "pytest-cov>=6.2.1",
+    "pytest-xdist>=1.12",
+    "ruff>=0.0.291",
     "setuptools",
     "tox",
     "types-httplib2",

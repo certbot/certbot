@@ -8,7 +8,7 @@ install_requires = [
     # https://github.com/certbot/certbot/issues/8761 for more info.
     f'acme>={version}',
     f'certbot>={version}',
-    'python-augeas',
+    'python-augeas>=0.5.0',
 ]
 
 setup(

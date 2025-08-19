@@ -1,0 +1,86 @@
+acme/pyproject.toml:requires = ["setuptools"]
+acme/pyproject.toml:build-backend = "setuptools.build_meta"
+acme/pyproject.toml:[tool.setuptools]
+acme/pyproject.toml:[tool.setuptools.packages.find]
+certbot-apache/pyproject.toml:requires = ["setuptools"]
+certbot-apache/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-apache/pyproject.toml:[tool.setuptools]
+certbot-apache/pyproject.toml:[tool.setuptools.packages.find]
+certbot-ci/pyproject.toml:requires = ["setuptools"]
+certbot-ci/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-ci/pyproject.toml:[tool.setuptools]
+certbot-ci/pyproject.toml:[tool.setuptools.packages.find]
+certbot-compatibility-test/pyproject.toml:requires = ["setuptools"]
+certbot-compatibility-test/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-compatibility-test/pyproject.toml:[tool.setuptools]
+certbot-compatibility-test/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-cloudflare/pyproject.toml:requires = ["setuptools"]
+certbot-dns-cloudflare/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-cloudflare/pyproject.toml:[tool.setuptools]
+certbot-dns-cloudflare/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-digitalocean/pyproject.toml:requires = ["setuptools"]
+certbot-dns-digitalocean/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-digitalocean/pyproject.toml:[tool.setuptools]
+certbot-dns-digitalocean/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-dnsimple/pyproject.toml:requires = ["setuptools"]
+certbot-dns-dnsimple/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-dnsimple/pyproject.toml:[tool.setuptools]
+certbot-dns-dnsimple/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-dnsmadeeasy/pyproject.toml:requires = ["setuptools"]
+certbot-dns-dnsmadeeasy/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-dnsmadeeasy/pyproject.toml:[tool.setuptools]
+certbot-dns-dnsmadeeasy/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-gehirn/pyproject.toml:requires = ["setuptools"]
+certbot-dns-gehirn/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-gehirn/pyproject.toml:[tool.setuptools]
+certbot-dns-gehirn/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-google/pyproject.toml:requires = ["setuptools"]
+certbot-dns-google/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-google/pyproject.toml:[tool.setuptools]
+certbot-dns-google/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-linode/pyproject.toml:requires = ["setuptools"]
+certbot-dns-linode/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-linode/pyproject.toml:[tool.setuptools]
+certbot-dns-linode/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-luadns/pyproject.toml:requires = ["setuptools"]
+certbot-dns-luadns/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-luadns/pyproject.toml:[tool.setuptools]
+certbot-dns-luadns/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-nsone/pyproject.toml:requires = ["setuptools"]
+certbot-dns-nsone/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-nsone/pyproject.toml:[tool.setuptools]
+certbot-dns-nsone/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-ovh/pyproject.toml:requires = ["setuptools"]
+certbot-dns-ovh/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-ovh/pyproject.toml:[tool.setuptools]
+certbot-dns-ovh/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-rfc2136/pyproject.toml:requires = ["setuptools"]
+certbot-dns-rfc2136/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-rfc2136/pyproject.toml:[tool.setuptools]
+certbot-dns-rfc2136/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-route53/pyproject.toml:requires = ["setuptools"]
+certbot-dns-route53/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-route53/pyproject.toml:[tool.setuptools]
+certbot-dns-route53/pyproject.toml:[tool.setuptools.packages.find]
+certbot-dns-sakuracloud/pyproject.toml:requires = ["setuptools"]
+certbot-dns-sakuracloud/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-dns-sakuracloud/pyproject.toml:[tool.setuptools]
+certbot-dns-sakuracloud/pyproject.toml:[tool.setuptools.packages.find]
+certbot-nginx/pyproject.toml:requires = ["setuptools"]
+certbot-nginx/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot-nginx/pyproject.toml:[tool.setuptools]
+certbot-nginx/pyproject.toml:[tool.setuptools.packages.find]
+certbot/pyproject.toml:requires = ["setuptools"]
+certbot/pyproject.toml:build-backend = "setuptools.build_meta"
+certbot/pyproject.toml:    # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
+certbot/pyproject.toml:    "setuptools",
+certbot/pyproject.toml:    "types-setuptools",
+certbot/pyproject.toml:[tool.setuptools]
+certbot/pyproject.toml:[tool.setuptools.packages.find]
+certbot/pyproject.toml:[tool.setuptools.dynamic]
+letstest/pyproject.toml:requires = ["setuptools"]
+letstest/pyproject.toml:build-backend = "setuptools.build_meta"
+letstest/pyproject.toml:[tool.setuptools.packages.find]
+tools/pinning/current/pyproject.toml:# setuptools-rust is a build dependency of cryptography, and since we don't have
+tools/pinning/current/pyproject.toml:# working version. Note: if build dependencies of setuptools-rust break at some
+tools/pinning/current/pyproject.toml:setuptools-rust = "*"

@@ -29,7 +29,10 @@ def call_with_print(command, env):
 
 
 def uv_install_with_print(args_str, env):
-    command = ['"', sys.executable, '" -m uv pip install ', args_str]
+    if os.environ.get('CERTBOT_LOWEST') == '1':
+        command = ['"', sys.executable, '" -m uv pip install --resolution lowest-direct ', args_str]
+    else:
+        command = ['"', sys.executable, '" -m uv pip install ', args_str]
     call_with_print(''.join(command), env=env)
 
 def pip_install_with_print(args_str, env):
@@ -38,6 +41,10 @@ def pip_install_with_print(args_str, env):
 
 
 def pip_constrained_environ():
+    env = os.environ.copy()
+    if os.environ.get('CERTBOT_LOWEST') == '1':
+        return env
+
     tools_path = find_tools_path()
 
     repo_path = os.path.dirname(tools_path)
@@ -48,7 +55,6 @@ def pip_constrained_environ():
         constraints_path = os.path.normpath(os.path.join(
             repo_path, 'tools', 'requirements.txt'))
 
-    env = os.environ.copy()
     # We set constraints for pip using an environment variable so that they
     # are also used when installing build dependencies. See
     # https://github.com/certbot/certbot/pull/8443 for more info.
