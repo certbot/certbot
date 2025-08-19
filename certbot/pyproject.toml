@@ -58,7 +58,7 @@ test = [
     "pip",
     "pylint",
     "pytest",
-    "pytest-cov",
+    "pytest-cov>=4.1.0", # https://github.com/pytest-dev/pytest-cov/pull/558
     "pytest-xdist",
     "ruff",
     "setuptools",
