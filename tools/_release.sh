@@ -82,7 +82,7 @@ tmpvenv=$(mktemp -d)
 python3 -m venv "$tmpvenv"
 . $tmpvenv/bin/activate
 # update packaging tools to their pinned versions
-tools/pip_install.py towncrier virtualenv
+tools/pip_install.py build towncrier virtualenv
 
 root_without_le="$version.$$"
 root="$RELEASE_DIR/le.$root_without_le"
@@ -133,10 +133,8 @@ for pkg_dir in $SUBPKGS
 do
   cd $pkg_dir
 
-  python setup.py clean
   rm -rf build dist
-  python setup.py sdist
-  python setup.py bdist_wheel
+  python -m build
 
   cd -
 done
