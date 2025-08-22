@@ -82,7 +82,7 @@ tmpvenv=$(mktemp -d)
 python3 -m venv "$tmpvenv"
 . $tmpvenv/bin/activate
 # update packaging tools to their pinned versions
-tools/pip_install.py build towncrier virtualenv
+tools/pip_install.py build towncrier uv virtualenv
 
 root_without_le="$version.$$"
 root="$RELEASE_DIR/le.$root_without_le"
@@ -134,7 +134,9 @@ do
   cd $pkg_dir
 
   rm -rf build dist
-  python -m build
+  # It's not strictly necessary, but using uv to install build dependencies speeds things up a
+  # little bit.
+  python -m build --installer uv
 
   cd -
 done
