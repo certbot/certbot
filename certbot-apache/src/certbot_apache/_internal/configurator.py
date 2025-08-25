@@ -160,10 +160,14 @@ class ApacheConfigurator(common.Configurator):
         openssl_version = self.openssl_version(warn_on_no_mod_ssl)
         if self.version < (2, 4, 11) or not openssl_version or \
             util.parse_loose_version(openssl_version) < min_openssl_version:
-            logger.warning('Certbot has detected that apache version < 2.4.11 or compiled against '
-                'openssl < 1.0.2l. Since these are deprecated, the configuration file being '
-                'installed at %s will not receive future updates. To get the latest configuration '
-                'version, update apache.', self.mod_ssl_conf)
+            # If we're supposed to warn about failing to find mod_ssl, we already did it in the
+            # openssl_version function and don't need to do it again here.
+            if openssl_version is not None:
+                logger.warning('Certbot has detected that apache version < 2.4.11 or compiled '
+                    'against openssl < 1.0.2l. Since these are deprecated, the configuration file '
+                    'being installed at %s will not receive future updates. To get the latest '
+                    'configuration version, update apache.',
+                    self.mod_ssl_conf)
             return apache_util.find_ssl_apache_conf("old")
         return apache_util.find_ssl_apache_conf("current")
 
