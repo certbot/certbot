@@ -716,7 +716,13 @@ class NginxConfigurator(common.Configurator):
         assert isinstance(cryptography_key, rsa.RSAPrivateKey)
         cert = acme_crypto_util.make_self_signed_cert(
             cryptography_key,
-            domains=[socket.gethostname()]
+            # we used to use socket.gethostname here, but that sometimes
+            # resulted in strings over 64 characters long which would error
+            # on the validation introduced in
+            # https://github.com/pyca/cryptography/pull/11201. the ".invalid"
+            # TLD comes from RFC2606 (and was also used in the tls-sni-01
+            # challenge in early versions of the ACME spec)
+            domains=['temp-certbot-nginx.invalid']
         )
         cert_pem = cert.public_bytes(serialization.Encoding.PEM)
         cert_file, cert_path = util.unique_file(
