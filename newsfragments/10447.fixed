@@ -1,0 +1,1 @@
+certbot-nginx no longer uses socket.gethostname when generating self-signed certificates for use as a temporary step of installing certificates as it would sometimes result in strings that are too long to be used in the common name of a certificate. The static domain "temp-certbot-nginx.invalid" is now used instead.
