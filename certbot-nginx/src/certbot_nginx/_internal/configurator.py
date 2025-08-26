@@ -254,31 +254,32 @@ class NginxConfigurator(common.Configurator):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a certificate.")
 
-        vhosts = self.choose_vhosts(domain, create_if_no_match=True)
+        vhosts = self.choose_or_make_vhosts(domain)
         for vhost in vhosts:
-            self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+            if vhost.ssl:
+                self._update_cert_directives(vhost, key_path, fullchain_path)
+            else:
+                self._make_server_ssl(vhost, key_path, fullchain_path)
+            vhost_addrs = ", ".join(str(addr) for addr in vhost.addrs)
+            self.save_notes += "Updated vhost at {vhost.filep} with addresses of {vhost_addrs}\n"
+            self.save_notes += "\tssl_certificate %s\n" % fullchain_path
+            self.save_notes += "\tssl_certificate_key %s\n" % key_path
             display_util.notify("Successfully deployed certificate for {} to {}"
                                 .format(domain, vhost.filep))
 
-    def _deploy_cert(self, vhost: obj.VirtualHost, _cert_path: str, key_path: str,
-                     _chain_path: str, fullchain_path: str) -> None:
-        """
-        Helper function for deploy_cert() that handles the actual deployment
-        this exists because we might want to do multiple deployments per
+    def _update_cert_directives(self, vhost: obj.VirtualHost, key_path: str,
+                                fullchain_path: str) -> None:
+        """Helper function for deploy_cert() that handles adding or updating
+        certificate directives for an SSL vhost.
+
+        This exists because we might want to do multiple deployments per
         domain originally passed for deploy_cert(). This is especially true
         with wildcard certificates
+
         """
         cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
                            ['\n    ', 'ssl_certificate_key', ' ', key_path]]
-
         self.parser.update_or_add_server_directives(vhost, cert_directives)
-        logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
-
-        self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
-                            (vhost.filep,
-                             ", ".join(str(addr) for addr in vhost.addrs)))
-        self.save_notes += "\tssl_certificate %s\n" % fullchain_path
-        self.save_notes += "\tssl_certificate_key %s\n" % key_path
 
     def _choose_vhosts_wildcard(self, domain: str, prefer_ssl: bool,
                                 no_ssl_filter_port: Optional[str] = None) -> list[obj.VirtualHost]:
@@ -337,50 +338,46 @@ class NginxConfigurator(common.Configurator):
         vhosts = [x for x in [self._select_best_name_match(matches)] if x is not None]
         return vhosts
 
-    def choose_vhosts(self, target_name: str,
-                      create_if_no_match: bool = False) -> list[obj.VirtualHost]:
-        """Chooses a virtual host based on the given domain name.
+    def choose_or_make_vhosts(self, target_name: str) -> list[obj.VirtualHost]:
+        """Choose or make virtual hosts based on the given domain name.
 
-        .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
-            Nginx's server block selection rules preferring blocks that are
-            already SSL.
+        This function will always return at least one vhost or raise an error.
+        If no matching vhost is found, we attempt to create a new one from the
+        default vhost, raising an exception if unable to do so.
 
-        .. todo:: This should maybe return list if no obvious answer
-            is presented.
+        This function may return SSL and/or non-SSL vhosts.
 
         :param str target_name: domain name
-        :param bool create_if_no_match: If we should create a new vhost from default
-            when there is no match found. If we can't choose a default, raise a
-            MisconfigurationError.
+        :returns: vhosts associated with name
+        :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
 
+        """
+        vhosts = self._choose_vhosts(target_name)
+        if vhosts:
+            return vhosts
+        # result will not be [None] because it errors on failure
+        return [self._vhost_from_duplicated_default(target_name, True,
+                                                    str(self.config.https_port))]
+
+    def choose_ssl_vhosts(self, target_name: str) -> list[obj.VirtualHost]:
+        """Choose SSL vhosts based on the given domain name.
+
+        This function will return an empty list if no matching SSL vhosts are
+        found.
+
+        :param str target_name: domain name
         :returns: ssl vhosts associated with name
         :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
 
         """
+        return [vhost for vhost in self._choose_vhosts(target_name) if vhost.ssl]
+
+    def _choose_vhosts(self, target_name: str) -> list[obj.VirtualHost]:
         if util.is_wildcard_domain(target_name):
             # Ask user which VHosts to support.
-            vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
+            return self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
         else:
-            vhosts = self._choose_vhost_single(target_name)
-        if not vhosts:
-            if create_if_no_match:
-                # result will not be [None] because it errors on failure
-                vhosts = [self._vhost_from_duplicated_default(target_name, True,
-                    str(self.config.https_port))]
-            else:
-                # No matches. Raise a misconfiguration error.
-                raise errors.MisconfigurationError(
-                            ("Cannot find a VirtualHost matching domain %s. "
-                             "In order for Certbot to correctly perform the challenge "
-                             "please add a corresponding server_name directive to your "
-                             "nginx configuration for every domain on your certificate: "
-                             "https://nginx.org/en/docs/http/server_names.html") % (target_name))
-        # Note: if we are enhancing with ocsp, vhost should already be ssl.
-        for vhost in vhosts:
-            if not vhost.ssl:
-                self._make_server_ssl(vhost)
-
-        return vhosts
+            return self._choose_vhost_single(target_name)
 
     def ipv6_info(self, host: str, port: str) -> tuple[bool, bool]:
         """Returns tuple of booleans (ipv6_active, ipv6only_present)
@@ -704,28 +701,7 @@ class NginxConfigurator(common.Configurator):
 
         return util.get_filtered_names(all_names)
 
-    def _get_snakeoil_paths(self) -> tuple[str, str]:
-        """Generate invalid certs that let us create ssl directives for Nginx"""
-        # TODO: generate only once
-        tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
-        le_key = crypto_util.generate_key(
-            key_type='rsa', key_size=2048, key_dir=tmp_dir, keyname="key.pem",
-            strict_permissions=self.config.strict_permissions)
-        assert le_key.file is not None
-        cryptography_key = serialization.load_pem_private_key(le_key.pem, password=None)
-        assert isinstance(cryptography_key, rsa.RSAPrivateKey)
-        cert = acme_crypto_util.make_self_signed_cert(
-            cryptography_key,
-            domains=[socket.gethostname()]
-        )
-        cert_pem = cert.public_bytes(serialization.Encoding.PEM)
-        cert_file, cert_path = util.unique_file(
-            os.path.join(tmp_dir, "cert.pem"), mode="wb")
-        with cert_file:
-            cert_file.write(cert_pem)
-        return cert_path, le_key.file
-
-    def _make_server_ssl(self, vhost: obj.VirtualHost) -> None:
+    def _make_server_ssl(self, vhost: obj.VirtualHost, key_path: str, fullchain_path: str) -> None:
         """Make a server SSL.
 
         Make a server SSL by adding new listen and SSL directives.
@@ -788,12 +764,10 @@ class NginxConfigurator(common.Configurator):
                               'ssl']
                 addr_blocks.append(addr_block)
 
-        snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-
         ssl_block = ([
             *addr_blocks,
-            ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
-            ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+            ['\n    ', 'ssl_certificate', ' ', fullchain_path],
+            ['\n    ', 'ssl_certificate_key', ' ', key_path],
             ['\n    ', 'include', ' ', self.mod_ssl_conf],
             ['\n    ', 'ssl_dhparam', ' ', self.ssl_dhparams],
         ])
@@ -851,7 +825,7 @@ class NginxConfigurator(common.Configurator):
             raise errors.NotSupportedError(
                 f"{header_substring} is not supported by the nginx plugin.")
 
-        vhosts = self.choose_vhosts(domain)
+        vhosts = self.choose_ssl_vhosts(domain)
         if not vhosts:
             raise errors.PluginError(
                 "Unable to find corresponding HTTPS host for enhancement.")
@@ -982,7 +956,10 @@ class NginxConfigurator(common.Configurator):
         if not isinstance(chain_path, str) and chain_path is not None:
             raise errors.NotSupportedError(f"Invalid chain_path type {type(chain_path)}, "
                                            "expected a str or None.")
-        vhosts = self.choose_vhosts(domain)
+        vhosts = self.choose_ssl_vhosts(domain)
+        if not vhosts:
+            raise errors.PluginError(
+                "Unable to find corresponding HTTPS host for OCSP stapling.")
         for vhost in vhosts:
             self._enable_ocsp_stapling_single(vhost, chain_path)
 

@@ -181,7 +181,7 @@ class NginxConfiguratorTest(util.NginxTest):
                    'ipv6.com': "etc_nginx/sites-enabled/ipv6.com"}
         conf_path = {key: os.path.normpath(value) for key, value in conf_path.items()}
 
-        vhost = self.config.choose_vhosts(name)[0]
+        vhost = self.config._choose_vhosts(name)[0]
         path = os.path.relpath(vhost.filep, self.temp_dir)
 
         assert conf_names[conf] == vhost.names
@@ -199,31 +199,31 @@ class NginxConfiguratorTest(util.NginxTest):
         for name in bad_results:
             with self.subTest(name=name):
                 with pytest.raises(errors.MisconfigurationError):
-                    self.config.choose_vhosts(name)
+                    self.config._choose_vhosts(name)
 
     def test_choose_vhosts_keep_ip_address(self):
         # no listen on port 80
         # listen       69.50.225.155:9000;
         # listen       127.0.0.1;
-        vhost = self.config.choose_vhosts('example.com')[0]
+        vhost = self.config._choose_vhosts('example.com')[0]
         assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
 
         # no listens at all
-        vhost = self.config.choose_vhosts('headers.com')[0]
+        vhost = self.config._choose_vhosts('headers.com')[0]
         assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
         assert obj.Addr.fromstring("80") in vhost.addrs
 
         # blank addr listen on 80 should result in blank addr ssl
         # listen 80;
         # listen [::]:80;
-        vhost = self.config.choose_vhosts('ipv6.com')[0]
+        vhost = self.config._choose_vhosts('ipv6.com')[0]
         assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
         assert obj.Addr.fromstring("[::]:5001 ssl") in vhost.addrs
 
         # listen on 80 with ip address should result in copied addr
         # listen 1.2.3.4:80;
         # listen [1:20::300]:80;
-        vhost = self.config.choose_vhosts('addr-80.com')[0]
+        vhost = self.config._choose_vhosts('addr-80.com')[0]
         assert obj.Addr.fromstring("1.2.3.4:5001 ssl") in vhost.addrs
         assert obj.Addr.fromstring("[1:20::300]:5001 ssl ipv6only=on") in vhost.addrs
 
@@ -244,7 +244,7 @@ class NginxConfiguratorTest(util.NginxTest):
             "example/chain.pem",
             "example/fullchain.pem")
 
-        for addr in self.config.choose_vhosts("ipv6.com")[0].addrs:
+        for addr in self.config._choose_vhosts("ipv6.com")[0].addrs:
             assert not addr.ipv6only
 
     def test_more_info(self):
@@ -568,16 +568,6 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_add_to_checkpoint.side_effect = errors.ReverterError("foo")
         with pytest.raises(errors.PluginError):
             self.config.save()
-
-    def test_get_snakeoil_paths(self):
-        # pylint: disable=protected-access
-        cert, key = self.config._get_snakeoil_paths()
-        assert os.path.exists(cert)
-        assert os.path.exists(key)
-        with open(cert, "rb") as cert_file:
-            x509.load_pem_x509_certificate(cert_file.read())
-        with open(key, "rb") as key_file:
-            serialization.load_pem_private_key(key_file.read(), password=None)
 
     def test_redirect_enhance(self):
         # Test that we successfully add a redirect when there is
@@ -933,13 +923,13 @@ class NginxConfiguratorTest(util.NginxTest):
             if 'geese.com' in x.names][0]
         mock_choose_vhosts.return_value = [vhost]
         self.config._choose_vhosts_wildcard = mock_choose_vhosts
-        mock_d = "certbot_nginx._internal.configurator.NginxConfigurator._deploy_cert"
-        with mock.patch(mock_d) as mock_dep:
+        mock_path = "certbot_nginx._internal.configurator.NginxConfigurator._update_cert_directives"
+        with mock.patch(mock_path) as mock_update_cert:
             self.config.deploy_cert("*.com", "/tmp/path",
                                     "/tmp/path", "/tmp/path", "/tmp/path")
-            assert mock_dep.called
-            assert len(mock_dep.call_args_list) == 1
-            assert vhost == mock_dep.call_args_list[0][0][0]
+            assert mock_update_cert.called
+            assert len(mock_update_cert.call_args_list) == 1
+            assert vhost == mock_update_cert.call_args_list[0][0][0]
 
     @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
     def test_deploy_cert_wildcard_no_vhosts(self, mock_dialog):
