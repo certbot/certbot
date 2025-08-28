@@ -1,12 +1,7 @@
 """Tests for acme.crypto_util."""
 import ipaddress
 import itertools
-import socket
-import socketserver
 import sys
-import threading
-import time
-from typing import List
 import unittest
 from unittest import mock
 import warnings
@@ -16,7 +11,6 @@ from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, x25519
 
-from acme import errors
 from acme._internal.tests import test_util
 
 
@@ -25,73 +19,6 @@ class FormatTest(unittest.TestCase):
         from acme.crypto_util import Format
         assert Format.DER.to_cryptography_encoding() == serialization.Encoding.DER
         assert Format.PEM.to_cryptography_encoding() == serialization.Encoding.PEM
-
-
-class SSLSocketAndProbeSNITest(unittest.TestCase):
-    """Tests for acme.crypto_util.SSLSocket/probe_sni."""
-
-    def setUp(self):
-        self.cert = test_util.load_cert('rsa2048_cert.pem')
-        key = test_util.load_pyopenssl_private_key('rsa2048_key.pem')
-        # pylint: disable=protected-access
-        certs = {b'foo': (key, self.cert)}
-
-        from acme.crypto_util import SSLSocket
-
-        class _TestServer(socketserver.TCPServer):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.socket = SSLSocket(self.socket, certs)
-
-        self.server = _TestServer(('', 0), socketserver.BaseRequestHandler)
-        self.port = self.server.socket.getsockname()[1]
-        self.server_thread = threading.Thread(
-            target=self.server.handle_request)
-
-    def tearDown(self):
-        if self.server_thread.is_alive():
-            # The thread may have already terminated.
-            self.server_thread.join()  # pragma: no cover
-        self.server.server_close()
-
-    def _probe(self, name):
-        from acme.crypto_util import probe_sni
-        return probe_sni(name, host='127.0.0.1', port=self.port)
-
-    def _start_server(self):
-        self.server_thread.start()
-        time.sleep(1)  # TODO: avoid race conditions in other way
-
-    def test_probe_ok(self):
-        self._start_server()
-        assert self.cert == self._probe(b'foo')
-
-    def test_probe_not_recognized_name(self):
-        self._start_server()
-        with pytest.raises(errors.Error):
-            self._probe(b'bar')
-
-    def test_probe_connection_error(self):
-        self.server.server_close()
-        original_timeout = socket.getdefaulttimeout()
-        try:
-            socket.setdefaulttimeout(1)
-            with pytest.raises(errors.Error):
-                self._probe(b'bar')
-        finally:
-            socket.setdefaulttimeout(original_timeout)
-
-
-class SSLSocketTest(unittest.TestCase):
-    """Tests for acme.crypto_util.SSLSocket."""
-
-    def test_ssl_socket_invalid_arguments(self):
-        from acme.crypto_util import SSLSocket
-        with pytest.raises(ValueError):
-            _ = SSLSocket(None, {'sni': ('key', 'cert')},
-                    cert_selection=lambda _: None)
-        with pytest.raises(ValueError):
-            _ = SSLSocket(None)
 
 
 class MiscTests(unittest.TestCase):
@@ -182,7 +109,7 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
 
     def setUp(self):
         self.cert_count = 5
-        self.serial_num: List[int] = []
+        self.serial_num: list[int] = []
         self.privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     def test_sn_collisions(self):
@@ -195,7 +122,7 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
 
     def test_no_ips(self):
         from acme.crypto_util import make_self_signed_cert
-        cert = make_self_signed_cert(self.privkey, ['dummy'])
+        make_self_signed_cert(self.privkey, ['dummy'])
 
     @mock.patch("acme.crypto_util._now")
     def test_expiry_times(self, mock_now):

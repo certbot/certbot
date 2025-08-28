@@ -1,0 +1,1 @@
+certbot-apache no longer prints a warning claiming the version of OpenSSL used by Apache is too old when we were unable determine the OpenSSL version.

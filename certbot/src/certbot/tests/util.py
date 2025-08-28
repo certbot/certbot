@@ -16,7 +16,6 @@ from typing import Callable
 from typing import cast
 from typing import IO
 from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import Union
 import unittest
@@ -51,10 +50,10 @@ class DummyInstaller(common.Installer):
         pass
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[Union[List[str], str]] = None) -> None:
+                options: Optional[Union[list[str], str]] = None) -> None:
         pass
 
-    def supported_enhancements(self) -> List[str]:
+    def supported_enhancements(self) -> list[str]:
         return []
 
     def save(self, title: Optional[str] = None, temporary: bool = False) -> None:

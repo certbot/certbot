@@ -10,13 +10,9 @@ import sys
 import tempfile
 import time
 from typing import Any
-from typing import Dict
 from typing import Generator
 from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Type
 
 from cryptography.hazmat.primitives import serialization
 from urllib3.util import connection
@@ -42,7 +38,7 @@ tests that the plugin supports are performed.
 
 """
 
-PLUGINS: Dict[str, Type[common.Proxy]] = {"apache": a_common.Proxy, "nginx": n_common.Proxy}
+PLUGINS: dict[str, type[common.Proxy]] = {"apache": a_common.Proxy, "nginx": n_common.Proxy}
 
 
 logger = logging.getLogger(__name__)
@@ -103,9 +99,9 @@ def test_authenticator(plugin: common.Proxy, config: str, temp_dir: str) -> bool
     return success
 
 
-def _create_achalls(plugin: common.Proxy) -> List[achallenges.AnnotatedChallenge]:
+def _create_achalls(plugin: common.Proxy) -> list[achallenges.AnnotatedChallenge]:
     """Returns a list of annotated challenges to test on plugin"""
-    achalls: List[achallenges.AnnotatedChallenge] = []
+    achalls: list[achallenges.AnnotatedChallenge] = []
     names = plugin.get_testable_domain_names()
     for domain in names:
         prefs = plugin.get_chall_pref(domain)
@@ -145,7 +141,7 @@ def test_installer(args: argparse.Namespace, plugin: common.Proxy, config: str,
     return names_match and success and good_rollback
 
 
-def test_deploy_cert(plugin: common.Proxy, temp_dir: str, domains: List[str]) -> bool:
+def test_deploy_cert(plugin: common.Proxy, temp_dir: str, domains: list[str]) -> bool:
     """Tests deploy_cert returning True if the tests are successful"""
     cert = crypto_util.make_self_signed_cert(util.KEY, domains)
     cert_path = os.path.join(temp_dir, "cert.pem")
@@ -187,7 +183,7 @@ def test_enhancements(plugin: common.Proxy, domains: Iterable[str]) -> bool:
                      "enhancements")
         return False
 
-    domains_and_info: List[Tuple[str, List[bool]]] = [(domain, []) for domain in domains]
+    domains_and_info: list[tuple[str, list[bool]]] = [(domain, []) for domain in domains]
 
     for domain, info in domains_and_info:
         try:
@@ -390,7 +386,7 @@ def _fake_dns_resolution(resolved_ip: str) -> Generator[None, None, None]:
     """Monkey patch urllib3 to make any hostname be resolved to the provided IP"""
     _original_create_connection = connection.create_connection
 
-    def _patched_create_connection(address: Tuple[str, int],
+    def _patched_create_connection(address: tuple[str, int],
                                    *args: Any, **kwargs: Any) -> socket.socket:
         _, port = address
         return _original_create_connection((resolved_ip, port), *args, **kwargs)

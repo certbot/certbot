@@ -4,7 +4,6 @@ import shutil
 import sys
 import tempfile
 from typing import Iterable
-from typing import Tuple
 
 import pytest
 
@@ -24,7 +23,7 @@ class IntegrationTestsContext:
             acme_xdist = request.config.acme_xdist  # type: ignore[attr-defined]
 
         self.directory_url = acme_xdist['directory_url']
-        self.tls_alpn_01_port = acme_xdist['https_port'][self.worker_id]
+        self.https_port = acme_xdist['https_port'][self.worker_id]
         self.http_01_port = acme_xdist['http_port'][self.worker_id]
         self.other_port = acme_xdist['other_port'][self.worker_id]
         # Challtestsrv REST API, that exposes entrypoints to register new DNS entries,
@@ -67,7 +66,7 @@ class IntegrationTestsContext:
         """Cleanup the integration test context."""
         shutil.rmtree(self.workspace)
 
-    def certbot(self, args: Iterable[str], force_renew: bool = True) -> Tuple[str, str]:
+    def certbot(self, args: Iterable[str], force_renew: bool = True) -> tuple[str, str]:
         """
         Execute certbot with given args, not renewing certificates by default.
         :param args: args to pass to certbot
@@ -78,7 +77,7 @@ class IntegrationTestsContext:
         command = ['--authenticator', 'standalone', '--installer', 'null']
         command.extend(args)
         return certbot_call.certbot_test(
-            command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
+            command, self.directory_url, self.http_01_port, self.https_port,
             self.config_dir, self.workspace, force_renew=force_renew)
 
     def get_domain(self, subdomain: str = 'le') -> str:

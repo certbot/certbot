@@ -6,12 +6,8 @@ import os
 import shutil
 import tempfile
 from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import overload
-from typing import Set
-from typing import Tuple
-from typing import Type
 from typing import Union
 
 from acme import challenges
@@ -50,8 +46,8 @@ class Proxy(interfaces.ConfiguratorProxy):
         self.http_port = 80
         self.https_port = 443
         self._configurator: common.Configurator
-        self._all_names: Optional[Set[str]] = None
-        self._test_names: Optional[Set[str]] = None
+        self._all_names: Optional[set[str]] = None
+        self._test_names: Optional[set[str]] = None
 
     def has_more_configs(self) -> bool:
         """Returns true if there are more configs to test"""
@@ -70,14 +66,14 @@ class Proxy(interfaces.ConfiguratorProxy):
 
     @overload
     def copy_certs_and_keys(self, cert_path: str, key_path: str,
-                            chain_path: str) -> Tuple[str, str, str]: ...
+                            chain_path: str) -> tuple[str, str, str]: ...
 
     @overload
     def copy_certs_and_keys(self, cert_path: str, key_path: str,
-                            chain_path: Optional[str]) -> Tuple[str, str, Optional[str]]: ...
+                            chain_path: Optional[str]) -> tuple[str, str, Optional[str]]: ...
 
     def copy_certs_and_keys(self, cert_path: str, key_path: str,
-                            chain_path: Optional[str] = None) -> Tuple[str, str, Optional[str]]:
+                            chain_path: Optional[str] = None) -> tuple[str, str, Optional[str]]:
         """Copies certs and keys into the temporary directory"""
         cert_and_key_dir = os.path.join(self._temp_dir, "certs_and_keys")
         if not os.path.isdir(cert_and_key_dir):
@@ -94,13 +90,13 @@ class Proxy(interfaces.ConfiguratorProxy):
 
         return cert, key, chain
 
-    def get_all_names_answer(self) -> Set[str]:
+    def get_all_names_answer(self) -> set[str]:
         """Returns the set of domain names that the plugin should find"""
         if self._all_names:
             return self._all_names
         raise errors.Error("No configuration file loaded")
 
-    def get_testable_domain_names(self) -> Set[str]:
+    def get_testable_domain_names(self) -> set[str]:
         """Returns the set of domain names that can be tested against"""
         if self._test_names:
             return self._test_names
@@ -115,20 +111,20 @@ class Proxy(interfaces.ConfiguratorProxy):
         self._configurator.deploy_cert(
             domain, cert_path, key_path, chain_path, fullchain_path)
 
-    def cleanup(self, achalls: List[AnnotatedChallenge]) -> None:
+    def cleanup(self, achalls: list[AnnotatedChallenge]) -> None:
         self._configurator.cleanup(achalls)
 
     def config_test(self) -> None:
         self._configurator.config_test()
 
     def enhance(self, domain: str, enhancement: str,
-                options: Optional[Union[List[str], str]] = None) -> None:
+                options: Optional[Union[list[str], str]] = None) -> None:
         self._configurator.enhance(domain, enhancement, options)
 
     def get_all_names(self) -> Iterable[str]:
         return self._configurator.get_all_names()
 
-    def get_chall_pref(self, domain: str) -> Iterable[Type[Challenge]]:
+    def get_chall_pref(self, domain: str) -> Iterable[type[Challenge]]:
         return self._configurator.get_chall_pref(domain)
 
     @classmethod
@@ -138,7 +134,7 @@ class Proxy(interfaces.ConfiguratorProxy):
     def more_info(self) -> str:
         return self._configurator.more_info()
 
-    def perform(self, achalls: List[AnnotatedChallenge]) -> List[challenges.ChallengeResponse]:
+    def perform(self, achalls: list[AnnotatedChallenge]) -> list[challenges.ChallengeResponse]:
         return self._configurator.perform(achalls)
 
     def prepare(self) -> None:
@@ -156,5 +152,5 @@ class Proxy(interfaces.ConfiguratorProxy):
     def save(self, title: Optional[str] = None, temporary: bool = False) -> None:
         self._configurator.save(title, temporary)
 
-    def supported_enhancements(self) -> List[str]:
+    def supported_enhancements(self) -> list[str]:
         return self._configurator.supported_enhancements()

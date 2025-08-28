@@ -1,5 +1,6 @@
 """Certbot command line argument & config processing."""
 # pylint: disable=too-many-lines
+# ruff: noqa: F401
 import argparse
 import logging
 import logging.handlers
@@ -55,7 +56,7 @@ logger = logging.getLogger(__name__)
 helpful_parser: Optional[HelpfulArgumentParser] = None
 
 
-def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[str]
+def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[str]
                            ) -> NamespaceConfig:
     """Returns parsed command line arguments.
 
@@ -490,7 +491,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     return helpful.parse_args()
 
 
-def argparse_type(variable: Any) -> Type:
+def argparse_type(variable: Any) -> type:
     """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
     if helpful_parser is not None:

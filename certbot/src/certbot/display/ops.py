@@ -4,9 +4,7 @@ from textwrap import indent
 from typing import Any
 from typing import Callable
 from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Tuple
 
 from certbot import errors
 from certbot import interfaces
@@ -48,7 +46,7 @@ def get_email(invalid: bool = False, **kwargs: Any) -> str:
         invalid_prefix = "There is a problem with your email address. "
 
 
-def choose_account(accounts: List[account.Account]) -> Optional[account.Account]:
+def choose_account(accounts: list[account.Account]) -> Optional[account.Account]:
     """Choose an account.
 
     :param list accounts: Containing at least one
@@ -64,7 +62,7 @@ def choose_account(accounts: List[account.Account]) -> Optional[account.Account]
     return None
 
 
-def choose_values(values: List[str], question: Optional[str] = None) -> List[str]:
+def choose_values(values: list[str], question: Optional[str] = None) -> list[str]:
     """Display screen to let user pick one or multiple values from the provided
     list.
 
@@ -82,7 +80,7 @@ def choose_values(values: List[str], question: Optional[str] = None) -> List[str
 
 
 def choose_names(installer: Optional[interfaces.Installer],
-                 question: Optional[str] = None) -> List[str]:
+                 question: Optional[str] = None) -> list[str]:
     """Display screen to select domains to validate.
 
     :param installer: An installer object
@@ -111,7 +109,7 @@ def choose_names(installer: Optional[interfaces.Installer],
     return []
 
 
-def get_valid_domains(domains: Iterable[str]) -> List[str]:
+def get_valid_domains(domains: Iterable[str]) -> list[str]:
     """Helper method for choose_names that implements basic checks
      on domain names
 
@@ -119,7 +117,7 @@ def get_valid_domains(domains: Iterable[str]) -> List[str]:
     :return: List of valid domains
     :rtype: list
     """
-    valid_domains: List[str] = []
+    valid_domains: list[str] = []
     for domain in domains:
         try:
             valid_domains.append(util.enforce_domain_sanity(domain))
@@ -128,7 +126,7 @@ def get_valid_domains(domains: Iterable[str]) -> List[str]:
     return valid_domains
 
 
-def _sort_names(FQDNs: Iterable[str]) -> List[str]:
+def _sort_names(FQDNs: Iterable[str]) -> list[str]:
     """Sort FQDNs by SLD (and if many, by their subdomains)
 
     :param list FQDNs: list of domain names
@@ -140,7 +138,7 @@ def _sort_names(FQDNs: Iterable[str]) -> List[str]:
 
 
 def _filter_names(names: Iterable[str],
-                  override_question: Optional[str] = None) -> Tuple[str, List[str]]:
+                  override_question: Optional[str] = None) -> tuple[str, list[str]]:
     """Determine which names the user would like to select from a list.
 
     :param list names: domain names
@@ -165,7 +163,7 @@ def _filter_names(names: Iterable[str],
     return code, [str(s) for s in names]
 
 
-def _choose_names_manually(prompt_prefix: str = "") -> List[str]:
+def _choose_names_manually(prompt_prefix: str = "") -> list[str]:
     """Manually input names for those without an installer.
 
     :param str prompt_prefix: string to prepend to prompt for domains
@@ -219,7 +217,7 @@ def _choose_names_manually(prompt_prefix: str = "") -> List[str]:
     return []
 
 
-def success_installation(domains: List[str]) -> None:
+def success_installation(domains: list[str]) -> None:
     """Display a box confirming the installation of HTTPS.
 
     :param list domains: domain names which were enabled
@@ -231,7 +229,7 @@ def success_installation(domains: List[str]) -> None:
     )
 
 
-def success_renewal(unused_domains: List[str]) -> None:
+def success_renewal(unused_domains: list[str]) -> None:
     """Display a box confirming the renewal of an existing certificate.
 
     :param list domains: domain names which were renewed
@@ -273,7 +271,7 @@ def report_executed_command(command_name: str, returncode: int, stdout: str, std
         logger.warning("%s ran with error output:\n%s", command_name, indent(err_s, ' '))
 
 
-def _gen_https_names(domains: List[str]) -> str:
+def _gen_https_names(domains: list[str]) -> str:
     """Returns a string of the https domains.
 
     Domains are formatted nicely with ``https://`` prepended to each.
@@ -294,9 +292,9 @@ def _gen_https_names(domains: List[str]) -> str:
     return ""
 
 
-def _get_validated(method: Callable[..., Tuple[str, str]],
+def _get_validated(method: Callable[..., tuple[str, str]],
                    validator: Callable[[str], Any], message: str,
-                   default: Optional[str] = None, **kwargs: Any) -> Tuple[str, str]:
+                   default: Optional[str] = None, **kwargs: Any) -> tuple[str, str]:
     if default is not None:
         try:
             validator(default)
@@ -324,7 +322,7 @@ def _get_validated(method: Callable[..., Tuple[str, str]],
 
 
 def validated_input(validator: Callable[[str], Any],
-                    *args: Any, **kwargs: Any) -> Tuple[str, str]:
+                    *args: Any, **kwargs: Any) -> tuple[str, str]:
     """Like `~certbot.display.util.input_text`, but with validation.
 
     :param callable validator: A method which will be called on the
@@ -339,7 +337,7 @@ def validated_input(validator: Callable[[str], Any],
 
 
 def validated_directory(validator: Callable[[str], Any],
-                        *args: Any, **kwargs: Any) -> Tuple[str, str]:
+                        *args: Any, **kwargs: Any) -> tuple[str, str]:
     """Like `~certbot.display.util.directory_select`, but with validation.
 
     :param callable validator: A method which will be called on the

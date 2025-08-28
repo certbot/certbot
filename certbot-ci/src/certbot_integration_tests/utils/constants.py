@@ -1,6 +1,6 @@
 """Some useful constants to use throughout certbot-ci integration tests"""
 DEFAULT_HTTP_01_PORT = 5002
-TLS_ALPN_01_PORT = 5001
+HTTPS_PORT = 5001
 CHALLTESTSRV_PORT = 8055
 PEBBLE_DIRECTORY_URL = 'https://localhost:14000/dir'
 PEBBLE_MANAGEMENT_URL = 'https://localhost:15000'

@@ -2,9 +2,6 @@
 import errno
 import socket
 import sys
-from typing import Dict
-from typing import Set
-from typing import Tuple
 import unittest
 from unittest import mock
 
@@ -24,7 +21,7 @@ class ServerManagerTest(unittest.TestCase):
 
     def setUp(self):
         from certbot._internal.plugins.standalone import ServerManager
-        self.http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = {}
+        self.http_01_resources: set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = {}
         self.mgr = ServerManager(self.http_01_resources)
 
     def test_init(self):

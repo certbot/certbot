@@ -6,10 +6,10 @@ import tempfile
 import unittest
 from unittest import mock
 
+import configobj
 import pytest
 
-from acme import challenges
-from acme import errors as acme_errors
+from acme import challenges, errors as acme_errors
 from certbot import configuration
 from certbot import errors
 from certbot._internal import storage
@@ -18,7 +18,6 @@ import certbot.tests.util as test_util
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography import x509
-from cryptography.x509 import Certificate
 
 def make_cert_with_lifetime(not_before: datetime.datetime, lifetime_days: int) -> bytes:
     """Return PEM of a self-signed certificate with the given notBefore and lifetime."""
@@ -199,7 +198,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         from certbot._internal import renewal
         lineage_config = copy.deepcopy(self.config)
-        renewal_candidate = renewal.reconstitute(lineage_config, rc_path)
+        renewal.reconstitute(lineage_config, rc_path)
         # This means that manual_public_ip_logging_ok was not modified in the config based on its
         # value in the renewal conf file
         assert isinstance(lineage_config.manual_public_ip_logging_ok, mock.MagicMock)
@@ -217,14 +216,14 @@ class RenewalTest(test_util.ConfigTestCase):
 
     @test_util.patch_display_util()
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
-    @mock.patch('certbot._internal.client.create_acme_client')
+    @mock.patch('certbot._internal.renewal.AriClientPool.get')
     @mock.patch('certbot._internal.main.renew_cert')
     @mock.patch("certbot._internal.renewal.datetime")
-    def test_renewal_via_ari(self, mock_datetime, mock_renew_cert, mock_acme_from_config, mock_set_by_user, unused_mock_display):
+    def test_renewal_via_ari(self, mock_datetime, mock_renew_cert, mock_ari_client_get, mock_set_by_user, unused_mock_display):
         mock_set_by_user.return_value = False
         from certbot._internal import renewal
         acme_client = mock.MagicMock()
-        mock_acme_from_config.return_value = acme_client
+        mock_ari_client_get.return_value = acme_client
         past = datetime.datetime(2025, 3, 19, 0, 0, 0, tzinfo=datetime.timezone.utc)
         now = datetime.datetime(2025, 4, 19, 0, 0, 0, tzinfo=datetime.timezone.utc)
         future = datetime.datetime(2025, 4, 19, 12, 0, 0, tzinfo=datetime.timezone.utc)
@@ -234,7 +233,7 @@ class RenewalTest(test_util.ConfigTestCase):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
         config = configuration.NamespaceConfig(self.config)
 
-        with mock.patch('time.sleep') as sleep:
+        with mock.patch('time.sleep'):
             renewal.handle_renewal_request(config)
 
         mock_renew_cert.assert_called_once()
@@ -242,7 +241,8 @@ class RenewalTest(test_util.ConfigTestCase):
         # the global default.
         expected_server = "https://acme-staging-v02.api.letsencrypt.org/directory"
         assert expected_server != config.server
-        assert mock_acme_from_config.call_args[0][0].server == expected_server
+        mock_ari_client_get.assert_called_once()
+        assert mock_ari_client_get.call_args[0][0] == expected_server
 
     @test_util.patch_display_util()
     @mock.patch('acme.client.ClientNetwork.get')
@@ -254,7 +254,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf', ec=False)
 
-        with mock.patch('time.sleep') as sleep:
+        with mock.patch('time.sleep'):
             renewal.handle_renewal_request(self.config)
 
         assert mock_client_network_get.call_count == 0
@@ -263,10 +263,10 @@ class RenewalTest(test_util.ConfigTestCase):
     def test_dry_run_no_ari_call(self, mock_acme):
         from certbot._internal import renewal
         self.config.dry_run = True
-        acme_clients = {}
-        acme_clients[self.config.server] = mock_acme
-        with mock.patch('time.sleep') as sleep:
-            renewal.should_renew(self.config, mock.Mock(), acme_clients)
+        ari_client_pool = mock.MagicMock()
+        ari_client_pool.get.return_value = mock_acme
+        with mock.patch('time.sleep'):
+            renewal.should_renew(self.config, mock.Mock(), ari_client_pool)
         assert mock_acme.renewal_time.call_count == 0
 
     def test_default_renewal_time(self):
@@ -279,8 +279,9 @@ class RenewalTest(test_util.ConfigTestCase):
         t = renewal._default_renewal_time(cert_pem)
         assert t == datetime.datetime(2025, 3, 24, 00, 00, 00, tzinfo=datetime.timezone.utc)
 
+    @mock.patch("certbot._internal.storage.atomic_rewrite")
     @mock.patch("certbot._internal.renewal.datetime")
-    def test_renew_before_expiry(self, mock_datetime):
+    def test_renew_before_expiry(self, mock_datetime, unused_mock_atomic_rewrite):
         """When neither OCSP nor the ACME client indicate it's time to renew,
            obey the renew_before_expiry config.
         """
@@ -295,17 +296,15 @@ class RenewalTest(test_util.ConfigTestCase):
         short_cert = make_cert_with_lifetime(not_before, 7)
 
         ari_server = "http://ari"
-        mock_acme = mock.MagicMock()
         future = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=100000)
-        mock_acme.renewal_time.return_value = (future, future)
-        acme_clients = {}
-        acme_clients[ari_server] = mock_acme
+        ari_client_pool = MockAriClientPool(future, future)
 
         mock_renewable_cert = mock.MagicMock()
         mock_renewable_cert.server = ari_server
         mock_renewable_cert.autorenewal_is_enabled.return_value = True
         mock_renewable_cert.version.return_value = "/tmp/abc"
         mock_renewable_cert.ocsp_revoked.return_value = False
+        mock_renewable_cert.configfile = configobj.ConfigObj()
 
         mock_datetime.timedelta = datetime.timedelta
 
@@ -349,11 +348,11 @@ class RenewalTest(test_util.ConfigTestCase):
                 sometime = datetime.datetime.fromtimestamp(current_time, datetime.timezone.utc)
                 mock_datetime.datetime.now.return_value = sometime
                 mock_renewable_cert.configuration = {"renew_before_expiry": interval}
-                assert renewal.should_autorenew(self.config, mock_renewable_cert, acme_clients) == result, f"at {current_time}, with config '{interval}', ari response in future, expected {result}"
+                assert renewal.should_autorenew(mock_renewable_cert, ari_client_pool) == result, f"at {current_time}, with config '{interval}', ari response in future, expected {result}"
 
             # Now, test cases where ARI either fails (returns `(None, _)`) or
             # the cert has no `server` value and ARI is skipped
-            mock_acme.renewal_time.return_value = (None, future)
+            ari_client_pool = MockAriClientPool(None, future)
             for (current_time, interval, result) in [
                     # 2014-12-13 12:00 (about 5 days prior to expiry)
                     # Times that should result in autorenewal/autodeployment
@@ -388,9 +387,9 @@ class RenewalTest(test_util.ConfigTestCase):
                 mock_datetime.datetime.now.return_value = sometime
                 mock_renewable_cert.configuration = {"renew_before_expiry": interval}
                 mock_renewable_cert.server = ari_server
-                assert renewal.should_autorenew(self.config, mock_renewable_cert, acme_clients) == result, f"at {current_time}, with config '{interval}', no ari response, expected {result}"
+                assert renewal.should_autorenew(mock_renewable_cert, ari_client_pool) == result, f"at {current_time}, with config '{interval}', no ari response, expected {result}"
                 mock_renewable_cert.server = None
-                assert renewal.should_autorenew(self.config, mock_renewable_cert, acme_clients) == result, f"at {current_time}, with config '{interval}', skipped ari, expected {result}"
+                assert renewal.should_autorenew(mock_renewable_cert, ari_client_pool) == result, f"at {current_time}, with config '{interval}', skipped ari, expected {result}"
 
     @mock.patch("certbot._internal.storage.RenewableCert.ocsp_revoked")
     def test_should_autorenew(self, mock_ocsp):
@@ -400,75 +399,157 @@ class RenewalTest(test_util.ConfigTestCase):
         ari_server = "http://ari"
         future = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=1000)
         mock_acme.renewal_time.return_value = (future, future)
-        acme_clients = {}
-        acme_clients[ari_server] = mock_acme
+        ari_client_pool = mock.MagicMock()
+        ari_client_pool.get.return_value = mock_acme
         mock_rc = mock.MagicMock()
 
         with mock.patch('certbot._internal.renewal.open', mock.mock_open(read_data=b'')):
             # Autorenewal turned off
             mock_rc.autorenewal_is_enabled.return_value = False
             mock_rc.server = ari_server
-            assert not renewal.should_autorenew(self.config, mock_rc, acme_clients)
+            assert not renewal.should_autorenew(mock_rc, ari_client_pool)
             mock_rc.server = None
-            assert not renewal.should_autorenew(self.config, mock_rc, acme_clients)
+            assert not renewal.should_autorenew(mock_rc, ari_client_pool)
 
             # Autorenewal turned on, mandatory renewal on the basis of OCSP
             # revocation
             mock_rc.autorenewal_is_enabled.return_value = True
             mock_ocsp.return_value = True
-            assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
+            assert renewal.should_autorenew(mock_rc, ari_client_pool)
             mock_rc.server = None
             with mock.patch('certbot._internal.renewal.logger.warning') as mock_warning:
-                assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
+                assert renewal.should_autorenew(mock_rc, ari_client_pool)
             # Ensure we warned about skipping ARI checks when server is None
-            assert any(call.args[0].startswith('Skipping ARI') for call in
+            assert any(call.args[0].startswith('Skipping ARI check') for call in
                        mock_warning.call_args_list)
 
-    @mock.patch('certbot._internal.client.create_acme_client')
+    @mock.patch("certbot._internal.storage.atomic_rewrite")
     @mock.patch('certbot._internal.storage.RenewableCert.ocsp_revoked')
     @mock.patch('acme.client.ClientV2.renewal_time')
-    def test_resilient_ari_directory_fetches(self, mock_renewal_time, mock_ocsp, mock_create_acme):
+    def test_resilient_ari_directory_fetches(self, mock_renewal_time, mock_ocsp,
+                                             unused_mock_atomic_rewrite):
         from certbot._internal import renewal
         from acme import messages
 
         ari_server = 'http://ari'
-        acme_clients = {}
+        ari_client_pool = mock.MagicMock()
+        ari_client_pool.get.side_effect = messages.Error()
         mock_rc = mock.MagicMock()
         mock_rc.server = ari_server
+        mock_rc.configfile = configobj.ConfigObj()
         mock_rc.autorenewal_is_enabled.return_value = True
-        mock_create_acme.side_effect = messages.Error()
         mock_ocsp.return_value = True
 
         with mock.patch('certbot._internal.renewal.open', mock.mock_open(read_data=b'')):
             with mock.patch('certbot._internal.renewal.logger') as mock_logger:
-                assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
+                assert renewal.should_autorenew(mock_rc, ari_client_pool)
+
         assert mock_renewal_time.call_count == 0
         # Ensure we logged about skipping the ARI check and the underlying exception
         assert any('ARI' in call.args[0] for call in mock_logger.warning.call_args_list)
         assert any(call.kwargs.get('exc_info') for call in mock_logger.debug.call_args_list)
 
-
     @mock.patch('certbot._internal.storage.RenewableCert.ocsp_revoked')
     def test_resilient_ari_check(self, mock_ocsp):
         from certbot._internal import renewal
 
-        mock_acme = mock.MagicMock()
+        rc_path = test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        renewable_cert = storage.RenewableCert(rc_path, self.config)
+
         ari_error = acme_errors.ARIError('some error', datetime.datetime.now())
-        ari_server = 'http://ari'
-        mock_acme.renewal_time.side_effect = ari_error
-        acme_clients = {}
-        acme_clients[ari_server] = mock_acme
-        mock_rc = mock.MagicMock()
-        mock_rc.server = ari_server
-        mock_rc.autorenewal_is_enabled.return_value = True
+        ari_client_pool = MockAriClientPool(None, None)
+        ari_client_pool.mock_acme.renewal_time.side_effect = ari_error
+
         mock_ocsp.return_value = True
 
         with mock.patch('certbot._internal.renewal.open', mock.mock_open(read_data=b'')):
             with mock.patch('certbot._internal.renewal.logger') as mock_logger:
-                assert renewal.should_autorenew(self.config, mock_rc, acme_clients)
+                assert renewal.should_autorenew(renewable_cert, ari_client_pool)
         # Ensure we logged about skipping the ARI check and the underlying exception
         assert any('ARI' in call.args[0] for call in mock_logger.warning.call_args_list)
         assert any(call.kwargs.get('exc_info') for call in mock_logger.debug.call_args_list)
+
+    def test_stores_ari_retry_after(self):
+        from certbot._internal import renewal
+
+        rc_path = test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        renewable_cert = storage.RenewableCert(rc_path, self.config)
+
+        renewal_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+            seconds=1000)
+        retry_after = datetime.datetime.now() + datetime.timedelta(seconds=1000)
+        mock_ari_client_pool = MockAriClientPool(renewal_time, retry_after)
+
+        # Check for renewal. As a side effect, this should cause the lineage config to be
+        # updated with 'ari_retry_after' in the renewalparams section.
+        renewal.should_autorenew(renewable_cert, mock_ari_client_pool)
+
+        with open(renewable_cert.configfile.filename, 'r') as c:
+            renewable_cert_config = configobj.ConfigObj(c)
+
+        assert renewable_cert_config['acme_renewal_info']['ari_retry_after'] == retry_after.isoformat(
+            timespec='seconds')
+
+    def test_skips_ari_when_retry_after_future(self):
+        from certbot._internal import renewal
+
+        rc_path = test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        renewable_cert = storage.RenewableCert(rc_path, self.config)
+
+        future = datetime.datetime.now() + datetime.timedelta(seconds=1000)
+        storage.atomic_rewrite(rc_path,
+           {"acme_renewal_info": {"ari_retry_after": future.isoformat(timespec="seconds")}})
+
+        # ARI shouldn't be checked at all because retry after is in the future.
+        mock_ari_client_pool = MockAriClientPool(None, None)
+        mock_ari_client_pool.mock_acme.renewal_time.side_effect = errors.Error("Shouldn't be called")
+
+        # Check for renewal. All we care about here is that renewal_time is not called; if it were,
+        # an exception would be raised.
+        renewal.should_autorenew(renewable_cert, mock_ari_client_pool)
+
+    def test_checks_ari_when_retry_after_absent(self):
+        from certbot._internal import renewal
+
+        rc_path = test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        renewable_cert = storage.RenewableCert(rc_path, self.config)
+
+        renewal_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=1000)
+        retry_after = datetime.datetime.now() + datetime.timedelta(seconds=1000)
+        mock_ari_client_pool = MockAriClientPool(renewal_time, retry_after)
+
+        # The 'ari_retry_after' field is absent, so renewal_time _should_ be called.
+        # We don't care about the return value of should_autorenew.
+        renewal.should_autorenew(renewable_cert, mock_ari_client_pool)
+
+        mock_ari_client_pool.mock_acme.renewal_time.assert_called_once()
+
+    def test_checks_ari_when_retry_after_in_past(self):
+        from certbot._internal import renewal
+
+        rc_path = test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        renewable_cert = storage.RenewableCert(rc_path, self.config)
+
+        past = datetime.datetime.now() - datetime.timedelta(seconds=1000)
+        storage.atomic_rewrite(rc_path,
+                               {"acme_renewal_info": {"ari_retry_after": past.isoformat(timespec="seconds")}})
+
+        renewal_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=1000)
+        retry_after = datetime.datetime.now() + datetime.timedelta(seconds=1000)
+        mock_ari_client_pool = MockAriClientPool(renewal_time, retry_after)
+
+        # The 'ari_retry_after' field is in the past, so renewal_time _should_ be called.
+        # We don't care about the return value of should_autorenew.
+        renewal.should_autorenew(renewable_cert, mock_ari_client_pool)
+        mock_ari_client_pool.mock_acme.renewal_time.assert_called_once()
+
+class MockAriClientPool:
+    def __init__(self, renewal_time, retry_after):
+        self.mock_acme = mock.MagicMock()
+        self.mock_acme.renewal_time.return_value = (renewal_time, retry_after)
+
+    def get(self, server):
+        return self.mock_acme
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):

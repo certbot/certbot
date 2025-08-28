@@ -6,11 +6,9 @@ import urllib.parse as urllib_parse
 
 import josepy as jose
 from josepy.jwk import JWKEC
-import OpenSSL
 import pytest
 import requests
 
-from acme import errors
 from acme._internal.tests import test_util
 
 CERT = test_util.load_cert('cert.pem')
@@ -261,126 +259,6 @@ class HTTP01Test(unittest.TestCase):
     def test_good_token(self):
         assert self.msg.good_token
         assert not self.msg.update(token=b'..').good_token
-
-
-class TLSALPN01ResponseTest(unittest.TestCase):
-
-    def setUp(self):
-        from acme.challenges import TLSALPN01
-        self.chall = TLSALPN01(
-            token=jose.b64decode(b'a82d5ff8ef740d12881f6d3c2277ab2e'))
-        self.domain = u'example.com'
-        self.domain2 = u'example2.com'
-
-        self.response = self.chall.response(KEY)
-        self.jmsg = {
-            'resource': 'challenge',
-            'type': 'tls-alpn-01',
-            'keyAuthorization': self.response.key_authorization,
-        }
-
-    def test_to_partial_json(self):
-        assert {} == self.response.to_partial_json()
-
-    def test_from_json(self):
-        from acme.challenges import TLSALPN01Response
-        assert self.response == TLSALPN01Response.from_json(self.jmsg)
-
-    def test_from_json_hashable(self):
-        from acme.challenges import TLSALPN01Response
-        hash(TLSALPN01Response.from_json(self.jmsg))
-
-    def test_gen_verify_cert(self):
-        key1 = test_util.load_pyopenssl_private_key('rsa512_key.pem')
-        cert, key2 = self.response.gen_cert(self.domain, key1)
-        assert key1 == key2
-        assert self.response.verify_cert(self.domain, cert)
-
-    def test_gen_verify_cert_gen_key(self):
-        cert, key = self.response.gen_cert(self.domain)
-        assert isinstance(key, OpenSSL.crypto.PKey)
-        assert self.response.verify_cert(self.domain, cert)
-
-    def test_verify_bad_cert(self):
-        assert not self.response.verify_cert(self.domain,
-            test_util.load_cert('cert.pem'))
-
-    def test_verify_bad_domain(self):
-        key1 = test_util.load_pyopenssl_private_key('rsa512_key.pem')
-        cert, key2 = self.response.gen_cert(self.domain, key1)
-        assert key1 == key2
-        assert not self.response.verify_cert(self.domain2, cert)
-
-    def test_simple_verify_bad_key_authorization(self):
-        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
-        self.response.simple_verify(self.chall, "local", key2.public_key())
-
-    @mock.patch('acme.challenges.TLSALPN01Response.verify_cert', autospec=True)
-    def test_simple_verify(self, mock_verify_cert):
-        mock_verify_cert.return_value = mock.sentinel.verification
-        assert mock.sentinel.verification == self.response.simple_verify(
-                self.chall, self.domain, KEY.public_key(),
-                cert=mock.sentinel.cert)
-        mock_verify_cert.assert_called_once_with(
-            self.response, self.domain, mock.sentinel.cert)
-
-    @mock.patch('acme.challenges.socket.gethostbyname')
-    @mock.patch('acme.challenges.crypto_util.probe_sni')
-    def test_probe_cert(self, mock_probe_sni, mock_gethostbyname):
-        mock_gethostbyname.return_value = '127.0.0.1'
-        self.response.probe_cert('foo.com')
-        mock_gethostbyname.assert_called_once_with('foo.com')
-        mock_probe_sni.assert_called_once_with(
-            host=b'127.0.0.1', port=self.response.PORT, name=b'foo.com',
-            alpn_protocols=[b'acme-tls/1'])
-
-        self.response.probe_cert('foo.com', host='8.8.8.8')
-        mock_probe_sni.assert_called_with(
-            host=b'8.8.8.8', port=mock.ANY, name=b'foo.com',
-            alpn_protocols=[b'acme-tls/1'])
-
-    @mock.patch('acme.challenges.TLSALPN01Response.probe_cert')
-    def test_simple_verify_false_on_probe_error(self, mock_probe_cert):
-        mock_probe_cert.side_effect = errors.Error
-        assert not self.response.simple_verify(
-            self.chall, self.domain, KEY.public_key())
-
-
-class TLSALPN01Test(unittest.TestCase):
-
-    def setUp(self):
-        from acme.challenges import TLSALPN01
-        self.msg = TLSALPN01(
-            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
-        self.jmsg = {
-            'type': 'tls-alpn-01',
-            'token': 'a82d5ff8ef740d12881f6d3c2277ab2e',
-        }
-
-    def test_to_partial_json(self):
-        assert self.jmsg == self.msg.to_partial_json()
-
-    def test_from_json(self):
-        from acme.challenges import TLSALPN01
-        assert self.msg == TLSALPN01.from_json(self.jmsg)
-
-    def test_from_json_hashable(self):
-        from acme.challenges import TLSALPN01
-        hash(TLSALPN01.from_json(self.jmsg))
-
-    def test_from_json_invalid_token_length(self):
-        from acme.challenges import TLSALPN01
-        self.jmsg['token'] = jose.encode_b64jose(b'abcd')
-        with pytest.raises(jose.DeserializationError):
-            TLSALPN01.from_json(self.jmsg)
-
-    @mock.patch('acme.challenges.TLSALPN01Response.gen_cert')
-    def test_validation(self, mock_gen_cert):
-        mock_gen_cert.return_value = ('cert', 'key')
-        assert ('cert', 'key') == self.msg.validation(
-            KEY, cert_key=mock.sentinel.cert_key, domain=mock.sentinel.domain)
-        mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key,
-                                              domain=mock.sentinel.domain)
 
 
 class DNSTest(unittest.TestCase):

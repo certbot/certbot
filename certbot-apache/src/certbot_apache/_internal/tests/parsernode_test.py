@@ -112,12 +112,12 @@ def test_dummy():
         dirty=False,
         filepath="/some/random/path"
     )
-    dummydirective = DummyDirectiveNode(
+    dummydirective = DummyDirectiveNode( # noqa: F841
         name="Name",
         ancestor=None,
         filepath="/another/path"
     )
-    dummycomment = DummyCommentNode(
+    dummycomment = DummyCommentNode( # noqa: F841
         comment="Comment",
         ancestor=dummyblock,
         filepath="/some/file"

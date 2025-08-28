@@ -82,7 +82,7 @@ tmpvenv=$(mktemp -d)
 python3 -m venv "$tmpvenv"
 . $tmpvenv/bin/activate
 # update packaging tools to their pinned versions
-tools/pip_install.py towncrier virtualenv
+tools/pip_install.py build towncrier uv virtualenv
 
 root_without_le="$version.$$"
 root="$RELEASE_DIR/le.$root_without_le"
@@ -101,16 +101,10 @@ git checkout "$RELEASE_BRANCH"
 towncrier build --version "$version" --yes
 git commit -m "Update changelog for $version release"
 
-for pkg_dir in $SUBPKGS certbot-compatibility-test
-do
-  sed -i 's/\.dev0//' "$pkg_dir/setup.py"
-  git add "$pkg_dir/setup.py"
-done
-
 SetVersion() {
     ver="$1"
     # bumping Certbot's version number is done differently
-    for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test
+    for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test certbot-ci letstest
     do
       setup_file="$pkg_dir/setup.py"
       if [ $(grep -c '^version' "$setup_file") != 1 ]; then
@@ -126,7 +120,7 @@ SetVersion() {
     fi
     sed -i "s/^__version.*/__version__ = '$ver'/" "$init_file"
 
-    git add $SUBPKGS certbot-compatibility-test
+    git add $SUBPKGS certbot-compatibility-test certbot-ci letstest
 }
 
 SetVersion "$version"
@@ -139,10 +133,10 @@ for pkg_dir in $SUBPKGS
 do
   cd $pkg_dir
 
-  python setup.py clean
   rm -rf build dist
-  python setup.py sdist
-  python setup.py bdist_wheel
+  # It's not strictly necessary, but using uv to install build dependencies speeds things up a
+  # little bit.
+  python -m build --installer uv
 
   cd -
 done

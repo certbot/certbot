@@ -1,42 +1,20 @@
 """Crypto utilities."""
-import contextlib
 import enum
 from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
-import socket
 import typing
-from typing import Any
-from typing import Callable
-from typing import List
 from typing import Literal
-from typing import Mapping
 from typing import Optional
-from typing import Sequence
-from typing import Set
-from typing import Tuple
 from typing import Union
-import warnings
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448, types
 from cryptography.hazmat.primitives.serialization import Encoding
 from OpenSSL import crypto
-from OpenSSL import SSL
-
-from acme import errors
 
 logger = logging.getLogger(__name__)
-
-# Default SSL method selected here is the most compatible, while secure
-# SSL method: TLSv1_METHOD is only compatible with
-# TLSv1_METHOD, while TLS_method is compatible with all other
-# methods, including TLSv2_METHOD (read more at
-# https://docs.openssl.org/master/man3/SSL_CTX_new/#notes). _serve_sni
-# should be changed to use "set_options" to disable SSLv2 and SSLv3,
-# in case it's used for things other than probing/serving!
-_DEFAULT_SSL_METHOD = SSL.TLS_METHOD
 
 
 class Format(enum.IntEnum):
@@ -55,212 +33,6 @@ class Format(enum.IntEnum):
             return Encoding.DER
         else:
             return Encoding.PEM
-
-
-_KeyAndCert = Union[
-    Tuple[crypto.PKey, crypto.X509],
-    Tuple[types.CertificateIssuerPrivateKeyTypes, x509.Certificate],
-]
-
-
-class _DefaultCertSelection:
-    def __init__(self, certs: Mapping[bytes, _KeyAndCert]):
-        self.certs = certs
-
-    def __call__(self, connection: SSL.Connection) -> Optional[_KeyAndCert]:
-        server_name = connection.get_servername()
-        if server_name:
-            return self.certs.get(server_name, None)
-        return None # pragma: no cover
-
-
-class SSLSocket:  # pylint: disable=too-few-public-methods
-    """SSL wrapper for sockets.
-
-    :ivar socket sock: Original wrapped socket.
-    :ivar dict certs: Mapping from domain names (`bytes`) to
-        `OpenSSL.crypto.X509`.
-    :ivar method: See `OpenSSL.SSL.Context` for allowed values.
-    :ivar alpn_selection: Hook to select negotiated ALPN protocol for
-        connection.
-    :ivar cert_selection: Hook to select certificate for connection. If given,
-        `certs` parameter would be ignored, and therefore must be empty.
-
-    """
-    def __init__(
-        self,
-        sock: socket.socket,
-        certs: Optional[Mapping[bytes, _KeyAndCert]] = None,
-        method: int = _DEFAULT_SSL_METHOD,
-        alpn_selection: Optional[Callable[[SSL.Connection, List[bytes]], bytes]] = None,
-        cert_selection: Optional[
-            Callable[
-                [SSL.Connection],
-                Optional[_KeyAndCert],
-            ]
-        ] = None,
-    ) -> None:
-        warnings.warn("SSLSocket is deprecated and will be removed in an upcoming release",
-                      DeprecationWarning)
-        self.sock = sock
-        self.alpn_selection = alpn_selection
-        self.method = method
-        if not cert_selection and not certs:
-            raise ValueError("Neither cert_selection or certs specified.")
-        if cert_selection and certs:
-            raise ValueError("Both cert_selection and certs specified.")
-        if cert_selection is None:
-            cert_selection = _DefaultCertSelection(certs if certs else {})
-        self.cert_selection = cert_selection
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self.sock, name)
-
-    def _pick_certificate_cb(self, connection: SSL.Connection) -> None:
-        """SNI certificate callback.
-
-        This method will set a new OpenSSL context object for this
-        connection when an incoming connection provides an SNI name
-        (in order to serve the appropriate certificate, if any).
-
-        :param connection: The TLS connection object on which the SNI
-            extension was received.
-        :type connection: :class:`OpenSSL.Connection`
-
-        """
-        pair = self.cert_selection(connection)
-        if pair is None:
-            logger.debug("Certificate selection for server name %s failed, dropping SSL",
-                         connection.get_servername())
-            return
-        key, cert = pair
-        new_context = SSL.Context(self.method)
-        new_context.set_min_proto_version(SSL.TLS1_2_VERSION)
-        new_context.use_privatekey(key)
-        if isinstance(cert, x509.Certificate):
-            cert = crypto.X509.from_cryptography(cert)
-        new_context.use_certificate(cert)
-        if self.alpn_selection is not None:
-            new_context.set_alpn_select_callback(self.alpn_selection)
-        connection.set_context(new_context)
-
-    class FakeConnection:
-        """Fake OpenSSL.SSL.Connection."""
-
-        # pylint: disable=missing-function-docstring
-
-        def __init__(self, connection: SSL.Connection) -> None:
-            self._wrapped = connection
-
-        def __getattr__(self, name: str) -> Any:
-            return getattr(self._wrapped, name)
-
-        def shutdown(self, *unused_args: Any) -> bool:
-            # OpenSSL.SSL.Connection.shutdown doesn't accept any args
-            try:
-                return self._wrapped.shutdown()
-            except SSL.Error as error:  # pragma: no cover
-                # We wrap the error so we raise the same error type as sockets
-                # in the standard library. This is useful when this object is
-                # used by code which expects a standard socket such as
-                # socketserver in the standard library.
-                #
-                # We don't track code coverage in this "except" branch to avoid spurious CI failures
-                # caused by missing test coverage. These aren't worth fixing because this entire
-                # class has been deprecated. See https://github.com/certbot/certbot/issues/10284.
-                raise OSError(error)
-
-    def accept(self) -> Tuple[FakeConnection, Any]:  # pylint: disable=missing-function-docstring
-        sock, addr = self.sock.accept()
-
-        try:
-            context = SSL.Context(self.method)
-            context.set_options(SSL.OP_NO_SSLv2)
-            context.set_options(SSL.OP_NO_SSLv3)
-            context.set_tlsext_servername_callback(self._pick_certificate_cb)
-            if self.alpn_selection is not None:
-                context.set_alpn_select_callback(self.alpn_selection)
-
-            ssl_sock = self.FakeConnection(SSL.Connection(context, sock))
-            ssl_sock.set_accept_state()
-
-            # This log line is especially desirable because without it requests to
-            # our standalone TLSALPN server would not be logged.
-            logger.debug("Performing handshake with %s", addr)
-            try:
-                ssl_sock.do_handshake()
-            except SSL.Error as error:
-                # _pick_certificate_cb might have returned without
-                # creating SSL context (wrong server name)
-                raise OSError(error)
-
-            return ssl_sock, addr
-        except:
-            # If we encounter any error, close the new socket before reraising
-            # the exception.
-            sock.close()
-            raise
-
-
-def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # pylint: disable=too-many-arguments
-              method: int = _DEFAULT_SSL_METHOD, source_address: Tuple[str, int] = ('', 0),
-              alpn_protocols: Optional[Sequence[bytes]] = None) -> x509.Certificate:
-    """Probe SNI server for SSL certificate.
-
-    :param bytes name: Byte string to send as the server name in the
-        client hello message.
-    :param bytes host: Host to connect to.
-    :param int port: Port to connect to.
-    :param int timeout: Timeout in seconds.
-    :param method: See `OpenSSL.SSL.Context` for allowed values.
-    :param tuple source_address: Enables multi-path probing (selection
-        of source interface). See `socket.creation_connection` for more
-        info. Available only in Python 2.7+.
-    :param alpn_protocols: Protocols to request using ALPN.
-    :type alpn_protocols: `Sequence` of `bytes`
-
-    :raises acme.errors.Error: In case of any problems.
-
-    :returns: SSL certificate presented by the server.
-    :rtype: cryptography.x509.Certificate
-
-    """
-    warnings.warn("probe_sni is deprecated and will be removed in an upcoming release",
-                      DeprecationWarning)
-    context = SSL.Context(method)
-    context.set_timeout(timeout)
-
-    socket_kwargs = {'source_address': source_address}
-
-    try:
-        logger.debug(
-            "Attempting to connect to %s:%d%s.", host, port,
-            " from {0}:{1}".format(
-                source_address[0],
-                source_address[1]
-            ) if any(source_address) else ""
-        )
-        socket_tuple: Tuple[bytes, int] = (host, port)
-        sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore[arg-type]
-    except OSError as error:
-        raise errors.Error(error)
-
-    with contextlib.closing(sock) as client:
-        client_ssl = SSL.Connection(context, client)
-        client_ssl.set_connect_state()
-        client_ssl.set_tlsext_host_name(name)  # pyOpenSSL>=0.13
-        if alpn_protocols is not None:
-            client_ssl.set_alpn_protos(list(alpn_protocols))
-            warnings.warn("alpn_protocols parameter is deprecated and will be removed in an "
-                "upcoming certbot major version update", DeprecationWarning)
-        try:
-            client_ssl.do_handshake()
-            client_ssl.shutdown()
-        except SSL.Error as error:
-            raise errors.Error(error)
-    cert = client_ssl.get_peer_certificate()
-    assert cert # Appease mypy. We would have crashed out by now if there was no certificate.
-    return cert.to_cryptography()
 
 
 # Even *more* annoyingly, due to a mypy bug, we can't use Union[] types in
@@ -282,9 +54,9 @@ CertificateIssuerPrivateKeyTypesTpl = (
 
 def make_csr(
     private_key_pem: bytes,
-    domains: Optional[Union[Set[str], List[str]]] = None,
+    domains: Optional[Union[set[str], list[str]]] = None,
     must_staple: bool = False,
-    ipaddrs: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None,
+    ipaddrs: Optional[list[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None,
 ) -> bytes:
     """Generate a CSR containing domains or IPs as subjectAltNames.
 
@@ -338,7 +110,7 @@ def make_csr(
 
 def get_names_from_subject_and_extensions(
     subject: x509.Name, exts: x509.Extensions
-) -> List[str]:
+) -> list[str]:
     """Gets all DNS SAN names as well as the first Common Name from subject.
 
     :param subject: Name of the x509 object, which may include Common Name
@@ -366,14 +138,14 @@ def get_names_from_subject_and_extensions(
         return dns_names
     else:
         # We only include the first CN, if there are multiple. This matches
-        # the behavior of the previously implementation using pyOpenSSL.
+        # the behavior of the previous implementation using pyOpenSSL.
         return [cns[0]] + [d for d in dns_names if d != cns[0]]
 
 
 def _cryptography_cert_or_req_san(
     cert_or_req: Union[x509.Certificate, x509.CertificateSigningRequest],
-) -> List[str]:
-    """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
+) -> list[str]:
+    """Get Subject Alternative Names from certificate or CSR using cryptography.
 
     .. note:: Although this is `acme` internal API, it is used by
         `letsencrypt`.
@@ -403,11 +175,11 @@ def _now() -> datetime:
 
 
 def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
-                          domains: Optional[List[str]] = None,
+                          domains: Optional[list[str]] = None,
                           not_before: Optional[datetime] = None,
                           validity: Optional[timedelta] = None, force_san: bool = True,
-                          extensions: Optional[List[x509.Extension]] = None,
-                          ips: Optional[List[Union[ipaddress.IPv4Address,
+                          extensions: Optional[list[x509.Extension]] = None,
+                          ips: Optional[list[Union[ipaddress.IPv4Address,
                                                    ipaddress.IPv6Address]]] = None
                           ) -> x509.Certificate:
     """Generate new self-signed certificate.
@@ -454,7 +226,7 @@ def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
     builder = builder.subject_name(x509.Name(name_attrs))
     builder = builder.issuer_name(x509.Name(name_attrs))
 
-    sanlist: List[x509.GeneralName] = []
+    sanlist: list[x509.GeneralName] = []
     for address in domains:
         sanlist.append(x509.DNSName(address))
     for ip in ips:
@@ -478,7 +250,7 @@ def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
 
 
 def dump_cryptography_chain(
-    chain: List[x509.Certificate],
+    chain: list[x509.Certificate],
     encoding: Literal[Encoding.PEM, Encoding.DER] = Encoding.PEM,
 ) -> bytes:
     """Dump certificate chain into a bundle.

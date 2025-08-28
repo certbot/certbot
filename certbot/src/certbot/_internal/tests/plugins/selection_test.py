@@ -1,6 +1,5 @@
 """Tests for letsencrypt.plugins.selection"""
 import sys
-from typing import List
 import unittest
 from unittest import mock
 
@@ -50,7 +49,7 @@ class PickPluginTest(unittest.TestCase):
         self.default = None
         self.reg = mock.MagicMock()
         self.question = "Question?"
-        self.ifaces: List[interfaces.Plugin] = []
+        self.ifaces: list[interfaces.Plugin] = []
 
     def _call(self):
         from certbot._internal.plugins.selection import pick_plugin
@@ -220,7 +219,6 @@ class TestChooseConfiguratorPlugins(unittest.TestCase):
         return mock_ep
 
     def _parseArgs(self, args):
-        from certbot import configuration
         from certbot._internal import cli
         return cli.prepare_and_parse_args(self.plugins, args.split())
 

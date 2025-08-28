@@ -31,7 +31,7 @@ class AccountTest(unittest.TestCase):
         self.regr.__repr__ = mock.MagicMock(return_value="i_am_a_regr")
 
         with mock.patch("certbot._internal.account.socket") as mock_socket:
-            mock_socket.getfqdn.return_value = "test.certbot.org"
+            mock_socket.gethostname.return_value = "test.certbot.org"
             with mock.patch("certbot._internal.account.datetime") as mock_dt:
                 mock_dt.datetime.now.return_value = self.meta.creation_dt
                 self.acc_no_meta = Account(self.regr, KEY)

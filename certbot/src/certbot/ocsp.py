@@ -4,7 +4,6 @@ from datetime import timedelta
 from datetime import timezone
 import logging
 from typing import Optional
-from typing import Tuple
 import warnings
 
 from cryptography import x509
@@ -61,7 +60,8 @@ class RevocationChecker:
 
         return _check_ocsp_cryptography(cert_path, chain_path, url, timeout)
 
-def _determine_ocsp_server(cert_path: str) -> Tuple[Optional[str], Optional[str]]:
+
+def _determine_ocsp_server(cert_path: str) -> tuple[Optional[str], Optional[str]]:
     """Extract the OCSP server host from a certificate.
 
     :param str cert_path: Path to the cert we're checking OCSP for

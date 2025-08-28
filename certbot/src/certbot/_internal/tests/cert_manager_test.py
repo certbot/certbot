@@ -226,7 +226,8 @@ class CertificatesTest(BaseCertManagerTest):
         # pylint: disable=protected-access
 
         # pylint: disable=protected-access
-        get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
+        def get_report():
+            return cert_manager._report_human_readable(mock_config, parsed_certs)
 
         out = get_report()
         assert "INVALID: EXPIRED" in out
@@ -354,100 +355,6 @@ class DomainsForCertnameTest(BaseCertManagerTest):
         from certbot._internal import cert_manager
         assert cert_manager.domains_for_certname(self.config, "other.com") is None
         assert mock_make_or_verify_dir.called
-
-
-class RenameLineageTest(BaseCertManagerTest):
-    """Tests for certbot._internal.cert_manager.rename_lineage"""
-
-    def setUp(self):
-        super().setUp()
-        self.config.certname = "example.org"
-        self.config.new_certname = "after"
-
-    def _call(self, *args, **kwargs):
-        from certbot._internal import cert_manager
-        return cert_manager.rename_lineage(*args, **kwargs)
-
-    @mock.patch('certbot._internal.storage.renewal_conf_files')
-    @test_util.patch_display_util()
-    def test_no_certname(self, mock_get_utility, mock_renewal_conf_files):
-        self.config.certname = None
-        self.config.new_certname = "two"
-
-        # if not choices
-        mock_renewal_conf_files.return_value = []
-        with pytest.raises(errors.Error):
-            self._call(self.config)
-
-        mock_renewal_conf_files.return_value = ["one.conf"]
-        util_mock = mock_get_utility()
-        util_mock.menu.return_value = (display_util.CANCEL, 0)
-        with pytest.raises(errors.Error):
-            self._call(self.config)
-
-        util_mock.menu.return_value = (display_util.OK, -1)
-        with pytest.raises(errors.Error):
-            self._call(self.config)
-
-    @test_util.patch_display_util()
-    def test_no_new_certname(self, mock_get_utility):
-        self.config.certname = "one"
-        self.config.new_certname = None
-
-        util_mock = mock_get_utility()
-        util_mock.input.return_value = (display_util.CANCEL, "name")
-        with pytest.raises(errors.Error):
-            self._call(self.config)
-
-        util_mock.input.return_value = (display_util.OK, None)
-        with pytest.raises(errors.Error):
-            self._call(self.config)
-
-    @test_util.patch_display_util()
-    @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
-    def test_no_existing_certname(self, mock_lineage_for_certname, unused_get_utility):
-        self.config.certname = "one"
-        self.config.new_certname = "two"
-        mock_lineage_for_certname.return_value = None
-        with pytest.raises(errors.ConfigurationError):
-            self._call(self.config)
-
-    @test_util.patch_display_util()
-    @mock.patch("certbot._internal.storage.RenewableCert._check_symlinks")
-    def test_rename_cert(self, mock_check, unused_get_utility):
-        mock_check.return_value = True
-        self._call(self.config)
-        from certbot._internal import cert_manager
-        updated_lineage = cert_manager.lineage_for_certname(self.config, self.config.new_certname)
-        assert updated_lineage is not None
-        assert updated_lineage.lineagename == self.config.new_certname
-
-    @test_util.patch_display_util()
-    @mock.patch("certbot._internal.storage.RenewableCert._check_symlinks")
-    def test_rename_cert_interactive_certname(self, mock_check, mock_get_utility):
-        mock_check.return_value = True
-        self.config.certname = None
-        util_mock = mock_get_utility()
-        util_mock.menu.return_value = (display_util.OK, 0)
-        self._call(self.config)
-        from certbot._internal import cert_manager
-        updated_lineage = cert_manager.lineage_for_certname(self.config, self.config.new_certname)
-        assert updated_lineage is not None
-        assert updated_lineage.lineagename == self.config.new_certname
-
-    @test_util.patch_display_util()
-    @mock.patch("certbot._internal.storage.RenewableCert._check_symlinks")
-    def test_rename_cert_bad_new_certname(self, mock_check, unused_get_utility):
-        mock_check.return_value = True
-
-        # for example, don't rename to existing certname
-        self.config.new_certname = "example.org"
-        with pytest.raises(errors.ConfigurationError):
-            self._call(self.config)
-
-        self.config.new_certname = "one{0}two".format(os.path.sep)
-        with pytest.raises(errors.ConfigurationError):
-            self._call(self.config)
 
 
 class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):

@@ -89,8 +89,16 @@ the same way across all environments. Luckily, this is a largely a theoretical
 problem and I'm aware of no issues with our current dependencies.
 
 The second problem with this approach is that build dependencies are not
-tracked and pinned. Unfortunately, [this seems to be a largely unsolved problem
-in Python right
+tracked and pinned. To be clear, normal runtime dependencies like those
+declared in "install_requires" in setup.py files and even optional runtime
+dependencies like those declared in "extras_require" in setup.py are managed
+properly. The problem here is with dependencies needed at build time when
+initially installing a Python project. These are usually specified in
+"setup_requires" in setup.py or under "requires" in the "build-system" section
+of pyproject.toml files.
+
+Unfortunately, [tracking and pinning build dependencies seems to be a largely
+unsolved problem in Python right
 now](https://discuss.python.org/t/pinning-build-dependencies/8363). Our tooling
 ensures that when installing build dependencies when using our pinning files
 that versions from the pinning files are used (see
