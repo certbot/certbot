@@ -8,6 +8,7 @@ import errno
 import functools
 import http.server as SimpleHTTPServer
 import importlib.resources
+import json
 import os
 import re
 import shutil
@@ -19,9 +20,7 @@ import threading
 import time
 from typing import Generator
 from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 from cryptography import x509
@@ -102,7 +101,7 @@ def create_http_server(port: int) -> Generator[str, None, None]:
             server.server_close()
 
 
-def list_renewal_hooks_dirs(config_dir: str) -> List[str]:
+def list_renewal_hooks_dirs(config_dir: str) -> list[str]:
     """
     Find and return paths of all hook directories for the given certbot config directory
     :param str config_dir: path to the certbot config directory
@@ -158,7 +157,7 @@ set -e
 
 
 @contextlib.contextmanager
-def manual_http_hooks(http_server_root: str) -> Generator[Tuple[str, str], None, None]:
+def manual_http_hooks(http_server_root: str) -> Generator[tuple[str, str], None, None]:
     """
     Generate suitable http-01 hooks command for test purpose in the given HTTP
     server webroot directory. These hooks command use temporary python scripts
@@ -302,7 +301,7 @@ def echo(keyword: str, path: Optional[str] = None) -> str:
         os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')
 
 
-def get_acme_issuers() -> List[Certificate]:
+def get_acme_issuers() -> list[Certificate]:
     """Gets the list of one or more issuer certificates from the ACME server used by the
     context.
     :param context: the testing context.
@@ -318,3 +317,20 @@ def get_acme_issuers() -> List[Certificate]:
         issuers.append(load_pem_x509_certificate(request.content, default_backend()))
 
     return issuers
+
+def set_ari_response(certificate_pem: str, response_json: str) -> None:
+    """POST to an endpoint on the Pebble server setting the ARI response
+    for the given certificate."""
+    set_renewal_info_body = json.dumps(
+        {
+            'certificate': certificate_pem,
+            'ariResponse': response_json,
+        })
+
+    _suppress_x509_verification_warnings()
+    url = PEBBLE_MANAGEMENT_URL + '/set-renewal-info/'
+    print(f'sending to {url}: {set_renewal_info_body}')
+    resp = requests.post(url, verify=False, timeout=10, data=set_renewal_info_body)
+    if resp.status_code != 200:
+        print(f'setting renewal info: {resp.status_code} {resp.text}')
+    assert resp.status_code == 200

@@ -2,9 +2,6 @@
 import errno
 import socket
 import sys
-from typing import Dict
-from typing import Set
-from typing import Tuple
 import unittest
 from unittest import mock
 
@@ -23,13 +20,11 @@ class ServerManagerTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.standalone.ServerManager."""
 
     def setUp(self):
-        from certbot._internal.plugins.standalone import ServerManager, _KeyAndCert
-        self.certs: Dict[bytes, _KeyAndCert] = {}
-        self.http_01_resources: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = {}
-        self.mgr = ServerManager(self.certs, self.http_01_resources)
+        from certbot._internal.plugins.standalone import ServerManager
+        self.http_01_resources: set[acme_standalone.HTTP01RequestHandler.HTTP01Resource] = {}
+        self.mgr = ServerManager(self.http_01_resources)
 
     def test_init(self):
-        assert self.mgr.certs is self.certs
         assert self.mgr.http_01_resources is self.http_01_resources
 
     def _test_run_stop(self, challenge_type):

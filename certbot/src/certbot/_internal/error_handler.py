@@ -6,10 +6,7 @@ import traceback
 from types import TracebackType
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Type
 from typing import Union
 
 from certbot import errors
@@ -33,7 +30,7 @@ if os.name != "nt":
             _SIGNALS.append(signal_code)
 else:
     # POSIX signals are not implemented natively in Windows, but emulated from the C runtime.
-    # As consumed by CPython, most of handlers on theses signals are useless, in particular
+    # As consumed by CPython, most of handlers on these signals are useless, in particular
     # SIGTERM: for instance, os.kill(pid, signal.SIGTERM) will call TerminateProcess, that stops
     # immediately the process without calling the attached handler. Besides, non-POSIX signals
     # (CTRL_C_EVENT and CTRL_BREAK_EVENT) are implemented in a console context to handle the
@@ -80,9 +77,9 @@ class ErrorHandler:
     def __init__(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         self.call_on_regular_exit = False
         self.body_executed = False
-        self.funcs: List[Callable[[], Any]] = []
-        self.prev_handlers: Dict[int, Union[int, None, Callable]] = {}
-        self.received_signals: List[int] = []
+        self.funcs: list[Callable[[], Any]] = []
+        self.prev_handlers: dict[int, Union[int, None, Callable]] = {}
+        self.received_signals: list[int] = []
         if func is not None:
             self.register(func, *args, **kwargs)
 
@@ -90,7 +87,7 @@ class ErrorHandler:
         self.body_executed = False
         self._set_signal_handlers()
 
-    def __exit__(self, exec_type: Optional[Type[BaseException]],
+    def __exit__(self, exec_type: Optional[type[BaseException]],
                  exec_value: Optional[BaseException],
                  trace: Optional[TracebackType]) -> bool:
         self.body_executed = True

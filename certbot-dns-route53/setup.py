@@ -1,13 +1,11 @@
 import os
-import sys
 
-from setuptools import find_packages
 from setuptools import setup
 
-version = '4.1.0.dev0'
+version = '5.0.0.dev0'
 
 install_requires = [
-    'boto3>=1.15.15',
+    'boto3>=1.20.34',
 ]
 
 if os.environ.get('SNAP_BUILD'):
@@ -21,57 +19,7 @@ else:
         f'certbot>={version}',
     ])
 
-docs_extras = [
-    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
-    'sphinx_rtd_theme',
-]
-
-test_extras = [
-    'pytest',
-]
-
 setup(
-    name='certbot-dns-route53',
     version=version,
-    description="Route53 DNS Authenticator plugin for Certbot",
-    url='https://github.com/certbot/certbot',
-    author="Certbot Project",
-    author_email='certbot-dev@eff.org',
-    license='Apache License 2.0',
-    python_requires='>=3.9.2',
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Environment :: Plugins',
-        'Intended Audience :: System Administrators',
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
-        'Programming Language :: Python :: 3.12',
-        'Programming Language :: Python :: 3.13',
-        'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Security',
-        'Topic :: System :: Installation/Setup',
-        'Topic :: System :: Networking',
-        'Topic :: System :: Systems Administration',
-        'Topic :: Utilities',
-    ],
-    packages=find_packages(where='src'),
-    package_dir={'': 'src'},
-    include_package_data=True,
     install_requires=install_requires,
-    keywords=['certbot', 'route53', 'aws'],
-    extras_require={
-        'docs': docs_extras,
-        'test': test_extras,
-    },
-    entry_points={
-        'certbot.plugins': [
-            'dns-route53 = certbot_dns_route53._internal.dns_route53:Authenticator',
-            'certbot-route53:auth = certbot_dns_route53._internal.dns_route53:HiddenAuthenticator',
-        ],
-    },
 )

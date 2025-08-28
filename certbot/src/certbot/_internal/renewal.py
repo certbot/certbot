@@ -1,6 +1,8 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 
+import configobj
 import copy
+import datetime
 import itertools
 import logging
 import random
@@ -8,18 +10,18 @@ import sys
 import time
 import traceback
 from typing import Any
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography import x509
+
+from acme import client as acme_client
 
 from certbot import configuration
 from certbot import crypto_util
@@ -38,6 +40,8 @@ from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
+ARI_RETRY_AFTER_CONFIG_ITEM = "ari_retry_after"
+
 # These are the items which get pulled out of a renewal configuration
 # file's renewalparams and actually used in the client configuration
 # during the renewal process. We have to record their types here because
@@ -53,6 +57,39 @@ BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
 
 CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
+
+class AriClientPool:
+    """A cache of ACME clients for using in performing ACME Renewal Info (ARI) requests.
+
+    During `certbot renew` we need to check ARI for many certificates, and usually these
+    are all issued by the same server. To avoid redundant directory fetches, we create
+    one acme.ClientV2 per server.
+
+    This takes a command line configuration object so it can set the User-Agent header and
+    observe the --no-verify-ssl flag.
+    """
+    def __init__(self, cli_config: configuration.NamespaceConfig):
+        self._verify_ssl = not cli_config.no_verify_ssl
+        self._user_agent = client.determine_user_agent(cli_config)
+        self._pool: dict[str, acme_client.ClientV2] = {}
+
+    def get(self, server: str) -> acme_client.ClientV2:
+        """
+        Retrieve or create an ACME client for the specified server.
+
+        Returns:
+            acme_client.ClientV2: The ACME client associated with the specified server.
+        """
+        ari_client = self._pool.get(server, None)
+        if ari_client:
+            return ari_client
+
+        net = acme_client.ClientNetwork(verify_ssl=self._verify_ssl, user_agent=self._user_agent)
+        directory = acme_client.ClientV2.get_directory(server, net)
+        ari_client = acme_client.ClientV2(directory, net)
+
+        self._pool[server] = ari_client
+        return ari_client
 
 
 def reconstitute(config: configuration.NamespaceConfig,
@@ -160,7 +197,7 @@ def _restore_plugin_configs(config: configuration.NamespaceConfig,
     #      longer defined, stored copies of that parameter will be
     #      deserialized as strings by this logic even if they were
     #      originally meant to be some other type.
-    plugin_prefixes: List[str] = []
+    plugin_prefixes: list[str] = []
     if renewalparams["authenticator"] == "webroot":
         _restore_webroot_config(config, renewalparams)
     else:
@@ -209,7 +246,7 @@ def restore_required_config_elements(config: configuration.NamespaceConfig,
         setattr(config, key, value)
 
 
-def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> Dict[str, Any]:
+def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> dict[str, Any]:
     """Removes deprecated config options from the parsed renewalparams.
 
     :param dict renewalparams: list of parsed renewalparams
@@ -222,7 +259,7 @@ def _remove_deprecated_config_elements(renewalparams: Mapping[str, Any]) -> Dict
         if option_name not in cli.DEPRECATED_OPTIONS}
 
 
-def _restore_pref_challs(unused_name: str, value: Union[List[str], str]) -> List[str]:
+def _restore_pref_challs(unused_name: str, value: Union[list[str], str]) -> list[str]:
     """Restores preferred challenges from a renewal config file.
 
     If value is a `str`, it should be a single challenge type.
@@ -294,13 +331,9 @@ def _restore_str(name: str, value: str) -> Optional[str]:
     :rtype: str or None
 
     """
-    # Previous to v0.5.0, Certbot always stored the `server` URL in the renewal config,
-    # resulting in configs which explicitly use the deprecated ACMEv1 URL, today
-    # preventing an automatic transition to the default modern ACME URL.
-    # (https://github.com/certbot/certbot/issues/7978#issuecomment-625442870)
-    # As a mitigation, this function reinterprets the value of the `server` parameter if
-    # necessary, replacing the ACMEv1 URL with the default ACME URL. It is still possible
-    # to override this choice with the explicit `--server` CLI flag.
+    # To automatically migrate users from Let's Encrypt's old ACMEv1 URL, we replace the it here
+    # with the default ACME URL. It is still possible to override this choice with the explicit
+    # `--server` CLI flag.
     if name == "server" and value == constants.V1_URI:
         logger.info("Using server %s instead of legacy %s",
                     constants.CLI_DEFAULTS["server"], value)
@@ -309,18 +342,149 @@ def _restore_str(name: str, value: str) -> Optional[str]:
     return None if value == "None" else value
 
 
-def should_renew(config: configuration.NamespaceConfig, lineage: storage.RenewableCert) -> bool:
+def should_renew(config: configuration.NamespaceConfig,
+                 lineage: storage.RenewableCert,
+                 ari_clients: AriClientPool) -> bool:
     """Return true if any of the circumstances for automatic renewal apply."""
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
-    if lineage.should_autorenew():
-        logger.info("Certificate is due for renewal, auto-renewing...")
-        return True
     if config.dry_run:
         logger.info("Certificate not due for renewal, but simulating renewal for dry run")
         return True
+    if should_autorenew(lineage, ari_clients):
+        logger.info("Certificate is due for renewal, auto-renewing...")
+        return True
     display_util.notify("Certificate not yet due for renewal")
+    return False
+
+
+def _ari_renewal_time(lineage: storage.RenewableCert,
+                     cert_pem: bytes,
+                     ari_clients: AriClientPool) -> Optional[datetime.datetime]:
+    """Return the ARI suggested renewal time if it's available."""
+    # For ARI requests, we want to use the ACME directory URL from which the
+    # cert was originally requested. Since `NamespaceConfig.server` can be overridden on
+    # the command line, we're using the server stored in the cert's renewal
+    # conf, i.e. `lineage.server`
+    #
+    # Fixes https://github.com/certbot/certbot/issues/10339
+    if not lineage.server:
+        logger.warning("Skipping ARI check because %s has no 'server' field. This issue will not "
+                       "prevent certificate renewal", lineage.configfile.filename)
+        return None
+
+    ari_config_section = lineage.configfile.get("acme_renewal_info", {})
+    retry_after = ari_config_section.get(ARI_RETRY_AFTER_CONFIG_ITEM, None)
+    if retry_after:
+        retry_after_datetime = datetime.datetime.fromisoformat(retry_after)
+        now = datetime.datetime.now()
+        if now < retry_after_datetime:
+            logger.debug("Skipped ACME Renewal Info check because ari_retry_after %s is in "
+                         "the future",
+                         retry_after)
+            return None
+
+    renewal_time = None
+    try:
+        ari_client = ari_clients.get(lineage.server)
+        renewal_time, retry_after = ari_client.renewal_time(cert_pem)
+    except Exception:  # pylint: disable=broad-except
+        # We want to stop errors around ARI preventing renewal so we catch all exceptions here
+        # with a warning asking users to tell us about any problems they are experiencing
+        logger.warning("An error occurred requesting ACME Renewal Information (ARI). If this "
+                       "problem persists and you think it's a bug in Certbot, please open an "
+                       "issue at https://github.com/certbot/certbot/issues/new/choose.")
+        logger.debug("Error while requesting ARI was:", exc_info=True)
+        retry_after = datetime.datetime.now() + datetime.timedelta(seconds=60 * 60 * 6)
+
+
+    config_update = configobj.ConfigObj()
+    config_update["acme_renewal_info"] = {
+        # Note: the ACME client returns naive (no timezone) datetimes for retry_after, and that
+        # is what we serialize here.
+        ARI_RETRY_AFTER_CONFIG_ITEM: retry_after.isoformat(timespec="seconds"),
+    }
+    storage.atomic_rewrite(lineage.configfile.filename, config_update)
+    return renewal_time
+
+
+def _default_renewal_time(cert_pem: bytes) -> datetime.datetime:
+    """Return an reasonable default time to attempt renewal of the certificate
+    based on the certificate lifetime.
+
+    :param bytes cert_pem: cert as pem file
+
+    :returns: Time to attempt renewal
+    :rtype: `datetime.datetime`
+    """
+    cert = x509.load_pem_x509_certificate(cert_pem)
+
+    not_before = cert.not_valid_before_utc
+    lifetime = cert.not_valid_after_utc - not_before
+    if lifetime.total_seconds() < 10 * 86400:
+        default_rt = not_before + lifetime / 2
+    else:
+        default_rt = not_before + lifetime * 2 / 3
+
+    return default_rt
+
+def should_autorenew(lineage: storage.RenewableCert,
+                     ari_clients: AriClientPool) -> bool:
+    """Should we now try to autorenew the most recent cert version?
+
+    If automatic renewal is disabled for the lineage, this function
+    immediately returns False.
+
+    Otherwise, if any of ACME Renewal Info (ARI), OCSP, or the
+    renew_before_expiry config option indicates we should renew, we
+    return True. If none of those values say we should renew and at
+    least one of ARI or renew_before_expiry has an available value, we
+    return False. We otherwise decide whether to renew based on the
+    certificate's remaining lifetime.
+
+    Note that this examines the numerically most recent cert version,
+    not the currently deployed version.
+
+    :returns: whether an attempt should now be made to autorenew the
+        most current cert version in this lineage
+    :rtype: bool
+
+    """
+    if not lineage.autorenewal_is_enabled():
+        return False
+
+    cert = lineage.version("cert", lineage.latest_common_version())
+    with open(cert, 'rb') as f:
+        cert_pem = f.read()
+
+    renewal_time = _ari_renewal_time(lineage, cert_pem, ari_clients)
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    if renewal_time and now > renewal_time:
+        return True
+
+    # Renewals on the basis of revocation
+    if lineage.ocsp_revoked(lineage.latest_common_version()):
+        logger.debug("Should renew, certificate is revoked.")
+        return True
+
+    # If the renew_before_expiry config field is set, check if it says we should renew
+    config_interval = lineage.configuration.get("renew_before_expiry")
+    if config_interval is not None:
+        notAfter = crypto_util.notAfter(cert)
+        if notAfter < storage.add_time_interval(now, config_interval):
+            logger.debug("Should renew, less than %s before certificate "
+                            "expiry %s.", config_interval,
+                            notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
+            return True
+    # Only use the default if we don't have an ARI or renew_before_expiry value
+    elif renewal_time is None:
+        default_renewal_time = _default_renewal_time(cert_pem)
+        if now > default_renewal_time:
+            return True
+
     return False
 
 
@@ -381,7 +545,7 @@ def _avoid_reuse_key_conflicts(config: configuration.NamespaceConfig,
                 "add --new-key.")
 
 
-def renew_cert(config: configuration.NamespaceConfig, domains: Optional[List[str]],
+def renew_cert(config: configuration.NamespaceConfig, domains: Optional[list[str]],
                le_client: client.Client, lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
@@ -416,9 +580,9 @@ def report(msgs: Iterable[str], category: str) -> str:
     return "  " + "\n  ".join(lines)
 
 
-def _renew_describe_results(config: configuration.NamespaceConfig, renew_successes: List[str],
-                            renew_failures: List[str], renew_skipped: List[str],
-                            parse_failures: List[str]) -> None:
+def _renew_describe_results(config: configuration.NamespaceConfig, renew_successes: list[str],
+                            renew_failures: list[str], renew_skipped: list[str],
+                            parse_failures: list[str]) -> None:
     """
     Print a report to the terminal about the results of the renewal process.
 
@@ -464,7 +628,7 @@ def _renew_describe_results(config: configuration.NamespaceConfig, renew_success
     notify(display_obj.SIDE_FRAME)
 
 
-def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list, list]:
+def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -499,9 +663,15 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
     # shutting down a web service) aren't prolonged unnecessarily.
     apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
 
+    # We initialize acme clients on a per-server basis, but most
+    # lineages use the same server. Memoize clients here so we can
+    # share the connection pool and reuse a single fetched directory.
+    ari_clients = AriClientPool(config)
+
     for renewal_file in conf_files:
         display_util.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
+        assert renewal_file.endswith(".conf") # make sure lineagename_for_filename will not error
         lineagename = storage.lineagename_for_filename(renewal_file)
 
         # Note that this modifies config (to add back the configuration
@@ -523,7 +693,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
                 renewal_candidate.ensure_deployed()
                 from certbot._internal import main
                 plugins = plugins_disco.PluginsRegistry.find_all()
-                if should_renew(lineage_config, renewal_candidate):
+                if should_renew(lineage_config, renewal_candidate, ari_clients):
                     # Apply random sleep upon first renewal if needed
                     if apply_random_sleep:
                         sleep_time = random.uniform(1, 60 * 8)
@@ -565,13 +735,13 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
     _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures)
 
+    hooks.run_saved_post_hooks(renewed_domains, failed_domains)
+
     if renew_failures or parse_failures:
         raise errors.Error(
             f"{len(renew_failures)} renew failure(s), {len(parse_failures)} parse failure(s)")
 
     logger.debug("no renewal failures")
-
-    return (renewed_domains, failed_domains)
 
 
 def _update_renewal_params_from_key(key_path: str, config: configuration.NamespaceConfig) -> None:

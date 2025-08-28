@@ -1,4 +1,5 @@
 """Module executing integration tests against certbot core."""
+import json
 import os
 from os.path import exists
 from os.path import join
@@ -7,8 +8,6 @@ import shutil
 import subprocess
 import time
 from typing import Generator
-from typing import Tuple
-from typing import Type
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
@@ -95,17 +94,14 @@ def test_prepare_plugins(context: IntegrationTestsContext) -> None:
 
 def test_http_01(context: IntegrationTestsContext) -> None:
     """Test the HTTP-01 challenge using standalone plugin."""
-    # We start a server listening on the port for the
-    # TLS-SNI challenge to prevent regressions in #3601.
-    with misc.create_http_server(context.tls_alpn_01_port):
-        certname = context.get_domain('le2')
-        context.certbot([
-            '--domains', certname, '--preferred-challenges', 'http-01', 'run',
-            '--cert-name', certname,
-            '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
-            '--post-hook', misc.echo('wtf_post', context.hook_probe),
-            '--deploy-hook', misc.echo('deploy', context.hook_probe),
-        ])
+    certname = context.get_domain('le2')
+    context.certbot([
+        '--domains', certname, '--preferred-challenges', 'http-01', 'run',
+        '--cert-name', certname,
+        '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
+        '--post-hook', misc.echo('wtf_post', context.hook_probe),
+        '--deploy-hook', misc.echo('deploy', context.hook_probe),
+    ])
 
     assert_hook_execution(context.hook_probe, 'deploy')
     assert_saved_renew_hook(context.config_dir, certname)
@@ -310,6 +306,38 @@ def test_graceful_renew_it_is_time(context: IntegrationTestsContext) -> None:
     assert_hook_execution(context.hook_probe, 'deploy')
 
 
+def test_renew_when_ari_says_its_time(context: IntegrationTestsContext) -> None:
+    """Test graceful renew is done when it is due time."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
+    # Tell Pebble to make ARI look urgent
+    with open(join(context.config_dir, 'live', certname, 'cert.pem'), 'r') as c:
+        certificate_pem = c.read()
+
+    misc.set_ari_response(certificate_pem, json.dumps({
+        'suggestedWindow': {
+            'start': '2020-01-01T00:00:00Z',
+            'end': '2020-01-01T00:00:00Z'
+        }
+    }))
+
+    # For the renew call only, avoid passing `--server` to the `certbot` command, so
+    # we fall back on the hardcoded default of `https://acme-v02.api.letsencrypt.org`.
+    # No requests should be made to that URL because the lineage has a baked-in Pebble
+    # URL in its config from the issuance earlier in this test case. If there's a bug
+    # an ARI _is_ called against that URL it will fail because Let's Encrypt doesn't
+    # know about certificates issued by Pebble.
+    context.directory_url = None
+    context.certbot(['renew', '--deploy-hook', misc.echo('deploy', context.hook_probe)],
+                    force_renew=False)
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+    assert_hook_execution(context.hook_probe, 'deploy')
+
+
 def test_renew_with_changed_private_key_complexity(context: IntegrationTestsContext) -> None:
     """Test proper renew with updated private key complexity."""
     certname = context.get_domain('renew')
@@ -409,6 +437,40 @@ def test_renew_hook_override(context: IntegrationTestsContext) -> None:
     assert_hook_execution(context.hook_probe, 'deploy_override')
 
 
+def test_renew_hook_env_vars(context: IntegrationTestsContext) -> None:
+    fail_domain = context.get_domain('fail-env')
+    context.certbot([
+        'certonly', '-d', fail_domain,
+        '--preferred-challenges', 'http-01'
+    ])
+
+    context.certbot([
+        'renew',
+        '--post-hook', f'printenv RENEWED_DOMAINS >> {context.hook_probe}'
+    ])
+
+    assert_hook_execution(context.hook_probe, fail_domain)
+
+    # Clear probe
+    with open(context.hook_probe, 'w'):
+        pass
+
+    # now renew using manual dns, which will fail on renew
+    # manual_dns_auth_hook from misc is designed to fail if the domain contains 'fail-*'.
+    with pytest.raises(subprocess.CalledProcessError):
+        context.certbot([
+            'renew', '--cert-name', fail_domain,
+            '--preferred-challenges', 'dns',
+            '--manual-auth-hook', context.manual_dns_auth_hook,
+            '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
+            '-a', 'manual',
+            '--post-hook', f'printenv FAILED_DOMAINS >> {context.hook_probe}',
+            '--dry-run', # use dry run here to deactivate previous authz, or this will pass
+        ])
+
+    assert_hook_execution(context.hook_probe, fail_domain)
+
+
 def test_invalid_domain_with_dns_challenge(context: IntegrationTestsContext) -> None:
     """Test certificate issuance failure with DNS-01 challenge."""
     # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
@@ -506,7 +568,7 @@ def test_reuse_key_allow_subset_of_names(context: IntegrationTestsContext) -> No
 
 def test_new_key(context: IntegrationTestsContext) -> None:
     """Tests --new-key and its interactions with --reuse-key"""
-    def private_key(generation: int) -> Tuple[str, str]:
+    def private_key(generation: int) -> tuple[str, str]:
         pk_path = join(context.config_dir, f'archive/{certname}/privkey{generation}.pem')
         with open(pk_path, 'r') as file:
             return file.read(), pk_path
@@ -606,7 +668,7 @@ def test_default_rsa_size(context: IntegrationTestsContext) -> None:
     ('secp521r1', SECP521R1)]
 )
 def test_ecdsa_curves(context: IntegrationTestsContext, curve: str,
-                      curve_cls: Type[EllipticCurve]) -> None:
+                      curve_cls: type[EllipticCurve]) -> None:
     """Test issuance for each supported ECDSA curve"""
     domain = context.get_domain('curve')
     context.certbot([
@@ -742,7 +804,7 @@ def test_revoke_and_unregister(context: IntegrationTestsContext) -> None:
     ('secp521r1', SECP521R1)]
 )
 def test_revoke_ecdsa_cert_key(
-    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve]) -> None:
+    context: IntegrationTestsContext, curve: str, curve_cls: type[EllipticCurve]) -> None:
     """Test revoking a certificate """
     cert: str = context.get_domain('curve')
     context.certbot([
@@ -767,7 +829,7 @@ def test_revoke_ecdsa_cert_key(
     ('secp521r1', SECP521R1)]
 )
 def test_revoke_ecdsa_cert_key_delete(
-    context: IntegrationTestsContext, curve: str, curve_cls: Type[EllipticCurve]) -> None:
+    context: IntegrationTestsContext, curve: str, curve_cls: type[EllipticCurve]) -> None:
     """Test revoke and deletion for each supported curve type"""
     cert: str = context.get_domain('curve')
     context.certbot([

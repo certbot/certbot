@@ -3,6 +3,7 @@
 import contextlib
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 import sys
 import unittest
 from unittest import mock
@@ -14,9 +15,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.x509 import ocsp as ocsp_lib
 import pytest
-import pytz
 
-from certbot import errors
 from certbot.tests import util as test_util
 
 out = """Missing = in header key=value
@@ -37,7 +36,7 @@ class OSCPTestCryptography(unittest.TestCase):
         self.cert_obj = mock.MagicMock()
         self.cert_obj.cert_path = self.cert_path
         self.cert_obj.chain_path = self.chain_path
-        now = datetime.now(pytz.UTC)
+        now = datetime.now(timezone.utc)
         self.mock_notAfter = mock.patch('certbot.ocsp.crypto_util.notAfter',
                                         return_value=now + timedelta(hours=2))
         self.mock_notAfter.start()
@@ -223,8 +222,8 @@ def _construct_mock_ocsp_response(certificate_status, response_status):
         responder_name=responder.subject,
         certificates=[responder],
         hash_algorithm=hashes.SHA1(),
-        next_update_utc=datetime.now(pytz.UTC) + timedelta(days=1),
-        this_update_utc=datetime.now(pytz.UTC) - timedelta(days=1),
+        next_update_utc=datetime.now(timezone.utc) + timedelta(days=1),
+        this_update_utc=datetime.now(timezone.utc) - timedelta(days=1),
         signature_algorithm_oid=x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA1,
     )
 

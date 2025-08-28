@@ -33,8 +33,6 @@ from typing import Any
 from typing import cast
 from typing import IO
 from typing import Optional
-from typing import Tuple
-from typing import Type
 
 from acme import messages
 from certbot import configuration
@@ -148,7 +146,7 @@ def post_arg_parse_setup(config: configuration.NamespaceConfig) -> None:
 
 
 def setup_log_file_handler(config: configuration.NamespaceConfig, logfile: str,
-                           fmt: str) -> Tuple[logging.Handler, str]:
+                           fmt: str) -> tuple[logging.Handler, str]:
     """Setup file debug logging.
 
     :param certbot.configuration.NamespaceConfig config: Configuration object
@@ -332,7 +330,7 @@ def pre_arg_parse_except_hook(memory_handler: MemoryHandler,
         memory_handler.flush(force=True)
 
 
-def post_arg_parse_except_hook(exc_type: Type[BaseException], exc_value: BaseException,
+def post_arg_parse_except_hook(exc_type: type[BaseException], exc_value: BaseException,
                                trace: TracebackType, debug: bool, quiet: bool,
                                log_path: str) -> None:
     """Logs fatal exceptions and reports them to the user.
@@ -373,8 +371,9 @@ def post_arg_parse_except_hook(exc_type: Type[BaseException], exc_value: BaseExc
             logger.error(str(exc_value))
             exit_func()
         logger.error('An unexpected error occurred:')
-        if messages.is_acme_error(exc_value):
-            logger.error(display_util.describe_acme_error(cast(messages.Error, exc_value)))
+        acme_error = getattr(exc_value, "error", exc_value)
+        if messages.is_acme_error(acme_error):
+            logger.error(display_util.describe_acme_error(cast(messages.Error, acme_error)))
         else:
             output = traceback.format_exception_only(exc_type, exc_value)
             # format_exception_only returns a list of strings each

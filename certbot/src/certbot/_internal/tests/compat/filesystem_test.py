@@ -565,7 +565,7 @@ class RealpathTest(test_util.TempDirTestCase):
         os.symlink(link2_path, link3_path)
         os.symlink(link3_path, link1_path)
 
-        with pytest.raises(RuntimeError, match='link1 is a loop!') as error:
+        with pytest.raises(RuntimeError, match='link1 is a loop!'):
             filesystem.realpath(link1_path)
 
 

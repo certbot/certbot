@@ -6,13 +6,9 @@ import traceback
 from typing import Any
 from typing import Callable
 from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import TypeVar
 from typing import Union
-
-import pytz
 
 from certbot import configuration
 from certbot import crypto_util
@@ -28,32 +24,6 @@ logger = logging.getLogger(__name__)
 ###################
 # Commands
 ###################
-
-
-def rename_lineage(config: configuration.NamespaceConfig) -> None:
-    """Rename the specified lineage to the new name.
-
-    :param config: Configuration.
-    :type config: :class:`certbot._internal.configuration.NamespaceConfig`
-
-    """
-    certname = get_certnames(config, "rename")[0]
-
-    new_certname = config.new_certname
-    if not new_certname:
-        code, new_certname = display_util.input_text(
-            "Enter the new name for certificate {0}".format(certname),
-            force_interactive=True)
-        if code != display_util.OK or not new_certname:
-            raise errors.Error("User ended interaction.")
-
-    lineage = lineage_for_certname(config, certname)
-    if not lineage:
-        raise errors.ConfigurationError("No existing certificate with name "
-            "{0} found.".format(certname))
-    storage.rename_renewal_config(certname, new_certname, config)
-    display_util.notification("Successfully renamed {0} to {1}."
-                                 .format(certname, new_certname), pause=False)
 
 
 def certificates(config: configuration.NamespaceConfig) -> None:
@@ -124,14 +94,14 @@ def lineage_for_certname(cli_config: configuration.NamespaceConfig,
 
 
 def domains_for_certname(config: configuration.NamespaceConfig,
-                         certname: str) -> Optional[List[str]]:
+                         certname: str) -> Optional[list[str]]:
     """Find the domains in the cert with name certname."""
     lineage = lineage_for_certname(config, certname)
     return lineage.names() if lineage else None
 
 
 def find_duplicative_certs(config: configuration.NamespaceConfig,
-                           domains: List[str]) -> Tuple[Optional[storage.RenewableCert],
+                           domains: list[str]) -> tuple[Optional[storage.RenewableCert],
                                                         Optional[storage.RenewableCert]]:
     """Find existing certs that match the given domain names.
 
@@ -156,9 +126,9 @@ def find_duplicative_certs(config: configuration.NamespaceConfig,
 
     """
     def update_certs_for_domain_matches(candidate_lineage: storage.RenewableCert,
-                                        rv: Tuple[Optional[storage.RenewableCert],
+                                        rv: tuple[Optional[storage.RenewableCert],
                                                   Optional[storage.RenewableCert]]
-                                        ) -> Tuple[Optional[storage.RenewableCert],
+                                        ) -> tuple[Optional[storage.RenewableCert],
                                                    Optional[storage.RenewableCert]]:
         """Return cert as identical_names_cert if it matches,
            or subset_names_cert if it matches as subset
@@ -178,12 +148,12 @@ def find_duplicative_certs(config: configuration.NamespaceConfig,
                 subset_names_cert = candidate_lineage
         return (identical_names_cert, subset_names_cert)
 
-    init: Tuple[Optional[storage.RenewableCert], Optional[storage.RenewableCert]] = (None, None)
+    init: tuple[Optional[storage.RenewableCert], Optional[storage.RenewableCert]] = (None, None)
 
     return _search_lineages(config, update_certs_for_domain_matches, init)
 
 
-def _archive_files(candidate_lineage: storage.RenewableCert, filetype: str) -> Optional[List[str]]:
+def _archive_files(candidate_lineage: storage.RenewableCert, filetype: str) -> Optional[list[str]]:
     """ In order to match things like:
         /etc/letsencrypt/archive/example.com/chain1.pem.
 
@@ -205,8 +175,8 @@ def _archive_files(candidate_lineage: storage.RenewableCert, filetype: str) -> O
     return None
 
 
-def _acceptable_matches() -> List[Union[Callable[[storage.RenewableCert], str],
-                                        Callable[[storage.RenewableCert], Optional[List[str]]]]]:
+def _acceptable_matches() -> list[Union[Callable[[storage.RenewableCert], str],
+                                        Callable[[storage.RenewableCert], Optional[list[str]]]]]:
     """ Generates the list that's passed to match_and_check_overlaps. Is its own function to
     make unit testing easier.
 
@@ -237,9 +207,9 @@ def cert_path_to_lineage(cli_config: configuration.NamespaceConfig) -> str:
 def match_and_check_overlaps(cli_config: configuration.NamespaceConfig,
                              acceptable_matches: Iterable[Union[
                                  Callable[[storage.RenewableCert], str],
-                                 Callable[[storage.RenewableCert], Optional[List[str]]]]],
+                                 Callable[[storage.RenewableCert], Optional[list[str]]]]],
                              match_func: Callable[[storage.RenewableCert], str],
-                             rv_func: Callable[[storage.RenewableCert], str]) -> List[str]:
+                             rv_func: Callable[[storage.RenewableCert], str]) -> list[str]:
     """ Searches through all lineages for a match, and checks for duplicates.
     If a duplicate is found, an error is raised, as performing operations on lineages
     that have their properties incorrectly duplicated elsewhere is probably a bad idea.
@@ -250,13 +220,13 @@ def match_and_check_overlaps(cli_config: configuration.NamespaceConfig,
     :param function rv_func: specifies what to return
 
     """
-    def find_matches(candidate_lineage: storage.RenewableCert, return_value: List[str],
+    def find_matches(candidate_lineage: storage.RenewableCert, return_value: list[str],
                      acceptable_matches: Iterable[Union[
                          Callable[[storage.RenewableCert], str],
-                         Callable[[storage.RenewableCert], Optional[List[str]]]]]) -> List[str]:
+                         Callable[[storage.RenewableCert], Optional[list[str]]]]]) -> list[str]:
         """Returns a list of matches using _search_lineages."""
         acceptable_matches_resolved = [func(candidate_lineage) for func in acceptable_matches]
-        acceptable_matches_rv: List[str] = []
+        acceptable_matches_rv: list[str] = []
         for item in acceptable_matches_resolved:
             if isinstance(item, list):
                 acceptable_matches_rv += item
@@ -267,7 +237,7 @@ def match_and_check_overlaps(cli_config: configuration.NamespaceConfig,
             return_value.append(rv_func(candidate_lineage))
         return return_value
 
-    matched: List[str] = _search_lineages(cli_config, find_matches, [], acceptable_matches)
+    matched: list[str] = _search_lineages(cli_config, find_matches, [], acceptable_matches)
     if not matched:
         raise errors.Error(f"No match found for cert-path {cli_config.cert_path}!")
     elif len(matched) > 1:
@@ -285,7 +255,7 @@ def human_readable_cert_info(config: configuration.NamespaceConfig, cert: storag
         return None
     if config.domains and not set(config.domains).issubset(cert.names()):
         return None
-    now = datetime.datetime.now(pytz.UTC)
+    now = datetime.datetime.now(datetime.timezone.utc)
 
     reasons = []
     if cert.is_test_cert:
@@ -319,7 +289,7 @@ def human_readable_cert_info(config: configuration.NamespaceConfig, cert: storag
 
 
 def get_certnames(config: configuration.NamespaceConfig, verb: str, allow_multiple: bool = False,
-                  custom_prompt: Optional[str] = None) -> List[str]:
+                  custom_prompt: Optional[str] = None) -> list[str]:
     """Get certname from flag, interactively, or error out."""
     certname = config.certname
     if certname:
@@ -377,7 +347,7 @@ def _describe_certs(config: configuration.NamespaceConfig,
                     parsed_certs: Iterable[storage.RenewableCert],
                     parse_failures: Iterable[str]) -> None:
     """Print information about the certs we know about"""
-    out: List[str] = []
+    out: list[str] = []
 
     notify = out.append
 

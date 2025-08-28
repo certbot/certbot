@@ -2,10 +2,8 @@
 import abc
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import Generator
 from typing import Iterable
-from typing import List
 from typing import Optional
 
 from certbot import configuration
@@ -25,7 +23,7 @@ List of expected options parameters:
 
 
 def enabled_enhancements(
-        config: configuration.NamespaceConfig) -> Generator[Dict[str, Any], None, None]:
+        config: configuration.NamespaceConfig) -> Generator[dict[str, Any], None, None]:
     """
     Generator to yield the enabled new style enhancements.
 
@@ -174,7 +172,7 @@ class AutoHSTSEnhancement(object, metaclass=abc.ABCMeta):
 # This is used to configure internal new style enhancements in Certbot. These
 # enhancement interfaces need to be defined in this file. Please do not modify
 # this list from plugin code.
-_INDEX: List[Dict[str, Any]] = [
+_INDEX: list[dict[str, Any]] = [
     {
         "name": "AutoHSTS",
         "cli_help": "Gradually increasing max-age value for HTTP Strict Transport "+

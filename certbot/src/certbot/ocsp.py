@@ -1,9 +1,9 @@
 """Tools for checking certificate revocation."""
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 import logging
 from typing import Optional
-from typing import Tuple
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -12,7 +12,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import ocsp
-import pytz
 import requests
 
 from certbot import crypto_util
@@ -50,7 +49,7 @@ class RevocationChecker:
         # Let's Encrypt doesn't update OCSP for expired certificates,
         # so don't check OCSP if the cert is expired.
         # https://github.com/certbot/certbot/issues/7152
-        now = datetime.now(pytz.UTC)
+        now = datetime.now(timezone.utc)
         if crypto_util.notAfter(cert_path) <= now:
             return False
 
@@ -60,7 +59,8 @@ class RevocationChecker:
 
         return _check_ocsp_cryptography(cert_path, chain_path, url, timeout)
 
-def _determine_ocsp_server(cert_path: str) -> Tuple[Optional[str], Optional[str]]:
+
+def _determine_ocsp_server(cert_path: str) -> tuple[Optional[str], Optional[str]]:
     """Extract the OCSP server host from a certificate.
 
     :param str cert_path: Path to the cert we're checking OCSP for
@@ -166,7 +166,7 @@ def _check_ocsp_response(response_ocsp: 'ocsp.OCSPResponse', request_ocsp: 'ocsp
     # See OpenSSL implementation as a reference:
     # https://github.com/openssl/openssl/blob/ef45aa14c5af024fcb8bef1c9007f3d1c115bd85/crypto/ocsp/ocsp_cl.c#L338-L391
     # thisUpdate/nextUpdate are expressed in UTC/GMT time zone
-    now = datetime.now(pytz.UTC)
+    now = datetime.now(timezone.utc)
     if not response_ocsp.this_update_utc:
         raise AssertionError('param thisUpdate is not set.')
     if response_ocsp.this_update_utc > now + timedelta(minutes=5):

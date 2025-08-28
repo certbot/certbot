@@ -1,0 +1,3 @@
+Updated apache TLS configuration options based on changes to Mozilla's intermediate configuration recommendations.
+* Added `DHE-RSA-CHACHA20-POLY1305` to `SSLCipherSuite` list for better compliance
+* Configured curves using `SSLOpenSSLConfCmd` so FFDH won't be used with OpenSSL 3.0

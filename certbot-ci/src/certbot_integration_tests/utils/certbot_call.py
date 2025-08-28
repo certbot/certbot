@@ -4,18 +4,17 @@
 import os
 import subprocess
 import sys
-from typing import Dict
-from typing import List
-from typing import Tuple
+from typing import Optional
 
 import certbot_integration_tests
-# pylint: disable=wildcard-import,unused-wildcard-import
-from certbot_integration_tests.utils.constants import *
+from certbot_integration_tests.utils.constants import DEFAULT_HTTP_01_PORT
+from certbot_integration_tests.utils.constants import HTTPS_PORT
+from certbot_integration_tests.utils.constants import PEBBLE_DIRECTORY_URL
 
 
-def certbot_test(certbot_args: List[str], directory_url: str, http_01_port: int,
-                 tls_alpn_01_port: int, config_dir: str, workspace: str,
-                 force_renew: bool = True) -> Tuple[str, str]:
+def certbot_test(certbot_args: list[str], directory_url: Optional[str], http_01_port: int,
+                 https_port: int, config_dir: str, workspace: str,
+                 force_renew: bool = True) -> tuple[str, str]:
     """
     Invoke the certbot executable available in PATH in a test context for the given args.
     The test context consists in running certbot in debug mode, with various flags suitable
@@ -24,14 +23,14 @@ def certbot_test(certbot_args: List[str], directory_url: str, http_01_port: int,
     :param list certbot_args: the arguments to pass to the certbot executable
     :param str directory_url: URL of the ACME directory server to use
     :param int http_01_port: port for the HTTP-01 challenges
-    :param int tls_alpn_01_port: port for the TLS-ALPN-01 challenges
+    :param int https_port: port Nginx expects will serve HTTPS
     :param str config_dir: certbot configuration directory to use
     :param str workspace: certbot current directory to use
     :param bool force_renew: set False to not force renew existing certificates (default: True)
     :return: stdout and stderr as strings
     :rtype: `tuple` of `str`
     """
-    command, env = _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
+    command, env = _prepare_args_env(certbot_args, directory_url, http_01_port, https_port,
                                      config_dir, workspace, force_renew)
 
     proc = subprocess.run(command, stdout=subprocess.PIPE,
@@ -43,7 +42,7 @@ def certbot_test(certbot_args: List[str], directory_url: str, http_01_port: int,
     return proc.stdout, proc.stderr
 
 
-def _prepare_environ(workspace: str) -> Dict[str, str]:
+def _prepare_environ(workspace: str) -> dict[str, str]:
     # pylint: disable=missing-function-docstring
 
     new_environ = os.environ.copy()
@@ -81,21 +80,24 @@ def _prepare_environ(workspace: str) -> Dict[str, str]:
     return new_environ
 
 
-def _prepare_args_env(certbot_args: List[str], directory_url: str, http_01_port: int,
-                      tls_alpn_01_port: int, config_dir: str, workspace: str,
-                      force_renew: bool) -> Tuple[List[str], Dict[str, str]]:
+def _prepare_args_env(certbot_args: list[str], directory_url: Optional[str], http_01_port: int,
+                      https_port: int, config_dir: str, workspace: str,
+                      force_renew: bool) -> tuple[list[str], dict[str, str]]:
 
     new_environ = _prepare_environ(workspace)
     additional_args = ['--no-random-sleep-on-renew']
     if force_renew:
         additional_args.append('--renew-by-default')
 
+    if directory_url:
+        additional_args.extend(['--server', directory_url])
+
+
     command = [
         'certbot',
-        '--server', directory_url,
         '--no-verify-ssl',
         '--http-01-port', str(http_01_port),
-        '--https-port', str(tls_alpn_01_port),
+        '--https-port', str(https_port),
         '--config-dir', config_dir,
         '--work-dir', os.path.join(workspace, 'work'),
         '--logs-dir', os.path.join(workspace, 'logs'),
@@ -122,7 +124,7 @@ def main() -> None:
     # Default config is pebble
     directory_url = os.environ.get('SERVER', PEBBLE_DIRECTORY_URL)
     http_01_port = int(os.environ.get('HTTP_01_PORT', DEFAULT_HTTP_01_PORT))
-    tls_alpn_01_port = int(os.environ.get('TLS_ALPN_01_PORT', TLS_ALPN_01_PORT))
+    https_port = int(os.environ.get('HTTPS_PORT', HTTPS_PORT))
 
     # Execution of certbot in a self-contained workspace
     workspace = os.environ.get('WORKSPACE', os.path.join(os.getcwd(), '.certbot_test_workspace'))
@@ -134,8 +136,8 @@ def main() -> None:
     config_dir = os.path.join(workspace, 'conf')
 
     # Invoke certbot in test mode, without capturing output so users see directly the outcome.
-    command, env = _prepare_args_env(args, directory_url, http_01_port, tls_alpn_01_port,
-                                     config_dir, workspace, True)
+    command, env = _prepare_args_env(args, directory_url, http_01_port, https_port,
+                                     config_dir, workspace, False)
     subprocess.check_call(command, universal_newlines=True, cwd=workspace, env=env)
 
 

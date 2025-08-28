@@ -82,7 +82,7 @@ tmpvenv=$(mktemp -d)
 python3 -m venv "$tmpvenv"
 . $tmpvenv/bin/activate
 # update packaging tools to their pinned versions
-tools/pip_install.py virtualenv
+tools/pip_install.py build towncrier uv virtualenv
 
 root_without_le="$version.$$"
 root="$RELEASE_DIR/le.$root_without_le"
@@ -96,21 +96,15 @@ if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
 fi
 git checkout "$RELEASE_BRANCH"
 
-# Update changelog
-sed -i "0,/main/ s/main/$(date +'%Y-%m-%d')/" certbot/CHANGELOG.md
-git add certbot/CHANGELOG.md
+# Update changelog. `--yes` automatically clears out older newsfragments,
+# and all of towncrier's changes are staged for commit when it's done
+towncrier build --version "$version" --yes
 git commit -m "Update changelog for $version release"
-
-for pkg_dir in $SUBPKGS certbot-compatibility-test
-do
-  sed -i 's/\.dev0//' "$pkg_dir/setup.py"
-  git add "$pkg_dir/setup.py"
-done
 
 SetVersion() {
     ver="$1"
     # bumping Certbot's version number is done differently
-    for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test
+    for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test certbot-ci letstest
     do
       setup_file="$pkg_dir/setup.py"
       if [ $(grep -c '^version' "$setup_file") != 1 ]; then
@@ -126,7 +120,7 @@ SetVersion() {
     fi
     sed -i "s/^__version.*/__version__ = '$ver'/" "$init_file"
 
-    git add $SUBPKGS certbot-compatibility-test
+    git add $SUBPKGS certbot-compatibility-test certbot-ci letstest
 }
 
 SetVersion "$version"
@@ -139,10 +133,10 @@ for pkg_dir in $SUBPKGS
 do
   cd $pkg_dir
 
-  python setup.py clean
   rm -rf build dist
-  python setup.py sdist
-  python setup.py bdist_wheel
+  # It's not strictly necessary, but using uv to install build dependencies speeds things up a
+  # little bit.
+  python -m build --installer uv
 
   cd -
 done
@@ -204,18 +198,6 @@ git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$ta
 
 git rm --cached -r "$built_package_dir"
 git commit -m "Remove built packages from git"
-
-# Add main section to CHANGELOG.md
-header=$(head -n 4 certbot/CHANGELOG.md)
-body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
-footer=$(tail -n +5 certbot/CHANGELOG.md)
-echo "$header
-
-$body
-
-$footer" > certbot/CHANGELOG.md
-git add certbot/CHANGELOG.md
-git commit -m "Add contents to certbot/CHANGELOG.md for next version"
 
 if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0

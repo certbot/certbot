@@ -36,11 +36,8 @@ import sys
 import tempfile
 import time
 import traceback
-import urllib.error as urllib_error
-import urllib.request as urllib_request
 
 import boto3
-from botocore.exceptions import ClientError
 from fabric import Config
 from fabric import Connection
 import yaml
@@ -185,7 +182,7 @@ def block_until_ssh_open(ipstring, wait_time=10, timeout=120):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((ipstring, 22))
             reached = True
-        except OSError as err:
+        except OSError:
             time.sleep(wait_time)
             t_elapsed += wait_time
     sock.close()

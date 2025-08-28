@@ -5,11 +5,8 @@ import platform
 from typing import Any
 from typing import Callable
 from typing import cast
-from typing import Dict
 from typing import IO
-from typing import List
 from typing import Optional
-from typing import Tuple
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -48,9 +45,10 @@ from certbot.interfaces import AccountStorage
 logger = logging.getLogger(__name__)
 
 
-def acme_from_config_key(config: configuration.NamespaceConfig,
+def create_acme_client(config: configuration.NamespaceConfig,
                          key: Optional[jose.JWK] = None,
                          regr: Optional[messages.RegistrationResource] = None,
+                         server_override: Optional[str] = None,
                          ) -> acme_client.ClientV2:
     """Wrangle ACME client construction"""
     alg = RS256
@@ -70,7 +68,10 @@ def acme_from_config_key(config: configuration.NamespaceConfig,
                                     verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
 
-    directory = acme_client.ClientV2.get_directory(config.server, net)
+    server = config.server
+    if server_override:
+        server = server_override
+    directory = acme_client.ClientV2.get_directory(server, net)
     return acme_client.ClientV2(directory, net)
 
 
@@ -148,7 +149,7 @@ def sample_user_agent() -> str:
 
 def register(config: configuration.NamespaceConfig, account_storage: AccountStorage,
              tos_cb: Optional[Callable[[str], None]] = None
-             ) -> Tuple[account.Account, acme_client.ClientV2]:
+             ) -> tuple[account.Account, acme_client.ClientV2]:
     """Register new account with an ACME CA.
 
     This function takes care of generating fresh private key,
@@ -199,7 +200,7 @@ def register(config: configuration.NamespaceConfig, account_storage: AccountStor
             key_size=config.rsa_key_size,
             backend=default_backend())
     key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
-    acme = acme_from_config_key(config, key)
+    acme = create_acme_client(config, key)
     # TODO: add phone?
     regr = perform_registration(acme, config, tos_cb)
 
@@ -228,13 +229,14 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
         raise errors.Error("acme client with no private key cannot register account.")
 
     eab_credentials_supplied = config.eab_kid and config.eab_hmac_key
-    eab: Optional[Dict[str, Any]]
+    eab: Optional[dict[str, Any]]
     if eab_credentials_supplied:
         account_public_key = acme.net.key.public_key()
         eab = messages.ExternalAccountBinding.from_data(account_public_key=account_public_key,
                                                         kid=config.eab_kid,
                                                         hmac_key=config.eab_hmac_key,
-                                                        directory=acme.directory)
+                                                        directory=acme.directory,
+                                                        hmac_alg=config.eab_hmac_alg)
     else:
         eab = None
 
@@ -291,7 +293,7 @@ class Client:
 
         # Initialize ACME if account is provided
         if acme is None and self.account is not None:
-            acme = acme_from_config_key(config, self.account.key, self.account.regr)
+            acme = create_acme_client(config, self.account.key, self.account.regr)
         self.acme = acme
 
         self.auth_handler: Optional[auth_handler.AuthHandler]
@@ -303,7 +305,7 @@ class Client:
 
     def obtain_certificate_from_csr(self, csr: util.CSR,
                                     orderr: Optional[messages.OrderResource] = None
-                                    ) -> Tuple[bytes, bytes]:
+                                    ) -> tuple[bytes, bytes]:
         """Obtain certificate.
 
         :param .util.CSR csr: PEM-encoded Certificate Signing
@@ -346,8 +348,8 @@ class Client:
         cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, domains: List[str], old_keypath: Optional[str] = None
-                           ) -> Tuple[bytes, bytes, util.Key, util.CSR]:
+    def obtain_certificate(self, domains: list[str], old_keypath: Optional[str] = None
+                           ) -> tuple[bytes, bytes, util.Key, util.CSR]:
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
@@ -503,7 +505,7 @@ class Client:
         authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
 
-    def obtain_and_enroll_certificate(self, domains: List[str], certname: Optional[str]
+    def obtain_and_enroll_certificate(self, domains: list[str], certname: Optional[str]
                                       ) -> Optional[storage.RenewableCert]:
         """Obtain and enroll certificate.
 
@@ -537,8 +539,8 @@ class Client:
             key.pem, chain,
             self.config)
 
-    def _successful_domains_from_error(self, error: messages.Error, domains: List[str],
-                                ) -> List[str]:
+    def _successful_domains_from_error(self, error: messages.Error, domains: list[str],
+                                ) -> list[str]:
         if error.subproblems is not None:
             failed_domains = [problem.identifier.value for problem in error.subproblems
                                 if problem.identifier is not None]
@@ -546,16 +548,16 @@ class Client:
             return successful_domains
         return []
 
-    def _retry_obtain_certificate(self, domains: List[str], successful_domains: List[str],
+    def _retry_obtain_certificate(self, domains: list[str], successful_domains: list[str],
                                 old_keypath: Optional[str]
-                                ) -> Tuple[bytes, bytes, util.Key, util.CSR]:
+                                ) -> tuple[bytes, bytes, util.Key, util.CSR]:
         failed_domains = [d for d in domains if d not in successful_domains]
         domains_list = ", ".join(failed_domains)
         display_util.notify("Unable to obtain a certificate with every requested "
             f"domain. Retrying without: {domains_list}")
         return self.obtain_certificate(successful_domains, old_keypath)
 
-    def _choose_lineagename(self, domains: List[str], certname: Optional[str]) -> str:
+    def _choose_lineagename(self, domains: list[str], certname: Optional[str]) -> str:
         """Chooses a name for the new lineage.
 
         :param domains: domains in certificate request
@@ -604,7 +606,7 @@ class Client:
 
     def save_certificate(self, cert_pem: bytes, chain_pem: bytes,
                          cert_path: str, chain_path: str, fullchain_path: str
-                         ) -> Tuple[str, str, str]:
+                         ) -> tuple[str, str, str]:
         """Saves the certificate received from the ACME server.
 
         :param bytes cert_pem:
@@ -639,7 +641,7 @@ class Client:
 
         return abs_cert_path, abs_chain_path, abs_fullchain_path
 
-    def deploy_certificate(self, domains: List[str], privkey_path: str, cert_path: str,
+    def deploy_certificate(self, domains: list[str], privkey_path: str, cert_path: str,
                            chain_path: str, fullchain_path: str) -> None:
         """Install certificate
 
@@ -678,7 +680,7 @@ class Client:
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains: List[str], chain_path: str,
+    def enhance_config(self, domains: list[str], chain_path: str,
                        redirect_default: bool = True) -> None:
         """Enhance the configuration.
 
@@ -722,7 +724,7 @@ class Client:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
-    def apply_enhancement(self, domains: List[str], enhancement: str,
+    def apply_enhancement(self, domains: list[str], enhancement: str,
                           options: Optional[str] = None) -> None:
         """Applies an enhancement on all domains.
 
@@ -854,7 +856,7 @@ def rollback(default_installer: str, checkpoints: int,
 
 
 def _open_pem_file(config: configuration.NamespaceConfig,
-                   cli_arg_path: str, pem_path: str) -> Tuple[IO, str]:
+                   cli_arg_path: str, pem_path: str) -> tuple[IO, str]:
     """Open a pem file.
 
     If cli_arg_path was set by the client, open that.

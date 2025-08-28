@@ -298,40 +298,41 @@ There are also a number of third-party plugins for the client, provided by
 other developers. Many are beta/experimental, but some are already in
 widespread use:
 
-================== ==== ==== =================================================================
-Plugin             Auth Inst Notes
-================== ==== ==== =================================================================
-haproxy_           Y    Y    Integration with the HAProxy load balancer
-s3front_           Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
-gandi_             Y    N    Obtain certificates via the Gandi LiveDNS API
-varnish_           Y    N    Obtain certificates via a Varnish server
-external-auth_     Y    Y    A plugin for convenient scripting
-pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN servers
-proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
-dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
-dns-ispconfig_     Y    N    DNS Authentication using ISPConfig as DNS server
-dns-cloudns_       Y    N    DNS Authentication using ClouDNS API
-dns-clouddns_      Y    N    DNS Authentication using CloudDNS API
-dns-lightsail_     Y    N    DNS Authentication using Amazon Lightsail DNS API
-dns-inwx_          Y    Y    DNS Authentication for INWX through the XML API
-dns-azure_         Y    N    DNS Authentication using Azure DNS
-dns-godaddy_       Y    N    DNS Authentication using Godaddy DNS
-dns-yandexcloud_   Y    N    DNS Authentication using Yandex Cloud DNS
-dns-bunny_         Y    N    DNS Authentication using BunnyDNS
-njalla_            Y    N    DNS Authentication for njalla
-DuckDNS_           Y    N    DNS Authentication for DuckDNS
-Porkbun_           Y    N    DNS Authentication for Porkbun
-Infomaniak_        Y    N    DNS Authentication using Infomaniak Domains API
-dns-multi_         Y    N    DNS authentication of 100+ providers using go-acme/lego
-dns-dnsmanager_    Y    N    DNS Authentication for dnsmanager.io
-standalone-nfq_    Y    N    HTTP Authentication that works with any webserver (Linux only)
-dns-solidserver_   Y    N    DNS Authentication using SOLIDserver (EfficientIP)
-dns-stackit_       Y    N    DNS Authentication using STACKIT DNS
-dns-ionos_         Y    N    DNS Authentication using IONOS Cloud DNS
-dns-mijn-host_     Y    N    DNS Authentication using mijn.host DNS
-nginx-unit_        Y    Y    Automates obtaining and installing a certificate with Nginx Unit
-dns-cdmon_         Y    N    DNS Authentication using cdmon's API
-================== ==== ==== =================================================================
+======================= ==== ==== =================================================================
+Plugin                  Auth Inst Notes
+======================= ==== ==== =================================================================
+haproxy_                Y    Y    Integration with the HAProxy load balancer
+s3front_                Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
+gandi_                  Y    N    Obtain certificates via the Gandi LiveDNS API
+varnish_                Y    N    Obtain certificates via a Varnish server
+external-auth_          Y    Y    A plugin for convenient scripting
+pritunl_                N    Y    Install certificates in pritunl distributed OpenVPN servers
+proxmox_                N    Y    Install certificates in Proxmox Virtualization servers
+dns-standalone_         Y    N    Obtain certificates via an integrated DNS server
+dns-ispconfig_          Y    N    DNS Authentication using ISPConfig as DNS server
+dns-cloudns_            Y    N    DNS Authentication using ClouDNS API
+dns-clouddns_           Y    N    DNS Authentication using CloudDNS API
+dns-lightsail_          Y    N    DNS Authentication using Amazon Lightsail DNS API
+dns-inwx_               Y    Y    DNS Authentication for INWX through the XML API
+dns-azure_              Y    N    DNS Authentication using Azure DNS
+dns-godaddy_            Y    N    DNS Authentication using Godaddy DNS
+dns-yandexcloud_        Y    N    DNS Authentication using Yandex Cloud DNS
+dns-bunny_              Y    N    DNS Authentication using BunnyDNS
+njalla_                 Y    N    DNS Authentication for njalla
+DuckDNS_                Y    N    DNS Authentication for DuckDNS
+Porkbun_                Y    N    DNS Authentication for Porkbun
+Infomaniak_             Y    N    DNS Authentication using Infomaniak Domains API
+dns-multi_              Y    N    DNS authentication of 100+ providers using go-acme/lego
+dns-dnsmanager_         Y    N    DNS Authentication for dnsmanager.io
+standalone-nfq_         Y    N    HTTP Authentication that works with any webserver (Linux only)
+dns-solidserver_        Y    N    DNS Authentication using SOLIDserver (EfficientIP)
+dns-stackit_            Y    N    DNS Authentication using STACKIT DNS
+dns-ionos_              Y    N    DNS Authentication using IONOS Cloud DNS
+dns-mijn-host_          Y    N    DNS Authentication using mijn.host DNS
+nginx-unit_             Y    Y    Automates obtaining and installing a certificate with Nginx Unit
+dns-cdmon_              Y    N    DNS Authentication using cdmon's API
+dns-synergy-wholesale_  Y    N    DNS Authentication using Synergy Wholesale DNS
+======================= ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
@@ -363,6 +364,7 @@ dns-cdmon_         Y    N    DNS Authentication using cdmon's API
 .. _dns-mijn-host: https://github.com/mijnhost/certbot-dns-mijn-host
 .. _nginx-unit: https://github.com/kea/certbot-nginx-unit
 .. _dns-cdmon: https://github.com/rascazzione/certbot-dns-cdmon
+.. _dns-synergy-wholesale: https://github.com/ALameLlama/certbot-dns-synergy-wholesale
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -766,6 +768,83 @@ commands into your individual environment.
   you will need to use the ``--deploy-hook`` since the exit status will be 0 both on successful renewal
   and when renewal is not necessary.
 
+.. _renaming:
+
+Renaming certificates
+------------------------------------------------------------
+
+While certbot does not have an internal rename function, it is possible to rename certs by
+requesting a new certificate using certbot's ``--cert-name`` flag.
+
+1. View certificates with ``certbot certificates``
+
+   The output might be something like::
+
+    Found the following certs:
+      Certificate Name: yourdomain.com-0001
+        Serial Number: 2ce74f4e2b822211dd7648ea26c8927bdef6
+        Key Type: ECDSA
+        Domains: yourdomain.com subdomain.yourdomain.com
+        Expiry Date: 2025-11-16 20:27:27+00:00 (INVALID: TEST_CERT)
+        Certificate Path: /etc/letsencrypt/live/yourdomain.com-0001/fullchain.pem
+        Private Key Path: /etc/letsencrypt/live/yourdomain.com-0001/privkey.pem
+      Certificate Name: yourdomain.com
+        Serial Number: 2c72aa8cf58aa9fe9a33208d82304642d9ed
+        Key Type: ECDSA
+        Domains: yourdomain.com
+        Expiry Date: 2025-11-16 19:22:47+00:00 (INVALID: TEST_CERT)
+        Certificate Path: /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+        Private Key Path: /etc/letsencrypt/live/yourdomain.com/privkey.pem
+
+   In this example, we will rename certificate ``yourdomain.com-0001`` to ``yourdomain.com``.
+
+2. If the name you want is in use and you're not using that cert, delete it using the instructions
+   in the `Deleting certificates`_ section.
+
+   You'll then have::
+
+    Found the following certs:
+      Certificate Name: yourdomain.com-0001
+        Serial Number: 2ce74f4e2b822211dd7648ea26c8927bdef6
+        Key Type: ECDSA
+        Domains: yourdomain.com subdomain.yourdomain.com
+        Expiry Date: 2025-11-16 20:27:27+00:00 (INVALID: TEST_CERT)
+        Certificate Path: /etc/letsencrypt/live/yourdomain.com-0001/fullchain.pem
+        Private Key Path: /etc/letsencrypt/live/yourdomain.com-0001/privkey.pem
+
+3. If you're not sure how you set the cert up initially, note relevant configuration options by
+   inspecting ``/etc/letsencrypt/renewal/yourdomain.com-0001.conf``
+
+   It will look something like::
+
+    version = 4.2.0
+    archive_dir = /etc/letsencrypt/archive/yourdomain.com-0001
+    cert = /etc/letsencrypt/live/yourdomain.com-0001/cert.pem
+    privkey = /etc/letsencrypt/live/yourdomain.com-0001/privkey.pem
+    chain = /etc/letsencrypt/live/yourdomain.com-0001/chain.pem
+    fullchain = /etc/letsencrypt/live/yourdomain.com-0001/fullchain.pem
+    [renewalparams]
+    account = abcdef12345678910
+    server = https://acme-staging-v02.api.letsencrypt.org/directory
+    authenticator = standalone
+    key_type = ecdsa
+    post_hook = "echo 'shut down server'"
+
+   You'll want to note the authenticator, installer, server, any hooks, etc.
+
+4. Create a new cert with the options and name you want by running
+   ``certbot certonly --cert-name yourdomain.com -d yourdomain.com -d otherdomain.com --any-other-options``.
+   The value for ``--cert-name`` can be anything you want; by default it is the first domain
+   listed on the cert.
+
+5. Make sure that any links to your certificates are updated. If you're using certbot to manage
+   the installation of certs on your webserver, you can run
+   ``certbot install --cert-name yourdomain.com``.
+
+6. Restart your webserver, if applicable.
+
+7. You can now delete the old certificate, again using the `Deleting certificates`_ section.
+
 .. _renewal-config-file:
 .. _Modifying the Renewal Configuration File:
 
@@ -860,7 +939,7 @@ whether your system has a pre-installed scheduled task for Certbot, it is safe t
 instructions to create one.
 
 .. note::
-   If you're using Windows, these instructions are not neccessary as Certbot on Windows comes with
+   If you're using Windows, these instructions are not necessary as Certbot on Windows comes with
    a scheduled task for automated renewal pre-installed.
 
    If you are using macOS and installed Certbot using Homebrew, follow the instructions at

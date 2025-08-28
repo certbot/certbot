@@ -6,11 +6,7 @@ authors = ["Certbot Project"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-# python 3.9.2 is used as a lower bound here because newer versions of
-# cryptography dropped support for python 3.9.0 and 3.9.1. see
-# https://github.com/pyca/cryptography/pull/12045. when we drop support for
-# python 3.9 altogether, this line can be changed to the simpler 'python = "^3.10"'.
-python = ">=3.9.2,<4.0"
+python = "^3.10"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be

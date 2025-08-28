@@ -21,7 +21,7 @@ from __future__ import absolute_import
 # First round of wrapping: we import statically all public attributes exposed by the os module
 # This allows in particular to have pylint, mypy, IDEs be aware that most of os members are
 # available in certbot.compat.os.
-from os import *  # pylint: disable=wildcard-import,unused-wildcard-import,redefined-builtin,os-module-forbidden
+from os import *  # pylint: disable=wildcard-import,unused-wildcard-import,redefined-builtin,os-module-forbidden # noqa: F403
 
 # Second round of wrapping: we import dynamically all attributes from the os module that have not
 # yet been imported by the first round (static import). This covers in particular the case of
@@ -43,7 +43,7 @@ if not std_os.environ.get("CERTBOT_DOCS") == "1":
 
 # Import our internal path module, then allow certbot.compat.os.path
 # to behave as a module (similarly to os.path).
-from certbot.compat import _path as path  # type: ignore  # pylint: disable=wrong-import-position
+from certbot.compat import _path as path  # type: ignore  # pylint: disable=wrong-import-position # noqa: E402
 std_sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.

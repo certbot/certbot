@@ -2,7 +2,6 @@
 """Test for certbot_apache._internal.configurator AutoHSTS functionality"""
 import re
 import sys
-import unittest
 from unittest import mock
 
 import pytest

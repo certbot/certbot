@@ -1,6 +1,5 @@
 """Test for certbot_apache._internal.configurator for Centos overrides"""
 import sys
-import unittest
 from unittest import mock
 
 import pytest

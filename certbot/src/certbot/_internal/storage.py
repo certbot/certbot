@@ -8,12 +8,9 @@ import shutil
 import stat
 from typing import Any
 from typing import cast
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 import configobj
@@ -22,7 +19,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
-import pytz
 
 import certbot
 from certbot import configuration
@@ -31,7 +27,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot import ocsp
 from certbot import util
-from certbot._internal import constants
 from certbot._internal import error_handler
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import filesystem
@@ -49,7 +44,7 @@ BASE_PRIVKEY_MODE = 0o600
 # pylint: disable=too-many-lines
 
 
-def renewal_conf_files(config: configuration.NamespaceConfig) -> List[str]:
+def renewal_conf_files(config: configuration.NamespaceConfig) -> list[str]:
     """Build a list of all renewal configuration files.
 
     :param configuration.NamespaceConfig config: Configuration object
@@ -84,16 +79,6 @@ def cert_path_for_cert_name(config: configuration.NamespaceConfig, cert_name: st
         cert_name_implied_conf, encoding='utf-8', default_encoding='utf-8')["fullchain"]
 
 
-def config_with_defaults(config: Optional[configuration.NamespaceConfig] = None
-                         ) -> configobj.ConfigObj:
-    """Merge supplied config, if provided, on top of builtin defaults."""
-    defaults_copy = configobj.ConfigObj(
-        constants.RENEWER_DEFAULTS, encoding='utf-8', default_encoding='utf-8')
-    defaults_copy.merge(config if config is not None else configobj.ConfigObj(
-        encoding='utf-8', default_encoding='utf-8'))
-    return defaults_copy
-
-
 def add_time_interval(base_time: datetime.datetime, interval: str,
                       textparser: parsedatetime.Calendar = parsedatetime.Calendar()
                       ) -> datetime.datetime:
@@ -115,83 +100,74 @@ def add_time_interval(base_time: datetime.datetime, interval: str,
         interval += " days"
 
     # try to use the same timezone, but fallback to UTC
-    tzinfo = base_time.tzinfo or pytz.UTC
+    tzinfo = base_time.tzinfo or datetime.timezone.utc
 
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
-def write_renewal_config(o_filename: str, n_filename: str, archive_dir: str,
-                         target: Mapping[str, str],
-                         relevant_data: Mapping[str, Any]) -> configobj.ConfigObj:
-    """Writes a renewal config file with the specified name and values.
+def create_renewal_config_file(filename: str, archive_dir: str,
+                               target: Mapping[str, str],
+                               cli_config: configuration.NamespaceConfig) -> None:
+    """Creates a renewal config file with the specified name and values.
 
-    :param str o_filename: Absolute path to the previous version of config file
-    :param str n_filename: Absolute path to the new destination of config file
+    :param str filename: Absolute path to the new destination of config file
     :param str archive_dir: Absolute path to the archive directory
     :param dict target: Maps ALL_FOUR to their symlink paths
-    :param dict relevant_data: Renewal configuration options to save
-
-    :returns: Configuration object for the new config file
-    :rtype: configobj.ConfigObj
-
-    """
-    config = configobj.ConfigObj(o_filename, encoding='utf-8', default_encoding='utf-8')
-    config["version"] = certbot.__version__
-    config["archive_dir"] = archive_dir
-    for kind in ALL_FOUR:
-        config[kind] = target[kind]
-
-    if "renewalparams" not in config:
-        config["renewalparams"] = {}
-        config.comments["renewalparams"] = ["",
-                                            "Options used in "
-                                            "the renewal process"]
-
-    config["renewalparams"].update(relevant_data)
-
-    for k in config["renewalparams"]:
-        if k not in relevant_data:
-            del config["renewalparams"][k]
-
-    if "renew_before_expiry" not in config:
-        default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
-        config.initial_comment = ["renew_before_expiry = " + default_interval]
-
-    # TODO: add human-readable comments explaining other available
-    #       parameters
-    logger.debug("Writing new config %s.", n_filename)
-
-    # Ensure that the file exists
-    with open(n_filename, 'a'):
-        pass
-
-    # Copy permissions from the old version of the file, if it exists.
-    if os.path.exists(o_filename):
-        current_permissions = stat.S_IMODE(os.lstat(o_filename).st_mode)
-        filesystem.chmod(n_filename, current_permissions)
-
-    with open(n_filename, "wb") as f:
-        config.write(outfile=f)
-    return config
-
-
-def rename_renewal_config(prev_name: str, new_name: str,
-                          cli_config: configuration.NamespaceConfig) -> None:
-    """Renames cli_config.certname's config to cli_config.new_certname.
-
     :param .NamespaceConfig cli_config: parsed command line
         arguments
     """
-    prev_filename = renewal_filename_for_lineagename(cli_config, prev_name)
-    new_filename = renewal_filename_for_lineagename(cli_config, new_name)
-    if os.path.exists(new_filename):
-        raise errors.ConfigurationError("The new certificate name "
-            "is already in use.")
-    try:
-        filesystem.replace(prev_filename, new_filename)
-    except OSError:
-        raise errors.ConfigurationError("Please specify a valid filename "
-            "for the new certificate name.")
+    config = make_renewal_configobj(archive_dir, target, cli_config)
+    with open(filename, "wb") as f:
+        config.write(outfile=f)
+
+
+def atomic_rewrite(config_filename: str, new_config: configobj.ConfigObj) -> None:
+    """Update a config file on disk with the provided values.
+
+    The update will be atomic: if writing fails, the original file will not be modified. The
+    updated file will preserve comments from the original and will have the same permissions.
+
+    In general, fields that exist on disk but not in new_config will be preserved. As a special
+    case, fields in the 'renewalparams' section will be deleted unless they exist in new_config.
+    This deletion clears out old fields from when we used to dump _all_ flags (as opposed to
+    relevant ones).
+
+    :param str config_filename: Absolute path to the configuration file
+    :param configobj.ConfigObj new_config: New configuration object
+    """
+    # Read the existing values from `config_filename`, or error (file_error=True)
+    merged_config = configobj.ConfigObj(config_filename, encoding='utf-8', default_encoding='utf-8',
+                                        file_error=True)
+    merged_config.merge(new_config)
+
+    # When updating the "renewalparams" section, only carry through fields that actually exist
+    # in the new config's "renewalparams" section. We could achieve this straightforwardly by
+    # assigning the new config's "renewalparams" section into the merged config. But then we would
+    # lose comments. Merging and then deleting allows us to preserve comments.
+    #
+    # As a concrete example, if a renewal params config has elliptic_curve=secp384r1, and the
+    # user executes a command to issue with `--key-type=rsa` instead, the old elliptic_curve value
+    # should disappear because it's not specified in the current command line.
+    #
+    # This only applies when "renewalparams" is actually being updated, because sometimes we
+    # update other sections independently (like "acme_renewal_info").
+    if "renewalparams" in new_config:
+        for k in merged_config["renewalparams"]:
+            if k not in new_config["renewalparams"]:
+                del merged_config["renewalparams"][k]
+
+    current_permissions = stat.S_IMODE(os.lstat(config_filename).st_mode)
+
+    temp_filename = config_filename + ".new"
+
+    # If an existing tempfile exists, delete it
+    if os.path.exists(temp_filename):
+        os.unlink(temp_filename)
+
+    with util.safe_open(temp_filename, "wb", current_permissions) as f:
+        merged_config.write(outfile=f)
+
+    filesystem.replace(temp_filename, config_filename)
 
 
 def update_configuration(lineagename: str, archive_dir: str, target: Mapping[str, str],
@@ -201,26 +177,40 @@ def update_configuration(lineagename: str, archive_dir: str, target: Mapping[str
     :param str lineagename: Name of the lineage being modified
     :param str archive_dir: Absolute path to the archive directory
     :param dict target: Maps ALL_FOUR to their symlink paths
-    :param .NamespaceConfig cli_config: parsed command line
-        arguments
+    :param .NamespaceConfig cli_config: parsed command line arguments
 
     :returns: Configuration object for the updated config file
     :rtype: configobj.ConfigObj
 
     """
+    config = make_renewal_configobj(archive_dir, target, cli_config)
+
     config_filename = renewal_filename_for_lineagename(cli_config, lineagename)
-    temp_filename = config_filename + ".new"
 
-    # If an existing tempfile exists, delete it
-    if os.path.exists(temp_filename):
-        os.unlink(temp_filename)
-
-    # Save only the config items that are relevant to renewal
-    values = relevant_values(cli_config)
-    write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    filesystem.replace(temp_filename, config_filename)
+    atomic_rewrite(config_filename, config)
 
     return configobj.ConfigObj(config_filename, encoding='utf-8', default_encoding='utf-8')
+
+
+def make_renewal_configobj(archive_dir: str, target: Mapping[str, str],
+                           cli_config: configuration.NamespaceConfig) -> configobj.ConfigObj:
+    """Create a configobj.ConfigObj representing the provided values.
+
+    :param str archive_dir: Absolute path to the archive directory
+    :param dict target: Maps ALL_FOUR to their symlink paths
+    :param .NamespaceConfig cli_config: parsed command line arguments
+
+    :returns: Configuration object representing the inputs
+    :rtype: configobj.ConfigObj
+    """
+    config = configobj.ConfigObj(encoding='utf-8', default_encoding='utf-8')
+    config["version"] = certbot.__version__
+    config["archive_dir"] = archive_dir
+    for kind in ALL_FOUR:
+        config[kind] = target[kind]
+    config['renewalparams'] = {}
+    config['renewalparams'].update(relevant_values(cli_config))
+    return config
 
 
 def get_link_target(link: str) -> str:
@@ -282,7 +272,7 @@ def _relevant(namespaces: Iterable[str], option: str) -> bool:
             any(option.startswith(namespace) for namespace in namespaces))
 
 
-def relevant_values(config: configuration.NamespaceConfig) -> Dict[str, Any]:
+def relevant_values(config: configuration.NamespaceConfig) -> dict[str, Any]:
     """Return a new dict containing only items relevant for renewal.
 
     :param .NamespaceConfig config: parsed command line
@@ -469,20 +459,19 @@ class RenewableCert(interfaces.RenewableCert):
         self.cli_config = cli_config
         self._lineagename = lineagename_for_filename(config_filename)
 
-        # self.configuration should be used to read parameters that
-        # may have been chosen based on default values from the
-        # systemwide renewal configuration; self.configfile should be
-        # used to make and save changes.
         try:
             self.configfile = configobj.ConfigObj(
                 config_filename, encoding='utf-8', default_encoding='utf-8')
         except configobj.ConfigObjError:
             raise errors.CertStorageError(
                 "error parsing {0}".format(config_filename))
-        # TODO: Do we actually use anything from defaults and do we want to
-        #       read further defaults from the systemwide renewal configuration
-        #       file at this stage?
-        self.configuration = config_with_defaults(self.configfile)
+
+        # These are equivalent. Previously we were adding the unused default
+        # value of renew_before_expiry. Keeping both names because cleaning
+        # out the variables from callers is annoying. Ideally new code should
+        # use self.configfile so we can remove self.configuration at some point,
+        # but either should work currently.
+        self.configuration = self.configfile
 
         if not all(x in self.configuration for x in ALL_FOUR):
             raise errors.CertStorageError(
@@ -673,7 +662,7 @@ class RenewableCert(interfaces.RenewableCert):
     #       happen as a result of random tampering by a sysadmin, or
     #       filesystem errors, or crashes.)
 
-    def _previous_symlinks(self) -> List[Tuple[str, str]]:
+    def _previous_symlinks(self) -> list[tuple[str, str]]:
         """Returns the kind and path of all symlinks used in recovery.
 
         :returns: list of (kind, symlink) tuples
@@ -777,7 +766,7 @@ class RenewableCert(interfaces.RenewableCert):
         where = os.path.dirname(link)
         return os.path.join(where, "{0}{1}.pem".format(kind, version))
 
-    def available_versions(self, kind: str) -> List[int]:
+    def available_versions(self, kind: str) -> list[int]:
         """Which alternative versions of the specified kind of item exist?
 
         The archive directory where the current version is stored is
@@ -866,7 +855,7 @@ class RenewableCert(interfaces.RenewableCert):
         :rtype: bool
 
         """
-        all_versions: List[int] = []
+        all_versions: list[int] = []
         for item in ALL_FOUR:
             version = self.current_version(item)
             if version is None:
@@ -923,7 +912,7 @@ class RenewableCert(interfaces.RenewableCert):
             for _, link in previous_links:
                 os.unlink(link)
 
-    def names(self) -> List[str]:
+    def names(self) -> list[str]:
         """What are the subject names of this certificate?
 
         :returns: the subject names
@@ -976,58 +965,6 @@ class RenewableCert(interfaces.RenewableCert):
         """
         return ("autorenew" not in self.configuration["renewalparams"] or
                 self.configuration["renewalparams"].as_bool("autorenew"))
-
-    def should_autorenew(self) -> bool:
-        """Should we now try to autorenew the most recent cert version?
-
-        This is a policy question and does not only depend on whether
-        the cert is expired. (This considers whether autorenewal is
-        enabled, whether the cert is revoked, and whether the time
-        interval for autorenewal has been reached.)
-
-        Note that this examines the numerically most recent cert version,
-        not the currently deployed version.
-
-        :returns: whether an attempt should now be made to autorenew the
-            most current cert version in this lineage
-        :rtype: bool
-
-        """
-        if self.autorenewal_is_enabled():
-            # Consider whether to attempt to autorenew this cert now
-
-            # Renewals on the basis of revocation
-            if self.ocsp_revoked(self.latest_common_version()):
-                logger.debug("Should renew, certificate is revoked.")
-                return True
-
-            cert = self.version("cert", self.latest_common_version())
-            notBefore = crypto_util.notBefore(cert)
-            notAfter = crypto_util.notAfter(cert)
-            lifetime = notAfter - notBefore
-
-            config_interval = self.configuration.get("renew_before_expiry")
-            now = datetime.datetime.now(pytz.UTC)
-            if config_interval is not None and notAfter < add_time_interval(now, config_interval):
-                logger.debug("Should renew, less than %s before certificate "
-                             "expiry %s.", config_interval,
-                             notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
-                return True
-
-            # No config for "renew_before_expiry", provide default behavior.
-            # For most certs, renew with 1/3 of certificate lifetime remaining.
-            # For short lived certificates, renew at 1/2 of certificate lifetime.
-            default_interval = lifetime / 3
-            if lifetime.total_seconds() < 10 * 86400:
-                default_interval = lifetime / 2
-            remaining_time = notAfter - now
-            if remaining_time < default_interval:
-                logger.debug("Should renew, less than %ss before certificate "
-                             "expiry %s.", default_interval,
-                             notAfter.strftime("%Y-%m-%d %H:%M:%S %Z"))
-                return True
-
-        return False
 
     @classmethod
     def new_lineage(cls, lineagename: str, cert: bytes, privkey: bytes, chain: bytes,
@@ -1117,12 +1054,8 @@ class RenewableCert(interfaces.RenewableCert):
         # Document what we've done in a new renewal config file
         config_file.close()
 
-        # Save only the config items that are relevant to renewal
-        values = relevant_values(cli_config)
-
-        new_config = write_renewal_config(config_filename, config_filename, archive,
-            target, values)
-        return cls(new_config.filename, cli_config)
+        create_renewal_config_file(config_filename, archive, target, cli_config)
+        return cls(config_filename, cli_config)
 
     def _private_key(self) -> Union[RSAPrivateKey, EllipticCurvePrivateKey]:
         with open(self.configuration["privkey"], "rb") as priv_key_file:
@@ -1241,7 +1174,7 @@ class RenewableCert(interfaces.RenewableCert):
         # Update renewal config file
         self.configfile = update_configuration(
             self.lineagename, self.archive_dir, symlinks, cli_config)
-        self.configuration = config_with_defaults(self.configfile)
+        self.configuration = self.configfile
 
         return target_version
 
@@ -1256,7 +1189,7 @@ class RenewableCert(interfaces.RenewableCert):
         # Update renewal config file
         self.configfile = update_configuration(
             self.lineagename, self.archive_dir, symlinks, cli_config)
-        self.configuration = config_with_defaults(self.configfile)
+        self.configuration = self.configfile
 
     def truncate(self, num_prior_certs_to_keep: int = 5) -> None:
         """Delete unused historical certificate, chain and key items from the lineage.

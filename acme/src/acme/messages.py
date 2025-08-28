@@ -3,14 +3,10 @@ from collections.abc import Hashable
 import datetime
 import json
 from typing import Any
-from typing import Dict
 from typing import Iterator
-from typing import List
 from typing import Mapping
 from typing import MutableMapping
 from typing import Optional
-from typing import Tuple
-from typing import Type
 from typing import TypeVar
 
 from cryptography import x509
@@ -73,7 +69,7 @@ def is_acme_error(err: BaseException) -> bool:
 class _Constant(jose.JSONDeSerializable, Hashable):
     """ACME constant."""
     __slots__ = ('name',)
-    POSSIBLE_NAMES: Dict[str, '_Constant'] = NotImplemented
+    POSSIBLE_NAMES: dict[str, '_Constant'] = NotImplemented
 
     def __init__(self, name: str) -> None:
         super().__init__()
@@ -101,7 +97,7 @@ class _Constant(jose.JSONDeSerializable, Hashable):
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
-    POSSIBLE_NAMES: Dict[str, _Constant] = {}
+    POSSIBLE_NAMES: dict[str, _Constant] = {}
 
 
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
@@ -140,12 +136,12 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     detail: str = jose.field('detail', omitempty=True)
     identifier: Optional['Identifier'] = jose.field(
         'identifier', decoder=Identifier.from_json, omitempty=True)
-    subproblems: Optional[Tuple['Error', ...]] = jose.field('subproblems', omitempty=True)
+    subproblems: Optional[tuple['Error', ...]] = jose.field('subproblems', omitempty=True)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that subproblems is redefined. Let's ignore the type check here.
     @subproblems.decoder  # type: ignore
-    def subproblems(value: List[Dict[str, Any]]) -> Tuple['Error', ...]:  # pylint: disable=no-self-argument,missing-function-docstring
+    def subproblems(value: list[dict[str, Any]]) -> tuple['Error', ...]:  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Error.from_json(subproblem) for subproblem in value)
 
     @classmethod
@@ -208,7 +204,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 
 class Status(_Constant):
     """ACME "status" field."""
-    POSSIBLE_NAMES: Dict[str, _Constant] = {}
+    POSSIBLE_NAMES: dict[str, _Constant] = {}
 
 
 STATUS_UNKNOWN = Status('unknown')
@@ -231,9 +227,9 @@ class Directory(jose.JSONDeSerializable):
         """Directory Meta."""
         _terms_of_service: str = jose.field('termsOfService', omitempty=True)
         website: str = jose.field('website', omitempty=True)
-        caa_identities: List[str] = jose.field('caaIdentities', omitempty=True)
+        caa_identities: list[str] = jose.field('caaIdentities', omitempty=True)
         external_account_required: bool = jose.field('externalAccountRequired', omitempty=True)
-        profiles: Dict[str, str] = jose.field('profiles', omitempty=True)
+        profiles: dict[str, str] = jose.field('profiles', omitempty=True)
 
         def __init__(self, **kwargs: Any) -> None:
             kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
@@ -268,7 +264,7 @@ class Directory(jose.JSONDeSerializable):
         except KeyError:
             raise KeyError(f'Directory field "{name}" not found')
 
-    def to_partial_json(self) -> Dict[str, Any]:
+    def to_partial_json(self) -> dict[str, Any]:
         return util.map_keys(self._jobj, lambda k: k)
 
     @classmethod
@@ -304,15 +300,26 @@ class ExternalAccountBinding:
 
     @classmethod
     def from_data(cls, account_public_key: jose.JWK, kid: str, hmac_key: str,
-                  directory: Directory) -> Dict[str, Any]:
+                  directory: Directory, hmac_alg: str = "HS256") -> dict[str, Any]:
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
         key_json = json.dumps(account_public_key.to_partial_json()).encode()
         decoded_hmac_key = jose.b64.b64decode(hmac_key)
         url = directory["newAccount"]
 
+        hmac_alg_map = {
+            "HS256": jose.jwa.HS256,
+            "HS384": jose.jwa.HS384,
+            "HS512": jose.jwa.HS512,
+        }
+        alg = hmac_alg_map.get(hmac_alg)
+        if alg is None:
+            supported = ", ".join(hmac_alg_map.keys())
+            raise ValueError(f"Invalid value for hmac_alg: {hmac_alg}. "
+                             f"Expected one of: {supported}.")
+
         eab = jws.JWS.sign(key_json, jose.jwk.JWKOct(key=decoded_hmac_key),
-                           jose.jwa.HS256, None,
+                           alg, None,
                            url, kid)
 
         return eab.to_partial_json()
@@ -336,21 +343,21 @@ class Registration(ResourceBody):
     # Contact field implements special behavior to allow messages that clear existing
     # contacts while not expecting the `contact` field when loading from json.
     # This is implemented in the constructor and *_json methods.
-    contact: Tuple[str, ...] = jose.field('contact', omitempty=True, default=())
+    contact: tuple[str, ...] = jose.field('contact', omitempty=True, default=())
     agreement: str = jose.field('agreement', omitempty=True)
     status: Status = jose.field('status', omitempty=True)
     terms_of_service_agreed: bool = jose.field('termsOfServiceAgreed', omitempty=True)
     only_return_existing: bool = jose.field('onlyReturnExisting', omitempty=True)
-    external_account_binding: Dict[str, Any] = jose.field('externalAccountBinding',
+    external_account_binding: dict[str, Any] = jose.field('externalAccountBinding',
                                                           omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls: Type[GenericRegistration], phone: Optional[str] = None,
+    def from_data(cls: type[GenericRegistration], phone: Optional[str] = None,
                   email: Optional[str] = None,
-                  external_account_binding: Optional[Dict[str, Any]] = None,
+                  external_account_binding: Optional[dict[str, Any]] = None,
                   **kwargs: Any) -> GenericRegistration:
         """
         Create registration resource from contact details.
@@ -387,12 +394,12 @@ class Registration(ResourceBody):
             object.__setattr__(self, '_add_contact', True)
         super().__init__(**kwargs)
 
-    def _filter_contact(self, prefix: str) -> Tuple[str, ...]:
+    def _filter_contact(self, prefix: str) -> tuple[str, ...]:
         return tuple(
             detail[len(prefix):] for detail in self.contact  # pylint: disable=not-an-iterable
             if detail.startswith(prefix))
 
-    def _add_contact_if_appropriate(self, jobj: Dict[str, Any]) -> Dict[str, Any]:
+    def _add_contact_if_appropriate(self, jobj: dict[str, Any]) -> dict[str, Any]:
         """
         The `contact` member of Registration objects should not be required when
         de-serializing (as it would be if the Fields' `omitempty` flag were `False`), but
@@ -409,23 +416,23 @@ class Registration(ResourceBody):
 
         return jobj
 
-    def to_partial_json(self) -> Dict[str, Any]:
+    def to_partial_json(self) -> dict[str, Any]:
         """Modify josepy.JSONDeserializable.to_partial_json()"""
         jobj = super().to_partial_json()
         return self._add_contact_if_appropriate(jobj)
 
-    def fields_to_partial_json(self) -> Dict[str, Any]:
+    def fields_to_partial_json(self) -> dict[str, Any]:
         """Modify josepy.JSONObjectWithFields.fields_to_partial_json()"""
         jobj = super().fields_to_partial_json()
         return self._add_contact_if_appropriate(jobj)
 
     @property
-    def phones(self) -> Tuple[str, ...]:
+    def phones(self) -> tuple[str, ...]:
         """All phones found in the ``contact`` field."""
         return self._filter_contact(self.phone_prefix)
 
     @property
-    def emails(self) -> Tuple[str, ...]:
+    def emails(self) -> tuple[str, ...]:
         """All emails found in the ``contact`` field."""
         return self._filter_contact(self.email_prefix)
 
@@ -487,13 +494,13 @@ class ChallengeBody(ResourceBody):
     def encode(self, name: str) -> Any:
         return super().encode(self._internal_name(name))
 
-    def to_partial_json(self) -> Dict[str, Any]:
+    def to_partial_json(self) -> dict[str, Any]:
         jobj = super().to_partial_json()
         jobj.update(self.chall.to_partial_json())
         return jobj
 
     @classmethod
-    def fields_from_json(cls, jobj: Mapping[str, Any]) -> Dict[str, Any]:
+    def fields_from_json(cls, jobj: Mapping[str, Any]) -> dict[str, Any]:
         jobj_fields = super().fields_from_json(jobj)
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields
@@ -542,7 +549,7 @@ class Authorization(ResourceBody):
 
     """
     identifier: Identifier = jose.field('identifier', decoder=Identifier.from_json, omitempty=True)
-    challenges: List[ChallengeBody] = jose.field('challenges', omitempty=True)
+    challenges: list[ChallengeBody] = jose.field('challenges', omitempty=True)
 
     status: Status = jose.field('status', omitempty=True, decoder=Status.from_json)
     # TODO: 'expires' is allowed for Authorization Resources in
@@ -555,7 +562,7 @@ class Authorization(ResourceBody):
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that challenge is redefined. Let's ignore the type check here.
     @challenges.decoder  # type: ignore
-    def challenges(value: List[Dict[str, Any]]) -> Tuple[ChallengeBody, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
+    def challenges(value: list[dict[str, Any]]) -> tuple[ChallengeBody, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(ChallengeBody.from_json(chall) for chall in value)
 
 
@@ -597,7 +604,7 @@ class CertificateResource(ResourceWithURI):
 
     """
     cert_chain_uri: str = jose.field('cert_chain_uri')
-    authzrs: Tuple[AuthorizationResource, ...] = jose.field('authzrs')
+    authzrs: tuple[AuthorizationResource, ...] = jose.field('authzrs')
 
 
 class Revocation(jose.JSONObjectWithFields):
@@ -629,9 +636,9 @@ class Order(ResourceBody):
     """
     # https://datatracker.ietf.org/doc/draft-aaron-acme-profiles/
     profile: str = jose.field('profile', omitempty=True)
-    identifiers: List[Identifier] = jose.field('identifiers', omitempty=True)
+    identifiers: list[Identifier] = jose.field('identifiers', omitempty=True)
     status: Status = jose.field('status', decoder=Status.from_json, omitempty=True)
-    authorizations: List[str] = jose.field('authorizations', omitempty=True)
+    authorizations: list[str] = jose.field('authorizations', omitempty=True)
     certificate: str = jose.field('certificate', omitempty=True)
     finalize: str = jose.field('finalize', omitempty=True)
     expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
@@ -640,7 +647,7 @@ class Order(ResourceBody):
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that identifiers is redefined. Let's ignore the type check here.
     @identifiers.decoder  # type: ignore
-    def identifiers(value: List[Dict[str, Any]]) -> Tuple[Identifier, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
+    def identifiers(value: list[dict[str, Any]]) -> tuple[Identifier, ...]:  # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(Identifier.from_json(identifier) for identifier in value)
 
 
@@ -670,17 +677,33 @@ class OrderResource(ResourceWithURI):
                                 decoder=lambda s: s.encode("utf-8"),
                                 encoder=lambda b: b.decode("utf-8"))
 
-    authorizations: List[AuthorizationResource] = jose.field('authorizations')
+    authorizations: list[AuthorizationResource] = jose.field('authorizations')
     fullchain_pem: str = jose.field('fullchain_pem', omitempty=True)
-    alternative_fullchains_pem: List[str] = jose.field('alternative_fullchains_pem',
+    alternative_fullchains_pem: list[str] = jose.field('alternative_fullchains_pem',
                                                        omitempty=True)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that authorizations is redefined. Let's ignore the type check here.
     @authorizations.decoder  # type: ignore
-    def authorizations(value: List[Dict[str, Any]]) -> Tuple[AuthorizationResource, ...]: # pylint: disable=no-self-argument,missing-function-docstring
+    def authorizations(value: list[dict[str, Any]]) -> tuple[AuthorizationResource, ...]: # pylint: disable=no-self-argument,missing-function-docstring
         return tuple(AuthorizationResource.from_json(authz) for authz in value)
 
 
 class NewOrder(Order):
     """New order."""
+
+
+class RenewalInfo(ResourceBody):
+    """Renewal Info Resource Body.
+    :ivar acme.messages.SuggestedWindow window: The suggested renewal window.
+    """
+    class SuggestedWindow(jose.JSONObjectWithFields):
+        """Suggested Renewal Window, sub-resource of Renewal Info Resource.
+        :ivar datetime.datetime start: Beginning of suggested renewal window
+        :ivar datetime.datetime end: End of suggested renewal window (inclusive)
+        """
+        start: datetime.datetime = fields.rfc3339('start', omitempty=True)
+        end: datetime.datetime = fields.rfc3339('end', omitempty=True)
+
+    suggested_window: SuggestedWindow = jose.field('suggestedWindow',
+                                                   decoder=SuggestedWindow.from_json)

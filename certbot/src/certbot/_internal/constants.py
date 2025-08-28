@@ -4,7 +4,6 @@ import importlib.resources
 import logging
 from contextlib import ExitStack
 from typing import Any
-from typing import Dict
 
 from acme import challenges
 from certbot.compat import misc
@@ -16,7 +15,7 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 """Plugins Setuptools entry point before rename."""
 
-CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
+CLI_DEFAULTS: dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     config_files=[
         os.path.join(misc.get_default_folder('config'), 'cli.ini'),
         # https://freedesktop.org/wiki/Software/xdg-user-dirs/
@@ -82,6 +81,7 @@ CLI_DEFAULTS: Dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     random_sleep_on_renew=True,
     eab_hmac_key=None,
     eab_kid=None,
+    eab_hmac_alg="HS256",
     issuance_timeout=90,
     run_deploy_hooks=False,
 
@@ -152,11 +152,6 @@ QUIET_LOGGING_LEVEL = logging.ERROR
 
 DEFAULT_LOGGING_LEVEL = logging.WARNING
 """Default logging level to use when not in quiet mode."""
-
-RENEWER_DEFAULTS = {
-    "renew_before_expiry": "30 days",
-}
-"""Defaults for `certbot renew`."""
 
 ARCHIVE_DIR = "archive"
 """Archive directory, relative to `certbot.configuration.NamespaceConfig.config_dir`."""

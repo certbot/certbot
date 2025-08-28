@@ -1091,7 +1091,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         http_vhost = self.config._get_http_vhost(ssl_vhost)
 
-        # Create an old (previously suppoorted) https redirectoin rewrite rule
+        # Create an old (previously supported) https redirectoin rewrite rule
         self.config.parser.add_dir(
             http_vhost.path, "RewriteRule",
             ["^",
@@ -1245,7 +1245,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_deploy_cert_no_mod_ssl(self):
         # Create
-        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
+        self.config.make_vhost_ssl(self.vh_truth[0])
         self.config.parser.modules["socache_shmcb_module"] = None
         self.config.prepare_server_https = mock.Mock()
 
@@ -1646,6 +1646,50 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self._call()
             assert mock_logger.warning.called is False
 
+    @mock.patch('certbot_apache._internal.configurator.logger.warning')
+    @mock.patch('certbot_apache._internal.configurator.ApacheConfigurator.openssl_version')
+    def test_pick_apache_config_versions_and_warnings(self, mock_openssl_version, mock_warning):
+        def has_logged_warning():
+            """Returns True if a warning was logged about updating Apache."""
+            return any('update apache' in call.args[0] for call in mock_warning.call_args_list)
+
+        # old apache, no openssl
+        self.config.version = (2, 4, 10)
+        mock_openssl_version.return_value = None
+        assert 'old' in self.config.pick_apache_config()
+        assert not has_logged_warning()
+
+        # old apache, old openssl
+        mock_warning.reset_mock()
+        mock_openssl_version.return_value = '1.0.2a'
+        assert 'old' in self.config.pick_apache_config()
+        assert has_logged_warning()
+
+        # old apache, new openssl
+        mock_warning.reset_mock()
+        mock_openssl_version.return_value = '1.0.2m'
+        assert 'old' in self.config.pick_apache_config()
+        assert has_logged_warning()
+
+        # new apache, no openssl
+        mock_warning.reset_mock()
+        self.config.version = (2, 4, 11)
+        mock_openssl_version.return_value = None
+        assert 'old' in self.config.pick_apache_config()
+        assert not has_logged_warning()
+
+        # new apache, old openssl
+        mock_warning.reset_mock()
+        mock_openssl_version.return_value = '1.0.2a'
+        assert 'old' in self.config.pick_apache_config()
+        assert has_logged_warning()
+
+        # new apache, new openssl
+        mock_warning.reset_mock()
+        mock_openssl_version.return_value = '1.0.2m'
+        assert 'current' in self.config.pick_apache_config()
+        assert not has_logged_warning()
+
     def test_ssl_config_files_hash_in_all_hashes(self):
         """
         It is really critical that all TLS Apache config files have their SHA256 hash registered in
@@ -1696,18 +1740,6 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             "ApacheConfigurator._open_module_file") as mock_omf:
             mock_omf.return_value = some_string_contents
             assert self.config.openssl_version() == "1.0.2g"
-
-    def test_current_version(self):
-        self.config.version = (2, 4, 10)
-        self.config._openssl_version = '1.0.2m'
-        assert 'old' in self.config.pick_apache_config()
-
-        self.config.version = (2, 4, 11)
-        self.config._openssl_version = '1.0.2m'
-        assert 'current' in self.config.pick_apache_config()
-
-        self.config._openssl_version = '1.0.2a'
-        assert 'old' in self.config.pick_apache_config()
 
     def test_openssl_version_warns(self):
         self.config._openssl_version = '1.0.2a'

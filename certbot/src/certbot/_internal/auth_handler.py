@@ -2,13 +2,9 @@
 import datetime
 import logging
 import time
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import Sequence
-from typing import Tuple
-from typing import Type
 
 import josepy
 from requests.models import Response
@@ -46,7 +42,7 @@ class AuthHandler:
 
     """
     def __init__(self, auth: interfaces.Authenticator, acme_client: Optional[client.ClientV2],
-                 account: Optional[Account], pref_challs: List[str]) -> None:
+                 account: Optional[Account], pref_challs: list[str]) -> None:
         self.auth = auth
         self.acme = acme_client
 
@@ -56,7 +52,7 @@ class AuthHandler:
     def handle_authorizations(self, orderr: messages.OrderResource,
                               config: configuration.NamespaceConfig, best_effort: bool = False,
                               max_retries: int = 30,
-                              max_time_mins: float = 30) -> List[messages.AuthorizationResource]:
+                              max_time_mins: float = 30) -> list[messages.AuthorizationResource]:
         """
         Retrieve all authorizations, perform all challenges required to validate
         these authorizations, then poll and wait for the authorization to be checked.
@@ -117,9 +113,9 @@ class AuthHandler:
 
         raise errors.Error("An unexpected error occurred while handling the authorizations.")
 
-    def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> Tuple[List, List]:
+    def deactivate_valid_authorizations(self, orderr: messages.OrderResource) -> tuple[list, list]:
         """
-        Deactivate all `valid` authorizations in the order, so that they cannot be re-used
+        Deactivate all `valid` authorizations in the order, so that they cannot be reused
         in subsequent orders.
         :param messages.OrderResource orderr: must have authorizations filled in
         :returns: tuple of list of successfully deactivated authorizations, and
@@ -144,7 +140,7 @@ class AuthHandler:
 
         return (deactivated, failed)
 
-    def _poll_authorizations(self, authzrs: List[messages.AuthorizationResource], max_retries: int,
+    def _poll_authorizations(self, authzrs: list[messages.AuthorizationResource], max_retries: int,
                              deadline_minutes: float, best_effort: bool) -> None:
         """
         Poll the ACME CA server, to wait for confirmation that authorizations have their challenges
@@ -154,7 +150,7 @@ class AuthHandler:
         if not self.acme:
             raise errors.Error("No ACME client defined, cannot poll authorizations.")
 
-        authzrs_to_check: Dict[int, Tuple[messages.AuthorizationResource,
+        authzrs_to_check: dict[int, tuple[messages.AuthorizationResource,
                                           Optional[Response]]] = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
         authzrs_failed_to_report = []
@@ -216,7 +212,7 @@ class AuthHandler:
             raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
 
     def _choose_challenges(self, authzrs: Iterable[messages.AuthorizationResource]
-                           ) -> List[achallenges.AnnotatedChallenge]:
+                           ) -> list[achallenges.AnnotatedChallenge]:
         """
         Retrieve necessary and pending challenges to satisfy server.
         NB: Necessary and already validated challenges are not retrieved,
@@ -227,7 +223,7 @@ class AuthHandler:
 
         pending_authzrs = [authzr for authzr in authzrs
                            if authzr.body.status != messages.STATUS_VALID]
-        achalls: List[achallenges.AnnotatedChallenge] = []
+        achalls: list[achallenges.AnnotatedChallenge] = []
         if pending_authzrs:
             logger.info("Performing the following challenges:")
         for authzr in pending_authzrs:
@@ -241,7 +237,7 @@ class AuthHandler:
 
         return achalls
 
-    def _get_chall_pref(self, domain: str) -> List[Type[challenges.Challenge]]:
+    def _get_chall_pref(self, domain: str) -> list[type[challenges.Challenge]]:
         """Return list of challenge preferences.
 
         :param str domain: domain for which you are requesting preferences
@@ -263,7 +259,7 @@ class AuthHandler:
         chall_prefs.extend(plugin_pref)
         return chall_prefs
 
-    def _cleanup_challenges(self, achalls: List[achallenges.AnnotatedChallenge]) -> None:
+    def _cleanup_challenges(self, achalls: list[achallenges.AnnotatedChallenge]) -> None:
         """Cleanup challenges.
 
         :param achalls: annotated challenges to cleanup
@@ -274,7 +270,7 @@ class AuthHandler:
         self.auth.cleanup(achalls)
 
     def _challenge_factory(self, authzr: messages.AuthorizationResource,
-                           path: Sequence[int]) -> List[achallenges.AnnotatedChallenge]:
+                           path: Sequence[int]) -> list[achallenges.AnnotatedChallenge]:
         """Construct Namedtuple Challenges
 
         :param messages.AuthorizationResource authzr: authorization
@@ -299,11 +295,11 @@ class AuthHandler:
 
         return achalls
 
-    def _report_failed_authzrs(self, failed_authzrs: List[messages.AuthorizationResource]) -> None:
+    def _report_failed_authzrs(self, failed_authzrs: list[messages.AuthorizationResource]) -> None:
         """Notifies the user about failed authorizations."""
         if not self.account:
             raise errors.Error("Account is not set.")
-        problems: Dict[str, List[achallenges.AnnotatedChallenge]] = {}
+        problems: dict[str, list[achallenges.AnnotatedChallenge]] = {}
         failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier.value)
                         for authzr in failed_authzrs for challb in authzr.body.challenges
                         if challb.error]
@@ -325,7 +321,7 @@ class AuthHandler:
 
         display_util.notify("".join(msg))
 
-    def _debug_challenges_msg(self, achalls: List[achallenges.AnnotatedChallenge],
+    def _debug_challenges_msg(self, achalls: list[achallenges.AnnotatedChallenge],
                               config: configuration.NamespaceConfig) -> str:
         """Construct message for debug challenges prompt
 
@@ -388,8 +384,8 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
         return achallenges.Other(challb=challb, domain=domain)
 
 
-def gen_challenge_path(challbs: List[messages.ChallengeBody],
-                       preferences: List[Type[challenges.Challenge]]) -> Tuple[int, ...]:
+def gen_challenge_path(challbs: list[messages.ChallengeBody],
+                       preferences: list[type[challenges.Challenge]]) -> tuple[int, ...]:
     """Generate a plan to get authority over the identity.
 
     :param tuple challbs: A tuple of challenges
@@ -417,7 +413,7 @@ def gen_challenge_path(challbs: List[messages.ChallengeBody],
 
     # max_cost is now equal to sum(indices) + 1
 
-    best_combo: Optional[Tuple[int, ...]] = None
+    best_combo: Optional[tuple[int, ...]] = None
     # Set above completing all of the available challenges
     best_combo_cost = max_cost
 
@@ -441,7 +437,7 @@ def gen_challenge_path(challbs: List[messages.ChallengeBody],
     return best_combo
 
 
-def _report_no_chall_path(challbs: List[messages.ChallengeBody]) -> errors.AuthorizationError:
+def _report_no_chall_path(challbs: list[messages.ChallengeBody]) -> errors.AuthorizationError:
     """Logs and return a raisable error reporting that no satisfiable chall path exists.
 
     :param challbs: challenges from the authorization that can't be satisfied
@@ -460,7 +456,7 @@ def _report_no_chall_path(challbs: List[messages.ChallengeBody]) -> errors.Autho
     return errors.AuthorizationError(msg)
 
 
-def _generate_failed_chall_msg(failed_achalls: List[achallenges.AnnotatedChallenge]) -> str:
+def _generate_failed_chall_msg(failed_achalls: list[achallenges.AnnotatedChallenge]) -> str:
     """Creates a user friendly error message about failed challenges.
 
     :param list failed_achalls: A list of failed

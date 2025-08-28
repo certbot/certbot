@@ -1,7 +1,6 @@
 """nginx plugin constants."""
 import platform
 from typing import Any
-from typing import Dict
 
 FREEBSD_DARWIN_SERVER_ROOT = "/usr/local/etc/nginx"
 LINUX_SERVER_ROOT = "/etc/nginx"
@@ -14,7 +13,7 @@ elif platform.system() in ('NetBSD',):
 else:
     server_root_tmp = LINUX_SERVER_ROOT
 
-CLI_DEFAULTS: Dict[str, Any] = {
+CLI_DEFAULTS: dict[str, Any] = {
     "server_root": server_root_tmp,
     "ctl": "nginx",
     "sleep_seconds": 1
@@ -53,6 +52,9 @@ ALL_SSL_OPTIONS_HASHES = [
     'f5615544105c4eee44f02a604e3e9ae55b3d5bad247160bb18731a0ac531af02',
     '05a799c4db12f8e15e68219c98056824cbd5ae7b05863225318ae112f343880b',
     'dc81acfd9670f137d5abbccfe3438d9306d4b6a906439b0fbf6a6756272e7cc7',
+    '0175f71721dd8e5315a6d0f3efef703ff54e867d1ab2a4e076791b89a0b3511a',
+    '246b520bedc461fcbd35f4d3efdd75ebf171baccaba5c38f488009566de6d5b3',
+    'dd72286f760c90550f34fbeeceb5a1f1351b09b812e65a18569a0f4a4d7f5847',
 ]
 """SHA256 hashes of the contents of all versions of MOD_SSL_CONF_SRC"""
 

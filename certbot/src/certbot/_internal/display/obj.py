@@ -3,10 +3,8 @@ import logging
 import sys
 from typing import Any
 from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import TextIO
-from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
@@ -90,11 +88,11 @@ class FileDisplay:
             else:
                 logger.debug("Not pausing for user confirmation")
 
-    def menu(self, message: str, choices: Union[List[Tuple[str, str]], List[str]],
+    def menu(self, message: str, choices: Union[list[tuple[str, str]], list[str]],
              ok_label: Optional[str] = None, cancel_label: Optional[str] = None,  # pylint: disable=unused-argument
              help_label: Optional[str] = None, default: Optional[int] = None,  # pylint: disable=unused-argument
              cli_flag: Optional[str] = None, force_interactive: bool = False,
-             **unused_kwargs: Any) -> Tuple[str, int]:
+             **unused_kwargs: Any) -> tuple[str, int]:
         """Display a menu.
 
         .. todo:: This doesn't enable the help label/button (I wasn't sold on
@@ -127,7 +125,7 @@ class FileDisplay:
         return code, selection - 1
 
     def input(self, message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
-              force_interactive: bool = False, **unused_kwargs: Any) -> Tuple[str, str]:
+              force_interactive: bool = False, **unused_kwargs: Any) -> tuple[str, str]:
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -199,9 +197,9 @@ class FileDisplay:
                 ans.startswith(no_label[0].upper())):
                 return False
 
-    def checklist(self, message: str, tags: List[str], default: Optional[List[str]] = None,
+    def checklist(self, message: str, tags: list[str], default: Optional[list[str]] = None,
                   cli_flag: Optional[str] = None, force_interactive: bool = False,
-                  **unused_kwargs: Any) -> Tuple[str, List[str]]:
+                  **unused_kwargs: Any) -> tuple[str, list[str]]:
         """Display a checklist.
 
         :param str message: Message to display to user
@@ -294,7 +292,7 @@ class FileDisplay:
 
     def directory_select(self, message: str, default: Optional[str] = None,
                          cli_flag: Optional[str] = None, force_interactive: bool = False,
-                         **unused_kwargs: Any) -> Tuple[str, str]:
+                         **unused_kwargs: Any) -> tuple[str, str]:
         """Display a directory selection screen.
 
         :param str message: prompt to give the user
@@ -312,7 +310,7 @@ class FileDisplay:
             return self.input(message, default, cli_flag, force_interactive)
 
     def _scrub_checklist_input(self, indices: Iterable[Union[str, int]],
-                               tags: List[str]) -> List[str]:
+                               tags: list[str]) -> list[str]:
         """Validate input and transform indices to appropriate tags.
 
         :param list indices: input
@@ -328,7 +326,7 @@ class FileDisplay:
         except ValueError:
             return []
 
-        # Remove duplicates. dict is used instead of set, since dict perserves
+        # Remove duplicates. dict is used instead of set, since dict preserves
         # insertion order as of Python 3.7
         indices_int = list(dict.fromkeys(indices_int).keys())
 
@@ -340,7 +338,7 @@ class FileDisplay:
         return [tags[index - 1] for index in indices_int]
 
     def _print_menu(self, message: str,
-                    choices: Union[List[Tuple[str, str]], List[str]]) -> None:
+                    choices: Union[list[tuple[str, str]], list[str]]) -> None:
         """Print a menu on the screen.
 
         :param str message: title of menu
@@ -368,7 +366,7 @@ class FileDisplay:
         self.outfile.write(SIDE_FRAME + os.linesep)
         self.outfile.flush()
 
-    def _get_valid_int_ans(self, max_: int) -> Tuple[str, int]:
+    def _get_valid_int_ans(self, max_: int) -> tuple[str, int]:
         """Get a numerical selection.
 
         :param int max: The maximum entry (len of choices), must be positive
@@ -446,10 +444,10 @@ class NoninteractiveDisplay:
         )
         self.outfile.flush()
 
-    def menu(self, message: str, choices: Union[List[Tuple[str, str]], List[str]],
+    def menu(self, message: str, choices: Union[list[tuple[str, str]], list[str]],
              ok_label: Optional[str] = None, cancel_label: Optional[str] = None,
              help_label: Optional[str] = None, default: Optional[int] = None,
-             cli_flag: Optional[str] = None, **unused_kwargs: Any) -> Tuple[str, int]:
+             cli_flag: Optional[str] = None, **unused_kwargs: Any) -> tuple[str, int]:
         # pylint: disable=unused-argument
         """Avoid displaying a menu.
 
@@ -473,7 +471,7 @@ class NoninteractiveDisplay:
         return OK, default
 
     def input(self, message: str, default: Optional[str] = None, cli_flag: Optional[str] = None,
-              **unused_kwargs: Any) -> Tuple[str, str]:
+              **unused_kwargs: Any) -> tuple[str, str]:
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -506,8 +504,8 @@ class NoninteractiveDisplay:
             raise self._interaction_fail(message, cli_flag)
         return default
 
-    def checklist(self, message: str, tags: Iterable[str], default: Optional[List[str]] = None,
-                  cli_flag: Optional[str] = None, **unused_kwargs: Any) -> Tuple[str, List[str]]:
+    def checklist(self, message: str, tags: Iterable[str], default: Optional[list[str]] = None,
+                  cli_flag: Optional[str] = None, **unused_kwargs: Any) -> tuple[str, list[str]]:
         """Display a checklist.
 
         :param str message: Message to display to user
@@ -525,7 +523,7 @@ class NoninteractiveDisplay:
         return OK, default
 
     def directory_select(self, message: str, default: Optional[str] = None,
-                         cli_flag: Optional[str] = None, **unused_kwargs: Any) -> Tuple[str, str]:
+                         cli_flag: Optional[str] = None, **unused_kwargs: Any) -> tuple[str, str]:
         """Simulate prompting the user for a directory.
 
         This function returns default if it is not ``None``, otherwise,

@@ -4,15 +4,13 @@ import datetime
 from email.utils import parsedate_tz
 import http.client as http_client
 import logging
-import re
+import math
+import random
 import time
 from typing import Any
 from typing import cast
-from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Set
-from typing import Tuple
 from typing import Union
 
 from cryptography import x509
@@ -155,7 +153,7 @@ class ClientV2:
             csr_pem=csr_pem)
 
     def poll(self, authzr: messages.AuthorizationResource
-             ) -> Tuple[messages.AuthorizationResource, requests.Response]:
+             ) -> tuple[messages.AuthorizationResource, requests.Response]:
         """Poll Authorization Resource for status.
 
         :param authzr: Authorization Resource
@@ -251,9 +249,10 @@ class ClientV2:
         :returns: finalized order (with certificate)
         :rtype: messages.OrderResource
         """
-
+        sleep_seconds: float = 1
         while datetime.datetime.now() < deadline:
-            time.sleep(1)
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
             response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.status == messages.STATUS_INVALID:
@@ -269,6 +268,7 @@ class ClientV2:
                 # fulfilled, and is awaiting finalization.  Submit a finalization
                 # request.
                 self.begin_finalization(orderr)
+                sleep_seconds = 1
             elif body.status == messages.STATUS_VALID and body.certificate is not None:
                 # "valid": The server has issued the certificate and provisioned its
                 # URL to the "certificate" field of the order.  Download the
@@ -280,6 +280,14 @@ class ClientV2:
                     alt_chains = [self._post_as_get(url).text for url in alt_chains_urls]
                     orderr = orderr.update(alternative_fullchains_pem=alt_chains)
                 return orderr
+            elif body.status == messages.STATUS_PROCESSING:
+                # "processing": The certificate is being issued.  Send a POST-as-GET request after
+                # the time given in the Retry-After header field of the response, if any.
+                retry_after = self.retry_after(response, 1)
+                # Whatever Retry-After the ACME server requests, the polling must not take
+                # longer than the overall deadline
+                retry_after = min(retry_after, deadline)
+                sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
         raise errors.TimeoutError()
 
     def finalize_order(self, orderr: messages.OrderResource, deadline: datetime.datetime,
@@ -301,6 +309,73 @@ class ClientV2:
             if e.code != 'orderNotReady':
                 raise e
         return self.poll_finalization(orderr, deadline, fetch_alternative_chains)
+
+    def renewal_time(self, cert_pem: bytes
+        ) -> tuple[Optional[datetime.datetime], datetime.datetime]:
+        """Return an appropriate time to attempt renewal of the certificate,
+        and the next time to ask the ACME server for renewal info.
+
+        If the certificate has already expired, renewal info isn't checked.
+        Instead, the certificate's notAfter time is returned and the certificate
+        should be immediately renewed.
+
+        If the ACME directory has a "renewalInfo" field, the response will be
+        based on a fetch of the renewal info resource for the certificate
+        (https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html).
+
+        If there is no "renewalInfo" field, this function will return a tuple of
+        None, and the next time to ask the ACME server for renewal info.
+
+        This function may make other network calls in the future (e.g., OCSP
+        or CRL).
+
+        :param bytes cert_pem: cert as pem file
+
+        :returns: Tuple of time to attempt renewal, next time to ask for renewal info
+
+        :raises errors.ARIError: If an error occurs fetching ARI from the
+            server. Explicit exception chaining is used so the original error
+            can be accessed through the __cause__ attribute on the ARIError if
+            desired.
+
+        """
+        now = datetime.datetime.now()
+        # https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3.3
+        default_retry_after = datetime.timedelta(seconds=6 * 60 * 60)
+
+        cert = x509.load_pem_x509_certificate(cert_pem)
+
+        # from https://www.ietf.org/archive/id/draft-ietf-acme-ari-08.html#section-4.3, "Clients
+        # MUST NOT check a certificate's RenewalInfo after the certificate has expired."
+        #
+        # we call datetime.datetime.now here with the UTC argument to create a timezone aware
+        # datetime object that can be compared with the UTC notAfter from cryptography
+        if cert.not_valid_after_utc < datetime.datetime.now(datetime.timezone.utc):
+            return cert.not_valid_after_utc, now + default_retry_after
+
+        try:
+            renewal_info_base_url = self.directory['renewalInfo']
+        except KeyError:
+            return None, now + default_retry_after
+
+        ari_url = renewal_info_base_url + '/' + _renewal_info_path_component(cert)
+        try:
+            resp = self.net.get(ari_url, content_type='application/json')
+        except Exception as e:  # pylint: disable=broad-except
+            error_msg = f'failed to fetch renewal_info URL {ari_url}'
+            raise errors.ARIError(error_msg, now + default_retry_after) from e
+        renewal_info: messages.RenewalInfo = messages.RenewalInfo.from_json(resp.json())
+
+        start = renewal_info.suggested_window.start # pylint: disable=no-member
+        end = renewal_info.suggested_window.end # pylint: disable=no-member
+
+        delta_seconds = (end - start).total_seconds()
+        random_seconds = random.uniform(0, delta_seconds)
+        random_time = start + datetime.timedelta(seconds=random_seconds)
+
+        retry_after = self.retry_after(resp, default_retry_after.seconds)
+        return random_time, retry_after
+
 
     def revoke(self, cert: x509.Certificate, rsn: int) -> None:
         """Revoke certificate.
@@ -330,7 +405,7 @@ class ClientV2:
         new_args = args[:1] + (None,) + args[1:]
         return self._post(*new_args, **kwargs)
 
-    def _get_links(self, response: requests.Response, relation_type: str) -> List[str]:
+    def _get_links(self, response: requests.Response, relation_type: str) -> list[str]:
         """
         Retrieves all Link URIs of relation_type from the response.
         :param requests.Response response: The requests HTTP response.
@@ -341,8 +416,8 @@ class ClientV2:
         if 'Link' not in response.headers:
             return []
         links = parse_header_links(response.headers['Link'])
-        return [l['url'] for l in links
-                if 'rel' in l and 'url' in l and l['rel'] == relation_type]
+        return [link['url'] for link in links
+                if 'rel' in link and 'url' in link and link['rel'] == relation_type]
 
     @classmethod
     def get_directory(cls, url: str, net: 'ClientNetwork') -> messages.Directory:
@@ -543,7 +618,7 @@ class ClientNetwork:
         self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
-        self._nonces: Set[str] = set()
+        self._nonces: set[str] = set()
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
@@ -671,30 +746,7 @@ class ClientNetwork:
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
         kwargs.setdefault('timeout', self._default_timeout)
-        try:
-            response = self.session.request(method, url, *args, **kwargs)
-        except requests.exceptions.RequestException as e:
-            # pylint: disable=pointless-string-statement
-            """Requests response parsing
-
-            The requests library emits exceptions with a lot of extra text.
-            We parse them with a regexp to raise a more readable exceptions.
-
-            Example:
-            HTTPSConnectionPool(host='acme-v01.api.letsencrypt.org',
-            port=443): Max retries exceeded with url: /directory
-            (Caused by NewConnectionError('
-            <requests.packages.urllib3.connection.VerifiedHTTPSConnection
-            object at 0x108356c50>: Failed to establish a new connection:
-            [Errno 65] No route to host',))"""
-
-            # pylint: disable=line-too-long
-            err_regex = r".*host='(\S*)'.*Max retries exceeded with url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
-            m = re.match(err_regex, str(e))
-            if m is None:
-                raise  # pragma: no cover
-            host, path, _err_no, err_msg = m.groups()
-            raise ValueError(f"Requesting {host}{path}:{err_msg}")
+        response = self.session.request(method, url, *args, **kwargs)
 
         # If an Accept header was sent in the request, the response may not be
         # UTF-8 encoded. In this case, we don't set response.encoding and log
@@ -781,3 +833,22 @@ class ClientNetwork:
         response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
         return response
+
+def _renewal_info_path_component(cert: x509.Certificate) -> str:
+    akid_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
+    key_identifier = akid_ext.value.key_identifier # type: ignore[attr-defined]
+
+    akid_encoded = base64.urlsafe_b64encode(key_identifier).decode('ascii').replace("=", "")
+
+    # We add one to the reported bit_length so there is room for the sign bit.
+    # https://docs.python.org/3/library/stdtypes.html#int.bit_length
+    # "Return the number of bits necessary to represent an integer in binary, excluding
+    # the sign and leading zeros"
+    serial = cert.serial_number
+    encoded_serial_len = math.ceil((serial.bit_length()+1)/8)
+    # Serials are encoded as ASN.1 INTEGERS, which means big endian and signed (two's complement).
+    # https://letsencrypt.org/docs/a-warm-welcome-to-asn1-and-der/#integer-encoding
+    serial_bytes = serial.to_bytes(encoded_serial_len, byteorder='big', signed=True)
+    serial_encoded = base64.urlsafe_b64encode(serial_bytes).decode('ascii').replace("=", "")
+
+    return f"{akid_encoded}.{serial_encoded}"
