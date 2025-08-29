@@ -241,7 +241,7 @@ def read_certificate(cert_path: str) -> Certificate:
     """
     Load the certificate from the provided path and return the certificate object.
     :param str cert_path: the path to the certificate
-    :returns: the Certificate object
+    :returns: a cryptography.x509.Certificate object
     """
     with open(cert_path, "rb") as file:
         data = file.read()
