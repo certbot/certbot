@@ -13,7 +13,11 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
 from cryptography.hazmat.primitives.asymmetric.ec import SECP384R1
 from cryptography.hazmat.primitives.asymmetric.ec import SECP521R1
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography import x509
+from cryptography.x509 import ExtensionNotFound
 from cryptography.x509 import NameOID
+from cryptography.x509 import TLSFeatureType
 import pytest
 
 from certbot_integration_tests.certbot_tests.assertions import assert_cert_count_for_lineage
@@ -637,7 +641,10 @@ def test_ecdsa(context: IntegrationTestsContext) -> None:
     ])
 
     certificate = misc.read_certificate(cert_path)
-    assert 'ASN1 OID: secp384r1' in certificate
+    # Check that the certificate uses SECP384R1 curve
+    public_key = certificate.public_key()
+    assert isinstance(public_key, ec.EllipticCurvePublicKey)
+    assert isinstance(public_key.curve, ec.SECP384R1)
 
 
 def test_default_key_type(context: IntegrationTestsContext) -> None:
@@ -736,7 +743,12 @@ def test_ocsp_must_staple(context: IntegrationTestsContext) -> None:
 
     certificate = misc.read_certificate(join(context.config_dir,
                                              'live/{0}/cert.pem').format(certname))
-    assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24' in certificate
+
+    try:
+        tls_feature_ext = certificate.extensions.get_extension_for_class(x509.TLSFeature)
+        assert TLSFeatureType.status_request in list(tls_feature_ext.value)
+    except ExtensionNotFound:
+        assert False, "OCSP Must-Staple requires TLS Feature extension"
 
 
 def test_revoke_simple(context: IntegrationTestsContext) -> None:
@@ -1011,8 +1023,9 @@ def test_preferred_chain(context: IntegrationTestsContext) -> None:
                 '--preferred-chain', requested, '--force-renewal']
         context.certbot(args)
 
-        dumped = misc.read_certificate(cert_path)
-        assert f'Issuer: CN={expected}'in dumped, \
+        certificate = misc.read_certificate(cert_path)
+        issuer_cn = certificate.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+        assert expected == issuer_cn, \
                f'Expected chain issuer to be {expected} when preferring {requested}'
 
         with open(conf_path, 'r') as f:
