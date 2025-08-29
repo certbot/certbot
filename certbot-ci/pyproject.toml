@@ -26,7 +26,6 @@ classifiers = [
 dependencies = [
     "coverage",
     "cryptography",
-    "pyopenssl",
     "pytest",
     "pytest-cov",
     # This version is needed for "worker" attributes we currently use like
