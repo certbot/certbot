@@ -1,1 +1,0 @@
-Migrated most functionality from `setup.py` to `pyproject.toml` for certbot dns plugins.

@@ -4,6 +4,67 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.0.0 - 2025-09-02
+
+### Added
+
+- Certbot now stores the Retry-After value given by ACME Renewal Info (ARI) so
+  the value can be respected across multiple Certbot runs.
+  ([#10377](https://github.com/certbot/certbot/issues/10377))
+- Added `uv` as a test dependency, and switched most `pip` invocations to `uv
+  pip` for faster installs.
+  ([#10428](https://github.com/certbot/certbot/issues/10428))
+
+### Changed
+
+- Removed final instances of pyopenssl x509 and PKey objects
+  * Removed `acme.crypto_util.SSLSocket`
+  * Removed `acme.crypto_util.probe_sni`
+
+  ([#10079](https://github.com/certbot/certbot/issues/10079),
+  [#10381](https://github.com/certbot/certbot/issues/10381))
+- Removed a number of deprecated classes/interfaces
+  * Removed `acme.challenges.TLSALPN01Response`
+  * Removed `acme.challenges.TLSALPN01`
+  * Removed `acme.standalone.TLSServer`
+  * Removed `acme.standalone.TLSALPN01Server`
+
+  ([#10274](https://github.com/certbot/certbot/issues/10274))
+- certbot.ocsp.RevocationChecker.__init__ no longer accepts the parameter
+  `enforce_openssl_binary_usage` and always uses the cryptography Python
+  library for OCSP checking.
+  ([#10291](https://github.com/certbot/certbot/issues/10291))
+- Python 3.9 support was removed.
+  ([#10389](https://github.com/certbot/certbot/issues/10389))
+- Migrated most functionality from `certbot/setup.py` to
+  `certbot/pyproject.toml`
+  ([#10402](https://github.com/certbot/certbot/issues/10402))
+- Migrated most functionality from `setup.py` to `pyproject.toml` for acme,
+  certbot-apache, and certbot-nginx.
+  ([#10417](https://github.com/certbot/certbot/issues/10417))
+- Migrated most functionality from `setup.py` to `pyproject.toml` for certbot
+  dns plugins. ([#10425](https://github.com/certbot/certbot/issues/10425))
+- Updated apache TLS configuration options based on changes to Mozilla's
+  intermediate configuration recommendations.
+  * Added `DHE-RSA-CHACHA20-POLY1305` to `SSLCipherSuite` list for better
+  compliance
+  * Configured curves using `SSLOpenSSLConfCmd` so FFDH won't be used with
+  OpenSSL 3.0
+
+  ([#10443](https://github.com/certbot/certbot/issues/10443))
+
+### Fixed
+
+- certbot-apache no longer prints a warning claiming the version of OpenSSL
+  used by Apache is too old when we were unable determine the OpenSSL version.
+  ([#10444](https://github.com/certbot/certbot/issues/10444))
+- certbot-nginx no longer uses socket.gethostname when generating self-signed
+  certificates for use as a temporary step of installing certificates as it
+  would sometimes result in strings that are too long to be used in the common
+  name of a certificate. The static domain "temp-certbot-nginx.invalid" is now
+  used instead. ([#10447](https://github.com/certbot/certbot/issues/10447))
+
+
 ## 4.2.0 - 2025-08-05
 
 ### Added
