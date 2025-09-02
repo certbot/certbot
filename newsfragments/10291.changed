@@ -1,1 +1,0 @@
-certbot.ocsp.RevocationChecker.__init__ no longer accepts the parameter `enforce_openssl_binary_usage` and always uses the cryptography Python library for OCSP checking.
