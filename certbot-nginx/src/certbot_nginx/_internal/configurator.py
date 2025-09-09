@@ -254,7 +254,7 @@ class NginxConfigurator(common.Configurator):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a certificate.")
 
-        vhosts = self.choose_vhosts(domain, create_if_no_match=True)
+        vhosts = self.choose_or_make_vhosts(domain, create_if_no_match=True)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
             display_util.notify("Successfully deployed certificate for {} to {}"
@@ -337,9 +337,30 @@ class NginxConfigurator(common.Configurator):
         vhosts = [x for x in [self._select_best_name_match(matches)] if x is not None]
         return vhosts
 
-    def choose_vhosts(self, target_name: str,
-                      create_if_no_match: bool = False) -> list[obj.VirtualHost]:
-        """Chooses a virtual host based on the given domain name.
+    def _choose_vhosts_common(self, target_name: str) -> list[obj.VirtualHost]:
+        if util.is_wildcard_domain(target_name):
+            # Ask user which VHosts to support.
+            return self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
+        else:
+            return self._choose_vhost_single(target_name)
+
+    def choose_vhosts(self, target_name: str) -> list[obj.VirtualHost]:
+        """Chooses SSL virtual hosts based on the given domain name.
+
+        If no matching SSL vhosts are found, none are created and an empty list
+        is returned.
+
+        :param str target_name: domain name
+
+        :returns: ssl vhosts associated with name
+        :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
+
+        """
+        return [vhost for vhost in self._choose_vhosts_common(target_name) if vhost.ssl]
+
+    def choose_or_make_vhosts(self, target_name: str, create_if_no_match: bool
+                              = False) -> list[obj.VirtualHost]:
+        """Chooses or creates SSL  virtual host based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
             Nginx's server block selection rules preferring blocks that are
@@ -357,11 +378,7 @@ class NginxConfigurator(common.Configurator):
         :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
 
         """
-        if util.is_wildcard_domain(target_name):
-            # Ask user which VHosts to support.
-            vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
-        else:
-            vhosts = self._choose_vhost_single(target_name)
+        vhosts = self._choose_vhosts_common(target_name)
         if not vhosts:
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
@@ -989,6 +1006,9 @@ class NginxConfigurator(common.Configurator):
             raise errors.NotSupportedError(f"Invalid chain_path type {type(chain_path)}, "
                                            "expected a str or None.")
         vhosts = self.choose_vhosts(domain)
+        if not vhosts:
+            raise errors.PluginError(
+                "Unable to find corresponding HTTPS host for OCSP stapling.")
         for vhost in vhosts:
             self._enable_ocsp_stapling_single(vhost, chain_path)
 
