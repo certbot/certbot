@@ -360,7 +360,7 @@ class NginxConfigurator(common.Configurator):
 
     def choose_or_make_vhosts(self, target_name: str, create_if_no_match: bool
                               = False) -> list[obj.VirtualHost]:
-        """Chooses or creates SSL  virtual host based on the given domain name.
+        """Chooses or creates SSL virtual hosts based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
             Nginx's server block selection rules preferring blocks that are
@@ -392,7 +392,6 @@ class NginxConfigurator(common.Configurator):
                              "please add a corresponding server_name directive to your "
                              "nginx configuration for every domain on your certificate: "
                              "https://nginx.org/en/docs/http/server_names.html") % (target_name))
-        # Note: if we are enhancing with ocsp, vhost should already be ssl.
         for vhost in vhosts:
             if not vhost.ssl:
                 self._make_server_ssl(vhost)
