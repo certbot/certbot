@@ -62,6 +62,7 @@ class NginxParserTest(util.NginxTest):
                            'sites-enabled/ipv6.com',
                            'sites-enabled/ipv6ssl.com',
                            'sites-enabled/example.net',
+                           'sites-enabled/no-listens.com',
                            'sites-enabled/addr-80.com']} == \
                          set(nparser.parsed.keys())
         assert [['server_name', 'somename', 'alias', 'another.alias']] == \
@@ -101,7 +102,7 @@ class NginxParserTest(util.NginxTest):
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))
         assert 4 == len(glob.glob(nparser.abs_path('*.test')))
-        assert 11 == len(
+        assert 12 == len(
             glob.glob(nparser.abs_path('sites-enabled/*.test')))
         assert [[['server'], [['listen', '69.50.225.155:9000'],
                                         ['listen', '127.0.0.1'],
@@ -184,7 +185,7 @@ class NginxParserTest(util.NginxTest):
                                                   '*.www.example.com'},
                                  [], [2, 1, 0])
 
-        assert 20 == len(vhosts)
+        assert 21 == len(vhosts)
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
         assert vhost3 == example_com
         default = [x for x in vhosts if 'default' in x.filep][0]
