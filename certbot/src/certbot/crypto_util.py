@@ -98,7 +98,9 @@ def generate_key(key_size: int, key_dir: Optional[str], key_type: str = "rsa",
 
 
 def generate_csr(privkey: util.Key, names: Union[list[str], set[str]], path: Optional[str],
-                 must_staple: bool = False, strict_permissions: bool = True) -> util.CSR:
+                 must_staple: bool = False,
+                 strict_permissions: bool = True,
+                 legacy_common_name: bool = False) -> util.CSR:
     """Initialize a CSR with the given private key.
 
     :param privkey: Key to include in the CSR
@@ -108,13 +110,14 @@ def generate_csr(privkey: util.Key, names: Union[list[str], set[str]], path: Opt
     :param bool must_staple: If true, include the TLS Feature extension "OCSP Must-Staple"
     :param bool strict_permissions: If true and path exists, an exception is raised if
         the directory doesn't have 0755 permissions or isn't owned by the current user.
+    :param bool legacy_common_name: Whether to add a CN to the CSR
 
     :returns: CSR
     :rtype: :class:`certbot.util.CSR`
 
     """
     csr_pem = acme_crypto_util.make_csr(
-        privkey.pem, names, must_staple=must_staple)
+        privkey.pem, names, must_staple=must_staple, legacy_common_name=legacy_common_name)
 
     # Save CSR, if requested
     csr_filename = None

@@ -32,6 +32,7 @@ CLI_DEFAULTS: dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     noninteractive_mode=False,
     force_interactive=False,
     domains=[],
+    legacy_common_name=False,
     certname=None,
     dry_run=False,
     register_unsafely_without_email=False,
@@ -214,6 +215,9 @@ EFF_SUBSCRIBE_URI = "https://supporters.eff.org/subscribe/certbot"
 SSL_DHPARAMS_DEST = "ssl-dhparams.pem"
 """Name of the ssl_dhparams file as saved
 in `certbot.configuration.NamespaceConfig.config_dir`."""
+
+LEGACY_COMMON_NAME_FLAG = "--legacy-common-name"
+"""Flag to set the first domain provided to the subject common name."""
 
 def _generate_ssl_dhparams_src_static() -> str:
     # This code ensures that the resource is accessible as file for the lifetime of current

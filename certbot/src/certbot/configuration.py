@@ -456,6 +456,14 @@ class NamespaceConfig:
         """
         return self.namespace.new_key
 
+    @property
+    def legacy_common_name(self) -> bool:
+        """This option specifies whether Certbot should add the first
+        domain provided to the subject common name. This is to support
+        TLS clients which still check the common name first/only before
+        checking SANs."""
+        return self.namespace.legacy_common_name
+
     # Magic methods
 
     def __deepcopy__(self, _memo: Any) -> 'NamespaceConfig':
