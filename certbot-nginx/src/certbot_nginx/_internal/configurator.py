@@ -254,7 +254,7 @@ class NginxConfigurator(common.Configurator):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a certificate.")
 
-        vhosts = self.choose_or_make_vhosts(domain, create_if_no_match=True)
+        vhosts = self.choose_or_make_vhosts(domain)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
             display_util.notify("Successfully deployed certificate for {} to {}"
@@ -358,21 +358,17 @@ class NginxConfigurator(common.Configurator):
         """
         return [vhost for vhost in self._choose_vhosts_common(target_name) if vhost.ssl]
 
-    def choose_or_make_vhosts(self, target_name: str, create_if_no_match: bool
-                              = False) -> list[obj.VirtualHost]:
+    def choose_or_make_vhosts(self, target_name: str) -> list[obj.VirtualHost]:
         """Chooses or creates SSL virtual hosts based on the given domain name.
+
+        If no matching vhost is found, we attempt to create a new one from the
+        default vhost. If this fails, a MisconfigurationError is raised.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
             Nginx's server block selection rules preferring blocks that are
             already SSL.
 
-        .. todo:: This should maybe return list if no obvious answer
-            is presented.
-
         :param str target_name: domain name
-        :param bool create_if_no_match: If we should create a new vhost from default
-            when there is no match found. If we can't choose a default, raise a
-            MisconfigurationError.
 
         :returns: ssl vhosts associated with name
         :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
@@ -380,18 +376,9 @@ class NginxConfigurator(common.Configurator):
         """
         vhosts = self._choose_vhosts_common(target_name)
         if not vhosts:
-            if create_if_no_match:
-                # result will not be [None] because it errors on failure
-                vhosts = [self._vhost_from_duplicated_default(target_name, True,
-                    str(self.config.https_port))]
-            else:
-                # No matches. Raise a misconfiguration error.
-                raise errors.MisconfigurationError(
-                            ("Cannot find a VirtualHost matching domain %s. "
-                             "In order for Certbot to correctly perform the challenge "
-                             "please add a corresponding server_name directive to your "
-                             "nginx configuration for every domain on your certificate: "
-                             "https://nginx.org/en/docs/http/server_names.html") % (target_name))
+            # result will not be [None] because it errors on failure
+            vhosts = [self._vhost_from_duplicated_default(target_name, True,
+                str(self.config.https_port))]
         for vhost in vhosts:
             if not vhost.ssl:
                 self._make_server_ssl(vhost)
