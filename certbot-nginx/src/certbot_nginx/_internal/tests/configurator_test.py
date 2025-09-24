@@ -232,6 +232,19 @@ class NginxConfiguratorTest(util.NginxTest):
         assert obj.Addr.fromstring("1.2.3.4:5001 ssl") in vhost.addrs
         assert obj.Addr.fromstring("[1:20::300]:5001 ssl ipv6only=on") in vhost.addrs
 
+    def test_choose_or_make_vhost_ssl_directives(self):
+        conf_path = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.choose_or_make_vhosts('example.com', 'my-key.pem', 'my-fullchain.pem')
+        self.config.save()
+        self.config.parser.load()
+        parsed_conf = util.filter_comments(self.config.parser.parsed[conf_path])
+
+        expected_directives = [
+            ['ssl_certificate', 'my-fullchain.pem'],
+            ['ssl_certificate_key', 'my-key.pem'],
+        ]
+        for directive in expected_directives:
+            assert util.contains_at_depth(parsed_conf, directive, 2)
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
