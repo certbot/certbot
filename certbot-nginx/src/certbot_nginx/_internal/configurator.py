@@ -254,7 +254,7 @@ class NginxConfigurator(common.Configurator):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a certificate.")
 
-        vhosts = self.choose_or_make_vhosts(domain)
+        vhosts = self.choose_or_make_vhosts(domain, key_path, fullchain_path)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
             display_util.notify("Successfully deployed certificate for {} to {}"
@@ -358,7 +358,8 @@ class NginxConfigurator(common.Configurator):
         """
         return [vhost for vhost in self._choose_vhosts_common(target_name) if vhost.ssl]
 
-    def choose_or_make_vhosts(self, target_name: str) -> list[obj.VirtualHost]:
+    def choose_or_make_vhosts(self, target_name: str, key_path: str,
+                              fullchain_path: str) -> list[obj.VirtualHost]:
         """Chooses or creates SSL virtual hosts based on the given domain name.
 
         If no matching vhost is found, we attempt to create a new one from the
@@ -369,6 +370,8 @@ class NginxConfigurator(common.Configurator):
             already SSL.
 
         :param str target_name: domain name
+        :param str key_path: key to use when creating SSL vhosts
+        :param str fullchain_path: certificates to use when creating SSL vhosts
 
         :returns: ssl vhosts associated with name
         :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
@@ -381,7 +384,7 @@ class NginxConfigurator(common.Configurator):
                 str(self.config.https_port))]
         for vhost in vhosts:
             if not vhost.ssl:
-                self._make_server_ssl(vhost)
+                self._make_server_ssl(vhost, key_path, fullchain_path)
 
         return vhosts
 
@@ -734,13 +737,16 @@ class NginxConfigurator(common.Configurator):
             cert_file.write(cert_pem)
         return cert_path, le_key.file
 
-    def _make_server_ssl(self, vhost: obj.VirtualHost) -> None:
+    def _make_server_ssl(self, vhost: obj.VirtualHost, key_path: str,
+                         fullchain_path: str) -> None:
         """Make a server SSL.
 
         Make a server SSL by adding new listen and SSL directives.
 
         :param vhost: The vhost to add SSL to.
         :type vhost: :class:`~certbot_nginx._internal.obj.VirtualHost`
+        :param str key_path: key to use for SSL
+        :param str fullchain_path: certificates to use for SSL
 
         """
         https_port = self.config.https_port
@@ -797,12 +803,10 @@ class NginxConfigurator(common.Configurator):
                               'ssl']
                 addr_blocks.append(addr_block)
 
-        snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-
         ssl_block = ([
             *addr_blocks,
-            ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
-            ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+            ['\n    ', 'ssl_certificate', ' ', fullchain_path],
+            ['\n    ', 'ssl_certificate_key', ' ', key_path],
             ['\n    ', 'include', ' ', self.mod_ssl_conf],
             ['\n    ', 'ssl_dhparam', ' ', self.ssl_dhparams],
         ])
