@@ -937,8 +937,8 @@ class NginxConfigurator(common.Configurator):
             http_vhost, _ = self._split_block(vhost, ['listen', 'server_name'])
 
             # Add this at the bottom to get the right order of directives
-            return_404_directive = [['\n    ', 'return', ' ', '404']]
-            self.parser.add_server_directives(http_vhost, return_404_directive)
+            return_421_directive = [['\n    ', 'return', ' ', '421']]
+            self.parser.add_server_directives(http_vhost, return_421_directive)
 
             vhost = http_vhost
 
