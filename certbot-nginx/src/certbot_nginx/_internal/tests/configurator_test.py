@@ -4,9 +4,6 @@ from unittest import mock
 
 import pytest
 
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
-
 from acme import challenges
 from acme import messages
 from certbot import achallenges
@@ -580,16 +577,6 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_add_to_checkpoint.side_effect = errors.ReverterError("foo")
         with pytest.raises(errors.PluginError):
             self.config.save()
-
-    def test_get_snakeoil_paths(self):
-        # pylint: disable=protected-access
-        cert, key = self.config._get_snakeoil_paths()
-        assert os.path.exists(cert)
-        assert os.path.exists(key)
-        with open(cert, "rb") as cert_file:
-            x509.load_pem_x509_certificate(cert_file.read())
-        with open(key, "rb") as key_file:
-            serialization.load_pem_private_key(key_file.read(), password=None)
 
     def test_redirect_enhance(self):
         # Test that we successfully add a redirect when there is

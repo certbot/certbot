@@ -18,13 +18,8 @@ from typing import Sequence
 from typing import Union
 from typing import cast
 
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-
 from acme import challenges
-from acme import crypto_util as acme_crypto_util
 from certbot import achallenges
-from certbot import crypto_util
 from certbot import errors
 from certbot import util
 from certbot.compat import os
@@ -709,33 +704,6 @@ class NginxConfigurator(common.Configurator):
                         continue
 
         return util.get_filtered_names(all_names)
-
-    def _get_snakeoil_paths(self) -> tuple[str, str]:
-        """Generate invalid certs that let us create ssl directives for Nginx"""
-        # TODO: generate only once
-        tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
-        le_key = crypto_util.generate_key(
-            key_type='rsa', key_size=2048, key_dir=tmp_dir, keyname="key.pem",
-            strict_permissions=self.config.strict_permissions)
-        assert le_key.file is not None
-        cryptography_key = serialization.load_pem_private_key(le_key.pem, password=None)
-        assert isinstance(cryptography_key, rsa.RSAPrivateKey)
-        cert = acme_crypto_util.make_self_signed_cert(
-            cryptography_key,
-            # we used to use socket.gethostname here, but that sometimes
-            # resulted in strings over 64 characters long which would error
-            # on the validation introduced in
-            # https://github.com/pyca/cryptography/pull/11201. the ".invalid"
-            # TLD comes from RFC2606 (and was also used in the tls-sni-01
-            # challenge in early versions of the ACME spec)
-            domains=['temp-certbot-nginx.invalid']
-        )
-        cert_pem = cert.public_bytes(serialization.Encoding.PEM)
-        cert_file, cert_path = util.unique_file(
-            os.path.join(tmp_dir, "cert.pem"), mode="wb")
-        with cert_file:
-            cert_file.write(cert_pem)
-        return cert_path, le_key.file
 
     def _make_server_ssl(self, vhost: obj.VirtualHost, key_path: str,
                          fullchain_path: str) -> None:
