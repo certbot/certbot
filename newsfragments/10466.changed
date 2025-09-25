@@ -1,0 +1,1 @@
+The function `acme.crypto_util.make_self_signed_cert` was deprecated and will be removed in a future release.
