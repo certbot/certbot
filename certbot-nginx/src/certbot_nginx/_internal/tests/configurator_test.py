@@ -4,9 +4,6 @@ from unittest import mock
 
 import pytest
 
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
-
 from acme import challenges
 from acme import messages
 from certbot import achallenges
@@ -182,7 +179,7 @@ class NginxConfiguratorTest(util.NginxTest):
                    'ipv6.com': "etc_nginx/sites-enabled/ipv6.com"}
         conf_path = {key: os.path.normpath(value) for key, value in conf_path.items()}
 
-        vhost = self.config.choose_or_make_vhosts(name)[0]
+        vhost = self.config.choose_or_make_vhosts(name, 'key.pem', 'fullchain.pem')[0]
         path = os.path.relpath(vhost.filep, self.temp_dir)
 
         assert conf_names[conf] == vhost.names
@@ -200,34 +197,51 @@ class NginxConfiguratorTest(util.NginxTest):
         for name in bad_results:
             with self.subTest(name=name):
                 with pytest.raises(errors.MisconfigurationError):
-                    self.config.choose_or_make_vhosts(name)
+                    self.config.choose_or_make_vhosts(name, 'key.pem', 'fullchain.pem')
 
     def test_choose_or_make_vhosts_keep_ip_address(self):
+        # let's use a simple helper function to set key and fullchain values
+        def choose_or_make_vhosts(domain):
+            return self.config.choose_or_make_vhosts(domain, 'key.pem', 'fullchain.pem')
+
         # no listen on port 80
         # listen       69.50.225.155:9000;
         # listen       127.0.0.1;
-        vhost = self.config.choose_or_make_vhosts('example.com')[0]
+        vhost = choose_or_make_vhosts('example.com')[0]
         assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
 
         # no listens at all
-        vhost = self.config.choose_or_make_vhosts('no-listens.com')[0]
+        vhost = choose_or_make_vhosts('no-listens.com')[0]
         assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
         assert obj.Addr.fromstring("80") in vhost.addrs
 
         # blank addr listen on 80 should result in blank addr ssl
         # listen 80;
         # listen [::]:80;
-        vhost = self.config.choose_or_make_vhosts('ipv6.com')[0]
+        vhost = choose_or_make_vhosts('ipv6.com')[0]
         assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
         assert obj.Addr.fromstring("[::]:5001 ssl") in vhost.addrs
 
         # listen on 80 with ip address should result in copied addr
         # listen 1.2.3.4:80;
         # listen [1:20::300]:80;
-        vhost = self.config.choose_or_make_vhosts('addr-80.com')[0]
+        vhost = choose_or_make_vhosts('addr-80.com')[0]
         assert obj.Addr.fromstring("1.2.3.4:5001 ssl") in vhost.addrs
         assert obj.Addr.fromstring("[1:20::300]:5001 ssl ipv6only=on") in vhost.addrs
 
+    def test_choose_or_make_vhost_ssl_directives(self):
+        conf_path = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.choose_or_make_vhosts('example.com', 'my-key.pem', 'my-fullchain.pem')
+        self.config.save()
+        self.config.parser.load()
+        parsed_conf = util.filter_comments(self.config.parser.parsed[conf_path])
+
+        expected_directives = [
+            ['ssl_certificate', 'my-fullchain.pem'],
+            ['ssl_certificate_key', 'my-key.pem'],
+        ]
+        for directive in expected_directives:
+            assert util.contains_at_depth(parsed_conf, directive, 2)
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
@@ -238,14 +252,8 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_ipv6only_detection(self):
         self.config.version = (1, 3, 1)
 
-        self.config.deploy_cert(
-            "ipv6.com",
-            "example/cert.pem",
-            "example/key.pem",
-            "example/chain.pem",
-            "example/fullchain.pem")
-
-        for addr in self.config.choose_or_make_vhosts("ipv6.com")[0].addrs:
+        vhost = self.config.choose_or_make_vhosts("ipv6.com", "key.pem", "fullchain.pem")[0]
+        for addr in vhost.addrs:
             assert not addr.ipv6only
 
     def test_more_info(self):
@@ -569,16 +577,6 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_add_to_checkpoint.side_effect = errors.ReverterError("foo")
         with pytest.raises(errors.PluginError):
             self.config.save()
-
-    def test_get_snakeoil_paths(self):
-        # pylint: disable=protected-access
-        cert, key = self.config._get_snakeoil_paths()
-        assert os.path.exists(cert)
-        assert os.path.exists(key)
-        with open(cert, "rb") as cert_file:
-            x509.load_pem_x509_certificate(cert_file.read())
-        with open(key, "rb") as key_file:
-            serialization.load_pem_private_key(key_file.read(), password=None)
 
     def test_redirect_enhance(self):
         # Test that we successfully add a redirect when there is

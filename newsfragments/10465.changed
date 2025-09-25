@@ -1,0 +1,1 @@
+certbot-nginx no longer creates and uses self-signed certificates as an intermediate step when installing certificates. The certificates the user requested Certbot install are now always used instead.
