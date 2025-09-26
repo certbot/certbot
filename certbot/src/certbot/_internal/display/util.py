@@ -85,7 +85,7 @@ def separate_list_input(input_: str) -> list[str]:
 
 def summarize_identifier_list(identifiers: list[str]) -> str:
     """Summarizes a list of identifiers in the format of:
-        example.com.com and N more domains / IP addresses
+        example.com.com and N more
     or if there are only two identifiers:
         example.com and 192.0.2.77
     or if there is only one identifier:
@@ -104,7 +104,7 @@ def summarize_identifier_list(identifiers: list[str]) -> str:
     elif length == 2:
         return " and ".join(identifiers)
     else:
-        return "{0} and {1} more domains".format(identifiers[0], length - 1)
+        return "{0} and {1} more".format(identifiers[0], length - 1)
 
 
 def describe_acme_error(error: acme_messages.Error) -> str:

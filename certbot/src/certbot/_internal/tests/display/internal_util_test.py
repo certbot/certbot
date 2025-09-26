@@ -119,7 +119,7 @@ class SummarizeDomainListTest(unittest.TestCase):
                          self._call(["example.com", "example.org"])
 
     def test_many_domains(self):
-        assert "example.com and 2 more domains" == \
+        assert "example.com and 2 more" == \
                          self._call(["example.com", "example.org", "a.example.com"])
 
     def test_empty_domains(self):
