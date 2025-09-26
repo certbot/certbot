@@ -119,13 +119,14 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
         if lineage is not None:
             # Renewal, where we already know the specific lineage we're
             # interested in
-            action = "Renewing an existing certificate"
-            if config.dry_run:
-                action = "Simulating renewal of an existing certificate"
-
-            idents = internal_display_util.summarize_identifier_list(identifiers or lineage.names())
-
-            display_util.notify(f"{action} for {idents}")
+            display_util.notify(
+                "{action} for {identifiers}".format(
+                    action="Simulating renewal of an existing certificate"
+                    if config.dry_run else "Renewing an existing certificate",
+                    identifiers=internal_display_util.summarize_identifier_list(
+                            identifiers or lineage.names())
+                )
+            )
             renewal.renew_cert(config, identifiers, le_client, lineage)
         else:
             # TREAT AS NEW REQUEST
