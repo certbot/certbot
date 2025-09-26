@@ -331,7 +331,7 @@ class LineageForCertnameTest(BaseCertManagerTest):
 
 
 class DomainsForCertnameTest(BaseCertManagerTest):
-    """Tests for certbot._internal.cert_manager.domains_for_certname"""
+    """Tests for certbot._internal.cert_manager.identifiers_for_certname"""
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
@@ -344,7 +344,7 @@ class DomainsForCertnameTest(BaseCertManagerTest):
         mock_match.names.return_value = domains
         mock_renewable_cert.return_value = mock_match
         from certbot._internal import cert_manager
-        assert cert_manager.domains_for_certname(self.config, "example.com") == \
+        assert cert_manager.identifiers_for_certname(self.config, "example.com") == \
             domains
         assert mock_make_or_verify_dir.called
 
@@ -353,7 +353,7 @@ class DomainsForCertnameTest(BaseCertManagerTest):
     def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
         from certbot._internal import cert_manager
-        assert cert_manager.domains_for_certname(self.config, "other.com") is None
+        assert cert_manager.identifiers_for_certname(self.config, "other.com") is None
         assert mock_make_or_verify_dir.called
 
 

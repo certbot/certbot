@@ -253,7 +253,7 @@ class CertonlyTest(unittest.TestCase):
 
     @mock.patch('certbot._internal.main._report_next_steps')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
-    @mock.patch('certbot._internal.cert_manager.domains_for_certname')
+    @mock.patch('certbot._internal.cert_manager.identifiers_for_certname')
     @mock.patch('certbot._internal.renewal.renew_cert')
     @mock.patch('certbot._internal.main._handle_unexpected_key_type_migration')
     @mock.patch('certbot._internal.main._report_new_cert')
@@ -289,12 +289,12 @@ class CertonlyTest(unittest.TestCase):
                 ' --no-directory-hooks'.split())
 
     @mock.patch('certbot._internal.main._report_next_steps')
-    @mock.patch('certbot._internal.cert_manager.domains_for_certname')
+    @mock.patch('certbot._internal.cert_manager.identifiers_for_certname')
     @mock.patch('certbot.display.ops.choose_names')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main._report_new_cert')
     def test_find_lineage_for_domains_new_certname(self, mock_report_cert,
-        mock_lineage, mock_choose_names, mock_domains_for_certname, unused_mock_report_next_steps):
+        mock_lineage, mock_choose_names, mock_identifiers_for_certname, unused_mock_report_next_steps):
         mock_lineage.return_value = None
 
         # no lineage with this name but we specified domains so create a new cert
@@ -305,7 +305,7 @@ class CertonlyTest(unittest.TestCase):
 
         # no lineage with this name and we didn't give domains
         mock_choose_names.return_value = ["somename"]
-        mock_domains_for_certname.return_value = None
+        mock_identifiers_for_certname.return_value = None
         self._call(('certonly --webroot --cert-name example.com --no-directory-hooks').split())
         assert mock_choose_names.called is True
 
@@ -371,22 +371,22 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot.display.ops.choose_names')
     def test_display_ops(self, mock_choose_names):
-        mock_config = mock.Mock(domains=None, certname=None)
+        mock_config = mock.Mock(domains=None, ip_addresses=None, certname=None)
         mock_choose_names.return_value = "domainname"
         # pylint: disable=protected-access
         assert main._find_domains_or_certname(mock_config, None) == ("domainname", None)
 
     @mock.patch('certbot.display.ops.choose_names')
     def test_no_results(self, mock_choose_names):
-        mock_config = mock.Mock(domains=None, certname=None)
+        mock_config = mock.Mock(domains=None, ip_addresses=None, certname=None)
         mock_choose_names.return_value = []
         # pylint: disable=protected-access
         with pytest.raises(errors.Error):
             main._find_domains_or_certname(mock_config, None)
 
-    @mock.patch('certbot._internal.cert_manager.domains_for_certname')
+    @mock.patch('certbot._internal.cert_manager.identifiers_for_certname')
     def test_grab_domains(self, mock_domains):
-        mock_config = mock.Mock(domains=None, certname="one.com")
+        mock_config = mock.Mock(domains=None, ip_addresses=None, certname="one.com")
         mock_domains.return_value = ["one.com", "two.com"]
         # pylint: disable=protected-access
         assert main._find_domains_or_certname(mock_config, None) == \
@@ -1974,7 +1974,7 @@ class EnhanceTest(test_util.ConfigTestCase):
 
         with mock.patch('certbot._internal.cert_manager.get_certnames') as mock_certs:
             mock_certs.return_value = ['example.com']
-            with mock.patch('certbot._internal.cert_manager.domains_for_certname') as mock_dom:
+            with mock.patch('certbot._internal.cert_manager.identifiers_for_certname') as mock_dom:
                 mock_dom.return_value = ['example.com']
                 with mock.patch('certbot._internal.main._init_le_client') as mock_init:
                     mock_client = mock.MagicMock()

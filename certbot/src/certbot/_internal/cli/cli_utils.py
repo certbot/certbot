@@ -138,8 +138,10 @@ class _IPAddressAction(argparse.Action):
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
                  ip_address: Union[str, Sequence[Any], None],
                  option_string: Optional[str] = None) -> None:
+        if not ip_address:
+            return
         # This will throw an exception if the IP address doesn't parse.
-        ipaddress.ip_address(ip_address)
+        ipaddress.ip_address(str(ip_address))
         namespace.ip_addresses.append(ip_address)
 
 

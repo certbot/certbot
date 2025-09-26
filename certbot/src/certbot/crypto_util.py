@@ -9,6 +9,7 @@ import hashlib
 import ipaddress
 import logging
 import re
+import typing
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
@@ -193,7 +194,7 @@ def get_identifiers_from_subject_and_extensions(
     try:
         san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
     except x509.ExtensionNotFound:
-        dns_names = []
+        identifiers = []
     else:
         dns_names = san_ext.value.get_values_for_type(x509.DNSName)
         ip_addresses = san_ext.value.get_values_for_type(x509.IPAddress)
@@ -217,7 +218,7 @@ def import_csr_file(
 
     :returns: (`acme_crypto_util.Format.PEM`,
                util.CSR object representing the CSR,
-               list of domains requested in the CSR)
+               list of identifiers requested in the CSR)
     :rtype: tuple
 
     """
@@ -230,14 +231,14 @@ def import_csr_file(
         except ValueError:
             raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
 
-    domains = get_identifiers_from_subject_and_extensions(csr.subject, csr.extensions)
+    identifiers = get_identifiers_from_subject_and_extensions(csr.subject, csr.extensions)
 
     # Internally we always use PEM, so re-encode as PEM before returning.
     data_pem = csr.public_bytes(serialization.Encoding.PEM)
     return (
         acme_crypto_util.Format.PEM,
         util.CSR(file=csrfile, data=data_pem, form="pem"),
-        domains,
+        identifiers,
     )
 
 

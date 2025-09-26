@@ -119,13 +119,13 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
         if lineage is not None:
             # Renewal, where we already know the specific lineage we're
             # interested in
-            display_util.notify(
-                "{action} for {identifiers}".format(
-                    action="Simulating renewal of an existing certificate"
-                    if config.dry_run else "Renewing an existing certificate",
-                    identifiers=internal_display_util.summarize_identifier_list(identifiers or lineage.names())
-                )
-            )
+            action = "Renewing an existing certificate"
+            if config.dry_run:
+                action = "Simulating renewal of an existing certificate"
+
+            idents = internal_display_util.summarize_identifier_list(identifiers or lineage.names())
+
+            display_util.notify(f"{action} for {idents}")
             renewal.renew_cert(config, identifiers, le_client, lineage)
         else:
             # TREAT AS NEW REQUEST
@@ -397,7 +397,7 @@ def _find_lineage_for_domains_and_certname(
     lineage = cert_manager.lineage_for_certname(config, certname)
     if lineage:
         if domains:
-            computed_domains = cert_manager.domains_for_certname(config, certname)
+            computed_domains = cert_manager.identifiers_for_certname(config, certname)
             if computed_domains and set(computed_domains) != set(domains):
                 _handle_unexpected_key_type_migration(config, lineage)
                 _ask_user_to_confirm_new_names(config, domains, certname,
@@ -506,22 +506,25 @@ def _find_domains_or_certname(config: configuration.NamespaceConfig,
         domains = config.domains
     if config.ip_addresses:
         ip_addresses = config.ip_addresses
-    # if we can't do that but we have a certname, get the domains
-    # with that certname
-    elif certname:
-        domains = cert_manager.domains_for_certname(config, certname)
+
+    identifiers: Optional[list[str]] = domains + ip_addresses
+
+    # if we can't do that but we have a certname, get the identifiers
+    # by loading the latest certificate with that certname
+    if certname and not identifiers:
+        identifiers = cert_manager.identifiers_for_certname(config, certname)
 
     # that certname might not have existed, or there was a problem.
     # try to get domains from the user.
-    if not domains and not ip_addresses:
-        domains = display_ops.choose_names(installer, question)
+    if not identifiers:
+        identifiers = display_ops.choose_names(installer, question)
 
-    if not domains and not ip_addresses and not certname:
+    if not identifiers:
         raise errors.Error("Please specify --domains, --ip-address, or --installer that "
                            "will help in domain names autodiscovery, or "
                            "--cert-name for an existing certificate name.")
 
-    return domains + ip_addresses, certname
+    return identifiers, certname
 
 
 def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Optional[errors.Error],
@@ -1229,7 +1232,7 @@ def enhance(config: configuration.NamespaceConfig,
     config.certname = cert_manager.get_certnames(
         config, "enhance", allow_multiple=False,
         custom_prompt=certname_question)[0]
-    cert_domains = cert_manager.domains_for_certname(config, config.certname)
+    cert_domains = cert_manager.identifiers_for_certname(config, config.certname)
     if cert_domains is None:
         raise errors.Error("Could not find the list of domains for the given certificate name.")
     if config.noninteractive_mode:

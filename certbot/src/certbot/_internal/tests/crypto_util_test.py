@@ -346,12 +346,12 @@ class GetSANsFromCertTest(unittest.TestCase):
 
 
 class GetNamesFromCertTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.get_names_from_cert."""
+    """Tests for certbot.crypto_util.get_identifiers_from_cert."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import get_names_from_cert
-        return get_names_from_cert(*args, **kwargs)
+        from certbot.crypto_util import get_identifiers_from_cert
+        return get_identifiers_from_cert(*args, **kwargs)
 
     def test_single(self):
         assert ['example.com'] == \
@@ -373,12 +373,12 @@ class GetNamesFromCertTest(unittest.TestCase):
 
 
 class GetNamesFromReqTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.get_names_from_req."""
+    """Tests for certbot.crypto_util.get_identifiers_from_req."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import get_names_from_req
-        return get_names_from_req(*args, **kwargs)
+        from certbot.crypto_util import get_identifiers_from_req
+        return get_identifiers_from_req(*args, **kwargs)
 
     def test_nonames(self):
         assert [] == \
