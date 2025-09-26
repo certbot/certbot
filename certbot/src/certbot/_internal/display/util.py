@@ -83,28 +83,28 @@ def separate_list_input(input_: str) -> list[str]:
     return [str(string) for string in no_commas.split()]
 
 
-def summarize_domain_list(domains: list[str]) -> str:
-    """Summarizes a list of domains in the format of:
-        example.com.com and N more domains
-    or if there is are only two domains:
-        example.com and www.example.com
-    or if there is only one domain:
+def summarize_identifier_list(identifiers: list[str]) -> str:
+    """Summarizes a list of identifiers in the format of:
+        example.com.com and N more domains / IP addresses
+    or if there are only two identifiers:
+        example.com and 192.0.2.77
+    or if there is only one identifier:
         example.com
 
-    :param list domains: `str` list of domains
+    :param list identifiers: `str` list of domains and/or IP addresses
     :returns: the domain list summary
     :rtype: str
     """
-    if not domains:
+    if not identifiers:
         return ""
 
-    length = len(domains)
+    length = len(identifiers)
     if length == 1:
-        return domains[0]
+        return identifiers[0]
     elif length == 2:
-        return " and ".join(domains)
+        return " and ".join(identifiers)
     else:
-        return "{0} and {1} more domains".format(domains[0], length-1)
+        return "{0} and {1} more domains".format(identifiers[0], length - 1)
 
 
 def describe_acme_error(error: acme_messages.Error) -> str:

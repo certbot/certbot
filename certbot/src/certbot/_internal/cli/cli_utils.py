@@ -3,6 +3,7 @@ import argparse
 import copy
 import glob
 import inspect
+import ipaddress
 from typing import Any
 from typing import Iterable
 from typing import Optional
@@ -129,6 +130,17 @@ def add_domains(args_or_config: Union[argparse.Namespace, configuration.Namespac
             args_or_config.domains.append(domain)
 
     return validated_domains
+
+
+class _IPAddressAction(argparse.Action):
+    """Action class for parsing IP addresses."""
+
+    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
+                 ip_address: Union[str, Sequence[Any], None],
+                 option_string: Optional[str] = None) -> None:
+        # This will throw an exception if the IP address doesn't parse.
+        ipaddress.ip_address(ip_address)
+        namespace.ip_addresses.append(ip_address)
 
 
 class CaseInsensitiveList(list):

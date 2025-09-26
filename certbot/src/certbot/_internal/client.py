@@ -2,6 +2,7 @@
 import datetime
 import logging
 import platform
+import ipaddress
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -348,13 +349,13 @@ class Client:
         cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, domains: list[str], old_keypath: Optional[str] = None
+    def obtain_certificate(self, identifiers: list[str], old_keypath: Optional[str] = None
                            ) -> tuple[bytes, bytes, util.Key, util.CSR]:
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
 
-        :param list domains: domains to get a certificate
+        :param list identifiers: identifiers for which to get a certificate
 
         :returns: certificate as PEM string, chain as PEM string,
             newly generated private key (`.util.Key`), and DER-encoded
@@ -398,6 +399,14 @@ class Client:
         elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':
             key_size = self.config.rsa_key_size
 
+        domains = []
+        ip_addresses = []
+        for ident in identifiers:
+            try:
+                ip_addresses.append(ipaddress.ip_address(ident))
+            except ValueError:
+                domains.append(ident)
+
         # Create CSR from names
         if self.config.dry_run:
             key = key or util.Key(
@@ -411,7 +420,7 @@ class Client:
             )
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
-                               key.pem, domains, self.config.must_staple))
+                               key.pem, domains, self.config.must_staple, ipaddrs=ip_addresses))
         else:
             key = key or crypto_util.generate_key(
                 key_size=key_size,
@@ -421,7 +430,8 @@ class Client:
                 strict_permissions=self.config.strict_permissions,
             )
             csr = crypto_util.generate_csr(
-                key, domains, None, self.config.must_staple, self.config.strict_permissions)
+                key, domains, None, self.config.must_staple, self.config.strict_permissions,
+                ipaddrs=ip_addresses)
 
         try:
             orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)

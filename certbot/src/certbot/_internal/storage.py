@@ -913,7 +913,7 @@ class RenewableCert(interfaces.RenewableCert):
                 os.unlink(link)
 
     def names(self) -> list[str]:
-        """What are the subject names of this certificate?
+        """Return the DNS names and IP addresss from this certificate, as strings.
 
         :returns: the subject names
         :rtype: `list` of `str`
@@ -924,7 +924,7 @@ class RenewableCert(interfaces.RenewableCert):
         if target is None:
             raise errors.CertStorageError("could not find the certificate file")
         with open(target, "rb") as f:
-            return crypto_util.get_names_from_cert(f.read())
+            return crypto_util.get_identifiers_from_cert(f.read())
 
     def ocsp_revoked(self, version: int) -> bool:
         """Is the specified cert version revoked according to OCSP?

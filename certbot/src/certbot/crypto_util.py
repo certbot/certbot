@@ -6,6 +6,7 @@
 """
 import datetime
 import hashlib
+import ipaddress
 import logging
 import re
 from typing import Optional
@@ -98,7 +99,10 @@ def generate_key(key_size: int, key_dir: Optional[str], key_type: str = "rsa",
 
 
 def generate_csr(privkey: util.Key, names: Union[list[str], set[str]], path: Optional[str],
-                 must_staple: bool = False, strict_permissions: bool = True) -> util.CSR:
+                 must_staple: bool = False, strict_permissions: bool = True,
+                 ipaddrs: Optional[
+                     list[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None,
+                 ) -> util.CSR:
     """Initialize a CSR with the given private key.
 
     :param privkey: Key to include in the CSR
@@ -114,7 +118,7 @@ def generate_csr(privkey: util.Key, names: Union[list[str], set[str]], path: Opt
 
     """
     csr_pem = acme_crypto_util.make_csr(
-        privkey.pem, names, must_staple=must_staple)
+        privkey.pem, domains=names, ipaddrs=ipaddrs, must_staple=must_staple)
 
     # Save CSR, if requested
     csr_filename = None
@@ -167,6 +171,41 @@ def csr_matches_pubkey(csr: bytes, privkey: bytes) -> bool:
     pkey = serialization.load_pem_private_key(privkey, password=None)
     return req.is_signature_valid and req.public_key() == pkey.public_key()
 
+def get_identifiers_from_subject_and_extensions(
+    subject: x509.Name, exts: x509.Extensions
+) -> list[str]:
+    """Get all DNS names and IP addresses, plus the first Common Name from subject.
+
+    :param subject: Name of the x509 object, which may include Common Name
+    :type subject: `cryptography.x509.Name`
+    :param exts: Extensions of the x509 object, which may include SANs
+    :type exts: `cryptography.x509.Extensions`
+
+    :returns: List of DNS Subject Alternative Names and first Common Name
+    :rtype: `list` of `str`
+    """
+    # We know these are always `str` because `bytes` is only possible for
+    # other OIDs.
+    cns = [
+        typing.cast(str, c.value)
+        for c in subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+    ]
+    try:
+        san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
+    except x509.ExtensionNotFound:
+        dns_names = []
+    else:
+        dns_names = san_ext.value.get_values_for_type(x509.DNSName)
+        ip_addresses = san_ext.value.get_values_for_type(x509.IPAddress)
+        identifiers = dns_names + [str(i) for i in ip_addresses]
+
+    if not cns:
+        return identifiers
+    else:
+        # We only include the first CN, if there are multiple. This matches
+        # the behavior of the previous implementation using pyOpenSSL.
+        return [cns[0]] + [ident for ident in identifiers if ident != cns[0]]
+
 
 def import_csr_file(
     csrfile: str, data: bytes
@@ -191,7 +230,8 @@ def import_csr_file(
         except ValueError:
             raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
 
-    domains = acme_crypto_util.get_names_from_subject_and_extensions(csr.subject, csr.extensions)
+    domains = get_identifiers_from_subject_and_extensions(csr.subject, csr.extensions)
+
     # Internally we always use PEM, so re-encode as PEM before returning.
     data_pem = csr.public_bytes(serialization.Encoding.PEM)
     return (
@@ -414,10 +454,10 @@ def get_sans_from_cert(
     return san_ext.value.get_values_for_type(x509.DNSName)
 
 
-def get_names_from_cert(
+def get_identifiers_from_cert(
     cert: bytes, typ: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM
 ) -> list[str]:
-    """Get a list of domains from a cert, including the CN if it is set.
+    """Get a list of domains and IP addresses from a cert, including the CN if it is set.
 
     :param str cert: Certificate (encoded).
     :param Format typ: Which format the `cert` bytes are in.
@@ -432,15 +472,15 @@ def get_names_from_cert(
     else:
         assert typ == acme_crypto_util.Format.DER
         x509_cert = x509.load_der_x509_certificate(cert)
-    return acme_crypto_util.get_names_from_subject_and_extensions(
+    return get_identifiers_from_subject_and_extensions(
         x509_cert.subject, x509_cert.extensions
     )
 
 
-def get_names_from_req(
+def get_identifiers_from_req(
     csr: bytes, typ: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM
 ) -> list[str]:
-    """Get a list of domains from a CSR, including the CN if it is set.
+    """Get a list of domains and IP addresses from a CSR, including the CN if it is set.
 
     :param str csr: CSR (encoded).
     :param acme_crypto_util.Format typ: Which format the `csr` bytes are in.
@@ -454,7 +494,7 @@ def get_names_from_req(
     else:
         assert typ == acme_crypto_util.Format.DER
         x509_req = x509.load_der_x509_csr(csr)
-    return acme_crypto_util.get_names_from_subject_and_extensions(
+    return get_identifiers_from_subject_and_extensions(
         x509_req.subject, x509_req.extensions
     )
 

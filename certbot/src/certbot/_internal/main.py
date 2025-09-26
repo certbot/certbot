@@ -85,7 +85,7 @@ def _suggest_donation_if_appropriate(config: configuration.NamespaceConfig) -> N
 
 
 def _get_and_save_cert(le_client: client.Client, config: configuration.NamespaceConfig,
-                       domains: Optional[list[str]] = None, certname: Optional[str] = None,
+                       identifiers: Optional[list[str]] = None, certname: Optional[str] = None,
                        lineage: Optional[storage.RenewableCert] = None
                        ) -> Optional[storage.RenewableCert]:
     """Authenticate and enroll certificate.
@@ -97,8 +97,8 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
 
-    :param domains: List of domain names to get a certificate. Defaults to `None`
-    :type domains: `list` of `str`
+    :param identifiers: List of domain names to get a certificate. Defaults to `None`
+    :type identifiers: `list` of `str`
 
     :param certname: Name of new certificate. Defaults to `None`
     :type certname: str
@@ -120,28 +120,28 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
             # Renewal, where we already know the specific lineage we're
             # interested in
             display_util.notify(
-                "{action} for {domains}".format(
+                "{action} for {identifiers}".format(
                     action="Simulating renewal of an existing certificate"
                     if config.dry_run else "Renewing an existing certificate",
-                    domains=internal_display_util.summarize_domain_list(domains or lineage.names())
+                    identifiers=internal_display_util.summarize_identifier_list(identifiers or lineage.names())
                 )
             )
-            renewal.renew_cert(config, domains, le_client, lineage)
+            renewal.renew_cert(config, identifiers, le_client, lineage)
         else:
             # TREAT AS NEW REQUEST
-            if domains is None:
+            if identifiers is None:
                 raise errors.Error("Domain list cannot be none if the lineage is not set.")
             display_util.notify(
-                "{action} for {domains}".format(
+                "{action} for {identifiers}".format(
                     action="Simulating a certificate request" if config.dry_run else
                            "Requesting a certificate",
-                    domains=internal_display_util.summarize_domain_list(domains)
+                    identifiers=internal_display_util.summarize_identifier_list(identifiers)
                 )
             )
-            lineage = le_client.obtain_and_enroll_certificate(domains, certname)
+            lineage = le_client.obtain_and_enroll_certificate(identifiers, certname)
             if lineage is not None:
                 hooks.deploy_hook(config, lineage.names(), lineage.live_dir)
-                renewed_domains.extend(domains)
+                renewed_domains.extend(identifiers)
     finally:
         hooks.post_hook(config, renewed_domains)
 
@@ -498,11 +498,14 @@ def _find_domains_or_certname(config: configuration.NamespaceConfig,
     :raises errors.Error: Usage message, if parameters are not used correctly
 
     """
-    domains = None
+    domains = []
+    ip_addresses = []
     certname = config.certname
     # first, try to get domains from the config
     if config.domains:
         domains = config.domains
+    if config.ip_addresses:
+        ip_addresses = config.ip_addresses
     # if we can't do that but we have a certname, get the domains
     # with that certname
     elif certname:
@@ -510,15 +513,15 @@ def _find_domains_or_certname(config: configuration.NamespaceConfig,
 
     # that certname might not have existed, or there was a problem.
     # try to get domains from the user.
-    if not domains:
+    if not domains and not ip_addresses:
         domains = display_ops.choose_names(installer, question)
 
-    if not domains and not certname:
-        raise errors.Error("Please specify --domains, or --installer that "
+    if not domains and not ip_addresses and not certname:
+        raise errors.Error("Please specify --domains, --ip-address, or --installer that "
                            "will help in domain names autodiscovery, or "
                            "--cert-name for an existing certificate name.")
 
-    return domains, certname
+    return domains + ip_addresses, certname
 
 
 def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Optional[errors.Error],
@@ -1467,12 +1470,12 @@ def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
 
     """
     csr, _ = config.actual_csr
-    csr_names = crypto_util.get_names_from_req(csr.data)
+    csr_names = crypto_util.get_identifiers_from_req(csr.data)
     display_util.notify(
         "{action} for {domains}".format(
             action="Simulating a certificate request" if config.dry_run else
                     "Requesting a certificate",
-            domains=internal_display_util.summarize_domain_list(csr_names)
+            domains=internal_display_util.summarize_identifier_list(csr_names)
         )
     )
     cert, chain = le_client.obtain_certificate_from_csr(csr)
