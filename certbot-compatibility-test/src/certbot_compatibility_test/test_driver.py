@@ -18,7 +18,6 @@ from cryptography.hazmat.primitives import serialization
 from urllib3.util import connection
 
 from acme import challenges
-from acme import crypto_util
 from acme import messages
 from certbot import achallenges
 from certbot import errors as le_errors
@@ -143,7 +142,7 @@ def test_installer(args: argparse.Namespace, plugin: common.Proxy, config: str,
 
 def test_deploy_cert(plugin: common.Proxy, temp_dir: str, domains: list[str]) -> bool:
     """Tests deploy_cert returning True if the tests are successful"""
-    cert = crypto_util.make_self_signed_cert(util.KEY, domains)
+    cert = util.make_self_signed_cert(util.KEY, domains)
     cert_path = os.path.join(temp_dir, "cert.pem")
     with open(cert_path, "wb") as f:
         f.write(cert.public_bytes(serialization.Encoding.PEM))

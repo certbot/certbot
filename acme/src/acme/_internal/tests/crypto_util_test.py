@@ -112,21 +112,24 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
         self.serial_num: list[int] = []
         self.privkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
-    def test_sn_collisions(self):
+    @classmethod
+    def _call(cls, *args, **kwargs):
         from acme.crypto_util import make_self_signed_cert
+        with pytest.warns(DeprecationWarning, match='make_self_signed_cert is deprecated'):
+            return make_self_signed_cert(*args, **kwargs)
+
+    def test_sn_collisions(self):
         for _ in range(self.cert_count):
-            cert = make_self_signed_cert(self.privkey, ['dummy'], force_san=True,
-                               ips=[ipaddress.ip_address("10.10.10.10")])
+            cert = self._call(self.privkey, ['dummy'], force_san=True,
+                              ips=[ipaddress.ip_address("10.10.10.10")])
             self.serial_num.append(cert.serial_number)
         assert len(set(self.serial_num)) >= self.cert_count
 
     def test_no_ips(self):
-        from acme.crypto_util import make_self_signed_cert
-        make_self_signed_cert(self.privkey, ['dummy'])
+        self._call(self.privkey, ['dummy'])
 
     @mock.patch("acme.crypto_util._now")
     def test_expiry_times(self, mock_now):
-        from acme.crypto_util import make_self_signed_cert
         from datetime import datetime, timedelta, timezone
         not_before = 1736200830
         validity = 100
@@ -134,7 +137,7 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
         not_before_dt = datetime.fromtimestamp(not_before)
         validity_td = timedelta(validity)
         not_after_dt = not_before_dt + validity_td
-        cert = make_self_signed_cert(
+        cert = self._call(
             self.privkey,
             ['dummy'],
             not_before=not_before_dt,
@@ -155,7 +158,7 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
         now_dt = datetime.fromtimestamp(now)
         mock_now.return_value = now_dt.replace(tzinfo=timezone.utc)
         valid_after_now_dt = now_dt + validity_td
-        cert = make_self_signed_cert(
+        cert = self._call(
             self.privkey,
             ['dummy'],
             validity=validity_td,
@@ -169,20 +172,18 @@ class GenMakeSelfSignedCertTest(unittest.TestCase):
             self.assertEqual(cert.not_valid_after, valid_after_now_dt)
 
     def test_no_name(self):
-        from acme.crypto_util import make_self_signed_cert
         with pytest.raises(AssertionError):
-            make_self_signed_cert(self.privkey, ips=[ipaddress.ip_address("1.1.1.1")])
-            make_self_signed_cert(self.privkey)
+            self._call(self.privkey, ips=[ipaddress.ip_address("1.1.1.1")])
+            self._call(self.privkey)
 
     def test_extensions(self):
-        from acme.crypto_util import make_self_signed_cert
         extension_type = x509.TLSFeature([x509.TLSFeatureType.status_request])
         extension = x509.Extension(
             x509.TLSFeature.oid,
             False,
             extension_type
         )
-        cert = make_self_signed_cert(
+        cert = self._call(
             self.privkey,
             ips=[ipaddress.ip_address("1.1.1.1")],
             extensions=[extension]
