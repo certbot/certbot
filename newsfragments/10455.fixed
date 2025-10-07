@@ -1,1 +1,0 @@
-Fixed a bug in certbot-nginx that'd leave nginx configured with self-signed certificates if a user ran `certbot enhance` and they didn't have matching SSL server blocks. `certbot enhance` now requires the user to have a matching SSL server block to enable HSTS or OCSP stapling enhancements.
