@@ -120,7 +120,7 @@ def test_ip_address_standalone(context: IntegrationTestsContext) -> None:
     authenticator."""
 
     context.certbot([
-         'certonly', '--ip-address', '127.0.0.1', '--standalone'
+         'certonly', '--ip-address', context.get_local_ip(), '--standalone',
     ])
 
 
