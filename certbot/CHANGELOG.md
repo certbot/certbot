@@ -4,6 +4,27 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.1.0 - 2025-10-07
+
+### Changed
+
+- certbot-nginx no longer creates and uses self-signed certificates as an
+  intermediate step when installing certificates. The certificates the user
+  requested Certbot install are now always used instead.
+  ([#10465](https://github.com/certbot/certbot/issues/10465))
+- The function `acme.crypto_util.make_self_signed_cert` was deprecated and will
+  be removed in a future release.
+  ([#10466](https://github.com/certbot/certbot/issues/10466))
+
+### Fixed
+
+- Fixed a bug in certbot-nginx that'd leave nginx configured with self-signed
+  certificates if a user ran `certbot enhance` and they didn't have matching
+  SSL server blocks. `certbot enhance` now requires the user to have a matching
+  SSL server block to enable HSTS or OCSP stapling enhancements.
+  ([#10455](https://github.com/certbot/certbot/issues/10455))
+
+
 ## 5.0.0 - 2025-09-02
 
 ### Added
