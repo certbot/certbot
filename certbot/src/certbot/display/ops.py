@@ -10,6 +10,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot._internal import account
+from certbot._internal import san
 from certbot._internal.display import util as internal_display_util
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -80,7 +81,7 @@ def choose_values(values: list[str], question: Optional[str] = None) -> list[str
 
 
 def choose_names(installer: Optional[interfaces.Installer],
-                 question: Optional[str] = None) -> list[str]:
+                 question: Optional[str] = None) -> list[san.DNSName]:
     """Display screen to select domains to validate.
 
     :param installer: An installer object
@@ -109,7 +110,7 @@ def choose_names(installer: Optional[interfaces.Installer],
     return []
 
 
-def get_valid_domains(domains: Iterable[str]) -> list[str]:
+def get_valid_domains(domains: Iterable[str]) -> list[san.DNSName]:
     """Helper method for choose_names that implements basic checks
      on domain names
 
@@ -117,7 +118,7 @@ def get_valid_domains(domains: Iterable[str]) -> list[str]:
     :return: List of valid domains
     :rtype: list
     """
-    valid_domains: list[str] = []
+    valid_domains: list[san.DNSName] = []
     for domain in domains:
         try:
             valid_domains.append(util.enforce_domain_sanity(domain))
@@ -126,7 +127,7 @@ def get_valid_domains(domains: Iterable[str]) -> list[str]:
     return valid_domains
 
 
-def _sort_names(FQDNs: Iterable[str]) -> list[str]:
+def _sort_names(FQDNs: Iterable[san.DNSName]) -> list[str]:
     """Sort FQDNs by SLD (and if many, by their subdomains)
 
     :param list FQDNs: list of domain names
@@ -134,10 +135,10 @@ def _sort_names(FQDNs: Iterable[str]) -> list[str]:
     :returns: Sorted list of domain names
     :rtype: list
     """
-    return sorted(FQDNs, key=lambda fqdn: fqdn.split('.')[::-1][1:])
+    return sorted(FQDNs, key=lambda fqdn: fqdn.dns_name.split('.')[::-1][1:])
 
 
-def _filter_names(names: Iterable[str],
+def _filter_names(names: Iterable[san.DNSName],
                   override_question: Optional[str] = None) -> tuple[str, list[str]]:
     """Determine which names the user would like to select from a list.
 
@@ -160,7 +161,7 @@ def _filter_names(names: Iterable[str],
             "block.")
     code, names = display_util.checklist(
         question, tags=sorted_names, cli_flag="--domains", force_interactive=True)
-    return code, [str(s) for s in names]
+    return code, [san.DNSName(s) for s in names]
 
 
 def _choose_names_manually(prompt_prefix: str = "") -> list[str]:

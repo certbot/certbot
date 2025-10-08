@@ -21,6 +21,7 @@ import configargparse
 from certbot import errors
 from certbot._internal import constants
 from certbot._internal import lock
+from certbot._internal import san
 from certbot.compat import filesystem
 from certbot.compat import os
 
@@ -567,6 +568,8 @@ def add_deprecated_argument(add_argument: Callable[..., None], argument_name: st
 def enforce_le_validity(domain: str) -> str:
     """Checks that Let's Encrypt will consider domain to be valid.
 
+    TODO: Maybe this should take, and return, san.DNSName.
+
     :param str domain: FQDN to check
     :type domain: `str`
     :returns: The domain cast to `str`, with ASCII-only contents
@@ -576,7 +579,7 @@ def enforce_le_validity(domain: str) -> str:
 
     """
 
-    domain = enforce_domain_sanity(domain)
+    domain = str(enforce_domain_sanity(domain))
     if not re.match("^[A-Za-z0-9.-]*$", domain):
         raise errors.ConfigurationError(
             "{0} contains an invalid character. "
@@ -598,7 +601,7 @@ def enforce_le_validity(domain: str) -> str:
     return domain
 
 
-def enforce_domain_sanity(domain: Union[str, bytes]) -> str:
+def enforce_domain_sanity(domain: Union[str, bytes, san.DNSName]) -> san.DNSName:
     """Method which validates domain value and errors out if
     the requirements are not met.
 
@@ -614,6 +617,10 @@ def enforce_domain_sanity(domain: Union[str, bytes]) -> str:
     try:
         if isinstance(domain, bytes):
             domain = domain.decode('utf-8')
+        # TODO: make enforce_domain_sanity a necessary part of san.DNSName construction,
+        # and adjust call graph so it is never called on things that are already san.DNSNames.
+        if isinstance(domain, san.DNSName):
+            domain = domain.dns_name
         domain.encode('ascii')
     except UnicodeError:
         raise errors.ConfigurationError("Non-ASCII domain names not supported. "
@@ -653,7 +660,7 @@ def enforce_domain_sanity(domain: Union[str, bytes]) -> str:
         if len(l) > 63:
             raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
 
-    return domain
+    return san.DNSName(domain)
 
 
 def is_ipaddress(address: str) -> bool:

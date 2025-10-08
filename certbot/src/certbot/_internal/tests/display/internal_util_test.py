@@ -105,11 +105,11 @@ class SeparateListInputTest(unittest.TestCase):
             assert act == self.exp
 
 
-class SummarizeDomainListTest(unittest.TestCase):
+class SummarizeSANsTest(unittest.TestCase):
     @classmethod
     def _call(cls, domains):
-        from certbot._internal.display.util import summarize_identifier_list
-        return summarize_identifier_list(domains)
+        from certbot._internal.display.util import summarize_sans
+        return summarize_sans(domains)
 
     def test_single_domain(self):
         assert "example.com" == self._call(["example.com"])

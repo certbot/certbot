@@ -2,7 +2,6 @@
 import datetime
 import logging
 import platform
-import ipaddress
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -35,6 +34,7 @@ from certbot._internal import cli
 from certbot._internal import constants
 from certbot._internal import eff
 from certbot._internal import error_handler
+from certbot._internal import san
 from certbot._internal import storage
 from certbot._internal.plugins import disco as plugin_disco
 from certbot._internal.plugins import selection as plugin_selection
@@ -349,13 +349,13 @@ class Client:
         cert, chain = crypto_util.cert_and_chain_from_fullchain(fullchain)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, identifiers: list[str], old_keypath: Optional[str] = None
+    def obtain_certificate(self, sans: list[san.SAN], old_keypath: Optional[str] = None
                            ) -> tuple[bytes, bytes, util.Key, util.CSR]:
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
 
-        :param list identifiers: identifiers for which to get a certificate
+        :param list sans: domains and/or IP addresses for which to get a certificate.
 
         :returns: certificate as PEM string, chain as PEM string,
             newly generated private key (`.util.Key`), and DER-encoded
@@ -399,13 +399,7 @@ class Client:
         elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':
             key_size = self.config.rsa_key_size
 
-        domains = []
-        ip_addresses = []
-        for ident in identifiers:
-            try:
-                ip_addresses.append(ipaddress.ip_address(ident))
-            except ValueError:
-                domains.append(ident)
+        domains, ip_addresses = san.split(sans)
 
         # Create CSR from names
         if self.config.dry_run:
@@ -436,38 +430,38 @@ class Client:
         try:
             orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         except messages.Error as error:
-            # Some domains may be rejected during order creation.
+            # Some sans may be rejected during order creation.
             # Certbot can retry the operation without the rejected
-            # domains contained within subproblems.
+            # sans contained within subproblems.
             if self.config.allow_subset_of_names:
-                successful_domains = self._successful_domains_from_error(error, domains)
-                if successful_domains != domains and len(successful_domains) != 0:
-                    return self._retry_obtain_certificate(domains, successful_domains, old_keypath)
+                successful_sans = self._successful_sans_from_error(error, sans)
+                if successful_sans != sans and len(successful_sans) != 0:
+                    return self._retry_obtain_certificate(sans, successful_sans, old_keypath)
             raise
         authzr = orderr.authorizations
-        auth_domains = {a.body.identifier.value for a in authzr}
-        successful_domains = [d for d in domains if d in auth_domains]
+        auth_ident_values = {a.body.identifier.value for a in authzr}
+        successful_sans = [s for s in sans if str(s) in auth_ident_values]
 
         # allow_subset_of_names is currently disabled for wildcard
         # certificates. The reason for this and checking allow_subset_of_names
-        # below is because successful_domains == domains is never true if
-        # domains contains a wildcard because the ACME spec forbids identifiers
+        # below is because successful_sans == sans is never true if
+        # sans contains a wildcard because the ACME spec forbids identifiers
         # in authzs from containing a wildcard character.
-        if self.config.allow_subset_of_names and successful_domains != domains:
-            return self._retry_obtain_certificate(domains, successful_domains, old_keypath)
+        if self.config.allow_subset_of_names and successful_sans != sans:
+            return self._retry_obtain_certificate(sans, successful_sans, old_keypath)
         else:
             try:
                 cert, chain = self.obtain_certificate_from_csr(csr, orderr)
                 return cert, chain, key, csr
             except messages.Error as error:
-                # Some domains may be rejected during the very late stage of
+                # Some sans may be rejected during the very late stage of
                 # order finalization. Certbot can retry the operation without
-                # the rejected domains contained within subproblems.
+                # the rejected sans contained within subproblems.
                 if self.config.allow_subset_of_names:
-                    successful_domains = self._successful_domains_from_error(error, domains)
-                    if successful_domains != domains and len(successful_domains) != 0:
+                    successful_sans = self._successful_sans_from_error(error, sans)
+                    if successful_sans != sans and len(successful_sans) != 0:
                         return self._retry_obtain_certificate(
-                            domains, successful_domains, old_keypath)
+                            sans, successful_sans, old_keypath)
                 raise
 
     def _get_order_and_authorizations(self, csr_pem: bytes,
@@ -515,7 +509,7 @@ class Client:
         authzr = self.auth_handler.handle_authorizations(orderr, self.config, best_effort)
         return orderr.update(authorizations=authzr)
 
-    def obtain_and_enroll_certificate(self, domains: list[str], certname: Optional[str]
+    def obtain_and_enroll_certificate(self, sans: list[san.SAN], certname: Optional[str]
                                       ) -> Optional[storage.RenewableCert]:
         """Obtain and enroll certificate.
 
@@ -523,8 +517,8 @@ class Client:
         authenticator and installer, and then create a new renewable lineage
         containing it.
 
-        :param domains: domains to request a certificate for
-        :type domains: `list` of `str`
+        :param sans: domains and/or IP addresses to request a certificate for
+        :type sans: `list` of `san.SAN`
         :param certname: requested name of lineage
         :type certname: `str` or `None`
 
@@ -532,8 +526,8 @@ class Client:
             referred to the enrolled cert lineage, or None if doing a successful dry run.
 
         """
-        new_name = self._choose_lineagename(domains, certname)
-        cert, chain, key, _ = self.obtain_certificate(domains)
+        new_name = self._choose_lineagename(sans, certname)
+        cert, chain, key, _ = self.obtain_certificate(sans)
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
                 self.config.work_dir != constants.CLI_DEFAULTS["work_dir"]):
@@ -549,29 +543,38 @@ class Client:
             key.pem, chain,
             self.config)
 
-    def _successful_domains_from_error(self, error: messages.Error, domains: list[str],
-                                ) -> list[str]:
+    def _successful_sans_from_error(self, error: messages.Error, sans: list[san.SAN],
+                                    ) -> list[san.SAN]:
         if error.subproblems is not None:
-            failed_domains = [problem.identifier.value for problem in error.subproblems
-                                if problem.identifier is not None]
-            successful_domains = [x for x in domains if x not in failed_domains]
-            return successful_domains
+            failed_sans = []
+            for problem in error.subproblems:
+                if not problem.identifier:
+                    continue
+                match problem.identifier.typ:
+                    case messages.IDENTIFIER_FQDN:
+                        failed_sans.append(san.DNSName(problem.identifier.value))
+                    case messages.IDENTIFIER_IP:
+                        failed_sans.append(san.DNSName(problem.identifier.value))
+                    case _:
+                        raise TypeError(f"invalid identifier type {problem.identifier.typ}")
+            successful_sans = [x for x in sans if x not in failed_sans]
+            return successful_sans
         return []
 
-    def _retry_obtain_certificate(self, domains: list[str], successful_domains: list[str],
+    def _retry_obtain_certificate(self, sans: list[san.SAN], successful_sans: list[san.SAN],
                                 old_keypath: Optional[str]
                                 ) -> tuple[bytes, bytes, util.Key, util.CSR]:
-        failed_domains = [d for d in domains if d not in successful_domains]
-        domains_list = ", ".join(failed_domains)
+        failed_sans = [s for s in sans if s not in successful_sans]
+        domains_list = ", ".join(map(str, failed_sans))
         display_util.notify("Unable to obtain a certificate with every requested "
             f"domain. Retrying without: {domains_list}")
-        return self.obtain_certificate(successful_domains, old_keypath)
+        return self.obtain_certificate(successful_sans, old_keypath)
 
-    def _choose_lineagename(self, domains: list[str], certname: Optional[str]) -> str:
+    def _choose_lineagename(self, sans: list[san.SAN], certname: Optional[str]) -> str:
         """Chooses a name for the new lineage.
 
-        :param domains: domains in certificate request
-        :type domains: `list` of `str`
+        :param sans: domains and/or IP addresses in certificate request
+        :type sans: `list` of `san.SAN`
         :param certname: requested name of lineage
         :type certname: `str` or `None`
 
@@ -585,11 +588,11 @@ class Client:
         lineagename = None
         if certname:
             lineagename = certname
-        elif util.is_wildcard_domain(domains[0]):
+        elif sans[0].is_wildcard():
             # Don't make files and directories starting with *.
-            lineagename = domains[0][2:]
+            lineagename = str(sans[0])[2:]
         else:
-            lineagename = domains[0]
+            lineagename = str(sans[0])
         # Verify whether chosen lineage is valid
         if self._is_valid_lineagename(lineagename):
             return lineagename

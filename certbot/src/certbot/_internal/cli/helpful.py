@@ -15,10 +15,10 @@ from certbot import errors
 from certbot import util
 from certbot._internal import constants
 from certbot._internal import hooks
+from certbot._internal import san
 from certbot._internal.cli.cli_constants import COMMAND_OVERVIEW
 from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
 from certbot._internal.cli.cli_constants import SHORT_USAGE
-from certbot._internal.cli.cli_utils import add_domains
 from certbot._internal.cli.cli_utils import CustomHelpFormatter
 from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
@@ -298,7 +298,7 @@ class HelpfulArgumentParser:
             hooks.validate_hooks(config)
 
         if config.allow_subset_of_names:
-            if any(util.is_wildcard_domain(d) for d in config.domains):
+            if any(d.is_wildcard() for d in config.domains):
                 raise errors.Error("Using --allow-subset-of-names with a"
                                    " wildcard domain is not supported.")
 
@@ -334,7 +334,8 @@ class HelpfulArgumentParser:
         # This is not necessary for webroot to work, however,
         # obtain_certificate_from_csr requires config.domains to be set
         for domain in domains:
-            add_domains(config, domain)
+            domain = util.enforce_domain_sanity(domain.dns_name.strip())
+            config.domains.append(domain)
 
         if not domains:
             # TODO: add CN to domains instead:
@@ -344,12 +345,13 @@ class HelpfulArgumentParser:
 
         config.actual_csr = (csr, typ)
 
-        csr_domains = {d.lower() for d in domains}
+        csr_domains = {san.DNSName(d.dns_name.lower()) for d in domains}
         config_domains = set(config.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
                 "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
-                .format(", ".join(csr_domains), ", ".join(config_domains)))
+                .format(", ".join(map(str, csr_domains)),
+                        ", ".join(map(str, config_domains))))
 
 
     def determine_verb(self) -> None:

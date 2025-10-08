@@ -3,7 +3,6 @@ import argparse
 import copy
 import glob
 import inspect
-import ipaddress
 from typing import Any
 from typing import Iterable
 from typing import Optional
@@ -16,6 +15,7 @@ from certbot import configuration
 from certbot import errors
 from certbot import util
 from certbot._internal import constants
+from certbot._internal import san
 from certbot.compat import os
 
 if TYPE_CHECKING:
@@ -104,7 +104,7 @@ class _DomainsAction(argparse.Action):
 
 
 def add_domains(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
-                domains: Optional[str]) -> list[str]:
+                domains: Optional[str]) -> list[san.DNSName]:
     """Registers new domains to be used during the current client run.
 
     Domains are not added to the list of requested domains if they have
@@ -136,13 +136,12 @@ class _IPAddressAction(argparse.Action):
     """Action class for parsing IP addresses."""
 
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
-                 ip_address: Union[str, Sequence[Any], None],
+                 values: Union[str, Sequence[Any], None],
                  option_string: Optional[str] = None) -> None:
-        if not ip_address:
+        if not values:
             return
         # This will throw an exception if the IP address doesn't parse.
-        ipaddress.ip_address(str(ip_address))
-        namespace.ip_addresses.append(ip_address)
+        namespace.ip_addresses.append(san.IPAddress(values))
 
 
 class CaseInsensitiveList(list):

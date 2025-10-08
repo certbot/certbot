@@ -16,6 +16,7 @@ from certbot import errors
 from certbot import util
 from certbot._internal import account
 from certbot._internal import constants
+from certbot._internal import san
 from certbot._internal.display import obj as display_obj
 from certbot.compat import os
 import certbot.tests.util as test_util
@@ -275,6 +276,7 @@ class ClientTest(ClientTestCommon):
         self.config.dry_run = False
         self.config.strict_permissions = True
         self.eg_domains = ["example.com", "www.example.com"]
+        self.eg_sans = list(map(san.DNSName, self.eg_domains))
         self.eg_order = mock.MagicMock(
             authorizations=[None],
             csr_pem=mock.sentinel.csr_pem)
@@ -476,7 +478,7 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.generate_key.return_value = key
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
-        authzr = self._authzr_from_domains(["example.com"])
+        authzr = (self._authzr_from_sans([san.DNSName("example.com")]))
         self.config.allow_subset_of_names = True
         self._test_obtain_certificate_common(key, csr, authzr_ret=authzr, auth_count=2)
 
@@ -494,7 +496,7 @@ class ClientTest(ClientTestCommon):
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         self._mock_obtain_certificate()
-        authzr = self._authzr_from_domains(self.eg_domains)
+        authzr = self._authzr_from_sans(self.eg_sans)
         self.eg_order.authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
 
@@ -506,15 +508,15 @@ class ClientTest(ClientTestCommon):
         self.config.allow_subset_of_names = True
 
         with test_util.patch_display_util():
-            result = self.client.obtain_certificate(self.eg_domains)
+            result = self.client.obtain_certificate(self.eg_sans)
 
         assert result == \
             (mock.sentinel.cert, mock.sentinel.chain, key, csr)
         assert self.client.auth_handler.handle_authorizations.call_count == 2
         assert self.acme.finalize_order.call_count == 2
 
-        successful_domains = [d for d in self.eg_domains if d != 'example.com']
         assert mock_crypto_util.generate_key.call_count == 2
+        successful_domains = [d for d in self.eg_domains if d != 'example.com']
         mock_crypto_util.generate_csr.assert_has_calls([
             mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions, ipaddrs=[]),
             mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions, ipaddrs=[])])
@@ -530,7 +532,7 @@ class ClientTest(ClientTestCommon):
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         self._mock_obtain_certificate()
-        authzr = self._authzr_from_domains(self.eg_domains)
+        authzr = self._authzr_from_sans(self.eg_sans)
         self.eg_order.authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
 
@@ -544,7 +546,7 @@ class ClientTest(ClientTestCommon):
         self.config.allow_subset_of_names = True
 
         with pytest.raises(messages.Error):
-            self.client.obtain_certificate(self.eg_domains)
+            self.client.obtain_certificate(self.eg_sans)
         assert self.client.auth_handler.handle_authorizations.call_count == 1
         assert self.acme.finalize_order.call_count == 1
         assert mock_crypto_util.generate_key.call_count == 1
@@ -560,7 +562,7 @@ class ClientTest(ClientTestCommon):
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         self._mock_obtain_certificate()
-        authzr = self._authzr_from_domains(self.eg_domains)
+        authzr = self._authzr_from_sans(self.eg_sans)
         self.eg_order.authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
 
@@ -570,7 +572,7 @@ class ClientTest(ClientTestCommon):
         self.config.allow_subset_of_names = True
 
         with pytest.raises(messages.Error):
-            self.client.obtain_certificate(self.eg_domains)
+            self.client.obtain_certificate(self.eg_sans)
         assert self.client.auth_handler.handle_authorizations.call_count == 1
         assert self.acme.finalize_order.call_count == 1
         assert mock_crypto_util.generate_key.call_count == 1
@@ -586,7 +588,7 @@ class ClientTest(ClientTestCommon):
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         self._mock_obtain_certificate()
-        authzr = self._authzr_from_domains(self.eg_domains)
+        authzr = self._authzr_from_sans(self.eg_sans)
         self.eg_order.authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
 
@@ -598,7 +600,7 @@ class ClientTest(ClientTestCommon):
         self.config.allow_subset_of_names = True
 
         with test_util.patch_display_util():
-            result = self.client.obtain_certificate(self.eg_domains)
+            result = self.client.obtain_certificate(self.eg_sans)
 
         assert result == \
             (mock.sentinel.cert, mock.sentinel.chain, key, csr)
@@ -622,7 +624,7 @@ class ClientTest(ClientTestCommon):
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         self._mock_obtain_certificate()
-        authzr = self._authzr_from_domains(self.eg_domains)
+        authzr = self._authzr_from_sans(self.eg_sans)
         self.eg_order.authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
 
@@ -636,7 +638,7 @@ class ClientTest(ClientTestCommon):
         self.config.allow_subset_of_names = True
 
         with pytest.raises(messages.Error):
-            self.client.obtain_certificate(self.eg_domains)
+            self.client.obtain_certificate(self.eg_sans)
         assert self.client.auth_handler.handle_authorizations.call_count == 0
         assert self.acme.new_order.call_count == 1
         assert mock_crypto_util.generate_key.call_count == 1
@@ -652,7 +654,7 @@ class ClientTest(ClientTestCommon):
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         self._mock_obtain_certificate()
-        authzr = self._authzr_from_domains(self.eg_domains)
+        authzr = self._authzr_from_sans(self.eg_sans)
         self.eg_order.authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
 
@@ -662,7 +664,7 @@ class ClientTest(ClientTestCommon):
         self.config.allow_subset_of_names = True
 
         with pytest.raises(messages.Error):
-            self.client.obtain_certificate(self.eg_domains)
+            self.client.obtain_certificate(self.eg_sans)
         assert self.client.auth_handler.handle_authorizations.call_count == 0
         assert self.acme.new_order.call_count == 1
         assert mock_crypto_util.generate_key.call_count == 1
@@ -685,8 +687,10 @@ class ClientTest(ClientTestCommon):
             elliptic_curve="secp256r1",
             key_type=self.config.key_type,
         )
+        # Assumes all of eg_sans are DNSNames.
+        eg_domains = list(map(str, self.eg_sans))
         mock_acme_crypto.make_csr.assert_called_once_with(
-            mock.sentinel.key_pem, self.eg_domains, self.config.must_staple, ipaddrs=[])
+            mock.sentinel.key_pem, eg_domains, self.config.must_staple, ipaddrs=[])
         mock_crypto.generate_key.assert_not_called()
         mock_crypto.generate_csr.assert_not_called()
         assert mock_crypto.cert_and_chain_from_fullchain.call_count == 1
@@ -707,7 +711,7 @@ class ClientTest(ClientTestCommon):
         self.client.config.dry_run = True
 
         # Two authzs that are already valid and should get deactivated (dry run)
-        authzrs = self._authzr_from_domains(["example.com", "www.example.com"])
+        authzrs = self._authzr_from_sans([san.DNSName("example.com"), san.DNSName("www.example.com")])
         for authzr in authzrs:
             authzr.body.status = messages.STATUS_VALID
 
@@ -719,7 +723,7 @@ class ClientTest(ClientTestCommon):
         self.eg_order.authorizations = authzrs
         self.client.auth_handler.handle_authorizations.return_value = authzrs
         with test_util.patch_display_util():
-            result = self.client.obtain_certificate(self.eg_domains)
+            result = self.client.obtain_certificate(self.eg_sans)
         assert result == (mock.sentinel.cert, mock.sentinel.chain, key, csr)
         self._check_obtain_certificate(1)
 
@@ -741,7 +745,7 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.generate_key.return_value = new_key
         self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
-        authzr = self._authzr_from_domains(["example.com"])
+        authzr = self._authzr_from_sans([san.DNSName("example.com")])
         self.config.allow_subset_of_names = True
         self.config.reuse_key = True
 
@@ -753,7 +757,7 @@ class ClientTest(ClientTestCommon):
         with test_util.patch_display_util():
             mocked_open = mock.mock_open(read_data="old_key_pem")
             with mock.patch('builtins.open', mocked_open):
-                result = self.client.obtain_certificate(self.eg_domains, "old_key_file")
+                result = self.client.obtain_certificate(self.eg_sans, "old_key_file")
 
         assert result == \
             (mock.sentinel.cert, mock.sentinel.chain, old_key, csr)
@@ -768,16 +772,19 @@ class ClientTest(ClientTestCommon):
         mock_chain.encode.return_value = mock.sentinel.chain
         mock_from_fullchain.return_value = (mock_cert, mock_chain)
 
-    def _authzr_from_domains(self, domains):
+    def _authzr_from_sans(self, sans):
         authzr = []
 
         # domain ordering should not be affected by authorization order
-        for domain in reversed(domains):
+        for s in reversed(sans):
+            if type(s) is not san.DNSName:
+                raise TypeError(f"expected DNSName but got {type(s)}")
             authzr.append(
                 mock.MagicMock(
                     body=mock.MagicMock(
                         identifier=mock.MagicMock(
-                            value=domain))))
+                            value=str(s),
+                            typ="dns"))))
         return authzr
 
     def _test_obtain_certificate_common(self, key, csr, authzr_ret=None, auth_count=1):
@@ -786,13 +793,13 @@ class ClientTest(ClientTestCommon):
         # return_value is essentially set to (None, None) in
         # _mock_obtain_certificate(), which breaks this test.
         # Thus fixed by the next line.
-        authzr = authzr_ret or self._authzr_from_domains(self.eg_domains)
+        authzr = authzr_ret or self._authzr_from_sans(self.eg_sans)
 
         self.eg_order.authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
 
         with test_util.patch_display_util():
-            result = self.client.obtain_certificate(self.eg_domains)
+            result = self.client.obtain_certificate(self.eg_sans)
 
         assert result == \
             (mock.sentinel.cert, mock.sentinel.chain, key, csr)
@@ -802,19 +809,19 @@ class ClientTest(ClientTestCommon):
     @mock.patch('certbot._internal.storage.RenewableCert.new_lineage')
     def test_obtain_and_enroll_certificate(self,
                                            mock_storage, mock_obtain_certificate):
-        domains = ["*.example.com", "example.com"]
+        sans = [san.DNSName("*.example.com"), san.DNSName("example.com")]
         mock_obtain_certificate.return_value = (mock.MagicMock(),
                                                 mock.MagicMock(), mock.MagicMock(), None)
 
         self.client.config.dry_run = False
-        assert self.client.obtain_and_enroll_certificate(domains, "example_cert")
+        assert self.client.obtain_and_enroll_certificate(sans, "example_cert")
 
-        assert self.client.obtain_and_enroll_certificate(domains, None)
-        assert self.client.obtain_and_enroll_certificate(domains[1:], None)
+        assert self.client.obtain_and_enroll_certificate(sans, None)
+        assert self.client.obtain_and_enroll_certificate(sans[1:], None)
 
         self.client.config.dry_run = True
 
-        assert not self.client.obtain_and_enroll_certificate(domains, None)
+        assert not self.client.obtain_and_enroll_certificate(sans, None)
 
         names = [call[0][0] for call in mock_storage.call_args_list]
         assert names == ["example_cert", "example.com", "example.com"]
@@ -932,11 +939,11 @@ class ClientTest(ClientTestCommon):
 
     def test_choose_lineage_name(self):
         sep = os.path.sep
-        invalid_domains = [f"exam{sep}ple.com"]
-        valid_domains = ["example.com"]
+        invalid_domains = [san.DNSName(f"exam{sep}ple.com")]
+        valid_domains = [san.DNSName("example.com")]
         invalid_certname = f"foo{sep}.bar"
         valid_certname = "foo.bar"
-        invalid_wildcard_domain = [f"*.exam{sep}ple.com"]
+        invalid_wildcard_domain = [san.DNSName(f"*.exam{sep}ple.com")]
         # Verify errors are raised when invalid lineagename is chosen.
         with pytest.raises(errors.Error):
             self.client._choose_lineagename(invalid_domains, None)

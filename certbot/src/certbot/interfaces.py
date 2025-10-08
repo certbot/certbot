@@ -13,6 +13,7 @@ from acme.challenges import ChallengeResponse
 from acme.client import ClientV2
 from certbot import configuration
 from certbot.achallenges import AnnotatedChallenge
+from certbot._internal import san
 
 try:
     from zope.interface import Interface as ZopeInterface
@@ -390,11 +391,11 @@ class RenewableCert(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def names(self) -> list[str]:
-        """What are the subject names of this certificate?
+    def sans(self) -> list[san.SAN]:
+        """What are the subject alternative names of this certificate?
 
-        :returns: the subject names
-        :rtype: `list` of `str`
+        :returns: the subject alternative names
+        :rtype: `list` of `san.SAN`
         :raises .CertStorageError: if could not find cert file.
 
         """

@@ -28,6 +28,7 @@ from certbot import interfaces
 from certbot import ocsp
 from certbot import util
 from certbot._internal import error_handler
+from certbot._internal import san
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -912,11 +913,11 @@ class RenewableCert(interfaces.RenewableCert):
             for _, link in previous_links:
                 os.unlink(link)
 
-    def names(self) -> list[str]:
-        """Return the DNS names and IP addresss from this certificate, as strings.
+    def sans(self) -> list[san.SAN]:
+        """Return the DNS names and IP addresss from this certificate.
 
         :returns: the subject names
-        :rtype: `list` of `str`
+        :rtype: `list` of `san.SAN`
         :raises .CertStorageError: if could not find cert file.
 
         """
@@ -924,7 +925,7 @@ class RenewableCert(interfaces.RenewableCert):
         if target is None:
             raise errors.CertStorageError("could not find the certificate file")
         with open(target, "rb") as f:
-            return crypto_util.get_identifiers_from_cert(f.read())
+            return crypto_util.get_sans_and_cn_from_cert(f.read())
 
     def ocsp_revoked(self, version: int) -> bool:
         """Is the specified cert version revoked according to OCSP?

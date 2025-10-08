@@ -28,6 +28,7 @@ from certbot._internal import cli
 from certbot._internal import constants
 from certbot._internal import main
 from certbot._internal import updater
+from certbot._internal import san
 from certbot._internal.plugins import disco
 from certbot._internal.plugins import manual
 from certbot._internal.plugins import null
@@ -77,7 +78,7 @@ class TestHandleCerts(unittest.TestCase):
         mock_config = mock.Mock()
         mock_config.expand = True
         mock_lineage = mock.Mock()
-        mock_lineage.names.return_value = ["dummy1", "dummy2"]
+        mock_lineage.sans.return_value = [san.DNSName("dummy1"), san.DNSName("dummy2")]
         ret = main._handle_subset_cert_request(mock_config, ["dummy1"], mock_lineage)
         assert ret == ("renew", mock_lineage)
         assert mock_handle_migration.called
@@ -170,7 +171,7 @@ class RunTest(test_util.ConfigTestCase):
         self.mock_auth.return_value = mock.Mock()
         self.mock_find_cert.return_value = True, None
         self._call()
-        self.mock_success_installation.assert_called_once_with([self.domain])
+        self.mock_success_installation.assert_called_once_with([san.DNSName(self.domain)])
         self.mock_report_next_steps.assert_called_once_with(mock.ANY, None, mock.ANY,
             new_or_renewed_cert=True)
 
@@ -178,13 +179,13 @@ class RunTest(test_util.ConfigTestCase):
         self.mock_auth.return_value = mock.Mock()
         self.mock_find_cert.return_value = False, mock.Mock()
         self._call()
-        self.mock_success_installation.assert_called_once_with([self.domain])
+        self.mock_success_installation.assert_called_once_with([san.DNSName(self.domain)])
 
     def test_renewal_success(self):
         self.mock_auth.return_value = mock.Mock()
         self.mock_find_cert.return_value = True, mock.Mock()
         self._call()
-        self.mock_success_renewal.assert_called_once_with([self.domain])
+        self.mock_success_renewal.assert_called_once_with([san.DNSName(self.domain)])
 
     @mock.patch('certbot._internal.main.plug_sel.choose_configurator_plugins')
     def test_run_enhancement_not_supported(self, mock_choose):
@@ -253,20 +254,20 @@ class CertonlyTest(unittest.TestCase):
 
     @mock.patch('certbot._internal.main._report_next_steps')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
-    @mock.patch('certbot._internal.cert_manager.identifiers_for_certname')
+    @mock.patch('certbot._internal.cert_manager.sans_for_certname')
     @mock.patch('certbot._internal.renewal.renew_cert')
     @mock.patch('certbot._internal.main._handle_unexpected_key_type_migration')
     @mock.patch('certbot._internal.main._report_new_cert')
     def test_find_lineage_for_domains_and_certname(self, mock_report_cert,
-        mock_handle_type, mock_renew_cert, mock_domains, mock_lineage, mock_report_next_steps):
-        domains = ['example.com', 'test.org']
-        mock_domains.return_value = domains
-        mock_lineage.names.return_value = domains
+        mock_handle_type, mock_renew_cert, mock_sans_for_certname, mock_lineage, mock_report_next_steps):
+        domains = [san.DNSName('example.com'), san.DNSName('test.org')]
+        mock_sans_for_certname.return_value = domains
+        mock_lineage.sans.return_value = domains
         self._call(('certonly --webroot -d example.com -d test.org '
             '--cert-name example.com --no-directory-hooks').split())
 
         assert mock_lineage.call_count == 1
-        assert mock_domains.call_count == 1
+        assert mock_sans_for_certname.call_count == 1
         assert mock_renew_cert.call_count == 1
         assert mock_report_cert.call_count == 1
         assert mock_handle_type.call_count == 1
@@ -277,7 +278,7 @@ class CertonlyTest(unittest.TestCase):
         self._call(('certonly --webroot -d example.com -d test.com '
             '--cert-name example.com --no-directory-hooks').split())
         assert mock_lineage.call_count == 2
-        assert mock_domains.call_count == 2
+        assert mock_sans_for_certname.call_count == 2
         assert mock_renew_cert.call_count == 2
         assert mock_report_cert.call_count == 2
         assert mock_handle_type.call_count == 2
@@ -289,7 +290,7 @@ class CertonlyTest(unittest.TestCase):
                 ' --no-directory-hooks'.split())
 
     @mock.patch('certbot._internal.main._report_next_steps')
-    @mock.patch('certbot._internal.cert_manager.identifiers_for_certname')
+    @mock.patch('certbot._internal.cert_manager.sans_for_certname')
     @mock.patch('certbot.display.ops.choose_names')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main._report_new_cert')
@@ -367,14 +368,14 @@ class CertonlyTest(unittest.TestCase):
 
 
 class FindDomainsOrCertnameTest(unittest.TestCase):
-    """Tests for certbot._internal.main._find_domains_or_certname."""
+    """Tests for certbot._internal.main._find_sans_or_certname."""
 
     @mock.patch('certbot.display.ops.choose_names')
     def test_display_ops(self, mock_choose_names):
         mock_config = mock.Mock(domains=None, ip_addresses=None, certname=None)
         mock_choose_names.return_value = "domainname"
         # pylint: disable=protected-access
-        assert main._find_domains_or_certname(mock_config, None) == ("domainname", None)
+        assert main._find_sans_or_certname(mock_config, None) == ("domainname", None)
 
     @mock.patch('certbot.display.ops.choose_names')
     def test_no_results(self, mock_choose_names):
@@ -382,15 +383,15 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
         mock_choose_names.return_value = []
         # pylint: disable=protected-access
         with pytest.raises(errors.Error):
-            main._find_domains_or_certname(mock_config, None)
+            main._find_sans_or_certname(mock_config, None)
 
-    @mock.patch('certbot._internal.cert_manager.identifiers_for_certname')
+    @mock.patch('certbot._internal.cert_manager.sans_for_certname')
     def test_grab_domains(self, mock_domains):
         mock_config = mock.Mock(domains=None, ip_addresses=None, certname="one.com")
         mock_domains.return_value = ["one.com", "two.com"]
         # pylint: disable=protected-access
-        assert main._find_domains_or_certname(mock_config, None) == \
-            (["one.com", "two.com"], "one.com")
+        assert main._find_sans_or_certname(mock_config, None) == \
+               (["one.com", "two.com"], "one.com")
 
 
 class RevokeTest(test_util.TempDirTestCase):
@@ -536,7 +537,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
         self.mock_get_utility = self.get_utility_patch.start()
         self.patchers = {
             'check_symlinks': mock.patch('certbot._internal.storage.RenewableCert._check_symlinks'),
-            'cert_names': mock.patch('certbot._internal.storage.RenewableCert.names'),
+            'cert_sans': mock.patch('certbot._internal.storage.RenewableCert.sans'),
             'pick_installer': mock.patch('certbot._internal.plugins.selection.pick_installer'),
             'pick_auth': mock.patch('certbot._internal.plugins.selection.pick_authenticator'),
             'find_init': mock.patch('certbot._internal.plugins.disco.PluginsRegistry.find_init'),
@@ -545,7 +546,7 @@ class ReconfigureTest(test_util.TempDirTestCase):
             'list_hooks': mock.patch('certbot._internal.hooks.list_hooks'),
         }
         self.mocks = {k: v.start() for k, v in self.patchers.items()}
-        self.mocks['cert_names'].return_value = ['example.com']
+        self.mocks['cert_sans'].return_value = [san.DNSName('example.com')]
 
         self.config_dir = os.path.join(self.tempdir, 'config')
         renewal_configs_dir = os.path.join(self.config_dir, 'renewal')
@@ -1418,7 +1419,7 @@ class MainTest(test_util.ConfigTestCase):
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
                                       cert_path=cert_path, fullchain_path=chain_path)
         mock_lineage.has_pending_deployment.return_value = False
-        mock_lineage.names.return_value = ['isnot.org']
+        mock_lineage.sans.return_value = [san.DNSName('isnot.org')]
         mock_lineage.private_key_type = 'ecdsa'
         mock_lineage.elliptic_curve = 'secp256r1'
         mock_lineage.reuse_key = reuse_key
@@ -1634,7 +1635,7 @@ class MainTest(test_util.ConfigTestCase):
             if renewalparams is not None:
                 mock_lineage.configuration = {'renewalparams': renewalparams}
             if names is not None:
-                mock_lineage.names.return_value = names
+                mock_lineage.sans.return_value = [san.DNSName(n) for n in names]
             mock_rc.return_value = mock_lineage
             with mock.patch('certbot._internal.main.renew_cert') as mock_renew_cert:
                 kwargs.setdefault('args', ['renew'])
@@ -1974,7 +1975,7 @@ class EnhanceTest(test_util.ConfigTestCase):
 
         with mock.patch('certbot._internal.cert_manager.get_certnames') as mock_certs:
             mock_certs.return_value = ['example.com']
-            with mock.patch('certbot._internal.cert_manager.identifiers_for_certname') as mock_dom:
+            with mock.patch('certbot._internal.cert_manager.sans_for_certname') as mock_dom:
                 mock_dom.return_value = ['example.com']
                 with mock.patch('certbot._internal.main._init_le_client') as mock_init:
                     mock_client = mock.MagicMock()
@@ -1986,7 +1987,7 @@ class EnhanceTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main.display_ops.choose_values')
-    @mock.patch('certbot._internal.main._find_domains_or_certname')
+    @mock.patch('certbot._internal.main._find_sans_or_certname')
     def test_selection_question(self, mock_find, mock_choose, mock_lineage, _rec):
         mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
         mock_choose.return_value = ['example.com']
@@ -2000,7 +2001,7 @@ class EnhanceTest(test_util.ConfigTestCase):
     @mock.patch('certbot._internal.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main.display_ops.choose_values')
-    @mock.patch('certbot._internal.main._find_domains_or_certname')
+    @mock.patch('certbot._internal.main._find_sans_or_certname')
     def test_selection_auth_warning(self, mock_find, mock_choose, mock_lineage, _rec):
         mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
         mock_choose.return_value = ["example.com"]

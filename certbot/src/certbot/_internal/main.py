@@ -37,6 +37,7 @@ from certbot._internal import eff
 from certbot._internal import hooks
 from certbot._internal import log
 from certbot._internal import renewal
+from certbot._internal import san
 from certbot._internal import snap_config
 from certbot._internal import storage
 from certbot._internal import updater
@@ -85,7 +86,7 @@ def _suggest_donation_if_appropriate(config: configuration.NamespaceConfig) -> N
 
 
 def _get_and_save_cert(le_client: client.Client, config: configuration.NamespaceConfig,
-                       identifiers: Optional[list[str]] = None, certname: Optional[str] = None,
+                       sans: Optional[list[san.SAN]] = None, certname: Optional[str] = None,
                        lineage: Optional[storage.RenewableCert] = None
                        ) -> Optional[storage.RenewableCert]:
     """Authenticate and enroll certificate.
@@ -97,8 +98,9 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
 
-    :param identifiers: List of domain names to get a certificate. Defaults to `None`
-    :type identifiers: `list` of `str`
+    :param sans: List of domain names and/or IP addresses for which to get a certificate.
+        Defaults to `None`
+    :type sans: `list` of `san.SAN`
 
     :param certname: Name of new certificate. Defaults to `None`
     :type certname: str
@@ -123,26 +125,25 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
                 "{action} for {identifiers}".format(
                     action="Simulating renewal of an existing certificate"
                     if config.dry_run else "Renewing an existing certificate",
-                    identifiers=internal_display_util.summarize_identifier_list(
-                            identifiers or lineage.names())
+                    identifiers=internal_display_util.summarize_sans(sans or lineage.sans())
                 )
             )
-            renewal.renew_cert(config, identifiers, le_client, lineage)
+            renewal.renew_cert(config, sans, le_client, lineage)
         else:
             # TREAT AS NEW REQUEST
-            if identifiers is None:
+            if sans is None:
                 raise errors.Error("Domain list cannot be none if the lineage is not set.")
             display_util.notify(
                 "{action} for {identifiers}".format(
                     action="Simulating a certificate request" if config.dry_run else
                            "Requesting a certificate",
-                    identifiers=internal_display_util.summarize_identifier_list(identifiers)
+                    identifiers=internal_display_util.summarize_sans(sans)
                 )
             )
-            lineage = le_client.obtain_and_enroll_certificate(identifiers, certname)
+            lineage = le_client.obtain_and_enroll_certificate(sans, certname)
             if lineage is not None:
-                hooks.deploy_hook(config, lineage.names(), lineage.live_dir)
-                renewed_domains.extend(identifiers)
+                hooks.deploy_hook(config, lineage.sans(), lineage.live_dir)
+                renewed_domains.extend(sans)
     finally:
         hooks.post_hook(config, renewed_domains)
 
@@ -197,7 +198,7 @@ def _handle_unexpected_key_type_migration(config: configuration.NamespaceConfig,
 
 
 def _handle_subset_cert_request(config: configuration.NamespaceConfig,
-                                domains: Iterable[str],
+                                sans: Iterable[san.SAN],
                                 cert: storage.RenewableCert
                                 ) -> tuple[str, Optional[storage.RenewableCert]]:
     """Figure out what to do if a previous cert had a subset of the names now requested
@@ -205,8 +206,8 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
 
-    :param domains: List of domain names
-    :type domains: `list` of `str`
+    :param sans: List of domain names and/or IP addresses
+    :type sans: `list` of `san.SAN`
 
     :param cert: Certificate object
     :type cert: storage.RenewableCert
@@ -218,7 +219,7 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
     """
     _handle_unexpected_key_type_migration(config, cert)
 
-    existing = ", ".join(cert.names())
+    existing = ", ".join(map(str, cert.sans()))
     question = (
         "You have an existing certificate that contains a portion of "
         "the domains you requested (ref: {0}){br}{br}It contains these "
@@ -227,7 +228,7 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
         "certificate with the new certificate?"
     ).format(cert.configfile.filename,
              existing,
-             ", ".join(domains),
+             ", ".join(map(str, sans)),
              br=os.linesep)
     if config.expand or config.renew_by_default or display_util.yesno(
         question, "Expand", "Cancel", cli_flag="--expand", force_interactive=True):
@@ -304,7 +305,7 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     raise AssertionError('This is impossible')
 
 
-def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: list[str]
+def _find_lineage_for_domains(config: configuration.NamespaceConfig, sans: list[san.SAN]
                               ) -> tuple[Optional[str], Optional[storage.RenewableCert]]:
     """Determine whether there are duplicated names and how to handle
     them (renew, reinstall, newcert, or raising an error to stop
@@ -314,8 +315,8 @@ def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: li
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
 
-    :param domains: List of domain names
-    :type domains: `list` of `str`
+    :param sans: List of domain names and/or IP addresses
+    :type sans: `list` of `san.SAN`
 
     :returns: Two-element tuple containing desired new-certificate behavior as
               a string token ("reinstall", "renew", or "newcert"), plus either
@@ -332,7 +333,7 @@ def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: li
     if config.duplicate:
         return "newcert", None
     # TODO: Also address superset case
-    ident_names_cert, subset_names_cert = cert_manager.find_duplicative_certs(config, domains)
+    ident_names_cert, subset_names_cert = cert_manager.find_duplicative_certs(config, sans)
     # XXX ^ schoen is not sure whether that correctly reads the systemwide
     # configuration file.
     if ident_names_cert is None and subset_names_cert is None:
@@ -341,19 +342,19 @@ def _find_lineage_for_domains(config: configuration.NamespaceConfig, domains: li
     if ident_names_cert is not None:
         return _handle_identical_cert_request(config, ident_names_cert)
     elif subset_names_cert is not None:
-        return _handle_subset_cert_request(config, domains, subset_names_cert)
+        return _handle_subset_cert_request(config, sans, subset_names_cert)
     return None, None
 
 
-def _find_cert(config: configuration.NamespaceConfig, domains: list[str], certname: str
+def _find_cert(config: configuration.NamespaceConfig, sans: list[san.SAN], certname: str
                ) -> tuple[bool, Optional[storage.RenewableCert]]:
     """Finds an existing certificate object given domains and/or a certificate name.
 
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
 
-    :param domains: List of domain names
-    :type domains: `list` of `str`
+    :param sans: List of domain names and/or IP addresses
+    :type sans: `list` of `san.SAN`
 
     :param certname: Name of certificate
     :type certname: str
@@ -364,22 +365,22 @@ def _find_cert(config: configuration.NamespaceConfig, domains: list[str], certna
     :rtype: `tuple` of `bool` and :class:`storage.RenewableCert` or `None`
 
     """
-    action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
+    action, lineage = _find_lineage_for_domains_and_certname(config, sans, certname)
     if action == "reinstall":
         logger.info("Keeping the existing certificate")
     return (action != "reinstall"), lineage
 
 
 def _find_lineage_for_domains_and_certname(
-        config: configuration.NamespaceConfig, domains: list[str],
+        config: configuration.NamespaceConfig, sans: list[san.SAN],
         certname: str) -> tuple[Optional[str], Optional[storage.RenewableCert]]:
     """Find appropriate lineage based on given domains and/or certname.
 
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
 
-    :param domains: List of domain names
-    :type domains: `list` of `str`
+    :param sans: List of domain names and/or IP addresses
+    :type sans: `list` of `san.SAN`
 
     :param certname: Name of certificate
     :type certname: str
@@ -394,19 +395,19 @@ def _find_lineage_for_domains_and_certname(
 
     """
     if not certname:
-        return _find_lineage_for_domains(config, domains)
+        return _find_lineage_for_domains(config, sans)
     lineage = cert_manager.lineage_for_certname(config, certname)
     if lineage:
-        if domains:
-            computed_domains = cert_manager.identifiers_for_certname(config, certname)
-            if computed_domains and set(computed_domains) != set(domains):
+        if sans:
+            computed_domains = cert_manager.sans_for_certname(config, certname)
+            if computed_domains and set(computed_domains) != set(sans):
                 _handle_unexpected_key_type_migration(config, lineage)
-                _ask_user_to_confirm_new_names(config, domains, certname,
-                                               lineage.names())  # raises if no
+                _ask_user_to_confirm_new_sans(config, sans, certname,
+                                              lineage.sans())  # raises if no
                 return "renew", lineage
         # unnecessarily specified domains or no domains specified
         return _handle_identical_cert_request(config, lineage)
-    elif domains:
+    elif sans:
         return "newcert", None
     raise errors.ConfigurationError("No certificate with name {0} found. "
                                     "Use -d to specify domains, or run certbot certificates to see "
@@ -422,9 +423,7 @@ def _get_added_removed(after: Iterable[T], before: Iterable[T]) -> tuple[list[T]
     """
     added = list(set(after) - set(before))
     removed = list(set(before) - set(after))
-    added.sort()
-    removed.sort()
-    return added, removed
+    return sorted(list(map(str, added))), sorted(list(map(str, removed)))
 
 
 def _format_list(character: str, strings: Iterable[str]) -> str:
@@ -440,22 +439,23 @@ def _format_list(character: str, strings: Iterable[str]) -> str:
     )
 
 
-def _ask_user_to_confirm_new_names(config: configuration.NamespaceConfig,
-                                   new_domains: Iterable[str], certname: str,
-                                   old_domains: Iterable[str]) -> None:
+def _ask_user_to_confirm_new_sans(config: configuration.NamespaceConfig,
+                                  new_sans: Iterable[san.SAN],
+                                  certname: str,
+                                  old_sans: Iterable[san.SAN]) -> None:
     """Ask user to confirm update cert certname to contain new_domains.
 
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
 
-    :param new_domains: List of new domain names
-    :type new_domains: `list` of `str`
+    :param new_sans: List of new domain names and/or IP addresses
+    :type new_sans: `list` of `san.SAN`
 
     :param certname: Name of certificate
     :type certname: str
 
-    :param old_domains: List of old domain names
-    :type old_domains: `list` of `str`
+    :param old_sans: List of old domain names and/or IP addresses
+    :type old_sans: `list` of `san.SAN`
 
     :returns: None
     :rtype: None
@@ -466,22 +466,22 @@ def _ask_user_to_confirm_new_names(config: configuration.NamespaceConfig,
     if config.renew_with_new_domains:
         return
 
-    added, removed = _get_added_removed(new_domains, old_domains)
+    added, removed = _get_added_removed(new_sans, old_sans)
 
     msg = ("You are updating certificate {0} to include new domain(s): {1}{br}{br}"
            "You are also removing previously included domain(s): {2}{br}{br}"
            "Did you intend to make this change?".format(
                certname,
-               _format_list("+", added),
-               _format_list("-", removed),
+               _format_list("+", map(str, added)),
+               _format_list("-", map(str, removed)),
                br=os.linesep))
     if not display_util.yesno(msg, "Update certificate", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched certificate name and domains.")
 
 
-def _find_domains_or_certname(config: configuration.NamespaceConfig,
-                              installer: Optional[interfaces.Installer],
-                              question: Optional[str] = None) -> tuple[list[str], str]:
+def _find_sans_or_certname(config: configuration.NamespaceConfig,
+                           installer: Optional[interfaces.Installer],
+                           question: Optional[str] = None) -> tuple[list[san.SAN], str]:
     """Retrieve domains and certname from config or user input.
 
     :param config: Configuration object
@@ -499,8 +499,8 @@ def _find_domains_or_certname(config: configuration.NamespaceConfig,
     :raises errors.Error: Usage message, if parameters are not used correctly
 
     """
-    domains = []
-    ip_addresses = []
+    domains: list[san.SAN] = []
+    ip_addresses: list[san.SAN] = []
     certname = config.certname
     # first, try to get domains from the config
     if config.domains:
@@ -508,24 +508,24 @@ def _find_domains_or_certname(config: configuration.NamespaceConfig,
     if config.ip_addresses:
         ip_addresses = config.ip_addresses
 
-    identifiers: Optional[list[str]] = domains + ip_addresses
+    sans: Optional[list[san.SAN]] = domains + ip_addresses
 
-    # if we can't do that but we have a certname, get the identifiers
+    # if we can't do that but we have a certname, get the sans
     # by loading the latest certificate with that certname
-    if certname and not identifiers:
-        identifiers = cert_manager.identifiers_for_certname(config, certname)
+    if certname and not sans:
+        sans = cert_manager.sans_for_certname(config, certname)
 
     # that certname might not have existed, or there was a problem.
     # try to get domains from the user.
-    if not identifiers:
-        identifiers = display_ops.choose_names(installer, question)
+    if not sans:
+        sans = display_ops.choose_names(installer, question)
 
-    if not identifiers:
+    if not sans:
         raise errors.Error("Please specify --domains, --ip-address, or --installer that "
                            "will help in domain names autodiscovery, or "
                            "--cert-name for an existing certificate name.")
 
-    return identifiers, certname
+    return sans, certname
 
 
 def _report_next_steps(config: configuration.NamespaceConfig, installer_err: Optional[errors.Error],
@@ -1115,7 +1115,7 @@ def install(config: configuration.NamespaceConfig,
 
     if config.key_path and config.cert_path:
         _check_certificate_and_key(config)
-        domains, _ = _find_domains_or_certname(config, installer)
+        domains, _ = _find_sans_or_certname(config, installer)
         le_client = _init_le_client(config, authenticator=None, installer=installer)
         _install_cert(config, le_client, domains)
     else:
@@ -1233,7 +1233,7 @@ def enhance(config: configuration.NamespaceConfig,
     config.certname = cert_manager.get_certnames(
         config, "enhance", allow_multiple=False,
         custom_prompt=certname_question)[0]
-    cert_domains = cert_manager.identifiers_for_certname(config, config.certname)
+    cert_domains = cert_manager.sans_for_certname(config, config.certname)
     if cert_domains is None:
         raise errors.Error("Could not find the list of domains for the given certificate name.")
     if config.noninteractive_mode:
@@ -1411,12 +1411,12 @@ def run(config: configuration.NamespaceConfig,
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
-    domains, certname = _find_domains_or_certname(config, installer)
-    should_get_cert, lineage = _find_cert(config, domains, certname)
+    sans, certname = _find_sans_or_certname(config, installer)
+    should_get_cert, lineage = _find_cert(config, sans, certname)
 
     new_lineage = lineage
     if should_get_cert:
-        new_lineage = _get_and_save_cert(le_client, config, domains,
+        new_lineage = _get_and_save_cert(le_client, config, sans,
             certname, lineage)
 
     cert_path = new_lineage.cert_path if new_lineage else None
@@ -1430,15 +1430,15 @@ def run(config: configuration.NamespaceConfig,
     # relevant advice in a nice way, before re-raising the error for normal processing.
     installer_err: Optional[errors.Error] = None
     try:
-        _install_cert(config, le_client, domains, new_lineage)
+        _install_cert(config, le_client, sans, new_lineage)
 
         if enhancements.are_requested(config) and new_lineage:
-            enhancements.enable(new_lineage, domains, installer, config)
+            enhancements.enable(new_lineage, sans, installer, config)
 
         if lineage is None or not should_get_cert:
-            display_ops.success_installation(domains)
+            display_ops.success_installation(sans)
         else:
-            display_ops.success_renewal(domains)
+            display_ops.success_renewal(sans)
     except errors.Error as e:
         installer_err = e
     finally:
@@ -1474,12 +1474,12 @@ def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
 
     """
     csr, _ = config.actual_csr
-    csr_names = crypto_util.get_identifiers_from_req(csr.data)
+    csr_sans = crypto_util.get_sans_and_cn_from_req(csr.data)
     display_util.notify(
-        "{action} for {domains}".format(
+        "{action} for {sans}".format(
             action="Simulating a certificate request" if config.dry_run else
                     "Requesting a certificate",
-            domains=internal_display_util.summarize_identifier_list(csr_names)
+            sans=internal_display_util.summarize_sans(csr_sans)
         )
     )
     cert, chain = le_client.obtain_certificate_from_csr(csr)
@@ -1558,15 +1558,15 @@ def certonly(config: configuration.NamespaceConfig, plugins: plugins_disco.Plugi
         eff.handle_subscription(config, le_client.account)
         return
 
-    domains, certname = _find_domains_or_certname(config, installer)
-    should_get_cert, lineage = _find_cert(config, domains, certname)
+    sans, certname = _find_sans_or_certname(config, installer)
+    should_get_cert, lineage = _find_cert(config, sans, certname)
 
     if not should_get_cert:
         display_util.notification("Certificate not yet due for renewal; no action taken.",
                                      pause=False)
         return
 
-    lineage = _get_and_save_cert(le_client, config, domains, certname, lineage)
+    lineage = _get_and_save_cert(le_client, config, sans, certname, lineage)
 
     # If a new cert was issued and we were passed an installer, we can safely
     # run `installer.restart()` to load the newly issued certificate
