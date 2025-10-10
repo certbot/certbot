@@ -218,15 +218,15 @@ def _choose_names_manually(prompt_prefix: str = "") -> list[str]:
     return []
 
 
-def success_installation(domains: list[str]) -> None:
+def success_installation(sans: list[san.SAN]) -> None:
     """Display a box confirming the installation of HTTPS.
 
-    :param list domains: domain names which were enabled
+    :param list sans: domain names and/or IP addresses which were enabled
 
     """
     display_util.notify(
         "Congratulations! You have successfully enabled HTTPS on {0}"
-        .format(_gen_https_names(domains))
+        .format(_gen_https_names(sans))
     )
 
 
@@ -272,23 +272,23 @@ def report_executed_command(command_name: str, returncode: int, stdout: str, std
         logger.warning("%s ran with error output:\n%s", command_name, indent(err_s, ' '))
 
 
-def _gen_https_names(domains: list[str]) -> str:
+def _gen_https_names(sans: list[san.SAN]) -> str:
     """Returns a string of the https domains.
 
     Domains are formatted nicely with ``https://`` prepended to each.
 
-    :param list domains: Each domain is a 'str'
+    :param list sans: domains and/or IP addresses
 
     """
-    if len(domains) == 1:
-        return "https://{0}".format(domains[0])
-    elif len(domains) == 2:
-        return "https://{dom[0]} and https://{dom[1]}".format(dom=domains)
-    elif len(domains) > 2:
+    if len(sans) == 1:
+        return "https://{0}".format(sans[0])
+    elif len(sans) == 2:
+        return f"https://{sans[0]} and https://{sans[1]}"
+    elif len(sans) > 2:
         return "{0}{1}{2}".format(
-            ", ".join("https://%s" % dom for dom in domains[:-1]),
+            ", ".join("https://%s" % s for s in sans[:-1]),
             ", and https://",
-            domains[-1])
+            sans[-1])
 
     return ""
 

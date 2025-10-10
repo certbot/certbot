@@ -556,7 +556,7 @@ def _avoid_reuse_key_conflicts(config: configuration.NamespaceConfig,
                 "add --new-key.")
 
 
-def renew_cert(config: configuration.NamespaceConfig, sans: Optional[list[san.DNSName]],
+def renew_cert(config: configuration.NamespaceConfig, sans: Optional[list[san.SAN]],
                le_client: client.Client, lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]

@@ -1,11 +1,17 @@
 """Types for representing IP addresses and DNS names internal to Certbot."""
 import ipaddress
+from abc import abstractmethod
+
 
 class SAN:
     """A domain or IP address.
 
     These are Certbot-internal types, independent of the acme module's messages.Identifier.
     """
+    @abstractmethod
+    def is_wildcard(self) -> bool:
+        """Return True if this is a wildcard DNS name."""
+        pass
 
 class DNSName(SAN):
     """An FQDN or wildcard domain name.

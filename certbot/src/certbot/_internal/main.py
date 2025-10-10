@@ -1438,7 +1438,7 @@ def run(config: configuration.NamespaceConfig,
         if lineage is None or not should_get_cert:
             display_ops.success_installation(sans)
         else:
-            display_ops.success_renewal(sans)
+            display_ops.success_renewal([])
     except errors.Error as e:
         installer_err = e
     finally:

@@ -329,15 +329,16 @@ class HelpfulArgumentParser:
             raise errors.Error("--allow-subset-of-names cannot be used with --csr")
 
         csrfile, contents = config.csr[0:2]
-        typ, csr, domains = crypto_util.import_csr_file(csrfile, contents)
+        typ, csr, sans = crypto_util.import_csr_file(csrfile, contents)
 
         # This is not necessary for webroot to work, however,
         # obtain_certificate_from_csr requires config.domains to be set
-        for domain in domains:
-            domain = util.enforce_domain_sanity(domain.dns_name.strip())
-            config.domains.append(domain)
+        domains, ip_addresses = san.split(sans)
+        domains = [util.enforce_domain_sanity(d.dns_name.strip()) for d in domains]
+        config.domains = domains
+        config.ip_addresses = ip_addresses
 
-        if not domains:
+        if not sans:
             # TODO: add CN to domains instead:
             raise errors.Error(
                 "Unfortunately, your CSR %s needs to have a SubjectAltName for every domain"
@@ -345,12 +346,12 @@ class HelpfulArgumentParser:
 
         config.actual_csr = (csr, typ)
 
-        csr_domains = {san.DNSName(d.dns_name.lower()) for d in domains}
+        csr_sans = set(sans)
         config_domains = set(config.domains)
-        if csr_domains != config_domains:
+        if csr_sans != config_domains:
             raise errors.ConfigurationError(
                 "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
-                .format(", ".join(map(str, csr_domains)),
+                .format(", ".join(map(str, csr_sans)),
                         ", ".join(map(str, config_domains))))
 
 
