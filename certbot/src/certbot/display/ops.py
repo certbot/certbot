@@ -230,10 +230,10 @@ def success_installation(sans: list[san.SAN]) -> None:
     )
 
 
-def success_renewal(unused_domains: list[str]) -> None:
+def success_renewal(unused_sans: list[san.SAN]) -> None:
     """Display a box confirming the renewal of an existing certificate.
 
-    :param list domains: domain names which were renewed
+    :param list unused_sans: domain names and/or IP addresses which were renewed
 
     """
     display_util.notify(

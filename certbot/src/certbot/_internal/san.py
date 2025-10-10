@@ -73,9 +73,9 @@ def split(sans: list[SAN]) -> (list[DNSName], list[IPAddress]):
     for s in sans:
         match s:
             case IPAddress():
-                ip_addresses.append(s.ip_address)
+                ip_addresses.append(s)
             case DNSName():
-                domains.append(s.dns_name)
+                domains.append(s)
             case _:
                 raise TypeError(f"SAN of type {type(s)}")
     return domains, ip_addresses
