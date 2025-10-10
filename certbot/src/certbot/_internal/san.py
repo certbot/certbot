@@ -1,6 +1,7 @@
 """Types for representing IP addresses and DNS names internal to Certbot."""
 import ipaddress
 from abc import abstractmethod
+from typing import Any
 
 
 class SAN:
@@ -11,7 +12,6 @@ class SAN:
     @abstractmethod
     def is_wildcard(self) -> bool:
         """Return True if this is a wildcard DNS name."""
-        pass
 
 class DNSName(SAN):
     """An FQDN or wildcard domain name.
@@ -19,24 +19,24 @@ class DNSName(SAN):
     Not validated upon construction.
     """
     # TODO: validate upon construction, making sure user-friendly errors are generated.
-    def __init__(self, dns_name):
+    def __init__(self, dns_name: str) -> None:
         self.dns_name = dns_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.dns_name
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.dns_name)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'DNS(%s)' % self.dns_name
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if not issubclass(type(other), SAN):
             raise TypeError(f"DNSName SAN compared to non-SAN: {type(other)}")
         return self.dns_name == other.dns_name
 
-    def is_wildcard(self):
+    def is_wildcard(self) -> bool:
         """Return True if this DNS name is a wildcard."""
         return self.dns_name.startswith('*.')
 
@@ -45,28 +45,28 @@ class IPAddress(SAN):
 
     Validated upon construction.
     """
-    def __init__(self, ip_address: str):
+    def __init__(self, ip_address: str) -> None:
         self.ip_address = ipaddress.ip_address(ip_address)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.ip_address)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.ip_address)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'IP(%s)' % self.ip_address
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if not issubclass(type(other), SAN):
             raise TypeError(f"IPAddress SAN compared to non-SAN: {type(other)}")
         return self.ip_address == other.ip_address
 
-    def is_wildcard(self):
+    def is_wildcard(self) -> bool:
         """Always False."""
         return False
 
-def split(sans: list[SAN]) -> (list[DNSName], list[IPAddress]):
+def split(sans: list[SAN]) -> tuple[list[DNSName], list[IPAddress]]:
     """Split a list of SANs into a list of DNSNames and one of IPAddress, in that order."""
     domains = []
     ip_addresses = []

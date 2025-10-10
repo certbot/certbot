@@ -101,11 +101,11 @@ def summarize_sans(sans: list[san.SAN]) -> str:
 
     length = len(sans)
     if length == 1:
-        return sans[0]
+        return str(sans[0])
     elif length == 2:
         return f"{sans[0]} and {sans[1]}"
     else:
-        return "{0} and {1} more".format(sans[0], length - 1)
+        return f"{sans[0]} and {length - 1} more"
 
 
 def describe_acme_error(error: acme_messages.Error) -> str:

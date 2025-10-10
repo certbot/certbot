@@ -400,6 +400,8 @@ class Client:
             key_size = self.config.rsa_key_size
 
         domains, ip_addresses = san.split(sans)
+        domains_str = [d.dns_name for d in domains]
+        ip_addresses_typed = [i.ip_address for i in ip_addresses]
 
         # Create CSR from names
         if self.config.dry_run:
@@ -414,7 +416,8 @@ class Client:
             )
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
-                               key.pem, domains, self.config.must_staple, ipaddrs=ip_addresses))
+                               key.pem, domains_str, self.config.must_staple,
+                               ipaddrs=ip_addresses_typed))
         else:
             key = key or crypto_util.generate_key(
                 key_size=key_size,
@@ -424,8 +427,8 @@ class Client:
                 strict_permissions=self.config.strict_permissions,
             )
             csr = crypto_util.generate_csr(
-                key, domains, None, self.config.must_staple, self.config.strict_permissions,
-                ipaddrs=ip_addresses)
+                key, domains_str, None, self.config.must_staple, self.config.strict_permissions,
+                ipaddrs=ip_addresses_typed)
 
         try:
             orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
@@ -513,7 +516,7 @@ class Client:
                                       ) -> Optional[storage.RenewableCert]:
         """Obtain and enroll certificate.
 
-        Get a new certificate for the specified domains using the specified
+        Get a new certificate for the specified domains and/or IP addresses using the specified
         authenticator and installer, and then create a new renewable lineage
         containing it.
 
@@ -565,9 +568,9 @@ class Client:
                                 old_keypath: Optional[str]
                                 ) -> tuple[bytes, bytes, util.Key, util.CSR]:
         failed_sans = [s for s in sans if s not in successful_sans]
-        domains_list = ", ".join(map(str, failed_sans))
+        failed_sans_list = ", ".join(map(str, failed_sans))
         display_util.notify("Unable to obtain a certificate with every requested "
-            f"domain. Retrying without: {domains_list}")
+            f"domain. Retrying without: {failed_sans_list}")
         return self.obtain_certificate(successful_sans, old_keypath)
 
     def _choose_lineagename(self, sans: list[san.SAN], certname: Optional[str]) -> str:
@@ -654,11 +657,11 @@ class Client:
 
         return abs_cert_path, abs_chain_path, abs_fullchain_path
 
-    def deploy_certificate(self, domains: list[str], privkey_path: str, cert_path: str,
+    def deploy_certificate(self, sans: list[san.SAN], privkey_path: str, cert_path: str,
                            chain_path: str, fullchain_path: str) -> None:
         """Install certificate
 
-        :param list domains: list of domains to install the certificate
+        :param list sans: list of domains/and or IP addresses to install the certificate
         :param str privkey_path: path to certificate private key
         :param str cert_path: certificate file path (optional)
         :param str fullchain_path: path to the full chain of the certificate
@@ -675,10 +678,13 @@ class Client:
         display_util.notify("Deploying certificate")
 
         msg = "Could not install certificate"
+        domains, ip_addresses = san.split(sans)
+        if ip_addresses:
+            raise TypeError("deploy of IP address certificate not supported")
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 self.installer.deploy_cert(
-                    domain=dom, cert_path=os.path.abspath(cert_path),
+                    domain=dom.dns_name, cert_path=os.path.abspath(cert_path),
                     key_path=os.path.abspath(privkey_path),
                     chain_path=chain_path,
                     fullchain_path=fullchain_path)
@@ -693,17 +699,18 @@ class Client:
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains: list[str], chain_path: str,
+    def enhance_config(self, domains: list[san.DNSName], chain_path: str,
                        redirect_default: bool = True) -> None:
         """Enhance the configuration.
 
-        :param list domains: list of domains to configure
+        :param list domains: list of domains to configure.
         :param chain_path: chain file path
         :type chain_path: `str` or `None`
         :param redirect_default: boolean value that the "redirect" flag should default to
 
         :raises .errors.Error: if no installer is specified in the
             client.
+        :raises TypeError: if sans includes IP addresses.
 
         """
         if self.installer is None:
@@ -737,11 +744,11 @@ class Client:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
-    def apply_enhancement(self, domains: list[str], enhancement: str,
+    def apply_enhancement(self, domains: list[san.DNSName], enhancement: str,
                           options: Optional[str] = None) -> None:
         """Applies an enhancement on all domains.
 
-        :param list domains: list of ssl_vhosts (as strings)
+        :param list domains: list of ssl_vhosts (as san.DNSName)
         :param str enhancement: name of enhancement, e.g. ensure-http-header
         :param str options: options to enhancement, e.g. Strict-Transport-Security
 
@@ -758,7 +765,7 @@ class Client:
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, None):
             for dom in domains:
                 try:
-                    self.installer.enhance(dom, enhancement, options)
+                    self.installer.enhance(dom.dns_name, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
                     logger.info("Enhancement %s was already set.", enh_label)
                 except errors.PluginError:

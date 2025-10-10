@@ -115,7 +115,7 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
 
     """
     hooks.pre_hook(config)
-    renewed_domains: list[str] = []
+    renewed_sans: list[san.SAN] = []
 
     try:
         if lineage is not None:
@@ -143,9 +143,9 @@ def _get_and_save_cert(le_client: client.Client, config: configuration.Namespace
             lineage = le_client.obtain_and_enroll_certificate(sans, certname)
             if lineage is not None:
                 hooks.deploy_hook(config, lineage.sans(), lineage.live_dir)
-                renewed_domains.extend(sans)
+                renewed_sans.extend(sans)
     finally:
-        hooks.post_hook(config, renewed_domains)
+        hooks.post_hook(config, renewed_sans)
 
     return lineage
 
@@ -212,7 +212,7 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
     :param cert: Certificate object
     :type cert: storage.RenewableCert
 
-    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_sans_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: `tuple` of `str`
 
@@ -256,7 +256,7 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     :param lineage: Certificate lineage object
     :type lineage: storage.RenewableCert
 
-    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_sans_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: `tuple` of `str`
 
@@ -305,8 +305,8 @@ def _handle_identical_cert_request(config: configuration.NamespaceConfig,
     raise AssertionError('This is impossible')
 
 
-def _find_lineage_for_domains(config: configuration.NamespaceConfig, sans: list[san.SAN]
-                              ) -> tuple[Optional[str], Optional[storage.RenewableCert]]:
+def _find_lineage_for_sans(config: configuration.NamespaceConfig, sans: list[san.SAN]
+                           ) -> tuple[Optional[str], Optional[storage.RenewableCert]]:
     """Determine whether there are duplicated names and how to handle
     them (renew, reinstall, newcert, or raising an error to stop
     the client run if the user chooses to cancel the operation when
@@ -365,13 +365,13 @@ def _find_cert(config: configuration.NamespaceConfig, sans: list[san.SAN], certn
     :rtype: `tuple` of `bool` and :class:`storage.RenewableCert` or `None`
 
     """
-    action, lineage = _find_lineage_for_domains_and_certname(config, sans, certname)
+    action, lineage = _find_lineage_for_sans_and_certname(config, sans, certname)
     if action == "reinstall":
         logger.info("Keeping the existing certificate")
     return (action != "reinstall"), lineage
 
 
-def _find_lineage_for_domains_and_certname(
+def _find_lineage_for_sans_and_certname(
         config: configuration.NamespaceConfig, sans: list[san.SAN],
         certname: str) -> tuple[Optional[str], Optional[storage.RenewableCert]]:
     """Find appropriate lineage based on given domains and/or certname.
@@ -395,7 +395,7 @@ def _find_lineage_for_domains_and_certname(
 
     """
     if not certname:
-        return _find_lineage_for_domains(config, sans)
+        return _find_lineage_for_sans(config, sans)
     lineage = cert_manager.lineage_for_certname(config, certname)
     if lineage:
         if sans:
@@ -423,7 +423,9 @@ def _get_added_removed(after: Iterable[T], before: Iterable[T]) -> tuple[list[T]
     """
     added = list(set(after) - set(before))
     removed = list(set(before) - set(after))
-    return sorted(list(map(str, added))), sorted(list(map(str, removed)))
+    added.sort()
+    removed.sort()
+    return added, removed
 
 
 def _format_list(character: str, strings: Iterable[str]) -> str:
@@ -466,7 +468,7 @@ def _ask_user_to_confirm_new_sans(config: configuration.NamespaceConfig,
     if config.renew_with_new_domains:
         return
 
-    added, removed = _get_added_removed(new_sans, old_sans)
+    added, removed = _get_added_removed(map(str, new_sans), map(str, old_sans))
 
     msg = ("You are updating certificate {0} to include new domain(s): {1}{br}{br}"
            "You are also removing previously included domain(s): {2}{br}{br}"
@@ -518,7 +520,7 @@ def _find_sans_or_certname(config: configuration.NamespaceConfig,
     # that certname might not have existed, or there was a problem.
     # try to get domains from the user.
     if not sans:
-        sans = display_ops.choose_names(installer, question)
+        sans = cast(list[san.SAN], display_ops.choose_names(installer, question))
 
     if not sans:
         raise errors.Error("Please specify --domains, --ip-address, or --installer that "
@@ -1042,7 +1044,7 @@ def _cert_name_from_config_or_lineage(config: configuration.NamespaceConfig,
 
 
 def _install_cert(config: configuration.NamespaceConfig, le_client: client.Client,
-                  domains: list[str], lineage: Optional[storage.RenewableCert] = None) -> None:
+                  sans: list[san.SAN], lineage: Optional[storage.RenewableCert] = None) -> None:
     """Install a cert
 
     :param config: Configuration object
@@ -1051,8 +1053,8 @@ def _install_cert(config: configuration.NamespaceConfig, le_client: client.Clien
     :param le_client: Client object
     :type le_client: client.Client
 
-    :param domains: List of domains
-    :type domains: `list` of `str`
+    :param sans: List of domains
+    :type sans: `list` of `str`
 
     :param lineage: Certificate lineage object. Defaults to `None`
     :type lineage: storage.RenewableCert
@@ -1065,8 +1067,13 @@ def _install_cert(config: configuration.NamespaceConfig, le_client: client.Clien
                          configuration.NamespaceConfig] = lineage if lineage else config
     assert path_provider.cert_path is not None
 
-    le_client.deploy_certificate(domains, path_provider.key_path, path_provider.cert_path,
+    le_client.deploy_certificate(sans, path_provider.key_path, path_provider.cert_path,
                                  path_provider.chain_path, path_provider.fullchain_path)
+
+    # Silently ignore IP addresses from the certificate for now, since enhancements aren't
+    # supported for IP address certificates (requires changes to the plugin system).
+    domains, _ = san.split(sans)
+
     le_client.enhance_config(domains, path_provider.chain_path)
 
 
@@ -1115,9 +1122,9 @@ def install(config: configuration.NamespaceConfig,
 
     if config.key_path and config.cert_path:
         _check_certificate_and_key(config)
-        domains, _ = _find_sans_or_certname(config, installer)
+        sans, _ = _find_sans_or_certname(config, installer)
         le_client = _init_le_client(config, authenticator=None, installer=installer)
-        _install_cert(config, le_client, domains)
+        _install_cert(config, le_client, sans)
     else:
         raise errors.ConfigurationError("Path to certificate or key was not defined. "
             "If your certificate is managed by Certbot, please use --cert-name "
@@ -1126,7 +1133,11 @@ def install(config: configuration.NamespaceConfig,
     if enhancements.are_requested(config):
         # In the case where we don't have certname, we have errored out already
         lineage = cert_manager.lineage_for_certname(config, config.certname)
-        enhancements.enable(lineage, domains, installer, config)
+        domains, ip_addresses = san.split(sans)
+        if ip_addresses:
+            raise TypeError("enhancements not supported for IP address certificates")
+        domains_str = [d.dns_name for d in domains]
+        enhancements.enable(lineage, domains_str, installer, config)
 
     return None
 
@@ -1233,18 +1244,24 @@ def enhance(config: configuration.NamespaceConfig,
     config.certname = cert_manager.get_certnames(
         config, "enhance", allow_multiple=False,
         custom_prompt=certname_question)[0]
-    cert_domains = cert_manager.sans_for_certname(config, config.certname)
-    if cert_domains is None:
+    cert_sans = cert_manager.sans_for_certname(config, config.certname)
+    if cert_sans is None:
         raise errors.Error("Could not find the list of domains for the given certificate name.")
+
+    # Silently ignore IP addresses from the certificate for now, since enhancements aren't
+    # supported for IP address certificates (requires changes to the plugin system).
+    cert_domains, _ = san.split(cert_sans)
+
     if config.noninteractive_mode:
         domains = cert_domains
     else:
         domain_question = ("Which domain names would you like to enable the "
                            "selected enhancements for?")
-        domains = display_ops.choose_values(cert_domains, domain_question)
-        if not domains:
+        domain_strs = display_ops.choose_values(list(map(str, cert_domains)), domain_question)
+        if not domain_strs:
             raise errors.Error("User cancelled the domain selection. No domains "
                                "defined, exiting.")
+        domains = list(map(san.DNSName, domain_strs))
 
     lineage = cert_manager.lineage_for_certname(config, config.certname)
     if not lineage:
@@ -1255,7 +1272,7 @@ def enhance(config: configuration.NamespaceConfig,
         le_client = _init_le_client(config, authenticator=None, installer=installer)
         le_client.enhance_config(domains, config.chain_path, redirect_default=False)
     if enhancements.are_requested(config):
-        enhancements.enable(lineage, domains, installer, config)
+        enhancements.enable(lineage, [d.dns_name for d in domains], installer, config)
 
     return None
 
@@ -1412,6 +1429,11 @@ def run(config: configuration.NamespaceConfig,
     le_client = _init_le_client(config, authenticator, installer)
 
     sans, certname = _find_sans_or_certname(config, installer)
+
+    domains, ip_addresses = san.split(sans)
+    if ip_addresses:
+        raise errors.Error("installation of IP address certificate not supported")
+
     should_get_cert, lineage = _find_cert(config, sans, certname)
 
     new_lineage = lineage
@@ -1433,7 +1455,7 @@ def run(config: configuration.NamespaceConfig,
         _install_cert(config, le_client, sans, new_lineage)
 
         if enhancements.are_requested(config) and new_lineage:
-            enhancements.enable(new_lineage, sans, installer, config)
+            enhancements.enable(new_lineage, [d.dns_name for d in domains], installer, config)
 
         if lineage is None or not should_get_cert:
             display_ops.success_installation(sans)

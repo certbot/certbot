@@ -84,6 +84,8 @@ def choose_names(installer: Optional[interfaces.Installer],
                  question: Optional[str] = None) -> list[san.DNSName]:
     """Display screen to select domains to validate.
 
+    Only returns domain names, not IP addresses, due to entanglement with the --domains CLI flag.
+
     :param installer: An installer object
     :type installer: :class:`certbot.interfaces.Installer`
 
@@ -104,9 +106,9 @@ def choose_names(installer: Optional[interfaces.Installer],
     if not names:
         return _choose_names_manually()
 
-    code, names = _filter_names(names, question)
-    if code == display_util.OK and names:
-        return names
+    code, filtered_names = _filter_names(names, question)
+    if code == display_util.OK and filtered_names:
+        return filtered_names
     return []
 
 
@@ -127,7 +129,7 @@ def get_valid_domains(domains: Iterable[str]) -> list[san.DNSName]:
     return valid_domains
 
 
-def _sort_names(FQDNs: Iterable[san.DNSName]) -> list[str]:
+def _sort_names(FQDNs: Iterable[san.DNSName]) -> list[san.DNSName]:
     """Sort FQDNs by SLD (and if many, by their subdomains)
 
     :param list FQDNs: list of domain names
@@ -139,8 +141,10 @@ def _sort_names(FQDNs: Iterable[san.DNSName]) -> list[str]:
 
 
 def _filter_names(names: Iterable[san.DNSName],
-                  override_question: Optional[str] = None) -> tuple[str, list[str]]:
+                  override_question: Optional[str] = None) -> tuple[str, list[san.DNSName]]:
     """Determine which names the user would like to select from a list.
+
+    Only handles domain names, not IP addresses, due to entanglement with the --domains CLI flag.
 
     :param list names: domain names
 
@@ -159,13 +163,16 @@ def _filter_names(names: Iterable[san.DNSName],
             "Which names would you like to activate HTTPS for?\n"
             "We recommend selecting either all domains, or all domains in a VirtualHost/server "
             "block.")
-    code, names = display_util.checklist(
-        question, tags=sorted_names, cli_flag="--domains", force_interactive=True)
-    return code, [san.DNSName(s) for s in names]
+    sorted_name_strs = list(map(str, sorted_names))
+    code, checked_names = display_util.checklist(
+        question, tags=sorted_name_strs, cli_flag="--domains", force_interactive=True)
+    return code, [san.DNSName(s) for s in checked_names]
 
 
-def _choose_names_manually(prompt_prefix: str = "") -> list[str]:
+def _choose_names_manually(prompt_prefix: str = "") -> list[san.DNSName]:
     """Manually input names for those without an installer.
+
+    Only returns DNS names for now, due to entanglement with the --domains CLI flag.
 
     :param str prompt_prefix: string to prepend to prompt for domains
 
@@ -191,9 +198,10 @@ def _choose_names_manually(prompt_prefix: str = "") -> list[str]:
                 "supported.{0}{0}Would you like to re-enter the "
                 "names?{0}").format(os.linesep)
 
-        for i, domain in enumerate(domain_list):
+        checked_domains = []
+        for domain in domain_list:
             try:
-                domain_list[i] = util.enforce_domain_sanity(domain)
+                checked_domains.append(util.enforce_domain_sanity(domain))
             except errors.ConfigurationError as e:
                 invalid_domains[domain] = str(e)
 
@@ -214,7 +222,7 @@ def _choose_names_manually(prompt_prefix: str = "") -> list[str]:
             if retry:
                 return _choose_names_manually()
         else:
-            return domain_list
+            return checked_domains
     return []
 
 

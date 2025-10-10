@@ -346,10 +346,9 @@ class HelpfulArgumentParser:
 
         config.actual_csr = (csr, typ)
 
-        config_domains = set(config.domains)
         if set(config.domains) != set(domains) or set(config.ip_addresses) != set(ip_addresses):
             raise errors.ConfigurationError(
-                "Inconsistent domain/IP address requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
+                "Inconsistent requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
                 .format(", ".join(map(str, csr_sans)),
                         ", ".join(map(str, config.domains + config.ip_addresses))))
 

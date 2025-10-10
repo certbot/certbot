@@ -119,12 +119,12 @@ def add_domains(args_or_config: Union[argparse.Namespace, configuration.Namespac
     :rtype: `list` of `str`
 
     """
-    validated_domains: list[str] = []
+    validated_domains: list[san.DNSName] = []
     if not domains:
         return validated_domains
 
-    for domain in domains.split(","):
-        domain = util.enforce_domain_sanity(domain.strip())
+    for d in domains.split(","):
+        domain = util.enforce_domain_sanity(d.strip())
         validated_domains.append(domain)
         if domain not in args_or_config.domains:
             args_or_config.domains.append(domain)
@@ -138,10 +138,16 @@ class _IPAddressAction(argparse.Action):
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
                  values: Union[str, Sequence[Any], None],
                  option_string: Optional[str] = None) -> None:
-        if not values:
-            return
-        # This will throw an exception if the IP address doesn't parse.
-        namespace.ip_addresses.append(san.IPAddress(values))
+        match values:
+            case None:
+                return
+            case str():
+                # This will throw an exception if the IP address doesn't parse.
+                namespace.ip_addresses.append(san.IPAddress(str(values)))
+            case Sequence():
+                for v in values:
+                    # This will throw an exception if the IP address doesn't parse.
+                    namespace.ip_addresses.append(san.IPAddress(str(v)))
 
 
 class CaseInsensitiveList(list):

@@ -10,7 +10,6 @@ import ipaddress
 import logging
 import re
 import typing
-from collections.abc import Sequence
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
@@ -200,7 +199,8 @@ def get_sans_and_cn_from_subject_and_extensions(
     except x509.ExtensionNotFound:
         sans = []
     else:
-        dns_names: list[san.SAN] = [san.DNSName(d) for d in san_ext.value.get_values_for_type(x509.DNSName)]
+        dns_names: list[san.SAN] =\
+            [san.DNSName(d) for d in san_ext.value.get_values_for_type(x509.DNSName)]
         ip_addresses: list[san.SAN] = [san.IPAddress(str(ip)) for ip in
                         san_ext.value.get_values_for_type(x509.IPAddress)]
         sans = dns_names + ip_addresses

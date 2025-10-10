@@ -866,12 +866,12 @@ class ClientTest(ClientTestCommon):
     @test_util.patch_display_util()
     def test_deploy_certificate_success(self, mock_util):
         with pytest.raises(errors.Error):
-            self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
+            self.client.deploy_certificate([san.DNSName("foo.bar")], "key", "cert", "chain", "fullchain")
 
         installer = mock.MagicMock()
         self.client.installer = installer
 
-        self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
+        self.client.deploy_certificate([san.DNSName("foo.bar")], "key", "cert", "chain", "fullchain")
         installer.deploy_cert.assert_called_once_with(
             cert_path=os.path.abspath("cert"),
             chain_path=os.path.abspath("chain"),
@@ -890,7 +890,7 @@ class ClientTest(ClientTestCommon):
 
         installer.deploy_cert.side_effect = errors.PluginError
         with pytest.raises(errors.PluginError):
-            self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
+            self.client.deploy_certificate([san.DNSName("foo.bar")], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
         mock_notify.assert_any_call('Deploying certificate')
@@ -903,7 +903,7 @@ class ClientTest(ClientTestCommon):
 
         installer.save.side_effect = errors.PluginError
         with pytest.raises(errors.PluginError):
-            self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
+            self.client.deploy_certificate([san.DNSName("foo.bar")], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
     @mock.patch('certbot._internal.client.display_util.notify')
@@ -914,7 +914,7 @@ class ClientTest(ClientTestCommon):
         self.client.installer = installer
 
         with pytest.raises(errors.PluginError):
-            self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
+            self.client.deploy_certificate([san.DNSName("foo.bar")], "key", "cert", "chain", "fullchain")
         mock_notify.assert_called_with(
             'We were unable to install your certificate, however, we successfully restored '
             'your server to its prior configuration.')
@@ -930,7 +930,7 @@ class ClientTest(ClientTestCommon):
         self.client.installer = installer
 
         with pytest.raises(errors.PluginError):
-            self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain", "fullchain")
+            self.client.deploy_certificate([san.DNSName("foo.bar")], "key", "cert", "chain", "fullchain")
         assert mock_logger.error.call_count == 1
         assert 'An error occurred and we failed to restore your config' in \
             mock_logger.error.call_args[0][0]
@@ -971,7 +971,7 @@ class EnhanceConfigTest(ClientTestCommon):
 
     def test_no_installer(self):
         with pytest.raises(errors.Error):
-            self.client.enhance_config([self.domain], None)
+            self.client.enhance_config([san.DNSName(self.domain)], None)
 
     def test_unsupported(self):
         self.client.installer = mock.MagicMock()
@@ -1084,7 +1084,7 @@ class EnhanceConfigTest(ClientTestCommon):
             self.client.installer = mock.MagicMock()
         self.client.installer.supported_enhancements.return_value = [
             "ensure-http-header", "redirect", "staple-ocsp"]
-        self.client.enhance_config([self.domain], None)
+        self.client.enhance_config([san.DNSName(self.domain)], None)
         assert self.client.installer.save.call_count == 1
         assert self.client.installer.restart.call_count == 1
 
@@ -1093,7 +1093,7 @@ class EnhanceConfigTest(ClientTestCommon):
         self.client.installer.supported_enhancements.return_value = [
             "ensure-http-header", "redirect", "staple-ocsp"]
         self.client.installer.enhance.side_effect = errors.PluginEnhancementAlreadyPresent()
-        self.client.enhance_config([self.domain], None)
+        self.client.enhance_config([san.DNSName(self.domain)], None)
 
 
 class RollbackTest(unittest.TestCase):

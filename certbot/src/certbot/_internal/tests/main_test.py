@@ -258,8 +258,8 @@ class CertonlyTest(unittest.TestCase):
     @mock.patch('certbot._internal.renewal.renew_cert')
     @mock.patch('certbot._internal.main._handle_unexpected_key_type_migration')
     @mock.patch('certbot._internal.main._report_new_cert')
-    def test_find_lineage_for_domains_and_certname(self, mock_report_cert,
-        mock_handle_type, mock_renew_cert, mock_sans_for_certname, mock_lineage, mock_report_next_steps):
+    def test_find_lineage_for_sans_and_certname(self, mock_report_cert,
+                                                mock_handle_type, mock_renew_cert, mock_sans_for_certname, mock_lineage, mock_report_next_steps):
         domains = [san.DNSName('example.com'), san.DNSName('test.org')]
         mock_sans_for_certname.return_value = domains
         mock_lineage.sans.return_value = domains
@@ -294,8 +294,8 @@ class CertonlyTest(unittest.TestCase):
     @mock.patch('certbot.display.ops.choose_names')
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main._report_new_cert')
-    def test_find_lineage_for_domains_new_certname(self, mock_report_cert,
-        mock_lineage, mock_choose_names, mock_identifiers_for_certname, unused_mock_report_next_steps):
+    def test_find_lineage_for_sans_new_certname(self, mock_report_cert,
+                                                mock_lineage, mock_choose_names, mock_identifiers_for_certname, unused_mock_report_next_steps):
         mock_lineage.return_value = None
 
         # no lineage with this name but we specified domains so create a new cert
@@ -1367,7 +1367,7 @@ class MainTest(test_util.ConfigTestCase):
             self._call('certonly -d example.org --csr {0}'.format(CSR).split())
 
     def _certonly_new_request_common(self, mock_client, args=None):
-        with mock.patch('certbot._internal.main._find_lineage_for_domains_and_certname') \
+        with mock.patch('certbot._internal.main._find_lineage_for_sans_and_certname') \
             as mock_renewal:
             mock_renewal.return_value = ("newcert", None)
             with mock.patch('certbot._internal.main._init_le_client') as mock_init:
@@ -1727,7 +1727,7 @@ class MainTest(test_util.ConfigTestCase):
         assert 'No hooks were run.' in stdout.getvalue()
 
     @test_util.patch_display_util()
-    @mock.patch('certbot._internal.main._find_lineage_for_domains_and_certname')
+    @mock.patch('certbot._internal.main._find_lineage_for_sans_and_certname')
     @mock.patch('certbot._internal.main._init_le_client')
     @mock.patch('certbot._internal.main._report_new_cert')
     def test_certonly_reinstall(self, mock_report_new_cert, mock_init,
@@ -1976,7 +1976,7 @@ class EnhanceTest(test_util.ConfigTestCase):
         with mock.patch('certbot._internal.cert_manager.get_certnames') as mock_certs:
             mock_certs.return_value = ['example.com']
             with mock.patch('certbot._internal.cert_manager.sans_for_certname') as mock_dom:
-                mock_dom.return_value = ['example.com']
+                mock_dom.return_value = [san.DNSName('example.com')]
                 with mock.patch('certbot._internal.main._init_le_client') as mock_init:
                     mock_client = mock.MagicMock()
                     mock_client.config = config
@@ -2026,7 +2026,7 @@ class EnhanceTest(test_util.ConfigTestCase):
             assert mock_client.enhance_config.called
             assert all(getattr(mock_client.config, e) for e in req_enh)
             assert not any(getattr(mock_client.config, e) for e in not_req_enh)
-            assert "example.com" in mock_client.enhance_config.call_args[0][0]
+            assert san.DNSName("example.com") in mock_client.enhance_config.call_args[0][0]
 
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main.display_ops.choose_values')
