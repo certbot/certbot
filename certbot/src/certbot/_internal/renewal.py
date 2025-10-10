@@ -148,18 +148,8 @@ def reconstitute(config: configuration.NamespaceConfig,
         return None
 
     try:
-        domains = []
-        ip_addresses = []
-        for s in renewal_candidate.sans():
-            match s:
-                case san.DNSName():
-                    # Note: this can't use san.split() because it calls enforce_domain_sanity
-                    domains.append(util.enforce_domain_sanity(s.dns_name))
-                case san.IPAddress():
-                    ip_addresses.append(s)
-                case _:
-                    raise TypeError(f"SAN of type {type(s)}")
-        config.domains = domains
+        domains, ip_addresses = san.split(renewal_candidate.sans())
+        config.domains = [util.enforce_domain_sanity(d) for d in domains]
         config.ip_addresses = ip_addresses
     except errors.ConfigurationError as error:
         logger.error("Renewal configuration file %s references a certificate "
@@ -505,7 +495,7 @@ def _avoid_invalidating_lineage(config: configuration.NamespaceConfig,
     if util.is_staging(config.server):
         if not util.is_staging(original_server):
             if not config.break_my_certs:
-                names = ", ".join([str(s) for s in lineage.sans()])
+                names = ", ".join(map(str, lineage.sans()))
                 raise errors.Error(
                     "You've asked to renew/replace a seemingly valid certificate with "
                     f"a test certificate (domains: {names}). We will not do that "

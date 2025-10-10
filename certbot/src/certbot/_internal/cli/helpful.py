@@ -331,8 +331,9 @@ class HelpfulArgumentParser:
         csrfile, contents = config.csr[0:2]
         typ, csr, csr_sans = crypto_util.import_csr_file(csrfile, contents)
 
-        # This is not necessary for webroot to work, however,
-        # obtain_certificate_from_csr requires config.domains to be set
+        # The SANs from the CSR are added to the command line flags. That's how main.certonly
+        # gets the list of identifiers to request. Note: this does not clear command line flags
+        # set by the user. Any existing flags must be a subset of what's in the CSR.
         domains, ip_addresses = san.split(csr_sans)
         domains = [util.enforce_domain_sanity(d.dns_name.strip().lower()) for d in domains]
         config.domains.extend(domains)
@@ -346,6 +347,8 @@ class HelpfulArgumentParser:
 
         config.actual_csr = (csr, typ)
 
+        # Check that the original values for --domain and --ip-address set by the user were
+        # a subset of the domains and IP addresses listed in the CSR.
         if set(config.domains) != set(domains) or set(config.ip_addresses) != set(ip_addresses):
             raise errors.ConfigurationError(
                 "Inconsistent requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"

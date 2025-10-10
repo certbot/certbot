@@ -92,8 +92,8 @@ def summarize_sans(sans: list[san.SAN]) -> str:
     or if there is only one identifier:
         example.com
 
-    :param list identifiers: `str` list of domains and/or IP addresses
-    :returns: the domain list summary
+    :param list sans: `san.SAN` list of domains and/or IP addresses
+    :returns: a summary
     :rtype: str
     """
     if not sans:

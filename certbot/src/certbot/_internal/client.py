@@ -549,7 +549,7 @@ class Client:
     def _successful_sans_from_error(self, error: messages.Error, sans: list[san.SAN],
                                     ) -> list[san.SAN]:
         if error.subproblems is not None:
-            failed_sans = []
+            failed_sans: list[san.SAN] = []
             for problem in error.subproblems:
                 if not problem.identifier:
                     continue
@@ -557,7 +557,7 @@ class Client:
                     case messages.IDENTIFIER_FQDN:
                         failed_sans.append(san.DNSName(problem.identifier.value))
                     case messages.IDENTIFIER_IP:
-                        failed_sans.append(san.DNSName(problem.identifier.value))
+                        failed_sans.append(san.IPAddress(problem.identifier.value))
                     case _:
                         raise TypeError(f"invalid identifier type {problem.identifier.typ}")
             successful_sans = [x for x in sans if x not in failed_sans]

@@ -96,7 +96,7 @@ def lineage_for_certname(cli_config: configuration.NamespaceConfig,
 
 def sans_for_certname(config: configuration.NamespaceConfig,
                       certname: str) -> Optional[list[san.SAN]]:
-    """Find the domains and IP addresses in the cert with name certname."""
+    """Find the domains and/or IP addresses in the cert with name certname."""
     lineage = lineage_for_certname(config, certname)
     return lineage.sans() if lineage else None
 

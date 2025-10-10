@@ -474,8 +474,8 @@ def _ask_user_to_confirm_new_sans(config: configuration.NamespaceConfig,
            "You are also removing previously included domain(s): {2}{br}{br}"
            "Did you intend to make this change?".format(
                certname,
-               _format_list("+", map(str, added)),
-               _format_list("-", map(str, removed)),
+               _format_list("+", added),
+               _format_list("-", removed),
                br=os.linesep))
     if not display_util.yesno(msg, "Update certificate", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched certificate name and domains.")

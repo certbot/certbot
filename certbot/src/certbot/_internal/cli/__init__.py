@@ -125,7 +125,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[st
              "already have a certificate with the same name. In the case of a name conflict, "
              "a number like -0001 will be appended to the certificate name. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "certificates", "enhance"],
+        [None, "certonly", "certificates"],
         "--ip-address", dest="ip_addresses",
         action=_IPAddressAction,
         default=flag_default("ip_addresses"),
