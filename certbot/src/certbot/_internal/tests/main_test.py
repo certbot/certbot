@@ -1666,12 +1666,6 @@ class MainTest(test_util.ConfigTestCase):
         self._test_renew_common(renewalparams=renewalparams,
                                 assert_oc_called=True)
 
-    def test_renew_with_bad_domain(self):
-        renewalparams = {'authenticator': 'webroot'}
-        names = ['uniçodé.com']
-        self._test_renew_common(renewalparams=renewalparams, error_expected=True,
-                                names=names, assert_oc_called=False)
-
     @mock.patch('certbot._internal.plugins.selection.choose_configurator_plugins')
     def test_renew_with_configurator(self, mock_sel):
         mock_sel.return_value = (mock.MagicMock(), mock.MagicMock())

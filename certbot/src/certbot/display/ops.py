@@ -123,7 +123,7 @@ def get_valid_domains(domains: Iterable[str]) -> list[san.DNSName]:
     valid_domains: list[san.DNSName] = []
     for domain in domains:
         try:
-            valid_domains.append(util.enforce_domain_sanity(domain))
+            valid_domains.append(san.DNSName(domain))
         except errors.ConfigurationError:
             continue
     return valid_domains
@@ -201,7 +201,7 @@ def _choose_names_manually(prompt_prefix: str = "") -> list[san.DNSName]:
         checked_domains = []
         for domain in domain_list:
             try:
-                checked_domains.append(util.enforce_domain_sanity(domain))
+                checked_domains.append(san.DNSName(domain))
             except errors.ConfigurationError as e:
                 invalid_domains[domain] = str(e)
 

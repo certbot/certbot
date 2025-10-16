@@ -579,7 +579,8 @@ def enforce_le_validity(domain: str) -> str:
 
     """
 
-    domain = str(enforce_domain_sanity(domain))
+    # Do basic validation on a DNSName
+    domain = san.DNSName(domain).dns_name
     if not re.match("^[A-Za-z0-9.-]*$", domain):
         raise errors.ConfigurationError(
             "{0} contains an invalid character. "
@@ -599,68 +600,6 @@ def enforce_le_validity(domain: str) -> str:
                 'label "{0}" in domain "{1}" cannot end with "-"'.format(
                     label, domain))
     return domain
-
-
-def enforce_domain_sanity(domain: Union[str, bytes, san.DNSName]) -> san.DNSName:
-    """Method which validates domain value and errors out if
-    the requirements are not met.
-
-    :param domain: Domain to check
-    :type domain: `str` or `bytes`
-    :raises ConfigurationError: for invalid domains and cases where Let's
-                                Encrypt currently will not issue certificates
-
-    :returns: The domain cast to `str`, with ASCII-only contents
-    :rtype: str
-    """
-    # Unicode
-    try:
-        if isinstance(domain, bytes):
-            domain = domain.decode('utf-8')
-        # TODO: make enforce_domain_sanity a necessary part of san.DNSName construction,
-        # and adjust call graph so it is never called on things that are already san.DNSNames.
-        if isinstance(domain, san.DNSName):
-            domain = domain.dns_name
-        domain.encode('ascii')
-    except UnicodeError:
-        raise errors.ConfigurationError("Non-ASCII domain names not supported. "
-            "To issue for an Internationalized Domain Name, use Punycode.")
-
-    domain = domain.lower()
-
-    # Remove trailing dot
-    domain = domain[:-1] if domain.endswith('.') else domain
-
-    # Separately check for odd "domains" like "http://example.com" to fail
-    # fast and provide a clear error message
-    for scheme in ["http", "https"]:  # Other schemes seem unlikely
-        if domain.startswith("{0}://".format(scheme)):
-            raise errors.ConfigurationError(
-                "Requested name {0} appears to be a URL, not a FQDN. "
-                "Try again without the leading \"{1}://\".".format(
-                    domain, scheme
-                )
-            )
-
-    if is_ipaddress(domain):
-        raise errors.ConfigurationError(
-            f"Requested domain name {domain} is an IP address. Use the --ip-address flag "
-            "instead of -d or --domain")
-
-    # FQDN checks according to RFC 2181: domain name should be less than 255
-    # octets (inclusive). And each label is 1 - 63 octets (inclusive).
-    # https://tools.ietf.org/html/rfc2181#section-11
-    msg = "Requested domain {0} is not a FQDN because".format(domain)
-    if len(domain) > 255:
-        raise errors.ConfigurationError("{0} it is too long.".format(msg))
-    labels = domain.split('.')
-    for l in labels:
-        if not l:
-            raise errors.ConfigurationError("{0} it contains an empty label.".format(msg))
-        if len(l) > 63:
-            raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
-
-    return san.DNSName(domain)
 
 
 def is_ipaddress(address: str) -> bool:

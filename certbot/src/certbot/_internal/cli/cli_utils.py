@@ -13,7 +13,6 @@ from typing import Union
 from acme import challenges
 from certbot import configuration
 from certbot import errors
-from certbot import util
 from certbot._internal import constants
 from certbot._internal import san
 from certbot.compat import os
@@ -124,7 +123,7 @@ def add_domains(args_or_config: Union[argparse.Namespace, configuration.Namespac
         return validated_domains
 
     for d in domains.split(","):
-        domain = util.enforce_domain_sanity(d.strip())
+        domain = san.DNSName(d.strip())
         validated_domains.append(domain)
         if domain not in args_or_config.domains:
             args_or_config.domains.append(domain)

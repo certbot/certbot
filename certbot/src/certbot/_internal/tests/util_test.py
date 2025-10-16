@@ -431,65 +431,6 @@ class EnforceLeValidity(unittest.TestCase):
         assert self._call(u"http.example.com") == u"http.example.com"
 
 
-class EnforceDomainSanityTest(unittest.TestCase):
-    """Test enforce_domain_sanity."""
-
-    def _call(self, domain):
-        from certbot.util import enforce_domain_sanity
-        return enforce_domain_sanity(domain)
-
-    def test_nonascii_str(self):
-        with pytest.raises(errors.ConfigurationError):
-            self._call(u"eichh\u00f6rnchen.example.com".encode("utf-8"))
-
-    def test_nonascii_unicode(self):
-        with pytest.raises(errors.ConfigurationError):
-            self._call(u"eichh\u00f6rnchen.example.com")
-
-    def test_too_long(self):
-        long_domain = u"a"*256
-        with pytest.raises(errors.ConfigurationError):
-            self._call(long_domain)
-
-    def test_not_too_long(self):
-        not_too_long_domain = u"{0}.{1}.{2}.{3}".format("a"*63, "b"*63, "c"*63, "d"*63)
-        self._call(not_too_long_domain)
-
-    def test_empty_label(self):
-        empty_label_domain = u"fizz..example.com"
-        with pytest.raises(errors.ConfigurationError):
-            self._call(empty_label_domain)
-
-    def test_empty_trailing_label(self):
-        empty_trailing_label_domain = u"example.com.."
-        with pytest.raises(errors.ConfigurationError):
-            self._call(empty_trailing_label_domain)
-
-    def test_long_label_1(self):
-        long_label_domain = u"a"*64
-        with pytest.raises(errors.ConfigurationError):
-            self._call(long_label_domain)
-
-    def test_long_label_2(self):
-        long_label_domain = u"{0}.{1}.com".format(u"a"*64, u"b"*63)
-        with pytest.raises(errors.ConfigurationError):
-            self._call(long_label_domain)
-
-    def test_not_long_label(self):
-        not_too_long_label_domain = u"{0}.{1}.com".format(u"a"*63, u"b"*63)
-        self._call(not_too_long_label_domain)
-
-    def test_empty_domain(self):
-        empty_domain = u""
-        with pytest.raises(errors.ConfigurationError):
-            self._call(empty_domain)
-
-    def test_punycode_ok(self):
-        # Punycode is now legal, so no longer an error; instead check
-        # that it's _not_ an error (at the initial sanity check stage)
-        self._call('this.is.xn--ls8h.tld')
-
-
 class IsWildcardDomainTest(unittest.TestCase):
     """Tests for is_wildcard_domain."""
 

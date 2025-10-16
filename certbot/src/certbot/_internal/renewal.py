@@ -149,7 +149,7 @@ def reconstitute(config: configuration.NamespaceConfig,
 
     try:
         domains, ip_addresses = san.split(renewal_candidate.sans())
-        config.domains = [util.enforce_domain_sanity(d) for d in domains]
+        config.domains = domains
         config.ip_addresses = ip_addresses
     except errors.ConfigurationError as error:
         logger.error("Renewal configuration file %s references a certificate "

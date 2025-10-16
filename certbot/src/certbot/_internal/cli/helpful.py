@@ -335,7 +335,6 @@ class HelpfulArgumentParser:
         # gets the list of identifiers to request. Note: this does not clear command line flags
         # set by the user. Any existing flags must be a subset of what's in the CSR.
         domains, ip_addresses = san.split(csr_sans)
-        domains = [util.enforce_domain_sanity(d.dns_name.strip().lower()) for d in domains]
         config.domains.extend(domains)
         config.ip_addresses.extend(ip_addresses)
 

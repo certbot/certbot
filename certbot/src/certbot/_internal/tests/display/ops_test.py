@@ -264,18 +264,18 @@ class ChooseNamesTest(unittest.TestCase):
     def test_filter_names_cancel(self, mock_util):
         self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (
-            display_util.CANCEL, [san.DNSName("example.com")])
+            display_util.CANCEL, ["example.com"])
 
         assert self._call(self.mock_install) == []
 
     def test_get_valid_domains(self):
         from certbot.display.ops import get_valid_domains
-        all_valid = [san.DNSName("example.com"), san.DNSName("second.example.com"),
-                     san.DNSName("also.example.com"), san.DNSName("under_score.example.com"),
-                     san.DNSName("justtld"), san.DNSName("*.wildcard.com")]
-        all_invalid = [san.DNSName("öóòps.net"), san.DNSName("uniçodé.com")]
-        two_valid = [san.DNSName("example.com"), san.DNSName("úniçøde.com"), san.DNSName("also.example.com")]
-        assert get_valid_domains(all_valid) == all_valid
+        all_valid = ["example.com", "second.example.com",
+                     "also.example.com", "under_score.example.com",
+                     "justtld", "*.wildcard.com"]
+        all_invalid = ["öóòps.net", "uniçodé.com"]
+        two_valid = ["example.com", "úniçøde.com", "also.example.com"]
+        assert get_valid_domains(all_valid) == list(map(san.DNSName, all_valid))
         assert get_valid_domains(all_invalid) == []
         assert len(get_valid_domains(two_valid)) == 2
 
