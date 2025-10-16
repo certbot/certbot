@@ -495,7 +495,7 @@ def _avoid_invalidating_lineage(config: configuration.NamespaceConfig,
     if util.is_staging(config.server):
         if not util.is_staging(original_server):
             if not config.break_my_certs:
-                names = ", ".join(map(str, lineage.sans()))
+                names = san.display(lineage.sans())
                 raise errors.Error(
                     "You've asked to renew/replace a seemingly valid certificate with "
                     f"a test certificate (domains: {names}). We will not do that "

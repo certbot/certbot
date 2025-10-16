@@ -219,7 +219,6 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
     """
     _handle_unexpected_key_type_migration(config, cert)
 
-    existing = ", ".join(map(str, cert.sans()))
     question = (
         "You have an existing certificate that contains a portion of "
         "the domains you requested (ref: {0}){br}{br}It contains these "
@@ -227,8 +226,8 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
         "certificate: {2}.{br}{br}Do you want to expand and replace this existing "
         "certificate with the new certificate?"
     ).format(cert.configfile.filename,
-             existing,
-             ", ".join(map(str, sans)),
+             san.display(cert.sans()),
+             san.display(sans),
              br=os.linesep)
     if config.expand or config.renew_by_default or display_util.yesno(
         question, "Expand", "Cancel", cli_flag="--expand", force_interactive=True):
@@ -238,7 +237,7 @@ def _handle_subset_cert_request(config: configuration.NamespaceConfig,
         "replacing your existing certificate for {0}, you must use the "
         "--duplicate option.{br}{br}"
         "For example:{br}{br}{1} --duplicate {2}".format(
-            existing,
+            san.display(cert.sans()),
             cli.cli_command, " ".join(sys.argv[1:]),
             br=os.linesep
         ))

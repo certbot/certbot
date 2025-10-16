@@ -1,7 +1,7 @@
 """Types for representing IP addresses and DNS names internal to Certbot."""
 import ipaddress
 from abc import abstractmethod
-from typing import Any
+from typing import Any, Iterable
 
 
 class SAN:
@@ -66,7 +66,7 @@ class IPAddress(SAN):
         """Always False."""
         return False
 
-def split(sans: list[SAN]) -> tuple[list[DNSName], list[IPAddress]]:
+def split(sans: Iterable[SAN]) -> tuple[list[DNSName], list[IPAddress]]:
     """Split a list of SANs into a list of DNSNames and one of IPAddress, in that order."""
     domains = []
     ip_addresses = []
@@ -79,3 +79,7 @@ def split(sans: list[SAN]) -> tuple[list[DNSName], list[IPAddress]]:
             case _:
                 raise TypeError(f"SAN of type {type(s)}")
     return domains, ip_addresses
+
+def display(sans: Iterable[SAN]) -> str:
+    "Return the list of SANs in string form, separated by command and space."
+    return ", ".join(map(str, sans))

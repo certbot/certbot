@@ -352,8 +352,7 @@ class HelpfulArgumentParser:
         if set(config.domains) != set(domains) or set(config.ip_addresses) != set(ip_addresses):
             raise errors.ConfigurationError(
                 "Inconsistent requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
-                .format(", ".join(map(str, csr_sans)),
-                        ", ".join(map(str, config.domains + config.ip_addresses))))
+                .format(san.display(csr_sans), san.display(config.domains + config.ip_addresses)))
 
 
     def determine_verb(self) -> None:

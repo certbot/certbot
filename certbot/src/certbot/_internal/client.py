@@ -568,7 +568,7 @@ class Client:
                                 old_keypath: Optional[str]
                                 ) -> tuple[bytes, bytes, util.Key, util.CSR]:
         failed_sans = [s for s in sans if s not in successful_sans]
-        failed_sans_list = ", ".join(map(str, failed_sans))
+        failed_sans_list = san.display(failed_sans)
         display_util.notify("Unable to obtain a certificate with every requested "
             f"domain. Retrying without: {failed_sans_list}")
         return self.obtain_certificate(successful_sans, old_keypath)
