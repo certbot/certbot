@@ -391,6 +391,16 @@ class RenewableCert(metaclass=ABCMeta):
         """
 
     @abstractmethod
+    def names(self) -> list[str]:
+        """What are the subject names of this certificate?
+
+        :returns: the subject names
+        :rtype: `list` of `str`
+        :raises .CertStorageError: if could not find cert file.
+
+        """
+
+    @abstractmethod
     def sans(self) -> list[san.SAN]:
         """What are the subject alternative names of this certificate?
 
