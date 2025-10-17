@@ -1494,8 +1494,9 @@ def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
     :rtype: `tuple` of `str`
 
     """
-    csr, _ = config.actual_csr
-    csr_sans = crypto_util.get_sans_and_cn_from_req(csr.data)
+    util_csr, _ = config.actual_csr
+    x509_req = x509.load_pem_x509_csr(util_csr.data)
+    csr_sans = san.from_x509(x509_req.subject, x509_req.extensions)
     display_util.notify(
         "{action} for {sans}".format(
             action="Simulating a certificate request" if config.dry_run else
@@ -1503,7 +1504,7 @@ def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
             sans=internal_display_util.summarize_sans(csr_sans)
         )
     )
-    cert, chain = le_client.obtain_certificate_from_csr(csr)
+    cert, chain = le_client.obtain_certificate_from_csr(util_csr)
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)

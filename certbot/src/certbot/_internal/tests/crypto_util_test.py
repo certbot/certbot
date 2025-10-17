@@ -17,7 +17,6 @@ from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
-from certbot._internal import san
 
 RSA512_KEY = test_util.load_vector('rsa512_key.pem')
 RSA512_KEY_PATH = test_util.vector_path('rsa512_key.pem')
@@ -146,7 +145,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data_pem,
                       form="pem"),
-             [san.DNSName("Example.com")]) == \
+             ["Example.com"]) == \
             self._call(csrfile, data)
 
     def test_pem_csr(self):
@@ -157,7 +156,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data,
                       form="pem"),
-             [san.DNSName("Example.com")],) == \
+             ["Example.com"],) == \
             self._call(csrfile, data)
 
     def test_bad_csr(self):
@@ -330,26 +329,42 @@ class ValidPrivkeyTest(unittest.TestCase):
         assert not self._call('foo bar')
 
 
-class GetSANSandCNFromCertTest(unittest.TestCase):
+class GetSANsFromCertTest(unittest.TestCase):
     """Tests for certbot.crypto_util.get_sans_from_cert."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import get_sans_and_cn_from_cert
-        return get_sans_and_cn_from_cert(*args, **kwargs)
+        from certbot.crypto_util import get_sans_from_cert
+        return get_sans_from_cert(*args, **kwargs)
 
     def test_single(self):
-        assert [san.DNSName('example.com')] == \
+        assert [] == self._call(test_util.load_vector('cert_512.pem'))
+
+    def test_san(self):
+        assert ['example.com', 'www.example.com'] == \
+            self._call(test_util.load_vector('cert-san_512.pem'))
+
+
+class GetNamesFromCertTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.get_names_from_cert."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import get_names_from_cert
+        return get_names_from_cert(*args, **kwargs)
+
+    def test_single(self):
+        assert ['example.com'] == \
             self._call(test_util.load_vector('cert_512.pem'))
 
     def test_san(self):
-        assert [san.DNSName('example.com'), san.DNSName('www.example.com')] == \
+        assert ['example.com', 'www.example.com'] == \
             self._call(test_util.load_vector('cert-san_512.pem'))
 
     def test_common_name_sans_order(self):
         # Tests that the common name comes first
         # followed by the SANS in alphabetical order
-        assert [san.DNSName('example.com')] + [san.DNSName('{0}.example.com'.format(c)) for c in 'abcd'] == \
+        assert ['example.com'] + ['{0}.example.com'.format(c) for c in 'abcd'] == \
             self._call(test_util.load_vector('cert-5sans_512.pem'))
 
     def test_parse_non_cert(self):
@@ -358,29 +373,28 @@ class GetSANSandCNFromCertTest(unittest.TestCase):
 
 
 class GetNamesFromReqTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.get_sans_from_req."""
+    """Tests for certbot.crypto_util.get_names_from_req."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import get_sans_and_cn_from_req
-        return get_sans_and_cn_from_req(*args, **kwargs)
+        from certbot.crypto_util import get_names_from_req
+        return get_names_from_req(*args, **kwargs)
 
     def test_nonames(self):
         assert [] == \
             self._call(test_util.load_vector('csr-nonames_512.pem'))
 
     def test_nosans(self):
-        assert [san.DNSName('example.com')] == \
+        assert ['example.com'] == \
             self._call(test_util.load_vector('csr-nosans_512.pem'))
 
     def test_sans(self):
-        assert [san.DNSName('example.com'), san.DNSName('example.org'), san.DNSName('example.net'),
-                san.DNSName('example.info'), san.DNSName('subdomain.example.com'),
-                san.DNSName('other.subdomain.example.com')] == \
+        assert ['example.com', 'example.org', 'example.net', 'example.info',
+             'subdomain.example.com', 'other.subdomain.example.com'] == \
             self._call(test_util.load_vector('csr-6sans_512.pem'))
 
     def test_der(self):
-        assert [san.DNSName('Example.com')] == \
+        assert ['Example.com'] == \
             self._call(test_util.load_vector('csr_512.der'), typ=acme_crypto_util.Format.DER)
 
 

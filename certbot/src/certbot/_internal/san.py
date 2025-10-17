@@ -1,7 +1,9 @@
 """Types for representing IP addresses and DNS names internal to Certbot."""
 import ipaddress
 from abc import abstractmethod
-from typing import Any, Iterable
+from typing import Any, Iterable, cast
+
+from cryptography import x509
 
 from certbot import errors
 
@@ -129,3 +131,40 @@ def split(sans: Iterable[SAN]) -> tuple[list[DNSName], list[IPAddress]]:
 def display(sans: Iterable[SAN]) -> str:
     "Return the list of SANs in string form, separated by command and space."
     return ", ".join(map(str, sans))
+
+def from_x509(subject: x509.Name, exts: x509.Extensions) -> list[SAN]:
+    """Get all DNS names and IP addresses, plus the first Common Name from subject.
+
+    The CN will be first in the list, if present.
+
+    :param subject: Name of the x509 object, which may include Common Name
+    :type subject: `cryptography.x509.Name`
+    :param exts: Extensions of the x509 object, which may include SANs
+    :type exts: `cryptography.x509.Extensions`
+
+    :returns: List of DNS Subject Alternative Names and first Common Name
+    :rtype: `list` of `str`
+    """
+    # We know these are always `str` because `bytes` is only possible for
+    # other OIDs.
+    cns = [
+        cast(str, c.value)
+        for c in subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+    ]
+    try:
+        san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
+    except x509.ExtensionNotFound:
+        sans = []
+    else:
+        dns_names: list[SAN] = \
+            [DNSName(d) for d in san_ext.value.get_values_for_type(x509.DNSName)]
+        ip_addresses: list[SAN] = [IPAddress(str(ip)) for ip in
+                                   san_ext.value.get_values_for_type(x509.IPAddress)]
+        sans = dns_names + ip_addresses
+
+    if not cns:
+        return sans
+    else:
+        # We only include the first CN, if there are multiple. This matches
+        # the behavior of the previous implementation using pyOpenSSL.
+        return [DNSName(cns[0])] + [s for s in sans if str(s) != cns[0]]

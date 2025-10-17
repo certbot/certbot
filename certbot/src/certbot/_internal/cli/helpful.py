@@ -9,6 +9,7 @@ from typing import Optional
 from typing import Union
 
 import configargparse
+from cryptography import x509
 
 from certbot import crypto_util
 from certbot import errors
@@ -329,7 +330,9 @@ class HelpfulArgumentParser:
             raise errors.Error("--allow-subset-of-names cannot be used with --csr")
 
         csrfile, contents = config.csr[0:2]
-        typ, csr, csr_sans = crypto_util.import_csr_file(csrfile, contents)
+        typ, util_csr, _ = crypto_util.import_csr_file(csrfile, contents)
+        x509_req = x509.load_pem_x509_csr(util_csr.data)
+        csr_sans = san.from_x509(x509_req.subject, x509_req.extensions)
 
         # The SANs from the CSR are added to the command line flags. That's how main.certonly
         # gets the list of identifiers to request. Note: this does not clear command line flags
@@ -344,7 +347,7 @@ class HelpfulArgumentParser:
                 "Unfortunately, your CSR %s needs to have a SubjectAltName for every domain"
                 % config.csr[0])
 
-        config.actual_csr = (csr, typ)
+        config.actual_csr = (util_csr, typ)
 
         # Check that the original values for --domain and --ip-address set by the user were
         # a subset of the domains and IP addresses listed in the CSR.

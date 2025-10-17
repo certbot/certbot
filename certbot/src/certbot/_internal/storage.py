@@ -14,6 +14,7 @@ from typing import Optional
 from typing import Union
 
 import configobj
+from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
@@ -925,7 +926,9 @@ class RenewableCert(interfaces.RenewableCert):
         if target is None:
             raise errors.CertStorageError("could not find the certificate file")
         with open(target, "rb") as f:
-            return crypto_util.get_sans_and_cn_from_cert(f.read())
+            cert_bytes = f.read()
+        x509_cert = x509.load_pem_x509_certificate(cert_bytes)
+        return san.from_x509(x509_cert.subject, x509_cert.extensions)
 
     def ocsp_revoked(self, version: int) -> bool:
         """Is the specified cert version revoked according to OCSP?
