@@ -1,6 +1,14 @@
 """Tests for the san module"""
+import ipaddress
+from datetime import datetime
+
 import pytest
 import unittest
+
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
 
 from certbot import errors
 from certbot._internal import san
@@ -109,3 +117,90 @@ class EnforceDomainSyntaxTest(unittest.TestCase):
         # Punycode is now legal, so no longer an error; instead check
         # that it's _not_ an error (at the initial sanity check stage)
         self._call('this.is.xn--ls8h.tld')
+
+class FromX509Test(unittest.TestCase):
+    def test_csr(self) -> None:
+        key = ec.generate_private_key(ec.SECP256R1())
+        csr = (
+            x509.CertificateSigningRequestBuilder()
+            .subject_name(x509.Name([]))
+            .add_extension(
+                x509.SubjectAlternativeName(
+                    [x509.DNSName("example.com"),
+                     x509.IPAddress(ipaddress.ip_address("192.168.1.1"))]
+                ),
+                critical=False,
+            )
+        ).sign(key, hashes.SHA256())
+        result = san.from_x509(csr.subject, csr.extensions)
+        assert result == [
+            san.DNSName("example.com"),
+            san.IPAddress("192.168.1.1"),
+        ]
+
+    def test_cert(self) -> None:
+        key = ec.generate_private_key(ec.SECP256R1())
+        cert = (
+            x509.CertificateBuilder()
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.now())
+            .not_valid_after(datetime.now())
+            .subject_name(x509.Name([]))
+            .issuer_name(x509.Name([]))
+            .public_key(key.public_key())
+            .add_extension(
+                x509.SubjectAlternativeName(
+                    [x509.DNSName("example.com"),
+                     x509.IPAddress(ipaddress.ip_address("192.168.1.1"))]
+                ),
+                critical=False,
+            )
+        ).sign(key, hashes.SHA256())
+        result = san.from_x509(cert.subject, cert.extensions)
+        assert result == [
+            san.DNSName("example.com"),
+            san.IPAddress("192.168.1.1"),
+        ]
+
+    def test_cn(self) -> None:
+        key = ec.generate_private_key(ec.SECP256R1())
+        csr = (
+            x509.CertificateSigningRequestBuilder()
+            .subject_name(x509.Name([
+                x509.NameAttribute(NameOID.COMMON_NAME, "common.example"),
+            ]))
+            .add_extension(
+                x509.SubjectAlternativeName(
+                    [x509.DNSName("example.com"),
+                     x509.IPAddress(ipaddress.ip_address("192.168.1.1"))]
+                ),
+                critical=False,
+            )
+        ).sign(key, hashes.SHA256())
+        result = san.from_x509(csr.subject, csr.extensions)
+        assert result == [
+            san.DNSName("common.example"),
+            san.DNSName("example.com"),
+            san.IPAddress("192.168.1.1"),
+        ]
+
+    def test_cn_duplicate(self) -> None:
+        key = ec.generate_private_key(ec.SECP256R1())
+        csr = (
+            x509.CertificateSigningRequestBuilder()
+            .subject_name(x509.Name([
+                x509.NameAttribute(NameOID.COMMON_NAME, "example.com"),
+            ]))
+            .add_extension(
+                x509.SubjectAlternativeName(
+                    [x509.DNSName("example.com"),
+                     x509.IPAddress(ipaddress.ip_address("192.168.1.1"))]
+                ),
+                critical=False,
+            )
+        ).sign(key, hashes.SHA256())
+        result = san.from_x509(csr.subject, csr.extensions)
+        assert result == [
+            san.DNSName("example.com"),
+            san.IPAddress("192.168.1.1"),
+        ]
