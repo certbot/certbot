@@ -2,6 +2,8 @@
 
 import sys
 import unittest
+from dataclasses import dataclass
+from typing import Optional
 from unittest import mock
 
 from botocore.exceptions import ClientError
@@ -20,6 +22,11 @@ from certbot.tests import util as test_util
 KEY = jose.jwk.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
+@dataclass
+class Route53TestConfig:
+    route53_hosted_zone_id: Optional[str] = None
+
+
 class AuthenticatorTest(unittest.TestCase):
     # pylint: disable=protected-access
 
@@ -31,7 +38,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         super().setUp()
 
-        self.config = mock.MagicMock()
+        self.config = Route53TestConfig()
 
         # Set up dummy credentials for testing
         os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
@@ -141,7 +148,7 @@ class ClientTest(unittest.TestCase):
     def setUp(self):
         from certbot_dns_route53._internal.dns_route53 import Authenticator
 
-        self.config = mock.MagicMock()
+        self.config = Route53TestConfig()
 
         # Set up dummy credentials for testing
         os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
@@ -266,6 +273,37 @@ class ClientTest(unittest.TestCase):
         self.client._wait_for_change("1")
 
         assert self.client.r53.get_change.called
+
+    def test_change_txt_record_with_explicit_zone_id(self):
+        self.client.config.route53_hosted_zone_id = "EXPLICIT-ZONE-ID"
+
+        # _find_zone_id_for_domain should NOT be called if the config is present
+        self.client._find_zone_id_for_domain = mock.MagicMock()  # type: ignore[method-assign, unused-ignore]
+
+        self.client.r53.change_resource_record_sets = mock.MagicMock(
+            return_value={"ChangeInfo": {"Id": 1}}
+        )
+
+        self.client._change_txt_record("UPSERT", DOMAIN, "val123")
+
+        # we didn't try to auto-detect the zone
+        assert not self.client._find_zone_id_for_domain.called
+
+        # and we used the right zone ID
+        call_kwargs = self.client.r53.change_resource_record_sets.call_args.kwargs
+        assert call_kwargs["HostedZoneId"] == "EXPLICIT-ZONE-ID"
+
+    def test_change_txt_record_without_zone_id_falls_back_to_lookup(self):
+        self.client._find_zone_id_for_domain = mock.MagicMock(return_value="LOOKED-UP")  # type: ignore[method-assign, unused-ignore]
+        self.client.r53.change_resource_record_sets = mock.MagicMock(
+            return_value={"ChangeInfo": {"Id": 1}}
+        )
+
+        self.client._change_txt_record("UPSERT", DOMAIN, "val456")
+
+        self.client._find_zone_id_for_domain.assert_called_once_with(DOMAIN)
+        call_kwargs = self.client.r53.change_resource_record_sets.call_args.kwargs
+        assert call_kwargs["HostedZoneId"] == "LOOKED-UP"
 
 
 if __name__ == "__main__":
