@@ -111,14 +111,14 @@ def make_csr(
 def get_names_from_subject_and_extensions(
     subject: x509.Name, exts: x509.Extensions
 ) -> list[str]:
-    """Gets all DNS SAN names as well as the first Common Name from subject.
+    """Gets all DNS and/or IP address SANs as well as the first Common Name from subject.
 
     :param subject: Name of the x509 object, which may include Common Name
     :type subject: `cryptography.x509.Name`
     :param exts: Extensions of the x509 object, which may include SANs
     :type exts: `cryptography.x509.Extensions`
 
-    :returns: List of DNS Subject Alternative Names and first Common Name
+    :returns: List of Subject Alternative Names and first Common Name
     :rtype: `list` of `str`
     """
     # We know these are always `str` because `bytes` is only possible for
@@ -130,16 +130,18 @@ def get_names_from_subject_and_extensions(
     try:
         san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
     except x509.ExtensionNotFound:
-        dns_names = []
+        sans = []
     else:
         dns_names = san_ext.value.get_values_for_type(x509.DNSName)
+        ip_addresses = [str(ip) for ip in san_ext.value.get_values_for_type(x509.IPAddress)]
+        sans = dns_names + ip_addresses
 
     if not cns:
-        return dns_names
+        return sans
     else:
         # We only include the first CN, if there are multiple. This matches
         # the behavior of the previous implementation using pyOpenSSL.
-        return [cns[0]] + [d for d in dns_names if d != cns[0]]
+        return [cns[0]] + [s for s in sans if s != cns[0]]
 
 
 def _cryptography_cert_or_req_san(

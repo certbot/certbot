@@ -1,8 +1,9 @@
 """Types for representing IP addresses and DNS names internal to Certbot."""
 import ipaddress
 from abc import abstractmethod
-from typing import Any, Iterable, cast
+from typing import Any, Iterable
 
+from acme import crypto_util as acme_crypto_util
 from cryptography import x509
 
 from certbot import errors
@@ -80,9 +81,13 @@ class DNSName(SAN):
         return 'DNS(%s)' % self.dns_name
 
     def __eq__(self, other: Any) -> bool:
-        if not issubclass(type(other), SAN):
-            raise TypeError(f"DNSName SAN compared to non-SAN: {type(other)}")
-        return self.dns_name == other.dns_name
+        match other:
+            case DNSName():
+                return self.dns_name == other.dns_name
+            case IPAddress():
+                return False
+            case _:
+                raise TypeError(f"DNSName SAN compared to non-SAN: {type(other)}")
 
     def is_wildcard(self) -> bool:
         """Return True if this DNS name is a wildcard."""
@@ -106,9 +111,13 @@ class IPAddress(SAN):
         return 'IP(%s)' % self.ip_address
 
     def __eq__(self, other: Any) -> bool:
-        if not issubclass(type(other), SAN):
-            raise TypeError(f"IPAddress SAN compared to non-SAN: {type(other)}")
-        return self.ip_address == other.ip_address
+        match other:
+            case IPAddress():
+                return self.ip_address == other.ip_address
+            case DNSName():
+                return False
+            case _:
+                raise TypeError(f"IPAddress SAN compared to non-SAN: {type(other)}")
 
     def is_wildcard(self) -> bool:
         """Always False."""
@@ -145,26 +154,11 @@ def from_x509(subject: x509.Name, exts: x509.Extensions) -> list[SAN]:
     :returns: List of DNS Subject Alternative Names and first Common Name
     :rtype: `list` of `str`
     """
-    # We know these are always `str` because `bytes` is only possible for
-    # other OIDs.
-    cns = [
-        cast(str, c.value)
-        for c in subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-    ]
-    try:
-        san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
-    except x509.ExtensionNotFound:
-        sans = []
-    else:
-        dns_names: list[SAN] = \
-            [DNSName(d) for d in san_ext.value.get_values_for_type(x509.DNSName)]
-        ip_addresses: list[SAN] = [IPAddress(str(ip)) for ip in
-                                   san_ext.value.get_values_for_type(x509.IPAddress)]
-        sans = dns_names + ip_addresses
-
-    if not cns:
-        return sans
-    else:
-        # We only include the first CN, if there are multiple. This matches
-        # the behavior of the previous implementation using pyOpenSSL.
-        return [DNSName(cns[0])] + [s for s in sans if str(s) != cns[0]]
+    san_strs = acme_crypto_util.get_names_from_subject_and_extensions(subject, exts)
+    sans: list[SAN] = []
+    for san_str in san_strs:
+        try:
+            sans.append(IPAddress(san_str))
+        except ValueError:
+            sans.append(DNSName(san_str))
+    return sans
