@@ -138,7 +138,7 @@ def split(sans: Iterable[SAN]) -> tuple[list[DNSName], list[IPAddress]]:
     return domains, ip_addresses
 
 def display(sans: Iterable[SAN]) -> str:
-    "Return the list of SANs in string form, separated by command and space."
+    """Return the list of SANs in string form, separated by comma and space."""
     return ", ".join(map(str, sans))
 
 def from_x509(subject: x509.Name, exts: x509.Extensions) -> list[SAN]:
