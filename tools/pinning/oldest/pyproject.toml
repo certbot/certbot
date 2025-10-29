@@ -95,7 +95,7 @@ urllib3 = "1.26.5"
 
 # cython is a build dependency of pyyaml
 #
-# We also pin back cython as is currently required by pyyaml. See
+# We also pin back cython as is required by pyyaml for python < 3.13. See
 # https://github.com/yaml/pyyaml/pull/702 and
 # https://github.com/yaml/pyyaml/issues/601.
 cython = "<3.0"
