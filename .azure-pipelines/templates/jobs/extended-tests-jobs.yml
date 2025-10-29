@@ -14,7 +14,7 @@ jobs:
         linux-py312:
           PYTHON_VERSION: 3.12
           TOXENV: py312
-        linux-py312:
+        linux-py313:
           PYTHON_VERSION: 3.13
           TOXENV: py313
         linux-isolated:
