@@ -155,11 +155,10 @@ def from_x509(subject: x509.Name, exts: x509.Extensions) -> list[SAN]:
     :returns: List of DNS Subject Alternative Names and first Common Name
     :rtype: `list` of `SAN`
     """
-    san_strs = acme_crypto_util.get_names_from_subject_and_extensions(subject, exts)
+    dns_names, ip_addresses = acme_crypto_util.get_identifiers_from_x509(subject, exts)
     sans: list[SAN] = []
-    for san_str in san_strs:
-        try:
-            sans.append(IPAddress(san_str))
-        except ValueError:
-            sans.append(DNSName(san_str))
+    for dns_name in dns_names:
+        sans.append(DNSName(dns_name))
+    for ip_address in ip_addresses:
+        sans.append(IPAddress(ip_address))
     return sans
