@@ -141,7 +141,7 @@ def display(sans: Iterable[SAN]) -> str:
     """Return the list of SANs in string form, separated by comma and space."""
     return ", ".join(map(str, sans))
 
-def from_x509(subject: x509.Name, exts: x509.Extensions) -> list[SAN]:
+def from_x509(subject: x509.Name, exts: x509.Extensions) -> tuple[list[DNSName], list[IPAddress]]:
     """Get all DNS names and IP addresses, plus the first Common Name from subject.
 
     The CN will be first in the list, if present. It will always be interpreted
@@ -152,13 +152,8 @@ def from_x509(subject: x509.Name, exts: x509.Extensions) -> list[SAN]:
     :param exts: Extensions of the x509 object, which may include SANs
     :type exts: `cryptography.x509.Extensions`
 
-    :returns: List of DNS Subject Alternative Names and first Common Name
+    :returns: Tuple containing a list of DNSNames and a list of IPAddresses
     :rtype: `list` of `SAN`
     """
     dns_names, ip_addresses = acme_crypto_util.get_identifiers_from_x509(subject, exts)
-    sans: list[SAN] = []
-    for dns_name in dns_names:
-        sans.append(DNSName(dns_name))
-    for ip_address in ip_addresses:
-        sans.append(IPAddress(ip_address))
-    return sans
+    return [DNSName(d) for d in dns_names], [IPAddress(i) for i in ip_addresses]

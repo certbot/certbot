@@ -133,10 +133,10 @@ class FromX509Test(unittest.TestCase):
             )
         ).sign(key, hashes.SHA256())
         result = san.from_x509(csr.subject, csr.extensions)
-        assert result == [
-            san.DNSName("example.com"),
-            san.IPAddress("192.168.1.1"),
-        ]
+        assert result == (
+            [san.DNSName("example.com")],
+            [san.IPAddress("192.168.1.1")],
+        )
 
     def test_cert(self) -> None:
         key = ec.generate_private_key(ec.SECP256R1())
@@ -157,10 +157,10 @@ class FromX509Test(unittest.TestCase):
             )
         ).sign(key, hashes.SHA256())
         result = san.from_x509(cert.subject, cert.extensions)
-        assert result == [
-            san.DNSName("example.com"),
-            san.IPAddress("192.168.1.1"),
-        ]
+        assert result == (
+            [san.DNSName("example.com")],
+            [san.IPAddress("192.168.1.1")],
+        )
 
     def test_cn(self) -> None:
         key = ec.generate_private_key(ec.SECP256R1())
@@ -178,11 +178,10 @@ class FromX509Test(unittest.TestCase):
             )
         ).sign(key, hashes.SHA256())
         result = san.from_x509(csr.subject, csr.extensions)
-        assert result == [
-            san.DNSName("common.example"),
-            san.DNSName("example.com"),
-            san.IPAddress("192.168.1.1"),
-        ]
+        assert result == (
+            [san.DNSName("common.example"), san.DNSName("example.com")],
+            [san.IPAddress("192.168.1.1")],
+        )
 
     def test_cn_duplicate(self) -> None:
         key = ec.generate_private_key(ec.SECP256R1())
@@ -200,7 +199,7 @@ class FromX509Test(unittest.TestCase):
             )
         ).sign(key, hashes.SHA256())
         result = san.from_x509(csr.subject, csr.extensions)
-        assert result == [
-            san.DNSName("example.com"),
-            san.IPAddress("192.168.1.1"),
-        ]
+        assert result == (
+            [san.DNSName("example.com")],
+            [san.IPAddress("192.168.1.1")],
+        )
