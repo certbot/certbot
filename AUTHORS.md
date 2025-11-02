@@ -10,6 +10,7 @@ Authors
 * [Aidin Gharibnavaz](https://github.com/aidin36)
 * [AJ ONeal](https://github.com/coolaj86)
 * [Alcaro](https://github.com/Alcaro)
+* [Alexander Houben](https://github.com/ahouben)
 * [Alexander Mankuta](https://github.com/pointlessone)
 * [Alex Bowers](https://github.com/alexbowers)
 * [Alex Conlin](https://github.com/alexconlin)
