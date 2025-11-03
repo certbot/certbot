@@ -42,8 +42,12 @@ letstest = {path = "../../../letstest"}
 # stability.
 #
 # As of pyyaml 6.0.2, cython >= 3.0 is required for py >= 3.13, and < 3.0 for py < 3.13.
-# So don't pin to a specific version, and let the resolver handle it.
-cython = "*"
+# See https://github.com/yaml/pyyaml/pull/808/files.
+cython = [
+    { version = "<3.0", python = "<3.13" },
+    { version = ">=3.0", python = ">=3.13" }
+]
+
 # setuptools-rust is a build dependency of cryptography, and since we don't have
 # a great way of pinning build dependencies, we simply list it here to ensure a
 # working version. Note: if build dependencies of setuptools-rust break at some
