@@ -48,7 +48,7 @@ cython = [
     { version = ">=3.0", python = ">=3.13" }
 ]
 
-coverage = "7.10.4"
+coverage = "7.10.6"
 
 # setuptools-rust is a build dependency of cryptography, and since we don't have
 # a great way of pinning build dependencies, we simply list it here to ensure a
