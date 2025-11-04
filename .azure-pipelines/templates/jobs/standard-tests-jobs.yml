@@ -4,9 +4,46 @@ jobs:
       PYTHON_VERSION: 3.14
     strategy:
       matrix:
+        macos-cover:
+          IMAGE_NAME: macOS-15
+          TOXENV: cover
+          # As of pip 23.1.0, builds started failing on macOS unless this flag was set.
+          # See https://github.com/certbot/certbot/pull/9717#issuecomment-1610861794.
+          PIP_USE_PEP517: "true"
+        linux-oldest:
+          IMAGE_NAME: ubuntu-22.04
+          PYTHON_VERSION: 3.10
+          TOXENV: oldest
+        linux-py310:
+          # linux unit tests with the oldest python we support
+          IMAGE_NAME: ubuntu-22.04
+          PYTHON_VERSION: 3.10
+          TOXENV: py310
+        linux-cover:
+          # linux unit+cover tests with the newest python we support
+          IMAGE_NAME: ubuntu-22.04
+          TOXENV: cover
+        linux-lint:
+          IMAGE_NAME: ubuntu-22.04
+          TOXENV: lint-posix
+        linux-mypy:
+          IMAGE_NAME: ubuntu-22.04
+          TOXENV: mypy
         linux-integration:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: integration
+        apache-compat:
+          IMAGE_NAME: ubuntu-22.04
+          TOXENV: apache_compat
+        apacheconftest:
+          IMAGE_NAME: ubuntu-22.04
+          TOXENV: apacheconftest-with-pebble
+        nginxroundtrip:
+          IMAGE_NAME: ubuntu-22.04
+          TOXENV: nginxroundtrip
+        validate-changelog:
+          IMAGE_NAME: ubuntu-22.04
+          TOXENV: validate-changelog
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
