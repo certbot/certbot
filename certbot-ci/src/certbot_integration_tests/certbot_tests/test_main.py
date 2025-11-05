@@ -6,7 +6,6 @@ from os.path import join
 import re
 import shutil
 import subprocess
-import time
 from typing import Generator
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
@@ -972,9 +971,6 @@ def test_ocsp_status_live(context: IntegrationTestsContext) -> None:
 
     # OSCP 2: Check live certificate OCSP status (REVOKED)
     context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
-    # Sometimes in oldest tests (using openssl binary and not cryptography), the OCSP status is
-    # not seen immediately by Certbot as invalid. Waiting few seconds solves this transient issue.
-    time.sleep(5)
     stdout, _ = context.certbot(['certificates'])
 
     assert stdout.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)

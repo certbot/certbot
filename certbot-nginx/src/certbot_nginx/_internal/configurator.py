@@ -18,13 +18,8 @@ from typing import Sequence
 from typing import Union
 from typing import cast
 
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-
 from acme import challenges
-from acme import crypto_util as acme_crypto_util
 from certbot import achallenges
-from certbot import crypto_util
 from certbot import errors
 from certbot import util
 from certbot.compat import os
@@ -254,7 +249,7 @@ class NginxConfigurator(common.Configurator):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a certificate.")
 
-        vhosts = self.choose_vhosts(domain, create_if_no_match=True)
+        vhosts = self.choose_or_make_vhosts(domain, key_path, fullchain_path)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
             display_util.notify("Successfully deployed certificate for {} to {}"
@@ -337,48 +332,54 @@ class NginxConfigurator(common.Configurator):
         vhosts = [x for x in [self._select_best_name_match(matches)] if x is not None]
         return vhosts
 
-    def choose_vhosts(self, target_name: str,
-                      create_if_no_match: bool = False) -> list[obj.VirtualHost]:
-        """Chooses a virtual host based on the given domain name.
+    def _choose_vhosts_common(self, target_name: str) -> list[obj.VirtualHost]:
+        if util.is_wildcard_domain(target_name):
+            # Ask user which VHosts to support.
+            return self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
+        else:
+            return self._choose_vhost_single(target_name)
 
-        .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
-            Nginx's server block selection rules preferring blocks that are
-            already SSL.
+    def choose_vhosts(self, target_name: str) -> list[obj.VirtualHost]:
+        """Chooses SSL virtual hosts based on the given domain name.
 
-        .. todo:: This should maybe return list if no obvious answer
-            is presented.
+        If no matching SSL vhosts are found, none are created and an empty list
+        is returned.
 
         :param str target_name: domain name
-        :param bool create_if_no_match: If we should create a new vhost from default
-            when there is no match found. If we can't choose a default, raise a
-            MisconfigurationError.
 
         :returns: ssl vhosts associated with name
         :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
 
         """
-        if util.is_wildcard_domain(target_name):
-            # Ask user which VHosts to support.
-            vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
-        else:
-            vhosts = self._choose_vhost_single(target_name)
+        return [vhost for vhost in self._choose_vhosts_common(target_name) if vhost.ssl]
+
+    def choose_or_make_vhosts(self, target_name: str, key_path: str,
+                              fullchain_path: str) -> list[obj.VirtualHost]:
+        """Chooses or creates SSL virtual hosts based on the given domain name.
+
+        If no matching vhost is found, we attempt to create a new one from the
+        default vhost. If this fails, a MisconfigurationError is raised.
+
+        .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
+            Nginx's server block selection rules preferring blocks that are
+            already SSL.
+
+        :param str target_name: domain name
+        :param str key_path: key to use when creating SSL vhosts
+        :param str fullchain_path: certificates to use when creating SSL vhosts
+
+        :returns: ssl vhosts associated with name
+        :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
+
+        """
+        vhosts = self._choose_vhosts_common(target_name)
         if not vhosts:
-            if create_if_no_match:
-                # result will not be [None] because it errors on failure
-                vhosts = [self._vhost_from_duplicated_default(target_name, True,
-                    str(self.config.https_port))]
-            else:
-                # No matches. Raise a misconfiguration error.
-                raise errors.MisconfigurationError(
-                            ("Cannot find a VirtualHost matching domain %s. "
-                             "In order for Certbot to correctly perform the challenge "
-                             "please add a corresponding server_name directive to your "
-                             "nginx configuration for every domain on your certificate: "
-                             "https://nginx.org/en/docs/http/server_names.html") % (target_name))
-        # Note: if we are enhancing with ocsp, vhost should already be ssl.
+            # result will not be [None] because it errors on failure
+            vhosts = [self._vhost_from_duplicated_default(target_name, True,
+                str(self.config.https_port))]
         for vhost in vhosts:
             if not vhost.ssl:
-                self._make_server_ssl(vhost)
+                self._make_server_ssl(vhost, key_path, fullchain_path)
 
         return vhosts
 
@@ -704,40 +705,16 @@ class NginxConfigurator(common.Configurator):
 
         return util.get_filtered_names(all_names)
 
-    def _get_snakeoil_paths(self) -> tuple[str, str]:
-        """Generate invalid certs that let us create ssl directives for Nginx"""
-        # TODO: generate only once
-        tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
-        le_key = crypto_util.generate_key(
-            key_type='rsa', key_size=2048, key_dir=tmp_dir, keyname="key.pem",
-            strict_permissions=self.config.strict_permissions)
-        assert le_key.file is not None
-        cryptography_key = serialization.load_pem_private_key(le_key.pem, password=None)
-        assert isinstance(cryptography_key, rsa.RSAPrivateKey)
-        cert = acme_crypto_util.make_self_signed_cert(
-            cryptography_key,
-            # we used to use socket.gethostname here, but that sometimes
-            # resulted in strings over 64 characters long which would error
-            # on the validation introduced in
-            # https://github.com/pyca/cryptography/pull/11201. the ".invalid"
-            # TLD comes from RFC2606 (and was also used in the tls-sni-01
-            # challenge in early versions of the ACME spec)
-            domains=['temp-certbot-nginx.invalid']
-        )
-        cert_pem = cert.public_bytes(serialization.Encoding.PEM)
-        cert_file, cert_path = util.unique_file(
-            os.path.join(tmp_dir, "cert.pem"), mode="wb")
-        with cert_file:
-            cert_file.write(cert_pem)
-        return cert_path, le_key.file
-
-    def _make_server_ssl(self, vhost: obj.VirtualHost) -> None:
+    def _make_server_ssl(self, vhost: obj.VirtualHost, key_path: str,
+                         fullchain_path: str) -> None:
         """Make a server SSL.
 
         Make a server SSL by adding new listen and SSL directives.
 
         :param vhost: The vhost to add SSL to.
         :type vhost: :class:`~certbot_nginx._internal.obj.VirtualHost`
+        :param str key_path: key to use for SSL
+        :param str fullchain_path: certificates to use for SSL
 
         """
         https_port = self.config.https_port
@@ -794,12 +771,10 @@ class NginxConfigurator(common.Configurator):
                               'ssl']
                 addr_blocks.append(addr_block)
 
-        snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-
         ssl_block = ([
             *addr_blocks,
-            ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
-            ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+            ['\n    ', 'ssl_certificate', ' ', fullchain_path],
+            ['\n    ', 'ssl_certificate_key', ' ', key_path],
             ['\n    ', 'include', ' ', self.mod_ssl_conf],
             ['\n    ', 'ssl_dhparam', ' ', self.ssl_dhparams],
         ])
@@ -989,6 +964,9 @@ class NginxConfigurator(common.Configurator):
             raise errors.NotSupportedError(f"Invalid chain_path type {type(chain_path)}, "
                                            "expected a str or None.")
         vhosts = self.choose_vhosts(domain)
+        if not vhosts:
+            raise errors.PluginError(
+                "Unable to find corresponding HTTPS host for OCSP stapling.")
         for vhost in vhosts:
             self._enable_ocsp_stapling_single(vhost, chain_path)
 

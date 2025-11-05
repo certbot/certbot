@@ -7,6 +7,7 @@ import typing
 from typing import Literal
 from typing import Optional
 from typing import Union
+import warnings
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -222,6 +223,8 @@ def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
     subject CN. If only one domain is provided no ``subjectAltName``
     extension is used, unless `force_san` is ``True``.
     """
+    warnings.warn("make_self_signed_cert is deprecated and will be removed in "
+                  "an upcoming release", DeprecationWarning)
     assert domains or ips, "Must provide one or more hostnames or IPs for the cert."
 
     builder = x509.CertificateBuilder()

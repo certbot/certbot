@@ -4,9 +4,6 @@ from unittest import mock
 
 import pytest
 
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
-
 from acme import challenges
 from acme import messages
 from certbot import achallenges
@@ -42,7 +39,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         assert (1, 6, 2) == self.config.version
-        assert 15 == len(self.config.parser.parsed)
+        assert 16 == len(self.config.parser.parsed)
 
     @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
     @mock.patch("certbot_nginx._internal.configurator.subprocess.run")
@@ -100,7 +97,8 @@ class NginxConfiguratorTest(util.NginxTest):
             "155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
-             "headers.com", "example.net", "ssl.both.com", 'addr-80.com'}
+             "headers.com", "example.net", "ssl.both.com", "no-listens.com",
+             "addr-80.com"}
 
     def test_supported_enhancements(self):
         assert ['redirect', 'ensure-http-header', 'staple-ocsp'] == \
@@ -136,34 +134,34 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['#', parser.COMMENT]]]] == \
                          parsed[filep]
 
-    def test_choose_vhosts_alias(self):
-        self._test_choose_vhosts_common('alias', 'server_conf')
+    def test_choose_or_make_vhosts_alias(self):
+        self._test_choose_or_make_vhosts_common('alias', 'server_conf')
 
-    def test_choose_vhosts_example_com(self):
-        self._test_choose_vhosts_common('example.com', 'example_conf')
+    def test_choose_or_make_vhosts_example_com(self):
+        self._test_choose_or_make_vhosts_common('example.com', 'example_conf')
 
-    def test_choose_vhosts_localhost(self):
-        self._test_choose_vhosts_common('localhost', 'localhost_conf')
+    def test_choose_or_make_vhosts_localhost(self):
+        self._test_choose_or_make_vhosts_common('localhost', 'localhost_conf')
 
-    def test_choose_vhosts_example_com_uk_test(self):
-        self._test_choose_vhosts_common('example.com.uk.test', 'example_conf')
+    def test_choose_or_make_vhosts_example_com_uk_test(self):
+        self._test_choose_or_make_vhosts_common('example.com.uk.test', 'example_conf')
 
-    def test_choose_vhosts_www_example_com(self):
-        self._test_choose_vhosts_common('www.example.com', 'example_conf')
+    def test_choose_or_make_vhosts_www_example_com(self):
+        self._test_choose_or_make_vhosts_common('www.example.com', 'example_conf')
 
-    def test_choose_vhosts_test_www_example_com(self):
-        self._test_choose_vhosts_common('test.www.example.com', 'foo_conf')
+    def test_choose_or_make_vhosts_test_www_example_com(self):
+        self._test_choose_or_make_vhosts_common('test.www.example.com', 'foo_conf')
 
-    def test_choose_vhosts_abc_www_foo_com(self):
-        self._test_choose_vhosts_common('abc.www.foo.com', 'foo_conf')
+    def test_choose_or_make_vhosts_abc_www_foo_com(self):
+        self._test_choose_or_make_vhosts_common('abc.www.foo.com', 'foo_conf')
 
-    def test_choose_vhosts_www_bar_co_uk(self):
-        self._test_choose_vhosts_common('www.bar.co.uk', 'localhost_conf')
+    def test_choose_or_make_vhosts_www_bar_co_uk(self):
+        self._test_choose_or_make_vhosts_common('www.bar.co.uk', 'localhost_conf')
 
-    def test_choose_vhosts_ipv6_com(self):
-        self._test_choose_vhosts_common('ipv6.com', 'ipv6_conf')
+    def test_choose_or_make_vhosts_ipv6_com(self):
+        self._test_choose_or_make_vhosts_common('ipv6.com', 'ipv6_conf')
 
-    def _test_choose_vhosts_common(self, name, conf):
+    def _test_choose_or_make_vhosts_common(self, name, conf):
         conf_names = {'localhost_conf': {'localhost', r'~^(www\.)?(example|bar)\.'},
                  'server_conf': {'somename', 'another.alias', 'alias'},
                  'example_conf': {'.example.com', 'example.*'},
@@ -181,7 +179,7 @@ class NginxConfiguratorTest(util.NginxTest):
                    'ipv6.com': "etc_nginx/sites-enabled/ipv6.com"}
         conf_path = {key: os.path.normpath(value) for key, value in conf_path.items()}
 
-        vhost = self.config.choose_vhosts(name)[0]
+        vhost = self.config.choose_or_make_vhosts(name, 'key.pem', 'fullchain.pem')[0]
         path = os.path.relpath(vhost.filep, self.temp_dir)
 
         assert conf_names[conf] == vhost.names
@@ -192,41 +190,58 @@ class NginxConfiguratorTest(util.NginxTest):
             # Make sure that we have SSL enabled also for IPv6 addr
             assert any(True for x in vhost.addrs if x.ssl and x.ipv6)
 
-    def test_choose_vhosts_bad(self):
+    def test_choose_or_make_vhosts_bad(self):
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',
                        '69.255.225.155']
 
         for name in bad_results:
             with self.subTest(name=name):
                 with pytest.raises(errors.MisconfigurationError):
-                    self.config.choose_vhosts(name)
+                    self.config.choose_or_make_vhosts(name, 'key.pem', 'fullchain.pem')
 
-    def test_choose_vhosts_keep_ip_address(self):
+    def test_choose_or_make_vhosts_keep_ip_address(self):
+        # let's use a simple helper function to set key and fullchain values
+        def choose_or_make_vhosts(domain):
+            return self.config.choose_or_make_vhosts(domain, 'key.pem', 'fullchain.pem')
+
         # no listen on port 80
         # listen       69.50.225.155:9000;
         # listen       127.0.0.1;
-        vhost = self.config.choose_vhosts('example.com')[0]
+        vhost = choose_or_make_vhosts('example.com')[0]
         assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
 
         # no listens at all
-        vhost = self.config.choose_vhosts('headers.com')[0]
+        vhost = choose_or_make_vhosts('no-listens.com')[0]
         assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
         assert obj.Addr.fromstring("80") in vhost.addrs
 
         # blank addr listen on 80 should result in blank addr ssl
         # listen 80;
         # listen [::]:80;
-        vhost = self.config.choose_vhosts('ipv6.com')[0]
+        vhost = choose_or_make_vhosts('ipv6.com')[0]
         assert obj.Addr.fromstring("5001 ssl") in vhost.addrs
         assert obj.Addr.fromstring("[::]:5001 ssl") in vhost.addrs
 
         # listen on 80 with ip address should result in copied addr
         # listen 1.2.3.4:80;
         # listen [1:20::300]:80;
-        vhost = self.config.choose_vhosts('addr-80.com')[0]
+        vhost = choose_or_make_vhosts('addr-80.com')[0]
         assert obj.Addr.fromstring("1.2.3.4:5001 ssl") in vhost.addrs
         assert obj.Addr.fromstring("[1:20::300]:5001 ssl ipv6only=on") in vhost.addrs
 
+    def test_choose_or_make_vhost_ssl_directives(self):
+        conf_path = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.choose_or_make_vhosts('example.com', 'my-key.pem', 'my-fullchain.pem')
+        self.config.save()
+        self.config.parser.load()
+        parsed_conf = util.filter_comments(self.config.parser.parsed[conf_path])
+
+        expected_directives = [
+            ['ssl_certificate', 'my-fullchain.pem'],
+            ['ssl_certificate_key', 'my-key.pem'],
+        ]
+        for directive in expected_directives:
+            assert util.contains_at_depth(parsed_conf, directive, 2)
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
@@ -237,14 +252,8 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_ipv6only_detection(self):
         self.config.version = (1, 3, 1)
 
-        self.config.deploy_cert(
-            "ipv6.com",
-            "example/cert.pem",
-            "example/key.pem",
-            "example/chain.pem",
-            "example/fullchain.pem")
-
-        for addr in self.config.choose_vhosts("ipv6.com")[0].addrs:
+        vhost = self.config.choose_or_make_vhosts("ipv6.com", "key.pem", "fullchain.pem")[0]
+        for addr in vhost.addrs:
             assert not addr.ipv6only
 
     def test_more_info(self):
@@ -569,16 +578,6 @@ class NginxConfiguratorTest(util.NginxTest):
         with pytest.raises(errors.PluginError):
             self.config.save()
 
-    def test_get_snakeoil_paths(self):
-        # pylint: disable=protected-access
-        cert, key = self.config._get_snakeoil_paths()
-        assert os.path.exists(cert)
-        assert os.path.exists(key)
-        with open(cert, "rb") as cert_file:
-            x509.load_pem_x509_certificate(cert_file.read())
-        with open(key, "rb") as key_file:
-            serialization.load_pem_private_key(key_file.read(), password=None)
-
     def test_redirect_enhance(self):
         # Test that we successfully add a redirect when there is
         # a listen directive
@@ -661,14 +660,16 @@ class NginxConfiguratorTest(util.NginxTest):
             generated_conf
 
     def test_http_header_hsts(self):
-        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
-        self.config.enhance("www.example.com", "ensure-http-header",
+        # we need to select an SSL enabled vhost here for the HSTS enhancement
+        example_conf = self.config.parser.abs_path('sites-enabled/migration.com')
+        self.config.enhance("migration.com", "ensure-http-header",
                             "Strict-Transport-Security")
         expected = ['add_header', 'Strict-Transport-Security', '"max-age=31536000"', 'always']
         generated_conf = self.config.parser.parsed[example_conf]
         assert util.contains_at_depth(generated_conf, expected, 2) is True
 
     def test_multiple_headers_hsts(self):
+        # we need to select an SSL enabled vhost here for the HSTS enhancement
         headers_conf = self.config.parser.abs_path('sites-enabled/headers.com')
         self.config.enhance("headers.com", "ensure-http-header",
                             "Strict-Transport-Security")
@@ -677,10 +678,11 @@ class NginxConfiguratorTest(util.NginxTest):
         assert util.contains_at_depth(generated_conf, expected, 2) is True
 
     def test_http_header_hsts_twice(self):
-        self.config.enhance("www.example.com", "ensure-http-header",
+        # we need to select an SSL enabled vhost here for the HSTS enhancement
+        self.config.enhance("migration.com", "ensure-http-header",
                             "Strict-Transport-Security")
         with pytest.raises(errors.PluginEnhancementAlreadyPresent):
-            self.config.enhance("www.example.com",
+            self.config.enhance("migration.com",
             "ensure-http-header", "Strict-Transport-Security")
 
     @mock.patch('certbot_nginx._internal.obj.VirtualHost.contains_list')
@@ -724,16 +726,20 @@ class NginxConfiguratorTest(util.NginxTest):
             self.config.enhance("www.example.com", "staple-ocsp", None)
 
     def test_staple_ocsp_internal_error(self):
-        self.config.enhance("www.example.com", "staple-ocsp", "chain_path")
+        # we need to select an SSL enabled vhost here for the OCSP stapling
+        # enhancement
+        self.config.enhance("sslon.com", "staple-ocsp", "chain_path")
         # error is raised because the server block has conflicting directives
         with pytest.raises(errors.PluginError):
-            self.config.enhance("www.example.com", "staple-ocsp", "different_path")
+            self.config.enhance("sslon.com", "staple-ocsp", "different_path")
 
     def test_staple_ocsp(self):
         chain_path = "example/chain.pem"
-        self.config.enhance("www.example.com", "staple-ocsp", chain_path)
+        # we need to select an SSL enabled vhost here for the OCSP stapling
+        # enhancement
+        self.config.enhance("sslon.com", "staple-ocsp", chain_path)
 
-        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        example_conf = self.config.parser.abs_path('sites-enabled/sslon.com')
         generated_conf = self.config.parser.parsed[example_conf]
 
         assert util.contains_at_depth(
@@ -960,8 +966,10 @@ class NginxConfiguratorTest(util.NginxTest):
 
     @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
     def test_enhance_wildcard_redirect_or_ocsp_no_install(self, mock_dialog):
+        # we need to select an SSL enabled vhost here for the OCSP stapling
+        # enhancement
         vhost = [x for x in self.config.parser.get_vhosts()
-            if 'summer.com' in x.names][0]
+                 if 'geese.com' in x.names][0]
         mock_dialog.return_value = [vhost]
         self.config.enhance("*.com", "staple-ocsp", "example/chain.pem")
         assert mock_dialog.called is True

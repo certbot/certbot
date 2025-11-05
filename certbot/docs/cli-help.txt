@@ -142,7 +142,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/5.0.0 (certbot;
+                        "". (default: CertbotACMEClient/5.1.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -324,6 +324,20 @@ run:
 certonly:
   Options for modifying how a certificate is obtained
 
+  --deploy-hook DEPLOY_HOOK
+                        Command to be run in a shell once for each
+                        successfully issued certificate, including on
+                        subsequent renewals. Unless --disable-hook-validation
+                        is used, the command’s first word must be the absolute
+                        pathname of an executable or one found via the PATH
+                        environment variable. For this command, the shell
+                        variable $RENEWED_LINEAGE will point to the config
+                        live subdirectory (for example,
+                        "/etc/letsencrypt/live/example.com") containing the
+                        new certificates and keys; the shell variable
+                        $RENEWED_DOMAINS will contain a space-delimited list
+                        of renewed certificate domains (for example,
+                        "example.com www.example.com") (default: None)
   --csr CSR             Path to a Certificate Signing Request (CSR) in DER or
                         PEM format. Currently --csr only works with the
                         'certonly' subcommand. (default: None)
@@ -360,19 +374,6 @@ renew:
                         an attempt was made to obtain/renew a certificate. If
                         multiple renewed certificates have identical post-
                         hooks, only one will be run. (default: None)
-  --deploy-hook DEPLOY_HOOK
-                        Command to be run in a shell once for each
-                        successfully issued certificate. Unless --disable-
-                        hook-validation is used, the command’s first word must
-                        be the absolute pathname of an executable or one found
-                        via the PATH environment variable. For this command,
-                        the shell variable $RENEWED_LINEAGE will point to the
-                        config live subdirectory (for example,
-                        "/etc/letsencrypt/live/example.com") containing the
-                        new certificates and keys; the shell variable
-                        $RENEWED_DOMAINS will contain a space-delimited list
-                        of renewed certificate domains (for example,
-                        "example.com www.example.com") (default: None)
   --disable-hook-validation
                         Ordinarily the commands specified for --pre-
                         hook/--post-hook/--deploy-hook will be checked for

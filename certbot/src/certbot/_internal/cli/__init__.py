@@ -437,9 +437,9 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[st
         default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
         help=argparse.SUPPRESS)
     helpful.add(
-        ["renew", "reconfigure"], "--deploy-hook", action=_DeployHookAction,
+        ["certonly", "renew", "reconfigure", "run"], "--deploy-hook", action=_DeployHookAction,
         help='Command to be run in a shell once for each successfully'
-        ' issued certificate.'
+        ' issued certificate, including on subsequent renewals.'
         ' Unless --disable-hook-validation is used, the command’s first word'
         ' must be the absolute pathname of an executable or one found via the'
         ' PATH environment variable.'
