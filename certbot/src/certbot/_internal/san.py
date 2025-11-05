@@ -137,6 +137,10 @@ def split(sans: Iterable[SAN]) -> tuple[list[DNSName], list[IPAddress]]:
                 raise TypeError(f"SAN of type {type(s)}")
     return domains, ip_addresses
 
+def join(dns_names: Iterable[DNSName], ip_addresses: Iterable[IPAddress]) -> list[SAN]:
+    """Combine a list of DNS names and a list of IP addresses."""
+    return list(dns_names) + list(ip_addresses)
+
 def display(sans: Iterable[SAN]) -> str:
     """Return the list of SANs in string form, separated by comma and space."""
     return ", ".join(map(str, sans))

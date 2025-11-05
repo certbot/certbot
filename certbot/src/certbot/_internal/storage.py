@@ -937,7 +937,8 @@ class RenewableCert(interfaces.RenewableCert):
         with open(target, "rb") as f:
             cert_bytes = f.read()
         x509_cert = x509.load_pem_x509_certificate(cert_bytes)
-        return san.from_x509(x509_cert.subject, x509_cert.extensions)
+        dns_names, ip_addrs = san.from_x509(x509_cert.subject, x509_cert.extensions)
+        return cast(list[san.SAN], dns_names + ip_addrs)
 
     def ocsp_revoked(self, version: int) -> bool:
         """Is the specified cert version revoked according to OCSP?

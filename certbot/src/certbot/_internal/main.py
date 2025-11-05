@@ -1496,12 +1496,12 @@ def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
     """
     util_csr, _ = config.actual_csr
     x509_req = x509.load_pem_x509_csr(util_csr.data)
-    csr_sans = san.from_x509(x509_req.subject, x509_req.extensions)
+    domains, ip_addresses = san.from_x509(x509_req.subject, x509_req.extensions)
     display_util.notify(
         "{action} for {sans}".format(
             action="Simulating a certificate request" if config.dry_run else
                     "Requesting a certificate",
-            sans=internal_display_util.summarize_sans(csr_sans)
+            sans=internal_display_util.summarize_sans(san.join(domains, ip_addresses))
         )
     )
     cert, chain = le_client.obtain_certificate_from_csr(util_csr)
