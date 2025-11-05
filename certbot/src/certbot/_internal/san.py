@@ -153,7 +153,6 @@ def from_x509(subject: x509.Name, exts: x509.Extensions) -> tuple[list[DNSName],
     :type exts: `cryptography.x509.Extensions`
 
     :returns: Tuple containing a list of DNSNames and a list of IPAddresses
-    :rtype: `list` of `SAN`
     """
     dns_names, ip_addresses = acme_crypto_util.get_identifiers_from_x509(subject, exts)
     return [DNSName(d) for d in dns_names], [IPAddress(i) for i in ip_addresses]

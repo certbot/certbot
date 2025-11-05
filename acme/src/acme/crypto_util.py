@@ -139,7 +139,6 @@ def get_identifiers_from_x509(
     :type exts: `cryptography.x509.Extensions`
 
     :returns: Tuple containing DNS names and IP addresses.
-    :rtype: `list` of `str`
     """
     # We know these are always `str` because `bytes` is only possible for
     # other OIDs.
