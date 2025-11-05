@@ -171,7 +171,7 @@ class RunTest(test_util.ConfigTestCase):
         self.mock_auth.return_value = mock.Mock()
         self.mock_find_cert.return_value = True, None
         self._call()
-        self.mock_success_installation.assert_called_once_with([san.DNSName(self.domain)])
+        self.mock_success_installation.assert_called_once_with([self.domain])
         self.mock_report_next_steps.assert_called_once_with(mock.ANY, None, mock.ANY,
             new_or_renewed_cert=True)
 
@@ -179,13 +179,13 @@ class RunTest(test_util.ConfigTestCase):
         self.mock_auth.return_value = mock.Mock()
         self.mock_find_cert.return_value = False, mock.Mock()
         self._call()
-        self.mock_success_installation.assert_called_once_with([san.DNSName(self.domain)])
+        self.mock_success_installation.assert_called_once_with([self.domain])
 
     def test_renewal_success(self):
         self.mock_auth.return_value = mock.Mock()
         self.mock_find_cert.return_value = True, mock.Mock()
         self._call()
-        self.mock_success_renewal.assert_called_once_with([san.DNSName(self.domain)])
+        self.mock_success_renewal.assert_called_once_with([self.domain])
 
     @mock.patch('certbot._internal.main.plug_sel.choose_configurator_plugins')
     def test_run_enhancement_not_supported(self, mock_choose):
@@ -373,9 +373,9 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
     @mock.patch('certbot.display.ops.choose_names')
     def test_display_ops(self, mock_choose_names):
         mock_config = mock.Mock(domains=None, ip_addresses=None, certname=None)
-        mock_choose_names.return_value = "domainname"
+        mock_choose_names.return_value = ["example.com"]
         # pylint: disable=protected-access
-        assert main._find_sans_or_certname(mock_config, None) == ("domainname", None)
+        assert main._find_sans_or_certname(mock_config, None) == ([san.DNSName("example.com")], None)
 
     @mock.patch('certbot.display.ops.choose_names')
     def test_no_results(self, mock_choose_names):

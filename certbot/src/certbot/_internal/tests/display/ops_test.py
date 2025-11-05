@@ -10,7 +10,6 @@ import pytest
 from acme import messages
 from certbot import errors
 from certbot._internal import account
-from certbot._internal import san
 from certbot._internal.display import obj as display_obj
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -194,7 +193,7 @@ class ChooseNamesTest(unittest.TestCase):
 
         actual_doms = self._call(self.mock_install)
         assert mock_util().input.call_count == 1
-        assert actual_doms == [san.DNSName(domain)]
+        assert actual_doms == [domain]
 
     def test_sort_names_trivial(self):
         from certbot.display.ops import _sort_names
@@ -203,16 +202,16 @@ class ChooseNamesTest(unittest.TestCase):
         assert _sort_names([]) == []
 
         #sort simple domains
-        some_domains = [san.DNSName("ex.com"), san.DNSName("zx.com"), san.DNSName("ax.com")]
-        assert _sort_names(some_domains) == [san.DNSName("ax.com"), san.DNSName("ex.com"), san.DNSName("zx.com")]
+        some_domains = ["ex.com", "zx.com", "ax.com"]
+        assert _sort_names(some_domains) == ["ax.com", "ex.com", "zx.com"]
 
         #Sort subdomains of a single domain
         domain = ".ex.com"
         unsorted_short = ["e", "a", "z", "y"]
-        unsorted_long = [san.DNSName(us + domain) for us in unsorted_short]
+        unsorted_long = [us + domain for us in unsorted_short]
 
         sorted_short = sorted(unsorted_short)
-        sorted_long = [san.DNSName(us + domain) for us in sorted_short]
+        sorted_long = [us + domain for us in sorted_short]
 
         assert _sort_names(unsorted_long) == sorted_long
 
@@ -227,11 +226,11 @@ class ChooseNamesTest(unittest.TestCase):
         to_sort = []
         for short in unsorted_short:
             for domain in unsorted_domains:
-                to_sort.append(san.DNSName(short+domain))
+                to_sort.append(short+domain)
         sortd = []
         for domain in sorted(unsorted_domains):
             for short in sorted_short:
-                sortd.append(san.DNSName(short+domain))
+                sortd.append(short+domain)
         assert _sort_names(to_sort) == sortd
 
 
@@ -241,7 +240,7 @@ class ChooseNamesTest(unittest.TestCase):
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
 
         names = self._call(self.mock_install)
-        assert names == [san.DNSName("example.com")]
+        assert names == ["example.com"]
         assert mock_util().checklist.call_count == 1
 
     @test_util.patch_display_util()
@@ -249,7 +248,7 @@ class ChooseNamesTest(unittest.TestCase):
         self.mock_install.get_all_names.return_value = {"example.com"}
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
         names = self._call(self.mock_install, "Custom")
-        assert names == [san.DNSName("example.com")]
+        assert names == ["example.com"]
         assert mock_util().checklist.call_count == 1
         assert mock_util().checklist.call_args[0][0] == "Custom"
 
@@ -275,7 +274,7 @@ class ChooseNamesTest(unittest.TestCase):
                      "justtld", "*.wildcard.com"]
         all_invalid = ["öóòps.net", "uniçodé.com"]
         two_valid = ["example.com", "úniçøde.com", "also.example.com"]
-        assert get_valid_domains(all_valid) == list(map(san.DNSName, all_valid))
+        assert get_valid_domains(all_valid) == all_valid
         assert get_valid_domains(all_invalid) == []
         assert len(get_valid_domains(two_valid)) == 2
 
@@ -303,8 +302,8 @@ class ChooseNamesTest(unittest.TestCase):
                                            "justtld,"
                                            "valid.example.com"))
         assert _choose_names_manually() == \
-                         [san.DNSName("example.com"), san.DNSName("under_score.example.com"),
-                          san.DNSName("justtld"), san.DNSName("valid.example.com")]
+                         ["example.com", "under_score.example.com",
+                          "justtld", "valid.example.com"]
 
     @test_util.patch_display_util()
     def test_choose_manually_retry(self, mock_util):

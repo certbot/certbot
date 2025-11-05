@@ -519,7 +519,7 @@ def _find_sans_or_certname(config: configuration.NamespaceConfig,
     # that certname might not have existed, or there was a problem.
     # try to get domains from the user.
     if not sans:
-        sans = cast(list[san.SAN], display_ops.choose_names(installer, question))
+        sans = san.guess(display_ops.choose_names(installer, question))
 
     if not sans:
         raise errors.Error("Please specify --domains, --ip-address, or --installer that "
@@ -1456,10 +1456,11 @@ def run(config: configuration.NamespaceConfig,
         if enhancements.are_requested(config) and new_lineage:
             enhancements.enable(new_lineage, [d.dns_name for d in domains], installer, config)
 
+        sans_strs = list(map(str, sans))
         if lineage is None or not should_get_cert:
-            display_ops.success_installation(sans)
+            display_ops.success_installation(sans_strs)
         else:
-            display_ops.success_renewal(sans)
+            display_ops.success_renewal(sans_strs)
     except errors.Error as e:
         installer_err = e
     finally:

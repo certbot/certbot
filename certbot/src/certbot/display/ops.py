@@ -10,7 +10,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot._internal import account
-from certbot._internal import san
 from certbot._internal.display import util as internal_display_util
 from certbot.compat import os
 from certbot.display import util as display_util
@@ -81,10 +80,8 @@ def choose_values(values: list[str], question: Optional[str] = None) -> list[str
 
 
 def choose_names(installer: Optional[interfaces.Installer],
-                 question: Optional[str] = None) -> list[san.DNSName]:
+                 question: Optional[str] = None) -> list[str]:
     """Display screen to select domains to validate.
-
-    Only returns domain names, not IP addresses, due to entanglement with the --domains CLI flag.
 
     :param installer: An installer object
     :type installer: :class:`certbot.interfaces.Installer`
@@ -106,13 +103,13 @@ def choose_names(installer: Optional[interfaces.Installer],
     if not names:
         return _choose_names_manually()
 
-    code, filtered_names = _filter_names(names, question)
-    if code == display_util.OK and filtered_names:
-        return filtered_names
+    code, names = _filter_names(names, question)
+    if code == display_util.OK and names:
+        return names
     return []
 
 
-def get_valid_domains(domains: Iterable[str]) -> list[san.DNSName]:
+def get_valid_domains(domains: Iterable[str]) -> list[str]:
     """Helper method for choose_names that implements basic checks
      on domain names
 
@@ -120,16 +117,16 @@ def get_valid_domains(domains: Iterable[str]) -> list[san.DNSName]:
     :return: List of valid domains
     :rtype: list
     """
-    valid_domains: list[san.DNSName] = []
+    valid_domains: list[str] = []
     for domain in domains:
         try:
-            valid_domains.append(san.DNSName(domain))
+            valid_domains.append(util.enforce_domain_sanity(domain))
         except errors.ConfigurationError:
             continue
     return valid_domains
 
 
-def _sort_names(FQDNs: Iterable[san.DNSName]) -> list[san.DNSName]:
+def _sort_names(FQDNs: Iterable[str]) -> list[str]:
     """Sort FQDNs by SLD (and if many, by their subdomains)
 
     :param list FQDNs: list of domain names
@@ -137,14 +134,12 @@ def _sort_names(FQDNs: Iterable[san.DNSName]) -> list[san.DNSName]:
     :returns: Sorted list of domain names
     :rtype: list
     """
-    return sorted(FQDNs, key=lambda fqdn: fqdn.dns_name.split('.')[::-1][1:])
+    return sorted(FQDNs, key=lambda fqdn: fqdn.split('.')[::-1][1:])
 
 
-def _filter_names(names: Iterable[san.DNSName],
-                  override_question: Optional[str] = None) -> tuple[str, list[san.DNSName]]:
+def _filter_names(names: Iterable[str],
+                  override_question: Optional[str] = None) -> tuple[str, list[str]]:
     """Determine which names the user would like to select from a list.
-
-    Only handles domain names, not IP addresses, due to entanglement with the --domains CLI flag.
 
     :param list names: domain names
 
@@ -163,16 +158,13 @@ def _filter_names(names: Iterable[san.DNSName],
             "Which names would you like to activate HTTPS for?\n"
             "We recommend selecting either all domains, or all domains in a VirtualHost/server "
             "block.")
-    sorted_name_strs = list(map(str, sorted_names))
-    code, checked_names = display_util.checklist(
-        question, tags=sorted_name_strs, cli_flag="--domains", force_interactive=True)
-    return code, [san.DNSName(s) for s in checked_names]
+    code, names = display_util.checklist(
+        question, tags=sorted_names, force_interactive=True)
+    return code, [str(s) for s in names]
 
 
-def _choose_names_manually(prompt_prefix: str = "") -> list[san.DNSName]:
+def _choose_names_manually(prompt_prefix: str = "") -> list[str]:
     """Manually input names for those without an installer.
-
-    Only returns DNS names for now, due to entanglement with the --domains CLI flag.
 
     :param str prompt_prefix: string to prepend to prompt for domains
 
@@ -198,10 +190,9 @@ def _choose_names_manually(prompt_prefix: str = "") -> list[san.DNSName]:
                 "supported.{0}{0}Would you like to re-enter the "
                 "names?{0}").format(os.linesep)
 
-        checked_domains = []
-        for domain in domain_list:
+        for i, domain in enumerate(domain_list):
             try:
-                checked_domains.append(san.DNSName(domain))
+                domain_list[i] = util.enforce_domain_sanity(domain)
             except errors.ConfigurationError as e:
                 invalid_domains[domain] = str(e)
 
@@ -222,26 +213,26 @@ def _choose_names_manually(prompt_prefix: str = "") -> list[san.DNSName]:
             if retry:
                 return _choose_names_manually()
         else:
-            return checked_domains
+            return domain_list
     return []
 
 
-def success_installation(sans: list[san.SAN]) -> None:
+def success_installation(domains: list[str]) -> None:
     """Display a box confirming the installation of HTTPS.
 
-    :param list sans: domain names and/or IP addresses which were enabled
+    :param list domains: domain names which were enabled
 
     """
     display_util.notify(
         "Congratulations! You have successfully enabled HTTPS on {0}"
-        .format(_gen_https_names(sans))
+        .format(_gen_https_names(domains))
     )
 
 
-def success_renewal(unused_sans: list[san.SAN]) -> None:
+def success_renewal(unused_domains: list[str]) -> None:
     """Display a box confirming the renewal of an existing certificate.
 
-    :param list unused_sans: domain names and/or IP addresses which were renewed
+    :param list domains: domain names which were renewed
 
     """
     display_util.notify(
@@ -280,23 +271,23 @@ def report_executed_command(command_name: str, returncode: int, stdout: str, std
         logger.warning("%s ran with error output:\n%s", command_name, indent(err_s, ' '))
 
 
-def _gen_https_names(sans: list[san.SAN]) -> str:
+def _gen_https_names(domains: list[str]) -> str:
     """Returns a string of the https domains.
 
     Domains are formatted nicely with ``https://`` prepended to each.
 
-    :param list sans: domains and/or IP addresses
+    :param list domains: Each domain is a 'str'
 
     """
-    if len(sans) == 1:
-        return "https://{0}".format(sans[0])
-    elif len(sans) == 2:
-        return f"https://{sans[0]} and https://{sans[1]}"
-    elif len(sans) > 2:
+    if len(domains) == 1:
+        return "https://{0}".format(domains[0])
+    elif len(domains) == 2:
+        return "https://{dom[0]} and https://{dom[1]}".format(dom=domains)
+    elif len(domains) > 2:
         return "{0}{1}{2}".format(
-            ", ".join("https://%s" % s for s in sans[:-1]),
+            ", ".join("https://%s" % dom for dom in domains[:-1]),
             ", and https://",
-            sans[-1])
+            domains[-1])
 
     return ""
 
