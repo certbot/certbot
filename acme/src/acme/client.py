@@ -121,18 +121,12 @@ class ClientV2:
         :rtype: OrderResource
         """
         csr = x509.load_pem_x509_csr(csr_pem)
-        dnsNames = crypto_util.get_names_from_subject_and_extensions(csr.subject, csr.extensions)
-        try:
-            san_ext = csr.extensions.get_extension_for_class(x509.SubjectAlternativeName)
-        except x509.ExtensionNotFound:
-            ipNames = []
-        else:
-            ipNames = san_ext.value.get_values_for_type(x509.IPAddress)
+        dns_names, ip_addrs  = crypto_util.get_identifiers_from_x509(csr.subject, csr.extensions)
         identifiers = []
-        for name in dnsNames:
+        for name in dns_names:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
                 value=name))
-        for ip in ipNames:
+        for ip in ip_addrs:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_IP,
                 value=str(ip)))
         if profile is None:

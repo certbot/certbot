@@ -112,7 +112,7 @@ def make_csr(
 def get_names_from_subject_and_extensions(
     subject: x509.Name, exts: x509.Extensions
 ) -> list[str]:
-    """Gets all DNS SAN names as well as the first Common Name from subject.
+    """Gets all DNS SANs as well as the first Common Name from subject.
 
     :param subject: Name of the x509 object, which may include Common Name
     :type subject: `cryptography.x509.Name`
@@ -121,6 +121,24 @@ def get_names_from_subject_and_extensions(
 
     :returns: List of DNS Subject Alternative Names and first Common Name
     :rtype: `list` of `str`
+    """
+    dns_names, _ = get_identifiers_from_x509(subject, exts)
+    return dns_names
+
+
+def get_identifiers_from_x509(
+    subject: x509.Name, exts: x509.Extensions
+) -> tuple[list[str], list[str]]:
+    """Gets all DNS and/or IP address SANs as well as the first Common Name from subject.
+
+    The CN will be first in the list of DNS names, if present.
+
+    :param subject: Name of the x509 object, which may include Common Name
+    :type subject: `cryptography.x509.Name`
+    :param exts: Extensions of the x509 object, which may include SANs
+    :type exts: `cryptography.x509.Extensions`
+
+    :returns: Tuple containing DNS names and IP addresses.
     """
     # We know these are always `str` because `bytes` is only possible for
     # other OIDs.
@@ -132,15 +150,17 @@ def get_names_from_subject_and_extensions(
         san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
     except x509.ExtensionNotFound:
         dns_names = []
+        ip_addresses = []
     else:
         dns_names = san_ext.value.get_values_for_type(x509.DNSName)
+        ip_addresses = [str(ip) for ip in san_ext.value.get_values_for_type(x509.IPAddress)]
 
     if not cns:
-        return dns_names
+        return dns_names, ip_addresses
     else:
         # We only include the first CN, if there are multiple. This matches
         # the behavior of the previous implementation using pyOpenSSL.
-        return [cns[0]] + [d for d in dns_names if d != cns[0]]
+        return [cns[0]] + [d for d in dns_names if d != cns[0]], ip_addresses
 
 
 def _cryptography_cert_or_req_san(
