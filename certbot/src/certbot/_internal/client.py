@@ -399,9 +399,8 @@ class Client:
         elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':
             key_size = self.config.rsa_key_size
 
-        domains, ip_addresses = san.split(sans)
+        domains, _ = san.split(sans)
         domains_str = [d.dns_name for d in domains]
-        ip_addresses_typed = [i.ip_address for i in ip_addresses]
 
         # Create CSR from names
         if self.config.dry_run:
@@ -417,7 +416,7 @@ class Client:
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
                                key.pem, domains_str, self.config.must_staple,
-                               ipaddrs=ip_addresses_typed))
+                               ))
         else:
             key = key or crypto_util.generate_key(
                 key_size=key_size,
@@ -427,8 +426,7 @@ class Client:
                 strict_permissions=self.config.strict_permissions,
             )
             csr = crypto_util.generate_csr(
-                key, domains_str, None, self.config.must_staple, self.config.strict_permissions,
-                ipaddrs=ip_addresses_typed)
+                key, domains_str, None, self.config.must_staple, self.config.strict_permissions)
 
         try:
             orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)

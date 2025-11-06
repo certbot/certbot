@@ -380,7 +380,7 @@ class ClientTest(ClientTestCommon):
             strict_permissions=True,
         )
         mock_crypto_util.generate_csr.assert_called_once_with(
-            mock.sentinel.key, self.eg_domains, None, False, True, ipaddrs=[])
+            mock.sentinel.key, self.eg_domains, None, False, True)
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
             self.eg_order.fullchain_pem)
 
@@ -518,8 +518,8 @@ class ClientTest(ClientTestCommon):
         assert mock_crypto_util.generate_key.call_count == 2
         successful_domains = [d for d in self.eg_domains if d != 'example.com']
         mock_crypto_util.generate_csr.assert_has_calls([
-            mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions, ipaddrs=[]),
-            mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions, ipaddrs=[])])
+            mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions),
+            mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions)])
         assert mock_crypto_util.cert_and_chain_from_fullchain.call_count == 1
 
     @mock.patch("certbot._internal.client.crypto_util")
@@ -610,8 +610,8 @@ class ClientTest(ClientTestCommon):
         successful_domains = [d for d in self.eg_domains if d != 'example.com']
         assert mock_crypto_util.generate_key.call_count == 2
         mock_crypto_util.generate_csr.assert_has_calls([
-            mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions, ipaddrs=[]),
-            mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions, ipaddrs=[])])
+            mock.call(key, self.eg_domains, None, self.config.must_staple, self.config.strict_permissions),
+            mock.call(key, successful_domains, None, self.config.must_staple, self.config.strict_permissions)])
         assert mock_crypto_util.cert_and_chain_from_fullchain.call_count == 1
 
     @mock.patch("certbot._internal.client.crypto_util")
@@ -690,7 +690,7 @@ class ClientTest(ClientTestCommon):
         # Assumes all of eg_sans are DNSNames.
         eg_domains = list(map(str, self.eg_sans))
         mock_acme_crypto.make_csr.assert_called_once_with(
-            mock.sentinel.key_pem, eg_domains, self.config.must_staple, ipaddrs=[])
+            mock.sentinel.key_pem, eg_domains, self.config.must_staple)
         mock_crypto.generate_key.assert_not_called()
         mock_crypto.generate_csr.assert_not_called()
         assert mock_crypto.cert_and_chain_from_fullchain.call_count == 1
