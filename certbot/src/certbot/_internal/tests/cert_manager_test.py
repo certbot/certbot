@@ -333,7 +333,7 @@ class LineageForCertnameTest(BaseCertManagerTest):
 
 
 class DomainsForCertnameTest(BaseCertManagerTest):
-    """Tests for certbot._internal.cert_manager.identifiers_for_certname"""
+    """Tests for certbot._internal.cert_manager.sans_for_certname"""
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')

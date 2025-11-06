@@ -295,7 +295,7 @@ class CertonlyTest(unittest.TestCase):
     @mock.patch('certbot._internal.cert_manager.lineage_for_certname')
     @mock.patch('certbot._internal.main._report_new_cert')
     def test_find_lineage_for_sans_new_certname(self, mock_report_cert,
-                                                mock_lineage, mock_choose_names, mock_identifiers_for_certname, unused_mock_report_next_steps):
+                                                mock_lineage, mock_choose_names, mock_sans_for_certname, unused_mock_report_next_steps):
         mock_lineage.return_value = None
 
         # no lineage with this name but we specified domains so create a new cert
@@ -306,7 +306,7 @@ class CertonlyTest(unittest.TestCase):
 
         # no lineage with this name and we didn't give domains
         mock_choose_names.return_value = ["somename"]
-        mock_identifiers_for_certname.return_value = None
+        mock_sans_for_certname.return_value = None
         self._call(('certonly --webroot --cert-name example.com --no-directory-hooks').split())
         assert mock_choose_names.called is True
 
@@ -367,12 +367,12 @@ class CertonlyTest(unittest.TestCase):
                     '-i standalone -d example.com').split())
 
 
-class FindDomainsOrCertnameTest(unittest.TestCase):
+class FindSansOrCertnameTest(unittest.TestCase):
     """Tests for certbot._internal.main._find_sans_or_certname."""
 
     @mock.patch('certbot.display.ops.choose_names')
     def test_display_ops(self, mock_choose_names):
-        mock_config = mock.Mock(domains=None, ip_addresses=None, certname=None)
+        mock_config = mock.Mock(domains=None, certname=None)
         mock_choose_names.return_value = ["example.com"]
         # pylint: disable=protected-access
         assert main._find_sans_or_certname(mock_config, None) == ([san.DNSName("example.com")], None)
