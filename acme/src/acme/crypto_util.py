@@ -13,27 +13,15 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448, types
 from cryptography.hazmat.primitives.serialization import Encoding
-from OpenSSL import crypto
 
 logger = logging.getLogger(__name__)
 
 
-class Format(enum.IntEnum):
+class Format(enum.Enum):
     """File format to be used when parsing or serializing X.509 structures.
-
-    Backwards compatible with the `FILETYPE_ASN1` and `FILETYPE_PEM` constants
-    from pyOpenSSL.
     """
-    DER = crypto.FILETYPE_ASN1
-    PEM = crypto.FILETYPE_PEM
-
-    def to_cryptography_encoding(self) -> Encoding:
-        """Converts the Format to the corresponding cryptography `Encoding`.
-        """
-        if self == Format.DER:
-            return Encoding.DER
-        else:
-            return Encoding.PEM
+    DER = Encoding.DER
+    PEM = Encoding.PEM
 
 
 # Even *more* annoyingly, due to a mypy bug, we can't use Union[] types in

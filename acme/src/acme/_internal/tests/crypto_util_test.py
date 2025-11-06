@@ -14,13 +14,6 @@ from cryptography.hazmat.primitives.asymmetric import rsa, x25519
 from acme._internal.tests import test_util
 
 
-class FormatTest(unittest.TestCase):
-    def test_to_cryptography_encoding(self):
-        from acme.crypto_util import Format
-        assert Format.DER.to_cryptography_encoding() == serialization.Encoding.DER
-        assert Format.PEM.to_cryptography_encoding() == serialization.Encoding.PEM
-
-
 class MiscTests(unittest.TestCase):
 
     def test_dump_cryptography_chain(self):
