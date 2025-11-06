@@ -115,13 +115,6 @@ class ACMEServer:
         acme_xdist['directory_url'] = PEBBLE_DIRECTORY_URL
         acme_xdist['challtestsrv_url'] = PEBBLE_CHALLTESTSRV_URL
         acme_xdist['http_port'] = dict(zip(nodes, range(5200, 5200 + len(nodes))))
-        # When testing the standalone plugin with IP address certificates, we need a way for
-        # the proxy to map incoming requests to workers. Since all 127.* addresses are loopback,
-        # we give each worker a 127.0.0.n address. The proxy will route all requests for that
-        # IP address to the http_port assigned for that worker.
-        acme_xdist['local_ip'] = {}
-        for i, node in enumerate(nodes):
-            acme_xdist['local_ip'][node] = f"127.0.0.{i+30}"
         acme_xdist['https_port'] = dict(zip(nodes, range(5100, 5100 + len(nodes))))
         acme_xdist['other_port'] = dict(zip(nodes, range(5300, 5300 + len(nodes))))
 
@@ -168,14 +161,6 @@ class ACMEServer:
         http_port_map = cast(dict[str, int], self.acme_xdist['http_port'])
         mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
                    for node, port in http_port_map.items()}
-
-        # Each worker gets a specific loopback IP address. All traffic to that IP address gets
-        # routed to that worker's http_port.
-        local_ip_map = cast(dict[str, str], self.acme_xdist['local_ip'])
-        for node, local_ip in local_ip_map.items():
-            mapping[r'{0}:.+'.format(local_ip)] = \
-                'http://{0}:{1}'.format(local_ip, http_port_map[node])
-
         command = [sys.executable, proxy.__file__, str(self._http_01_port), json.dumps(mapping)]
         self._launch_process(command)
         print('=> Finished configuring the HTTP proxy.')

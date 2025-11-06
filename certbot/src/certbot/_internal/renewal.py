@@ -148,9 +148,8 @@ def reconstitute(config: configuration.NamespaceConfig,
         return None
 
     try:
-        domains, ip_addresses = san.split(renewal_candidate.sans())
+        domains, _ = san.split(renewal_candidate.sans())
         config.domains = domains
-        config.ip_addresses = ip_addresses
     except errors.ConfigurationError as error:
         logger.error("Renewal configuration file %s references a certificate "
                        "that contains an invalid domain name. The problem "

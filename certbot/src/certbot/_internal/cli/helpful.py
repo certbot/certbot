@@ -332,15 +332,14 @@ class HelpfulArgumentParser:
         csrfile, contents = config.csr[0:2]
         typ, util_csr, _ = crypto_util.import_csr_file(csrfile, contents)
         x509_req = x509.load_pem_x509_csr(util_csr.data)
-        domains, ip_addresses = san.from_x509(x509_req.subject, x509_req.extensions)
+        domains, _ = san.from_x509(x509_req.subject, x509_req.extensions)
 
         # The SANs from the CSR are added to the command line flags. That's how main.certonly
         # gets the list of identifiers to request. Note: this does not clear command line flags
         # set by the user. Any existing flags must be a subset of what's in the CSR.
         config.domains.extend(domains)
-        config.ip_addresses.extend(ip_addresses)
 
-        if not domains + ip_addresses:
+        if not domains:
             # TODO: add CN to domains instead:
             raise errors.Error(
                 "Unfortunately, your CSR %s needs to have a SubjectAltName for every domain"
@@ -348,13 +347,13 @@ class HelpfulArgumentParser:
 
         config.actual_csr = (util_csr, typ)
 
-        # Check that the original values for --domain and --ip-address set by the user were
-        # a subset of the domains and IP addresses listed in the CSR.
-        if set(config.domains) != set(domains) or set(config.ip_addresses) != set(ip_addresses):
+        # Check that the original values for --domain set by the user were
+        # a subset of the domains listed in the CSR.
+        if set(config.domains) != set(domains):
             raise errors.ConfigurationError(
                 "Inconsistent requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
-                .format(san.display(san.join(domains, ip_addresses)),
-                        san.display(san.join(config.domains, config.ip_addresses))))
+                .format(san.display(domains),
+                        san.display(config.domains)))
 
 
     def determine_verb(self) -> None:

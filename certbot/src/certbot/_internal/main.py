@@ -500,16 +500,12 @@ def _find_sans_or_certname(config: configuration.NamespaceConfig,
     :raises errors.Error: Usage message, if parameters are not used correctly
 
     """
-    domains: list[san.SAN] = []
-    ip_addresses: list[san.SAN] = []
     certname = config.certname
+    sans: Optional[list[san.SAN]] = None
+
     # first, try to get domains from the config
     if config.domains:
-        domains = config.domains
-    if config.ip_addresses:
-        ip_addresses = config.ip_addresses
-
-    sans: Optional[list[san.SAN]] = domains + ip_addresses
+        sans = config.domains
 
     # if we can't do that but we have a certname, get the sans
     # by loading the latest certificate with that certname

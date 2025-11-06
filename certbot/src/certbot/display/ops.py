@@ -159,7 +159,7 @@ def _filter_names(names: Iterable[str],
             "We recommend selecting either all domains, or all domains in a VirtualHost/server "
             "block.")
     code, names = display_util.checklist(
-        question, tags=sorted_names, force_interactive=True)
+        question, tags=sorted_names, cli_flag="--domains", force_interactive=True)
     return code, [str(s) for s in names]
 
 
