@@ -124,6 +124,12 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[st
              "already have a certificate with the same name. In the case of a name conflict, "
              "a number like -0001 will be appended to the certificate name. (default: Ask)")
     helpful.add(
+        [None, "run", "certonly", "certificates", "enhance"],
+        constants.LEGACY_COMMON_NAME_FLAG, action="store_true",
+        default=flag_default("legacy_common_name"),
+        help="Set the certificate subject common name to be the first domain "
+             "provided")
+    helpful.add(
         [None, "run", "certonly", "register"],
         "--eab-kid", dest="eab_kid",
         metavar="EAB_KID",

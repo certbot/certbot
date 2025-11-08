@@ -249,6 +249,20 @@ class MakeCSRTest(unittest.TestCase):
             x509.TLSFeatureType.status_request
         ]
 
+    def test_make_csr_legacy_cn(self):
+        csr_pem = self._call_with_key(["a.example", "b.example"], legacy_common_name=True)
+        assert b"--BEGIN CERTIFICATE REQUEST--" in csr_pem
+        assert b"--END CERTIFICATE REQUEST--" in csr_pem
+        csr = x509.load_pem_x509_csr(csr_pem)
+        assert csr.subject == x509.Name([x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, 'a.example')])
+
+    def test_make_csr_without_domains_legacy_cn_enabled(self):
+        with pytest.raises(ValueError):
+            self._call_with_key(
+                [],
+                ipaddrs=[ipaddress.ip_address("127.0.0.1"), ipaddress.ip_address("::1")],
+                legacy_common_name=True)
+
     def test_make_csr_without_hostname(self):
         with pytest.raises(ValueError):
             self._call_with_key()

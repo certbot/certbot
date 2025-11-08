@@ -58,6 +58,7 @@ def make_csr(
     domains: Optional[Union[set[str], list[str]]] = None,
     must_staple: bool = False,
     ipaddrs: Optional[list[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None,
+    legacy_common_name: bool = False
 ) -> bytes:
     """Generate a CSR containing domains or IPs as subjectAltNames.
 
@@ -70,11 +71,13 @@ def make_csr(
         OCSP Must Staple: https://tools.ietf.org/html/rfc7633).
     :param list ipaddrs: List of IPaddress(type ipaddress.IPv4Address or ipaddress.IPv6Address)
         names to include in subbjectAltNames of CSR.
+    :param bool legacy_common_name: Whether to add a CN to the CSR
 
     :returns: buffer PEM-encoded Certificate Signing Request.
 
     """
     private_key = serialization.load_pem_private_key(private_key_pem, password=None)
+    cn = ''
     if not isinstance(private_key, CertificateIssuerPrivateKeyTypesTpl):
         raise ValueError(f"Invalid private key type: {type(private_key)}")
     if domains is None:
@@ -85,10 +88,13 @@ def make_csr(
         raise ValueError(
             "At least one of domains or ipaddrs parameter need to be not empty"
         )
+    if legacy_common_name and not domains:
+        raise ValueError("At least one domain is required to set a legacy CN")
+    if legacy_common_name and domains:
+        cn = next(iter(domains))
 
     builder = (
         x509.CertificateSigningRequestBuilder()
-        .subject_name(x509.Name([]))
         .add_extension(
             x509.SubjectAlternativeName(
                 [x509.DNSName(d) for d in domains]
@@ -97,6 +103,14 @@ def make_csr(
             critical=False,
         )
     )
+
+    if legacy_common_name:
+        builder = builder.subject_name(
+            x509.Name([x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, cn)])
+        )
+    else:
+        builder = builder.subject_name(x509.Name([]))
+
     if must_staple:
         builder = builder.add_extension(
             # "status_request" is the feature commonly known as OCSP
