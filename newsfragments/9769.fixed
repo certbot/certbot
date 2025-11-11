@@ -1,0 +1,1 @@
+Removed `vhost_combined` and `vhost_common` log formats from included Apache configuration file.
