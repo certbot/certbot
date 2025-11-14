@@ -21,6 +21,7 @@ import configargparse
 from certbot import errors
 from certbot._internal import constants
 from certbot._internal import lock
+from certbot._internal import san
 from certbot.compat import filesystem
 from certbot.compat import os
 
@@ -567,6 +568,8 @@ def add_deprecated_argument(add_argument: Callable[..., None], argument_name: st
 def enforce_le_validity(domain: str) -> str:
     """Checks that Let's Encrypt will consider domain to be valid.
 
+    TODO: Maybe this should take, and return, san.DNSName.
+
     :param str domain: FQDN to check
     :type domain: `str`
     :returns: The domain cast to `str`, with ASCII-only contents
@@ -576,7 +579,8 @@ def enforce_le_validity(domain: str) -> str:
 
     """
 
-    domain = enforce_domain_sanity(domain)
+    # Do basic validation on a DNSName
+    domain = san.DNSName(domain).dns_name
     if not re.match("^[A-Za-z0-9.-]*$", domain):
         raise errors.ConfigurationError(
             "{0} contains an invalid character. "

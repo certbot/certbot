@@ -8,7 +8,6 @@ from typing import Optional
 from urllib import parse
 
 from certbot import errors
-from certbot import util
 from certbot._internal import constants
 from certbot.compat import misc
 from certbot.compat import os
@@ -482,12 +481,6 @@ def _check_config_sanity(config: NamespaceConfig) -> None:
         raise errors.ConfigurationError(
             "Trying to run http-01 and https-port "
             "on the same port ({0})".format(config.https_port))
-
-    # Domain checks
-    if config.namespace.domains is not None:
-        for domain in config.namespace.domains:
-            # This may be redundant, but let's be paranoid
-            util.enforce_domain_sanity(domain)
 
 
 def _is_immutable(value: Any) -> bool:

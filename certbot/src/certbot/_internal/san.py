@@ -123,6 +123,16 @@ class IPAddress(SAN):
         """Always False."""
         return False
 
+def guess(names: Iterable[str]) -> list[SAN]:
+    """Turn a list of strings in to a list of SANs based on how they parse."""
+    sans: list[SAN] = []
+    for name in names:
+        try:
+            sans.append(IPAddress(name))
+        except ValueError:
+            sans.append(DNSName(name))
+    return sans
+
 def split(sans: Iterable[SAN]) -> tuple[list[DNSName], list[IPAddress]]:
     """Split a list of SANs into a list of DNSNames and one of IPAddress, in that order."""
     domains = []
@@ -136,6 +146,10 @@ def split(sans: Iterable[SAN]) -> tuple[list[DNSName], list[IPAddress]]:
             case _:
                 raise TypeError(f"SAN of type {type(s)}")
     return domains, ip_addresses
+
+def join(dns_names: Iterable[DNSName], ip_addresses: Iterable[IPAddress]) -> list[SAN]:
+    """Combine a list of DNS names and a list of IP addresses."""
+    return list(dns_names) + list(ip_addresses)
 
 def display(sans: Iterable[SAN]) -> str:
     """Return the list of SANs in string form, separated by comma and space."""

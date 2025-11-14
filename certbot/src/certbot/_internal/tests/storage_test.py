@@ -14,6 +14,7 @@ import pytest
 import certbot
 from certbot import errors
 from certbot._internal.storage import ALL_FOUR
+from certbot._internal import san
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
@@ -432,17 +433,17 @@ class RenewableCertTests(BaseRenewableCertTest):
             else:
                 assert not self.test_rc.has_pending_deployment()
 
-    def test_names(self):
+    def test_sans(self):
         # Trying the current version
         self._write_out_kind("cert", 12, test_util.load_vector("cert-san_512.pem"))
 
-        assert self.test_rc.names() == \
-                         ["example.com", "www.example.com"]
+        assert self.test_rc.sans() == \
+                         [san.DNSName("example.com"), san.DNSName("www.example.com")]
 
         # Trying missing cert
         os.unlink(self.test_rc.cert)
         with pytest.raises(errors.CertStorageError):
-            self.test_rc.names()
+            self.test_rc.sans()
 
     def test_autorenewal_is_enabled(self):
         self.test_rc.configuration["renewalparams"] = {}

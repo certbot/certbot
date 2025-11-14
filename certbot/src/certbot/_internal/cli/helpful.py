@@ -9,16 +9,17 @@ from typing import Optional
 from typing import Union
 
 import configargparse
+from cryptography import x509
 
 from certbot import crypto_util
 from certbot import errors
 from certbot import util
 from certbot._internal import constants
 from certbot._internal import hooks
+from certbot._internal import san
 from certbot._internal.cli.cli_constants import COMMAND_OVERVIEW
 from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
 from certbot._internal.cli.cli_constants import SHORT_USAGE
-from certbot._internal.cli.cli_utils import add_domains
 from certbot._internal.cli.cli_utils import CustomHelpFormatter
 from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
@@ -298,7 +299,7 @@ class HelpfulArgumentParser:
             hooks.validate_hooks(config)
 
         if config.allow_subset_of_names:
-            if any(util.is_wildcard_domain(d) for d in config.domains):
+            if any(d.is_wildcard() for d in config.domains):
                 raise errors.Error("Using --allow-subset-of-names with a"
                                    " wildcard domain is not supported.")
 
@@ -329,12 +330,13 @@ class HelpfulArgumentParser:
             raise errors.Error("--allow-subset-of-names cannot be used with --csr")
 
         csrfile, contents = config.csr[0:2]
-        typ, csr, domains = crypto_util.import_csr_file(csrfile, contents)
+        typ, util_csr, _ = crypto_util.import_csr_file(csrfile, contents)
+        x509_req = x509.load_pem_x509_csr(util_csr.data)
+        domains, _ = san.from_x509(x509_req.subject, x509_req.extensions)
 
-        # This is not necessary for webroot to work, however,
-        # obtain_certificate_from_csr requires config.domains to be set
-        for domain in domains:
-            add_domains(config, domain)
+        # The SANs from the CSR are added to the domains from command line flags as this config
+        # setting is where main.certonly gets the list of identifiers to request.
+        config.domains.extend(domains)
 
         if not domains:
             # TODO: add CN to domains instead:
@@ -342,14 +344,15 @@ class HelpfulArgumentParser:
                 "Unfortunately, your CSR %s needs to have a SubjectAltName for every domain"
                 % config.csr[0])
 
-        config.actual_csr = (csr, typ)
+        config.actual_csr = (util_csr, typ)
 
-        csr_domains = {d.lower() for d in domains}
-        config_domains = set(config.domains)
-        if csr_domains != config_domains:
+        # Check that the original values for --domain set by the user were
+        # a subset of the domains listed in the CSR.
+        if set(config.domains) != set(domains):
             raise errors.ConfigurationError(
-                "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
-                .format(", ".join(csr_domains), ", ".join(config_domains)))
+                "Inconsistent requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
+                .format(san.display(domains),
+                        san.display(config.domains)))
 
 
     def determine_verb(self) -> None:

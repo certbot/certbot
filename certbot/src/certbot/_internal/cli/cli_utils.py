@@ -13,8 +13,8 @@ from typing import Union
 from acme import challenges
 from certbot import configuration
 from certbot import errors
-from certbot import util
 from certbot._internal import constants
+from certbot._internal import san
 from certbot.compat import os
 
 if TYPE_CHECKING:
@@ -103,7 +103,7 @@ class _DomainsAction(argparse.Action):
 
 
 def add_domains(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
-                domains: Optional[str]) -> list[str]:
+                domains: Optional[str]) -> list[san.DNSName]:
     """Registers new domains to be used during the current client run.
 
     Domains are not added to the list of requested domains if they have
@@ -118,12 +118,12 @@ def add_domains(args_or_config: Union[argparse.Namespace, configuration.Namespac
     :rtype: `list` of `str`
 
     """
-    validated_domains: list[str] = []
+    validated_domains: list[san.DNSName] = []
     if not domains:
         return validated_domains
 
-    for domain in domains.split(","):
-        domain = util.enforce_domain_sanity(domain.strip())
+    for d in domains.split(","):
+        domain = san.DNSName(d.strip())
         validated_domains.append(domain)
         if domain not in args_or_config.domains:
             args_or_config.domains.append(domain)

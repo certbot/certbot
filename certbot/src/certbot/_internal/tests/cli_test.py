@@ -15,6 +15,7 @@ from certbot import errors
 from certbot.configuration import ArgumentSource, NamespaceConfig
 from certbot._internal import cli
 from certbot._internal import constants
+from certbot._internal import san
 from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.plugins import disco
 from certbot.compat import filesystem
@@ -128,7 +129,7 @@ class ParseTest(unittest.TestCase):
             with open(tmp_config.name, 'w') as file_h:
                 file_h.write("domains = example.com")
             namespace = self.parse(["certonly"])
-            assert_value_and_source(namespace, 'domains', ["example.com"], ArgumentSource.CONFIG_FILE)
+            assert_value_and_source(namespace, 'domains', [san.DNSName("example.com")], ArgumentSource.CONFIG_FILE)
             namespace = self.parse(["renew"])
             assert_value_and_source(namespace, 'domains', [], ArgumentSource.RUNTIME)
 
@@ -234,28 +235,28 @@ class ParseTest(unittest.TestCase):
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
         namespace = self.parse(short_args)
-        assert_set_by_user_with_value(namespace, 'domains', ['example.com'])
+        assert_set_by_user_with_value(namespace, 'domains', [san.DNSName('example.com')])
 
         short_args = ['-d', 'trailing.period.com.']
         namespace = self.parse(short_args)
-        assert_set_by_user_with_value(namespace, 'domains', ['trailing.period.com'])
+        assert_set_by_user_with_value(namespace, 'domains', [san.DNSName('trailing.period.com')])
 
         short_args = ['-d', 'example.com,another.net,third.org,example.com']
         namespace = self.parse(short_args)
         assert_set_by_user_with_value(namespace, 'domains',
-            ['example.com', 'another.net', 'third.org'])
+            [san.DNSName('example.com'), san.DNSName('another.net'), san.DNSName('third.org')])
 
         long_args = ['--domains', 'example.com']
         namespace = self.parse(long_args)
-        assert_set_by_user_with_value(namespace, 'domains', ['example.com'])
+        assert_set_by_user_with_value(namespace, 'domains', [san.DNSName('example.com')])
 
         long_args = ['--domains', 'trailing.period.com.']
         namespace = self.parse(long_args)
-        assert_set_by_user_with_value(namespace, 'domains', ['trailing.period.com'])
+        assert_set_by_user_with_value(namespace, 'domains', [san.DNSName('trailing.period.com')])
 
         long_args = ['--domains', 'example.com,another.net,example.com']
         namespace = self.parse(long_args)
-        assert_set_by_user_with_value(namespace, 'domains', ['example.com', 'another.net'])
+        assert_set_by_user_with_value(namespace, 'domains', [san.DNSName('example.com'), san.DNSName('another.net')])
 
     def test_preferred_challenges(self):
         short_args = ['--preferred-challenges', 'http, dns']
@@ -481,7 +482,7 @@ class ParseTest(unittest.TestCase):
         assert_value_and_source(namespace, 'pref_challs', [], ArgumentSource.DEFAULT)
 
         namespace.pref_challs = [challenges.HTTP01.typ]
-        namespace.domains = ['example.com']
+        namespace.domains = [san.DNSName('example.com')]
 
         namespace = self.parse([])
         assert_value_and_source(namespace, 'domains', [], ArgumentSource.DEFAULT)
@@ -572,7 +573,7 @@ class ParseTest(unittest.TestCase):
     @mock.patch('certbot._internal.hooks.validate_hooks')
     def test_argument_with_equals(self, unsused_mock_validate_hooks):
         namespace = self.parse('-d=example.com')
-        assert_set_by_user_with_value(namespace, 'domains', ['example.com'])
+        assert_set_by_user_with_value(namespace, 'domains', [san.DNSName('example.com')])
 
         # make sure it doesn't choke on equals signs being present in the argument value
         plugins = disco.PluginsRegistry.find_all()
@@ -598,7 +599,7 @@ class ParseTest(unittest.TestCase):
         # in double quotes, or as its own line in a docker-compose.yml file (as
         # in #9811)
         namespace = self.parse(['certonly', '-d foo.com'])
-        assert_set_by_user_with_value(namespace, 'domains', ['foo.com'])
+        assert_set_by_user_with_value(namespace, 'domains', [san.DNSName('foo.com')])
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
