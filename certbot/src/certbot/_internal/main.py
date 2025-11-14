@@ -1062,7 +1062,6 @@ def _install_cert(config: configuration.NamespaceConfig, le_client: client.Clien
                          configuration.NamespaceConfig] = lineage if lineage else config
     assert path_provider.cert_path is not None
 
-    # Enhancements aren't supported for IP address certificates.
     domains, ip_addresses = san.split(sans)
     if len(ip_addresses) > 0:
         raise errors.ConfigurationError("Enhancements not supported for IP address certificates")
@@ -1244,7 +1243,6 @@ def enhance(config: configuration.NamespaceConfig,
     if cert_sans is None:
         raise errors.Error("Could not find the list of domains for the given certificate name.")
 
-    # Enhancements aren't supported for IP address certificates.
     cert_domains, ip_addresses = san.split(cert_sans)
     if len(ip_addresses) > 0:
         raise errors.ConfigurationError("Enhancements not supported for IP address certificates")
