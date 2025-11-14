@@ -334,9 +334,8 @@ class HelpfulArgumentParser:
         x509_req = x509.load_pem_x509_csr(util_csr.data)
         domains, _ = san.from_x509(x509_req.subject, x509_req.extensions)
 
-        # The SANs from the CSR are added to the command line flags. That's how main.certonly
-        # gets the list of identifiers to request. Note: this does not clear command line flags
-        # set by the user. Any existing flags must be a subset of what's in the CSR.
+        # The SANs from the CSR are added to the domains from command line flags as this config
+        # setting is where main.certonly gets the list of identifiers to request.
         config.domains.extend(domains)
 
         if not domains:

@@ -655,7 +655,7 @@ class Client:
 
         return abs_cert_path, abs_chain_path, abs_fullchain_path
 
-    def deploy_certificate(self, sans: list[san.SAN], privkey_path: str, cert_path: str,
+    def deploy_certificate(self, sans: list[san.DNSName], privkey_path: str, cert_path: str,
                            chain_path: str, fullchain_path: str) -> None:
         """Install certificate
 
@@ -708,8 +708,6 @@ class Client:
 
         :raises .errors.Error: if no installer is specified in the
             client.
-        :raises TypeError: if sans includes IP addresses.
-
         """
         if self.installer is None:
             logger.error("No installer is specified, there isn't any "

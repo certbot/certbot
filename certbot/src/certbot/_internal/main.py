@@ -518,7 +518,7 @@ def _find_sans_or_certname(config: configuration.NamespaceConfig,
         sans = san.guess(display_ops.choose_names(installer, question))
 
     if not sans:
-        raise errors.Error("Please specify --domains, --ip-address, or --installer that "
+        raise errors.Error("Please specify --domains, or --installer that "
                            "will help in domain names autodiscovery, or "
                            "--cert-name for an existing certificate name.")
 
@@ -1062,12 +1062,13 @@ def _install_cert(config: configuration.NamespaceConfig, le_client: client.Clien
                          configuration.NamespaceConfig] = lineage if lineage else config
     assert path_provider.cert_path is not None
 
-    le_client.deploy_certificate(sans, path_provider.key_path, path_provider.cert_path,
-                                 path_provider.chain_path, path_provider.fullchain_path)
+    # Enhancements aren't supported for IP address certificates.
+    domains, ip_addresses = san.split(sans)
+    if len(ip_addresses) > 0:
+        raise errors.ConfigurationError("Enhancements not supported for IP address certificates")
 
-    # Silently ignore IP addresses from the certificate for now, since enhancements aren't
-    # supported for IP address certificates (requires changes to the plugin system).
-    domains, _ = san.split(sans)
+    le_client.deploy_certificate(domains, path_provider.key_path, path_provider.cert_path,
+                                 path_provider.chain_path, path_provider.fullchain_path)
 
     le_client.enhance_config(domains, path_provider.chain_path)
 
@@ -1243,9 +1244,10 @@ def enhance(config: configuration.NamespaceConfig,
     if cert_sans is None:
         raise errors.Error("Could not find the list of domains for the given certificate name.")
 
-    # Silently ignore IP addresses from the certificate for now, since enhancements aren't
-    # supported for IP address certificates (requires changes to the plugin system).
-    cert_domains, _ = san.split(cert_sans)
+    # Enhancements aren't supported for IP address certificates.
+    cert_domains, ip_addresses = san.split(cert_sans)
+    if len(ip_addresses) > 0:
+        raise errors.ConfigurationError("Enhancements not supported for IP address certificates")
 
     if config.noninteractive_mode:
         domains = cert_domains
