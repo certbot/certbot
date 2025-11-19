@@ -45,9 +45,12 @@ CHALLENGES_P = [HTTP01_P, DNS01_P]
 
 
 # AnnotatedChallenge objects
-HTTP01_A = auth_handler.challb_to_achall(HTTP01_P, JWK, "example.com")
-DNS01_A = auth_handler.challb_to_achall(DNS01_P, JWK, "example.org")
-DNS01_A_2 = auth_handler.challb_to_achall(DNS01_P_2, JWK, "esimerkki.example.org")
+HTTP01_A = auth_handler.challb_to_achall(HTTP01_P, JWK, messages.Identifier(
+    typ=messages.IDENTIFIER_FQDN, value="example.com"))
+DNS01_A = auth_handler.challb_to_achall(DNS01_P, JWK, messages.Identifier(
+    typ=messages.IDENTIFIER_FQDN, value="example.org"))
+DNS01_A_2 = auth_handler.challb_to_achall(DNS01_P_2, JWK, messages.Identifier(
+    typ=messages.IDENTIFIER_FQDN, value="esimerkki.example.org"))
 
 ACHALLENGES = [HTTP01_A, DNS01_A]
 

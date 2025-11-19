@@ -41,12 +41,16 @@ class AnnotatedChallenge(jose.ImmutableMap):
     _acme_type: type[Challenge] = NotImplemented
 
     def __getattr__(self, name: str) -> Any:
-        return getattr(self.challb, name)
+        return getattr(self.challb, name, None)
 
 
 class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
     """Client annotated `KeyAuthorizationChallenge` challenge."""
-    __slots__ = ('challb', 'domain', 'account_key') # pylint: disable=redefined-slots-in-subclass
+    __slots__ = ('challb', 'domain', 'account_key', 'identifier') # pylint: disable=redefined-slots-in-subclass
+
+    def __init__(self, **kwargs: Any) -> None: # pylint: disable=super-init-not-called
+        for k, v in kwargs.items():
+            object.__setattr__(self, k, v)
 
     def response_and_validation(self, *args: Any, **kwargs: Any
         ) -> tuple['challenges.KeyAuthorizationChallengeResponse', Any]:
@@ -57,11 +61,18 @@ class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
 
 class DNS(AnnotatedChallenge):
     """Client annotated "dns" ACME challenge."""
-    __slots__ = ('challb', 'domain') # pylint: disable=redefined-slots-in-subclass
+    __slots__ = ('challb', 'domain', 'identifier') # pylint: disable=redefined-slots-in-subclass
     acme_type = challenges.DNS
 
+    def __init__(self, **kwargs: Any) -> None: # pylint: disable=super-init-not-called
+        for k, v in kwargs.items():
+            object.__setattr__(self, k, v)
 
 class Other(AnnotatedChallenge):
     """Client annotated ACME challenge of an unknown type."""
-    __slots__ = ('challb', 'domain') # pylint: disable=redefined-slots-in-subclass
+    __slots__ = ('challb', 'domain', 'identifier') # pylint: disable=redefined-slots-in-subclass
     acme_type = challenges.Challenge
+
+    def __init__(self, **kwargs: Any) -> None: # pylint: disable=super-init-not-called
+        for k, v in kwargs.items():
+            object.__setattr__(self, k, v)

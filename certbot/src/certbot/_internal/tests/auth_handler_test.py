@@ -430,13 +430,15 @@ class ChallbToAchallTest(unittest.TestCase):
 
     def _call(self, challb):
         from certbot._internal.auth_handler import challb_to_achall
-        return challb_to_achall(challb, "account_key", "domain")
+        ident = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain")
+        return challb_to_achall(challb, "account_key", ident)
 
     def test_it(self):
         assert self._call(acme_util.HTTP01_P) == \
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.HTTP01_P, account_key="account_key",
-                domain="domain")
+                domain="domain",
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain"))
 
 
 class GenChallengePathTest(unittest.TestCase):
