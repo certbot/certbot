@@ -915,7 +915,7 @@ class RenewableCert(interfaces.RenewableCert):
                 os.unlink(link)
 
     def names(self) -> list[str]:
-        """Return the DNS names and IP addresses from this certificate.
+        """Return the DNS names and IP addresses from this certificate as strings.
 
         :returns: the subject names
         :rtype: `list` of `str`
@@ -924,7 +924,7 @@ class RenewableCert(interfaces.RenewableCert):
         return list(map(str, self.sans()))
 
     def sans(self) -> list[san.SAN]:
-        """Return the DNS names and IP addresses from this certificate.
+        """Return the DNS names and IP addresses from this certificate as SAN objects.
 
         :returns: the subject names
         :rtype: `list` of `san.SAN`

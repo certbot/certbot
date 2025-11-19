@@ -568,8 +568,6 @@ def add_deprecated_argument(add_argument: Callable[..., None], argument_name: st
 def enforce_le_validity(domain: str) -> str:
     """Checks that Let's Encrypt will consider domain to be valid.
 
-    TODO: Maybe this should take, and return, san.DNSName.
-
     :param str domain: FQDN to check
     :type domain: `str`
     :returns: The domain cast to `str`, with ASCII-only contents

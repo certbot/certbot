@@ -284,7 +284,7 @@ def human_readable_cert_info(config: configuration.NamespaceConfig, cert: storag
     certinfo.append(f"  Certificate Name: {cert.lineagename}\n"
                     f"    Serial Number: {serial}\n"
                     f"    Key Type: {cert.private_key_type}\n"
-                    f'    Domains: {" ".join(map(str, cert.sans()))}\n'
+                    f'    Identifiers: {" ".join(map(str, cert.sans()))}\n'
                     f"    Expiry Date: {valid_string}\n"
                     f"    Certificate Path: {cert.fullchain}\n"
                     f"    Private Key Path: {cert.privkey}")

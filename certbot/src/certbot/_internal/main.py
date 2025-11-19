@@ -444,7 +444,7 @@ def _ask_user_to_confirm_new_sans(config: configuration.NamespaceConfig,
                                   new_sans: Iterable[san.SAN],
                                   certname: str,
                                   old_sans: Iterable[san.SAN]) -> None:
-    """Ask user to confirm update cert certname to contain new_domains.
+    """Ask user to confirm update cert certname to contain new_sans.
 
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
