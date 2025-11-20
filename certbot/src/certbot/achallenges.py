@@ -19,10 +19,11 @@ Note, that all annotated challenges act as a proxy objects::
 """
 import logging
 from typing import Any
+import warnings
 
 import josepy as jose
 
-from acme import challenges
+from acme import challenges, messages
 from acme.challenges import Challenge
 
 logger = logging.getLogger(__name__)
@@ -41,16 +42,26 @@ class AnnotatedChallenge(jose.ImmutableMap):
     _acme_type: type[Challenge] = NotImplemented
 
     def __getattr__(self, name: str) -> Any:
-        return getattr(self.challb, name, None)
+        return getattr(self.challb, name)
+
+    def __getattribute__(self, name: str) -> Any:
+        if name == 'domain':
+            warnings.warn("the domain attribute is deprecated and will be removed in "
+                        "an upcoming release", DeprecationWarning)
+        return object.__getattribute__(self, name)
+
+    def __init__(self, **kwargs: Any) -> None: # pylint: disable=super-init-not-called
+        if 'identifier' not in kwargs:
+            kwargs['identifier'] = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=kwargs['domain'])
+        if 'domain' not in kwargs:
+            kwargs['domain'] = kwargs['identifier'].value
+        for k, v in kwargs.items():
+            object.__setattr__(self, k, v)
 
 
 class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
     """Client annotated `KeyAuthorizationChallenge` challenge."""
     __slots__ = ('challb', 'domain', 'account_key', 'identifier') # pylint: disable=redefined-slots-in-subclass
-
-    def __init__(self, **kwargs: Any) -> None: # pylint: disable=super-init-not-called
-        for k, v in kwargs.items():
-            object.__setattr__(self, k, v)
 
     def response_and_validation(self, *args: Any, **kwargs: Any
         ) -> tuple['challenges.KeyAuthorizationChallengeResponse', Any]:
@@ -64,15 +75,7 @@ class DNS(AnnotatedChallenge):
     __slots__ = ('challb', 'domain', 'identifier') # pylint: disable=redefined-slots-in-subclass
     acme_type = challenges.DNS
 
-    def __init__(self, **kwargs: Any) -> None: # pylint: disable=super-init-not-called
-        for k, v in kwargs.items():
-            object.__setattr__(self, k, v)
-
 class Other(AnnotatedChallenge):
     """Client annotated ACME challenge of an unknown type."""
     __slots__ = ('challb', 'domain', 'identifier') # pylint: disable=redefined-slots-in-subclass
     acme_type = challenges.Challenge
-
-    def __init__(self, **kwargs: Any) -> None: # pylint: disable=super-init-not-called
-        for k, v in kwargs.items():
-            object.__setattr__(self, k, v)
