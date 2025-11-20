@@ -472,7 +472,7 @@ def _generate_failed_chall_msg(failed_achalls: list[achallenges.AnnotatedChallen
     msg = []
 
     for achall in failed_achalls:
-        msg.append("\n  Domain: %s\n  Type:   %s\n  Detail: %s\n" % (
-            achall.domain, typ, achall.error.detail))
+        msg.append("\n  Identifier: %s\n  Type:   %s\n  Detail: %s\n" % (
+            achall.identifier.value, typ, achall.error.detail))
 
     return "".join(msg)
