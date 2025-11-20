@@ -21,6 +21,7 @@ import configargparse
 from certbot import errors
 from certbot._internal import constants
 from certbot._internal import lock
+from certbot._internal import san
 from certbot.compat import filesystem
 from certbot.compat import os
 
@@ -576,7 +577,8 @@ def enforce_le_validity(domain: str) -> str:
 
     """
 
-    domain = enforce_domain_sanity(domain)
+    # Do basic validation on a DNSName
+    domain = san.DNSName(domain).dns_name
     if not re.match("^[A-Za-z0-9.-]*$", domain):
         raise errors.ConfigurationError(
             "{0} contains an invalid character. "
