@@ -24,6 +24,7 @@ from certbot._internal.cli.cli_constants import VAR_MODIFIERS
 from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
 from certbot._internal.cli.cli_utils import _DeployHookAction
 from certbot._internal.cli.cli_utils import _DomainsAction
+from certbot._internal.cli.cli_utils import _IPAddressAction
 from certbot._internal.cli.cli_utils import _EncodeReasonAction
 from certbot._internal.cli.cli_utils import _PrefChallAction
 from certbot._internal.cli.cli_utils import _RenewHookAction
@@ -123,6 +124,14 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[st
              "will be used as the certificate name, unless otherwise specified or if you "
              "already have a certificate with the same name. In the case of a name conflict, "
              "a number like -0001 will be appended to the certificate name. (default: Ask)")
+    helpful.add(
+        [None, "certonly", "certificates"],
+        "--ip-address", dest="ip_addresses",
+        action=_IPAddressAction,
+        default=flag_default("ip_addresses"),
+        help="IP addresses to include. For multiple IP addresses you can use multiple "
+             "--ip-address flags. All IP addresses will be included as Subject Alternative Names "
+             "on the certificate.")
     helpful.add(
         [None, "run", "certonly", "register"],
         "--eab-kid", dest="eab_kid",

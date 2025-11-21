@@ -225,6 +225,7 @@ class CertificatesTest(BaseCertManagerTest):
 
         mock_config = mock.MagicMock(certname=None, lineagename=None)
         mock_config.domains = []
+        mock_config.ip_addresses = []
         # pylint: disable=protected-access
 
         # pylint: disable=protected-access

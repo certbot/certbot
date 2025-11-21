@@ -32,6 +32,7 @@ CLI_DEFAULTS: dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     noninteractive_mode=False,
     force_interactive=False,
     domains=[],
+    ip_addresses=[],
     certname=None,
     dry_run=False,
     register_unsafely_without_email=False,

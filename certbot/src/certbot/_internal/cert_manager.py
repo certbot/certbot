@@ -252,7 +252,7 @@ def human_readable_cert_info(config: configuration.NamespaceConfig, cert: storag
     certinfo = []
     checker = ocsp.RevocationChecker()
 
-    config_sans = set(config.domains)
+    config_sans = set(config.domains + config.ip_addresses)
 
     if config.certname and cert.lineagename != config.certname and not skip_filter_checks:
         return None
