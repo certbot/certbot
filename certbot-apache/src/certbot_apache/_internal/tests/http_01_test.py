@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from acme import challenges
+from acme import challenges, messages
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import filesystem
@@ -83,12 +83,14 @@ class ApacheHttp01Test(util.ApacheTest):
                 challb=acme_util.chall_to_challb(
                     challenges.HTTP01(token=((b'a' * 16))),
                     "pending"),
-                domain=vhost.name, account_key=self.account_key),
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=vhost.name),
+                account_key=self.account_key),
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
                     challenges.HTTP01(token=((b'b' * 16))),
                     "pending"),
-                domain=next(iter(vhost.aliases)), account_key=self.account_key)
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=next(iter(vhost.aliases))),
+                account_key=self.account_key)
         ]
         self.common_perform_test(achalls, [vhost])
 

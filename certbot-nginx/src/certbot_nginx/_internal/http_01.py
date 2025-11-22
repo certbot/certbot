@@ -5,7 +5,7 @@ from typing import Any
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from acme import challenges
+from acme import challenges, messages
 from acme.challenges import KeyAuthorizationChallengeResponse
 from certbot import errors
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
@@ -55,6 +55,9 @@ class NginxHttp01(common.ChallengePerformer):
         """
         if not self.achalls:
             return []
+        if any(achall.identifier.typ == messages.IDENTIFIER_IP for achall in self.achalls):
+            raise errors.ConfigurationError(
+                "Apache authenticator not supported for IP address certificates")
 
         responses = [x.response(x.account_key) for x in self.achalls]
 

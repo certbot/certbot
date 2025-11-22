@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from acme.challenges import KeyAuthorizationChallengeResponse
+from acme import messages
 from certbot import errors
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import filesystem
@@ -52,6 +53,9 @@ class ApacheHttp01(common.ChallengePerformer):
         """Perform all HTTP-01 challenges."""
         if not self.achalls:
             return []
+        if any(achall.identifier.typ == messages.IDENTIFIER_IP for achall in self.achalls):
+            raise errors.ConfigurationError(
+                "Apache authenticator not supported for IP address certificates")
         # Save any changes to the configuration as a precaution
         # About to make temporary changes to the config
         self.configurator.save("Changes before challenge setup", True)
