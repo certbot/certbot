@@ -50,6 +50,11 @@ class AnnotatedChallenge(jose.ImmutableMap):
                         "an upcoming release", DeprecationWarning)
         return object.__getattribute__(self, name)
 
+    def __hash__(self) -> int:
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', 'domain attribute is deprecated')
+            return super().__hash__()
+
     def __init__(self, **kwargs: Any) -> None: # pylint: disable=super-init-not-called
         if 'identifier' not in kwargs:
             kwargs['identifier'] = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=kwargs['domain'])

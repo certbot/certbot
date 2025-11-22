@@ -241,16 +241,16 @@ permitted by DNS standards.)
         self.subsequent_any_challenge = True
 
     def cleanup(self, achalls: Iterable[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
-        if not achall.identifier.typ == messages.IDENTIFIER_FQDN:
+        if not all([a.identifier.typ == messages.IDENTIFIER_FQDN
+                   for a in achalls]):
             raise errors.ConfigurationError("non-FQDN identifiers not yet supported")
-        domain = achall.domain
         if self.conf('cleanup-hook'):
             for achall in achalls:
                 env = self.env.pop(achall)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)
-                self._execute_hook('cleanup-hook', domain)
+                self._execute_hook('cleanup-hook', achall.identifier.value)
         self.reverter.recovery_routine()
 
     def _execute_hook(self, hook_name: str, achall_domain: str) -> tuple[str, str]:
