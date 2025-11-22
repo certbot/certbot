@@ -295,7 +295,7 @@ class _WebrootMapAction(argparse.Action):
         for domains, webroot_path in json.loads(str(webroot_map)).items():
             webroot_path = _validate_webroot(webroot_path)
             namespace.webroot_map.update(
-                (d, webroot_path) for d in cli.add_domains(namespace, domains))
+                (d.dns_name, webroot_path) for d in cli.add_domains(namespace, domains))
 
 
 class _WebrootPathAction(argparse.Action):

@@ -1,5 +1,4 @@
 """Functionality for autorenewal and associated juggling of configurations"""
-
 import configobj
 import copy
 import datetime
@@ -31,6 +30,7 @@ from certbot._internal import cli
 from certbot._internal import client
 from certbot._internal import constants
 from certbot._internal import hooks
+from certbot._internal import san
 from certbot._internal import storage
 from certbot._internal import updater
 from certbot._internal.display import obj as display_obj
@@ -148,8 +148,8 @@ def reconstitute(config: configuration.NamespaceConfig,
         return None
 
     try:
-        config.domains = [util.enforce_domain_sanity(d)
-                          for d in renewal_candidate.names()]
+        domains, _ = san.split(renewal_candidate.sans())
+        config.domains = domains
     except errors.ConfigurationError as error:
         logger.error("Renewal configuration file %s references a certificate "
                        "that contains an invalid domain name. The problem "
@@ -494,7 +494,7 @@ def _avoid_invalidating_lineage(config: configuration.NamespaceConfig,
     if util.is_staging(config.server):
         if not util.is_staging(original_server):
             if not config.break_my_certs:
-                names = ", ".join(lineage.names())
+                names = san.display(lineage.sans())
                 raise errors.Error(
                     "You've asked to renew/replace a seemingly valid certificate with "
                     f"a test certificate (domains: {names}). We will not do that "
@@ -545,15 +545,15 @@ def _avoid_reuse_key_conflicts(config: configuration.NamespaceConfig,
                 "add --new-key.")
 
 
-def renew_cert(config: configuration.NamespaceConfig, domains: Optional[list[str]],
+def renew_cert(config: configuration.NamespaceConfig, sans: Optional[list[san.SAN]],
                le_client: client.Client, lineage: storage.RenewableCert) -> None:
     """Renew a certificate lineage."""
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
     _avoid_invalidating_lineage(config, lineage, original_server)
     _avoid_reuse_key_conflicts(config, lineage)
-    if not domains:
-        domains = lineage.names()
+    if not sans:
+        sans = lineage.sans()
     # The private key is the existing lineage private key if reuse_key is set.
     # Otherwise, generate a fresh private key by passing None.
     if config.reuse_key and not config.new_key:
@@ -561,7 +561,7 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[list[str
         _update_renewal_params_from_key(new_key, config)
     else:
         new_key = None
-    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
+    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(sans, new_key)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s", os.path.dirname(lineage.cert))
     else:
@@ -571,7 +571,7 @@ def renew_cert(config: configuration.NamespaceConfig, domains: Optional[list[str
         lineage.update_all_links_to(lineage.latest_common_version())
         lineage.truncate()
 
-    hooks.renew_hook(config, domains, lineage.live_dir)
+    hooks.renew_hook(config, sans, lineage.live_dir)
 
 
 def report(msgs: Iterable[str], category: str) -> str:
@@ -632,7 +632,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
-    if any(domain not in config.webroot_map for domain in config.domains):
+    if any(domain.dns_name not in config.webroot_map for domain in config.domains):
         # If more plugins start using cli.add_domains,
         # we may want to only log a warning here
         raise errors.Error("Currently, the renew verb is capable of either "
@@ -710,7 +710,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
                     # and we have a lineage in renewal_candidate
                     main.renew_cert(lineage_config, plugins, renewal_candidate)
                     renew_successes.append(renewal_candidate.fullchain)
-                    renewed_domains.extend(renewal_candidate.names())
+                    renewed_domains.extend(renewal_candidate.sans())
                 else:
                     expiry = crypto_util.notAfter(renewal_candidate.version(
                         "cert", renewal_candidate.latest_common_version()))
@@ -721,7 +721,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
                                              plugins)
 
         except Exception as e:  # pylint: disable=broad-except
-            # obtain_cert (presumably) encountered an unanticipated problem.
+            # obtain_certificate (presumably) encountered an unanticipated problem.
             logger.error(
                 "Failed to renew certificate %s with error: %s",
                 lineagename, e
@@ -729,7 +729,7 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             if renewal_candidate:
                 renew_failures.append(renewal_candidate.fullchain)
-                failed_domains.extend(renewal_candidate.names())
+                failed_domains.extend(renewal_candidate.sans())
 
     # Describe all the results
     _renew_describe_results(config, renew_successes, renew_failures,
