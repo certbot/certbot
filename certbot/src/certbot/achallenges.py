@@ -60,8 +60,7 @@ class AnnotatedChallenge(jose.ImmutableMap):
             kwargs['identifier'] = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=kwargs['domain'])
         if 'domain' not in kwargs:
             kwargs['domain'] = kwargs['identifier'].value
-        for k, v in kwargs.items():
-            object.__setattr__(self, k, v)
+        super().__init__(**kwargs)
 
 
 class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
