@@ -190,7 +190,7 @@ class NginxHttp01(common.ChallengePerformer):
         document_root = os.path.join(
             self.configurator.config.work_dir, "http_01_nonexistent")
 
-        block.extend([['server_name', ' ', achall.domain],
+        block.extend([['server_name', ' ', achall.identifier.value],
                       ['root', ' ', document_root],
                       self._location_directive_for_achall(achall)
                       ])
@@ -219,7 +219,7 @@ class NginxHttp01(common.ChallengePerformer):
         :rtype: list
 
         """
-        http_vhosts, https_vhosts = self.configurator.choose_auth_vhosts(achall.domain)
+        http_vhosts, https_vhosts = self.configurator.choose_auth_vhosts(achall.identifier.value)
 
         new_vhost: Optional[list[Any]] = None
         if not http_vhosts:

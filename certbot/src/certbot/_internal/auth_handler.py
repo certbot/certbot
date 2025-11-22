@@ -337,11 +337,11 @@ class AuthHandler:
             dns01_achalls = {}
             for achall in achalls:
                 if isinstance(achall.chall, challenges.HTTP01):
-                    http01_achalls[achall.chall.uri(achall.domain)] = (
+                    http01_achalls[achall.chall.uri(achall.identifier.value)] = (
                         achall.validation(achall.account_key) + "\n"
                     )
                 if isinstance(achall.chall, challenges.DNS01):
-                    dns01_achalls[achall.validation_domain_name(achall.domain)] = (
+                    dns01_achalls[achall.validation_domain_name(achall.identifier.value)] = (
                         achall.validation(achall.account_key) + "\n"
                     )
             if http01_achalls:

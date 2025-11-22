@@ -70,7 +70,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         try:
             change_ids = [
                 self._change_txt_record("UPSERT",
-                  achall.validation_domain_name(achall.domain),
+                  achall.validation_domain_name(achall.identifier.value),
                   achall.validation(achall.account_key))
                 for achall in achalls
             ]
@@ -85,7 +85,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
     def cleanup(self, achalls: list[achallenges.AnnotatedChallenge]) -> None:
         if self._attempt_cleanup:
             for achall in achalls:
-                domain = achall.domain
+                domain = achall.identifier.value
                 validation_domain_name = achall.validation_domain_name(domain)
                 validation = achall.validation(achall.account_key)
 

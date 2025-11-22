@@ -118,12 +118,12 @@ to serve all files under specified web root ({0})."""
             logger.info("Using the webroot path %s for all unmatched domains.",
                         webroot_path)
             for achall in achalls:
-                self.conf("map").setdefault(achall.domain, webroot_path)
+                self.conf("map").setdefault(achall.identifier.value, webroot_path)
         else:
             known_webroots = list(set(self.conf("map").values()))
             for achall in achalls:
-                if achall.domain not in self.conf("map"):
-                    new_webroot = self._prompt_for_webroot(achall.domain,
+                if achall.identifier.value not in self.conf("map"):
+                    new_webroot = self._prompt_for_webroot(achall.identifier.value,
                                                            known_webroots)
                     # Put the most recently input
                     # webroot first for easy selection
@@ -132,7 +132,7 @@ to serve all files under specified web root ({0})."""
                     except ValueError:
                         pass
                     known_webroots.insert(0, new_webroot)
-                    self.conf("map")[achall.domain] = new_webroot
+                    self.conf("map")[achall.identifier.value] = new_webroot
 
     def _prompt_for_webroot(self, domain: str, known_webroots: list[str]) -> Optional[str]:
         webroot = None
@@ -238,7 +238,7 @@ to serve all files under specified web root ({0})."""
     def _perform_single(self, achall: AnnotatedChallenge) -> challenges.ChallengeResponse:
         response, validation = achall.response_and_validation()
 
-        root_path = self.full_roots[achall.domain]
+        root_path = self.full_roots[achall.identifier.value]
         validation_path = self._get_validation_path(root_path, achall)
         logger.debug("Attempting to save validation to %s", validation_path)
 
@@ -252,7 +252,7 @@ to serve all files under specified web root ({0})."""
 
     def cleanup(self, achalls: list[AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
         for achall in achalls:
-            root_path = self.full_roots.get(achall.domain, None)
+            root_path = self.full_roots.get(achall.identifier.value, None)
             if root_path is not None:
                 validation_path = self._get_validation_path(root_path, achall)
                 logger.debug("Removing %s", validation_path)

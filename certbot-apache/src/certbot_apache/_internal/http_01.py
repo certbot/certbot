@@ -82,7 +82,7 @@ class ApacheHttp01(common.ChallengePerformer):
 
         # Search for VirtualHosts matching by name
         for chall in self.achalls:
-            selected_vhosts += self._matching_vhosts(chall.domain)
+            selected_vhosts += self._matching_vhosts(chall.identifier.value)
 
         # Ensure that we have one or more VirtualHosts that we can continue
         # with. (one that listens to port configured with --http-01-port)

@@ -186,9 +186,6 @@ permitted by DNS standards.)
                                     achalls: list[achallenges.AnnotatedChallenge]) -> None:
         if not achall.identifier.typ == messages.IDENTIFIER_FQDN:
             raise errors.ConfigurationError("non-FQDN identifiers not yet supported")
-        if not all([a.identifier.typ == messages.IDENTIFIER_FQDN
-                    for a in achalls]):
-            raise errors.ConfigurationError("non-FQDN identifiers not yet supported")
         domain = achall.identifier.value
         env = {
             "CERTBOT_DOMAIN": domain,
@@ -241,9 +238,6 @@ permitted by DNS standards.)
         self.subsequent_any_challenge = True
 
     def cleanup(self, achalls: Iterable[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
-        if not all([a.identifier.typ == messages.IDENTIFIER_FQDN
-                   for a in achalls]):
-            raise errors.ConfigurationError("non-FQDN identifiers not yet supported")
         if self.conf('cleanup-hook'):
             for achall in achalls:
                 env = self.env.pop(achall)

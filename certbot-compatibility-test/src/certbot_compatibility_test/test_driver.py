@@ -65,22 +65,22 @@ def test_authenticator(plugin: common.Proxy, config: str, temp_dir: str) -> bool
         if not response:
             logger.error(
                 "Plugin failed to complete %s for %s in %s",
-                type(achall), achall.domain, config)
+                type(achall), achall.identifier.value, config)
             success = False
         elif isinstance(response, challenges.HTTP01Response):
             # We fake the DNS resolution to ensure that any domain is resolved
             # to the local HTTP server setup for the compatibility tests
             with _fake_dns_resolution("127.0.0.1"):
                 verified = response.simple_verify(
-                    achall.chall, achall.domain,
+                    achall.chall, achall.identifier.value,
                     util.JWK.public_key(), port=plugin.http_port)
             if verified:
                 logger.info(
-                    "http-01 verification for %s succeeded", achall.domain)
+                    "http-01 verification for %s succeeded", achall.identifier.value)
             else:
                 logger.error(
                     "**** http-01 verification for %s in %s failed",
-                    achall.domain, config)
+                    achall.identifier.value, config)
                 success = False
 
     if success:

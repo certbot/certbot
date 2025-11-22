@@ -51,13 +51,16 @@ class AnnotatedChallenge(jose.ImmutableMap):
         return object.__getattribute__(self, name)
 
     def __hash__(self) -> int:
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', 'domain attribute is deprecated')
-            return super().__hash__()
+        return hash(tuple(getattr(self, slot) for slot in self.__slots__ if slot != 'domain'))
+
+    def __eq__(self, other: Any) -> bool:
+        return (tuple(getattr(self, slot) for slot in self.__slots__ if slot != 'domain') ==
+                tuple(getattr(other, slot) for slot in other.__slots__ if slot != 'domain'))
 
     def __init__(self, **kwargs: Any) -> None: # pylint: disable=super-init-not-called
         if 'identifier' not in kwargs:
-            kwargs['identifier'] = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=kwargs['domain'])
+            kwargs['identifier'] = messages.Identifier(
+                typ=messages.IDENTIFIER_FQDN, value=kwargs['domain'])
         if 'domain' not in kwargs:
             kwargs['domain'] = kwargs['identifier'].value
         super().__init__(**kwargs)
