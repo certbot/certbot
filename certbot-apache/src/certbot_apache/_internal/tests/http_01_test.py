@@ -50,6 +50,16 @@ class ApacheHttp01Test(util.ApacheTest):
     def test_empty_perform(self):
         assert len(self.http.perform()) == 0
 
+    def test_ip_address_perform(self):
+        self.http.achalls = [achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.chall_to_challb(
+                    challenges.HTTP01(token=((b'a' * 16))),
+                    "pending"),
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_IP, value="127.0.0.1"),
+                account_key=self.account_key)]
+        with pytest.raises(errors.ConfigurationError):
+            self.http.perform()
+
     @mock.patch("certbot_apache._internal.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_4(self, mock_enmod):
         del self.config.parser.modules["authz_core_module"]
