@@ -332,6 +332,7 @@ dns-mijn-host_          Y    N    DNS Authentication using mijn.host DNS
 nginx-unit_             Y    Y    Automates obtaining and installing a certificate with Nginx Unit
 dns-cdmon_              Y    N    DNS Authentication using cdmon's API
 dns-synergy-wholesale_  Y    N    DNS Authentication using Synergy Wholesale DNS
+pkcs12_                 N    Y    Install certificates as PKCS#12 archives
 ======================= ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -365,6 +366,7 @@ dns-synergy-wholesale_  Y    N    DNS Authentication using Synergy Wholesale DNS
 .. _nginx-unit: https://github.com/kea/certbot-nginx-unit
 .. _dns-cdmon: https://github.com/rascazzione/certbot-dns-cdmon
 .. _dns-synergy-wholesale: https://github.com/ALameLlama/certbot-dns-synergy-wholesale
+.. _pkcs12: https://github.com/nasa-gcn/certbot-pkcs12
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
