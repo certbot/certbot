@@ -387,7 +387,8 @@ class GetNamesFromCertTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.crypto_util import get_names_from_cert
-        return get_names_from_cert(*args, **kwargs)
+        with pytest.warns(DeprecationWarning, match='get_names_from_cert is deprecated'):
+            return get_names_from_cert(*args, **kwargs)
 
     def test_single(self):
         assert ['example.com'] == \
