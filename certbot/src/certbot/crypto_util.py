@@ -11,6 +11,7 @@ import re
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
+import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -168,6 +169,32 @@ def csr_matches_pubkey(csr: bytes, privkey: bytes) -> bool:
     return req.is_signature_valid and req.public_key() == pkey.public_key()
 
 
+def _import_csr_file(
+    csrfile: str, data: bytes
+) -> util.CSR:
+    """Import a CSR file, which can be either PEM or DER. Replaces import_csr_file on next major
+    release.
+
+    :param str csrfile: CSR filename
+    :param bytes data: contents of the CSR file
+
+    :returns: object representing the CSR
+    :rtype util.CSR
+    """
+    try:
+        # Try to parse as DER first, then fall back to PEM.
+        csr = x509.load_der_x509_csr(data)
+    except ValueError:
+        try:
+            csr = x509.load_pem_x509_csr(data)
+        except ValueError:
+            raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
+
+    # Internally we always use PEM, so re-encode as PEM before returning.
+    data_pem = csr.public_bytes(serialization.Encoding.PEM)
+    return  util.CSR(file=csrfile, data=data_pem, form="pem")
+
+
 def import_csr_file(
     csrfile: str, data: bytes
 ) -> tuple[acme_crypto_util.Format, util.CSR, list[str]]:
@@ -182,6 +209,8 @@ def import_csr_file(
     :rtype: tuple
 
     """
+    warnings.warn("import_csr_file will change its return value to just "
+                  "the util.CSR object in an upcoming release", DeprecationWarning)
     try:
         # Try to parse as DER first, then fall back to PEM.
         csr = x509.load_der_x509_csr(data)
