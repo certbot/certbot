@@ -415,7 +415,8 @@ class GetNamesFromReqTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.crypto_util import get_names_from_req
-        return get_names_from_req(*args, **kwargs)
+        with pytest.warns(DeprecationWarning, match='get_names_from_req is deprecated'):
+            return get_names_from_req(*args, **kwargs)
 
     def test_nonames(self):
         assert [] == \

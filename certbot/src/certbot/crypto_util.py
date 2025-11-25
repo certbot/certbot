@@ -481,6 +481,8 @@ def get_names_from_req(
     :rtype: list
 
     """
+    warnings.warn("get_names_from_req is deprecated and will be removed in the next "
+        "major release.", DeprecationWarning)
     typ = acme_crypto_util.Format(typ)
     if typ == acme_crypto_util.Format.PEM:
         x509_req = x509.load_pem_x509_csr(csr)
