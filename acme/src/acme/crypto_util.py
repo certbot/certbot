@@ -88,7 +88,11 @@ def make_csr(
 
     builder = (
         x509.CertificateSigningRequestBuilder()
-        .subject_name(x509.Name([]))
+        .subject_name(
+            x509.Name([
+                x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, domains[0])
+            ])
+        )
         .add_extension(
             x509.SubjectAlternativeName(
                 [x509.DNSName(d) for d in domains]
