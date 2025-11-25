@@ -370,7 +370,8 @@ class GetSANsFromCertTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.crypto_util import get_sans_from_cert
-        return get_sans_from_cert(*args, **kwargs)
+        with pytest.warns(DeprecationWarning, match='get_sans_from_cert is deprecated'):
+            return get_sans_from_cert(*args, **kwargs)
 
     def test_single(self):
         assert [] == self._call(test_util.load_vector('cert_512.pem'))
