@@ -415,7 +415,7 @@ def verify_fullchain(renewable_cert: interfaces.RenewableCert) -> None:
 
 
 def get_sans_from_cert(
-    cert: bytes, typ: Optional[Union[acme_crypto_util.Format, int]] = None
+    cert: bytes, typ: acme_crypto_util.Format | int | None = None
 ) -> list[str]:
     """Get a list of Subject Alternative Names from a certificate.
 
@@ -448,7 +448,7 @@ def get_sans_from_cert(
 
 
 def get_names_from_cert(
-    cert: bytes, typ: Optional[Union[acme_crypto_util.Format, int]] = None
+    cert: bytes, typ: acme_crypto_util.Format | int | None = None
 ) -> list[str]:
     """Get a list of domains from a cert, including the CN if it is set.
 
@@ -475,7 +475,7 @@ def get_names_from_cert(
 
 
 def get_names_from_req(
-    csr: bytes, typ: Optional[Union[acme_crypto_util.Format, int]] = None
+    csr: bytes, typ: acme_crypto_util.Format | int | None = None
 ) -> list[str]:
     """Get a list of domains from a CSR, including the CN if it is set.
 

@@ -28,8 +28,8 @@ class _FormatMeta(enum.EnumMeta):
         # raise a deprecation warning only if the enum's variants are invoked -- as it turns out,
         # during normal Python class setup, __getattribute__ is run a *lot*
         if isinstance(value, cls):
-            warnings.warn("Format is deprecated and will be removed in the next "
-                "major release.", DeprecationWarning)
+            warnings.warn("acme.crypto_util.Format is deprecated and will be removed in "
+                "the next major release.", DeprecationWarning)
         return value
 
 
