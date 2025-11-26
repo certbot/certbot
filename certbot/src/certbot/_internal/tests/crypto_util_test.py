@@ -129,35 +129,72 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
 
 
 class ImportCSRFileTest(unittest.TestCase):
-    """Tests for certbot.certbot_util.import_csr_file."""
+    """Tests for certbot.certbot_util._import_csr_file. Replace the DeprecatedImportCSRFileTest with
+    this on next major release."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import import_csr_file
-        return import_csr_file(*args, **kwargs)
+        from certbot.crypto_util import _import_csr_file
+        return _import_csr_file(*args, **kwargs)
 
     def test_der_csr(self):
         csrfile = test_util.vector_path('csr_512.der')
         data = test_util.load_vector('csr_512.der')
         data_pem = test_util.load_vector('csr_512.pem')
 
-        assert (acme_crypto_util.Format.PEM,
-             util.CSR(file=csrfile,
+        assert util.CSR(file=csrfile,
                       data=data_pem,
-                      form="pem"),
-             ["Example.com"]) == \
+                      form="pem") == \
             self._call(csrfile, data)
 
     def test_pem_csr(self):
         csrfile = test_util.vector_path('csr_512.pem')
         data = test_util.load_vector('csr_512.pem')
 
-        assert (acme_crypto_util.Format.PEM,
-             util.CSR(file=csrfile,
+        assert util.CSR(file=csrfile,
                       data=data,
-                      form="pem"),
-             ["Example.com"],) == \
+                      form="pem") == \
             self._call(csrfile, data)
+
+    def test_bad_csr(self):
+        with pytest.raises(errors.Error):
+            self._call(test_util.vector_path('cert_512.pem'),
+                          test_util.load_vector('cert_512.pem'))
+
+
+class DeprecatedImportCSRFileTest(unittest.TestCase):
+    """Tests for certbot.certbot_util.import_csr_file."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import import_csr_file
+        with pytest.warns(DeprecationWarning, match='import_csr_file will change'):
+            return import_csr_file(*args, **kwargs)
+
+    def test_der_csr(self):
+        csrfile = test_util.vector_path('csr_512.der')
+        data = test_util.load_vector('csr_512.der')
+        data_pem = test_util.load_vector('csr_512.pem')
+
+        with pytest.warns(DeprecationWarning, match='Format is deprecated'):
+            assert (acme_crypto_util.Format.PEM,
+                util.CSR(file=csrfile,
+                        data=data_pem,
+                        form="pem"),
+                ["Example.com"]) == \
+                self._call(csrfile, data)
+
+    def test_pem_csr(self):
+        csrfile = test_util.vector_path('csr_512.pem')
+        data = test_util.load_vector('csr_512.pem')
+
+        with pytest.warns(DeprecationWarning, match='Format is deprecated'):
+            assert (acme_crypto_util.Format.PEM,
+                util.CSR(file=csrfile,
+                        data=data,
+                        form="pem"),
+                ["Example.com"],) == \
+                self._call(csrfile, data)
 
     def test_bad_csr(self):
         with pytest.raises(errors.Error):
@@ -335,7 +372,8 @@ class GetSANsFromCertTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.crypto_util import get_sans_from_cert
-        return get_sans_from_cert(*args, **kwargs)
+        with pytest.warns(DeprecationWarning, match=re.compile('[get_sans_from_cert|Format] is deprecated')):
+            return get_sans_from_cert(*args, **kwargs)
 
     def test_single(self):
         assert [] == self._call(test_util.load_vector('cert_512.pem'))
@@ -351,7 +389,8 @@ class GetNamesFromCertTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.crypto_util import get_names_from_cert
-        return get_names_from_cert(*args, **kwargs)
+        with pytest.warns(DeprecationWarning, match=re.compile('[get_names_from_cert|Format] is deprecated')):
+            return get_names_from_cert(*args, **kwargs)
 
     def test_single(self):
         assert ['example.com'] == \
@@ -378,7 +417,8 @@ class GetNamesFromReqTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.crypto_util import get_names_from_req
-        return get_names_from_req(*args, **kwargs)
+        with pytest.warns(DeprecationWarning, match=re.compile('[get_names_from_req|Format] is deprecated')):
+            return get_names_from_req(*args, **kwargs)
 
     def test_nonames(self):
         assert [] == \
@@ -394,8 +434,9 @@ class GetNamesFromReqTest(unittest.TestCase):
             self._call(test_util.load_vector('csr-6sans_512.pem'))
 
     def test_der(self):
-        assert ['Example.com'] == \
-            self._call(test_util.load_vector('csr_512.der'), typ=acme_crypto_util.Format.DER)
+        with pytest.warns(DeprecationWarning, match='Format is deprecated'):
+            assert ['Example.com'] == \
+                self._call(test_util.load_vector('csr_512.der'), typ=acme_crypto_util.Format.DER)
 
 
 class NotBeforeTest(unittest.TestCase):
