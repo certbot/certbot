@@ -415,7 +415,7 @@ def verify_fullchain(renewable_cert: interfaces.RenewableCert) -> None:
 
 
 def get_sans_from_cert(
-    cert: bytes, typ: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM
+    cert: bytes, typ: Optional[Union[acme_crypto_util.Format, int]] = None
 ) -> list[str]:
     """Get a list of Subject Alternative Names from a certificate.
 
@@ -428,6 +428,8 @@ def get_sans_from_cert(
     """
     warnings.warn("get_sans_from_cert is deprecated and will be removed in the next "
         "major release.", DeprecationWarning)
+    if typ is None:
+        typ = acme_crypto_util.Format.PEM
     typ = acme_crypto_util.Format(typ)
     if typ == acme_crypto_util.Format.PEM:
         x509_cert = x509.load_pem_x509_certificate(cert)
@@ -446,7 +448,7 @@ def get_sans_from_cert(
 
 
 def get_names_from_cert(
-    cert: bytes, typ: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM
+    cert: bytes, typ: Optional[Union[acme_crypto_util.Format, int]] = None
 ) -> list[str]:
     """Get a list of domains from a cert, including the CN if it is set.
 
@@ -459,6 +461,8 @@ def get_names_from_cert(
     """
     warnings.warn("get_names_from_cert is deprecated and will be removed in the next "
         "major release.", DeprecationWarning)
+    if typ is None:
+        typ = acme_crypto_util.Format.PEM
     typ = acme_crypto_util.Format(typ)
     if typ == acme_crypto_util.Format.PEM:
         x509_cert = x509.load_pem_x509_certificate(cert)
@@ -471,7 +475,7 @@ def get_names_from_cert(
 
 
 def get_names_from_req(
-    csr: bytes, typ: Union[acme_crypto_util.Format, int] = acme_crypto_util.Format.PEM
+    csr: bytes, typ: Optional[Union[acme_crypto_util.Format, int]] = None
 ) -> list[str]:
     """Get a list of domains from a CSR, including the CN if it is set.
 
@@ -483,6 +487,8 @@ def get_names_from_req(
     """
     warnings.warn("get_names_from_req is deprecated and will be removed in the next "
         "major release.", DeprecationWarning)
+    if typ is None:
+        typ = acme_crypto_util.Format.PEM
     typ = acme_crypto_util.Format(typ)
     if typ == acme_crypto_util.Format.PEM:
         x509_req = x509.load_pem_x509_csr(csr)

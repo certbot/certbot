@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
 import typing
+from typing import Any
 from typing import Literal
 from typing import Optional
 from typing import Union
@@ -18,7 +19,21 @@ from OpenSSL import crypto
 logger = logging.getLogger(__name__)
 
 
-class Format(enum.IntEnum):
+# This is very ugly but thankfully temporary. Since accessing enum variants doesn't call a
+# constructor, overriding the class' `__getattribute__` handler lets us raise a deprecation warning
+# whenever `Format.PEM` or `Format.DER` expressions are resolved.
+class _FormatMeta(enum.EnumMeta):
+    def __getattribute__(cls, name: str) -> Any:
+        value = super().__getattribute__(name)
+        # raise a deprecation warning only if the enum's variants are invoked -- as it turns out,
+        # during normal Python class setup, __getattribute__ is run a *lot*
+        if isinstance(value, cls):
+            warnings.warn("Format is deprecated and will be removed in the next "
+                "major release.", DeprecationWarning)
+        return value
+
+
+class Format(enum.IntEnum, metaclass=_FormatMeta):
     """File format to be used when parsing or serializing X.509 structures.
 
     Backwards compatible with the `FILETYPE_ASN1` and `FILETYPE_PEM` constants
