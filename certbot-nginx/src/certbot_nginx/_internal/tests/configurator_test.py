@@ -375,7 +375,9 @@ class NginxConfiguratorTest(util.NginxTest):
                 chall=challenges.HTTP01(token=b"m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
                 status=messages.Status("pending"),
-            ), domain="example.com", account_key=self.rsa512jwk)
+            ),
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="example.com"),
+            account_key=self.rsa512jwk)
 
         expected = [
             achall.response(self.rsa512jwk),

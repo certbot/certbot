@@ -290,8 +290,7 @@ class AuthHandler:
 
         for index in path:
             challb = authzr.body.challenges[index]
-            achalls.append(challb_to_achall(
-                challb, self.account.key, authzr.body.identifier.value))
+            achalls.append(challb_to_achall(challb, self.account.key, authzr.body.identifier))
 
         return achalls
 
@@ -300,7 +299,7 @@ class AuthHandler:
         if not self.account:
             raise errors.Error("Account is not set.")
         problems: dict[str, list[achallenges.AnnotatedChallenge]] = {}
-        failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier.value)
+        failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier)
                         for authzr in failed_authzrs for challb in authzr.body.challenges
                         if challb.error]
 
@@ -338,11 +337,11 @@ class AuthHandler:
             dns01_achalls = {}
             for achall in achalls:
                 if isinstance(achall.chall, challenges.HTTP01):
-                    http01_achalls[achall.chall.uri(achall.domain)] = (
+                    http01_achalls[achall.chall.uri(achall.identifier.value)] = (
                         achall.validation(achall.account_key) + "\n"
                     )
                 if isinstance(achall.chall, challenges.DNS01):
-                    dns01_achalls[achall.validation_domain_name(achall.domain)] = (
+                    dns01_achalls[achall.validation_domain_name(achall.identifier.value)] = (
                         achall.validation(achall.account_key) + "\n"
                     )
             if http01_achalls:
@@ -361,7 +360,7 @@ class AuthHandler:
 
 
 def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
-                     domain: str) -> achallenges.AnnotatedChallenge:
+                     identifier: messages.Identifier) -> achallenges.AnnotatedChallenge:
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
     :param .ChallengeBody challb: ChallengeBody
@@ -373,15 +372,15 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
 
     """
     chall = challb.chall
-    logger.info("%s challenge for %s", chall.typ, domain)
+    logger.info("%s challenge for %s", chall.typ, identifier)
 
     if isinstance(chall, challenges.KeyAuthorizationChallenge):
         return achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=challb, domain=domain, account_key=account_key)
+            challb=challb, account_key=account_key, identifier=identifier)
     elif isinstance(chall, challenges.DNS):
-        return achallenges.DNS(challb=challb, domain=domain)
+        return achallenges.DNS(challb=challb, identifier=identifier)
     else:
-        return achallenges.Other(challb=challb, domain=domain)
+        return achallenges.Other(challb=challb, identifier=identifier)
 
 
 def gen_challenge_path(challbs: list[messages.ChallengeBody],
@@ -473,7 +472,7 @@ def _generate_failed_chall_msg(failed_achalls: list[achallenges.AnnotatedChallen
     msg = []
 
     for achall in failed_achalls:
-        msg.append("\n  Domain: %s\n  Type:   %s\n  Detail: %s\n" % (
-            achall.domain, typ, achall.error.detail))
+        msg.append("\n  Identifier: %s\n  Type:   %s\n  Detail: %s\n" % (
+            achall.identifier.value, typ, achall.error.detail))
 
     return "".join(msg)

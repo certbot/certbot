@@ -9,7 +9,7 @@ from unittest import mock
 
 import pytest
 
-from acme import challenges
+from acme import challenges, messages
 from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
@@ -1193,17 +1193,20 @@ class MultipleVhostsTest(util.ApacheTest):
                 challenges.HTTP01(
                     token=b"jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
                 "pending"),
-            domain="encryption-example.demo", account_key=account_key)
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="encryption-example.demo"),
+            account_key=account_key)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.HTTP01(
                     token=b"uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
                 "pending"),
-            domain="certbot.demo", account_key=account_key)
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="certbot.demo"),
+            account_key=account_key)
         achall3 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.HTTP01(token=(b'x' * 16)), "pending"),
-            domain="example.org", account_key=account_key)
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="example.org"),
+            account_key=account_key)
 
         return account_key, (achall1, achall2, achall3)
 
