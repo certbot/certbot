@@ -36,7 +36,7 @@ class Format(enum.IntEnum):
             return Encoding.PEM
 
 
-# Even *more* annoyingly, due to a mypy bug, we can't use Union[] types in
+# Annoyingly, due to a mypy bug, we can't use Union[] types in
 # isinstance expressions without causing false mypy errors. So we have to
 # recreate the type collection as a tuple here. And no, typing.get_args doesn't
 # work due to another mypy bug.
