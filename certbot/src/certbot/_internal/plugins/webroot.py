@@ -10,7 +10,7 @@ from typing import Optional
 from typing import Sequence
 from typing import Union
 
-from acme import challenges
+from acme import challenges, messages
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -106,6 +106,9 @@ to serve all files under specified web root ({0})."""
         pass
 
     def perform(self, achalls: list[AnnotatedChallenge]) -> list[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
+        if any(achall.identifier.typ == messages.IDENTIFIER_IP for achall in achalls):
+            raise errors.ConfigurationError(
+                "webroot authenticator not supported for IP address certificates")
         self._set_webroots(achalls)
 
         self._create_challenge_dirs()

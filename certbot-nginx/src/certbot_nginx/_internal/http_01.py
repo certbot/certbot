@@ -57,7 +57,7 @@ class NginxHttp01(common.ChallengePerformer):
             return []
         if any(achall.identifier.typ == messages.IDENTIFIER_IP for achall in self.achalls):
             raise errors.ConfigurationError(
-                "Apache authenticator not supported for IP address certificates")
+                "nginx authenticator not supported for IP address certificates")
 
         responses = [x.response(x.account_key) for x in self.achalls]
 

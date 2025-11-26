@@ -376,11 +376,11 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
 
     if isinstance(chall, challenges.KeyAuthorizationChallenge):
         return achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=challb, domain=identifier.value, account_key=account_key, identifier=identifier)
+            challb=challb, account_key=account_key, identifier=identifier)
     elif isinstance(chall, challenges.DNS):
-        return achallenges.DNS(challb=challb, domain=identifier.value, identifier=identifier)
+        return achallenges.DNS(challb=challb, identifier=identifier)
     else:
-        return achallenges.Other(challb=challb, domain=identifier.value, identifier=identifier)
+        return achallenges.Other(challb=challb, identifier=identifier)
 
 
 def gen_challenge_path(challbs: list[messages.ChallengeBody],

@@ -7,7 +7,7 @@ from unittest import mock
 import configobj
 import josepy as jose
 
-from acme import challenges
+from acme import challenges, messages
 from certbot import achallenges
 from certbot.compat import filesystem
 from certbot.plugins.dns_common import DNSAuthenticator
@@ -51,7 +51,9 @@ class BaseAuthenticatorTest:
     """
 
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.DNS01, domain=DOMAIN, account_key=KEY)
+        challb=acme_util.DNS01,
+        identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=DOMAIN),
+        account_key=KEY)
 
     def test_more_info(self: _AuthenticatorCallableTestCase) -> None:
         self.assertTrue(isinstance(self.auth.more_info(), str))  # pylint: disable=no-member

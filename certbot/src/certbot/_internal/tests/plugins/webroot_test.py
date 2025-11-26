@@ -14,7 +14,7 @@ from unittest import mock
 import josepy as jose
 import pytest
 
-from acme import challenges
+from acme import challenges, messages
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import filesystem
@@ -30,7 +30,9 @@ class AuthenticatorTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.webroot.Authenticator."""
 
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.HTTP01_P, domain="thing.com", account_key=KEY)
+        challb=acme_util.HTTP01_P,
+        identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="thing.com"),
+        account_key=KEY)
 
     def setUp(self):
         from certbot._internal.plugins.webroot import Authenticator
@@ -120,7 +122,8 @@ class AuthenticatorTest(unittest.TestCase):
         # Covers bug https://github.com/certbot/certbot/issues/9091
         achall_2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(challenges.HTTP01(token=b"bingo"), "pending"),
-            domain="second-thing.com", account_key=KEY)
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="second-thing.com"),
+            account_key=KEY)
         self.config.webroot_map["second-thing.com"] = self.path
 
         challenge_path = os.path.join(self.path, ".well-known", "acme-challenge")
@@ -210,7 +213,9 @@ class AuthenticatorTest(unittest.TestCase):
         mock_display.menu.side_effect = ((display_util.OK, 0),
                                          (display_util.OK, new_webroot))
         achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.HTTP01_P, domain="something.com", account_key=KEY)
+            challb=acme_util.HTTP01_P,
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="something.com"),
+            account_key=KEY)
         with mock.patch('certbot.display.ops.validated_directory') as m:
             m.return_value = (display_util.OK, new_webroot,)
             self.auth.perform([achall])
@@ -262,7 +267,8 @@ class AuthenticatorTest(unittest.TestCase):
         bingo_achall = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.HTTP01(token=b"bingo"), "pending"),
-            domain="thing.com", account_key=KEY)
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="thing.com"),
+            account_key=KEY)
 
         bingo_validation_path = "YmluZ28"
         filesystem.mkdir(self.partial_root_challenge_path)
@@ -307,7 +313,9 @@ class WebrootActionTest(unittest.TestCase):
     """Tests for webroot argparse actions."""
 
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.HTTP01_P, domain="thing.com", account_key=KEY)
+        challb=acme_util.HTTP01_P,
+        identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="thing.com"),
+        account_key=KEY)
 
     def setUp(self):
         from certbot._internal.plugins.webroot import Authenticator

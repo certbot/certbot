@@ -37,7 +37,8 @@ class ApacheHttp01Test(util.ApacheTest):
                     challb=acme_util.chall_to_challb(
                         challenges.HTTP01(token=((chr(ord('a') + i).encode() * 16))),
                         "pending"),
-                    domain=self.vhosts[i].name, account_key=self.account_key))
+                    identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=self.vhosts[i].name),
+                    account_key=self.account_key))
 
         modules = ["ssl", "rewrite", "authz_core", "authz_host"]
         for mod in modules:
@@ -111,7 +112,8 @@ class ApacheHttp01Test(util.ApacheTest):
                 challb=acme_util.chall_to_challb(
                     challenges.HTTP01(token=((b'a' * 16))),
                     "pending"),
-                domain="something.nonexistent", account_key=self.account_key)]
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="something.nonexistent"),
+                account_key=self.account_key)]
         self.common_perform_test(achalls, vhosts)
 
     def test_configure_multiple_vhosts(self):
@@ -122,7 +124,8 @@ class ApacheHttp01Test(util.ApacheTest):
                 challb=acme_util.chall_to_challb(
                     challenges.HTTP01(token=((b'a' * 16))),
                     "pending"),
-                domain="duplicate.example.com", account_key=self.account_key)]
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="duplicate.example.com"),
+                account_key=self.account_key)]
         self.common_perform_test(achalls, vhosts)
 
     def test_configure_name_and_blank(self):
@@ -133,7 +136,8 @@ class ApacheHttp01Test(util.ApacheTest):
                 challb=acme_util.chall_to_challb(
                     challenges.HTTP01(token=((b'a' * 16))),
                     "pending"),
-                domain=domain, account_key=self.account_key),
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=domain),
+                account_key=self.account_key),
         ]
         self.common_perform_test(achalls, vhosts)
 
@@ -160,7 +164,8 @@ class ApacheHttp01Test(util.ApacheTest):
                 challb=acme_util.chall_to_challb(
                     challenges.HTTP01(token=((b'a' * 16))),
                     "pending"),
-                domain="certbot.demo", account_key=self.account_key)]
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="certbot.demo"),
+                account_key=self.account_key)]
         vhosts[0].enabled = False
         self.common_perform_test(achalls, vhosts)
         matches = self.config.parser.find_dir(

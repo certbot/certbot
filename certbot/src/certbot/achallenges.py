@@ -26,6 +26,8 @@ import josepy as jose
 from acme import challenges, messages
 from acme.challenges import Challenge
 
+from certbot import errors
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,21 +50,32 @@ class AnnotatedChallenge(jose.ImmutableMap):
         if name == 'domain':
             warnings.warn("the domain attribute is deprecated and will be removed in "
                         "an upcoming release", DeprecationWarning)
-        return object.__getattribute__(self, name)
+        return super().__getattribute__(name)
 
     def __hash__(self) -> int:
-        return hash(tuple(getattr(self, slot) for slot in self.__slots__ if slot != 'domain'))
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', 'the domain attribute is deprecated')
+            return super().__hash__()
 
     def __eq__(self, other: Any) -> bool:
-        return (tuple(getattr(self, slot) for slot in self.__slots__ if slot != 'domain') ==
-                tuple(getattr(other, slot) for slot in other.__slots__ if slot != 'domain'))
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', 'the domain attribute is deprecated')
+            return super().__eq__(other)
 
-    def __init__(self, **kwargs: Any) -> None: # pylint: disable=super-init-not-called
+    def __init__(self, **kwargs: Any) -> None:
+        if 'domain' in kwargs:
+            if 'identifier' in kwargs:
+                raise errors.Error("AnnotatedChallenge takes either domain or identifier, not both")
+            warnings.warn("the domain attribute is deprecated and will be removed in "
+                          "an upcoming release", DeprecationWarning)
         if 'identifier' not in kwargs:
             kwargs['identifier'] = messages.Identifier(
                 typ=messages.IDENTIFIER_FQDN, value=kwargs['domain'])
         if 'domain' not in kwargs:
-            kwargs['domain'] = kwargs['identifier'].value
+            if kwargs['identifier'].typ == messages.IDENTIFIER_FQDN:
+                kwargs['domain'] = kwargs['identifier'].value
+            else:
+                kwargs['domain'] = None
         super().__init__(**kwargs)
 
 

@@ -437,7 +437,6 @@ class ChallbToAchallTest(unittest.TestCase):
         assert self._call(acme_util.HTTP01_P) == \
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.HTTP01_P, account_key="account_key",
-                domain="domain",
                 identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain"))
 
 
