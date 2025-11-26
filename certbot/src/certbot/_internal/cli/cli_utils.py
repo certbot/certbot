@@ -131,6 +131,24 @@ def add_domains(args_or_config: Union[argparse.Namespace, configuration.Namespac
     return validated_domains
 
 
+class _IPAddressAction(argparse.Action):
+    """Action class for parsing IP addresses."""
+
+    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
+                 values: Union[str, Sequence[Any], None],
+                 option_string: Optional[str] = None) -> None:
+        match values:
+            case None:
+                return
+            case str():
+                # This will throw an exception if the IP address doesn't parse.
+                namespace.ip_addresses.append(san.IPAddress(str(values)))
+            case Sequence():
+                for v in values:
+                    # This will throw an exception if the IP address doesn't parse.
+                    namespace.ip_addresses.append(san.IPAddress(str(v)))
+
+
 class CaseInsensitiveList(list):
     """A list that will ignore case when searching.
 

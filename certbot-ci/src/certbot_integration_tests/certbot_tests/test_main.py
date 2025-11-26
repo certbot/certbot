@@ -111,6 +111,18 @@ def test_http_01(context: IntegrationTestsContext) -> None:
     assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
 
+def test_ip_address_standalone(context: IntegrationTestsContext) -> None:
+    """Test the HTTP-01 challenge with an IP address using standalone authenticator.
+
+    While Pebble will offer both HTTP-01 and TLS-ALPN-01 challenges, we will
+    only select HTTP-01 because TLS-ALPN-01 is not supported by the standalone
+    authenticator."""
+
+    context.certbot([
+         'certonly', '--ip-address', context.get_local_ip(), '--standalone',
+    ])
+
+
 def test_manual_http_auth(context: IntegrationTestsContext) -> None:
     """Test the HTTP-01 challenge using manual plugin."""
     with misc.create_http_server(context.http_01_port) as webroot,\
