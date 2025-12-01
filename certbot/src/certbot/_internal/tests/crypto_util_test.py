@@ -128,14 +128,13 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
             test_util.load_vector('csr_512.pem'), P256_KEY)
 
 
-class ImportCSRFileTest(unittest.TestCase):
-    """Tests for certbot.certbot_util._import_csr_file. Replace the DeprecatedImportCSRFileTest with
-    this on next major release."""
+class ReadCSRFileTest(unittest.TestCase):
+    """Tests for certbot.certbot_util.read_csr_file."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import _import_csr_file
-        return _import_csr_file(*args, **kwargs)
+        from certbot.crypto_util import read_csr_file
+        return read_csr_file(*args, **kwargs)
 
     def test_der_csr(self):
         csrfile = test_util.vector_path('csr_512.der')
@@ -162,13 +161,13 @@ class ImportCSRFileTest(unittest.TestCase):
                           test_util.load_vector('cert_512.pem'))
 
 
-class DeprecatedImportCSRFileTest(unittest.TestCase):
+class ImportCSRFileTest(unittest.TestCase):
     """Tests for certbot.certbot_util.import_csr_file."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.crypto_util import import_csr_file
-        with pytest.warns(DeprecationWarning, match='import_csr_file will change'):
+        with pytest.warns(DeprecationWarning, match='import_csr_file is deprecated'):
             return import_csr_file(*args, **kwargs)
 
     def test_der_csr(self):

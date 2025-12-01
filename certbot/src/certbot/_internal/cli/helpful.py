@@ -330,7 +330,7 @@ class HelpfulArgumentParser:
             raise errors.Error("--allow-subset-of-names cannot be used with --csr")
 
         csrfile, contents = config.csr[0:2]
-        util_csr = crypto_util._import_csr_file(csrfile, contents) # pylint: disable=protected-access
+        util_csr = crypto_util.read_csr_file(csrfile, contents)
         x509_req = x509.load_pem_x509_csr(util_csr.data)
         domains, _ = san.from_x509(x509_req.subject, x509_req.extensions)
 
