@@ -3,14 +3,6 @@
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
-## Upcoming
-
-### Changed
-
- - `achallenges.KeyAuthorizationAnnotatedChallenge`, `achallenges.DNS`, and `achallenges.Other` have a
-    new field `identifier`, of type `acme.messages.Identifier`. This should be used in place of the
-    `domain` field, which is now deprecated. Objects created with the `domain` field will have that
-    value propagated into `identifier`, and vice versa. Setting both at the same time errors.
 
 ## 5.1.0 - 2025-10-07
 
