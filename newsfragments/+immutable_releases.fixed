@@ -1,0 +1,1 @@
+Due to a mistake on our end playing with GitHub's new [immutable releases](https://github.blog/changelog/2025-10-28-immutable-releases-are-now-generally-available/) feature that prevented our CI from uploading additional release assets, Certbot 5.2.0 was not and will not be uploaded to most platforms. Instead, that version number will be skipped and we'll go straight to 5.2.1.
