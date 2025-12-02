@@ -4,6 +4,27 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.2.0 - 2025-12-02
+
+### Added
+
+- Support for Python 3.14 was added.
+  ([#10477](https://github.com/certbot/certbot/issues/10477))
+
+### Changed
+
+- While nothing significant should have changed from the user's perspective,
+  we've been doing a lot of internal refactoring in preparation for soon adding
+  support for IP address certificates to Certbot.
+  ([#10468](https://github.com/certbot/certbot/issues/10468),
+  [#10478](https://github.com/certbot/certbot/issues/10478))
+
+### Fixed
+
+- Removed `vhost_combined` and `vhost_common` log formats from included Apache
+  configuration file. ([#9769](https://github.com/certbot/certbot/issues/9769))
+
+
 ## 5.1.0 - 2025-10-07
 
 ### Changed
