@@ -1,1 +1,0 @@
-While nothing significant should have changed from the user's perspective, we've been doing a lot of internal refactoring in preparation for soon adding support for IP address certificates to Certbot.
