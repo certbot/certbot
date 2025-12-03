@@ -197,7 +197,7 @@ def read_csr_file(
 
 def import_csr_file(
     csrfile: str, data: bytes
-) -> tuple[acme_crypto_util.Format, util.CSR, list[str]]:
+) -> tuple['acme_crypto_util.Format', util.CSR, list[str]]:
     """Import a CSR file, which can be either PEM or DER.
 
     :param str csrfile: CSR filename
@@ -416,7 +416,7 @@ def verify_fullchain(renewable_cert: interfaces.RenewableCert) -> None:
 
 
 def get_sans_from_cert(
-    cert: bytes, typ: acme_crypto_util.Format | int | None = None
+    cert: bytes, typ: 'acme_crypto_util.Format | int | None' = None
 ) -> list[str]:
     """Get a list of Subject Alternative Names from a certificate.
 
@@ -449,7 +449,7 @@ def get_sans_from_cert(
 
 
 def get_names_from_cert(
-    cert: bytes, typ: acme_crypto_util.Format | int | None = None
+    cert: bytes, typ: 'acme_crypto_util.Format | int | None' = None
 ) -> list[str]:
     """Get a list of domains from a cert, including the CN if it is set.
 
@@ -476,7 +476,7 @@ def get_names_from_cert(
 
 
 def get_names_from_req(
-    csr: bytes, typ: acme_crypto_util.Format | int | None = None
+    csr: bytes, typ: 'acme_crypto_util.Format | int | None' = None
 ) -> list[str]:
     """Get a list of domains from a CSR, including the CN if it is set.
 
