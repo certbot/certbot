@@ -3,12 +3,15 @@ import enum
 from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
+from types import ModuleType
 import typing
 from typing import Any
 from typing import Literal
+from typing import cast
 from typing import Optional
 from typing import Union
 import warnings
+import sys
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -19,22 +22,39 @@ from OpenSSL import crypto
 logger = logging.getLogger(__name__)
 
 
-# This is very ugly but thankfully temporary. Since accessing enum variants doesn't call a
-# constructor, overriding the class' `__getattribute__` handler lets us raise a deprecation warning
-# whenever `Format.PEM` or `Format.DER` expressions are resolved.
-class _FormatMeta(enum.EnumMeta):
-    def __getattribute__(cls, name: str) -> Any:
-        value = super().__getattribute__(name)
-        # raise a deprecation warning only if the enum's variants are invoked -- as it turns out,
-        # during normal Python class setup, __getattribute__ is run a *lot*
-        if isinstance(value, cls):
+# This class takes a similar approach to the cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
+class _ClientDeprecationModule:
+    """
+    Internal class delegating to a module, and displaying warnings when attributes
+    related to deprecated attributes in the acme.client module.
+    """
+    def __init__(self, module: ModuleType) -> None:
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr: str) -> Any:
+        if attr == 'Format':
             warnings.warn("acme.crypto_util.Format is deprecated and will be removed in "
                 "the next major release.", DeprecationWarning)
-        return value
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr: str) -> None:  # pragma: no cover
+        delattr(self._module, attr)
+
+    def __dir__(self) -> list[str]:  # pragma: no cover
+        return ['_module'] + dir(self._module)
 
 
-class Format(enum.IntEnum, metaclass=_FormatMeta):
-    """File format to be used when parsing or serializing X.509 structures.
+# Patching ourselves to warn about deprecation and planned removal of some elements in the module.
+sys.modules[__name__] = cast(ModuleType, _ClientDeprecationModule(sys.modules[__name__]))
+
+
+class Format(enum.IntEnum):
+    """File format to be used when parsing or serializing X.509 structures. Deprecated.
 
     Backwards compatible with the `FILETYPE_ASN1` and `FILETYPE_PEM` constants
     from pyOpenSSL.
