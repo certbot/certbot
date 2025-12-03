@@ -179,7 +179,8 @@ def read_csr_file(
     :param bytes data: contents of the CSR file
 
     :returns: object representing the CSR
-    :rtype util.CSR
+    :rtype: util.CSR
+
     """
     try:
         # Try to parse as DER first, then fall back to PEM.
