@@ -48,8 +48,10 @@ class AnnotatedChallenge(jose.ImmutableMap):
 
     def __getattribute__(self, name: str) -> Any:
         if name == 'domain':
-            warnings.warn("the domain attribute is deprecated and will be removed in "
-                        "an upcoming release", DeprecationWarning)
+            warnings.warn("The domain attribute is deprecated and will be removed in "
+                        "an upcoming release. Access the AnnotatedChallenge.identifier.value "
+                        "attribute instead",
+                        DeprecationWarning)
         return super().__getattribute__(name)
 
     def __hash__(self) -> int:
@@ -66,8 +68,11 @@ class AnnotatedChallenge(jose.ImmutableMap):
         if 'domain' in kwargs:
             if 'identifier' in kwargs:
                 raise errors.Error("AnnotatedChallenge takes either domain or identifier, not both")
-            warnings.warn("the domain attribute is deprecated and will be removed in "
-                          "an upcoming release", DeprecationWarning)
+            warnings.warn("The domain attribute is deprecated and will be removed in "
+                          "an upcoming release. domain=<domain> with "
+                          "identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, "
+                          "value=<domain>)",
+                          DeprecationWarning)
         if 'identifier' not in kwargs:
             kwargs['identifier'] = messages.Identifier(
                 typ=messages.IDENTIFIER_FQDN, value=kwargs['domain'])
