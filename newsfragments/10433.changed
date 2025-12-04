@@ -1,4 +1,4 @@
-A few largely unused functions/types have been deprecated in our effort to remove our OpenSSL dependency:
+A few largely unused functions/types have been deprecated in our effort to remove our pyOpenSSL dependency:
     * Deprecated: `certbot.crypto_util.get_sans_from_cert`
     * Deprecated: `certbot.crypto_util.get_names_from_cert`
     * Deprecated: `certbot.crypto_util.get_names_from_req`
