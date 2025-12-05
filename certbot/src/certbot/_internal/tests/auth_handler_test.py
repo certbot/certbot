@@ -430,13 +430,14 @@ class ChallbToAchallTest(unittest.TestCase):
 
     def _call(self, challb):
         from certbot._internal.auth_handler import challb_to_achall
-        return challb_to_achall(challb, "account_key", "domain")
+        ident = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain")
+        return challb_to_achall(challb, "account_key", ident)
 
     def test_it(self):
         assert self._call(acme_util.HTTP01_P) == \
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.HTTP01_P, account_key="account_key",
-                domain="domain")
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain"))
 
 
 class GenChallengePathTest(unittest.TestCase):
@@ -517,11 +518,11 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
             '\n'
             'Certbot failed to authenticate some domains (authenticator: buzz). '
             'The Certificate Authority reported these problems:\n'
-            '  Domain: example.com\n'
+            '  Identifier: example.com\n'
             '  Type:   tls\n'
             '  Detail: detail\n'
             '\n'
-            '  Domain: example.com\n'
+            '  Identifier: example.com\n'
             '  Type:   tls\n'
             '  Detail: detail\n'
             '\nHint: the buzz hint\n'
@@ -536,15 +537,15 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
             '\n'
             'Certbot failed to authenticate some domains (authenticator: quux). '
             'The Certificate Authority reported these problems:\n'
-            '  Domain: foo.bar\n'
+            '  Identifier: foo.bar\n'
             '  Type:   dnssec\n'
             '  Detail: detail\n'
             '\n'
-            '  Domain: example.com\n'
+            '  Identifier: example.com\n'
             '  Type:   tls\n'
             '  Detail: detail\n'
             '\n'
-            '  Domain: example.com\n'
+            '  Identifier: example.com\n'
             '  Type:   tls\n'
             '  Detail: detail\n'
             '\nHint: quuuuuux\n'
@@ -565,7 +566,7 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
 
 def gen_auth_resp(chall_list):
     """Generate a dummy authorization response."""
-    return ["%s%s" % (chall.__class__.__name__, chall.domain)
+    return ["%s%s" % (chall.__class__.__name__, chall.identifier.value)
             for chall in chall_list]
 
 

@@ -14,7 +14,7 @@ from unittest import mock
 import josepy as jose
 import pytest
 
-from acme import challenges
+from acme import challenges, messages
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import filesystem
@@ -30,7 +30,9 @@ class AuthenticatorTest(unittest.TestCase):
     """Tests for certbot._internal.plugins.webroot.Authenticator."""
 
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.HTTP01_P, domain="thing.com", account_key=KEY)
+        challb=acme_util.HTTP01_P,
+        identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="thing.com"),
+        account_key=KEY)
 
     def setUp(self):
         from certbot._internal.plugins.webroot import Authenticator
@@ -79,11 +81,11 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.perform([self.achall])
         assert mock_display.menu.called
         for call in mock_display.menu.call_args_list:
-            assert self.achall.domain in call[0][0]
+            assert self.achall.identifier.value in call[0][0]
             assert all(
                 webroot in call[0][1]
                 for webroot in self.config.webroot_map.values())
-        assert self.config.webroot_map[self.achall.domain] == \
+        assert self.config.webroot_map[self.achall.identifier.value] == \
                          self.path
 
     @unittest.skipIf(filesystem.POSIX_MODE, reason='Test specific to Windows')
@@ -120,7 +122,8 @@ class AuthenticatorTest(unittest.TestCase):
         # Covers bug https://github.com/certbot/certbot/issues/9091
         achall_2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(challenges.HTTP01(token=b"bingo"), "pending"),
-            domain="second-thing.com", account_key=KEY)
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="second-thing.com"),
+            account_key=KEY)
         self.config.webroot_map["second-thing.com"] = self.path
 
         challenge_path = os.path.join(self.path, ".well-known", "acme-challenge")
@@ -142,7 +145,7 @@ class AuthenticatorTest(unittest.TestCase):
             self.auth.perform([self.achall])
         assert mock_display.menu.called
         for call in mock_display.menu.call_args_list:
-            assert self.achall.domain in call[0][0]
+            assert self.achall.identifier.value in call[0][0]
             assert all(
                 webroot in call[0][1]
                 for webroot in self.config.webroot_map.values())
@@ -160,7 +163,7 @@ class AuthenticatorTest(unittest.TestCase):
 
             self.auth.perform([self.achall])
 
-        assert self.config.webroot_map[self.achall.domain] == self.path
+        assert self.config.webroot_map[self.achall.identifier.value] == self.path
 
     @test_util.patch_display_util()
     def test_new_webroot_empty_map_cancel(self, mock_get_utility):
@@ -210,11 +213,13 @@ class AuthenticatorTest(unittest.TestCase):
         mock_display.menu.side_effect = ((display_util.OK, 0),
                                          (display_util.OK, new_webroot))
         achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.HTTP01_P, domain="something.com", account_key=KEY)
+            challb=acme_util.HTTP01_P,
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="something.com"),
+            account_key=KEY)
         with mock.patch('certbot.display.ops.validated_directory') as m:
             m.return_value = (display_util.OK, new_webroot,)
             self.auth.perform([achall])
-        assert self.config.webroot_map[achall.domain] == new_webroot
+        assert self.config.webroot_map[achall.identifier.value] == new_webroot
 
     def test_perform_permissions(self):
         self.auth.prepare()
@@ -262,7 +267,8 @@ class AuthenticatorTest(unittest.TestCase):
         bingo_achall = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.HTTP01(token=b"bingo"), "pending"),
-            domain="thing.com", account_key=KEY)
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="thing.com"),
+            account_key=KEY)
 
         bingo_validation_path = "YmluZ28"
         filesystem.mkdir(self.partial_root_challenge_path)
@@ -307,7 +313,9 @@ class WebrootActionTest(unittest.TestCase):
     """Tests for webroot argparse actions."""
 
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.HTTP01_P, domain="thing.com", account_key=KEY)
+        challb=acme_util.HTTP01_P,
+        identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="thing.com"),
+        account_key=KEY)
 
     def setUp(self):
         from certbot._internal.plugins.webroot import Authenticator
@@ -324,9 +332,9 @@ class WebrootActionTest(unittest.TestCase):
 
     def test_domain_before_webroot(self):
         args = self.parser.parse_args(
-            "-d {0} -w {1}".format(self.achall.domain, self.path).split())
+            "-d {0} -w {1}".format(self.achall.identifier.value, self.path).split())
         config = self._get_config_after_perform(args)
-        assert config.webroot_map[self.achall.domain] == self.path
+        assert config.webroot_map[self.achall.identifier.value] == self.path
 
     def test_domain_before_webroot_error(self):
         with pytest.raises(errors.PluginError):
@@ -336,10 +344,10 @@ class WebrootActionTest(unittest.TestCase):
 
     def test_multiwebroot(self):
         args = self.parser.parse_args("-w {0} -d {1} -w {2} -d bar".format(
-            self.path, self.achall.domain, tempfile.mkdtemp()).split())
-        assert args.webroot_map[self.achall.domain] == self.path
+            self.path, self.achall.identifier.value, tempfile.mkdtemp()).split())
+        assert args.webroot_map[self.achall.identifier.value] == self.path
         config = self._get_config_after_perform(args)
-        assert config.webroot_map[self.achall.domain] == self.path
+        assert config.webroot_map[self.achall.identifier.value] == self.path
 
     def test_webroot_map_partial_without_perform(self):
         # This test acknowledges the fact that webroot_map content will be partial if webroot
@@ -350,8 +358,8 @@ class WebrootActionTest(unittest.TestCase):
         # See https://github.com/certbot/certbot/pull/7095 for details.
         other_webroot_path = tempfile.mkdtemp()
         args = self.parser.parse_args("-w {0} -d {1} -w {2} -d bar".format(
-            self.path, self.achall.domain, other_webroot_path).split())
-        assert args.webroot_map == {self.achall.domain: self.path}
+            self.path, self.achall.identifier.value, other_webroot_path).split())
+        assert args.webroot_map == {self.achall.identifier.value: self.path}
         assert args.webroot_path == [self.path, other_webroot_path]
 
     def _get_config_after_perform(self, config):

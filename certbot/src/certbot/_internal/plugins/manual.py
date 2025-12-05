@@ -4,7 +4,7 @@ from typing import Any
 from typing import Callable
 from typing import Iterable
 
-from acme import challenges
+from acme import challenges, messages
 from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
@@ -184,10 +184,13 @@ permitted by DNS standards.)
 
     def _perform_achall_with_script(self, achall: achallenges.AnnotatedChallenge,
                                     achalls: list[achallenges.AnnotatedChallenge]) -> None:
+        if not achall.identifier.typ == messages.IDENTIFIER_FQDN:
+            raise errors.ConfigurationError("non-FQDN identifiers not yet supported")
+        domain = achall.identifier.value
         env = {
-            "CERTBOT_DOMAIN": achall.domain,
+            "CERTBOT_DOMAIN": domain,
             "CERTBOT_VALIDATION": achall.validation(achall.account_key),
-            "CERTBOT_ALL_DOMAINS": ','.join(one_achall.domain for one_achall in achalls),
+            "CERTBOT_ALL_DOMAINS": ','.join(one_achall.identifier.value for one_achall in achalls),
             "CERTBOT_REMAINING_CHALLENGES": str(len(achalls) - achalls.index(achall) - 1),
         }
         if isinstance(achall.chall, challenges.HTTP01):
@@ -195,22 +198,25 @@ permitted by DNS standards.)
         else:
             os.environ.pop('CERTBOT_TOKEN', None)
         os.environ.update(env)
-        _, out = self._execute_hook('auth-hook', achall.domain)
+        _, out = self._execute_hook('auth-hook', domain)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
     def _perform_achall_manually(self, achall: achallenges.AnnotatedChallenge,
                                  last_dns_achall: bool = False) -> None:
+        if not achall.identifier.typ == messages.IDENTIFIER_FQDN:
+            raise errors.ConfigurationError("non-FQDN identifiers not yet supported")
+        domain = achall.identifier.value
         validation = achall.validation(achall.account_key)
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
                 achall=achall, encoded_token=achall.chall.encode('token'),
                 port=self.config.http01_port,
-                uri=achall.chall.uri(achall.domain), validation=validation)
+                uri=achall.chall.uri(domain), validation=validation)
         else:
             assert isinstance(achall.chall, challenges.DNS01)
             msg = self._DNS_INSTRUCTIONS.format(
-                domain=achall.validation_domain_name(achall.domain),
+                domain=achall.validation_domain_name(domain),
                 validation=validation)
         if isinstance(achall.chall, challenges.DNS01):
             if self.subsequent_dns_challenge:
@@ -224,7 +230,7 @@ permitted by DNS standards.)
             if last_dns_achall:
                 # last dns-01 challenge
                 msg += self._DNS_VERIFY_INSTRUCTIONS.format(
-                    domain=achall.validation_domain_name(achall.domain))
+                    domain=achall.validation_domain_name(domain))
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
@@ -238,7 +244,7 @@ permitted by DNS standards.)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)
-                self._execute_hook('cleanup-hook', achall.domain)
+                self._execute_hook('cleanup-hook', achall.identifier.value)
         self.reverter.recovery_routine()
 
     def _execute_hook(self, hook_name: str, achall_domain: str) -> tuple[str, str]:
