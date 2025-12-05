@@ -69,7 +69,7 @@ class AnnotatedChallenge(jose.ImmutableMap):
             if 'identifier' in kwargs:
                 raise errors.Error("AnnotatedChallenge takes either domain or identifier, not both")
             warnings.warn("The domain attribute is deprecated and will be removed in "
-                          "an upcoming release. domain=<domain> with "
+                          "an upcoming release. Replace domain=<domain> with "
                           "identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, "
                           "value=<domain>)",
                           DeprecationWarning)
