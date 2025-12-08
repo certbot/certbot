@@ -13,7 +13,6 @@ import pytest
 
 from certbot import configuration
 from certbot import errors
-from certbot._internal import san
 from certbot._internal.storage import ALL_FOUR
 from certbot._internal.tests import storage_test
 from certbot.compat import filesystem
@@ -219,12 +218,11 @@ class CertificatesTest(BaseCertManagerTest):
 
         cert = mock.MagicMock(lineagename="nameone")
         cert.target_expiry = expiry
-        cert.sans.return_value = [san.DNSName("nameone"), san.DNSName("nametwo")]
+        cert.names.return_value = ["nameone", "nametwo"]
         cert.is_test_cert = False
         parsed_certs = [cert]
 
         mock_config = mock.MagicMock(certname=None, lineagename=None)
-        mock_config.domains = []
         # pylint: disable=protected-access
 
         # pylint: disable=protected-access
@@ -263,16 +261,16 @@ class CertificatesTest(BaseCertManagerTest):
 
         cert = mock.MagicMock(lineagename="indescribable")
         cert.target_expiry = expiry
-        cert.sans.return_value = [san.DNSName("nameone"), san.DNSName("thrice.named")]
+        cert.names.return_value = ["nameone", "thrice.named"]
         cert.is_test_cert = True
         parsed_certs.append(cert)
 
         out = get_report()
         assert len(re.findall("INVALID:", out)) == 2
-        mock_config.domains = [san.DNSName("thrice.named")]
+        mock_config.domains = ["thrice.named"]
         out = get_report()
         assert len(re.findall("INVALID:", out)) == 1
-        mock_config.domains = [san.DNSName("nameone")]
+        mock_config.domains = ["nameone"]
         out = get_report()
         assert len(re.findall("INVALID:", out)) == 2
         mock_config.certname = "indescribable"
@@ -333,7 +331,7 @@ class LineageForCertnameTest(BaseCertManagerTest):
 
 
 class DomainsForCertnameTest(BaseCertManagerTest):
-    """Tests for certbot._internal.cert_manager.sans_for_certname"""
+    """Tests for certbot._internal.cert_manager.domains_for_certname"""
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot._internal.storage.renewal_file_for_certname')
@@ -342,12 +340,12 @@ class DomainsForCertnameTest(BaseCertManagerTest):
                          mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
         mock_match = mock.Mock(lineagename="example.com")
-        domains = [san.DNSName("example.com"), san.DNSName("example.org")]
-        mock_match.sans.return_value = domains
+        domains = ["example.com", "example.org"]
+        mock_match.names.return_value = domains
         mock_renewable_cert.return_value = mock_match
         from certbot._internal import cert_manager
-        assert cert_manager.sans_for_certname(self.config, "example.com") == \
-               domains
+        assert cert_manager.domains_for_certname(self.config, "example.com") == \
+            domains
         assert mock_make_or_verify_dir.called
 
     @mock.patch('certbot.util.make_or_verify_dir')
@@ -355,7 +353,7 @@ class DomainsForCertnameTest(BaseCertManagerTest):
     def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
         from certbot._internal import cert_manager
-        assert cert_manager.sans_for_certname(self.config, "other.com") is None
+        assert cert_manager.domains_for_certname(self.config, "other.com") is None
         assert mock_make_or_verify_dir.called
 
 
@@ -376,25 +374,24 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
 
         # No overlap at all
         result = find_duplicative_certs(
-            self.config, [san.DNSName('wow.net'), san.DNSName('hooray.org')])
+            self.config, ['wow.net', 'hooray.org'])
         assert result == (None, None)
 
         # Totally identical
         result = find_duplicative_certs(
-            self.config, [san.DNSName('example.com'), san.DNSName('www.example.com')])
+            self.config, ['example.com', 'www.example.com'])
         assert result[0].configfile.filename.endswith('example.org.conf')
         assert result[1] is None
 
         # Superset
         result = find_duplicative_certs(
-            self.config, [san.DNSName('example.com'), san.DNSName('www.example.com'),
-                          san.DNSName('something.new')])
+            self.config, ['example.com', 'www.example.com', 'something.new'])
         assert result[0] is None
         assert result[1].configfile.filename.endswith('example.org.conf')
 
         # Partial overlap doesn't count
         result = find_duplicative_certs(
-            self.config, [san.DNSName('example.com'), san.DNSName('something.new')])
+            self.config, ['example.com', 'something.new'])
         assert result == (None, None)
 
 

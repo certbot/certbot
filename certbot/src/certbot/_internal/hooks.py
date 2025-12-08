@@ -6,7 +6,6 @@ from typing import Optional
 from certbot import configuration
 from certbot import errors
 from certbot import util
-from certbot._internal import san
 from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
@@ -101,7 +100,7 @@ def _run_pre_hook_if_necessary(command: str) -> None:
 
 def post_hook(
     config: configuration.NamespaceConfig,
-    renewed_sans: list[san.SAN]
+    renewed_domains: list[str]
 ) -> None:
 
     """Run post-hooks if defined.
@@ -130,17 +129,17 @@ def post_hook(
             _run_eventually(hook)
     # certonly / run
     else:
-        renewed_sans_str = ' '.join(map(str, renewed_sans))
+        renewed_domains_str = ' '.join(renewed_domains)
         # 32k is reasonable on Windows and likely quite conservative on other platforms
-        if len(renewed_sans_str) > 32_000:
+        if len(renewed_domains_str) > 32_000:
             logger.warning("Limiting RENEWED_DOMAINS environment variable to 32k characters")
-            renewed_sans_str = renewed_sans_str[:32_000]
+            renewed_domains_str = renewed_domains_str[:32_000]
         for hook in all_hooks:
             _run_hook(
                 "post-hook",
                 hook,
                 {
-                    'RENEWED_DOMAINS': renewed_sans_str,
+                    'RENEWED_DOMAINS': renewed_domains_str,
                     # Since other commands stop certbot execution on failure,
                     # it doesn't make sense to have a FAILED_DOMAINS variable
                     'FAILED_DOMAINS': ""
@@ -164,48 +163,48 @@ def _run_eventually(command: str) -> None:
         post_hooks.append(command)
 
 
-def run_saved_post_hooks(renewed_sans: list[san.SAN], failed_sans: list[san.SAN]) -> None:
+def run_saved_post_hooks(renewed_domains: list[str], failed_domains: list[str]) -> None:
     """Run any post hooks that were saved up in the course of the 'renew' verb"""
 
-    renewed_sans_str = ' '.join(map(str, renewed_sans))
-    failed_sans_str = ' '.join(map(str, failed_sans))
+    renewed_domains_str = ' '.join(renewed_domains)
+    failed_domains_str = ' '.join(failed_domains)
 
     # 32k combined is reasonable on Windows and likely quite conservative on other platforms
-    if len(renewed_sans_str) > 16_000:
+    if len(renewed_domains_str) > 16_000:
         logger.warning("Limiting RENEWED_DOMAINS environment variable to 16k characters")
-        renewed_sans_str = renewed_sans_str[:16_000]
+        renewed_domains_str = renewed_domains_str[:16_000]
 
-    if len(failed_sans_str) > 16_000:
+    if len(failed_domains_str) > 16_000:
         logger.warning("Limiting FAILED_DOMAINS environment variable to 16k characters")
-        renewed_sans_str = failed_sans_str[:16_000]
+        renewed_domains_str = failed_domains_str[:16_000]
 
     for cmd in post_hooks:
         _run_hook(
             "post-hook",
             cmd,
             {
-                'RENEWED_DOMAINS': renewed_sans_str,
-                'FAILED_DOMAINS': failed_sans_str
+                'RENEWED_DOMAINS': renewed_domains_str,
+                'FAILED_DOMAINS': failed_domains_str
             }
         )
 
 
-def deploy_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
+def deploy_hook(config: configuration.NamespaceConfig, domains: list[str],
                 lineage_path: str) -> None:
     """Run post-issuance hook if defined.
 
     :param configuration.NamespaceConfig config: Certbot settings
-    :param sans: domains and/or IP addresses in the obtained certificate
-    :type sans: `list` of `str`
+    :param domains: domains in the obtained certificate
+    :type domains: `list` of `str`
     :param str lineage_path: live directory path for the new cert
 
     """
     if config.deploy_hook:
-        _run_deploy_hook(config.deploy_hook, sans,
+        _run_deploy_hook(config.deploy_hook, domains,
                          lineage_path, config.dry_run, config.run_deploy_hooks)
 
 
-def renew_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
+def renew_hook(config: configuration.NamespaceConfig, domains: list[str],
                lineage_path: str) -> None:
     """Run post-renewal hooks.
 
@@ -218,8 +217,8 @@ def renew_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
     logged saying that they were skipped.
 
     :param configuration.NamespaceConfig config: Certbot settings
-    :param sans: domains and/or IP addresses in the obtained certificate
-    :type sans: `list` of `san.SAN`
+    :param domains: domains in the obtained certificate
+    :type domains: `list` of `str`
     :param str lineage_path: live directory path for the new cert
 
     """
@@ -231,11 +230,11 @@ def renew_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
         if hook in executed_hooks:
             logger.info("Skipping deploy-hook '%s' as it was already run.", hook)
         else:
-            _run_deploy_hook(hook, sans, lineage_path, config.dry_run, config.run_deploy_hooks)
+            _run_deploy_hook(hook, domains, lineage_path, config.dry_run, config.run_deploy_hooks)
             executed_hooks.add(hook)
 
 
-def _run_deploy_hook(command: str, sans: list[san.SAN], lineage_path: str, dry_run: bool,
+def _run_deploy_hook(command: str, domains: list[str], lineage_path: str, dry_run: bool,
                      run_deploy_hooks: bool) -> None:
     """Run the specified deploy-hook (if not doing a dry run).
 
@@ -244,8 +243,8 @@ def _run_deploy_hook(command: str, sans: list[san.SAN], lineage_path: str, dry_r
     after setting the appropriate environment variables.
 
     :param str command: command to run as a deploy-hook
-    :param sans: domains and/or IP addresses in the obtained certificate
-    :type sans: `list` of `san.SAN`
+    :param domains: domains in the obtained certificate
+    :type domains: `list` of `str`
     :param str lineage_path: live directory path for the new cert
     :param bool dry_run: True iff Certbot is doing a dry run
     :param bool run_deploy_hooks: True if deploy hooks should run despite Certbot doing a dry run
@@ -256,7 +255,7 @@ def _run_deploy_hook(command: str, sans: list[san.SAN], lineage_path: str, dry_r
                        command)
         return
 
-    os.environ["RENEWED_DOMAINS"] = " ".join(map(str, sans))
+    os.environ["RENEWED_DOMAINS"] = " ".join(domains)
     os.environ["RENEWED_LINEAGE"] = lineage_path
     _run_hook("deploy-hook", command)
 

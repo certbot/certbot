@@ -14,7 +14,6 @@ from typing import Optional
 from typing import Union
 
 import configobj
-from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
@@ -29,7 +28,6 @@ from certbot import interfaces
 from certbot import ocsp
 from certbot import util
 from certbot._internal import error_handler
-from certbot._internal import san
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -915,19 +913,10 @@ class RenewableCert(interfaces.RenewableCert):
                 os.unlink(link)
 
     def names(self) -> list[str]:
-        """Return the DNS names and IP addresses from this certificate as strings.
+        """What are the subject names of this certificate?
 
         :returns: the subject names
         :rtype: `list` of `str`
-        :raises .CertStorageError: if could not find cert file.
-        """
-        return list(map(str, self.sans()))
-
-    def sans(self) -> list[san.SAN]:
-        """Return the DNS names and IP addresses from this certificate as SAN objects.
-
-        :returns: the subject names
-        :rtype: `list` of `san.SAN`
         :raises .CertStorageError: if could not find cert file.
 
         """
@@ -935,10 +924,7 @@ class RenewableCert(interfaces.RenewableCert):
         if target is None:
             raise errors.CertStorageError("could not find the certificate file")
         with open(target, "rb") as f:
-            cert_bytes = f.read()
-        x509_cert = x509.load_pem_x509_certificate(cert_bytes)
-        dns_names, ip_addrs = san.from_x509(x509_cert.subject, x509_cert.extensions)
-        return cast(list[san.SAN], dns_names + ip_addrs)
+            return crypto_util.get_names_from_cert(f.read())
 
     def ocsp_revoked(self, version: int) -> bool:
         """Is the specified cert version revoked according to OCSP?

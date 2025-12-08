@@ -16,7 +16,6 @@ from certbot import errors
 from certbot import ocsp
 from certbot import util
 from certbot._internal import storage
-from certbot._internal import san
 from certbot.compat import os
 from certbot.display import util as display_util
 
@@ -94,16 +93,16 @@ def lineage_for_certname(cli_config: configuration.NamespaceConfig,
         return None
 
 
-def sans_for_certname(config: configuration.NamespaceConfig,
-                      certname: str) -> Optional[list[san.SAN]]:
-    """Find the domains and/or IP addresses in the cert with name certname."""
+def domains_for_certname(config: configuration.NamespaceConfig,
+                         certname: str) -> Optional[list[str]]:
+    """Find the domains in the cert with name certname."""
     lineage = lineage_for_certname(config, certname)
-    return lineage.sans() if lineage else None
+    return lineage.names() if lineage else None
 
 
 def find_duplicative_certs(config: configuration.NamespaceConfig,
-                           sans: list[san.SAN]) -> tuple[Optional[storage.RenewableCert],
-                                                         Optional[storage.RenewableCert]]:
+                           domains: list[str]) -> tuple[Optional[storage.RenewableCert],
+                                                        Optional[storage.RenewableCert]]:
     """Find existing certs that match the given domain names.
 
     This function searches for certificates whose domains are equal to
@@ -137,15 +136,15 @@ def find_duplicative_certs(config: configuration.NamespaceConfig,
         # TODO: Handle these differently depending on whether they are
         #       expired or still valid?
         identical_names_cert, subset_names_cert = rv
-        candidate_names = set(candidate_lineage.sans())
-        if candidate_names == set(sans):
+        candidate_names = set(candidate_lineage.names())
+        if candidate_names == set(domains):
             identical_names_cert = candidate_lineage
-        elif candidate_names.issubset(set(sans)):
+        elif candidate_names.issubset(set(domains)):
             # This logic finds and returns the largest subset-names cert
             # in the case where there are several available.
             if subset_names_cert is None:
                 subset_names_cert = candidate_lineage
-            elif len(candidate_names) > len(subset_names_cert.sans()):
+            elif len(candidate_names) > len(subset_names_cert.names()):
                 subset_names_cert = candidate_lineage
         return (identical_names_cert, subset_names_cert)
 
@@ -252,11 +251,9 @@ def human_readable_cert_info(config: configuration.NamespaceConfig, cert: storag
     certinfo = []
     checker = ocsp.RevocationChecker()
 
-    config_sans = set(config.domains)
-
     if config.certname and cert.lineagename != config.certname and not skip_filter_checks:
         return None
-    if config_sans and not config_sans.issubset(cert.sans()):
+    if config.domains and not set(config.domains).issubset(cert.names()):
         return None
     now = datetime.datetime.now(datetime.timezone.utc)
 
@@ -284,7 +281,7 @@ def human_readable_cert_info(config: configuration.NamespaceConfig, cert: storag
     certinfo.append(f"  Certificate Name: {cert.lineagename}\n"
                     f"    Serial Number: {serial}\n"
                     f"    Key Type: {cert.private_key_type}\n"
-                    f'    Identifiers: {" ".join(map(str, cert.sans()))}\n'
+                    f'    Domains: {" ".join(cert.names())}\n'
                     f"    Expiry Date: {valid_string}\n"
                     f"    Certificate Path: {cert.fullchain}\n"
                     f"    Private Key Path: {cert.privkey}")

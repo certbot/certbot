@@ -4,7 +4,6 @@ import textwrap
 from typing import Optional
 
 from acme import messages as acme_messages
-from certbot._internal import san
 from certbot.compat import misc
 
 
@@ -84,28 +83,28 @@ def separate_list_input(input_: str) -> list[str]:
     return [str(string) for string in no_commas.split()]
 
 
-def summarize_sans(sans: list[san.SAN]) -> str:
-    """Summarizes a list of identifiers in the format of:
-        example.com.com and N more
-    or if there are only two identifiers:
-        example.com and 192.0.2.77
-    or if there is only one identifier:
+def summarize_domain_list(domains: list[str]) -> str:
+    """Summarizes a list of domains in the format of:
+        example.com.com and N more domains
+    or if there is are only two domains:
+        example.com and www.example.com
+    or if there is only one domain:
         example.com
 
-    :param list sans: `san.SAN` list of domains and/or IP addresses
-    :returns: a summary
+    :param list domains: `str` list of domains
+    :returns: the domain list summary
     :rtype: str
     """
-    if not sans:
+    if not domains:
         return ""
 
-    length = len(sans)
+    length = len(domains)
     if length == 1:
-        return str(sans[0])
+        return domains[0]
     elif length == 2:
-        return f"{sans[0]} and {sans[1]}"
+        return " and ".join(domains)
     else:
-        return f"{sans[0]} and {length - 1} more"
+        return "{0} and {1} more domains".format(domains[0], length-1)
 
 
 def describe_acme_error(error: acme_messages.Error) -> str:

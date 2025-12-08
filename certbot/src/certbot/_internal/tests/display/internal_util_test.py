@@ -105,11 +105,11 @@ class SeparateListInputTest(unittest.TestCase):
             assert act == self.exp
 
 
-class SummarizeSANsTest(unittest.TestCase):
+class SummarizeDomainListTest(unittest.TestCase):
     @classmethod
     def _call(cls, domains):
-        from certbot._internal.display.util import summarize_sans
-        return summarize_sans(domains)
+        from certbot._internal.display.util import summarize_domain_list
+        return summarize_domain_list(domains)
 
     def test_single_domain(self):
         assert "example.com" == self._call(["example.com"])
@@ -119,7 +119,7 @@ class SummarizeSANsTest(unittest.TestCase):
                          self._call(["example.com", "example.org"])
 
     def test_many_domains(self):
-        assert "example.com and 2 more" == \
+        assert "example.com and 2 more domains" == \
                          self._call(["example.com", "example.org", "a.example.com"])
 
     def test_empty_domains(self):
