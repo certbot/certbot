@@ -1,0 +1,1 @@
+Fixed a regression that caused certbot to crash if multiple --webroot-path values were set on the command line.
