@@ -320,7 +320,7 @@ class _WebrootPathAction(argparse.Action):
             # domains before setting the new webroot path
             prev_webroot = namespace.webroot_path[-1]
             for domain in namespace.domains:
-                namespace.webroot_map.setdefault(domain, prev_webroot)
+                namespace.webroot_map.setdefault(domain.dns_name, prev_webroot)
         elif namespace.domains:
             self._domain_before_webroot = True
 
