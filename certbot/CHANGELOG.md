@@ -4,6 +4,15 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.2.2 - 2025-12-10
+
+### Fixed
+
+- Fixed a regression that caused certbot to crash if multiple --webroot-path
+  values were set on the command line.
+  ([#10509](https://github.com/certbot/certbot/issues/10509))
+
+
 ## 5.2.1 - 2025-12-03
 
 ### Added
