@@ -20,7 +20,7 @@ from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.display import util as display_util
-from certbot._internal import cli
+from certbot._internal.cli import cli_utils
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
@@ -322,7 +322,7 @@ class WebrootActionTest(unittest.TestCase):
         self.path = tempfile.mkdtemp()
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument("-d", "--domains",
-                                 action=cli._DomainsAction, default=[])
+                                 action=cli_utils.DomainsAction, default=[])
         Authenticator.inject_parser_options(self.parser, "webroot")
 
     def test_webroot_map_action(self):

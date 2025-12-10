@@ -92,7 +92,7 @@ class CustomHelpFormatter(argparse.HelpFormatter):
         return helpstr
 
 
-class _DomainsAction(argparse.Action):
+class DomainsAction(argparse.Action):
     """Action class for parsing domains."""
 
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
