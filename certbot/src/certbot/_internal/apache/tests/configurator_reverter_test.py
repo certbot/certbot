@@ -1,11 +1,11 @@
-"""Test for certbot_apache._internal.configurator implementations of reverter"""
+"""Test for certbot._internal.apache.configurator implementations of reverter"""
 import sys
 from unittest import mock
 
 import pytest
 
 from certbot import errors
-from certbot_apache._internal.tests import util
+from certbot._internal.apache.tests import util
 
 
 class ConfiguratorReverterTest(util.ApacheTest):

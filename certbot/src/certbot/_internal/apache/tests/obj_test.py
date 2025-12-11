@@ -1,4 +1,4 @@
-"""Tests for certbot_apache._internal.obj."""
+"""Tests for certbot._internal.apache.obj."""
 import sys
 import unittest
 
@@ -9,8 +9,8 @@ class VirtualHostTest(unittest.TestCase):
     """Test the VirtualHost class."""
 
     def setUp(self):
-        from certbot_apache._internal.obj import Addr
-        from certbot_apache._internal.obj import VirtualHost
+        from certbot._internal.apache.obj import Addr
+        from certbot._internal.apache.obj import VirtualHost
 
         self.addr1 = Addr.fromstring("127.0.0.1")
         self.addr2 = Addr.fromstring("127.0.0.1:443")
@@ -27,7 +27,7 @@ class VirtualHostTest(unittest.TestCase):
 
     def test_repr(self):
         assert repr(self.addr2) == \
-            "certbot_apache._internal.obj.Addr(('127.0.0.1', '443'))"
+            "certbot._internal.apache.obj.Addr(('127.0.0.1', '443'))"
 
     def test_eq(self):
         assert self.vhost1b == self.vhost1
@@ -40,8 +40,8 @@ class VirtualHostTest(unittest.TestCase):
         assert self.vhost1 == self.vhost1b
 
     def test_conflicts(self):
-        from certbot_apache._internal.obj import Addr
-        from certbot_apache._internal.obj import VirtualHost
+        from certbot._internal.apache.obj import Addr
+        from certbot._internal.apache.obj import VirtualHost
 
         complex_vh = VirtualHost(
             "fp", "vhp",
@@ -57,7 +57,7 @@ class VirtualHostTest(unittest.TestCase):
         assert self.vhost2.conflicts([self.addr1, self.addr_default]) is False
 
     def test_same_server(self):
-        from certbot_apache._internal.obj import VirtualHost
+        from certbot._internal.apache.obj import VirtualHost
         no_name1 = VirtualHost(
             "fp", "vhp", {self.addr1}, False, False, None)
         no_name2 = VirtualHost(
@@ -80,7 +80,7 @@ class VirtualHostTest(unittest.TestCase):
 class AddrTest(unittest.TestCase):
     """Test obj.Addr."""
     def setUp(self):
-        from certbot_apache._internal.obj import Addr
+        from certbot._internal.apache.obj import Addr
         self.addr = Addr.fromstring("*:443")
 
         self.addr1 = Addr.fromstring("127.0.0.1")
@@ -95,7 +95,7 @@ class AddrTest(unittest.TestCase):
         assert self.addr2.is_wildcard() is True
 
     def test_get_sni_addr(self):
-        from certbot_apache._internal.obj import Addr
+        from certbot._internal.apache.obj import Addr
         assert self.addr.get_sni_addr("443") == Addr.fromstring("*:443")
         assert self.addr.get_sni_addr("225") == Addr.fromstring("*:225")
         assert self.addr1.get_sni_addr("443") == Addr.fromstring("127.0.0.1")
