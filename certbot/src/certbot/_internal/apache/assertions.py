@@ -5,11 +5,11 @@ from typing import Iterable
 from typing import Optional
 from typing import Union
 
-from certbot_apache._internal import interfaces
-from certbot_apache._internal.interfaces import CommentNode
-from certbot_apache._internal.interfaces import DirectiveNode
-from certbot_apache._internal.interfaces import ParserNode
-from certbot_apache._internal.obj import VirtualHost
+from certbot._internal.apache import interfaces
+from certbot._internal.apache.interfaces import CommentNode
+from certbot._internal.apache.interfaces import DirectiveNode
+from certbot._internal.apache.interfaces import ParserNode
+from certbot._internal.apache.obj import VirtualHost
 
 PASS = "CERTBOT_PASS_ASSERT"
 

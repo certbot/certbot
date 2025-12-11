@@ -6,9 +6,9 @@ from typing import Optional
 from typing import Union
 
 from certbot.plugins import common
-from certbot_apache._internal.apacheparser import ApacheBlockNode
-from certbot_apache._internal.augeasparser import AugeasBlockNode
-from certbot_apache._internal.dualparser import DualBlockNode
+from certbot._internal.apache.apacheparser import ApacheBlockNode
+from certbot._internal.apache.augeasparser import AugeasBlockNode
+from certbot._internal.apache.dualparser import DualBlockNode
 
 
 class Addr(common.Addr):
@@ -27,7 +27,7 @@ class Addr(common.Addr):
         return False
 
     def __repr__(self) -> str:
-        return f"certbot_apache._internal.obj.Addr({repr(self.tup)})"
+        return f"certbot._internal.apache.obj.Addr({repr(self.tup)})"
 
     def __hash__(self) -> int:  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__ if __eq__ or

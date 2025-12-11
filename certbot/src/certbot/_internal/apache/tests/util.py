@@ -1,4 +1,4 @@
-"""Common utilities for certbot_apache."""
+"""Common test utilities for the apache plugin."""
 import shutil
 from typing import Optional
 import unittest
@@ -11,9 +11,9 @@ from certbot import util
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
-from certbot_apache._internal import configurator
-from certbot_apache._internal import entrypoint
-from certbot_apache._internal import obj
+from certbot._internal.apache import configurator
+from certbot._internal.apache import entrypoint
+from certbot._internal.apache import obj
 
 
 class ApacheTest(unittest.TestCase):
@@ -68,10 +68,10 @@ class ParserTest(ApacheTest):
               ) -> None:
         super().setUp(test_dir, config_root, vhost_root)
 
-        from certbot_apache._internal.parser import ApacheParser
+        from certbot._internal.apache.parser import ApacheParser
         self.aug = augeas.Augeas(
             flags=augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD)
-        with mock.patch("certbot_apache._internal.parser.ApacheParser."
+        with mock.patch("certbot._internal.apache.parser.ApacheParser."
                         "update_runtime_variables"):
             self.parser = ApacheParser(
                 self.config_path, self.config, self.vhost_path)
@@ -103,13 +103,13 @@ def get_apache_configurator(
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("certbot_apache._internal.configurator.util.run_script"):
-        with mock.patch("certbot_apache._internal.configurator.util."
+    with mock.patch("certbot._internal.apache.configurator.util.run_script"):
+        with mock.patch("certbot._internal.apache.configurator.util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
-            with mock.patch("certbot_apache._internal.parser.ApacheParser."
+            with mock.patch("certbot._internal.apache.parser.ApacheParser."
                             "update_runtime_variables"):
-                with mock.patch("certbot_apache._internal.apache_util.parse_from_subprocess") as mock_sp:
+                with mock.patch("certbot._internal.apache.apache_util.parse_from_subprocess") as mock_sp:
                     mock_sp.return_value = []
                     try:
                         config_class = entrypoint.OVERRIDE_CLASSES[os_info]

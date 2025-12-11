@@ -1,6 +1,6 @@
 """ Distribution specific override class for macOS """
-from certbot_apache._internal import configurator
-from certbot_apache._internal.configurator import OsOptions
+from certbot._internal.apache import configurator
+from certbot._internal.apache.configurator import OsOptions
 
 
 class DarwinConfigurator(configurator.ApacheConfigurator):
