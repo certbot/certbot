@@ -1,4 +1,4 @@
-"""Common utilities for certbot_nginx."""
+"""Common test utilities for the nginx plugin."""
 import copy
 import importlib.resources
 import shutil
@@ -12,8 +12,8 @@ from certbot import util
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
-from certbot_nginx._internal import configurator
-from certbot_nginx._internal import nginxparser
+from certbot._internal.nginx import configurator
+from certbot._internal.nginx import nginxparser
 
 class NginxTest(test_util.ConfigTestCase):
 
@@ -63,9 +63,9 @@ class NginxTest(test_util.ConfigTestCase):
         self.configuration.http01_port = 80
         self.configuration.https_port = 5001
 
-        with mock.patch("certbot_nginx._internal.configurator.NginxConfigurator."
+        with mock.patch("certbot._internal.nginx.configurator.NginxConfigurator."
                         "config_test"):
-            with mock.patch("certbot_nginx._internal.configurator.util."
+            with mock.patch("certbot._internal.nginx.configurator.util."
                             "exe_exists") as mock_exe_exists:
                 mock_exe_exists.return_value = True
                 config = configurator.NginxConfigurator(
