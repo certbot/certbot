@@ -7,8 +7,8 @@ from certbot import configuration
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
-from certbot_nginx._internal import configurator
-from certbot_nginx._internal import constants
+from certbot._internal.nginx import configurator
+from certbot._internal.nginx import constants
 
 
 class Proxy(configurators_common.Proxy):
