@@ -25,12 +25,12 @@ from certbot import util
 from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins import common
-from certbot_nginx._internal import constants
-from certbot_nginx._internal import display_ops
-from certbot_nginx._internal import http_01
-from certbot_nginx._internal import nginxparser
-from certbot_nginx._internal import obj
-from certbot_nginx._internal import parser
+from certbot._internal.nginx import constants
+from certbot._internal.nginx import display_ops
+from certbot._internal.nginx import http_01
+from certbot._internal.nginx import nginxparser
+from certbot._internal.nginx import obj
+from certbot._internal.nginx import parser
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1
@@ -52,7 +52,7 @@ class NginxConfigurator(common.Configurator):
     :type config: certbot.configuration.NamespaceConfig
 
     :ivar parser: Handles low level parsing
-    :type parser: :class:`~certbot_nginx._internal.parser`
+    :type parser: :class:`~certbot._internal.nginx.parser`
 
     :ivar str save_notes: Human-readable config change notes
 
@@ -173,8 +173,8 @@ class NginxConfigurator(common.Configurator):
 
         file_manager = ExitStack()
         atexit.register(file_manager.close)
-        ref = (importlib.resources.files("certbot_nginx").joinpath("_internal")
-               .joinpath("tls_configs").joinpath(config_filename))
+        ref = (importlib.resources.files("certbot").joinpath("_internal")
+               .joinpath("nginx").joinpath("tls_configs").joinpath(config_filename))
 
         return str(file_manager.enter_context(importlib.resources.as_file(ref)))
 
@@ -348,7 +348,7 @@ class NginxConfigurator(common.Configurator):
         :param str target_name: domain name
 
         :returns: ssl vhosts associated with name
-        :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
+        :rtype: list of :class:`~certbot._internal.nginx.obj.VirtualHost`
 
         """
         return [vhost for vhost in self._choose_vhosts_common(target_name) if vhost.ssl]
@@ -369,7 +369,7 @@ class NginxConfigurator(common.Configurator):
         :param str fullchain_path: certificates to use when creating SSL vhosts
 
         :returns: ssl vhosts associated with name
-        :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
+        :rtype: list of :class:`~certbot._internal.nginx.obj.VirtualHost`
 
         """
         vhosts = self._choose_vhosts_common(target_name)
@@ -478,7 +478,7 @@ class NginxConfigurator(common.Configurator):
         :param list matches: list of dicts containing the vhost, the matching name,
             and the numerical rank
         :returns: the most matching vhost
-        :rtype: :class:`~certbot_nginx._internal.obj.VirtualHost`
+        :rtype: :class:`~certbot._internal.nginx.obj.VirtualHost`
 
         """
         if not matches:
@@ -564,7 +564,7 @@ class NginxConfigurator(common.Configurator):
         :param str port: port number
 
         :returns: vhosts associated with name
-        :rtype: list of :class:`~certbot_nginx._internal.obj.VirtualHost`
+        :rtype: list of :class:`~certbot._internal.nginx.obj.VirtualHost`
 
         """
         if util.is_wildcard_domain(target_name):
@@ -586,7 +586,7 @@ class NginxConfigurator(common.Configurator):
         :param str target_name: non-wildcard domain name
 
         :returns: tuple of HTTP and HTTPS virtualhosts
-        :rtype: tuple of :class:`~certbot_nginx._internal.obj.VirtualHost`
+        :rtype: tuple of :class:`~certbot._internal.nginx.obj.VirtualHost`
 
         """
         vhosts = [m['vhost'] for m in self._get_ranked_matches(target_name) if m and 'vhost' in m]
@@ -712,7 +712,7 @@ class NginxConfigurator(common.Configurator):
         Make a server SSL by adding new listen and SSL directives.
 
         :param vhost: The vhost to add SSL to.
-        :type vhost: :class:`~certbot_nginx._internal.obj.VirtualHost`
+        :type vhost: :class:`~certbot._internal.nginx.obj.VirtualHost`
         :param str key_path: key to use for SSL
         :param str fullchain_path: certificates to use for SSL
 
@@ -868,9 +868,9 @@ class NginxConfigurator(common.Configurator):
         :param vhost: The server block to break up into two.
         :param list only_directives: If this exists, only duplicate these directives
             when splitting the block.
-        :type vhost: :class:`~certbot_nginx._internal.obj.VirtualHost`
+        :type vhost: :class:`~certbot._internal.nginx.obj.VirtualHost`
         :returns: tuple (http_vhost, https_vhost)
-        :rtype: tuple of type :class:`~certbot_nginx._internal.obj.VirtualHost`
+        :rtype: tuple of type :class:`~certbot._internal.nginx.obj.VirtualHost`
         """
         http_vhost = self.parser.duplicate_vhost(vhost, only_directives=only_directives)
 
