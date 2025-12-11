@@ -51,7 +51,7 @@ ignore=CVS
 # CERTBOT COMMENT
 # Changing this line back to the default of `ignore-paths=` is being tracked by
 # https://github.com/certbot/certbot/issues/7908.
-ignore-paths=.*/_internal/tests/
+ignore-paths=.*/_internal/tests/,.*/apache/tests,.*/nginx/tests
 
 # Files or directories matching the regular expression patterns are skipped.
 # The regex matches against base names, not paths. The default value ignores
