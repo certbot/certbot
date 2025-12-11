@@ -72,11 +72,11 @@ from typing import Union
 
 from certbot import errors
 from certbot.compat import os
-from certbot_apache._internal import apache_util
-from certbot_apache._internal import assertions
-from certbot_apache._internal import interfaces
-from certbot_apache._internal import parser
-from certbot_apache._internal import parsernode_util as util
+from certbot._internal.apache import apache_util
+from certbot._internal.apache import assertions
+from certbot._internal.apache import interfaces
+from certbot._internal.apache import parser
+from certbot._internal.apache import parsernode_util as util
 
 
 class AugeasParserNode(interfaces.ParserNode):
