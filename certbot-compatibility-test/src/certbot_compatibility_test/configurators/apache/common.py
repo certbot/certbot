@@ -8,7 +8,7 @@ from unittest import mock
 from certbot import configuration
 from certbot import errors as le_errors
 from certbot import util as certbot_util
-from certbot_apache._internal import entrypoint
+from certbot._internal.apache import entrypoint
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
@@ -24,7 +24,7 @@ class Proxy(configurators_common.Proxy):
 
         self.modules = self.server_root = self.test_conf = self.version = None
         patch = mock.patch(
-            "certbot_apache._internal.configurator.display_ops.select_vhost")
+            "certbot._internal.apache.configurator.display_ops.select_vhost")
         mock_display = patch.start()
         mock_display.side_effect = le_errors.PluginError(
             "Unable to determine vhost")
