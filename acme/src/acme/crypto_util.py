@@ -7,7 +7,6 @@ from types import ModuleType
 import typing
 from typing import Any
 from typing import Literal
-from typing import cast
 from typing import Optional
 from typing import Union
 import warnings
@@ -22,15 +21,14 @@ from OpenSSL import crypto
 logger = logging.getLogger(__name__)
 
 
-# This class takes a similar approach to the cryptography project to deprecate attributes
-# in public modules. See the _ModuleWithDeprecation class here:
-# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
-class _ClientDeprecationModule:
+# https://github.com/pyca/cryptography/blob/1eab7a67dcc34b568e3c0df64e6222a2ac74b1ee/src/cryptography/utils.py#L66-L113
+class _ClientDeprecationModule(ModuleType):
     """
     Internal class delegating to a module, and displaying warnings when attributes
     related to deprecated attributes in the acme.client module.
     """
     def __init__(self, module: ModuleType) -> None:
+        super().__init__(module.__name__)
         self.__dict__['_module'] = module
 
     def __getattr__(self, attr: str) -> Any:
@@ -50,7 +48,7 @@ class _ClientDeprecationModule:
 
 
 # Patching ourselves to warn about deprecation and planned removal of some elements in the module.
-sys.modules[__name__] = cast(ModuleType, _ClientDeprecationModule(sys.modules[__name__]))
+sys.modules[__name__] = _ClientDeprecationModule(sys.modules[__name__])
 
 
 class Format(enum.IntEnum):

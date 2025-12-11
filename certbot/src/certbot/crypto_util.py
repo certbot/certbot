@@ -225,11 +225,13 @@ def import_csr_file(
     domains = acme_crypto_util.get_names_from_subject_and_extensions(csr.subject, csr.extensions)
     # Internally we always use PEM, so re-encode as PEM before returning.
     data_pem = csr.public_bytes(serialization.Encoding.PEM)
-    return (
-        acme_crypto_util.Format.PEM,
-        util.CSR(file=csrfile, data=data_pem, form="pem"),
-        domains,
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        return (
+            acme_crypto_util.Format.PEM,
+            util.CSR(file=csrfile, data=data_pem, form="pem"),
+            domains,
+        )
 
 
 def make_key(bits: int = 2048, key_type: str = "rsa",
@@ -430,14 +432,16 @@ def get_sans_from_cert(
     """
     warnings.warn("get_sans_from_cert is deprecated and will be removed in the next "
         "major release.", DeprecationWarning)
-    if typ is None:
-        typ = acme_crypto_util.Format.PEM
-    typ = acme_crypto_util.Format(typ)
-    if typ == acme_crypto_util.Format.PEM:
-        x509_cert = x509.load_pem_x509_certificate(cert)
-    else:
-        assert typ == acme_crypto_util.Format.DER
-        x509_cert = x509.load_der_x509_certificate(cert)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        if typ is None:
+            typ = acme_crypto_util.Format.PEM
+        typ = acme_crypto_util.Format(typ)
+        if typ == acme_crypto_util.Format.PEM:
+            x509_cert = x509.load_pem_x509_certificate(cert)
+        else:
+            assert typ == acme_crypto_util.Format.DER
+            x509_cert = x509.load_der_x509_certificate(cert)
 
     try:
         san_ext = x509_cert.extensions.get_extension_for_class(
@@ -463,14 +467,16 @@ def get_names_from_cert(
     """
     warnings.warn("get_names_from_cert is deprecated and will be removed in the next "
         "major release.", DeprecationWarning)
-    if typ is None:
-        typ = acme_crypto_util.Format.PEM
-    typ = acme_crypto_util.Format(typ)
-    if typ == acme_crypto_util.Format.PEM:
-        x509_cert = x509.load_pem_x509_certificate(cert)
-    else:
-        assert typ == acme_crypto_util.Format.DER
-        x509_cert = x509.load_der_x509_certificate(cert)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        if typ is None:
+            typ = acme_crypto_util.Format.PEM
+        typ = acme_crypto_util.Format(typ)
+        if typ == acme_crypto_util.Format.PEM:
+            x509_cert = x509.load_pem_x509_certificate(cert)
+        else:
+            assert typ == acme_crypto_util.Format.DER
+            x509_cert = x509.load_der_x509_certificate(cert)
     return acme_crypto_util.get_names_from_subject_and_extensions(
         x509_cert.subject, x509_cert.extensions
     )
@@ -489,14 +495,16 @@ def get_names_from_req(
     """
     warnings.warn("get_names_from_req is deprecated and will be removed in the next "
         "major release.", DeprecationWarning)
-    if typ is None:
-        typ = acme_crypto_util.Format.PEM
-    typ = acme_crypto_util.Format(typ)
-    if typ == acme_crypto_util.Format.PEM:
-        x509_req = x509.load_pem_x509_csr(csr)
-    else:
-        assert typ == acme_crypto_util.Format.DER
-        x509_req = x509.load_der_x509_csr(csr)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        if typ is None:
+            typ = acme_crypto_util.Format.PEM
+        typ = acme_crypto_util.Format(typ)
+        if typ == acme_crypto_util.Format.PEM:
+            x509_req = x509.load_pem_x509_csr(csr)
+        else:
+            assert typ == acme_crypto_util.Format.DER
+            x509_req = x509.load_der_x509_csr(csr)
     return acme_crypto_util.get_names_from_subject_and_extensions(
         x509_req.subject, x509_req.extensions
     )

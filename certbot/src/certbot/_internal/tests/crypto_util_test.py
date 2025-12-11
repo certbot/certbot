@@ -371,7 +371,7 @@ class GetSANsFromCertTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.crypto_util import get_sans_from_cert
-        with pytest.warns(DeprecationWarning, match=re.compile('[get_sans_from_cert|Format] is deprecated')):
+        with pytest.warns(DeprecationWarning, match='get_sans_from_cert is deprecated'):
             return get_sans_from_cert(*args, **kwargs)
 
     def test_single(self):
@@ -388,7 +388,7 @@ class GetNamesFromCertTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.crypto_util import get_names_from_cert
-        with pytest.warns(DeprecationWarning, match=re.compile('[get_names_from_cert|Format] is deprecated')):
+        with pytest.warns(DeprecationWarning, match='get_names_from_cert is deprecated'):
             return get_names_from_cert(*args, **kwargs)
 
     def test_single(self):
@@ -416,7 +416,7 @@ class GetNamesFromReqTest(unittest.TestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.crypto_util import get_names_from_req
-        with pytest.warns(DeprecationWarning, match=re.compile('[get_names_from_req|Format] is deprecated')):
+        with pytest.warns(DeprecationWarning, match='get_names_from_req is deprecated'):
             return get_names_from_req(*args, **kwargs)
 
     def test_nonames(self):
