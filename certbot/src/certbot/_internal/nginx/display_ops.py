@@ -4,7 +4,7 @@ from typing import Iterable
 from typing import Optional
 
 from certbot.display import util as display_util
-from certbot_nginx._internal.obj import VirtualHost
+from certbot._internal.nginx.obj import VirtualHost
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-"""Test for certbot_nginx._internal.configurator."""
+"""Test for certbot._internal.nginx.configurator."""
 import sys
 from unittest import mock
 
@@ -11,11 +11,11 @@ from certbot import crypto_util
 from certbot import errors
 from certbot.compat import os
 from certbot.tests import util as certbot_test_util
-from certbot_nginx._internal import obj
-from certbot_nginx._internal import parser
-from certbot_nginx._internal.configurator import _redirect_block_for_domain
-from certbot_nginx._internal.nginxparser import UnspacedList
-from certbot_nginx._internal.tests import test_util as util
+from certbot._internal.nginx import obj
+from certbot._internal.nginx import parser
+from certbot._internal.nginx.configurator import _redirect_block_for_domain
+from certbot._internal.nginx.nginxparser import UnspacedList
+from certbot._internal.nginx.tests import test_util as util
 
 
 class NginxConfiguratorTest(util.NginxTest):
@@ -27,11 +27,11 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config = self.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
-        patch = mock.patch('certbot_nginx._internal.configurator.display_util.notify')
+        patch = mock.patch('certbot._internal.nginx.configurator.display_util.notify')
         self.mock_notify = patch.start()
         self.addCleanup(patch.stop)
 
-    @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
+    @mock.patch("certbot._internal.nginx.configurator.util.exe_exists")
     def test_prepare_no_install(self, mock_exe_exists):
         mock_exe_exists.return_value = False
         with pytest.raises(errors.NoInstallationError):
@@ -41,8 +41,8 @@ class NginxConfiguratorTest(util.NginxTest):
         assert (1, 6, 2) == self.config.version
         assert 16 == len(self.config.parser.parsed)
 
-    @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
-    @mock.patch("certbot_nginx._internal.configurator.subprocess.run")
+    @mock.patch("certbot._internal.nginx.configurator.util.exe_exists")
+    @mock.patch("certbot._internal.nginx.configurator.subprocess.run")
     def test_prepare_initializes_version(self, mock_run, mock_exe_exists):
         mock_run.return_value.stdout = ""
         mock_run.return_value.stderr = "\n".join(
@@ -76,7 +76,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.config_test = mock.Mock()
         certbot_test_util.lock_and_call(self._test_prepare_locked, server_root)
 
-    @mock.patch("certbot_nginx._internal.configurator.util.exe_exists")
+    @mock.patch("certbot._internal.nginx.configurator.util.exe_exists")
     def _test_prepare_locked(self, unused_exe_exists):
         try:
             self.config.prepare()
@@ -87,8 +87,8 @@ class NginxConfiguratorTest(util.NginxTest):
         else:  # pragma: no cover
             self.fail("Exception wasn't raised!")
 
-    @mock.patch("certbot_nginx._internal.configurator.socket.gethostname")
-    @mock.patch("certbot_nginx._internal.configurator.socket.gethostbyaddr")
+    @mock.patch("certbot._internal.nginx.configurator.socket.gethostname")
+    @mock.patch("certbot._internal.nginx.configurator.socket.gethostbyaddr")
     def test_get_all_names(self, mock_gethostbyaddr, mock_gethostname):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
         mock_gethostname.return_value = ('example.net')
@@ -268,7 +268,7 @@ class NginxConfiguratorTest(util.NginxTest):
             "example/chain.pem",
             None)
 
-    @mock.patch('certbot_nginx._internal.parser.NginxParser.update_or_add_server_directives')
+    @mock.patch('certbot._internal.nginx.parser.NginxParser.update_or_add_server_directives')
     def test_deploy_cert_raise_on_add_error(self, mock_update_or_add_server_directives):
         mock_update_or_add_server_directives.side_effect = errors.MisconfigurationError()
         with pytest.raises(errors.PluginError):
@@ -364,9 +364,9 @@ class NginxConfiguratorTest(util.NginxTest):
                            ]] == \
                          parsed_migration_conf[0]
 
-    @mock.patch("certbot_nginx._internal.configurator.http_01.NginxHttp01.perform")
-    @mock.patch("certbot_nginx._internal.configurator.NginxConfigurator.restart")
-    @mock.patch("certbot_nginx._internal.configurator.NginxConfigurator.revert_challenge_config")
+    @mock.patch("certbot._internal.nginx.configurator.http_01.NginxHttp01.perform")
+    @mock.patch("certbot._internal.nginx.configurator.NginxConfigurator.restart")
+    @mock.patch("certbot._internal.nginx.configurator.NginxConfigurator.revert_challenge_config")
     def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_http_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
@@ -394,7 +394,7 @@ class NginxConfiguratorTest(util.NginxTest):
         assert mock_revert.call_count == 1
         assert mock_restart.call_count == 2
 
-    @mock.patch("certbot_nginx._internal.configurator.subprocess.run")
+    @mock.patch("certbot._internal.nginx.configurator.subprocess.run")
     def test_get_version(self, mock_run):
         mock_run.return_value.stdout = ""
         mock_run.return_value.stderr = "\n".join(
@@ -455,7 +455,7 @@ class NginxConfiguratorTest(util.NginxTest):
         with pytest.raises(errors.PluginError):
             self.config.get_version()
 
-    @mock.patch("certbot_nginx._internal.configurator.subprocess.run")
+    @mock.patch("certbot._internal.nginx.configurator.subprocess.run")
     def test_get_openssl_version(self, mock_run):
         # pylint: disable=protected-access
         mock_run.return_value.stdout = ""
@@ -517,8 +517,8 @@ class NginxConfiguratorTest(util.NginxTest):
             """
         assert self.config._get_openssl_version() == ""
 
-    @mock.patch("certbot_nginx._internal.configurator.subprocess.run")
-    @mock.patch("certbot_nginx._internal.configurator.time")
+    @mock.patch("certbot._internal.nginx.configurator.subprocess.run")
+    @mock.patch("certbot._internal.nginx.configurator.time")
     def test_nginx_restart(self, mock_time, mock_run):
         mocked = mock_run.return_value
         mocked.stdout = ''
@@ -528,8 +528,8 @@ class NginxConfiguratorTest(util.NginxTest):
         assert mock_run.call_count == 1
         mock_time.sleep.assert_called_once_with(0.1234)
 
-    @mock.patch("certbot_nginx._internal.configurator.subprocess.run")
-    @mock.patch("certbot_nginx._internal.configurator.logger.debug")
+    @mock.patch("certbot._internal.nginx.configurator.subprocess.run")
+    @mock.patch("certbot._internal.nginx.configurator.logger.debug")
     def test_nginx_restart_fail(self, mock_log_debug, mock_run):
         mocked = mock_run.return_value
         mocked.stdout = ''
@@ -540,7 +540,7 @@ class NginxConfiguratorTest(util.NginxTest):
         assert mock_run.call_count == 2
         mock_log_debug.assert_called_once_with("nginx reload failed:\n%s", "")
 
-    @mock.patch("certbot_nginx._internal.configurator.subprocess.run")
+    @mock.patch("certbot._internal.nginx.configurator.subprocess.run")
     def test_no_nginx_start(self, mock_run):
         mock_run.side_effect = OSError("Can't find program")
         with pytest.raises(errors.MisconfigurationError):
@@ -687,20 +687,20 @@ class NginxConfiguratorTest(util.NginxTest):
             self.config.enhance("migration.com",
             "ensure-http-header", "Strict-Transport-Security")
 
-    @mock.patch('certbot_nginx._internal.obj.VirtualHost.contains_list')
+    @mock.patch('certbot._internal.nginx.obj.VirtualHost.contains_list')
     def test_certbot_redirect_exists(self, mock_contains_list):
         # Test that we add no redirect statement if there is already a
         # redirect in the block that is managed by certbot
         # Has a certbot redirect
         mock_contains_list.return_value = True
-        with mock.patch("certbot_nginx._internal.configurator.logger") as mock_logger:
+        with mock.patch("certbot._internal.nginx.configurator.logger") as mock_logger:
             self.config.enhance("www.example.com", "redirect")
             assert mock_logger.info.call_args[0][0] == \
                 "Traffic on port %s already redirecting to ssl in %s"
 
     def test_redirect_dont_enhance(self):
         # Test that we don't accidentally add redirect to ssl-only block
-        with mock.patch("certbot_nginx._internal.configurator.logger") as mock_logger:
+        with mock.patch("certbot._internal.nginx.configurator.logger") as mock_logger:
             self.config.enhance("geese.com", "redirect")
         assert mock_logger.info.call_args[0][0] == \
                 'No matching insecure server blocks listening on port %s found.'
@@ -895,7 +895,7 @@ class NginxConfiguratorTest(util.NginxTest):
         assert util.contains_at_depth(generated_conf, expected, 2)
 
     @mock.patch('certbot.reverter.logger')
-    @mock.patch('certbot_nginx._internal.parser.NginxParser.load')
+    @mock.patch('certbot._internal.nginx.parser.NginxParser.load')
     def test_parser_reload_after_config_changes(self, mock_parser_load, unused_mock_logger):
         self.config.recovery_routine()
         self.config.revert_challenge_config()
@@ -904,7 +904,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_choose_vhosts_wildcard(self):
         # pylint: disable=protected-access
-        mock_path = "certbot_nginx._internal.display_ops.select_vhost_multiple"
+        mock_path = "certbot._internal.nginx.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
             vhost = [x for x in self.config.parser.get_vhosts()
               if 'summer.com' in x.names][0]
@@ -920,7 +920,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_choose_vhosts_wildcard_redirect(self):
         # pylint: disable=protected-access
-        mock_path = "certbot_nginx._internal.display_ops.select_vhost_multiple"
+        mock_path = "certbot._internal.nginx.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
             vhost = [x for x in self.config.parser.get_vhosts()
               if 'summer.com' in x.names][0]
@@ -941,7 +941,7 @@ class NginxConfiguratorTest(util.NginxTest):
             if 'geese.com' in x.names][0]
         mock_choose_vhosts.return_value = [vhost]
         self.config._choose_vhosts_wildcard = mock_choose_vhosts
-        mock_d = "certbot_nginx._internal.configurator.NginxConfigurator._deploy_cert"
+        mock_d = "certbot._internal.nginx.configurator.NginxConfigurator._deploy_cert"
         with mock.patch(mock_d) as mock_dep:
             self.config.deploy_cert("*.com", "/tmp/path",
                                     "/tmp/path", "/tmp/path", "/tmp/path")
@@ -949,7 +949,7 @@ class NginxConfiguratorTest(util.NginxTest):
             assert len(mock_dep.call_args_list) == 1
             assert vhost == mock_dep.call_args_list[0][0][0]
 
-    @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
+    @mock.patch("certbot._internal.nginx.display_ops.select_vhost_multiple")
     def test_deploy_cert_wildcard_no_vhosts(self, mock_dialog):
         # pylint: disable=protected-access
         mock_dialog.return_value = []
@@ -957,7 +957,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.config.deploy_cert("*.wild.cat", "/tmp/path", "/tmp/path",
                            "/tmp/path", "/tmp/path")
 
-    @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
+    @mock.patch("certbot._internal.nginx.display_ops.select_vhost_multiple")
     def test_enhance_wildcard_ocsp_after_install(self, mock_dialog):
         # pylint: disable=protected-access
         vhost = [x for x in self.config.parser.get_vhosts()
@@ -966,7 +966,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.enhance("*.com", "staple-ocsp", "example/chain.pem")
         assert not mock_dialog.called
 
-    @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
+    @mock.patch("certbot._internal.nginx.display_ops.select_vhost_multiple")
     def test_enhance_wildcard_redirect_or_ocsp_no_install(self, mock_dialog):
         # we need to select an SSL enabled vhost here for the OCSP stapling
         # enhancement
@@ -976,7 +976,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.enhance("*.com", "staple-ocsp", "example/chain.pem")
         assert mock_dialog.called is True
 
-    @mock.patch("certbot_nginx._internal.display_ops.select_vhost_multiple")
+    @mock.patch("certbot._internal.nginx.display_ops.select_vhost_multiple")
     def test_enhance_wildcard_double_redirect(self, mock_dialog):
       # pylint: disable=protected-access
         vhost = [x for x in self.config.parser.get_vhosts()
@@ -987,7 +987,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_choose_vhosts_wildcard_no_ssl_filter_port(self):
         # pylint: disable=protected-access
-        mock_path = "certbot_nginx._internal.display_ops.select_vhost_multiple"
+        mock_path = "certbot._internal.nginx.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
             mock_select_vhs.return_value = []
             self.config._choose_vhosts_wildcard("*.com",
@@ -1055,14 +1055,14 @@ class InstallSslOptionsConfTest(util.NginxTest):
         return _hash
 
     def test_prev_file_updates_to_current(self):
-        from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot._internal.nginx.constants import ALL_SSL_OPTIONS_HASHES
         with mock.patch('certbot.crypto_util.sha256sum',
                 new=self._mock_hash_except_ssl_conf_src(ALL_SSL_OPTIONS_HASHES[0])):
             self._call()
         self._assert_current_file()
 
     def test_prev_file_updates_to_current_old_nginx(self):
-        from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot._internal.nginx.constants import ALL_SSL_OPTIONS_HASHES
         self.config.version = (1, 5, 8)
         with mock.patch('certbot.crypto_util.sha256sum',
                 new=self._mock_hash_except_ssl_conf_src(ALL_SSL_OPTIONS_HASHES[0])):
@@ -1099,7 +1099,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
             assert not mock_logger.warning.called
 
     def test_current_file_hash_in_all_hashes(self):
-        from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot._internal.nginx.constants import ALL_SSL_OPTIONS_HASHES
         assert self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES, \
             "Constants.ALL_SSL_OPTIONS_HASHES must be appended" \
             " with the sha256 hash of self.config.mod_ssl_conf when it is updated."
@@ -1113,10 +1113,10 @@ class InstallSslOptionsConfTest(util.NginxTest):
         """
         import importlib.resources
 
-        from certbot_nginx._internal.constants import ALL_SSL_OPTIONS_HASHES
+        from certbot._internal.nginx.constants import ALL_SSL_OPTIONS_HASHES
 
-        tls_configs_ref = importlib.resources.files("certbot_nginx").joinpath(
-            "_internal", "tls_configs")
+        tls_configs_ref = importlib.resources.files("certbot").joinpath(
+            "_internal", "nginx", "tls_configs")
         with importlib.resources.as_file(tls_configs_ref) as tls_configs_dir:
             for tls_config_file in os.listdir(tls_configs_dir):
                 file_hash = crypto_util.sha256sum(os.path.join(tls_configs_dir, tls_config_file))
@@ -1149,10 +1149,10 @@ class InstallSslOptionsConfTest(util.NginxTest):
 
 
 class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
-    """Tests for certbot_nginx._internal.configurator._determine_default_server_root."""
+    """Tests for certbot._internal.nginx.configurator._determine_default_server_root."""
 
     def _call(self):
-        from certbot_nginx._internal.configurator import _determine_default_server_root
+        from certbot._internal.nginx.configurator import _determine_default_server_root
         return _determine_default_server_root()
 
     @mock.patch.dict(os.environ, {"CERTBOT_DOCS": "1"})
