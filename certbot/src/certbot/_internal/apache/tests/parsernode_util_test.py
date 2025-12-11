@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from certbot_apache._internal import parsernode_util as util
+from certbot._internal.apache import parsernode_util as util
 
 
 def _setup_parsernode():

@@ -7,7 +7,7 @@ from typing import Sequence
 from certbot import errors
 from certbot.compat import os
 from certbot.display import util as display_util
-from certbot_apache._internal.obj import VirtualHost
+from certbot._internal.apache.obj import VirtualHost
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ def _vhost_menu(domain: str, vhosts: Iterable[VirtualHost]) -> tuple[str, int]:
 
     if free_chars < 2:
         logger.debug("Display size is too small for "
-                     "certbot_apache._internal.display_ops._vhost_menu()")
+                     "certbot._internal.apache.display_ops._vhost_menu()")
         # This runs the edge off the screen, but it doesn't cause an "error"
         filename_size = 1
         disp_name_size = 1
