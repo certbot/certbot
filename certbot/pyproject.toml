@@ -35,6 +35,7 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = [
+    "apacheconfig>=0.3.2",
     "azure-devops",
     "build",
     "ipdb",
