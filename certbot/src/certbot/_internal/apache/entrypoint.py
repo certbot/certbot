@@ -64,6 +64,3 @@ def get_configurator() -> type[configurator.ApacheConfigurator]:
             # No override class found, return the generic configurator
             override_class = configurator.ApacheConfigurator
     return override_class
-
-
-ENTRYPOINT = get_configurator()
