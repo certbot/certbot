@@ -4,11 +4,11 @@ import shutil
 import subprocess
 
 from certbot import configuration
+from certbot._internal.nginx import configurator
+from certbot._internal.nginx import constants
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
-from certbot._internal.nginx import configurator
-from certbot._internal.nginx import constants
 
 
 class Proxy(configurators_common.Proxy):
