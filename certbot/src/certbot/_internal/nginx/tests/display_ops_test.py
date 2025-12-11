@@ -1,17 +1,17 @@
-"""Test certbot_nginx._internal.display_ops."""
+"""Test certbot._internal.nginx.display_ops."""
 import sys
 
 import pytest
 
 from certbot.display import util as display_util
 from certbot.tests import util as certbot_util
-from certbot_nginx._internal import parser
-from certbot_nginx._internal.display_ops import select_vhost_multiple
-from certbot_nginx._internal.tests import test_util as util
+from certbot._internal.nginx import parser
+from certbot._internal.nginx.display_ops import select_vhost_multiple
+from certbot._internal.nginx.tests import test_util as util
 
 
 class SelectVhostMultiTest(util.NginxTest):
-    """Tests for certbot_nginx._internal.display_ops.select_vhost_multiple."""
+    """Tests for certbot._internal.nginx.display_ops.select_vhost_multiple."""
 
     def setUp(self):
         super().setUp()
