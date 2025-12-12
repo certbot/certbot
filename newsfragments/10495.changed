@@ -1,0 +1,3 @@
+Authenticator.get_chall_pref's argument has been renamed from `domain` to
+`identifier`, and can now receive string-formatted IP addresses in addition to
+domain names.
