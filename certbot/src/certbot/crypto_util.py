@@ -226,7 +226,7 @@ def import_csr_file(
     # Internally we always use PEM, so re-encode as PEM before returning.
     data_pem = csr.public_bytes(serialization.Encoding.PEM)
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", "acme.crypto_util.Format is deprecated")
         return (
             acme_crypto_util.Format.PEM,
             util.CSR(file=csrfile, data=data_pem, form="pem"),
