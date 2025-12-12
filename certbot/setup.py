@@ -40,7 +40,67 @@ install_requires = [
     'pywin32>=300 ; sys_platform == "win32"',
 ]
 
+extras_require = {
+    "dev": [
+        "apacheconfig>=0.3.2",
+        "azure-devops",
+        "build",
+        "ipdb",
+        # allows us to use newer urllib3 https://github.com/python-poetry/poetry-plugin-export/issues/183
+        "poetry-plugin-export>=1.9.0",
+        # poetry 1.2.0+ is required for it to pin pip, setuptools, and wheel. See
+        # https://github.com/python-poetry/poetry/issues/1584.
+        "poetry>=1.2.0",
+        "towncrier",
+        "twine",
+    ],
+    "docs": [
+        # If you have Sphinx<1.5.1, you need docutils<0.13.1
+        # https://github.com/sphinx-doc/sphinx/issues/3212
+        "Sphinx>=1.2", # Annotation support
+        "sphinx_rtd_theme",
+    ],
+    # Tools like pip, wheel, and tox are listed here to ensure they are properly
+    # pinned and installed during automated testing.
+    "test": [
+        "coverage",
+        "mypy",
+        "pip",
+        "pylint",
+        "pytest",
+        "pytest-cov>=4.1.0", # https://github.com/pytest-dev/pytest-cov/pull/558
+        "pytest-xdist",
+        "ruff",
+        "setuptools",
+        "tox",
+        "types-httplib2",
+        "types-pyRFC3339",
+        "types-pywin32",
+        "types-requests",
+        "types-setuptools",
+        "uv",
+        "wheel",
+    ],
+    "apache":  [
+        # If a user installes `certbot[apache]`, we want to include the shim
+        f'certbot-apache>={version}',
+        'python-augeas',
+    ],
+    "nginx": [
+        # If a user installes `certbot[nginx]`, we want to include the shim
+        f'certbot-nginx>={version}',
+        # PyOpenSSL>=25.0.0 is just needed to satisfy mypy right now so this dependency can probably be
+        # relaxed to >=24.0.0 if needed.
+        'PyOpenSSL>=25.0.0',
+        'pyparsing>=2.4.7',
+    ],
+    "all": [
+        "certbot[dev,docs,test,apache,nginx]"
+    ],
+}
+
 
 setup(
     install_requires=install_requires,
+    extras_require=extras_require,
 )
