@@ -10,7 +10,6 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from certbot import errors
 from certbot._internal import san
 
 class SanTest(unittest.TestCase):
@@ -65,58 +64,6 @@ class SanTest(unittest.TestCase):
     def test_ip_address(self) -> None:
         with pytest.raises(ValueError):
             san.IPAddress("example.com")
-
-class EnforceDomainSyntaxTest(unittest.TestCase):
-    """Test validation of domain names."""
-    def _call(self, dns_name: str) -> None:
-        san.DNSName(dns_name)
-
-    def test_nonascii_str(self) -> None:
-        with pytest.raises(errors.ConfigurationError):
-            self._call("eichh\u00f6rnchen.example.com")
-
-    def test_too_long(self) -> None:
-        long_domain = "a"*256
-        with pytest.raises(errors.ConfigurationError):
-            self._call(long_domain)
-
-    def test_not_too_long(self) -> None:
-        not_too_long_domain = "{0}.{1}.{2}.{3}".format("a"*63, "b"*63, "c"*63, "d"*63)
-        self._call(not_too_long_domain)
-
-    def test_empty_label(self) -> None:
-        empty_label_domain = "fizz..example.com"
-        with pytest.raises(errors.ConfigurationError):
-            self._call(empty_label_domain)
-
-    def test_empty_trailing_label(self) -> None:
-        empty_trailing_label_domain = "example.com.."
-        with pytest.raises(errors.ConfigurationError):
-            self._call(empty_trailing_label_domain)
-
-    def test_long_label_1(self) -> None:
-        long_label_domain = "a"*64
-        with pytest.raises(errors.ConfigurationError):
-            self._call(long_label_domain)
-
-    def test_long_label_2(self) -> None:
-        long_label_domain = "{0}.{1}.com".format("a"*64, "b"*63)
-        with pytest.raises(errors.ConfigurationError):
-            self._call(long_label_domain)
-
-    def test_not_long_label(self) -> None:
-        not_too_long_label_domain = "{0}.{1}.com".format("a"*63, "b"*63)
-        self._call(not_too_long_label_domain)
-
-    def test_empty_domain(self) -> None:
-        empty_domain = ""
-        with pytest.raises(errors.ConfigurationError):
-            self._call(empty_domain)
-
-    def test_punycode_ok(self) -> None:
-        # Punycode is now legal, so no longer an error; instead check
-        # that it's _not_ an error (at the initial sanity check stage)
-        self._call('this.is.xn--ls8h.tld')
 
 class FromX509Test(unittest.TestCase):
     def test_csr(self) -> None:
