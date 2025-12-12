@@ -61,7 +61,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
     def prepare(self) -> None:
         pass
 
-    def get_chall_pref(self, unused_domain: str) -> Iterable[type[challenges.Challenge]]:
+    def get_chall_pref(self, unused_identifier: str) -> Iterable[type[challenges.Challenge]]:
         return [challenges.DNS01]
 
     def perform(self, achalls: list[AnnotatedChallenge]) -> list[challenges.ChallengeResponse]:

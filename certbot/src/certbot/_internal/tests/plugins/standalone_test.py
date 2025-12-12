@@ -86,7 +86,7 @@ class AuthenticatorTest(unittest.TestCase):
         assert isinstance(self.auth.more_info(), str)
 
     def test_get_chall_pref(self):
-        assert self.auth.get_chall_pref(domain=None) == \
+        assert self.auth.get_chall_pref(identifier=None) == \
                          [challenges.HTTP01]
 
     def test_perform(self):

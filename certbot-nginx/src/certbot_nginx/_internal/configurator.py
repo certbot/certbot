@@ -1204,7 +1204,7 @@ class NginxConfigurator(common.Configurator):
     ###########################################################################
     # Challenges Section for Authenticator
     ###########################################################################
-    def get_chall_pref(self, unused_domain: str) -> list[type[challenges.Challenge]]:
+    def get_chall_pref(self, unused_identifier: str) -> list[type[challenges.Challenge]]:
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 
