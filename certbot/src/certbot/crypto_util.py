@@ -433,7 +433,7 @@ def get_sans_from_cert(
     warnings.warn("get_sans_from_cert is deprecated and will be removed in the next "
         "major release.", DeprecationWarning)
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", "acme.crypto_util.Format is deprecated")
         if typ is None:
             typ = acme_crypto_util.Format.PEM
         typ = acme_crypto_util.Format(typ)
@@ -468,7 +468,7 @@ def get_names_from_cert(
     warnings.warn("get_names_from_cert is deprecated and will be removed in the next "
         "major release.", DeprecationWarning)
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", "acme.crypto_util.Format is deprecated")
         if typ is None:
             typ = acme_crypto_util.Format.PEM
         typ = acme_crypto_util.Format(typ)
@@ -496,7 +496,7 @@ def get_names_from_req(
     warnings.warn("get_names_from_req is deprecated and will be removed in the next "
         "major release.", DeprecationWarning)
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", "acme.crypto_util.Format is deprecated")
         if typ is None:
             typ = acme_crypto_util.Format.PEM
         typ = acme_crypto_util.Format(typ)
