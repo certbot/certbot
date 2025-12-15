@@ -372,7 +372,7 @@ class FindSansOrCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot.display.ops.choose_names')
     def test_display_ops(self, mock_choose_names):
-        mock_config = mock.Mock(domains=None, certname=None)
+        mock_config = mock.Mock(domains=None, ip_addresses=None, certname=None)
         mock_choose_names.return_value = ["example.com"]
         # pylint: disable=protected-access
         assert main._find_sans_or_certname(mock_config, None) == ([san.DNSName("example.com")], None)

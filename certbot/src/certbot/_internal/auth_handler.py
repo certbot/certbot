@@ -237,7 +237,7 @@ class AuthHandler:
 
         return achalls
 
-    def _get_chall_pref(self, domain: str) -> list[type[challenges.Challenge]]:
+    def _get_chall_pref(self, identifier: str) -> list[type[challenges.Challenge]]:
         """Return list of challenge preferences.
 
         :param str domain: domain for which you are requesting preferences
@@ -245,7 +245,7 @@ class AuthHandler:
         """
         chall_prefs = []
         # Make sure to make a copy...
-        plugin_pref = self.auth.get_chall_pref(domain)
+        plugin_pref = self.auth.get_chall_pref(identifier)
         if self.pref_challs:
             plugin_pref_types = {chall.typ for chall in plugin_pref}
             for typ in self.pref_challs:

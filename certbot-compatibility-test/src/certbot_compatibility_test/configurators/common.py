@@ -124,8 +124,8 @@ class Proxy(interfaces.ConfiguratorProxy):
     def get_all_names(self) -> Iterable[str]:
         return self._configurator.get_all_names()
 
-    def get_chall_pref(self, domain: str) -> Iterable[type[Challenge]]:
-        return self._configurator.get_chall_pref(domain)
+    def get_chall_pref(self, identifier: str) -> Iterable[type[Challenge]]:
+        return self._configurator.get_chall_pref(identifier)
 
     @classmethod
     def inject_parser_options(cls, parser: argparse.ArgumentParser, name: str) -> None:

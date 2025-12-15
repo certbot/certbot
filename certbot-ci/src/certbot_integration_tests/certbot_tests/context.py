@@ -24,6 +24,7 @@ class IntegrationTestsContext:
 
         self.directory_url = acme_xdist['directory_url']
         self.https_port = acme_xdist['https_port'][self.worker_id]
+        self.local_ip = str(acme_xdist['local_ip'][self.worker_id])
         self.http_01_port = acme_xdist['http_port'][self.worker_id]
         self.other_port = acme_xdist['other_port'][self.worker_id]
         # Challtestsrv REST API, that exposes entrypoints to register new DNS entries,
@@ -92,3 +93,9 @@ class IntegrationTestsContext:
         :rtype: str
         """
         return '{0}.{1}.wtf'.format(subdomain, self.worker_id)
+
+    def get_local_ip(self) -> str:
+        """
+        The local IP address that this instance should request IP address certs for.
+        """
+        return self.local_ip
