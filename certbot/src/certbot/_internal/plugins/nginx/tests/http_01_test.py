@@ -1,4 +1,4 @@
-"""Tests for certbot._internal.nginx.http_01"""
+"""Tests for certbot._internal.plugins.nginx.http_01"""
 import sys
 from unittest import mock
 
@@ -9,8 +9,8 @@ from acme import challenges, messages
 from certbot import achallenges
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
-from certbot._internal.nginx.obj import Addr
-from certbot._internal.nginx.tests import test_util as util
+from certbot._internal.plugins.nginx.obj import Addr
+from certbot._internal.plugins.nginx.tests import test_util as util
 
 AUTH_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -59,14 +59,14 @@ class HttpPerformTest(util.NginxTest):
         config = self.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
-        from certbot._internal.nginx import http_01
+        from certbot._internal.plugins.nginx import http_01
         self.http01 = http_01.NginxHttp01(config)
 
     def test_perform0(self):
         responses = self.http01.perform()
         assert [] == responses
 
-    @mock.patch("certbot._internal.nginx.configurator.NginxConfigurator.save")
+    @mock.patch("certbot._internal.plugins.nginx.configurator.NginxConfigurator.save")
     def test_perform1(self, mock_save):
         self.http01.add_chall(self.achalls[0])
         response = self.achalls[0].response(self.account_key)
@@ -112,7 +112,7 @@ class HttpPerformTest(util.NginxTest):
             #     self.assertEqual(vhost.addrs, set(v_addr2_print))
             # self.assertEqual(vhost.names, set([response.z_domain.decode('ascii')]))
 
-    @mock.patch('certbot._internal.nginx.parser.NginxParser.add_server_directives')
+    @mock.patch('certbot._internal.plugins.nginx.parser.NginxParser.add_server_directives')
     def test_mod_config_http_and_https(self, mock_add_server_directives):
         """A server_name with both HTTP and HTTPS vhosts should get modded in both vhosts"""
         self.configuration.https_port = 443
@@ -123,8 +123,8 @@ class HttpPerformTest(util.NginxTest):
         # 2 * 'rewrite' + 2 * 'return 200 keyauthz' = 4
         assert mock_add_server_directives.call_count == 4
 
-    @mock.patch('certbot._internal.nginx.parser.nginxparser.dump')
-    @mock.patch('certbot._internal.nginx.parser.NginxParser.add_server_directives')
+    @mock.patch('certbot._internal.plugins.nginx.parser.nginxparser.dump')
+    @mock.patch('certbot._internal.plugins.nginx.parser.NginxParser.add_server_directives')
     def test_mod_config_only_https(self, mock_add_server_directives, mock_dump):
         """A server_name with only an HTTPS vhost should get modded"""
         self.http01.add_chall(self.achalls[4]) # ipv6ssl.com
@@ -136,7 +136,7 @@ class HttpPerformTest(util.NginxTest):
         # should have been created and written to the challenge conf file
         assert mock_dump.call_args[0][0] != []
 
-    @mock.patch('certbot._internal.nginx.parser.NginxParser.add_server_directives')
+    @mock.patch('certbot._internal.plugins.nginx.parser.NginxParser.add_server_directives')
     def test_mod_config_deduplicate(self, mock_add_server_directives):
         """A vhost that appears in both HTTP and HTTPS vhosts only gets modded once"""
         achall = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -198,7 +198,7 @@ class HttpPerformTest(util.NginxTest):
             f.write(original_example_com)
         self.http01.configurator.parser.load()
 
-    @mock.patch("certbot._internal.nginx.configurator.NginxConfigurator.ipv6_info")
+    @mock.patch("certbot._internal.plugins.nginx.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_no_memoization(self, ipv6_info):
         # pylint: disable=protected-access
         ipv6_info.return_value = (True, True)
@@ -208,7 +208,7 @@ class HttpPerformTest(util.NginxTest):
         self.http01._default_listen_addresses()
         assert ipv6_info.call_count == 2
 
-    @mock.patch("certbot._internal.nginx.configurator.NginxConfigurator.ipv6_info")
+    @mock.patch("certbot._internal.plugins.nginx.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_t_t(self, ipv6_info):
         # pylint: disable=protected-access
         ipv6_info.return_value = (True, True)
@@ -217,7 +217,7 @@ class HttpPerformTest(util.NginxTest):
         http_ipv6_addr = Addr.fromstring("[::]:80")
         assert addrs == [http_addr, http_ipv6_addr]
 
-    @mock.patch("certbot._internal.nginx.configurator.NginxConfigurator.ipv6_info")
+    @mock.patch("certbot._internal.plugins.nginx.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_t_f(self, ipv6_info):
         # pylint: disable=protected-access
         ipv6_info.return_value = (True, False)
@@ -226,7 +226,7 @@ class HttpPerformTest(util.NginxTest):
         http_ipv6_addr = Addr.fromstring("[::]:80 ipv6only=on")
         assert addrs == [http_addr, http_ipv6_addr]
 
-    @mock.patch("certbot._internal.nginx.configurator.NginxConfigurator.ipv6_info")
+    @mock.patch("certbot._internal.plugins.nginx.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_f_f(self, ipv6_info):
         # pylint: disable=protected-access
         ipv6_info.return_value = (False, False)

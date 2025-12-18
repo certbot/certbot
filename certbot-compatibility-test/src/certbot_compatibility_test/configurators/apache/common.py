@@ -24,7 +24,7 @@ class Proxy(configurators_common.Proxy):
 
         self.modules = self.server_root = self.test_conf = self.version = None
         patch = mock.patch(
-            "certbot._internal.apache.configurator.display_ops.select_vhost")
+            "certbot._internal.plugins.apache.configurator.display_ops.select_vhost")
         mock_display = patch.start()
         mock_display.side_effect = le_errors.PluginError(
             "Unable to determine vhost")

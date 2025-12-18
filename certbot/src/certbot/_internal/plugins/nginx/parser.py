@@ -18,9 +18,9 @@ import pyparsing
 
 from certbot import errors
 from certbot.compat import os
-from certbot._internal.nginx import nginxparser
-from certbot._internal.nginx import obj
-from certbot._internal.nginx.nginxparser import UnspacedList
+from certbot._internal.plugins.nginx import nginxparser
+from certbot._internal.plugins.nginx import obj
+from certbot._internal.plugins.nginx.nginxparser import UnspacedList
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ class NginxParser:
         Technically this is a misnomer because Nginx does not have virtual
         hosts, it has 'server blocks'.
 
-        :returns: List of :class:`~certbot._internal.nginx.obj.VirtualHost`
+        :returns: List of :class:`~certbot._internal.plugins.nginx.obj.VirtualHost`
             objects found in configuration
         :rtype: list
 
@@ -286,7 +286,7 @@ class NginxParser:
     def has_ssl_on_directive(self, vhost: obj.VirtualHost) -> bool:
         """Does vhost have ssl on for all ports?
 
-        :param :class:`~certbot._internal.nginx.obj.VirtualHost` vhost: The vhost in question
+        :param :class:`~certbot._internal.plugins.nginx.obj.VirtualHost` vhost: The vhost in question
 
         :returns: True if 'ssl on' directive is included
         :rtype: bool
@@ -313,7 +313,7 @@ class NginxParser:
         ..todo :: Doesn't match server blocks whose server_name directives are
             split across multiple conf files.
 
-        :param :class:`~certbot._internal.nginx.obj.VirtualHost` vhost: The vhost
+        :param :class:`~certbot._internal.plugins.nginx.obj.VirtualHost` vhost: The vhost
             whose information we use to match on
         :param list directives: The directives to add
         :param bool insert_at_top: True if the directives need to be inserted at the top
@@ -336,7 +336,7 @@ class NginxParser:
         ..todo :: Doesn't match server blocks whose server_name directives are
             split across multiple conf files.
 
-        :param :class:`~certbot._internal.nginx.obj.VirtualHost` vhost: The vhost
+        :param :class:`~certbot._internal.plugins.nginx.obj.VirtualHost` vhost: The vhost
             whose information we use to match on
         :param list directives: The directives to add
         :param bool insert_at_top: True if the directives need to be inserted at the top
@@ -350,7 +350,7 @@ class NginxParser:
                                  match_func: Optional[Callable[[Any], bool]] = None) -> None:
         """Remove all directives of type directive_name.
 
-        :param :class:`~certbot._internal.nginx.obj.VirtualHost` vhost: The vhost
+        :param :class:`~certbot._internal.plugins.nginx.obj.VirtualHost` vhost: The vhost
             to remove directives from
         :param string directive_name: The directive type to remove
         :param callable match_func: Function of the directive that returns true for directives
@@ -389,7 +389,7 @@ class NginxParser:
                         only_directives: Optional[list[Any]] = None) -> obj.VirtualHost:
         """Duplicate the vhost in the configuration files.
 
-        :param :class:`~certbot._internal.nginx.obj.VirtualHost` vhost_template: The vhost
+        :param :class:`~certbot._internal.plugins.nginx.obj.VirtualHost` vhost_template: The vhost
             whose information we copy
         :param bool remove_singleton_listen_params: If we should remove parameters
             from listen directives in the block that can only be used once per address
@@ -397,7 +397,7 @@ class NginxParser:
             looks at first level of depth; does not expand includes.
 
         :returns: A vhost object for the newly created vhost
-        :rtype: :class:`~certbot._internal.nginx.obj.VirtualHost`
+        :rtype: :class:`~certbot._internal.plugins.nginx.obj.VirtualHost`
         """
         # TODO: https://github.com/certbot/certbot/issues/5185
         # put it in the same file as the template, at the same level

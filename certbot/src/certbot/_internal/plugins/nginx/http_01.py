@@ -11,11 +11,11 @@ from certbot import errors
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
 from certbot.compat import os
 from certbot.plugins import common
-from certbot._internal.nginx import nginxparser
-from certbot._internal.nginx.obj import Addr
+from certbot._internal.plugins.nginx import nginxparser
+from certbot._internal.plugins.nginx.obj import Addr
 
 if TYPE_CHECKING:
-    from certbot._internal.nginx.configurator import NginxConfigurator
+    from certbot._internal.plugins.nginx.configurator import NginxConfigurator
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,7 @@ class NginxHttp01(common.ChallengePerformer):
 
     def _default_listen_addresses(self) -> list[Addr]:
         """Finds addresses for a challenge block to listen on.
-        :returns: list of :class:`certbot._internal.nginx.obj.Addr` to apply
+        :returns: list of :class:`certbot._internal.plugins.nginx.obj.Addr` to apply
         :rtype: list
         """
         addresses: list[Addr] = []

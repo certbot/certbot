@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 
-from certbot._internal.apache.tests import util
+from certbot._internal.plugins.apache.tests import util
 
 
 if importlib.util.find_spec('apacheconfig'):
