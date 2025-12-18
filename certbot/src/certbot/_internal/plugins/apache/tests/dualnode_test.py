@@ -2,9 +2,9 @@
 import unittest
 from unittest import mock
 
-from certbot._internal.apache import assertions
-from certbot._internal.apache import augeasparser
-from certbot._internal.apache import dualparser
+from certbot._internal.plugins.apache import assertions
+from certbot._internal.plugins.apache import augeasparser
+from certbot._internal.plugins.apache import dualparser
 import pytest
 
 

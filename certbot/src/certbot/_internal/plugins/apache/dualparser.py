@@ -6,14 +6,14 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import TypeVar
 
-from certbot._internal.apache import apacheparser
-from certbot._internal.apache import assertions
-from certbot._internal.apache import augeasparser
-from certbot._internal.apache import interfaces
+from certbot._internal.plugins.apache import apacheparser
+from certbot._internal.plugins.apache import assertions
+from certbot._internal.plugins.apache import augeasparser
+from certbot._internal.plugins.apache import interfaces
 
 if TYPE_CHECKING:
-    from certbot._internal.apache.apacheparser import ApacheParserNode  # pragma: no cover
-    from certbot._internal.apache.augeasparser import AugeasParserNode  # pragma: no cover
+    from certbot._internal.plugins.apache.apacheparser import ApacheParserNode  # pragma: no cover
+    from certbot._internal.plugins.apache.augeasparser import AugeasParserNode  # pragma: no cover
 
 GenericAugeasParserNode = TypeVar("GenericAugeasParserNode", bound="AugeasParserNode")
 GenericApacheParserNode = TypeVar("GenericApacheParserNode", bound="ApacheParserNode")

@@ -1,16 +1,16 @@
 """ Entry point for Apache Plugin """
 
 from certbot import util
-from certbot._internal.apache import configurator
-from certbot._internal.apache import override_alpine
-from certbot._internal.apache import override_arch
-from certbot._internal.apache import override_centos
-from certbot._internal.apache import override_darwin
-from certbot._internal.apache import override_debian
-from certbot._internal.apache import override_fedora
-from certbot._internal.apache import override_gentoo
-from certbot._internal.apache import override_suse
-from certbot._internal.apache import override_void
+from certbot._internal.plugins.apache import configurator
+from certbot._internal.plugins.apache import override_alpine
+from certbot._internal.plugins.apache import override_arch
+from certbot._internal.plugins.apache import override_centos
+from certbot._internal.plugins.apache import override_darwin
+from certbot._internal.plugins.apache import override_debian
+from certbot._internal.plugins.apache import override_fedora
+from certbot._internal.plugins.apache import override_gentoo
+from certbot._internal.plugins.apache import override_suse
+from certbot._internal.plugins.apache import override_void
 
 OVERRIDE_CLASSES: dict[str, type[configurator.ApacheConfigurator]] = {
     "alpine": override_alpine.AlpineConfigurator,

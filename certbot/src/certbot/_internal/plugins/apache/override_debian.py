@@ -5,10 +5,10 @@ from certbot import errors
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
-from certbot._internal.apache import apache_util
-from certbot._internal.apache import configurator
-from certbot._internal.apache.configurator import OsOptions
-from certbot._internal.apache.obj import VirtualHost
+from certbot._internal.plugins.apache import apache_util
+from certbot._internal.plugins.apache import configurator
+from certbot._internal.plugins.apache.configurator import OsOptions
+from certbot._internal.plugins.apache.obj import VirtualHost
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
                   modules are enabled appropriately.
 
         :param vhost: vhost to enable
-        :type vhost: :class:`~certbot._internal.apache.obj.VirtualHost`
+        :type vhost: :class:`~certbot._internal.plugins.apache.obj.VirtualHost`
 
         :raises .errors.NotSupportedError: If filesystem layout is not
             supported.

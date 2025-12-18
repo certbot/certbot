@@ -1,11 +1,11 @@
-"""Test for certbot._internal.apache.entrypoint for override class resolution"""
+"""Test for certbot._internal.plugins.apache.entrypoint for override class resolution"""
 import sys
 from unittest import mock
 
 import pytest
 
-from certbot._internal.apache import configurator
-from certbot._internal.apache import entrypoint
+from certbot._internal.plugins.apache import configurator
+from certbot._internal.plugins.apache import entrypoint
 
 
 def test_get_configurator():

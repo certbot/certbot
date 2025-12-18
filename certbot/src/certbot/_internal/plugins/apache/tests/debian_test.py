@@ -1,4 +1,4 @@
-"""Test for certbot._internal.apache.configurator for Debian overrides"""
+"""Test for certbot._internal.plugins.apache.configurator for Debian overrides"""
 import shutil
 import sys
 from unittest import mock
@@ -8,9 +8,9 @@ import pytest
 from certbot import errors
 from certbot.compat import os
 from certbot.tests import util as certbot_util
-from certbot._internal.apache import apache_util
-from certbot._internal.apache import obj
-from certbot._internal.apache.tests import util
+from certbot._internal.plugins.apache import apache_util
+from certbot._internal.plugins.apache import obj
+from certbot._internal.plugins.apache.tests import util
 
 
 class MultipleVhostsTestDebian(util.ApacheTest):
@@ -31,8 +31,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
         def mocked_deploy_cert(*args, **kwargs):
             """a helper to mock a deployed cert"""
-            g_mod = "certbot._internal.apache.configurator.ApacheConfigurator.enable_mod"
-            d_mod = "certbot._internal.apache.override_debian.DebianConfigurator.enable_mod"
+            g_mod = "certbot._internal.plugins.apache.configurator.ApacheConfigurator.enable_mod"
+            d_mod = "certbot._internal.plugins.apache.override_debian.DebianConfigurator.enable_mod"
             with mock.patch(g_mod):
                 with mock.patch(d_mod):
                     config.real_deploy_cert(*args, **kwargs)
@@ -46,7 +46,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
-    @mock.patch("certbot._internal.apache.apache_util.subprocess.run")
+    @mock.patch("certbot._internal.plugins.apache.apache_util.subprocess.run")
     def test_enable_mod(self, mock_run, mock_exe_exists, mock_run_script):
         mock_run.return_value.stdout = "Define: DUMP_RUN_CFG"
         mock_run.return_value.stderr = ""
@@ -194,7 +194,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
     def test_enable_site_call_parent(self):
         with mock.patch(
-            "certbot._internal.apache.configurator.ApacheConfigurator.enable_site") as e_s:
+            "certbot._internal.plugins.apache.configurator.ApacheConfigurator.enable_site") as e_s:
             self.config.parser.root = "/tmp/nonexistent"
             vh = self.vh_truth[0]
             vh.enabled = False

@@ -1,6 +1,6 @@
 """ Distribution specific override class for Void Linux """
-from certbot._internal.apache import configurator
-from certbot._internal.apache.configurator import OsOptions
+from certbot._internal.plugins.apache import configurator
+from certbot._internal.plugins.apache.configurator import OsOptions
 
 
 class VoidConfigurator(configurator.ApacheConfigurator):

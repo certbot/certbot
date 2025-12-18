@@ -12,11 +12,11 @@ from typing import Union
 
 from certbot import errors
 from certbot.compat import os
-from certbot._internal.apache import apache_util
-from certbot._internal.apache import constants
+from certbot._internal.plugins.apache import apache_util
+from certbot._internal.plugins.apache import constants
 
 if TYPE_CHECKING:
-    from certbot._internal.apache.configurator import ApacheConfigurator  # pragma: no cover
+    from certbot._internal.plugins.apache.configurator import ApacheConfigurator  # pragma: no cover
 
 try:
     from augeas import Augeas
