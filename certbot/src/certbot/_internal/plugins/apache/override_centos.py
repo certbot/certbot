@@ -4,10 +4,10 @@ from typing import Any
 
 from certbot import errors
 from certbot import util
-from certbot._internal.apache import apache_util
-from certbot._internal.apache import configurator
-from certbot._internal.apache import parser
-from certbot._internal.apache.configurator import OsOptions
+from certbot._internal.plugins.apache import apache_util
+from certbot._internal.plugins.apache import configurator
+from certbot._internal.plugins.apache import parser
+from certbot._internal.plugins.apache.configurator import OsOptions
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ from typing import Any
 from typing import Iterable
 from typing import Optional
 
-from certbot._internal.apache.interfaces import ParserNode
+from certbot._internal.plugins.apache.interfaces import ParserNode
 
 
 def validate_kwargs(kwargs: dict[str, Any], required_names: Iterable[str]) -> dict[str, Any]:

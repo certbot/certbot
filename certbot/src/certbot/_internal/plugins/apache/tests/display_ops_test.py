@@ -1,4 +1,4 @@
-"""Test certbot._internal.apache.display_ops."""
+"""Test certbot._internal.plugins.apache.display_ops."""
 import sys
 import unittest
 from unittest import mock
@@ -8,13 +8,13 @@ import pytest
 from certbot import errors
 from certbot.display import util as display_util
 from certbot.tests import util as certbot_util
-from certbot._internal.apache import obj
-from certbot._internal.apache.display_ops import select_vhost_multiple
-from certbot._internal.apache.tests import util
+from certbot._internal.plugins.apache import obj
+from certbot._internal.plugins.apache.display_ops import select_vhost_multiple
+from certbot._internal.plugins.apache.tests import util
 
 
 class SelectVhostMultiTest(unittest.TestCase):
-    """Tests for certbot._internal.apache.display_ops.select_vhost_multiple."""
+    """Tests for certbot._internal.plugins.apache.display_ops.select_vhost_multiple."""
 
     def setUp(self):
         self.base_dir = "/example_path"
@@ -44,7 +44,7 @@ class SelectVhostMultiTest(unittest.TestCase):
 
 
 class SelectVhostTest(unittest.TestCase):
-    """Tests for certbot._internal.apache.display_ops.select_vhost."""
+    """Tests for certbot._internal.plugins.apache.display_ops.select_vhost."""
 
     def setUp(self):
         self.base_dir = "/example_path"
@@ -53,7 +53,7 @@ class SelectVhostTest(unittest.TestCase):
 
     @classmethod
     def _call(cls, vhosts):
-        from certbot._internal.apache.display_ops import select_vhost
+        from certbot._internal.plugins.apache.display_ops import select_vhost
         return select_vhost("example.com", vhosts)
 
     @certbot_util.patch_display_util()
@@ -80,8 +80,8 @@ class SelectVhostTest(unittest.TestCase):
     def test_no_vhosts(self):
         assert self._call([]) is None
 
-    @mock.patch("certbot._internal.apache.display_ops.display_util")
-    @mock.patch("certbot._internal.apache.display_ops.logger")
+    @mock.patch("certbot._internal.plugins.apache.display_ops.display_util")
+    @mock.patch("certbot._internal.plugins.apache.display_ops.logger")
     def test_small_display(self, mock_logger, mock_display_util):
         mock_display_util.WIDTH = 20
         mock_display_util.menu.return_value = (display_util.OK, 0)

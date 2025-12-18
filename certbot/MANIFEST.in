@@ -4,11 +4,11 @@ include LICENSE.txt
 recursive-include docs *
 recursive-include examples *
 recursive-include src/certbot/tests/testdata *
-recursive-include src/certbot/_internal/nginx/tls_configs *.conf
-recursive-include src/certbot/_internal/nginx/tests/testdata *
-recursive-include src/_internal/apache/augeas_lens *.aug
-recursive-include src/_internal/apache/tls_configs *.conf
-recursive-include src/_internal/apache/tests/testdata *
+recursive-include src/certbot/_internal/plugins/nginx/tls_configs *.conf
+recursive-include src/certbot/_internal/plugins/nginx/tests/testdata *
+recursive-include src/_internal/plugins/apache/augeas_lens *.aug
+recursive-include src/_internal/plugins/apache/tls_configs *.conf
+recursive-include src/_internal/plugins/apache/tests/testdata *
 include src/certbot/ssl-dhparams.pem
 include src/certbot/py.typed
 global-exclude __pycache__

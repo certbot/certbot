@@ -1,4 +1,4 @@
-"""Test for certbot._internal.apache.http_01."""
+"""Test for certbot._internal.plugins.apache.http_01."""
 import errno
 import sys
 from unittest import mock
@@ -11,14 +11,14 @@ from certbot import errors
 from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import acme_util
-from certbot._internal.apache.parser import get_aug_path
-from certbot._internal.apache.tests import util
+from certbot._internal.plugins.apache.parser import get_aug_path
+from certbot._internal.plugins.apache.tests import util
 
 NUM_ACHALLS = 3
 
 
 class ApacheHttp01Test(util.ApacheTest):
-    """Test for certbot._internal.apache.http_01.ApacheHttp01."""
+    """Test for certbot._internal.plugins.apache.http_01.ApacheHttp01."""
 
     def setUp(self, *args, **kwargs):  # pylint: disable=arguments-differ
         super().setUp(*args, **kwargs)
@@ -45,7 +45,7 @@ class ApacheHttp01Test(util.ApacheTest):
             self.config.parser.modules["mod_{0}.c".format(mod)] = None
             self.config.parser.modules[mod + "_module"] = None
 
-        from certbot._internal.apache.http_01 import ApacheHttp01
+        from certbot._internal.plugins.apache.http_01 import ApacheHttp01
         self.http = ApacheHttp01(self.config)
 
     def test_empty_perform(self):
@@ -61,7 +61,7 @@ class ApacheHttp01Test(util.ApacheTest):
         with pytest.raises(errors.ConfigurationError):
             self.http.perform()
 
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.enable_mod")
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.enable_mod")
     def test_enable_modules_apache_2_4(self, mock_enmod):
         del self.config.parser.modules["authz_core_module"]
         del self.config.parser.modules["mod_authz_host.c"]
@@ -210,7 +210,7 @@ class ApacheHttp01Test(util.ApacheTest):
 
         assert os.path.exists(challenge_dir) is True
 
-    @mock.patch("certbot._internal.apache.http_01.filesystem.makedirs")
+    @mock.patch("certbot._internal.plugins.apache.http_01.filesystem.makedirs")
     def test_failed_makedirs(self, mock_makedirs):
         mock_makedirs.side_effect = OSError(errno.EACCES, "msg")
         self.http.add_chall(self.achalls[0])

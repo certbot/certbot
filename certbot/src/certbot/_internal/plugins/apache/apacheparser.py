@@ -3,10 +3,10 @@ from typing import Any
 from typing import Iterable
 from typing import Optional
 
-from certbot._internal.apache import assertions
-from certbot._internal.apache import interfaces
-from certbot._internal.apache import parsernode_util as util
-from certbot._internal.apache.interfaces import ParserNode
+from certbot._internal.plugins.apache import assertions
+from certbot._internal.plugins.apache import interfaces
+from certbot._internal.plugins.apache import parsernode_util as util
+from certbot._internal.plugins.apache.interfaces import ParserNode
 
 
 class ApacheParserNode(interfaces.ParserNode):

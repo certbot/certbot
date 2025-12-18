@@ -1,4 +1,4 @@
-"""Test for certbot._internal.nginx.nginxparser."""
+"""Test for certbot._internal.plugins.nginx.nginxparser."""
 import copy
 import operator
 import sys
@@ -8,13 +8,13 @@ import unittest
 from pyparsing import ParseException
 import pytest
 
-from certbot._internal.nginx.nginxparser import dump
-from certbot._internal.nginx.nginxparser import dumps
-from certbot._internal.nginx.nginxparser import load
-from certbot._internal.nginx.nginxparser import loads
-from certbot._internal.nginx.nginxparser import RawNginxParser
-from certbot._internal.nginx.nginxparser import UnspacedList
-from certbot._internal.nginx.tests import test_util as util
+from certbot._internal.plugins.nginx.nginxparser import dump
+from certbot._internal.plugins.nginx.nginxparser import dumps
+from certbot._internal.plugins.nginx.nginxparser import load
+from certbot._internal.plugins.nginx.nginxparser import loads
+from certbot._internal.plugins.nginx.nginxparser import RawNginxParser
+from certbot._internal.plugins.nginx.nginxparser import UnspacedList
+from certbot._internal.plugins.nginx.tests import test_util as util
 
 FIRST = operator.itemgetter(0)
 

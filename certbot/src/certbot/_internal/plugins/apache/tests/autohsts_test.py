@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-"""Test for certbot._internal.apache.configurator AutoHSTS functionality"""
+"""Test for certbot._internal.plugins.apache.configurator AutoHSTS functionality"""
 import re
 import sys
 from unittest import mock
@@ -7,8 +7,8 @@ from unittest import mock
 import pytest
 
 from certbot import errors
-from certbot._internal.apache import constants
-from certbot._internal.apache.tests import util
+from certbot._internal.plugins.apache import constants
+from certbot._internal.plugins.apache.tests import util
 
 
 class AutoHSTSTest(util.ApacheTest):
@@ -39,23 +39,23 @@ class AutoHSTSTest(util.ApacheTest):
                         head.replace("arg[3]", "arg[4]"))
         return None  # pragma: no cover
 
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.enable_mod")
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.restart")
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.enable_mod")
     def test_autohsts_enable_headers_mod(self, mock_enable, _restart):
         self.config.parser.modules.pop("headers_module", None)
         self.config.parser.modules.pop("mod_header.c", None)
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         assert mock_enable.called is True
 
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.restart")
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.restart")
     def test_autohsts_deploy_already_exists(self, _restart):
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         with pytest.raises(errors.PluginEnhancementAlreadyPresent):
             self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
 
-    @mock.patch("certbot._internal.apache.constants.AUTOHSTS_FREQ", 0)
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.prepare")
+    @mock.patch("certbot._internal.plugins.apache.constants.AUTOHSTS_FREQ", 0)
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.restart")
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.prepare")
     def test_autohsts_increase(self, mock_prepare, _mock_restart):
         self.config._prepared = False
         maxage = "\"max-age={0}\""
@@ -73,8 +73,8 @@ class AutoHSTSTest(util.ApacheTest):
                           inc_val
         assert mock_prepare.called is True
 
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator._autohsts_increase")
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.restart")
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator._autohsts_increase")
     def test_autohsts_increase_noop(self, mock_increase, _restart):
         maxage = "\"max-age={0}\""
         initial_val = maxage.format(constants.AUTOHSTS_STEPS[0])
@@ -88,8 +88,8 @@ class AutoHSTSTest(util.ApacheTest):
         assert mock_increase.called is False
 
 
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot._internal.apache.constants.AUTOHSTS_FREQ", 0)
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.restart")
+    @mock.patch("certbot._internal.plugins.apache.constants.AUTOHSTS_FREQ", 0)
     def test_autohsts_increase_no_header(self, _restart):
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         # Remove the header
@@ -100,8 +100,8 @@ class AutoHSTSTest(util.ApacheTest):
         with pytest.raises(errors.PluginError):
             self.config.update_autohsts(mock.MagicMock())
 
-    @mock.patch("certbot._internal.apache.constants.AUTOHSTS_FREQ", 0)
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.restart")
+    @mock.patch("certbot._internal.plugins.apache.constants.AUTOHSTS_FREQ", 0)
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.restart")
     def test_autohsts_increase_and_make_permanent(self, _mock_restart):
         maxage = "\"max-age={0}\""
         max_val = maxage.format(constants.AUTOHSTS_PERMANENT)
@@ -127,7 +127,7 @@ class AutoHSTSTest(util.ApacheTest):
                           max_val
 
     def test_autohsts_update_noop(self):
-        with mock.patch("certbot._internal.apache.configurator.time") as mock_time_module:
+        with mock.patch("certbot._internal.plugins.apache.configurator.time") as mock_time_module:
             # Time mock is used to make sure that the execution does not
             # continue when no autohsts entries exist in pluginstorage
             self.config.update_autohsts(mock.MagicMock())
@@ -139,16 +139,16 @@ class AutoHSTSTest(util.ApacheTest):
         # Make sure that the execution does not continue when no entries in store
         assert self.config.storage.put.called is False
 
-    @mock.patch("certbot._internal.apache.display_ops.select_vhost")
+    @mock.patch("certbot._internal.plugins.apache.display_ops.select_vhost")
     def test_autohsts_no_ssl_vhost(self, mock_select):
         mock_select.return_value = self.vh_truth[0]
-        with mock.patch("certbot._internal.apache.configurator.logger.error") as mock_log:
+        with mock.patch("certbot._internal.plugins.apache.configurator.logger.error") as mock_log:
             with pytest.raises(errors.PluginError):
                 self.config.enable_autohsts(mock.MagicMock(), "invalid.example.com")
             assert "Certbot was not able to find SSL" in mock_log.call_args[0][0]
 
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.restart")
-    @mock.patch("certbot._internal.apache.configurator.ApacheConfigurator.add_vhost_id")
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.restart")
+    @mock.patch("certbot._internal.plugins.apache.configurator.ApacheConfigurator.add_vhost_id")
     def test_autohsts_dont_enhance_twice(self, mock_id, _restart):
         mock_id.return_value = "1234567"
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com", "ocspvhost.com"])
@@ -172,7 +172,7 @@ class AutoHSTSTest(util.ApacheTest):
         self.config._autohsts_fetch_state()
         self.config._autohsts["orphan_id"] = {"laststep": 999, "timestamp": 0}
         self.config._autohsts_save_state()
-        with mock.patch("certbot._internal.apache.configurator.logger.error") as mock_log:
+        with mock.patch("certbot._internal.plugins.apache.configurator.logger.error") as mock_log:
             self.config.deploy_autohsts(mock.MagicMock())
             assert mock_log.called is True
             assert "VirtualHost with id orphan_id was not" in mock_log.call_args[0][0]
