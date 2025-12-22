@@ -29,12 +29,14 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.credentials: Optional[CredentialsConfiguration] = None
+        self.delegate_zone: Optional[str] = None
 
     @classmethod
     def add_parser_arguments(cls, add: Callable[..., None],
                              default_propagation_seconds: int = 10) -> None:
         super().add_parser_arguments(add, default_propagation_seconds)
         add('credentials', help='Cloudflare credentials INI file.')
+        add('delegate-via', help='The domain (zone) of the CNAME delegation')
 
     def more_info(self) -> str:
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
@@ -70,12 +72,15 @@ class Authenticator(dns_common.DNSAuthenticator):
             None,
             self._validate_credentials
         )
+        self.delegate_zone = self.conf('delegate-via')
 
     def _perform(self, domain: str, validation_name: str, validation: str) -> None:
-        self._get_cloudflare_client().add_txt_record(domain, validation_name, validation, self.ttl)
+        zone = self.delegate_zone if self.delegate_zone else domain
+        self._get_cloudflare_client().add_txt_record(zone, validation_name, validation, self.ttl)
 
     def _cleanup(self, domain: str, validation_name: str, validation: str) -> None:
-        self._get_cloudflare_client().del_txt_record(domain, validation_name, validation)
+        zone = self.delegate_zone if self.delegate_zone else domain
+        self._get_cloudflare_client().del_txt_record(zone, validation_name, validation)
 
     def _get_cloudflare_client(self) -> "_CloudflareClient":
         if not self.credentials:  # pragma: no cover
