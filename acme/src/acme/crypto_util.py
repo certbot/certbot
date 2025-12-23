@@ -3,11 +3,14 @@ import enum
 from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
+from types import ModuleType
 import typing
+from typing import Any
 from typing import Literal
 from typing import Optional
 from typing import Union
 import warnings
+import sys
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -18,8 +21,38 @@ from OpenSSL import crypto
 logger = logging.getLogger(__name__)
 
 
+# https://github.com/pyca/cryptography/blob/1eab7a67dcc34b568e3c0df64e6222a2ac74b1ee/src/cryptography/utils.py#L66-L113
+class _ClientDeprecationModule(ModuleType):
+    """
+    Internal class delegating to a module, and displaying warnings when attributes
+    related to deprecated attributes in the acme.client module.
+    """
+    def __init__(self, module: ModuleType) -> None:
+        super().__init__(module.__name__)
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr: str) -> Any:
+        if attr == 'Format':
+            warnings.warn("acme.crypto_util.Format is deprecated and will be removed in "
+                "the next major release.", DeprecationWarning)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr: str) -> None:  # pragma: no cover
+        delattr(self._module, attr)
+
+    def __dir__(self) -> list[str]:  # pragma: no cover
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about deprecation and planned removal of some elements in the module.
+sys.modules[__name__] = _ClientDeprecationModule(sys.modules[__name__])
+
+
 class Format(enum.IntEnum):
-    """File format to be used when parsing or serializing X.509 structures.
+    """File format to be used when parsing or serializing X.509 structures. Deprecated.
 
     Backwards compatible with the `FILETYPE_ASN1` and `FILETYPE_PEM` constants
     from pyOpenSSL.
@@ -36,7 +69,7 @@ class Format(enum.IntEnum):
             return Encoding.PEM
 
 
-# Even *more* annoyingly, due to a mypy bug, we can't use Union[] types in
+# Annoyingly, due to a mypy bug, we can't use Union[] types in
 # isinstance expressions without causing false mypy errors. So we have to
 # recreate the type collection as a tuple here. And no, typing.get_args doesn't
 # work due to another mypy bug.
