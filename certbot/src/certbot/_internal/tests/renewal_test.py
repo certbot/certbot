@@ -156,7 +156,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
     @mock.patch('certbot._internal.renewal.hooks.deploy_hook')
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
-    def test_reuse_key_conflicts(self, mock_set_by_user, unused_mock_renew_hook):
+    def test_reuse_key_conflicts(self, mock_set_by_user, unused_mock_deploy_hook):
         mock_set_by_user.return_value = False
 
         # When renewing with reuse_key and a conflicting key parameter (size, curve)

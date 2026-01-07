@@ -192,20 +192,7 @@ def run_saved_post_hooks(renewed_sans: list[san.SAN], failed_sans: list[san.SAN]
 
 def deploy_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
                 lineage_path: str) -> None:
-    """Run post-issuance hook if defined.
-
-    :param configuration.NamespaceConfig config: Certbot settings
-    :param sans: domains and/or IP addresses in the obtained certificate
-    :type sans: `list` of `str`
-    :param str lineage_path: live directory path for the new cert
-
-    """
-    _renew_hook(config, sans, lineage_path)
-
-
-def _renew_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
-               lineage_path: str) -> None:
-    """Run post-renewal hooks.
+    """Run post-renewal/post-issuance hooks.
 
     This function runs any hooks found in
     config.renewal_deploy_hooks_dir followed by any renew-hook in the

@@ -378,15 +378,6 @@ class DeployHookTest(RenewalHookTest):
                                      "bar")
         create_hook(self.dir_hook)
 
-    @mock.patch("certbot._internal.hooks.logger")
-    def test_dry_run(self, mock_logger):
-        self.config.deploy_hook = "foo" # also sets renew_hook
-        self.config.dry_run = True
-        mock_execute = self._call_with_mock_execute(
-            self.config, ["example.org"], "/foo/bar")
-        assert mock_execute.called is False
-        assert mock_logger.info.called
-
     def test_no_hooks(self):
         self.config.renew_hook = None
         os.remove(self.dir_hook)
@@ -405,24 +396,6 @@ class DeployHookTest(RenewalHookTest):
             self.config, domains, lineage)
         assert mock_execute.call_count == 2
 
-
-class RenewHookTest(RenewalHookTest):
-    """Tests for certbot._internal.hooks._renew_hook"""
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot._internal.hooks import _renew_hook
-        return _renew_hook(*args, **kwargs)
-
-    def setUp(self):
-        super().setUp()
-        self.config.renew_hook = "foo"
-
-        filesystem.makedirs(self.config.renewal_deploy_hooks_dir)
-        self.dir_hook = os.path.join(self.config.renewal_deploy_hooks_dir,
-                                     "bar")
-        create_hook(self.dir_hook)
-
     def test_disabled_dir_hooks(self):
         self.config.directory_hooks = False
         mock_execute = self._call_with_mock_execute(
@@ -436,16 +409,6 @@ class RenewHookTest(RenewalHookTest):
             self.config, ["example.org"], "/foo/bar")
         assert mock_execute.called is False
         assert mock_logger.info.call_count == 2
-
-    def test_no_hooks(self):
-        self.config.renew_hook = None
-        os.remove(self.dir_hook)
-
-        with mock.patch("certbot._internal.hooks.logger") as mock_logger:
-            mock_execute = self._call_with_mock_execute(
-                self.config, ["example.org"], "/foo/bar")
-        assert mock_execute.called is False
-        assert mock_logger.info.called is False
 
     def test_overlap(self):
         self.config.renew_hook = self.dir_hook
