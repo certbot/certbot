@@ -9,7 +9,7 @@ description = "Certbot continuous integration framework"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [
-    { name = "Certbot Project", email = "certbot-dev@eff.org" },
+    { name = "Certbot Project" },
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
