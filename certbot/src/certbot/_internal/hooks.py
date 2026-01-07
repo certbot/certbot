@@ -200,10 +200,10 @@ def deploy_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
     :param str lineage_path: live directory path for the new cert
 
     """
-    renew_hook(config, sans, lineage_path)
+    _renew_hook(config, sans, lineage_path)
 
 
-def renew_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
+def _renew_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
                lineage_path: str) -> None:
     """Run post-renewal hooks.
 

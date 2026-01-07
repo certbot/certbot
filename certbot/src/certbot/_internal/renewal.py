@@ -571,7 +571,7 @@ def renew_cert(config: configuration.NamespaceConfig, sans: Optional[list[san.SA
         lineage.update_all_links_to(lineage.latest_common_version())
         lineage.truncate()
 
-    hooks.renew_hook(config, sans, lineage.live_dir)
+    hooks.deploy_hook(config, sans, lineage.live_dir)
 
 
 def report(msgs: Iterable[str], category: str) -> str:

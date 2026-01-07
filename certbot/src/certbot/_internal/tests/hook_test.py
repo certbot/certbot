@@ -407,12 +407,12 @@ class DeployHookTest(RenewalHookTest):
 
 
 class RenewHookTest(RenewalHookTest):
-    """Tests for certbot._internal.hooks.renew_hook"""
+    """Tests for certbot._internal.hooks._renew_hook"""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot._internal.hooks import renew_hook
-        return renew_hook(*args, **kwargs)
+        from certbot._internal.hooks import _renew_hook
+        return _renew_hook(*args, **kwargs)
 
     def setUp(self):
         super().setUp()
