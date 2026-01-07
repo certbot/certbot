@@ -38,7 +38,7 @@ manage your account:
 
 options:
   -h, --help            show this help message and exit
-  -c CONFIG_FILE, --config CONFIG_FILE
+  -c, --config CONFIG_FILE
                         path to config file (default: /etc/letsencrypt/cli.ini
                         and ~/.config/letsencrypt/cli.ini)
   -v, --verbose         This flag can be used multiple times to incrementally
@@ -58,7 +58,7 @@ options:
   --force-interactive   Force Certbot to be interactive even if it detects
                         it's not being run in a terminal. This flag cannot be
                         used with the renew subcommand. (default: False)
-  -d DOMAIN, --domains DOMAIN, --domain DOMAIN
+  -d, --domains, --domain DOMAIN
                         Domain names to include. For multiple domains you can
                         use multiple -d flags or enter a comma separated list
                         of domains as a parameter. All domains will be
@@ -142,7 +142,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/5.1.0 (certbot;
+                        "". (default: CertbotACMEClient/5.2.2 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -419,8 +419,7 @@ revoke:
 register:
   Options for account registration
 
-  -m EMAIL, --email EMAIL
-                        Email used for registration and recovery contact. Use
+  -m, --email EMAIL     Email used for registration and recovery contact. Use
                         comma to register multiple emails, ex:
                         u1@example.com,u2@example.com. (default: Ask).
   --eff-email           Share your e-mail address with EFF (default: Ask)
@@ -473,9 +472,9 @@ plugins:
                         Name of the plugin that is both an authenticator and
                         an installer. Should not be used together with
                         --authenticator or --installer. (default: Ask)
-  -a AUTHENTICATOR, --authenticator AUTHENTICATOR
+  -a, --authenticator AUTHENTICATOR
                         Authenticator plugin name. (default: None)
-  -i INSTALLER, --installer INSTALLER
+  -i, --installer INSTALLER
                         Installer plugin name (also used to find domains).
                         (default: None)
   --apache              Obtain and install certificates using Apache (default:
@@ -752,7 +751,7 @@ webroot:
   be running and serving files from the webroot path. HTTP challenge only
   (wildcards not supported).
 
-  --webroot-path WEBROOT_PATH, -w WEBROOT_PATH
+  --webroot-path, -w WEBROOT_PATH
                         public_html / webroot path. This can be specified
                         multiple times to handle different domains; each
                         domain will have the webroot path that preceded it.

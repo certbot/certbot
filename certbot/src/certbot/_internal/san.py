@@ -6,7 +6,7 @@ from typing import Any, Iterable
 from acme import crypto_util as acme_crypto_util
 from cryptography import x509
 
-from certbot import errors
+from certbot.util import enforce_domain_sanity
 
 class SAN:
     """A domain or IP address.
@@ -27,49 +27,7 @@ class DNSName(SAN):
     def __init__(self, dns_name: str) -> None:
         if not isinstance(dns_name, str):
             raise TypeError("tried to initialize DNSName with non-str")
-        try:
-            dns_name.encode('ascii')
-        except UnicodeError:
-            raise errors.ConfigurationError("Non-ASCII domain names not supported. "
-                                    "To issue for an Internationalized Domain Name, use Punycode.")
-        dns_name = dns_name.lower()
-        # Remove trailing dot
-        dns_name = dns_name.removesuffix(".")
-
-        # Separately check for odd "domains" like "http://example.com" to fail
-        # fast and provide a clear error message
-        for scheme in ["http", "https"]:  # Other schemes seem unlikely
-            if dns_name.startswith("{0}://".format(scheme)):
-                raise errors.ConfigurationError(
-                    "Requested name {0} appears to be a URL, not a FQDN. "
-                    "Try again without the leading \"{1}://\".".format(
-                        dns_name, scheme
-                    )
-                )
-
-        try:
-            IPAddress(dns_name)
-            raise errors.ConfigurationError(
-                "Requested name {0} is an IP address. The Let's Encrypt "
-                "certificate authority will not issue certificates for a "
-                "bare IP address.".format(dns_name))
-        except ValueError:
-            pass
-
-        # FQDN checks according to RFC 2181: domain name should be less than 255
-        # octets (inclusive). And each label is 1 - 63 octets (inclusive).
-        # https://tools.ietf.org/html/rfc2181#section-11
-        msg = "Requested domain {0} is not a FQDN because".format(dns_name)
-        if len(dns_name) > 255:
-            raise errors.ConfigurationError("{0} it is too long.".format(msg))
-        labels = dns_name.split('.')
-        for l in labels:
-            if not l:
-                raise errors.ConfigurationError("{0} it contains an empty label.".format(msg))
-            if len(l) > 63:
-                raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
-
-        self.dns_name = dns_name
+        self.dns_name = enforce_domain_sanity(dns_name)
 
     def __str__(self) -> str:
         return self.dns_name

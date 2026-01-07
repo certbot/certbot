@@ -1069,6 +1069,9 @@ def _install_cert(config: configuration.NamespaceConfig, le_client: client.Clien
 
     domains, ip_addresses = san.split(sans)
     if len(ip_addresses) > 0:
+        # Our apache and nginx plugins are currently relying on this check for a user friendly error
+        # message about their lack of support for IP certificates. If you're removing this check,
+        # please check that the plugins can process IP addresses.
         raise errors.ConfigurationError("Enhancements not supported for IP address certificates")
 
     le_client.deploy_certificate(domains, path_provider.key_path, path_provider.cert_path,
@@ -1247,9 +1250,11 @@ def enhance(config: configuration.NamespaceConfig,
     cert_sans = cert_manager.sans_for_certname(config, config.certname)
     if cert_sans is None:
         raise errors.Error("Could not find the list of domains for the given certificate name.")
-
     cert_domains, ip_addresses = san.split(cert_sans)
     if len(ip_addresses) > 0:
+        # Our apache and nginx plugins are currently relying on this check for a user friendly error
+        # message about their lack of support for IP certificates. If you're removing this check,
+        # please check that the plugins can process IP addresses.
         raise errors.ConfigurationError("Enhancements not supported for IP address certificates")
 
     if config.noninteractive_mode:

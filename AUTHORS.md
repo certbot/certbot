@@ -124,6 +124,7 @@ Authors
 * [James Balazs](https://github.com/jamesbalazs)
 * [James Kasten](https://github.com/jdkasten)
 * [Jason Grinblat](https://github.com/ptychomancer)
+* [Jason Owen](https://github.com/jasonaowen)
 * [Jawshua](https://github.com/jawshua)
 * [Jay Faulkner](https://github.com/jayofdoom)
 * [J.C. Jones](https://github.com/jcjones)
