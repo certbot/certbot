@@ -217,10 +217,6 @@ class _DeployHookAction(argparse.Action):
 class _RenewHookAction(argparse.Action):
     """Action class for parsing renew hooks."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.dest = "deploy_hook"
-
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
                  values: Union[str, Sequence[Any], None],
                  option_string: Optional[str] = None) -> None:

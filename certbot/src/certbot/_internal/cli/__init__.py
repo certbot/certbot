@@ -422,7 +422,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[st
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
     helpful.add(["renew", "reconfigure"], "--renew-hook",
-                action=_RenewHookAction, help=argparse.SUPPRESS)
+                action=_RenewHookAction, dest="deploy_hook", help=argparse.SUPPRESS)
     helpful.add(
         "renew", "--no-random-sleep-on-renew", action="store_false",
         default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
