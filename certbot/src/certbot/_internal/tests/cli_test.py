@@ -458,14 +458,14 @@ class ParseTest(unittest.TestCase):
         value = "foo"
         namespace = self.parse(
             ["--renew-hook", value, "--disable-hook-validation"])
-        assert namespace.renew_hook is None
+        assert not hasattr(namespace, "renew_hook")
         assert_set_by_user_with_value(namespace, 'deploy_hook', value)
 
     def test_deploy_hook_does_not_set_renew_hook(self):
         value = "foo"
         namespace = self.parse(
             ["--deploy-hook", value, "--disable-hook-validation"])
-        assert namespace.renew_hook is None
+        assert not hasattr(namespace, "renew_hook")
         assert_set_by_user_with_value(namespace, 'deploy_hook', value)
 
     def test_max_log_backups_error(self):

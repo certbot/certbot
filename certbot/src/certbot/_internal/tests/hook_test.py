@@ -38,9 +38,7 @@ class ValidateHooksTest(unittest.TestCase):
         self._call(config)
 
         types = [call[0][1] for call in mock_validate_hook.call_args_list]
-        assert {"pre", "post", "deploy",} == set(types[:-1])
-        # This ensures error messages are about deploy hooks when appropriate
-        assert "renew" == types[-1]
+        assert {"pre", "post", "deploy",} == set(types)
 
 
 class ValidateHookTest(test_util.TempDirTestCase):

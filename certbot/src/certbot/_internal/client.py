@@ -121,7 +121,7 @@ def ua_flags(config: configuration.NamespaceConfig) -> str:
         flags.append("asn")
     if config.noninteractive_mode:
         flags.append("n")
-    hook_names = ("pre", "post", "renew", "manual_auth", "manual_cleanup")
+    hook_names = ("pre", "post", "deploy", "manual_auth", "manual_cleanup")
     hooks = [getattr(config, h + "_hook") for h in hook_names]
     if any(hooks):
         flags.append("hook")
