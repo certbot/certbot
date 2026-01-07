@@ -225,6 +225,7 @@ class _RenewHookAction(argparse.Action):
             raise argparse.ArgumentError(
                 self, "conflicts with --deploy-hook value")
         setattr(namespace, "deploy_hook", values)
+        self.dest = "deploy_hook"
 
 
 def nonnegative_int(value: str) -> int:
