@@ -211,7 +211,7 @@ class _DeployHookAction(argparse.Action):
         if deploy_hook_already_set_by_renew_hook and namespace.deploy_hook != values:
             raise argparse.ArgumentError(
                 self, "conflicts with --renew-hook value")
-        setattr(namespace, "deploy_hook", values)
+        namespace.deploy_hook = values
 
 
 class _RenewHookAction(argparse.Action):
@@ -224,7 +224,7 @@ class _RenewHookAction(argparse.Action):
         if deploy_hook_already_set_by_deploy_hook and namespace.deploy_hook != values:
             raise argparse.ArgumentError(
                 self, "conflicts with --deploy-hook value")
-        setattr(namespace, "deploy_hook", values)
+        namespace.deploy_hook = values
 
 
 def nonnegative_int(value: str) -> int:
