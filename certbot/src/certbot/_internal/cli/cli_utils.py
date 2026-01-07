@@ -135,7 +135,7 @@ class _IPAddressAction(argparse.Action):
     """Action class for parsing IP addresses."""
 
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
-                 values: Union[str, Sequence[Any], None],
+                 values: str | Sequence[Any] | None,
                  option_string: Optional[str] = None) -> None:
         match values:
             case None:

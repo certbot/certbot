@@ -341,8 +341,8 @@ class HelpfulArgumentParser:
         if not domains + ip_addresses:
             # TODO: add CN to domains instead:
             raise errors.Error(
-                "Unfortunately, your CSR %s needs to have a SubjectAltName for every domain"
-                % config.csr[0])
+                f"Unfortunately, your CSR {config.csr[0]} needs to have a SubjectAltName for " +
+                "every domain or IP address")
 
         config.actual_csr = (util_csr, typ)
 

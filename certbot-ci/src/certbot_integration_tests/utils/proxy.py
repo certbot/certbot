@@ -18,24 +18,15 @@ def _create_proxy(mapping: Mapping[str, str]) -> type[BaseHTTPServer.BaseHTTPReq
         # pylint: disable=missing-class-docstring
         def do_GET(self) -> None:
             headers = {key.lower(): value for key, value in self.headers.items()}
-            host = headers['host']
-            for pattern, backend in mapping.items():
-                if re.match(pattern, host):
-                    response = requests.get(backend + self.path, headers=headers, timeout=10)
+            backend = [backend for pattern, backend in mapping.items()
+                       if re.match(pattern, headers['host'])][0]
+            response = requests.get(backend + self.path, headers=headers, timeout=10)
 
-                    self.send_response(response.status_code)
-                    for key, value in response.headers.items():
-                        self.send_header(key, value)
-                    self.end_headers()
-                    self.wfile.write(response.content)
-                    return
-
-            # We should never hit this if the tests are written correctly, but if we do, this may
-            # be helpful debugging output.
-            print(f"proxy.py: do_GET for {host}: No backend")
-            self.send_response(500, "No backend")
+            self.send_response(response.status_code)
+            for key, value in response.headers.items():
+                self.send_header(key, value)
             self.end_headers()
-            self.wfile.write(bytes(f"No backend found for {host}\n", 'utf-8'))
+            self.wfile.write(response.content)
 
     return ProxyHandler
 
