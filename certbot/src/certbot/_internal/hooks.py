@@ -200,9 +200,7 @@ def deploy_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
     :param str lineage_path: live directory path for the new cert
 
     """
-    if config.deploy_hook:
-        _run_deploy_hook(config.deploy_hook, sans,
-                         lineage_path, config.dry_run, config.run_deploy_hooks)
+    renew_hook(config, sans, lineage_path)
 
 
 def renew_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
@@ -224,7 +222,7 @@ def renew_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
 
     """
     executed_hooks = set()
-    all_hooks: list[str] = (list_hooks(config.renewal_deploy_hooks_dir)if config.directory_hooks
+    all_hooks: list[str] = (list_hooks(config.renewal_deploy_hooks_dir) if config.directory_hooks
         else [])
     all_hooks += [config.renew_hook] if config.renew_hook else []
     for hook in all_hooks:
