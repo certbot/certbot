@@ -494,6 +494,14 @@ class RenewableCert(interfaces.RenewableCert):
         self.fullchain = self.configuration["fullchain"]
         self.live_dir = os.path.dirname(self.cert)
 
+        # MAGIC CODE ALERT
+        # We changed the name of the internal property from deploy hook to renew hook
+        # There are already configs out there with renew_hook saved. Load it in as deploy
+        # hook. Then, renewal.py's STR_CONFIG_ITEMS will check against the new internal name.
+        if "renew_hook" in self.configuration:
+            self.configuration["deploy_hook"] = self.configuration["renew_hook"]
+            del self.configuration["renew_hook"]
+
         self._fix_symlinks()
         self._check_symlinks()
 

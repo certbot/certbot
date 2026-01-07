@@ -48,7 +48,7 @@ ARI_RETRY_AFTER_CONFIG_ITEM = "ari_retry_after"
 # the renewal configuration process loses this information.
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
-                    "renew_hook", "pre_hook", "post_hook", "http01_address",
+                    "deploy_hook", "pre_hook", "post_hook", "http01_address",
                     "preferred_chain", "key_type", "elliptic_curve",
                     "preferred_profile", "required_profile"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "http01_port"]
@@ -605,7 +605,7 @@ def _renew_describe_results(config: configuration.NamespaceConfig, renew_success
     if not renew_successes and not renew_failures:
         notify(f"No {renewal_noun}s were attempted.")
         if (config.pre_hook is not None or
-                config.renew_hook is not None or config.post_hook is not None):
+                config.deploy_hook is not None or config.post_hook is not None):
             notify("No hooks were run.")
     elif renew_successes and not renew_failures:
         notify(f"Congratulations, all {renewal_noun}s succeeded: ")

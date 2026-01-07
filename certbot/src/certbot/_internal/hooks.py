@@ -21,7 +21,6 @@ def validate_hooks(config: configuration.NamespaceConfig) -> None:
     validate_hook(config.pre_hook, "pre")
     validate_hook(config.post_hook, "post")
     validate_hook(config.deploy_hook, "deploy")
-    validate_hook(config.renew_hook, "renew")
 
 
 def _prog(shell_cmd: str) -> Optional[str]:
@@ -211,7 +210,7 @@ def deploy_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
     executed_hooks = set()
     all_hooks: list[str] = (list_hooks(config.renewal_deploy_hooks_dir) if config.directory_hooks
         else [])
-    all_hooks += [config.renew_hook] if config.renew_hook else []
+    all_hooks += [config.deploy_hook] if config.deploy_hook else []
     for hook in all_hooks:
         if hook in executed_hooks:
             logger.info("Skipping deploy-hook '%s' as it was already run.", hook)

@@ -371,7 +371,7 @@ class DeployHookTest(RenewalHookTest):
 
     def setUp(self):
         super().setUp()
-        self.config.deploy_hook = "foo" # also sets renew_hook
+        self.config.deploy_hook = "foo"
 
         filesystem.makedirs(self.config.renewal_deploy_hooks_dir)
         self.dir_hook = os.path.join(self.config.renewal_deploy_hooks_dir,
@@ -379,7 +379,7 @@ class DeployHookTest(RenewalHookTest):
         create_hook(self.dir_hook)
 
     def test_no_hooks(self):
-        self.config.renew_hook = None
+        self.config.deploy_hook = None
         os.remove(self.dir_hook)
 
         with mock.patch("certbot._internal.hooks.logger") as mock_logger:
@@ -400,7 +400,7 @@ class DeployHookTest(RenewalHookTest):
         self.config.directory_hooks = False
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
-        mock_execute.assert_called_once_with("deploy-hook", self.config.renew_hook, env=mock.ANY)
+        mock_execute.assert_called_once_with("deploy-hook", self.config.deploy_hook, env=mock.ANY)
 
     @mock.patch("certbot._internal.hooks.logger")
     def test_dry_run(self, mock_logger):
@@ -411,7 +411,7 @@ class DeployHookTest(RenewalHookTest):
         assert mock_logger.info.call_count == 2
 
     def test_overlap(self):
-        self.config.renew_hook = self.dir_hook
+        self.config.deploy_hook = self.dir_hook
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.net", "example.org"], "/foo/bar")
         mock_execute.assert_called_once_with("deploy-hook", self.dir_hook, env=mock.ANY)
@@ -420,7 +420,7 @@ class DeployHookTest(RenewalHookTest):
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
         mock_execute.assert_any_call("deploy-hook", self.dir_hook, env=mock.ANY)
-        mock_execute.assert_called_with("deploy-hook", self.config.renew_hook, env=mock.ANY)
+        mock_execute.assert_called_with("deploy-hook", self.config.deploy_hook, env=mock.ANY)
 
 
 class ListHooksTest(test_util.TempDirTestCase):

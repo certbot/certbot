@@ -699,9 +699,9 @@ class ReconfigureTest(test_util.TempDirTestCase):
         assert new_config['renewalparams']['pre_hook'] == 'echo pre2'
 
         # test deploy hook is set even though we did a dry run
-        assert 'renew_hook' not in self.original_config
+        assert 'deploy_hook' not in self.original_config
         new_config = self._call('--cert-name example.com --deploy-hook'.split() + ['echo deploy'])
-        assert new_config['renewalparams']['renew_hook'] == 'echo deploy'
+        assert new_config['renewalparams']['deploy_hook'] == 'echo deploy'
 
     def test_dry_run_fails(self):
         # set side effect of raising error
