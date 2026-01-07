@@ -194,8 +194,8 @@ def deploy_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
     """Run post-renewal/post-issuance hooks.
 
     This function runs any hooks found in
-    config.renewal_deploy_hooks_dir followed by any renew-hook in the
-    config. If the renew-hook in the config is a path to a script in
+    config.renewal_deploy_hooks_dir followed by any deploy-hook in the
+    config. If the deploy-hook in the config is a path to a script in
     config.renewal_deploy_hooks_dir, it is not run twice.
 
     If Certbot is doing a dry run, no hooks are run and messages are
