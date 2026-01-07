@@ -78,9 +78,9 @@ def assert_saved_lineage_option(config_dir: str, lineage: str,
         assert f"{option} = {value if value else ''}" in file_h.read()
 
 
-def assert_saved_renew_hook(config_dir: str, lineage: str) -> None:
+def assert_saved_deploy_hook(config_dir: str, lineage: str) -> None:
     """
-    Assert that the renew hook configuration of a lineage has been saved.
+    Assert that the deploy hook configuration of a lineage has been saved (under renew_hook).
     :param str config_dir: location of the certbot configuration
     :param str lineage: lineage domain name
     """
