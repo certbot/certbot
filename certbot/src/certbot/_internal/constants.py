@@ -194,16 +194,18 @@ RENEWAL_CONFIGS_DIR = "renewal"
 to `certbot.configuration.NamespaceConfig.config_dir`."""
 
 RENEWAL_HOOKS_DIR = "renewal-hooks"
-"""Basename of directory containing hooks to run with the renew command."""
+"""Basename of directory containing hooks to run when getting or renewing certificates."""
 
 RENEWAL_PRE_HOOKS_DIR = "pre"
-"""Basename of directory containing pre-hooks to run with the renew command."""
+"""Basename of directory containing pre-hooks to run
+before attempting to get or renew certs"""
 
 RENEWAL_DEPLOY_HOOKS_DIR = "deploy"
-"""Basename of directory containing deploy-hooks to run with the renew command."""
+"""Basename of directory containing deploy-hooks to run
+upon successfully getting or renewing certs."""
 
 RENEWAL_POST_HOOKS_DIR = "post"
-"""Basename of directory containing post-hooks to run with the renew command."""
+"""Basename of directory containing post-hooks to run after attempting to get or renew certs."""
 
 FORCE_INTERACTIVE_FLAG = "--force-interactive"
 """Flag to disable TTY checking in certbot.display.util."""
