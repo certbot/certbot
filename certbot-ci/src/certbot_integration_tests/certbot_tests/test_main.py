@@ -111,8 +111,8 @@ def test_http_01(context: IntegrationTestsContext) -> None:
     assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
 
-def test_ip_address_standalone(context: IntegrationTestsContext) -> None:
-    """Test the HTTP-01 challenge with an IP address using standalone authenticator.
+def test_ipv4_address_standalone(context: IntegrationTestsContext) -> None:
+    """Test the HTTP-01 challenge with an IPv4 address using standalone authenticator.
 
     While Pebble will offer both HTTP-01 and TLS-ALPN-01 challenges, we will
     only select HTTP-01 because TLS-ALPN-01 is not supported by the standalone
@@ -120,6 +120,25 @@ def test_ip_address_standalone(context: IntegrationTestsContext) -> None:
 
     context.certbot([
          'certonly', '--ip-address', context.get_local_ip(), '--standalone',
+    ])
+
+
+@pytest.mark.xdist_group(name="ipv6")
+def test_ipv6_address_standalone(context: IntegrationTestsContext) -> None:
+    """Test the HTTP-01 challenge with an IPv6 address using standalone authenticator.
+
+    This test relies on some tricks. While proxy.py handles _most_ of the HTTP traffic
+    for integration test validations, it only binds port 5002 for IPv4 addresses. By
+    specifying `::1` on the commandline, we can get `certbot certonly --standalone` to
+    bind 5002 only for IPv6 localhost, thus not conflicting with proxy.py. That means
+    for this test, Pebble connects directly to the standalone server, not via proxy.py.
+
+    This test will only ever run alone because of xdist_group above.
+    """
+    context.certbot([
+         'certonly', '--ip-address', '::1', '--standalone',
+            '--http-01-address', '::1',
+            '--http-01-port', '5002',
     ])
 
 
