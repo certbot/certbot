@@ -84,7 +84,7 @@ def assert_saved_deploy_hook(config_dir: str, lineage: str) -> None:
     :param str config_dir: location of the certbot configuration
     :param str lineage: lineage domain name
     """
-    assert_saved_lineage_option(config_dir, lineage, 'deploy_hook')
+    assert_saved_lineage_option(config_dir, lineage, 'renew_hook')
 
 
 def assert_cert_count_for_lineage(config_dir: str, lineage: str, count: int) -> None:
