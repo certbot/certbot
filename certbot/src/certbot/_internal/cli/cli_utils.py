@@ -201,32 +201,6 @@ class _PrefChallAction(argparse.Action):
         namespace.pref_challs.extend(challs)
 
 
-class _DeployHookAction(argparse.Action):
-    """Action class for parsing deploy hooks."""
-
-    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
-                 values: Union[str, Sequence[Any], None],
-                 option_string: Optional[str] = None) -> None:
-        deploy_hook_already_set_by_renew_hook = namespace.deploy_hook is not None
-        if deploy_hook_already_set_by_renew_hook and namespace.deploy_hook != values:
-            raise argparse.ArgumentError(
-                self, "conflicts with --renew-hook value")
-        namespace.deploy_hook = values
-
-
-class _RenewHookAction(argparse.Action):
-    """Action class for parsing renew hooks."""
-
-    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
-                 values: Union[str, Sequence[Any], None],
-                 option_string: Optional[str] = None) -> None:
-        deploy_hook_already_set_by_deploy_hook = namespace.deploy_hook is not None
-        if deploy_hook_already_set_by_deploy_hook and namespace.deploy_hook != values:
-            raise argparse.ArgumentError(
-                self, "conflicts with --deploy-hook value")
-        namespace.deploy_hook = values
-
-
 def nonnegative_int(value: str) -> int:
     """Converts value to an int and checks that it is not negative.
 

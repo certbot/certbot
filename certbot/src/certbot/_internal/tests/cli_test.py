@@ -425,9 +425,16 @@ class ParseTest(unittest.TestCase):
             self.parse("-n --force-interactive".split())
 
     def test_deploy_hook_conflict(self):
-        with mock.patch("certbot._internal.cli.sys.stderr"):
-            with pytest.raises(SystemExit):
-                self.parse("--renew-hook foo --deploy-hook bar".split())
+        namespace = self.parse(["--renew-hook", "foo",
+                                "--deploy-hook", "bar",
+                                "--disable-hook-validation"])
+        assert_set_by_user_with_value(namespace, 'deploy_hook', "bar")
+
+    def test_renew_hook_conflict(self):
+        namespace = self.parse(["--renew-hook", "foo",
+                                "--deploy-hook", "bar",
+                                "--disable-hook-validation"])
+        assert_set_by_user_with_value(namespace, 'deploy_hook', "bar")
 
     def test_deploy_hook_matches_renew_hook(self):
         value = "foo"
@@ -441,11 +448,6 @@ class ParseTest(unittest.TestCase):
         namespace = self.parse(
             ["--renew-hook", value, "--disable-hook-validation"])
         assert_set_by_user_with_value(namespace, 'deploy_hook', value)
-
-    def test_renew_hook_conflict(self):
-        with mock.patch("certbot._internal.cli.sys.stderr"):
-            with pytest.raises(SystemExit):
-                self.parse("--deploy-hook foo --renew-hook bar".split())
 
     def test_renew_hook_matches_deploy_hook(self):
         value = "foo"

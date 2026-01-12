@@ -22,10 +22,8 @@ from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
 from certbot._internal.cli.cli_constants import SHORT_USAGE
 from certbot._internal.cli.cli_constants import VAR_MODIFIERS
 from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
-from certbot._internal.cli.cli_utils import _DeployHookAction
 from certbot._internal.cli.cli_utils import _EncodeReasonAction
 from certbot._internal.cli.cli_utils import _PrefChallAction
-from certbot._internal.cli.cli_utils import _RenewHookAction
 from certbot._internal.cli.cli_utils import _user_agent_comment_type
 from certbot._internal.cli.cli_utils import add_domains
 from certbot._internal.cli.cli_utils import CaseInsensitiveList
@@ -422,13 +420,13 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[st
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
     helpful.add(["renew", "reconfigure"], "--renew-hook",
-                action=_RenewHookAction, dest="deploy_hook", help=argparse.SUPPRESS)
+                dest="deploy_hook", help=argparse.SUPPRESS)
     helpful.add(
         "renew", "--no-random-sleep-on-renew", action="store_false",
         default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
         help=argparse.SUPPRESS)
     helpful.add(
-        ["certonly", "renew", "reconfigure", "run"], "--deploy-hook", action=_DeployHookAction,
+        ["certonly", "renew", "reconfigure", "run"], "--deploy-hook",
         help='Command to be run in a shell once for each successfully'
         ' issued certificate, including on subsequent renewals.'
         ' Unless --disable-hook-validation is used, the command’s first word'
