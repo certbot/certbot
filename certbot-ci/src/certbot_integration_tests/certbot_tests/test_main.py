@@ -148,7 +148,7 @@ def test_ipv6_address_standalone(context: IntegrationTestsContext) -> None:
             '--http-01-address', '::1',
             '--http-01-port', str(constants.DEFAULT_HTTP_01_PORT),
     ])
-    assert_cert_count_for_lineage(context.config_dir, context.local_ip, 1)
+    assert_cert_count_for_lineage(context.config_dir, '::1', 1)
 
 
 def test_manual_http_auth(context: IntegrationTestsContext) -> None:
