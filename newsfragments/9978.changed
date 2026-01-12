@@ -1,1 +1,1 @@
-Directory hooks are now also run when using `certbot certonly` or `certbot run` to get a new cert.
+Deploy directory hooks are now also run when using `certbot certonly` or `certbot run` to get a new cert. This change was made for pre and post directory hooks in our 3.2.0 release so this change unifies Certbot's behavior here.
