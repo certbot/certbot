@@ -1,4 +1,1 @@
-A new command line flag, --ip-address, has been added. This requests
-certificates with IP address SANs when using the standalone plugin.
-Note that for Let's Encrypt's implementation of IP address certificates,
-you'll also need to pass `--preferred-profile shortlived`.
+A new command line flag, --ip-address, has been added. This requests certificates with IP address SANs when using the standalone plugin.  Note that for Let's Encrypt's implementation of IP address certificates, you'll also need to pass `--preferred-profile shortlived`.
