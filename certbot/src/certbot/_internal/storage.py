@@ -217,7 +217,7 @@ def make_renewal_configobj(archive_dir: str, target: Mapping[str, str],
     # In keeping with the code in RenewableCert.__init__, we use deploy_hook internally,
     # but write out the value as renew_hook to allow downgrade compatibility.
     # So, if there's a deploy_hook (the internal name), change it to renew_hook (the renewal
-    # config filen name).
+    # config file name).
     if "deploy_hook" in config["renewalparams"]:
         config["renewalparams"]["renew_hook"] = config["renewalparams"]["deploy_hook"]
         del config["renewalparams"]["deploy_hook"]
