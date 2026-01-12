@@ -710,8 +710,6 @@ class Client:
 
         :raises .errors.Error: if no installer is specified in the
             client.
-        :raises TypeError: if sans includes IP addresses.
-
         """
         if self.installer is None:
             logger.error("No installer is specified, there isn't any "

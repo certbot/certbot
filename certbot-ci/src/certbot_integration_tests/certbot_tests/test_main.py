@@ -32,7 +32,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_world_no_p
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
 from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
-from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import misc, constants
 
 
 @pytest.fixture(name='context')
@@ -119,27 +119,36 @@ def test_ipv4_address_standalone(context: IntegrationTestsContext) -> None:
     authenticator."""
 
     context.certbot([
-         'certonly', '--ip-address', context.get_local_ip(), '--standalone',
+         'certonly', '--ip-address', context.local_ip, '--standalone',
     ])
+    assert_cert_count_for_lineage(context.config_dir, context.local_ip, 1)
 
 
-@pytest.mark.xdist_group(name="ipv6")
 def test_ipv6_address_standalone(context: IntegrationTestsContext) -> None:
     """Test the HTTP-01 challenge with an IPv6 address using standalone authenticator.
 
-    This test relies on some tricks. While proxy.py handles _most_ of the HTTP traffic
-    for integration test validations, it only binds port 5002 for IPv4 addresses. By
-    specifying `::1` on the commandline, we can get `certbot certonly --standalone` to
-    bind 5002 only for IPv6 localhost, thus not conflicting with proxy.py. That means
-    for this test, Pebble connects directly to the standalone server, not via proxy.py.
+    This test relies on some tricks. Pebble is configured to do validations on port 5002.
+    Since multiple integration tests want to handle validation requests, and may run
+    concurrently, proxy.py handles HTTP traffic for port 5002 and sends it to the appropriate
+    integration test runner. However, it binds that port for IPv4 only. That is,
+    GracefulTCPServer doesn't specify `address_family = AF_INET6` when subclassing
+    socketserver.TCPServer.
 
-    This test will only ever run alone because of xdist_group above.
+    For IPv4 integration tests (above), we simply assign each integration test runner a unique
+    IP address under 127.0.0.0/8, and the proxy knows how to route those IP addresses. Pebble's
+    validation connects to the proxy because all of 127.0.0.0/8 is defined to be loopback.
+
+    However, under IPv4 there is exactly one loopback address, so we can't use the same trick.
+    Instead, we ensure that this is the only test that cares about IPv6, and bind [::1]:5002
+    for IPv6 (via `--http-01-address`). When Pebble reaches out to validate `::1`, it reaches
+    this test runner rather than the proxy.
     """
     context.certbot([
          'certonly', '--ip-address', '::1', '--standalone',
             '--http-01-address', '::1',
-            '--http-01-port', '5002',
+            '--http-01-port', str(constants.DEFAULT_HTTP_01_PORT),
     ])
+    assert_cert_count_for_lineage(context.config_dir, context.local_ip, 1)
 
 
 def test_manual_http_auth(context: IntegrationTestsContext) -> None:

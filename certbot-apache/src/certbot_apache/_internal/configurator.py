@@ -2442,7 +2442,7 @@ class ApacheConfigurator(common.Configurator):
     ###########################################################################
     # Challenges Section
     ###########################################################################
-    def get_chall_pref(self, unused_domain: str) -> Sequence[type[challenges.HTTP01]]:
+    def get_chall_pref(self, unused_identifier: str) -> Sequence[type[challenges.HTTP01]]:
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 

@@ -358,8 +358,10 @@ def _describe_certs(config: configuration.NamespaceConfig,
         notify("No certificates found.")
     else:
         if parsed_certs:
-            match = "matching " if config.certname or config.domains else ""
-            notify("Found the following {0}certs:".format(match))
+            if config.certname or config.domains or config.ip_addresses:
+                notify("Found the following matching certs:")
+            else:
+                notify("Found the following certs:")
             notify(_report_human_readable(config, parsed_certs))
         if parse_failures:
             notify("\nThe following renewal configurations "

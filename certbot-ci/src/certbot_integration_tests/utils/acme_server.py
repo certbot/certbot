@@ -121,7 +121,7 @@ class ACMEServer:
         # IP address to the http_port assigned for that worker.
         acme_xdist['local_ip'] = {}
         for i, node in enumerate(nodes):
-            acme_xdist['local_ip'][node] = f"127.0.0.{i+30}"
+            acme_xdist['local_ip'][node] = f"127.0.0.{i+2}"
         acme_xdist['https_port'] = dict(zip(nodes, range(5100, 5100 + len(nodes))))
         acme_xdist['other_port'] = dict(zip(nodes, range(5300, 5300 + len(nodes))))
 

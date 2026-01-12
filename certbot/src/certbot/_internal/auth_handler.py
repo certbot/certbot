@@ -244,7 +244,11 @@ class AuthHandler:
 
         """
         chall_prefs = []
-        # Make sure to make a copy...
+        # The 'identifier' parameter of `get_chall_pref` used to be called `domain`.
+        # There may be plugins in the wild that name their parameter `domain`. To keep
+        # working with those plugins, make sure to continue to pass `identifier` as a
+        # positional parameter rather than a kwarg.
+        # Also, make sure to make a copy...
         plugin_pref = self.auth.get_chall_pref(identifier)
         if self.pref_challs:
             plugin_pref_types = {chall.typ for chall in plugin_pref}
