@@ -7,7 +7,7 @@ import pytest
 from certbot import errors
 from certbot._internal.plugins.apache import assertions
 from certbot._internal.plugins.apache import augeasparser
-from certbot._internal.plugins.apache.tests import util
+from certbot._internal.tests.plugins.apache import util
 
 
 def _get_augeasnode_mock(filepath):
