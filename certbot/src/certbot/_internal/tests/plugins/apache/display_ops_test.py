@@ -10,7 +10,7 @@ from certbot.display import util as display_util
 from certbot.tests import util as certbot_util
 from certbot._internal.plugins.apache import obj
 from certbot._internal.plugins.apache.display_ops import select_vhost_multiple
-from certbot._internal.plugins.apache.tests import util
+from certbot._internal.tests.plugins.apache import util
 
 
 class SelectVhostMultiTest(unittest.TestCase):

@@ -9,7 +9,7 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot._internal.plugins.apache import obj
 from certbot._internal.plugins.apache import override_centos
-from certbot._internal.plugins.apache.tests import util
+from certbot._internal.tests.plugins.apache import util
 
 
 def get_vh_truth(temp_dir, config_name):

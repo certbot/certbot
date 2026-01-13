@@ -15,7 +15,7 @@ from certbot._internal.plugins.nginx import obj
 from certbot._internal.plugins.nginx import parser
 from certbot._internal.plugins.nginx.configurator import _redirect_block_for_domain
 from certbot._internal.plugins.nginx.nginxparser import UnspacedList
-from certbot._internal.plugins.nginx.tests import test_util as util
+from certbot._internal.tests.plugins.nginx import test_util as util
 
 
 class NginxConfiguratorTest(util.NginxTest):
