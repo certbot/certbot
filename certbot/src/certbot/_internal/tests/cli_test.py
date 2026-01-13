@@ -431,8 +431,8 @@ class ParseTest(unittest.TestCase):
         assert_set_by_user_with_value(namespace, 'deploy_hook', "bar")
 
     def test_renew_hook_conflict(self):
-        namespace = self.parse(["--renew-hook", "foo",
-                                "--deploy-hook", "bar",
+        namespace = self.parse(["--deploy-hook", "foo",
+                                "--renew-hook", "bar",
                                 "--disable-hook-validation"])
         assert_set_by_user_with_value(namespace, 'deploy_hook', "bar")
 
