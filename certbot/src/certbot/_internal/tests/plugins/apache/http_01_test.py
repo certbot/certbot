@@ -12,7 +12,7 @@ from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import acme_util
 from certbot._internal.plugins.apache.parser import get_aug_path
-from certbot._internal.plugins.apache.tests import util
+from certbot._internal.tests.plugins.apache import util
 
 NUM_ACHALLS = 3
 
