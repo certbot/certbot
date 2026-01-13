@@ -138,7 +138,7 @@ def test_ipv6_address_standalone(context: IntegrationTestsContext) -> None:
     IP address under 127.0.0.0/8, and the proxy knows how to route those IP addresses. Pebble's
     validation connects to the proxy because all of 127.0.0.0/8 is defined to be loopback.
 
-    However, under IPv4 there is exactly one loopback address, so we can't use the same trick.
+    However, under IPv6 there is exactly one loopback address, so we can't use the same trick.
     Instead, we ensure that this is the only test that cares about IPv6, and bind [::1]:5002
     for IPv6 (via `--http-01-address`). When Pebble reaches out to validate `::1`, it reaches
     this test runner rather than the proxy.

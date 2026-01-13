@@ -29,8 +29,6 @@ def _create_proxy(mapping: Mapping[str, str]) -> type[BaseHTTPServer.BaseHTTPReq
                     self.wfile.write(response.content)
                     return
 
-            self.wfile.write(bytes(f"No backend found for '{host}'\n", 'utf-8'))
-
             # We should never hit this if the tests are written correctly, but if we do, this may
             # be helpful debugging output.
             print(f"proxy.py: do_GET for {host}: No backend")

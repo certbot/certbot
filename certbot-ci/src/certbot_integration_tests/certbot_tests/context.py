@@ -93,9 +93,3 @@ class IntegrationTestsContext:
         :rtype: str
         """
         return '{0}.{1}.wtf'.format(subdomain, self.worker_id)
-
-    def get_local_ip(self) -> str:
-        """
-        The local IP address that this instance should request IP address certs for.
-        """
-        return self.local_ip
