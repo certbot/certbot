@@ -823,7 +823,8 @@ class ApacheConfigurator(common.Configurator):
 
         :param str target_name: domain handled by the desired vhost
         :param vhosts: vhosts to consider
-        :type vhosts: `collections.Iterable` of :class:`~certbot._internal.plugins.apache.obj.VirtualHost`
+        :type vhosts: `collections.Iterable` of
+            :class:`~certbot._internal.plugins.apache.obj.VirtualHost`
         :param bool filter_defaults: whether a vhost with a _default_
             addr is acceptable
 
