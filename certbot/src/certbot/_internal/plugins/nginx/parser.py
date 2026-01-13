@@ -286,7 +286,8 @@ class NginxParser:
     def has_ssl_on_directive(self, vhost: obj.VirtualHost) -> bool:
         """Does vhost have ssl on for all ports?
 
-        :param :class:`~certbot._internal.plugins.nginx.obj.VirtualHost` vhost: The vhost in question
+        :param :class:`~certbot._internal.plugins.nginx.obj.VirtualHost`
+            vhost: The vhost in question
 
         :returns: True if 'ssl on' directive is included
         :rtype: bool
