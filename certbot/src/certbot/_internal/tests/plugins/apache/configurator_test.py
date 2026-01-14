@@ -1704,7 +1704,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
 
         from certbot._internal.plugins.apache.constants import ALL_SSL_OPTIONS_HASHES
 
-        ref = importlib.resources.files("certbot") / "_internal" / "apache" / "tls_configs"
+        ref = importlib.resources.files("certbot") / "_internal" / "plugins" /"apache" / "tls_configs"
         with importlib.resources.as_file(ref) as tls_configs_dir:
             all_files = [os.path.join(tls_configs_dir, name) for name in os.listdir(tls_configs_dir)
                         if name.endswith('options-ssl-apache.conf')]

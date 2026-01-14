@@ -1116,7 +1116,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
         from certbot._internal.plugins.nginx.constants import ALL_SSL_OPTIONS_HASHES
 
         tls_configs_ref = importlib.resources.files("certbot").joinpath(
-            "_internal", "nginx", "tls_configs")
+            "_internal", "plugins", "nginx", "tls_configs")
         with importlib.resources.as_file(tls_configs_ref) as tls_configs_dir:
             for tls_config_file in os.listdir(tls_configs_dir):
                 file_hash = crypto_util.sha256sum(os.path.join(tls_configs_dir, tls_config_file))
