@@ -174,7 +174,8 @@ class NginxConfigurator(common.Configurator):
         file_manager = ExitStack()
         atexit.register(file_manager.close)
         ref = (importlib.resources.files("certbot").joinpath("_internal")
-               .joinpath("nginx").joinpath("tls_configs").joinpath(config_filename))
+               .joinpath("plugins").joinpath("nginx").joinpath("tls_configs")
+               .joinpath(config_filename))
 
         return str(file_manager.enter_context(importlib.resources.as_file(ref)))
 
