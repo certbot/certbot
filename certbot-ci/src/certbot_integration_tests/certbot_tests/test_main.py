@@ -142,6 +142,11 @@ def test_ipv6_address_standalone(context: IntegrationTestsContext) -> None:
     Instead, we ensure that this is the only test that cares about IPv6, and bind [::1]:5002
     for IPv6 (via `--http-01-address`). When Pebble reaches out to validate `::1`, it reaches
     this test runner rather than the proxy.
+
+    Note: This works because this is the only test case that binds [::1]:5002. If additional
+    IPv6 tests are added they could conflict. In that case we might try using the
+    @pytest.mark.xdist_group annotation along with --dist loadgroup.
+    https://pytest-xdist.readthedocs.io/en/stable/distribution.html
     """
     context.certbot([
          'certonly', '--ip-address', '::1', '--standalone',

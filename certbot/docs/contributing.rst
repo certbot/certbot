@@ -660,6 +660,9 @@ current Certbot developers on macOS as of writing this:
    https://github.com/pyenv/pyenv?tab=readme-ov-file#set-up-your-shell-environment-for-pyenv.
 3. Configure ``git`` to ignore the ``.DS_Store`` files that are created by
    macOS's file manager Finder by running something like:
+4. Configure additional loopback addresses (these are used by IPv4 integration tests):
+   `for n in $(seq 2 127) ; do sudo ifconfig lo0 alias "127.0.0.${n}" up ; done`. Note this
+   will have to be re-done after boot. You may want to add it as a launch daemon.
 
 .. code-block:: shell
 
