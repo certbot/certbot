@@ -38,7 +38,7 @@ test = [
 ]
 
 [project.entry-points."certbot.plugins"]
-nginx = "certbot_nginx._internal.configurator:NginxConfigurator"
+nginx = "certbot_nginx._internal.entrypoint:ENTRYPOINT"
 
 [project.urls]
 Homepage = "https://github.com/certbot/certbot"
