@@ -6,6 +6,7 @@ from os.path import join
 import re
 import shutil
 import subprocess
+import sys
 from typing import Generator
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
@@ -32,7 +33,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_world_no_p
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
 from certbot_integration_tests.certbot_tests.context import IntegrationTestsContext
-from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import misc, constants
 
 
 @pytest.fixture(name='context')
@@ -109,6 +110,59 @@ def test_http_01(context: IntegrationTestsContext) -> None:
     assert_hook_execution(context.hook_probe, 'deploy')
     assert_saved_renew_hook(context.config_dir, certname)
     assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
+
+
+@pytest.mark.skipif(sys.platform == 'darwin',
+                    reason='macOS has one IPv4 loopback address by default')
+def test_ipv4_address_standalone(context: IntegrationTestsContext) -> None:
+    """Test the HTTP-01 challenge with an IPv4 address using standalone authenticator.
+
+    While Pebble will offer both HTTP-01 and TLS-ALPN-01 challenges, we will
+    only select HTTP-01 because TLS-ALPN-01 is not supported by the standalone
+    authenticator.
+
+    This test relies on proxy.py being able to forward requests for, e.g. `127.0.0.2`,
+    (`local_ip`) to this test runner. That works on Linux because 127.0.0.0/8 all routes
+    to localhost. However, on macOS by default only 127.0.0.1 is routed, so this test is
+    skipped. If you want to run it, configure additional loopback addresses:
+        for n in $(seq 2 127) ; do sudo ifconfig lo0 alias "127.0.0.${n}" up ; done.
+    """
+    context.certbot([
+         'certonly', '--ip-address', context.local_ip, '--standalone',
+    ])
+    assert_cert_count_for_lineage(context.config_dir, context.local_ip, 1)
+
+
+def test_ipv6_address_standalone(context: IntegrationTestsContext) -> None:
+    """Test the HTTP-01 challenge with an IPv6 address using standalone authenticator.
+
+    This test relies on some tricks. Pebble is configured to do validations on port 5002.
+    Since multiple integration tests want to handle validation requests, and may run
+    concurrently, proxy.py handles HTTP traffic for port 5002 and sends it to the appropriate
+    integration test runner. However, it binds that port for IPv4 only. That is,
+    GracefulTCPServer doesn't specify `address_family = AF_INET6` when subclassing
+    socketserver.TCPServer.
+
+    For IPv4 integration tests (above), we simply assign each integration test runner a unique
+    IP address under 127.0.0.0/8, and the proxy knows how to route those IP addresses. Pebble's
+    validation connects to the proxy because all of 127.0.0.0/8 is defined to be loopback.
+
+    However, under IPv6 there is exactly one loopback address, so we can't use the same trick.
+    Instead, we ensure that this is the only test that cares about IPv6, and bind [::1]:5002
+    for IPv6 (via `--http-01-address`). When Pebble reaches out to validate `::1`, it reaches
+    this test runner rather than the proxy.
+
+    Note: This works because this is the only test case that binds [::1]:5002. If additional
+    IPv6 tests are added they could conflict. In that case we might try using the
+    @pytest.mark.xdist_group annotation along with --dist loadgroup.
+    https://pytest-xdist.readthedocs.io/en/stable/distribution.html
+    """
+    context.certbot([
+         'certonly', '--ip-address', '::1', '--standalone',
+            '--http-01-address', '::1',
+            '--http-01-port', str(constants.DEFAULT_HTTP_01_PORT),
+    ])
+    assert_cert_count_for_lineage(context.config_dir, '::1', 1)
 
 
 def test_manual_http_auth(context: IntegrationTestsContext) -> None:

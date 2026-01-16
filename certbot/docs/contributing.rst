@@ -269,7 +269,7 @@ challenges: HTTP and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
-`get_chall_pref(domain)` to return a sorted list of challenge types in
+`get_chall_pref(identifier)` to return a sorted list of challenge types in
 preference order.
 
 An Authenticator must also implement `perform(achalls)`, which "performs" a list

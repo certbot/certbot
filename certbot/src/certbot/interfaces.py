@@ -162,10 +162,10 @@ class Authenticator(Plugin):
     """
 
     @abstractmethod
-    def get_chall_pref(self, domain: str) -> Iterable[type[Challenge]]:
+    def get_chall_pref(self, identifier: str) -> Iterable[type[Challenge]]:
         """Return `collections.Iterable` of challenge preferences.
 
-        :param str domain: Domain for which challenge preferences are sought.
+        :param str identifier: Domain or IP address for which challenge preferences are sought.
 
         :returns: `collections.Iterable` of challenge types (subclasses of
             :class:`acme.challenges.Challenge`) with the most
