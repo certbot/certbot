@@ -116,9 +116,9 @@ class ACMEServer:
         acme_xdist['challtestsrv_url'] = PEBBLE_CHALLTESTSRV_URL
         acme_xdist['http_port'] = dict(zip(nodes, range(5200, 5200 + len(nodes))))
         # When testing the standalone plugin with IP address certificates, we need a way for
-        # the proxy to map incoming requests to workers. Since all 127.* addresses are loopback,
-        # we give each worker a 127.0.0.n address. The proxy will route all requests for that
-        # IP address to the http_port assigned for that worker.
+        # the proxy to map incoming requests to workers. Since on Linux all 127.* addresses are 
+        # loopback, we give each worker a 127.0.0.n address. The proxy will route all requests for 
+        # that IP address to the http_port assigned for that worker.
         acme_xdist['local_ip'] = {}
         for i, node in enumerate(nodes):
             acme_xdist['local_ip'][node] = f"127.0.0.{i+2}"
