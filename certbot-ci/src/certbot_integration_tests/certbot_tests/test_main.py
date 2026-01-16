@@ -6,6 +6,7 @@ from os.path import join
 import re
 import shutil
 import subprocess
+import sys
 from typing import Generator
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
@@ -111,7 +112,8 @@ def test_http_01(context: IntegrationTestsContext) -> None:
     assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
 
-@pytest.mark.skipif(sys.platform == 'darwin', reason='macOS has one IPv4 loopback address by default')
+@pytest.mark.skipif(sys.platform == 'darwin',
+                    reason='macOS has one IPv4 loopback address by default')
 def test_ipv4_address_standalone(context: IntegrationTestsContext) -> None:
     """Test the HTTP-01 challenge with an IPv4 address using standalone authenticator.
 
