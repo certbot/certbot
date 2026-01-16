@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # pylint: disable=missing-module-docstring
+#
+# Note: If you're having trouble with this module, there was some discussion
+# about how it could be ripped out entirely at
+# https://github.com/certbot/certbot/pull/10495#discussion_r2699618989 that you
+# may want to read.
 
 import http.server as BaseHTTPServer
 import json
