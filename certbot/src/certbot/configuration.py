@@ -419,25 +419,31 @@ class NamespaceConfig:
 
     @property
     def renewal_hooks_dir(self) -> str:
-        """Path to directory with hooks to run with the renew subcommand."""
+        """Path to directory with hooks to run when getting or renewing certificates."""
         return os.path.join(self.namespace.config_dir,
                             constants.RENEWAL_HOOKS_DIR)
 
     @property
     def renewal_pre_hooks_dir(self) -> str:
-        """Path to the pre-hook directory for the renew subcommand."""
+        """Path to the pre-hook directory for hooks to run
+        before attempting to get or renew certs.
+        """
         return os.path.join(self.renewal_hooks_dir,
                             constants.RENEWAL_PRE_HOOKS_DIR)
 
     @property
     def renewal_deploy_hooks_dir(self) -> str:
-        """Path to the deploy-hook directory for the renew subcommand."""
+        """Path to the deploy-hook directory for hooks to run
+        upon successfully getting or renewing certs.
+        """
         return os.path.join(self.renewal_hooks_dir,
                             constants.RENEWAL_DEPLOY_HOOKS_DIR)
 
     @property
     def renewal_post_hooks_dir(self) -> str:
-        """Path to the post-hook directory for the renew subcommand."""
+        """Path to the post-hook directory for hooks to run
+        after attempting to get or renew certs.
+        """
         return os.path.join(self.renewal_hooks_dir,
                             constants.RENEWAL_POST_HOOKS_DIR)
 

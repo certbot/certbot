@@ -212,6 +212,16 @@ def make_renewal_configobj(archive_dir: str, target: Mapping[str, str],
         config[kind] = target[kind]
     config['renewalparams'] = {}
     config['renewalparams'].update(relevant_values(cli_config))
+
+    # MAGIC CODE ALERT
+    # In keeping with the code in RenewableCert.__init__, we use deploy_hook internally,
+    # but write out the value as renew_hook to allow downgrade compatibility.
+    # So, if there's a deploy_hook (the internal name), change it to renew_hook (the renewal
+    # config file name).
+    if "deploy_hook" in config["renewalparams"]:
+        config["renewalparams"]["renew_hook"] = config["renewalparams"]["deploy_hook"]
+        del config["renewalparams"]["deploy_hook"]
+
     return config
 
 
@@ -493,6 +503,17 @@ class RenewableCert(interfaces.RenewableCert):
         self.chain = self.configuration["chain"]
         self.fullchain = self.configuration["fullchain"]
         self.live_dir = os.path.dirname(self.cert)
+
+        # MAGIC CODE ALERT
+        # We changed the name of the internal property from deploy hook to renew hook
+        # There are already configs out there with renew_hook saved, so we're going to keep saving
+        # it out as renew_hook to allow downgrade compatibility. Load it in as deploy
+        # hook. Then, renewal.py's STR_CONFIG_ITEMS will check against the new internal name.
+        if "renewalparams" in self.configuration:
+            if "renew_hook" in self.configuration["renewalparams"]:
+                self.configuration["renewalparams"]["deploy_hook"] = \
+                    self.configuration["renewalparams"]["renew_hook"]
+                del self.configuration["renewalparams"]["renew_hook"]
 
         self._fix_symlinks()
         self._check_symlinks()
