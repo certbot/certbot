@@ -111,13 +111,20 @@ def test_http_01(context: IntegrationTestsContext) -> None:
     assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
 
+@pytest.mark.skipif(sys.platform == 'darwin', reason='macOS has one IPv4 loopback address by default')
 def test_ipv4_address_standalone(context: IntegrationTestsContext) -> None:
     """Test the HTTP-01 challenge with an IPv4 address using standalone authenticator.
 
     While Pebble will offer both HTTP-01 and TLS-ALPN-01 challenges, we will
     only select HTTP-01 because TLS-ALPN-01 is not supported by the standalone
-    authenticator."""
+    authenticator.
 
+    This test relies on proxy.py being able to forward requests for, e.g. `127.0.0.2`,
+    (`local_ip`) to this test runner. That works on Linux because 127.0.0.0/8 all routes
+    to localhost. However, on macOS by default only 127.0.0.1 is routed, so this test is
+    skipped. If you want to run it, configure additional loopback addresses:
+        for n in $(seq 2 127) ; do sudo ifconfig lo0 alias "127.0.0.${n}" up ; done.
+    """
     context.certbot([
          'certonly', '--ip-address', context.local_ip, '--standalone',
     ])
