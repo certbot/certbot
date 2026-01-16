@@ -5,7 +5,6 @@ filename = "certbot/CHANGELOG.md"
 title_format = "## {version} - {project_date}"
 issue_format = "[#{issue}](https://github.com/certbot/certbot/issues/{issue})"
 issue_pattern = "\\d+"
-wrap = true
 ignore = []
 
 # Our three custom news fragment types, declared in order of how we'd like them
