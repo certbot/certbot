@@ -333,6 +333,7 @@ nginx-unit_             Y    Y    Automates obtaining and installing a certifica
 dns-cdmon_              Y    N    DNS Authentication using cdmon's API
 dns-synergy-wholesale_  Y    N    DNS Authentication using Synergy Wholesale DNS
 pkcs12_                 N    Y    Install certificates as PKCS#12 archives
+dns-hetzner-cloud_      Y    N    DNS Authentication for Hetzner Cloud DNS
 ======================= ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -367,6 +368,7 @@ pkcs12_                 N    Y    Install certificates as PKCS#12 archives
 .. _dns-cdmon: https://github.com/rascazzione/certbot-dns-cdmon
 .. _dns-synergy-wholesale: https://github.com/ALameLlama/certbot-dns-synergy-wholesale
 .. _pkcs12: https://github.com/nasa-gcn/certbot-pkcs12
+.. _dns-hetzner-cloud: https://github.com/rolschewsky/certbot-dns-hetzner-cloud
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
