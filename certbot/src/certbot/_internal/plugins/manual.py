@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class Authenticator(common.Plugin, interfaces.Authenticator):
     """Manual authenticator
 
-    This plugin allows the user to perform the domain validation
+    This plugin allows the user to perform the validation
     challenge(s) themselves. This either be done manually by the user or
     through shell scripts provided to Certbot.
 
@@ -36,7 +36,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         'Authenticate through manual configuration or custom shell scripts. '
         'When using shell scripts, an authenticator script must be provided. '
         'The environment variables available to this script depend on the '
-        'type of challenge. $CERTBOT_DOMAIN will always contain the domain '
+        'type of challenge. $CERTBOT_IDENTIFIER will always contain the domain '
         'being authenticated. For HTTP-01 and DNS-01, $CERTBOT_VALIDATION '
         'is the validation string, and $CERTBOT_TOKEN is the filename of the '
         'resource requested when performing an HTTP-01 challenge. An additional '
@@ -44,8 +44,8 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script. '
         'For both authenticator and cleanup script, on HTTP-01 and DNS-01 challenges, '
         '$CERTBOT_REMAINING_CHALLENGES will be equal to the number of challenges that '
-        'remain after the current one, and $CERTBOT_ALL_DOMAINS contains a comma-separated '
-        'list of all domains that are challenged for the current certificate.')
+        'remain after the current one, and $CERTBOT_ALL_IDENTIFIERS contains a comma-separated '
+        'list of all identifiers that are challenged for the current certificate.')
     # Include the full stop at the end of the FQDN in the instructions below for the null
     # label of the DNS root, as stated in section 3.1 of RFC 1035. While not necessary
     # for most day to day usage of hostnames, when adding FQDNs to a DNS zone editor, this
@@ -123,7 +123,7 @@ permitted by DNS standards.)
 
     def more_info(self) -> str:  # pylint: disable=missing-function-docstring
         return (
-            'This plugin allows the user to customize setup for domain '
+            'This plugin allows the user to customize setup for '
             'validation challenges either through shell scripts provided by '
             'the user or by performing the setup manually.')
 
@@ -184,13 +184,14 @@ permitted by DNS standards.)
 
     def _perform_achall_with_script(self, achall: achallenges.AnnotatedChallenge,
                                     achalls: list[achallenges.AnnotatedChallenge]) -> None:
-        if not achall.identifier.typ == messages.IDENTIFIER_FQDN:
-            raise errors.ConfigurationError("non-FQDN identifiers not yet supported")
-        domain = achall.identifier.value
+        identifier_value = achall.identifier.value
         env = {
-            "CERTBOT_DOMAIN": domain,
+            "CERTBOT_DOMAIN": identifier_value,
+            "CERTBOT_IDENTIFIER": identifier_value,
             "CERTBOT_VALIDATION": achall.validation(achall.account_key),
             "CERTBOT_ALL_DOMAINS": ','.join(one_achall.identifier.value for one_achall in achalls),
+            "CERTBOT_ALL_IDENTIFIERS":
+                ','.join(one_achall.identifier.value for one_achall in achalls),
             "CERTBOT_REMAINING_CHALLENGES": str(len(achalls) - achalls.index(achall) - 1),
         }
         if isinstance(achall.chall, challenges.HTTP01):
@@ -198,25 +199,24 @@ permitted by DNS standards.)
         else:
             os.environ.pop('CERTBOT_TOKEN', None)
         os.environ.update(env)
-        _, out = self._execute_hook('auth-hook', domain)
+        _, out = self._execute_hook('auth-hook', identifier_value)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
     def _perform_achall_manually(self, achall: achallenges.AnnotatedChallenge,
                                  last_dns_achall: bool = False) -> None:
-        if not achall.identifier.typ == messages.IDENTIFIER_FQDN:
-            raise errors.ConfigurationError("non-FQDN identifiers not yet supported")
-        domain = achall.identifier.value
+        identifier_value = achall.identifier.value
         validation = achall.validation(achall.account_key)
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
                 achall=achall, encoded_token=achall.chall.encode('token'),
                 port=self.config.http01_port,
-                uri=achall.chall.uri(domain), validation=validation)
+                uri=achall.chall.uri(identifier_value), validation=validation)
         else:
             assert isinstance(achall.chall, challenges.DNS01)
+            assert achall.identifier.typ == messages.IDENTIFIER_FQDN
             msg = self._DNS_INSTRUCTIONS.format(
-                domain=achall.validation_domain_name(domain),
+                domain=achall.validation_domain_name(identifier_value),
                 validation=validation)
         if isinstance(achall.chall, challenges.DNS01):
             if self.subsequent_dns_challenge:
@@ -230,7 +230,7 @@ permitted by DNS standards.)
             if last_dns_achall:
                 # last dns-01 challenge
                 msg += self._DNS_VERIFY_INSTRUCTIONS.format(
-                    domain=achall.validation_domain_name(domain))
+                    domain=achall.validation_domain_name(identifier_value))
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
@@ -247,13 +247,13 @@ permitted by DNS standards.)
                 self._execute_hook('cleanup-hook', achall.identifier.value)
         self.reverter.recovery_routine()
 
-    def _execute_hook(self, hook_name: str, achall_domain: str) -> tuple[str, str]:
+    def _execute_hook(self, hook_name: str, identifier_value: str) -> tuple[str, str]:
         returncode, err, out = misc.execute_command_status(
             self.option_name(hook_name), self.conf(hook_name),
             env=util.env_no_snap_for_external_calls()
         )
 
         display_ops.report_executed_command(
-            f"Hook '--manual-{hook_name}' for {achall_domain}", returncode, out, err)
+            f"Hook '--manual-{hook_name}' for {identifier_value}", returncode, out, err)
 
         return err, out
