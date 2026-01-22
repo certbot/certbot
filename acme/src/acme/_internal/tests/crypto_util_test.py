@@ -16,9 +16,10 @@ from acme._internal.tests import test_util
 
 class FormatTest(unittest.TestCase):
     def test_to_cryptography_encoding(self):
-        from acme.crypto_util import Format
-        assert Format.DER.to_cryptography_encoding() == serialization.Encoding.DER
-        assert Format.PEM.to_cryptography_encoding() == serialization.Encoding.PEM
+        with pytest.warns(DeprecationWarning, match='Format is deprecated'):
+            from acme.crypto_util import Format
+            assert Format.DER.to_cryptography_encoding() == serialization.Encoding.DER
+            assert Format.PEM.to_cryptography_encoding() == serialization.Encoding.PEM
 
 
 class MiscTests(unittest.TestCase):
