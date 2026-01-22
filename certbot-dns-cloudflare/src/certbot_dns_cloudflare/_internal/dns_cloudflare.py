@@ -3,10 +3,10 @@ import logging
 from typing import Any
 from typing import Callable
 from typing import Optional
-from typing import cast
 
 from cloudflare import Cloudflare, APIError
-
+from cloudflare.pagination import SyncV4PagePaginationArray
+from cloudflare.types.zones import Zone
 from certbot import errors
 from certbot.plugins import dns_common
 from certbot.plugins.dns_common import CredentialsConfiguration
@@ -80,7 +80,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_cloudflare_client(self) -> "_CloudflareClient":
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
-        if self.credentials.conf('api-token'):
+        if self.credentials.conf('api-token'): # pragma: no cover
             return _CloudflareClient(api_token = self.credentials.conf('api-token'))
         return _CloudflareClient(email = self.credentials.conf('email'),
                                  api_key = self.credentials.conf('api-key'))
@@ -119,16 +119,13 @@ class _CloudflareClient:
 
         zone_id = self._find_zone_id(domain)
 
-        data = {'type': 'TXT',
-                'name': record_name,
-                'content': record_content,
-                'ttl': record_ttl}
-
         try:
-            logger.debug('Attempting to add record to zone %s: %s', zone_id, data)
-            self.cf.dns.records.create(zone_id=zone_id, **data)  # zones | pylint: disable=no-member
+            logger.debug('Attempting to add record to zone %s: %s=%s',
+                zone_id, record_name, record_content)
+            self.cf.dns.records.create(zone_id=zone_id, type='TXT', name=record_name,
+                content=record_content, ttl=record_ttl)  # zones | pylint: disable=no-member
         except APIError as e:
-            code = int(e.errors[0].code)
+            code = e.errors[0].code
             hint = None
 
             if code == 1009:
@@ -166,7 +163,7 @@ class _CloudflareClient:
             if record_id:
                 try:
                     # zones | pylint: disable=no-member
-                    self.cf.dns.records.delete(zone_id, record_id)
+                    self.cf.dns.records.delete(zone_id=zone_id, dns_record_id=record_id)
                     logger.debug('Successfully deleted TXT record.')
                 except APIError as e:
                     logger.warning('Encountered APIError deleting TXT record: %s', e)
@@ -186,24 +183,21 @@ class _CloudflareClient:
         """
 
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
-        zones: list[dict[str, Any]] | None = None
+        zones: SyncV4PagePaginationArray[Zone] | None = None
         code = msg = None
 
         for zone_name in zone_name_guesses:
-            params = {'name': zone_name,
-                      'per_page': 1}
-
             try:
-                zones = self.cf.zones.list(**params)  # zones | pylint: disable=no-member
+                zones = self.cf.zones.list(name=zone_name, per_page=1)  # zones | pylint: disable=no-member
             except APIError as e:
-                code = int(e.errors[0].code)
+                code = e.errors[0].code
                 msg = str(e)
                 hint = None
 
                 if code == 6003:
                     hint = ('Did you copy your entire API token/key? To use Cloudflare tokens, '
-                            'you\'ll need the python package cloudflare>=2.3.1.{}'
-                    .format(' This certbot is running cloudflare ' + str(CloudFlare.__version__)
+                            'you\'ll need the python package cloudflare>=4.3.1.{}'
+                    .format(' This certbot is running cloudflare ' + str(Cloudflare.__version__)
                     if hasattr(Cloudflare, '__version__') else ''))
                 elif code == 9103:
                     hint = 'Did you enter the correct email address and Global key?'
@@ -252,20 +246,17 @@ class _CloudflareClient:
         :rtype: str
         """
 
-        params = {'type': 'TXT',
-                  'name': record_name,
-                  'content': record_content,
-                  'per_page': 1}
+        records = None
         try:
             # zones | pylint: disable=no-member
-            records = self.cf.dns.records.list(zone_id=zone_id, **params)
+            records = self.cf.dns.records.list(zone_id=zone_id, type='TXT',
+                name=record_name, content=record_content, per_page=1) # type: ignore[arg-type]
         except APIError as e:
             logger.debug('Encountered APIError getting TXT record_id: %s', e)
-            records = []
 
-        if len(records.result) > 0:
+        if records and len(records.result) > 0:
             # Cleanup is returning the system to the state we found it. If, for some reason,
             # there are multiple matching records, we only delete one because we only added one.
-            return cast(str, records.result[0].id)
+            return records.result[0].id
         logger.debug('Unable to find TXT record.')
         return None

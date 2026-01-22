@@ -5,8 +5,8 @@ import unittest
 from unittest import mock
 from dataclasses import dataclass
 
-from cloudflare import Cloudflare, APIError
-
+from cloudflare import APIError
+from httpx import Request
 import pytest
 
 from certbot import errors
@@ -15,7 +15,7 @@ from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
-API_ERROR = APIError('', request='', body={'errors': [{'code': 1000}]})
+API_ERROR = APIError('', request=Request(method='get', url='cloudflare.com'), body={'errors': [{'code': 1000}]})
 
 API_TOKEN = 'an-api-token'
 
@@ -24,12 +24,12 @@ EMAIL = 'example@example.com'
 
 
 @dataclass
-class CFResultList(object):
-    result: list
+class CFListObject(object):
+    id: int
 
 @dataclass
-class CFListObject(object):
-    id: str
+class CFResultList(object):
+    result: list[CFListObject]
 
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
 
@@ -141,7 +141,7 @@ class CloudflareClientTest(unittest.TestCase):
     def test_add_txt_record_error(self):
         self.cf.zones.list.return_value = CFResultList(result=[CFListObject(id=self.zone_id)])
 
-        self.cf.dns.records.create.side_effect = APIError('', request='', body={'errors': [{'code': 1009}]})
+        self.cf.dns.records.create.side_effect = APIError('', Request(method='get', url='cloudflare.com'), body={'errors': [{'code': 1009}]})
 
         with pytest.raises(errors.PluginError):
             self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
@@ -159,19 +159,19 @@ class CloudflareClientTest(unittest.TestCase):
             self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     def test_add_txt_record_bad_creds(self):
-        self.cf.zones.list.side_effect = APIError('', request='', body={'errors': [{'code': 6003}]})
+        self.cf.zones.list.side_effect = APIError('', Request(method='get', url='cloudflare.com'), body={'errors': [{'code': 6003}]})
         with pytest.raises(errors.PluginError):
             self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
-        self.cf.zones.list.side_effect = APIError('', request='', body={'errors': [{'code': 9103}]})
+        self.cf.zones.list.side_effect = APIError('', Request(method='get', url='cloudflare.com'), body={'errors': [{'code': 9103}]})
         with pytest.raises(errors.PluginError):
             self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
-        self.cf.zones.list.side_effect = APIError('', request='', body={'errors': [{'code': 9109}]})
+        self.cf.zones.list.side_effect = APIError('', Request(method='get', url='cloudflare.com'), body={'errors': [{'code': 9109}]})
         with pytest.raises(errors.PluginError):
             self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
-        self.cf.zones.list.side_effect = APIError('', request='', body={'errors': [{'code': 9109, 'status': 'com.cloudflare.api.account.zone.list'}]})
+        self.cf.zones.list.side_effect = APIError('', Request(method='get', url='cloudflare.com'), body={'errors': [{'code': 9109, 'status': 'com.cloudflare.api.account.zone.list'}]})
         with pytest.raises(errors.PluginError):
             self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
@@ -183,7 +183,7 @@ class CloudflareClientTest(unittest.TestCase):
 
         expected = [mock.call.zones.list(name=mock.ANY, per_page=mock.ANY),
                     mock.call.dns.records.list(zone_id=mock.ANY, type=mock.ANY, name=mock.ANY, content=mock.ANY, per_page=mock.ANY),
-                    mock.call.dns.records.delete(1, 2)]
+                    mock.call.dns.records.delete(zone_id=self.zone_id, dns_record_id=self.record_id)]
 
         assert expected == self.cf.mock_calls
 
@@ -200,24 +200,23 @@ class CloudflareClientTest(unittest.TestCase):
 
     def test_del_txt_record_error_during_delete(self):
         self.cf.zones.list.return_value = CFResultList(result=[CFListObject(id=self.zone_id)])
-        self.cf.zones.dns_records.get.return_value = CFResultList(result=[CFListObject(id=self.record_id)])
-        self.cf.zones.dns_records.delete.side_effect = API_ERROR
+        self.cf.dns.records.list.return_value = CFResultList(result=[CFListObject(id=self.record_id)])
+        self.cf.dns.records.delete.side_effect = API_ERROR
 
         self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
         expected = [mock.call.zones.list(name=mock.ANY, per_page=mock.ANY),
                     mock.call.dns.records.list(zone_id=mock.ANY, type=mock.ANY, name=mock.ANY, content=mock.ANY, per_page=mock.ANY),
-                    mock.call.dns.records.list(zone_id=mock.ANY, type=mock.ANY, name=mock.ANY, content=mock.ANY, per_page=mock.ANY).result.__len__()
+                    mock.call.dns.records.delete(zone_id=self.zone_id, dns_record_id=self.record_id)
                     ]
         assert expected == self.cf.mock_calls
 
     def test_del_txt_record_error_during_get(self):
         self.cf.zones.list.return_value = CFResultList(result=[CFListObject(id=self.zone_id)])
-        self.cf.zones.dns_records.get.side_effect = API_ERROR
+        self.cf.dns.records.list.side_effect = API_ERROR
 
         self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
         expected = [mock.call.zones.list(name=mock.ANY, per_page=mock.ANY),
-                    mock.call.dns.records.list(zone_id=mock.ANY, type=mock.ANY, name=mock.ANY, content=mock.ANY, per_page=mock.ANY),
-                    mock.call.dns.records.list(zone_id=mock.ANY, type=mock.ANY, name=mock.ANY, content=mock.ANY, per_page=mock.ANY).result.__len__()
+                    mock.call.dns.records.list(zone_id=mock.ANY, type=mock.ANY, name=mock.ANY, content=mock.ANY, per_page=mock.ANY)
                     ]
 
         assert expected == self.cf.mock_calls
