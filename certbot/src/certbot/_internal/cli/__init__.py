@@ -32,7 +32,7 @@ from certbot._internal.cli.cli_utils import CaseInsensitiveList
 from certbot._internal.cli.cli_utils import config_help
 from certbot._internal.cli.cli_utils import CustomHelpFormatter
 from certbot._internal.cli.cli_utils import DomainsAction
-from certbot._internal.cli.cli_utils import _IPAddressAction
+from certbot._internal.cli.cli_utils import IPAddressAction
 from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
 from certbot._internal.cli.cli_utils import nonnegative_int
@@ -127,7 +127,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[st
     helpful.add(
         [None, "certonly", "certificates"],
         "--ip-address", dest="ip_addresses",
-        action=_IPAddressAction,
+        action=IPAddressAction,
         default=flag_default("ip_addresses"),
         help="IP addresses to include. For multiple IP addresses you can use multiple "
              "--ip-address flags. All IP addresses will be included as Subject Alternative Names "

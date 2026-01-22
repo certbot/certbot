@@ -136,7 +136,7 @@ def add_domains(args_or_config: Union[argparse.Namespace, configuration.Namespac
     return validated_domains
 
 
-class _IPAddressAction(argparse.Action):
+class IPAddressAction(argparse.Action):
     """Action class for parsing IP addresses."""
 
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,

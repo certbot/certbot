@@ -15,6 +15,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot._internal import cli
+from certbot._internal import san
 from certbot.achallenges import AnnotatedChallenge
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -69,14 +70,14 @@ to serve all files under specified web root ({0})."""
     def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         add("path", "-w", default=[], action=_WebrootPathAction,
             help="public_html / webroot path. This can be specified multiple "
-                 "times to handle different domains; each domain will have "
+                 "times to handle different identifiers; each identifier will have "
                  "the webroot path that preceded it.  For instance: `-w "
                  "/var/www/example -d example.com -d www.example.com -w "
                  "/var/www/thing -d thing.net -d m.thing.net` (default: Ask)")
         add("map", default={}, action=_WebrootMapAction,
-            help="JSON dictionary mapping domains to webroot paths; this "
-                 "implies -d for each entry. You may need to escape this from "
-                 "your shell. E.g.: --webroot-map "
+            help="JSON dictionary mapping identifiers to webroot paths; this "
+                 "implies -d or --ip-address for each entry. You may need to "
+                 " escape this from your shell. E.g.: --webroot-map "
                  '\'{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}\' '
                  "This option is merged with, but takes precedence over, -w / "
                  "-d entries. At present, if you put webroot-map in a config "
@@ -85,7 +86,7 @@ to serve all files under specified web root ({0})."""
 
     def auth_hint(self, failed_achalls: list[AnnotatedChallenge]) -> str:  # pragma: no cover
         return ("The Certificate Authority failed to download the temporary challenge files "
-                "created by Certbot. Ensure that the listed domains serve their content from "
+                "created by Certbot. Ensure that the listed identifiers serve their content from "
                 "the provided --webroot-path/-w and that files created there can be downloaded "
                 "from the internet.")
 
@@ -106,9 +107,6 @@ to serve all files under specified web root ({0})."""
         pass
 
     def perform(self, achalls: list[AnnotatedChallenge]) -> list[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
-        if any(achall.identifier.typ == messages.IDENTIFIER_IP for achall in achalls):
-            raise errors.ConfigurationError(
-                "webroot authenticator not supported for IP address certificates")
         self._set_webroots(achalls)
 
         self._create_challenge_dirs()
@@ -118,7 +116,7 @@ to serve all files under specified web root ({0})."""
     def _set_webroots(self, achalls: Iterable[AnnotatedChallenge]) -> None:
         if self.conf("path"):
             webroot_path = self.conf("path")[-1]
-            logger.info("Using the webroot path %s for all unmatched domains.",
+            logger.info("Using the webroot path %s for all unmatched identifiers.",
                         webroot_path)
             for achall in achalls:
                 self.conf("map").setdefault(achall.identifier.value, webroot_path)
@@ -126,7 +124,7 @@ to serve all files under specified web root ({0})."""
             known_webroots = list(set(self.conf("map").values()))
             for achall in achalls:
                 if achall.identifier.value not in self.conf("map"):
-                    new_webroot = self._prompt_for_webroot(achall.identifier.value,
+                    new_webroot = self._prompt_for_webroot(achall.identifier,
                                                            known_webroots)
                     # Put the most recently input
                     # webroot first for easy selection
@@ -137,46 +135,48 @@ to serve all files under specified web root ({0})."""
                     known_webroots.insert(0, new_webroot)
                     self.conf("map")[achall.identifier.value] = new_webroot
 
-    def _prompt_for_webroot(self, domain: str, known_webroots: list[str]) -> Optional[str]:
+    def _prompt_for_webroot(self, identifier: messages.Identifier,
+                            known_webroots: list[str]) -> Optional[str]:
         webroot = None
 
         while webroot is None:
             if known_webroots:
                 # Only show the menu if we have options for it
-                webroot = self._prompt_with_webroot_list(domain, known_webroots)
+                webroot = self._prompt_with_webroot_list(identifier, known_webroots)
                 if webroot is None:
-                    webroot = self._prompt_for_new_webroot(domain)
+                    webroot = self._prompt_for_new_webroot(identifier)
             else:
                 # Allow prompt to raise PluginError instead of looping forever
-                webroot = self._prompt_for_new_webroot(domain, True)
+                webroot = self._prompt_for_new_webroot(identifier, True)
 
         return webroot
 
-    def _prompt_with_webroot_list(self, domain: str,
+    def _prompt_with_webroot_list(self, identifier: messages.Identifier,
                                   known_webroots: list[str]) -> Optional[str]:
         path_flag = "--" + self.option_name("path")
 
         while True:
             code, index = display_util.menu(
-                "Select the webroot for {0}:".format(domain),
+                "Select the webroot for {0}:".format(identifier.value),
                 ["Enter a new webroot"] + known_webroots,
                 cli_flag=path_flag, force_interactive=True)
             if code == display_util.CANCEL:
                 raise errors.PluginError(
-                    "Every requested domain must have a "
+                    "Every requested identifier must have a "
                     "webroot when using the webroot plugin.")
             return None if index == 0 else known_webroots[index - 1]  # code == display_util.OK
 
-    def _prompt_for_new_webroot(self, domain: str, allowraise: bool = False) -> Optional[str]:
+    def _prompt_for_new_webroot(self, identifier: messages.Identifier,
+                                allowraise: bool = False) -> Optional[str]:
         code, webroot = ops.validated_directory(
             _validate_webroot,
-            "Input the webroot for {0}:".format(domain),
+            "Input the webroot for {0}:".format(identifier.value),
             force_interactive=True)
         if code == display_util.CANCEL:
             if not allowraise:
                 return None
             raise errors.PluginError(
-                "Every requested domain must have a "
+                "Every requested identifier must have a "
                 "webroot when using the webroot plugin.")
         return _validate_webroot(webroot)  # code == display_util.OK
 
@@ -184,9 +184,10 @@ to serve all files under specified web root ({0})."""
         path_map = self.conf("map")
         if not path_map:
             raise errors.PluginError(
-                "Missing parts of webroot configuration; please set either "
-                "--webroot-path and --domains, or --webroot-map. Run with "
-                " --help webroot for examples.")
+                "Missing parts of webroot configuration; please set "
+                "--webroot-path and --domains or --ip-address. "
+                "Alternatively you may set --webroot-map. "
+                "Run with --help webroot for examples.")
         for name, path in path_map.items():
             self.full_roots[name] = os.path.join(path, os.path.normcase(
                 challenges.HTTP01.URI_ROOT_PATH))
@@ -295,10 +296,16 @@ class _WebrootMapAction(argparse.Action):
                  option_string: Optional[str] = None) -> None:
         if webroot_map is None:
             return
-        for domains, webroot_path in json.loads(str(webroot_map)).items():
+        for identlist, webroot_path in json.loads(str(webroot_map)).items():
             webroot_path = _validate_webroot(webroot_path)
-            namespace.webroot_map.update(
-                (d.dns_name, webroot_path) for d in cli.add_domains(namespace, domains))
+            for s in san.guess(identlist.split(",")):
+                match s:
+                    case san.IPAddress():
+                        namespace.ip_addresses.append(s.ip_address)
+                    case san.DNSName():
+                        cli.add_domains(namespace, s.dns_name)
+
+                namespace.webroot_map[str(s)] = webroot_path
 
 
 class _WebrootPathAction(argparse.Action):
@@ -306,17 +313,17 @@ class _WebrootPathAction(argparse.Action):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._domain_before_webroot = False
+        self._ident_before_webroot = False
 
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
                  webroot_path: Union[str, Sequence[Any], None],
                  option_string: Optional[str] = None) -> None:
         if webroot_path is None:
             return
-        if self._domain_before_webroot:
+        if self._ident_before_webroot:
             raise errors.PluginError(
                 "If you specify multiple webroot paths, "
-                "one of them must precede all domain flags")
+                "one of them must precede all --domain and --ip-address flags")
 
         if namespace.webroot_path:
             # Apply previous webroot to all matched
@@ -324,8 +331,10 @@ class _WebrootPathAction(argparse.Action):
             prev_webroot = namespace.webroot_path[-1]
             for domain in namespace.domains:
                 namespace.webroot_map.setdefault(domain.dns_name, prev_webroot)
+            for ip_address in namespace.ip_addresses:
+                namespace.webroot_map.setdefault(ip_address.ip_address, prev_webroot)
         elif namespace.domains:
-            self._domain_before_webroot = True
+            self._ident_before_webroot = True
 
         namespace.webroot_path.append(_validate_webroot(str(webroot_path)))
 
