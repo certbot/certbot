@@ -1237,7 +1237,7 @@ Certbot accepts a global configuration file that applies its options to all invo
 of Certbot. Certificate-specific configuration choices are stored in the ``.conf``
 files that can be found in ``/etc/letsencrypt/renewal``. See 
 `Modifying the Renewal Configuration of Existing Certificates`_ for more information
-about modifying certificate specific options. Note that it is not recommended to modify
+about modifying certificate-specific options. Note that it is not recommended to modify
 these certificate-specific renewal configuration files manually.
 
 By default no cli.ini file is created (though it may exist already if you installed Certbot
