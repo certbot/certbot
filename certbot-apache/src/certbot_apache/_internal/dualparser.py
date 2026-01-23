@@ -38,9 +38,6 @@ class DualNodeBase(Generic[GenericAugeasParserNode, GenericApacheParserNode]):
 
     def __getattr__(self, aname: str) -> Any:
         """ Attribute value assertion """
-        # https://nedbatchelder.com/blog/201010/surprising_getattr_recursion
-        if aname in ("primary", "secondary"):
-            raise AttributeError(name=aname, obj=self)
         firstval = getattr(self.primary, aname)
         secondval = getattr(self.secondary, aname)
         exclusions = [
