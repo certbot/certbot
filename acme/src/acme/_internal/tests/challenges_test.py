@@ -1,5 +1,6 @@
 """Tests for acme.challenges."""
 import sys
+from typing import TYPE_CHECKING
 import unittest
 from unittest import mock
 import urllib.parse as urllib_parse
@@ -261,71 +262,82 @@ class HTTP01Test(unittest.TestCase):
         assert not self.msg.update(token=b'..').good_token
 
 
-class DNSTest(unittest.TestCase):
+class DNSTest:
 
-    def setUp(self):
+    if TYPE_CHECKING:
         from acme.challenges import DNS
-        self.msg = DNS(token=jose.b64decode(
-            b'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'))
-        self.jmsg = {
+
+    @pytest.fixture
+    def jmsg(self) -> dict:
+        jmsg = {
             'type': 'dns',
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
         }
+        return jmsg
 
-    def test_to_partial_json(self):
-        assert self.jmsg == self.msg.to_partial_json()
-
-    def test_from_json(self):
+    @pytest.fixture
+    def msg(self) -> 'DNS':
         from acme.challenges import DNS
-        assert self.msg == DNS.from_json(self.jmsg)
+        msg = DNS(token=jose.b64decode(
+            b'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'))
+        return msg
 
-    def test_from_json_hashable(self):
+    def test_to_partial_json(self, msg: 'DNS', jmsg: dict):
+        assert jmsg == msg.to_partial_json()
+
+    def test_from_json(self, msg: 'DNS', jmsg: dict):
         from acme.challenges import DNS
-        hash(DNS.from_json(self.jmsg))
+        assert msg == DNS.from_json(jmsg)
 
-    def test_gen_check_validation(self):
-        ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
-        for key, alg in [(KEY, jose.RS256), (ec_key_secp384r1, jose.ES384)]:
-            with self.subTest(key=key, alg=alg):
-                assert self.msg.check_validation(
-                    self.msg.gen_validation(key, alg=alg), key.public_key())
+    def test_from_json_hashable(self, jmsg: dict):
+        from acme.challenges import DNS
+        hash(DNS.from_json(jmsg))
 
-    def test_gen_check_validation_wrong_key(self):
+    # Using fixtures in parametrize is an open issue
+    # https://github.com/pytest-dev/pytest/issues/349
+    @pytest.mark.parametrize("key, alg", [
+        (KEY, jose.RS256),
+        (JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem')), jose.ES384)])
+    def test_gen_check_validation(self, key, alg, msg: 'DNS'):
+        assert msg.check_validation(
+            msg.gen_validation(key, alg=alg), key.public_key())
+
+    def test_gen_check_validation_wrong_key(self, msg: 'DNS'):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa1024_key.pem'))
         assert not self.msg.check_validation(
-            self.msg.gen_validation(KEY), key2.public_key())
+            msg.gen_validation(KEY), key2.public_key())
 
-    def test_check_validation_wrong_payload(self):
+    def test_check_validation_wrong_payload(self, msg: 'DNS'):
         validations = tuple(
             jose.JWS.sign(payload=payload, alg=jose.RS256, key=KEY)
             for payload in (b'', b'{}')
         )
         for validation in validations:
-            assert not self.msg.check_validation(
+            assert not msg.check_validation(
                 validation, KEY.public_key())
 
-    def test_check_validation_wrong_fields(self):
+    def test_check_validation_wrong_fields(self, msg: 'DNS'):
         bad_validation = jose.JWS.sign(
-            payload=self.msg.update(
+            payload=msg.update(
                 token=b'x' * 20).json_dumps().encode('utf-8'),
             alg=jose.RS256, key=KEY)
-        assert not self.msg.check_validation(bad_validation, KEY.public_key())
+        assert not msg.check_validation(bad_validation, KEY.public_key())
 
-    def test_gen_response(self):
+    def test_gen_response(self, msg: 'DNS'):
         with mock.patch('acme.challenges.DNS.gen_validation') as mock_gen:
             mock_gen.return_value = mock.sentinel.validation
-            response = self.msg.gen_response(KEY)
+            response = msg.gen_response(KEY)
         from acme.challenges import DNSResponse
         assert isinstance(response, DNSResponse)
         assert response.validation == mock.sentinel.validation
 
-    def test_validation_domain_name(self):
-        assert '_acme-challenge.le.wtf' == self.msg.validation_domain_name('le.wtf')
+    def test_validation_domain_name(self, msg: 'DNS'):
+        assert '_acme-challenge.le.wtf' == msg.validation_domain_name('le.wtf')
 
-    def test_validation_domain_name_ecdsa(self):
+    def test_validation_domain_name_ecdsa(self, msg: 'DNS'):
         ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
         assert self.msg.check_validation(
-            self.msg.gen_validation(ec_key_secp384r1, alg=jose.ES384),
+            msg.gen_validation(ec_key_secp384r1, alg=jose.ES384),
             ec_key_secp384r1.public_key()) is True
 
 
