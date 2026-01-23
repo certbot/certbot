@@ -262,7 +262,7 @@ class HTTP01Test(unittest.TestCase):
         assert not self.msg.update(token=b'..').good_token
 
 
-class DNSTest:
+class TestDNS:
 
     if TYPE_CHECKING:
         from acme.challenges import DNS
@@ -304,7 +304,7 @@ class DNSTest:
 
     def test_gen_check_validation_wrong_key(self, msg: 'DNS'):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa1024_key.pem'))
-        assert not self.msg.check_validation(
+        assert not msg.check_validation(
             msg.gen_validation(KEY), key2.public_key())
 
     def test_check_validation_wrong_payload(self, msg: 'DNS'):
@@ -336,7 +336,7 @@ class DNSTest:
 
     def test_validation_domain_name_ecdsa(self, msg: 'DNS'):
         ec_key_secp384r1 = JWKEC(key=test_util.load_ecdsa_private_key('ec_secp384r1_key.pem'))
-        assert self.msg.check_validation(
+        assert msg.check_validation(
             msg.gen_validation(ec_key_secp384r1, alg=jose.ES384),
             ec_key_secp384r1.public_key()) is True
 
