@@ -185,7 +185,7 @@ types-requests==2.32.4.20250913 ; python_version >= "3.10" and python_version < 
 types-setuptools==80.9.0.20250822 ; python_version >= "3.10" and python_version < "4.0"
 typing-extensions==4.15.0 ; python_version >= "3.10" and python_version < "4.0"
 uritemplate==4.2.0 ; python_version >= "3.10" and python_version < "4.0"
-urllib3==2.6.2 ; python_version >= "3.10" and python_version < "4.0"
+urllib3==2.6.3 ; python_version >= "3.10" and python_version < "4.0"
 uv==0.9.17 ; python_version >= "3.10" and python_version < "4.0"
 virtualenv==20.35.4 ; python_version >= "3.10" and python_version < "4.0"
 wcwidth==0.2.14 ; python_version >= "3.10" and python_version < "4.0"
