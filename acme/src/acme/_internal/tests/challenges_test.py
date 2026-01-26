@@ -244,6 +244,9 @@ class HTTP01Test(unittest.TestCase):
         assert 'http://example.com/.well-known/acme-challenge/' \
             'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA' == \
             self.msg.uri('example.com')
+        assert 'http://[::1]/.well-known/acme-challenge/' \
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA' == \
+            self.msg.uri('::1')
 
     def test_to_partial_json(self):
         assert self.jmsg == self.msg.to_partial_json()
