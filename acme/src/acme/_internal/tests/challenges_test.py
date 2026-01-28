@@ -244,6 +244,9 @@ class HTTP01Test(unittest.TestCase):
         assert 'http://example.com/.well-known/acme-challenge/' \
             'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA' == \
             self.msg.uri('example.com')
+        assert 'http://1.2.3.4/.well-known/acme-challenge/' \
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA' == \
+            self.msg.uri('1.2.3.4')
         assert 'http://[::1]/.well-known/acme-challenge/' \
             'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA' == \
             self.msg.uri('::1')
