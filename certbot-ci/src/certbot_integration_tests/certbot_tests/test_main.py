@@ -28,7 +28,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_equals_wor
 from certbot_integration_tests.certbot_tests.assertions import assert_hook_execution
 from certbot_integration_tests.certbot_tests.assertions import assert_rsa_key
 from certbot_integration_tests.certbot_tests.assertions import assert_saved_lineage_option
-from certbot_integration_tests.certbot_tests.assertions import assert_saved_renew_hook
+from certbot_integration_tests.certbot_tests.assertions import assert_saved_deploy_hook
 from certbot_integration_tests.certbot_tests.assertions import assert_world_no_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
@@ -108,7 +108,7 @@ def test_http_01(context: IntegrationTestsContext) -> None:
     ])
 
     assert_hook_execution(context.hook_probe, 'deploy')
-    assert_saved_renew_hook(context.config_dir, certname)
+    assert_saved_deploy_hook(context.config_dir, certname)
     assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
 
@@ -178,12 +178,11 @@ def test_manual_http_auth(context: IntegrationTestsContext) -> None:
             '--manual-cleanup-hook', scripts[1],
             '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
             '--post-hook', misc.echo('wtf_post', context.hook_probe),
-            '--renew-hook', misc.echo('renew', context.hook_probe),
+            '--deploy-hook', misc.echo('deploy', context.hook_probe),
         ])
 
-    with pytest.raises(AssertionError):
-        assert_hook_execution(context.hook_probe, 'renew')
-    assert_saved_renew_hook(context.config_dir, certname)
+    assert_hook_execution(context.hook_probe, 'deploy')
+    assert_saved_deploy_hook(context.config_dir, certname)
 
 
 def test_manual_dns_auth(context: IntegrationTestsContext) -> None:
@@ -196,12 +195,11 @@ def test_manual_dns_auth(context: IntegrationTestsContext) -> None:
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
         '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
         '--post-hook', misc.echo('wtf_post', context.hook_probe),
-        '--renew-hook', misc.echo('renew', context.hook_probe),
+        '--deploy-hook', misc.echo('deploy', context.hook_probe),
     ])
 
-    with pytest.raises(AssertionError):
-        assert_hook_execution(context.hook_probe, 'renew')
-    assert_saved_renew_hook(context.config_dir, certname)
+    assert_hook_execution(context.hook_probe, 'deploy')
+    assert_saved_deploy_hook(context.config_dir, certname)
 
     context.certbot(['renew', '--cert-name', certname, '--authenticator', 'manual'])
 

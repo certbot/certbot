@@ -400,7 +400,7 @@ class ParseTest(unittest.TestCase):
         args = 'renew --deploy-hook foo'.split()
         plugins = disco.PluginsRegistry.find_all()
         config = cli.prepare_and_parse_args(plugins, args)
-        assert config.set_by_user('renew_hook')
+        assert config.set_by_user('deploy_hook')
 
     @mock.patch('certbot._internal.plugins.webroot._validate_webroot')
     def test_user_set_webroot_map(self, mock_validate_webroot):
@@ -425,9 +425,16 @@ class ParseTest(unittest.TestCase):
             self.parse("-n --force-interactive".split())
 
     def test_deploy_hook_conflict(self):
-        with mock.patch("certbot._internal.cli.sys.stderr"):
-            with pytest.raises(SystemExit):
-                self.parse("--renew-hook foo --deploy-hook bar".split())
+        namespace = self.parse(["--renew-hook", "foo",
+                                "--deploy-hook", "bar",
+                                "--disable-hook-validation"])
+        assert_set_by_user_with_value(namespace, 'deploy_hook', "bar")
+
+    def test_renew_hook_conflict(self):
+        namespace = self.parse(["--deploy-hook", "foo",
+                                "--renew-hook", "bar",
+                                "--disable-hook-validation"])
+        assert_set_by_user_with_value(namespace, 'deploy_hook', "bar")
 
     def test_deploy_hook_matches_renew_hook(self):
         value = "foo"
@@ -435,19 +442,12 @@ class ParseTest(unittest.TestCase):
                                 "--deploy-hook", value,
                                 "--disable-hook-validation"])
         assert_set_by_user_with_value(namespace, 'deploy_hook', value)
-        assert_set_by_user_with_value(namespace, 'renew_hook', value)
 
-    def test_deploy_hook_sets_renew_hook(self):
+    def test_renew_hook_sets_deploy_hook(self):
         value = "foo"
         namespace = self.parse(
-            ["--deploy-hook", value, "--disable-hook-validation"])
+            ["--renew-hook", value, "--disable-hook-validation"])
         assert_set_by_user_with_value(namespace, 'deploy_hook', value)
-        assert_set_by_user_with_value(namespace, 'renew_hook', value)
-
-    def test_renew_hook_conflict(self):
-        with mock.patch("certbot._internal.cli.sys.stderr"):
-            with pytest.raises(SystemExit):
-                self.parse("--deploy-hook foo --renew-hook bar".split())
 
     def test_renew_hook_matches_deploy_hook(self):
         value = "foo"
@@ -455,14 +455,20 @@ class ParseTest(unittest.TestCase):
                                 "--renew-hook", value,
                                 "--disable-hook-validation"])
         assert_set_by_user_with_value(namespace, 'deploy_hook', value)
-        assert_set_by_user_with_value(namespace, 'renew_hook', value)
 
     def test_renew_hook_does_not_set_renew_hook(self):
         value = "foo"
         namespace = self.parse(
             ["--renew-hook", value, "--disable-hook-validation"])
-        assert namespace.deploy_hook is None
-        assert_set_by_user_with_value(namespace, 'renew_hook', value)
+        assert not hasattr(namespace, "renew_hook")
+        assert_set_by_user_with_value(namespace, 'deploy_hook', value)
+
+    def test_deploy_hook_does_not_set_renew_hook(self):
+        value = "foo"
+        namespace = self.parse(
+            ["--deploy-hook", value, "--disable-hook-validation"])
+        assert not hasattr(namespace, "renew_hook")
+        assert_set_by_user_with_value(namespace, 'deploy_hook', value)
 
     def test_max_log_backups_error(self):
         with mock.patch('certbot._internal.cli.sys.stderr'):

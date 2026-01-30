@@ -21,7 +21,6 @@ def validate_hooks(config: configuration.NamespaceConfig) -> None:
     validate_hook(config.pre_hook, "pre")
     validate_hook(config.post_hook, "post")
     validate_hook(config.deploy_hook, "deploy")
-    validate_hook(config.renew_hook, "renew")
 
 
 def _prog(shell_cmd: str) -> Optional[str]:
@@ -192,26 +191,11 @@ def run_saved_post_hooks(renewed_sans: list[san.SAN], failed_sans: list[san.SAN]
 
 def deploy_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
                 lineage_path: str) -> None:
-    """Run post-issuance hook if defined.
-
-    :param configuration.NamespaceConfig config: Certbot settings
-    :param sans: domains and/or IP addresses in the obtained certificate
-    :type sans: `list` of `str`
-    :param str lineage_path: live directory path for the new cert
-
-    """
-    if config.deploy_hook:
-        _run_deploy_hook(config.deploy_hook, sans,
-                         lineage_path, config.dry_run, config.run_deploy_hooks)
-
-
-def renew_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
-               lineage_path: str) -> None:
-    """Run post-renewal hooks.
+    """Run post-renewal/post-issuance hooks.
 
     This function runs any hooks found in
-    config.renewal_deploy_hooks_dir followed by any renew-hook in the
-    config. If the renew-hook in the config is a path to a script in
+    config.renewal_deploy_hooks_dir followed by any deploy-hook in the
+    config. If the deploy-hook in the config is a path to a script in
     config.renewal_deploy_hooks_dir, it is not run twice.
 
     If Certbot is doing a dry run, no hooks are run and messages are
@@ -224,9 +208,9 @@ def renew_hook(config: configuration.NamespaceConfig, sans: list[san.SAN],
 
     """
     executed_hooks = set()
-    all_hooks: list[str] = (list_hooks(config.renewal_deploy_hooks_dir)if config.directory_hooks
+    all_hooks: list[str] = (list_hooks(config.renewal_deploy_hooks_dir) if config.directory_hooks
         else [])
-    all_hooks += [config.renew_hook] if config.renew_hook else []
+    all_hooks += [config.deploy_hook] if config.deploy_hook else []
     for hook in all_hooks:
         if hook in executed_hooks:
             logger.info("Skipping deploy-hook '%s' as it was already run.", hook)
