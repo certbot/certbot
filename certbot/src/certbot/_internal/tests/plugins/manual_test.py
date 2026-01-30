@@ -67,19 +67,27 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             '{0} -c "'
             'from certbot.compat import os;'
             'print(os.environ.get(\'CERTBOT_DOMAIN\'));'
+            'print(os.environ.get(\'CERTBOT_IDENTIFIER\'));'
             'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
             'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));'
             'print(os.environ.get(\'CERTBOT_ALL_DOMAINS\'));'
+            'print(os.environ.get(\'CERTBOT_ALL_IDENTIFIERS\'));'
             'print(os.environ.get(\'CERTBOT_REMAINING_CHALLENGES\'));"'
             .format(sys.executable))
-        dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
-            self.dns_achall.identifier.value, 'notoken',
+        dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}'.format(
+            self.dns_achall.identifier.value,
+            self.dns_achall.identifier.value,
+            'notoken',
             self.dns_achall.validation(self.dns_achall.account_key),
             ','.join(achall.identifier.value for achall in self.achalls),
+            ','.join(achall.identifier.value for achall in self.achalls),
             len(self.achalls) - self.achalls.index(self.dns_achall) - 1)
-        http_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
-            self.http_achall.identifier.value, self.http_achall.chall.encode('token'),
+        http_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}'.format(
+            self.http_achall.identifier.value,
+            self.http_achall.identifier.value,
+            self.http_achall.chall.encode('token'),
             self.http_achall.validation(self.http_achall.account_key),
+            ','.join(achall.identifier.value for achall in self.achalls),
             ','.join(achall.identifier.value for achall in self.achalls),
             len(self.achalls) - self.achalls.index(self.http_achall) - 1)
 
@@ -116,6 +124,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.auth.cleanup([achall])
             assert os.environ['CERTBOT_AUTH_OUTPUT'] == 'foo'
             assert os.environ['CERTBOT_DOMAIN'] == achall.identifier.value
+            assert os.environ['CERTBOT_IDENTIFIER'] == achall.identifier.value
             if isinstance(achall.chall, (challenges.HTTP01, challenges.DNS01)):
                 assert os.environ['CERTBOT_VALIDATION'] == \
                     achall.validation(achall.account_key)
