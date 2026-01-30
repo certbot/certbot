@@ -337,10 +337,10 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.block.secondary.find_blocks = find_blocks_secondary
 
         blocks = self.block.find_blocks("anything")
+        assert len(blocks) == 1
         for block in blocks:
-            with self.subTest(block=block):
-                assert block.primary == block.secondary
-                assert block.primary is not block.secondary
+            assert block.primary == block.secondary
+            assert block.primary is not block.secondary
 
     def test_find_dirs_no_pass_equal(self):
         notpassing1 = [augeasparser.AugeasDirectiveNode(name="notpassing",
@@ -357,10 +357,10 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.block.secondary.find_directives = find_dirs_secondary
 
         directives = self.block.find_directives("anything")
+        assert len(directives) == 1
         for directive in directives:
-            with self.subTest(directive=directive):
-                assert directive.primary == directive.secondary
-                assert directive.primary is not directive.secondary
+            assert directive.primary == directive.secondary
+            assert directive.primary is not directive.secondary
 
     def test_find_comments_no_pass_equal(self):
         notpassing1 = [augeasparser.AugeasCommentNode(comment="notpassing",
@@ -377,10 +377,10 @@ class DualParserNodeTest(unittest.TestCase):  # pylint: disable=too-many-public-
         self.block.secondary.find_comments = find_coms_secondary
 
         comments = self.block.find_comments("anything")
+        assert len(comments) == 1
         for comment in comments:
-            with self.subTest(comment=comment):
-                assert comment.primary == comment.secondary
-                assert comment.primary is not comment.secondary
+            assert comment.primary == comment.secondary
+            assert comment.primary is not comment.secondary
 
     def test_find_blocks_no_pass_notequal(self):
         notpassing1 = [augeasparser.AugeasBlockNode(name="notpassing",
