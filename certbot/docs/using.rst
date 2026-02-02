@@ -334,7 +334,7 @@ dns-cdmon_              Y    N    DNS Authentication using cdmon's API
 dns-synergy-wholesale_  Y    N    DNS Authentication using Synergy Wholesale DNS
 pkcs12_                 N    Y    Install certificates as PKCS#12 archives
 dns-hetzner-cloud_      Y    N    DNS Authentication for Hetzner Cloud DNS
-certbot-dns-czechia_    Y    N    DNS Authentication for czechia.com
+dns-czechia_    Y    N    DNS Authentication for czechia.com
 ======================= ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -370,7 +370,7 @@ certbot-dns-czechia_    Y    N    DNS Authentication for czechia.com
 .. _dns-synergy-wholesale: https://github.com/ALameLlama/certbot-dns-synergy-wholesale
 .. _pkcs12: https://github.com/nasa-gcn/certbot-pkcs12
 .. _dns-hetzner-cloud: https://github.com/rolschewsky/certbot-dns-hetzner-cloud
-.. _certbot-dns-czechia: https://github.com/CZECHIA-COM/certbot-dns-czechia
+.. _dns-czechia: https://github.com/CZECHIA-COM/certbot-dns-czechia
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
