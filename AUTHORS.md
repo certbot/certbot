@@ -241,6 +241,7 @@ Authors
 * [Roland Shoemaker](https://github.com/rolandshoemaker)
 * [Roy Wellington Ⅳ](https://github.com/thanatos)
 * [rugk](https://github.com/rugk)
+* [seeg](https://github.com/s33g)
 * [Sachi King](https://github.com/nakato)
 * [Sagi Kedmi](https://github.com/sagi)
 * [Sam Lanning](https://github.com/samlanning)
