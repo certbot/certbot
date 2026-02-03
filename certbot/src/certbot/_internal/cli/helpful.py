@@ -330,7 +330,7 @@ class HelpfulArgumentParser:
             raise errors.Error("--allow-subset-of-names cannot be used with --csr")
 
         csrfile, contents = config.csr[0:2]
-        typ, util_csr, _ = crypto_util.import_csr_file(csrfile, contents)
+        util_csr = crypto_util.read_csr_file(csrfile, contents)
         x509_req = x509.load_pem_x509_csr(util_csr.data)
         domains, ip_addresses = san.from_x509(x509_req.subject, x509_req.extensions)
 
@@ -344,7 +344,7 @@ class HelpfulArgumentParser:
                 f"Unfortunately, your CSR {config.csr[0]} needs to have a SubjectAltName for " +
                 "every domain or IP address")
 
-        config.actual_csr = (util_csr, typ)
+        config.actual_csr = util_csr
 
         # Check that the original values for --domain and --ip-address set by the user were
         # a subset of the domains listed in the CSR.
