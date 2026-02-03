@@ -1,1 +1,0 @@
-The HTTP01.uri method will now properly enclose IPv6 addresses in square brackets.

@@ -1,6 +1,0 @@
-A few largely unused functions/types have been deprecated in our effort to remove our pyOpenSSL dependency:
-    * Deprecated: `certbot.crypto_util.get_sans_from_cert`
-    * Deprecated: `certbot.crypto_util.get_names_from_cert`
-    * Deprecated: `certbot.crypto_util.get_names_from_req`
-    * Deprecated: `certbot.crypto_util.import_csr_file` (and replaced by `certbot.crypto_util.read_csr_file`)
-    * Deprecated: `acme.crypto_util.Format`

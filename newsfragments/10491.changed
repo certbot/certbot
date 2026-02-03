@@ -1,1 +1,0 @@
-`achallenges.KeyAuthorizationAnnotatedChallenge`, `achallenges.DNS`, and `achallenges.Other` have a new field `identifier`, of type `acme.messages.Identifier`. This should be used in place of the `domain` field, which is now deprecated both as an attribute and during object creation.
