@@ -33,14 +33,14 @@ class RawNginxParser:
     """A class that parses nginx configuration with pyparsing."""
 
     # constants
-    space = Optional(White(ws=' \t\r\n\u00a0')).leaveWhitespace()
-    required_space = White(ws=' \t\r\n\u00a0').leaveWhitespace()
+    space = Optional(White(ws=' \t\r\n\u00a0')).leave_whitespace()
+    required_space = White(ws=' \t\r\n\u00a0').leave_whitespace()
 
     left_bracket = Literal("{").suppress()
     right_bracket = space + Literal("}").suppress()
     semicolon = Literal(";").suppress()
-    dquoted = QuotedString('"', multiline=True, unquoteResults=False, escChar='\\')
-    squoted = QuotedString("'", multiline=True, unquoteResults=False, escChar='\\')
+    dquoted = QuotedString('"', multiline=True, unquote_results=False, esc_char='\\')
+    squoted = QuotedString("'", multiline=True, unquote_results=False, esc_char='\\')
     quoted = dquoted | squoted
     head_tokenchars = Regex(r"(\$\{)|[^{};\s'\"]") # if (last_space)
     tail_tokenchars = Regex(r"(\$\{)|[^{;\s]") # else
@@ -61,18 +61,18 @@ class RawNginxParser:
     contents = Group(comment) | Group(block) | Group(assignment)
 
     block_begin = Group(whitespace_token_group)
-    block_innards = Group(ZeroOrMore(contents) + space).leaveWhitespace()
+    block_innards = Group(ZeroOrMore(contents) + space).leave_whitespace()
     block << block_begin + left_bracket + block_innards + right_bracket
 
     script = ZeroOrMore(contents) + space + stringEnd
-    script.parseWithTabs().leaveWhitespace()
+    script.parse_with_tabs().leave_whitespace()
 
     def __init__(self, source: str) -> None:
         self.source = source
 
     def parse(self) -> ParseResults:
         """Returns the parsed tree."""
-        return self.script.parseString(self.source)
+        return self.script.parse_string(self.source)
 
     def as_list(self) -> list[Any]:
         """Returns the parsed tree as a list."""

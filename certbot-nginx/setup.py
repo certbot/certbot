@@ -11,7 +11,7 @@ install_requires = [
     # PyOpenSSL>=25.0.0 is just needed to satisfy mypy right now so this dependency can probably be
     # relaxed to >=24.0.0 if needed.
     'PyOpenSSL>=25.0.0',
-    'pyparsing>=2.4.7',
+    'pyparsing>=3.0.0',
 ]
 
 setup(
