@@ -8,7 +8,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- A new command line flag, --ip-address, has been added. This requests certificates with IP address SANs when using the standalone or manual plugin.  Note that for Let's Encrypt's implementation of IP address certificates, you'll also need to pass `--preferred-profile shortlived`. ([#10465](https://github.com/certbot/certbot/issues/10465))
+- A new command line flag, --ip-address, has been added. This requests certificates with IP address SANs when using the standalone or manual plugin.  Note that for Let's Encrypt's implementation of IP address certificates, you'll also need to pass `--preferred-profile shortlived`. ([#10495](https://github.com/certbot/certbot/issues/10495), [#10544](https://github.com/certbot/certbot/pull/10544))
 
 ### Changed
 
