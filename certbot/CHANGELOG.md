@@ -4,6 +4,31 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.3.0 - 2026-02-03
+
+### Added
+
+- A new command line flag, --ip-address, has been added. This requests certificates with IP address SANs when using the standalone or manual plugin.  Note that for Let's Encrypt's implementation of IP address certificates, you'll also need to pass `--preferred-profile shortlived`. ([#10465](https://github.com/certbot/certbot/issues/10465))
+
+### Changed
+
+- Deploy directory hooks are now also run when using `certbot certonly` or `certbot run` to get a new cert. This change was made for pre and post directory hooks in our 3.2.0 release so this change unifies Certbot's behavior here. ([#9978](https://github.com/certbot/certbot/issues/9978))
+- A few largely unused functions/types have been deprecated in our effort to remove our pyOpenSSL dependency:
+      * Deprecated: `certbot.crypto_util.get_sans_from_cert`
+      * Deprecated: `certbot.crypto_util.get_names_from_cert`
+      * Deprecated: `certbot.crypto_util.get_names_from_req`
+      * Deprecated: `certbot.crypto_util.import_csr_file` (and replaced by `certbot.crypto_util.read_csr_file`)
+      * Deprecated: `acme.crypto_util.Format` ([#10433](https://github.com/certbot/certbot/issues/10433))
+- `achallenges.KeyAuthorizationAnnotatedChallenge`, `achallenges.DNS`, and `achallenges.Other` have a new field `identifier`, of type `acme.messages.Identifier`. This should be used in place of the `domain` field, which is now deprecated both as an attribute and during object creation. ([#10491](https://github.com/certbot/certbot/issues/10491))
+- Authenticator.get_chall_pref's argument has been renamed from `domain` to `identifier`, and can now receive string-formatted IP addresses in addition to domain names. ([#10495](https://github.com/certbot/certbot/issues/10495))
+- san.DNSName now calls util.enforce_domain_sanity to reduce code duplication ([#10519](https://github.com/certbot/certbot/issues/10519))
+
+### Fixed
+
+- Removed the outdated email address from our Python packages' metadata. ([#10533](https://github.com/certbot/certbot/issues/10533))
+- The HTTP01.uri method will now properly enclose IPv6 addresses in square brackets. ([#10548](https://github.com/certbot/certbot/issues/10548))
+
+
 ## 5.2.2 - 2025-12-10
 
 ### Fixed
