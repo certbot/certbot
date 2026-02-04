@@ -1,6 +1,6 @@
 """ Entry point for Apache Plugin """
 
-from certbot._internal.plugins.apache import entrypoint
+import certbot.plugins.apache
 
 
-ENTRYPOINT = entrypoint.get_configurator()
+ENTRYPOINT = certbot.plugins.apache.ENTRYPOINT
