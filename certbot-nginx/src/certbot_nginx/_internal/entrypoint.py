@@ -1,6 +1,6 @@
-""" Entry point for Apache Plugin """
+""" Entry point for Nginx Plugin """
 
-from certbot._internal.plugins.nginx import configurator
+import certbot.plugins.nginx
 
 
-ENTRYPOINT = configurator.NginxConfigurator
+ENTRYPOINT = certbot.plugins.nginx.ENTRYPOINT
