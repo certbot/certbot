@@ -340,9 +340,9 @@ class WebrootActionTest(unittest.TestCase):
     def test_webroot_map_action(self):
         other_path = tempfile.mkdtemp()
         args = self.parser.parse_args(
-            ["--webroot-map", json.dumps({'thing.com,thunk.com,1.2.3.4': self.path,'thunk.com': other_path})])
+            ["--webroot-map", json.dumps({'thing.com,thunk.com,9.8.7.6': self.path,'thunk.com': other_path})])
         assert args.webroot_map["thing.com"] == self.path
-        assert args.webroot_map["1.2.3.4"] == self.path
+        assert args.webroot_map["9.8.7.6"] == self.path
         assert args.webroot_map["thunk.com"] == other_path
 
     def test_domain_before_webroot(self):
@@ -353,11 +353,12 @@ class WebrootActionTest(unittest.TestCase):
 
     def test_multi_identifier(self):
         args = self.parser.parse_args(
-            "-w {0} -d {1} --ip-address 1.2.3.4".format(self.path, self.achall.identifier.value).split())
+            "-w {0} -d {1} --ip-address {2}".format(
+                self.path, self.achall.identifier.value, self.ipchall.identifier.value).split())
 
         config = self._get_config_after_perform(args, challs=[self.achall, self.ipchall])
         assert config.webroot_map[self.achall.identifier.value] == self.path
-        assert config.webroot_map["1.2.3.4"] == self.path
+        assert config.webroot_map[self.ipchall.identifier.value] == self.path
 
     def test_domain_before_webroot_error(self):
         with pytest.raises(errors.PluginError):
@@ -367,8 +368,9 @@ class WebrootActionTest(unittest.TestCase):
 
     def test_multiwebroot(self):
         other_path = tempfile.mkdtemp()
-        args = self.parser.parse_args("-w {0} -d {1} -w {2} --ip-address 1.2.3.4".format(
-            self.path, self.achall.identifier.value, other_path).split())
+        args = self.parser.parse_args("-w {0} -d {1} -w {2} --ip-address {3}".format(
+            self.path, self.achall.identifier.value,
+            other_path, self.ipchall.identifier.value).split())
         assert args.webroot_map[self.achall.identifier.value] == self.path
         config = self._get_config_after_perform(args, challs=[self.achall, self.ipchall])
         assert config.webroot_map[self.achall.identifier.value] == self.path
