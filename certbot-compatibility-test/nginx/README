@@ -4,7 +4,7 @@ Right now, this is data for the roundtrip test (checking that the parser
 can parse each file and that the reserialized config file it generates is
 identical to the original).
 
-If run in a virtualenv or otherwise so that certbot_nginx can be imported,
+If run in a virtualenv or otherwise so that certbot can be imported,
 the roundtrip test can run as
 
 python roundtrip.py nginx-roundtrip-testdata

@@ -1,0 +1,1 @@
+Moved nearly all code for certbot-nginx and certbot-apache plugins into private certbot modules. Virtually no projects use the public code from these plugins, and making them private allows us to update and maintain them with much greater ease.
