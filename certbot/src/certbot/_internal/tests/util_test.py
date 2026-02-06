@@ -222,6 +222,12 @@ class UniqueFileTest(test_util.TempDirTestCase):
         fd1.close()
         fd2.close()
 
+    def test_default_permission(self):
+        from certbot.util import unique_file
+        fd, name = unique_file(self.default_name)
+        fd.close()
+        assert filesystem.check_mode(name, 0o600)
+
     def test_default_exists(self):
         fd1, name1 = self._call()  # create 0000_foo.txt
         fd2, name2 = self._call()
