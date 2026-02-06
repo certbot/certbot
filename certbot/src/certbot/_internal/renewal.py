@@ -632,15 +632,17 @@ def _renew_describe_results(config: configuration.NamespaceConfig, renew_success
 def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
     """Examine each lineage; renew if due and report results"""
 
-    # This is trivially False if config.domains is empty
-    if any(domain.dns_name not in config.webroot_map for domain in config.domains):
-        # If more plugins start using cli.add_domains,
+    sans: list[san.SAN] = config.domains + config.ip_addresses
+
+    # This is trivially False if sans is empty
+    if any(str(san) not in config.webroot_map for san in sans):
+        # If more plugins start using cli.add_domain / cli.add_ip_address,
         # we may want to only log a warning here
         raise errors.Error("Currently, the renew verb is capable of either "
                            "renewing all installed certificates that are due "
                            "to be renewed or renewing a single certificate specified "
                            "by its name. If you would like to renew specific "
-                           "certificates by their domains, use the certonly command "
+                           "certificates by their identifiers, use the certonly command "
                            "instead. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
 
