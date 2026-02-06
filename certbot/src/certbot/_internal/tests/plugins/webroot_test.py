@@ -367,14 +367,26 @@ class WebrootActionTest(unittest.TestCase):
             self.parser.parse_args("-d foo -w bar -d baz -w qux".split())
 
     def test_multiwebroot(self):
-        other_path = tempfile.mkdtemp()
-        args = self.parser.parse_args("-w {0} -d {1} -w {2} --ip-address {3}".format(
-            self.path, self.achall.identifier.value,
-            other_path, self.ipchall.identifier.value).split())
-        assert args.webroot_map[self.achall.identifier.value] == self.path
+        ip = self.ipchall.identifier.value
+        dns_name = self.achall.identifier.value
+
+        ip_path = tempfile.mkdtemp()
+        dns_path = tempfile.mkdtemp()
+        args = self.parser.parse_args(f"-w {dns_path} -d {dns_name} -w {ip_path} --ip-address {ip}".split())
         config = self._get_config_after_perform(args, challs=[self.achall, self.ipchall])
-        assert config.webroot_map[self.achall.identifier.value] == self.path
-        assert config.webroot_map[self.ipchall.identifier.value] == other_path
+        assert config.webroot_map[dns_name] == dns_path
+        assert config.webroot_map[ip] == ip_path
+
+    def test_multiwebroot_ip_first(self):
+        ip = self.ipchall.identifier.value
+        dns_name = self.achall.identifier.value
+
+        ip_path = tempfile.mkdtemp()
+        dns_path = tempfile.mkdtemp()
+        args = self.parser.parse_args(f"-w {ip_path} --ip-address {ip} -w {dns_path} -d {dns_name}".split())
+        config = self._get_config_after_perform(args, challs=[self.achall, self.ipchall])
+        assert config.webroot_map[dns_name] == dns_path
+        assert config.webroot_map[ip] == ip_path
 
     def test_webroot_map_partial_without_perform(self):
         # This test acknowledges the fact that webroot_map content will be partial if webroot

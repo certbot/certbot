@@ -332,8 +332,8 @@ class _WebrootPathAction(argparse.Action):
             for domain in namespace.domains:
                 namespace.webroot_map.setdefault(domain.dns_name, prev_webroot)
             for ip_address in namespace.ip_addresses:
-                namespace.webroot_map.setdefault(ip_address.ip_address, prev_webroot)
-        elif namespace.domains:
+                namespace.webroot_map.setdefault(str(ip_address), prev_webroot)
+        elif namespace.domains or namespace.ip_addresses:
             self._ident_before_webroot = True
 
         namespace.webroot_path.append(_validate_webroot(str(webroot_path)))
