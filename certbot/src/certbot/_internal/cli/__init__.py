@@ -27,7 +27,8 @@ from certbot._internal.cli.cli_utils import _EncodeReasonAction
 from certbot._internal.cli.cli_utils import _PrefChallAction
 from certbot._internal.cli.cli_utils import _RenewHookAction
 from certbot._internal.cli.cli_utils import _user_agent_comment_type
-from certbot._internal.cli.cli_utils import add_domains
+from certbot._internal.cli.cli_utils import add_dns_name
+from certbot._internal.cli.cli_utils import add_ip_address
 from certbot._internal.cli.cli_utils import CaseInsensitiveList
 from certbot._internal.cli.cli_utils import config_help
 from certbot._internal.cli.cli_utils import CustomHelpFormatter

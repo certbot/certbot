@@ -130,10 +130,24 @@ def add_domains(args_or_config: Union[argparse.Namespace, configuration.Namespac
     for d in domains.split(","):
         domain = san.DNSName(d.strip())
         validated_domains.append(domain)
-        if domain not in args_or_config.domains:
-            args_or_config.domains.append(domain)
+        add_dns_name(args_or_config, domain)
 
     return validated_domains
+
+
+def add_dns_name(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
+                 dns_name: san.DNSName) -> None:
+    """Registers a new domain to be used during the current client run.
+
+    The domain is not added if it has already been registered.
+
+    :param args_or_config: parsed command line arguments
+    :type args_or_config: argparse.Namespace or
+        configuration.NamespaceConfig
+    :param san.DNSName dns_name: a DNS name
+    """
+    if dns_name not in args_or_config.domains:
+        args_or_config.domains.append(dns_name)
 
 
 class IPAddressAction(argparse.Action):
@@ -145,11 +159,25 @@ class IPAddressAction(argparse.Action):
         match values:
             case str():
                 # This will throw an exception if the IP address doesn't parse.
-                namespace.ip_addresses.append(san.IPAddress(values))
+                add_ip_address(namespace, san.IPAddress(values))
             case _:
                 # https://docs.python.org/3/library/argparse.html#nargs
                 raise TypeError("shouldn't happen: non-str passed by argparse when nargs=None")
 
+
+def add_ip_address(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
+                   ip_address: san.IPAddress) -> None:
+    """Registers a new IP address to be used during the current client run.
+
+    The IP address is not added if it has already been registered.
+
+    :param args_or_config: parsed command line arguments
+    :type args_or_config: argparse.Namespace or
+        configuration.NamespaceConfig
+    :param san.IPAddress ip_address: an IP address
+    """
+    if ip_address not in args_or_config.ip_addresses:
+        args_or_config.ip_addresses.append(ip_address)
 
 class CaseInsensitiveList(list):
     """A list that will ignore case when searching.

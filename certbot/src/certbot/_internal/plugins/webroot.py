@@ -301,9 +301,9 @@ class _WebrootMapAction(argparse.Action):
             for s in san.guess(identlist.split(",")):
                 match s:
                     case san.IPAddress():
-                        namespace.ip_addresses.append(s.ip_address)
+                        cli.add_ip_address(namespace, s)
                     case san.DNSName():
-                        cli.add_domains(namespace, s.dns_name)
+                        cli.add_dns_name(namespace, s)
 
                 namespace.webroot_map[str(s)] = webroot_path
 
