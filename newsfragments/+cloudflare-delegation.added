@@ -1,0 +1,1 @@
+Support for CNAME-delegated verification was added to `certbot-dns-cloudflare`, allowing challenge TXT records to be created in a different Cloudflare DNS zone.
