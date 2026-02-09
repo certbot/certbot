@@ -82,17 +82,17 @@ extras_require = {
         "wheel",
     ],
     "apache":  [
-        # If a user installes `certbot[apache]`, we want to include the shim
+        # If a user installs `certbot[apache]`, we want to include the shim
         f'certbot-apache>={version}',
         'python-augeas',
     ],
     "nginx": [
-        # If a user installes `certbot[nginx]`, we want to include the shim
+        # If a user installs `certbot[nginx]`, we want to include the shim
         f'certbot-nginx>={version}',
         # PyOpenSSL>=25.0.0 is just needed to satisfy mypy right now so this dependency can probably be
         # relaxed to >=24.0.0 if needed.
         'PyOpenSSL>=25.0.0',
-        'pyparsing>=2.4.7',
+        'pyparsing>=3.0.0',
     ],
     "all": [
         "certbot[dev,docs,test,apache,nginx]"
