@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup
 
-version = '5.3.1'
+version = '5.4.0.dev0'
 
 install_requires = [
     # This version of lexicon is required to address the problem described in

@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup
 
-version = '5.3.1'
+version = '5.4.0.dev0'
 
 install_requires = [
     'python-digitalocean>=1.15.0', # 1.15.0 or newer is recommended for TTL support
