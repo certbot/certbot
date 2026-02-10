@@ -28,7 +28,7 @@ from certbot_integration_tests.certbot_tests.assertions import assert_equals_wor
 from certbot_integration_tests.certbot_tests.assertions import assert_hook_execution
 from certbot_integration_tests.certbot_tests.assertions import assert_rsa_key
 from certbot_integration_tests.certbot_tests.assertions import assert_saved_lineage_option
-from certbot_integration_tests.certbot_tests.assertions import assert_saved_renew_hook
+from certbot_integration_tests.certbot_tests.assertions import assert_saved_deploy_hook
 from certbot_integration_tests.certbot_tests.assertions import assert_world_no_permissions
 from certbot_integration_tests.certbot_tests.assertions import assert_world_read_permissions
 from certbot_integration_tests.certbot_tests.assertions import EVERYBODY_SID
@@ -108,7 +108,7 @@ def test_http_01(context: IntegrationTestsContext) -> None:
     ])
 
     assert_hook_execution(context.hook_probe, 'deploy')
-    assert_saved_renew_hook(context.config_dir, certname)
+    assert_saved_deploy_hook(context.config_dir, certname)
     assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
 
@@ -178,12 +178,11 @@ def test_manual_http_auth(context: IntegrationTestsContext) -> None:
             '--manual-cleanup-hook', scripts[1],
             '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
             '--post-hook', misc.echo('wtf_post', context.hook_probe),
-            '--renew-hook', misc.echo('renew', context.hook_probe),
+            '--deploy-hook', misc.echo('deploy', context.hook_probe),
         ])
 
-    with pytest.raises(AssertionError):
-        assert_hook_execution(context.hook_probe, 'renew')
-    assert_saved_renew_hook(context.config_dir, certname)
+    assert_hook_execution(context.hook_probe, 'deploy')
+    assert_saved_deploy_hook(context.config_dir, certname)
 
 
 def test_manual_dns_auth(context: IntegrationTestsContext) -> None:
@@ -196,12 +195,11 @@ def test_manual_dns_auth(context: IntegrationTestsContext) -> None:
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
         '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
         '--post-hook', misc.echo('wtf_post', context.hook_probe),
-        '--renew-hook', misc.echo('renew', context.hook_probe),
+        '--deploy-hook', misc.echo('deploy', context.hook_probe),
     ])
 
-    with pytest.raises(AssertionError):
-        assert_hook_execution(context.hook_probe, 'renew')
-    assert_saved_renew_hook(context.config_dir, certname)
+    assert_hook_execution(context.hook_probe, 'deploy')
+    assert_saved_deploy_hook(context.config_dir, certname)
 
     context.certbot(['renew', '--cert-name', certname, '--authenticator', 'manual'])
 
@@ -432,6 +430,29 @@ def test_renew_with_changed_private_key_complexity(context: IntegrationTestsCont
 
     key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
     assert_rsa_key(key3, 2048)
+
+def test_certonly_non_default_key_size_kept(context: IntegrationTestsContext) -> None:
+    """Test that certonly keeps key type but uses default key size when unspecified."""
+
+    # create rsa 4096 key cert
+    certname = context.get_domain('renew')
+    context.certbot([
+        'certonly',
+        '--cert-name', certname,
+        '--key-type', 'rsa', '--rsa-key-size', '4096',
+        '--force-renewal', '-d', certname,
+    ])
+    key1 = join(context.config_dir, "archive", certname, 'privkey1.pem')
+    assert_rsa_key(key1, 4096)
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+    assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'rsa')
+
+    # When running non-interactively, if --key-type is unspecified but the default value differs
+    # to the lineage key type, Certbot should keep the lineage key type. The key size will still
+    # change to the default value, in order to stay consistent with the behavior of certonly.
+    context.certbot(['certonly', '--force-renewal', '-d', certname])
+    key2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
+    assert_rsa_key(key2, 2048)
 
 
 def test_renew_ignoring_directory_hooks(context: IntegrationTestsContext) -> None:
@@ -760,6 +781,7 @@ def test_ecdsa_curves(context: IntegrationTestsContext, curve: str,
 
 def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
     """Test proper renew with updated private key complexity."""
+    # create ecdsa 256 key cert
     certname = context.get_domain('renew')
     context.certbot([
         'certonly',
@@ -773,15 +795,16 @@ def test_renew_with_ec_keys(context: IntegrationTestsContext) -> None:
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
     assert_saved_lineage_option(context.config_dir, certname, 'key_type', 'ecdsa')
 
+    # renew using 384 ecdsa key instead
     context.certbot(['renew', '--elliptic-curve', 'secp384r1'])
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     key2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
     assert 280 < os.stat(key2).st_size < 320  # ec keys of 384 bits are ~310 bytes
     assert_elliptic_key(key2, SECP384R1)
 
-    # When running non-interactively, if --key-type is unspecified but the default value differs
-    # to the lineage key type, Certbot should keep the lineage key type. The curve will still
-    # change to the default value, in order to stay consistent with the behavior of certonly.
+    # When running non-interactively, if --key-type is unspecified, Certbot should keep the
+    # lineage key type. The curve will still change to the default value, in order to stay
+    # consistent with the behavior of certonly.
     context.certbot(['certonly', '--force-renewal', '-d', certname])
     key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
     assert 200 < os.stat(key3).st_size < 250  # ec keys of 256 bits are ~225 bytes

@@ -1,1 +1,0 @@
-san.DNSName now calls util.enforce_domain_sanity to reduce code duplication

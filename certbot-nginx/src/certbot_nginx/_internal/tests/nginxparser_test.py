@@ -23,21 +23,21 @@ class TestRawNginxParser(unittest.TestCase):
     """Test the raw low-level Nginx config parser."""
 
     def test_assignments(self):
-        parsed = RawNginxParser.assignment.parseString('root /test;').asList()
+        parsed = RawNginxParser.assignment.parse_string('root /test;').asList()
         assert parsed == ['root', ' ', '/test']
-        parsed = RawNginxParser.assignment.parseString('root /test;foo bar;').asList()
+        parsed = RawNginxParser.assignment.parse_string('root /test;foo bar;').asList()
         assert parsed == ['root', ' ', '/test'], ['foo', ' ', 'bar']
 
     def test_blocks(self):
-        parsed = RawNginxParser.block.parseString('foo {}').asList()
+        parsed = RawNginxParser.block.parse_string('foo {}').asList()
         assert parsed == [['foo', ' '], []]
-        parsed = RawNginxParser.block.parseString('location /foo{}').asList()
+        parsed = RawNginxParser.block.parse_string('location /foo{}').asList()
         assert parsed == [['location', ' ', '/foo'], []]
-        parsed = RawNginxParser.block.parseString('foo { bar foo ; }').asList()
+        parsed = RawNginxParser.block.parse_string('foo { bar foo ; }').asList()
         assert parsed == [['foo', ' '], [[' ', 'bar', ' ', 'foo', ' '], ' ']]
 
     def test_nested_blocks(self):
-        parsed = RawNginxParser.block.parseString('foo { bar {} }').asList()
+        parsed = RawNginxParser.block.parse_string('foo { bar {} }').asList()
         block, content = parsed
         assert FIRST(content) == [[' ', 'bar', ' '], []]
         assert FIRST(block) == 'foo'

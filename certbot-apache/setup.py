@@ -1,6 +1,6 @@
 from setuptools import setup
 
-version = '5.3.0.dev0'
+version = '5.4.0.dev0'
 
 install_requires = [
     # We specify the minimum acme and certbot version as the current plugin

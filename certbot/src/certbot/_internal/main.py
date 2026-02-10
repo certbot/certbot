@@ -1501,7 +1501,7 @@ def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
     :rtype: `tuple` of `str`
 
     """
-    util_csr, _ = config.actual_csr
+    util_csr = config.actual_csr
     x509_req = x509.load_pem_x509_csr(util_csr.data)
     domains, ip_addresses = san.from_x509(x509_req.subject, x509_req.extensions)
     display_util.notify(

@@ -1,6 +1,6 @@
 from setuptools import setup
 
-version = '5.3.0.dev0'
+version = '5.4.0.dev0'
 
 install_requires = [
     # We specify the minimum acme and certbot version as the current plugin
@@ -11,7 +11,7 @@ install_requires = [
     # PyOpenSSL>=25.0.0 is just needed to satisfy mypy right now so this dependency can probably be
     # relaxed to >=24.0.0 if needed.
     'PyOpenSSL>=25.0.0',
-    'pyparsing>=2.4.7',
+    'pyparsing>=3.0.0',
 ]
 
 setup(
