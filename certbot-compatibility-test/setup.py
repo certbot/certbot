@@ -1,6 +1,6 @@
 from setuptools import setup
 
-version = '5.3.0'
+version = '5.3.1'
 
 setup(
     version=version,
