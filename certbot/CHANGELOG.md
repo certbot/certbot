@@ -4,6 +4,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.3.1 - 2026-02-09
+
+### Fixed
+
+- We rebuilt our snaps to include updated versions our dependencies. ([#10569](https://github.com/certbot/certbot/issues/10569))
+
+
 ## 5.3.0 - 2026-02-03
 
 ### Added
