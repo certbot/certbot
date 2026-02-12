@@ -222,6 +222,24 @@ def test_certonly_webroot(context: IntegrationTestsContext) -> None:
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
 
+@pytest.mark.skipif(sys.platform == 'darwin',
+                    reason='macOS has one IPv4 loopback address by default')
+def test_certonly_webroot_ipv4(context: IntegrationTestsContext) -> None:
+    """Test the HTTP-01 challenge with an IPv4 address using webroot authenticator.
+
+    This test relies on proxy.py being able to forward requests for, e.g. `127.0.0.2`,
+    (`local_ip`) to this test runner. That works on Linux because 127.0.0.0/8 all routes
+    to localhost. However, on macOS by default only 127.0.0.1 is routed, so this test is
+    skipped. If you want to run it, configure additional loopback addresses:
+        for n in $(seq 2 127) ; do sudo ifconfig lo0 alias "127.0.0.${n}" up ; done.
+    """
+    with misc.create_http_server(context.http_01_port) as webroot:
+        context.certbot(['certonly', '-a', 'webroot', '--webroot-path', webroot,
+                          '--ip-address', context.local_ip])
+
+    assert_cert_count_for_lineage(context.config_dir, context.local_ip, 1)
+
+
 def test_auth_and_install_with_csr(context: IntegrationTestsContext) -> None:
     """Test certificate issuance and install using an existing CSR."""
     certname = context.get_domain('le3')

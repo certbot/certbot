@@ -98,45 +98,31 @@ class DomainsAction(argparse.Action):
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
                  values: str | Sequence[Any] | None,
                  option_string: str | None = None) -> None:
-        """Just wrap add_domains in argparseese."""
         match values:
             case str():
-                add_domains(namespace, str(values))
+                for domain in values.split(","):
+                    add_dns_name(namespace, san.DNSName(domain.strip()))
             case _:
                 # https://docs.python.org/3/library/argparse.html#nargs
                 raise TypeError("shouldn't happen: non-str passed by argparse when nargs=None")
 
 
-def add_domains(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
-                domains: Optional[str]) -> list[san.DNSName]:
-    """Registers new domains to be used during the current client run.
+def add_dns_name(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
+                 dns_name: san.DNSName) -> None:
+    """Registers a new domain to be used during the current client run.
 
-    Domains are not added to the list of requested domains if they have
-    already been registered.
+    The domain is not added if it has already been registered.
 
     :param args_or_config: parsed command line arguments
     :type args_or_config: argparse.Namespace or
         configuration.NamespaceConfig
-    :param str domain: one or more comma separated domains
-
-    :returns: domains after they have been normalized and validated
-    :rtype: `list` of `str`
-
+    :param san.DNSName dns_name: a DNS name
     """
-    validated_domains: list[san.DNSName] = []
-    if not domains:
-        return validated_domains
-
-    for d in domains.split(","):
-        domain = san.DNSName(d.strip())
-        validated_domains.append(domain)
-        if domain not in args_or_config.domains:
-            args_or_config.domains.append(domain)
-
-    return validated_domains
+    if dns_name not in args_or_config.domains:
+        args_or_config.domains.append(dns_name)
 
 
-class _IPAddressAction(argparse.Action):
+class IPAddressAction(argparse.Action):
     """Action class for parsing IP addresses."""
 
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
@@ -145,11 +131,25 @@ class _IPAddressAction(argparse.Action):
         match values:
             case str():
                 # This will throw an exception if the IP address doesn't parse.
-                namespace.ip_addresses.append(san.IPAddress(values))
+                add_ip_address(namespace, san.IPAddress(values))
             case _:
                 # https://docs.python.org/3/library/argparse.html#nargs
                 raise TypeError("shouldn't happen: non-str passed by argparse when nargs=None")
 
+
+def add_ip_address(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
+                   ip_address: san.IPAddress) -> None:
+    """Registers a new IP address to be used during the current client run.
+
+    The IP address is not added if it has already been registered.
+
+    :param args_or_config: parsed command line arguments
+    :type args_or_config: argparse.Namespace or
+        configuration.NamespaceConfig
+    :param san.IPAddress ip_address: an IP address
+    """
+    if ip_address not in args_or_config.ip_addresses:
+        args_or_config.ip_addresses.append(ip_address)
 
 class CaseInsensitiveList(list):
     """A list that will ignore case when searching.

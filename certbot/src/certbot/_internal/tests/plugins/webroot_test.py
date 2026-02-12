@@ -317,24 +317,48 @@ class WebrootActionTest(unittest.TestCase):
         identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="thing.com"),
         account_key=KEY)
 
+    ipchall = achallenges.KeyAuthorizationAnnotatedChallenge(
+        challb=acme_util.chall_to_challb(
+            challenges.HTTP01(token=((b'a' * 16))),
+            messages.STATUS_PENDING),
+        identifier=messages.Identifier(typ=messages.IDENTIFIER_IP, value="1.2.3.4"),
+        account_key=KEY)
+
     def setUp(self):
         from certbot._internal.plugins.webroot import Authenticator
         self.path = tempfile.mkdtemp()
         self.parser = argparse.ArgumentParser()
+        self.parser.ip_addresses = []
         self.parser.add_argument("-d", "--domains",
                                  action=cli_utils.DomainsAction, default=[])
+        self.parser.add_argument("--ip-address",
+                                 action=cli_utils.IPAddressAction,
+                                 dest="ip_addresses",
+                                 default=[])
         Authenticator.inject_parser_options(self.parser, "webroot")
 
     def test_webroot_map_action(self):
+        other_path = tempfile.mkdtemp()
         args = self.parser.parse_args(
-            ["--webroot-map", json.dumps({'thing.com': self.path})])
+            ["--webroot-map", json.dumps({'thing.com,thunk.com,9.8.7.6': self.path,'thunk.com': other_path})])
         assert args.webroot_map["thing.com"] == self.path
+        assert args.webroot_map["9.8.7.6"] == self.path
+        assert args.webroot_map["thunk.com"] == other_path
 
     def test_domain_before_webroot(self):
         args = self.parser.parse_args(
             "-d {0} -w {1}".format(self.achall.identifier.value, self.path).split())
         config = self._get_config_after_perform(args)
         assert config.webroot_map[self.achall.identifier.value] == self.path
+
+    def test_multi_identifier(self):
+        args = self.parser.parse_args(
+            "-w {0} -d {1} --ip-address {2}".format(
+                self.path, self.achall.identifier.value, self.ipchall.identifier.value).split())
+
+        config = self._get_config_after_perform(args, challs=[self.achall, self.ipchall])
+        assert config.webroot_map[self.achall.identifier.value] == self.path
+        assert config.webroot_map[self.ipchall.identifier.value] == self.path
 
     def test_domain_before_webroot_error(self):
         with pytest.raises(errors.PluginError):
@@ -343,11 +367,26 @@ class WebrootActionTest(unittest.TestCase):
             self.parser.parse_args("-d foo -w bar -d baz -w qux".split())
 
     def test_multiwebroot(self):
-        args = self.parser.parse_args("-w {0} -d {1} -w {2} -d bar".format(
-            self.path, self.achall.identifier.value, tempfile.mkdtemp()).split())
-        assert args.webroot_map[self.achall.identifier.value] == self.path
-        config = self._get_config_after_perform(args)
-        assert config.webroot_map[self.achall.identifier.value] == self.path
+        ip = self.ipchall.identifier.value
+        dns_name = self.achall.identifier.value
+
+        ip_path = tempfile.mkdtemp()
+        dns_path = tempfile.mkdtemp()
+        args = self.parser.parse_args(f"-w {dns_path} -d {dns_name} -w {ip_path} --ip-address {ip}".split())
+        config = self._get_config_after_perform(args, challs=[self.achall, self.ipchall])
+        assert config.webroot_map[dns_name] == dns_path
+        assert config.webroot_map[ip] == ip_path
+
+    def test_multiwebroot_ip_first(self):
+        ip = self.ipchall.identifier.value
+        dns_name = self.achall.identifier.value
+
+        ip_path = tempfile.mkdtemp()
+        dns_path = tempfile.mkdtemp()
+        args = self.parser.parse_args(f"-w {ip_path} --ip-address {ip} -w {dns_path} -d {dns_name}".split())
+        config = self._get_config_after_perform(args, challs=[self.achall, self.ipchall])
+        assert config.webroot_map[dns_name] == dns_path
+        assert config.webroot_map[ip] == ip_path
 
     def test_webroot_map_partial_without_perform(self):
         # This test acknowledges the fact that webroot_map content will be partial if webroot
@@ -362,10 +401,12 @@ class WebrootActionTest(unittest.TestCase):
         assert args.webroot_map == {self.achall.identifier.value: self.path}
         assert args.webroot_path == [self.path, other_webroot_path]
 
-    def _get_config_after_perform(self, config):
+    def _get_config_after_perform(self, config, challs=None):
+        if not challs:
+            challs = [self.achall]
         from certbot._internal.plugins.webroot import Authenticator
         auth = Authenticator(config, "webroot")
-        auth.perform([self.achall])
+        auth.perform(challs)
         return auth.config
 
 
