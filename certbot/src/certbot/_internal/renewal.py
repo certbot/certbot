@@ -641,9 +641,10 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> None:
         raise errors.Error("Currently, the renew verb is capable of either "
                            "renewing all installed certificates that are due "
                            "to be renewed or renewing a single certificate specified "
-                           "by its name. If you would like to renew specific "
-                           "certificates by their identifiers, use the certonly command "
-                           "instead. The renew verb may provide other options "
+                           "by its name using the --cert-name option (-d, --domain, and "
+                           "--ip-address are not valid options for the renew subcommand). If you "
+                           "would like to renew specific certificates by their identifiers, use "
+                           "the certonly command instead. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
 
     if config.certname:
