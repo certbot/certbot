@@ -10,12 +10,10 @@ from multiprocessing.managers import SyncManager
 import os
 from os.path import basename
 from os.path import dirname
-from os.path import exists
 from os.path import join
 from os.path import realpath
 import random
 import re
-import shutil
 import string
 import subprocess
 import sys
@@ -40,10 +38,6 @@ PLUGINS = [basename(path) for path in glob.glob(join(CERTBOT_DIR, 'certbot-dns-*
 # Python process starts, but this approach was taken instead to ensure
 # consistent behavior regardless of how the script is invoked.
 print = functools.partial(print, flush=True)
-
-
-def _snap_log_name(target: str, arch: str):
-    return f'{target}_{arch}.txt'
 
 
 def _execute_build(
@@ -109,7 +103,9 @@ def _build_snap(
         workspace = CERTBOT_DIR
     else:
         workspace = join(CERTBOT_DIR, target)
-        # init and commit git repo in workspace
+        # Init and commit git repo in workspace. This is necessary starting in core24
+        # as "Projects must be at the top level of a git repository"
+        # https://snapcraft.io/docs/migrate-core24#remote-build
         subprocess.run(['git', 'init'], capture_output=True, check=True, cwd=workspace)
         subprocess.run(['git', 'add', '-A'], capture_output=True, check=True, cwd=workspace)
         subprocess.run(['git', 'commit', '-m', 'init'], capture_output=True, check=True, cwd=workspace)
@@ -125,6 +121,8 @@ def _build_snap(
             print(f'Build {target} for {",".join(archs)} (attempt {4-retry}/3) ended with '
                   f'exit code {exit_code}.')
 
+            # This output may change, and is set by
+            # https://github.com/canonical/snapcraft/blob/8ab7fd0c8a1d3f13045bec41a6e0158c063faa9b/snapcraft/commands/remote.py#L278
             failed_archs = [arch for arch in archs if status[target][arch] != 'Succeeded']
             # If the command failed or any architecture wasn't built
             # successfully, let's try to print all the output about the problem
@@ -157,6 +155,8 @@ def _build_snap(
 def _extract_state(project: str, output: str, status: Dict[str, Dict[str, str]]) -> None:
     state = status[project]
 
+    # This output may change, and is set by
+    # https://github.com/canonical/snapcraft/blob/8ab7fd0c8a1d3f13045bec41a6e0158c063faa9b/snapcraft/commands/remote.py#L218
     if "Starting new build" in output:
         for arch in state.keys():
             state[arch] = "Starting new build"
@@ -204,6 +204,9 @@ def _dump_failed_build_logs(
         if result != 'Succeeded':
             failures = True
 
+            # log name is no longer set deterministically as target_arch.txt
+            # this will still result in a single output though, as we're filtering
+            # by target above and arch here
             build_output_path = [log_name for log_name in logs_list if arch in log_name]
             if not build_output_path:
                 build_output = 'No output has been dumped by snapcraft remote-build.'

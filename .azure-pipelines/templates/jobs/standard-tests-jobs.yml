@@ -1,7 +1,7 @@
 jobs:
   - job: test
     variables:
-      PYTHON_VERSION: 3.13
+      PYTHON_VERSION: 3.14
     strategy:
       matrix:
         macos-cover:
@@ -12,13 +12,13 @@ jobs:
           PIP_USE_PEP517: "true"
         linux-oldest:
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.9
+          PYTHON_VERSION: 3.10
           TOXENV: oldest
-        linux-py39:
+        linux-py310:
           # linux unit tests with the oldest python we support
           IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.9
-          TOXENV: py39
+          PYTHON_VERSION: 3.10
+          TOXENV: py310
         linux-cover:
           # linux unit+cover tests with the newest python we support
           IMAGE_NAME: ubuntu-22.04
@@ -41,6 +41,9 @@ jobs:
         nginxroundtrip:
           IMAGE_NAME: ubuntu-22.04
           TOXENV: nginxroundtrip
+        validate-changelog:
+          IMAGE_NAME: ubuntu-22.04
+          TOXENV: validate-changelog
     pool:
       vmImage: $(IMAGE_NAME)
     steps:

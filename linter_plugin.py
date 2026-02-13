@@ -7,13 +7,12 @@ See https://github.com/PyCQA/pylint/blob/b20a2984c94e2946669d727dbda78735882bf50
 See https://docs.pytest.org/en/latest/writing_plugins.html
 """
 import os.path
-import re
 
 from pylint.checkers import BaseChecker
 
 # Modules whose file is matching one of these paths can import the os module.
-WHITELIST_PATHS = [
-    '/acme/acme/',
+ALLOWLIST_PATHS = [
+    '/acme/src/acme/',
     '/certbot-ci/',
     '/certbot-compatibility-test/',
 ]
@@ -53,5 +52,5 @@ def register(linter):
 
 def _check_disabled(node):
     module = node.root()
-    return any(path for path in WHITELIST_PATHS
+    return any(path for path in ALLOWLIST_PATHS
                if os.path.normpath(path) in os.path.normpath(module.file))

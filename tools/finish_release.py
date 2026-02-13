@@ -23,17 +23,13 @@ should execute successfully.
 """
 
 import argparse
-import getpass
 import glob
 import os.path
 import re
 import subprocess
 import sys
-import tempfile
-from zipfile import ZipFile
 
 from azure.devops.connection import Connection
-import requests
 
 # Path to the root directory of the Certbot repository containing this script
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -111,7 +107,7 @@ def get_snap_revisions(snap, channel, version):
     print('Getting revision numbers for', snap, version)
     cmd = ['snapcraft', 'status', snap]
     process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, universal_newlines=True)
-    pattern = f'^\\s+{channel}\\s+{version}\\s+(\\d+)\\s*'
+    pattern = f'\\s+{channel}\\s+{version}\\s+(\\d+)\\s*'
     revisions = re.findall(pattern, process.stdout, re.MULTILINE)
     assert len(revisions) == SNAP_ARCH_COUNT, f'Unexpected number of snaps found for {channel} {snap} {version} (expected {SNAP_ARCH_COUNT}, found {len(revisions)})'
     return revisions

@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "certbot-dns-dnsimple"
+dynamic = ["version", "dependencies"]
+description = "DNSimple DNS Authenticator plugin for Certbot"
+readme = "README.rst"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [
+    { name = "Certbot Project" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Plugins",
+    "Intended Audience :: System Administrators",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Security",
+    "Topic :: System :: Installation/Setup",
+    "Topic :: System :: Networking",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+
+[project.optional-dependencies]
+docs = [
+    "Sphinx>=1.0", # autodoc_member_order = 'bysource', autodoc_default_flags
+    "sphinx_rtd_theme",
+]
+test = [
+    "pytest",
+]
+
+[project.entry-points."certbot.plugins"]
+dns-dnsimple = "certbot_dns_dnsimple._internal.dns_dnsimple:Authenticator"
+
+[project.urls]
+Homepage = "https://github.com/certbot/certbot"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

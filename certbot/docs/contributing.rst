@@ -44,28 +44,23 @@ Install and configure the OS system dependencies required to run Certbot.
 
    # For APT-based distributions (e.g. Debian, Ubuntu ...)
    sudo apt update
-   sudo apt install python3-venv libaugeas0
+   sudo apt install python3-dev python3-venv libaugeas-dev gcc
    # For RPM-based distributions (e.g. Fedora, CentOS ...)
    # NB1: old distributions will use yum instead of dnf
    # NB2: RHEL-based distributions use python3X instead of python3 (e.g. python38)
-   sudo dnf install python3 augeas-libs
+   sudo dnf install python3 python3-devel augeas-devel gcc
    # For macOS installations with Homebrew already installed and configured
-   # NB1: If you also run `brew install python` you don't need the ~/lib
-   #      directory created below, however, without this directory and symlinks
-   #      to augeas, Certbot's Apache plugin won't work if you use Python
-   #      installed from other sources such as pyenv or the version provided by
-   #      Apple.
-   # NB2: Some of our developer scripts expect GNU coreutils be first in your
-   #      PATH. The commands below set this up for bash and zsh, but your
-   #      instructions may be slightly different if you use an alternate shell.
+   # NB: CFLAGS are needed to compile and link to Augeas installed through
+   #     Homebrew and some of our developer scripts expect GNU coreutils be first in
+   #     your PATH. The commands below set this up for bash and zsh, but your
+   #     instructions may be slightly different if you use an alternate shell.
    brew install augeas coreutils gnu-sed
-   mkdir ~/lib
    BREW_PREFIX=$(brew --prefix)
-   ln -s "$BREW_PREFIX"/lib/libaugeas* ~/lib
-   RC_LINE="export PATH=\"$BREW_PREFIX/opt/coreutils/libexec/gnubin:"
-   RC_LINE+="$BREW_PREFIX/opt/gnu-sed/libexec/gnubin:\$PATH\""
-   echo "$RC_LINE" >> ~/.bashrc  # for bash
-   echo "$RC_LINE" >> ~/.zshrc  # for zsh
+   RC_LINES="export CFLAGS=\"\$CFLAGS -I$BREW_PREFIX/include -L$BREW_PREFIX/lib\"\n"
+   RC_LINES+="export PATH=\"$BREW_PREFIX/opt/coreutils/libexec/gnubin:"
+   RC_LINES+="$BREW_PREFIX/opt/gnu-sed/libexec/gnubin:\$PATH\"\n"
+   printf "$RC_LINES" >> ~/.bashrc  # for bash
+   printf "$RC_LINES" >> ~/.zshrc  # for zsh
 
 .. note:: If you have trouble creating the virtual environment below, you may
    need to install additional dependencies. See the `cryptography project's
@@ -78,7 +73,7 @@ Set up the Python virtual environment that will host your Certbot local instance
 .. code-block:: shell
 
    cd certbot
-   python tools/venv.py
+   python3 tools/venv.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
@@ -125,33 +120,32 @@ You can test your code in several ways:
 - running the `automated integration`_ tests
 - running an *ad hoc* `manual integration`_ test
 
-.. note:: Running integration tests does not currently work on macOS. See
-   https://github.com/certbot/certbot/issues/6959. In the meantime, we
-   recommend developers on macOS open a PR to run integration tests.
-
 .. _automated unit:
 
 Running automated unit tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When you are working in a file ``foo.py``, there should also be a file ``foo_test.py``
-either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
-(if there isn't, make one). While you are working on your code and tests, run
-``python foo_test.py`` to run the relevant tests.
+To run all unittests, mypy, and lint:
+
+.. code-block:: shell
+
+    tox
+
+If you're working on a specific test and would like to run just that one:
+
+.. code-block:: shell
+
+    pytest acme/src/acme/_internal/tests/messages_test.py # Use the test file you're working on
+
+To run a specific test case within a file:
+
+.. code-block:: shell
+
+    pytest acme/src/acme/_internal/tests/messages_test.py -k test_to_partial_json
 
 For debugging, we recommend putting
-``import ipdb; ipdb.set_trace()`` statements inside the source code.
-
-Once you are done with your code changes, and the tests in ``foo_test.py``
-pass, run all of the unit tests for Certbot and check for coverage with ``tox
--e cover``. You should then check for code style with ``tox run -e lint`` (all
-files) or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a
-time).
-
-Once all of the above is successful, you may run the full test suite using
-``tox --skip-missing-interpreters``. We recommend running the commands above
-first, because running all tests like this is very slow, and the large amount
-of output can make it hard to find specific failures when they happen.
+``import ipdb; ipdb.set_trace()`` statements inside the source code, which will require
+adding the `-s` flag to `pytest` invocations.
 
 .. warning:: The full test suite may attempt to modify your system's Apache
   config if your user has sudo permissions, so it should not be run on a
@@ -193,7 +187,7 @@ To do so you need:
 - Docker installed, and a user with access to the Docker client,
 - an available `local copy`_ of Certbot.
 
-The virtual environment set up with `python tools/venv.py` contains two CLI tools
+The virtual environment set up with `python3 tools/venv.py` contains two CLI tools
 that can be used once the virtual environment is activated:
 
 .. code-block:: shell
@@ -221,7 +215,7 @@ using an HTTP-01 challenge on a machine with Python 3:
 
 .. code-block:: shell
 
-    python tools/venv.py
+    python3 tools/venv.py
     source venv/bin/activate
     run_acme_server &
     certbot_test certonly --standalone -d test.example.com
@@ -262,20 +256,20 @@ certificate once it is issued. Some plugins, like the built-in Apache and Nginx
 plugins, implement both interfaces and perform both tasks. Others, like the
 built-in Standalone authenticator, implement just one interface.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/main/certbot/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/main/certbot/certbot/plugins/common.py#L45
+.. _interfaces.py: https://github.com/certbot/certbot/blob/main/certbot/src/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/main/certbot/src/certbot/plugins/common.py#L45
 
 
 Authenticators
 --------------
 
 Authenticators are plugins that prove control of a domain name by solving a
-challenge provided by the ACME server. ACME currently defines several types of
-challenges: HTTP, TLS-ALPN, and DNS, represented by classes in `acme.challenges`.
+challenge provided by the ACME server. ACME currently defines two types of
+challenges: HTTP and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
-`get_chall_pref(domain)` to return a sorted list of challenge types in
+`get_chall_pref(identifier)` to return a sorted list of challenge types in
 preference order.
 
 An Authenticator must also implement `perform(achalls)`, which "performs" a list
@@ -664,10 +658,3 @@ current Certbot developers on macOS as of writing this:
 2. If you're using ``pyenv``, make sure you've set up your shell for it by
    following instructions like
    https://github.com/pyenv/pyenv?tab=readme-ov-file#set-up-your-shell-environment-for-pyenv.
-3. Configure ``git`` to ignore the ``.DS_Store`` files that are created by
-   macOS's file manager Finder by running something like:
-
-.. code-block:: shell
-
-   mkdir -p ~/.config/git
-   echo '.DS_Store' >> ~/.config/git/ignore

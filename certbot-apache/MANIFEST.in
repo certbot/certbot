@@ -1,8 +1,8 @@
 include LICENSE.txt
 include README.rst
-recursive-include certbot_apache/_internal/augeas_lens *.aug
-recursive-include certbot_apache/_internal/tls_configs *.conf
-recursive-include certbot_apache/_internal/tests/testdata *
-include certbot_apache/py.typed
+recursive-include src/certbot_apache/_internal/augeas_lens *.aug
+recursive-include src/certbot_apache/_internal/tls_configs *.conf
+recursive-include src/certbot_apache/_internal/tests/testdata *
+include src/certbot_apache/py.typed
 global-exclude __pycache__
 global-exclude *.py[cod]

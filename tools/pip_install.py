@@ -28,8 +28,12 @@ def call_with_print(command, env):
     subprocess.check_call(command, shell=True, env=env)
 
 
+def uv_install_with_print(args_str, env):
+    command = ['"', sys.executable, '" -m uv pip install ', args_str]
+    call_with_print(''.join(command), env=env)
+
 def pip_install_with_print(args_str, env):
-    command = ['"', sys.executable, '" -m pip install --disable-pip-version-check ', args_str]
+    command = ['"', sys.executable, '" -m pip install --disable-pip-version-check --use-pep517 ', args_str]
     call_with_print(''.join(command), env=env)
 
 
@@ -49,19 +53,21 @@ def pip_constrained_environ():
     # are also used when installing build dependencies. See
     # https://github.com/certbot/certbot/pull/8443 for more info.
     env["PIP_CONSTRAINT"] = constraints_path
+    env["UV_CONSTRAINT"] = constraints_path
+    env["UV_BUILD_CONSTRAINT"] = constraints_path
     return env
 
 
 def pipstrap(env=None):
     if env is None:
         env = pip_constrained_environ()
-    pip_install_with_print('pip setuptools wheel', env=env)
+    pip_install_with_print('pip setuptools wheel uv', env=env)
 
 
 def main(args):
     env = pip_constrained_environ()
     pipstrap(env)
-    pip_install_with_print(' '.join(args), env=env)
+    uv_install_with_print(' '.join(args), env=env)
 
 
 if __name__ == '__main__':

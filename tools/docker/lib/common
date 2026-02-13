@@ -103,7 +103,7 @@ InstallMultiarchSupport() {
 # Function to create a docker builder using the buildkit docker-container
 # driver
 CreateBuilder() {
-    # just incase the env is not perfectly clean, remove any old instance of the builder
+    # just in case the env is not perfectly clean, remove any old instance of the builder
     docker buildx rm certbot_builder || true
     # create the builder instance
     #

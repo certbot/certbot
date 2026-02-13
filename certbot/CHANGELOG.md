@@ -2,7 +2,285 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 4.0.0 - main
+<!-- towncrier release notes start -->
+
+## 5.3.1 - 2026-02-09
+
+### Fixed
+
+- We rebuilt our snaps to include updated versions our dependencies. ([#10569](https://github.com/certbot/certbot/issues/10569))
+
+
+## 5.3.0 - 2026-02-03
+
+### Added
+
+- A new command line flag, --ip-address, has been added. This requests certificates with IP address SANs when using the standalone or manual plugin.  Note that for Let's Encrypt's implementation of IP address certificates, you'll also need to pass `--preferred-profile shortlived`. ([#10495](https://github.com/certbot/certbot/issues/10495), [#10544](https://github.com/certbot/certbot/pull/10544))
+
+### Changed
+
+- Deploy directory hooks are now also run when using `certbot certonly` or `certbot run` to get a new cert. This change was made for pre and post directory hooks in our 3.2.0 release so this change unifies Certbot's behavior here. ([#9978](https://github.com/certbot/certbot/issues/9978))
+- A few largely unused functions/types have been deprecated in our effort to remove our pyOpenSSL dependency:
+      * Deprecated: `certbot.crypto_util.get_sans_from_cert`
+      * Deprecated: `certbot.crypto_util.get_names_from_cert`
+      * Deprecated: `certbot.crypto_util.get_names_from_req`
+      * Deprecated: `certbot.crypto_util.import_csr_file` (and replaced by `certbot.crypto_util.read_csr_file`)
+      * Deprecated: `acme.crypto_util.Format` ([#10433](https://github.com/certbot/certbot/issues/10433))
+- `achallenges.KeyAuthorizationAnnotatedChallenge`, `achallenges.DNS`, and `achallenges.Other` have a new field `identifier`, of type `acme.messages.Identifier`. This should be used in place of the `domain` field, which is now deprecated both as an attribute and during object creation. ([#10491](https://github.com/certbot/certbot/issues/10491))
+- Authenticator.get_chall_pref's argument has been renamed from `domain` to `identifier`, and can now receive string-formatted IP addresses in addition to domain names. ([#10495](https://github.com/certbot/certbot/issues/10495))
+- san.DNSName now calls util.enforce_domain_sanity to reduce code duplication ([#10519](https://github.com/certbot/certbot/issues/10519))
+
+### Fixed
+
+- Removed the outdated email address from our Python packages' metadata. ([#10533](https://github.com/certbot/certbot/issues/10533))
+- The HTTP01.uri method will now properly enclose IPv6 addresses in square brackets. ([#10548](https://github.com/certbot/certbot/issues/10548))
+
+
+## 5.2.2 - 2025-12-10
+
+### Fixed
+
+- Fixed a regression that caused certbot to crash if multiple --webroot-path
+  values were set on the command line.
+  ([#10509](https://github.com/certbot/certbot/issues/10509))
+
+
+## 5.2.1 - 2025-12-03
+
+### Added
+
+- Support for Python 3.14 was added.
+  ([#10477](https://github.com/certbot/certbot/issues/10477))
+
+### Changed
+
+- While nothing significant should have changed from the user's perspective,
+  we've been doing a lot of internal refactoring in preparation for soon adding
+  support for IP address certificates to Certbot.
+  ([#10468](https://github.com/certbot/certbot/issues/10468),
+  [#10478](https://github.com/certbot/certbot/issues/10478))
+
+### Fixed
+
+- Removed `vhost_combined` and `vhost_common` log formats from included Apache
+  configuration file. ([#9769](https://github.com/certbot/certbot/issues/9769))
+- Due to a mistake on our end playing with GitHub's new [immutable
+  releases](https://github.blog/changelog/2025-10-28-immutable-releases-are-now-generally-available/)
+  feature that prevented our CI from uploading additional release assets,
+  Certbot 5.2.0 was not and will not be uploaded to most platforms. Instead,
+  that version number will be skipped and we'll go straight to 5.2.1.
+  ([#10501](https://github.com/certbot/certbot/issues/10501))
+
+
+## 5.1.0 - 2025-10-07
+
+### Changed
+
+- certbot-nginx no longer creates and uses self-signed certificates as an
+  intermediate step when installing certificates. The certificates the user
+  requested Certbot install are now always used instead.
+  ([#10465](https://github.com/certbot/certbot/issues/10465))
+- The function `acme.crypto_util.make_self_signed_cert` was deprecated and will
+  be removed in a future release.
+  ([#10466](https://github.com/certbot/certbot/issues/10466))
+
+### Fixed
+
+- Fixed a bug in certbot-nginx that'd leave nginx configured with self-signed
+  certificates if a user ran `certbot enhance` and they didn't have matching
+  SSL server blocks. `certbot enhance` now requires the user to have a matching
+  SSL server block to enable HSTS or OCSP stapling enhancements.
+  ([#10455](https://github.com/certbot/certbot/issues/10455))
+
+
+## 5.0.0 - 2025-09-02
+
+### Added
+
+- Certbot now stores the Retry-After value given by ACME Renewal Info (ARI) so
+  the value can be respected across multiple Certbot runs.
+  ([#10377](https://github.com/certbot/certbot/issues/10377))
+- Added `uv` as a test dependency, and switched most `pip` invocations to `uv
+  pip` for faster installs.
+  ([#10428](https://github.com/certbot/certbot/issues/10428))
+
+### Changed
+
+- Removed final instances of pyopenssl x509 and PKey objects
+  * Removed `acme.crypto_util.SSLSocket`
+  * Removed `acme.crypto_util.probe_sni`
+
+  ([#10079](https://github.com/certbot/certbot/issues/10079),
+  [#10381](https://github.com/certbot/certbot/issues/10381))
+- Removed a number of deprecated classes/interfaces
+  * Removed `acme.challenges.TLSALPN01Response`
+  * Removed `acme.challenges.TLSALPN01`
+  * Removed `acme.standalone.TLSServer`
+  * Removed `acme.standalone.TLSALPN01Server`
+
+  ([#10274](https://github.com/certbot/certbot/issues/10274))
+- certbot.ocsp.RevocationChecker.__init__ no longer accepts the parameter
+  `enforce_openssl_binary_usage` and always uses the cryptography Python
+  library for OCSP checking.
+  ([#10291](https://github.com/certbot/certbot/issues/10291))
+- Python 3.9 support was removed.
+  ([#10389](https://github.com/certbot/certbot/issues/10389))
+- Migrated most functionality from `certbot/setup.py` to
+  `certbot/pyproject.toml`
+  ([#10402](https://github.com/certbot/certbot/issues/10402))
+- Migrated most functionality from `setup.py` to `pyproject.toml` for acme,
+  certbot-apache, and certbot-nginx.
+  ([#10417](https://github.com/certbot/certbot/issues/10417))
+- Migrated most functionality from `setup.py` to `pyproject.toml` for certbot
+  dns plugins. ([#10425](https://github.com/certbot/certbot/issues/10425))
+- Updated apache TLS configuration options based on changes to Mozilla's
+  intermediate configuration recommendations.
+  * Added `DHE-RSA-CHACHA20-POLY1305` to `SSLCipherSuite` list for better
+  compliance
+  * Configured curves using `SSLOpenSSLConfCmd` so FFDH won't be used with
+  OpenSSL 3.0
+
+  ([#10443](https://github.com/certbot/certbot/issues/10443))
+
+### Fixed
+
+- certbot-apache no longer prints a warning claiming the version of OpenSSL
+  used by Apache is too old when we were unable determine the OpenSSL version.
+  ([#10444](https://github.com/certbot/certbot/issues/10444))
+- certbot-nginx no longer uses socket.gethostname when generating self-signed
+  certificates for use as a temporary step of installing certificates as it
+  would sometimes result in strings that are too long to be used in the common
+  name of a certificate. The static domain "temp-certbot-nginx.invalid" is now
+  used instead. ([#10447](https://github.com/certbot/certbot/issues/10447))
+
+
+## 4.2.0 - 2025-08-05
+
+### Added
+
+- Added `--eab-hmac-alg` parameter to support custom HMAC algorithm for
+  External Account Binding.
+  ([#10281](https://github.com/certbot/certbot/issues/10281))
+
+### Changed
+
+- Catches and ignores errors during the directory fetch for ARI checking so
+  that these errors do not hinder the actual certificate issuance.
+  ([#10342](https://github.com/certbot/certbot/issues/10342))
+- Removed the dependency on `pytz`.
+  ([#10350](https://github.com/certbot/certbot/issues/10350))
+- Deprecated `acme.crypto_util.probe_sni`
+  ([#10386](https://github.com/certbot/certbot/issues/10386))
+- Support for Python 3.9 was deprecated and will be removed in our next planned
+  release. ([#10390](https://github.com/certbot/certbot/issues/10390))
+
+### Fixed
+
+- The Certbot snap no longer sets the environment variable PYTHONPATH stopping
+  it from picking up Python files in the current directory and polluting the
+  environment for Certbot hooks written in Python.
+  ([#10176](https://github.com/certbot/certbot/issues/10176),
+  [#10257](https://github.com/certbot/certbot/issues/10257))
+- Previously, we claimed to set FAILED_DOMAINS and RENEWED_DOMAINS env
+  variables for use by post-hooks when certificate renewals fail, but we were
+  not actually setting them. Now, we are.
+  ([#10259](https://github.com/certbot/certbot/issues/10259))
+- Certbot now always uses the server value from the renewal configuration file
+  for ARI checks instead of the server value from the current invocation of
+  Certbot. This helps prevent ARI requests from going to the wrong server if
+  the user changes CAs.
+  ([#10339](https://github.com/certbot/certbot/issues/10339))
+
+
+## 4.1.1 - 2025-06-12
+
+### Fixed
+
+* When a CA fails to issue a certificate after finalization, print the ACME error from the order
+* No longer checks ARI during certbot --dry-run, because --dry-run uses staging when used
+  with let's encrypt but the cert was issued against the default server. This would emit
+  a scary warning, even though the cert would renew successfully.
+* Contacting the CA to check ARI is now skipped for certificate lineages that
+  have autorenew set to False.
+
+More details about these changes can be found on our GitHub repo.
+
+## 4.1.0 - 2025-06-10
+
+### Added
+
+* ACME Renewal Info (ARI) support. https://datatracker.ietf.org/doc/draft-ietf-acme-ari/
+  `certbot renew` will automatically check ARI when using an ACME server that supports it,
+  and may renew early based on the ARI information. For Let's Encrypt certificates this
+  will typically cause renewal at around 2/3rds of the certificate's lifetime, even if
+  the renew_before_expiry field of a lineage renewal config is set a later date.
+
+### Changed
+
+* Switched to src-layout from flat-layout to accommodate PEP 517 pip editable installs
+* acme.client.ClientNetwork now makes the "key" parameter optional.
+* Deprecated `acme.challenges.TLSALPN01Response`
+* Deprecated `acme.challenges.TLSALPN01`
+* Deprecated parameter `alpn_protocols` from `acme.crypto_util.probe_sni`
+* Deprecated `acme.crypto_util.SSLSocket`
+* Deprecated `acme.standalone.TLSServer`
+* Deprecated `acme.standalone.TLSALPN01Server`
+* Deprecated parameter `enforce_openssl_binary_usage` from certbot.ocsp.RevocationChecker.
+* Dropped support for Python 3.9.0 and 3.9.1 for compatibility with newer
+  versions of the cryptography Python package. Python 3.9.2+ is still
+  supported.
+
+### Fixed
+
+* Order finalization now catches `orderNotReady` response, polls until order status is
+  `ready`, and resubmits finalization request before polling for `valid` to download
+  certificate. This conforms to RFC 8555 more accurately and avoids race conditions where
+  all authorizations are fulfilled but order has not yet transitioned to ready state on
+  the server when the finalization request is sent. It also respects retry-after when
+  polling for finalization readiness.
+* The --preferred-profile and --required-profile flags now have their values stored in
+  the renewal configuration so the same setting will be used on renewal.
+* Fixed an unintended change introduced in 4.0.0 where `renew_before_expiry` could not be
+  shorter than certbot's default renewal time. If the server does not provide an ARI
+  response, `renew_before_expiry` will continue to override certbot's default. However,
+  an early ARI response will override a later `renew_before_expiry` time, to account for
+  notifications in case of certificate revocation, especially with the impending deprecation
+  of OCSP (https://letsencrypt.org/2024/12/05/ending-ocsp/). To force a later date, users
+  can replace certbot's default cron job and/or systemd timer with one of their own timing.
+
+More details about these changes can be found on our GitHub repo.
+
+## 4.0.0 - 2025-04-07
+
+### Added
+
+* The --preferred-profile and --required-profile flags allow requesting a profile.
+  https://datatracker.ietf.org/doc/draft-aaron-acme-profiles/
+
+### Changed
+
+* Certificates now renew with 1/3rd of lifetime left (or 1/2 of lifetime left,
+  if the lifetime is shorter than 10 days). This is a change from a hardcoded
+  renewal at 30 days before expiration. The config field renew_before_expiry
+  still overrides this default.
+
+* removed `acme.crypto_util._pyopenssl_cert_or_req_all_names`
+* removed `acme.crypto_util._pyopenssl_cert_or_req_san`
+* removed `acme.crypto_util.dump_pyopenssl_chain`
+* removed `acme.crypto_util.gen_ss_cert`
+* removed `certbot.crypto_util.dump_pyopenssl_chain`
+* removed `certbot.crypto_util.pyopenssl_load_certificate`
+
+
+### Fixed
+
+* Moved `RewriteEngine on` directive added during apache http01 authentication
+  to the end of the virtual host, so that it overwrites any `RewriteEngine off`
+  directives that already exist and allows redirection to the challenge URL.
+
+More details about these changes can be found on our GitHub repo.
+
+## 3.3.0 - 2025-03-11
 
 ### Added
 
@@ -10,15 +288,19 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* deprecated `acme.crypto_util.dump_pyopenssl_chain`
+* The --register-unsafely-without-email flag is no longer needed in non-interactive mode.
+* In interactive mode, pressing Enter at the email prompt will register without an email.
 * deprecated `acme.crypto_util._pyopenssl_cert_or_req_all_names`
 * deprecated `acme.crypto_util._pyopenssl_cert_or_req_san`
+* deprecated `acme.crypto_util.dump_pyopenssl_chain`
 * deprecated `certbot.crypto_util.dump_pyopenssl_chain`
 * deprecated `certbot.crypto_util.pyopenssl_load_certificate`
 
 ### Fixed
 
-*
+* Fixed a bug introduced in Certbot 3.1.0 where OpenSSL environment variables
+  needed in our snap configuration were persisted in calls to external programs
+  like nginx which could cause them to fail to load OpenSSL.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -1041,7 +1323,7 @@ More details about these changes can be found on our GitHub repo.
 * CLI flag `--key-type` has been added to specify 'rsa' or 'ecdsa' (default 'rsa').
 * CLI flag `--elliptic-curve` has been added which takes an NIST/SECG elliptic curve. Any of
   `secp256r1`, `secp384r1` and `secp521r1` are accepted values.
-* The command `certbot certficates` lists the which type of the private key that was used
+* The command `certbot certificates` lists the which type of the private key that was used
   for the private key.
 * Support for Python 3.9 was added to Certbot and all of its components.
 

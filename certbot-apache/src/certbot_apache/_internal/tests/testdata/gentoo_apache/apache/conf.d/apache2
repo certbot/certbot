@@ -1,0 +1,74 @@
+# /etc/conf.d/apache2: config file for /etc/init.d/apache2
+
+# When you install a module it is easy to activate or deactivate the modules
+# and other features of apache using the APACHE2_OPTS line. Every module should
+# install a configuration in /etc/apache2/modules.d. In that file will have an
+# <IfDefine NNN> directive where NNN is the option to enable that module.
+#
+# Here are the options available in the default configuration:
+#
+#  AUTH_DIGEST  Enables mod_auth_digest
+#  AUTHNZ_LDAP  Enables authentication through mod_ldap (available if USE=ldap)
+#  CACHE        Enables mod_cache
+#  DAV          Enables mod_dav
+#  ERRORDOCS    Enables default error documents for many languages.
+#  INFO         Enables mod_info, a useful module for debugging
+#  LANGUAGE     Enables content-negotiation based on language and charset.
+#  LDAP         Enables mod_ldap (available if USE=ldap)
+#  MANUAL       Enables /manual/ to be the apache manual (available if USE=docs)
+#  MEM_CACHE    Enables default configuration mod_mem_cache
+#  PROXY        Enables mod_proxy
+#  SSL          Enables SSL (available if USE=ssl)
+#  STATUS       Enabled mod_status, a useful module for statistics
+#  SUEXEC       Enables running CGI scripts (in USERDIR) through suexec.
+#  USERDIR      Enables /~username mapping to /home/username/public_html
+#
+#
+# The following two options provide the default virtual host for the HTTP and
+# HTTPS protocol. YOU NEED TO ENABLE AT LEAST ONE OF THEM, otherwise apache
+# will not listen for incoming connections on the appropriate port.
+#
+#  DEFAULT_VHOST      Enables name-based virtual hosts, with the default
+#                     virtual host being in /var/www/localhost/htdocs
+#  SSL_DEFAULT_VHOST  Enables default vhost for SSL (you should enable this
+#                     when you enable SSL)
+#
+APACHE2_OPTS="-D DEFAULT_VHOST -D INFO -D SSL -D SSL_DEFAULT_VHOST -D LANGUAGE"
+
+# Extended options for advanced uses of Apache ONLY
+# You don't need to edit these unless you are doing crazy Apache stuff
+# As not having them set correctly, or feeding in an incorrect configuration
+# via them will result in Apache failing to start
+# YOU HAVE BEEN WARNED.
+
+# PID file
+#PIDFILE=/var/run/apache2.pid
+
+# timeout for startup/shutdown checks
+#TIMEOUT=10
+
+# ServerRoot setting
+#SERVERROOT=/usr/lib64/apache2
+
+# Configuration file location
+# - If this does NOT start with a '/', then it is treated relative to
+# $SERVERROOT by Apache
+#CONFIGFILE=/etc/apache2/httpd.conf
+
+# Location to log startup errors to
+# They are normally dumped to your terminal.
+#STARTUPERRORLOG="/var/log/apache2/startuperror.log"
+
+# A command that outputs a formatted text version of the HTML at the URL
+# of the command line. Designed for lynx, however other programs may work.
+#LYNX="lynx -dump"
+
+# The URL to your server's mod_status status page.
+# Required for status and fullstatus
+#STATUSURL="http://localhost/server-status"
+
+# Method to use when reloading the server
+# Valid options are 'restart' and 'graceful'
+# See http://httpd.apache.org/docs/2.2/stopping.html for information on
+# what they do and how they differ.
+#RELOAD_TYPE="graceful"

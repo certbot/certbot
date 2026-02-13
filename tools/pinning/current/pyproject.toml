@@ -6,7 +6,7 @@ authors = ["Certbot Project"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -41,10 +41,13 @@ letstest = {path = "../../../letstest"}
 # as a dependency here to ensure a version of cython is pinned for extra
 # stability.
 #
-# We also pin back cython as is currently required by pyyaml. See
-# https://github.com/yaml/pyyaml/pull/702 and
-# https://github.com/yaml/pyyaml/issues/601.
-cython = "<3.0"
+# As of pyyaml 6.0.2, cython >= 3.0 is required for py >= 3.13, and < 3.0 for py < 3.13.
+# See https://github.com/yaml/pyyaml/pull/808/files.
+cython = [
+    { version = "<3.0", python = "<3.13" },
+    { version = ">=3.0", python = ">=3.13" }
+]
+
 # setuptools-rust is a build dependency of cryptography, and since we don't have
 # a great way of pinning build dependencies, we simply list it here to ensure a
 # working version. Note: if build dependencies of setuptools-rust break at some
@@ -62,11 +65,6 @@ pylint = "3.3.3"
 # dependencies. To help control when this needs to be done, we pin mypy to a
 # compatible version here.
 mypy = "1.9.0"
-
-# Bug in poetry, where still installes yanked versions from pypi (source: https://github.com/python-poetry/poetry/issues/2453)
-# this version of cryptography introduced a security vulnrability.
-# Making sure that it would not get installed (Fixing https://github.com/certbot/certbot/issues/9336)
-cryptography = "!= 37.0.3"
 
 # Branch 4.x of tox introduces backward incompatibility changes, so require a newer
 # version of tox to keep deterministic builds.
