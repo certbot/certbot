@@ -71,7 +71,8 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
                       | modifying DNS records to prove you have control over a
                       | domain. Doing domain validation in this way is
                       | the only way to obtain wildcard certificates from Let's
-                      | Encrypt.
+                      | Encrypt or any other ACME CA.
+                      | Encrypt or any other ACME CA.
 manual_     Y    N    | Obtain a certificate by manually following instructions to    http-01_ (80) or
                       | perform domain validation yourself. Certificates created this dns-01_ (53)
                       | way do not support autorenewal.
@@ -132,10 +133,10 @@ would obtain a single certificate for all of those names, using the
 ``/var/www/other`` for the second two.
 
 The webroot plugin works by creating a temporary file for each of your requested
-domains in ``${webroot-path}/.well-known/acme-challenge``. Then the Let's Encrypt
-validation server makes HTTP requests to validate that the DNS for each
-requested domain resolves to the server running certbot. An example request
-made to your web server would look like:
+domains in ``${webroot-path}/.well-known/acme-challenge``. Then the validation
+server makes HTTP requests to validate that the DNS for each requested domain
+resolves to the server running certbot. An example request made to your web server
+would look like:
 
 ::
 
@@ -194,9 +195,9 @@ Use ``--<challenge-type>-address`` to explicitly tell Certbot which interface
 DNS Plugins
 -----------
 
-If you'd like to obtain a wildcard certificate from Let's Encrypt or run
-``certbot`` on a machine other than your target webserver, you can use one of
-Certbot's DNS plugins.
+If you'd like to obtain a wildcard certificate from Let's Encrypt (or any other
+ACME CA), run ``certbot`` on a machine other than your target webserver, you
+can use one of Certbot's DNS plugins.
 
 These plugins are not included in a default Certbot installation and must be
 installed separately. They are available in many OS package managers, as Docker
@@ -575,7 +576,8 @@ If you need to delete a certificate, use the ``delete`` subcommand.
 Certbot does not automatically revoke a certificate before deleting it. If you're no longer using a certificate and don't
 plan to use it anywhere else, you may want to follow the instructions in `Revoking certificates`_ instead. Generally, there's
 no need to revoke a certificate if its private key has not been compromised, but you may still receive expiration emails
-from Let's Encrypt unless you revoke.
+from the CA unless you revoke.
+from the CA unless you revoke.
 
 .. note:: Do not manually delete certificate files from inside ``/etc/letsencrypt/``. Always use the ``delete`` subcommand.
 
@@ -866,8 +868,9 @@ you will need to perform the following steps:
 Certbot v2.3.0 and newer
 ~~~~~~~~~~~~~~~~~~~~~~~~
 The ``certbot reconfigure`` command can be used to change a certificate's renewal options.
-This command will use the new renewal options to perform a test renewal against the Let's Encrypt staging server.
-If this is successful, the new renewal options will be saved and will apply to future renewals.
+This command will use the new renewal options to perform a test renewal against the Let's Encrypt
+(or the configured CA's) staging server. If this is successful, the new renewal options will be
+saved and will apply to future renewals.
 
 You will need to specify the ``--cert-name``, which can be found by running ``certbot certificates``.
 
