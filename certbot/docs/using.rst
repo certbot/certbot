@@ -99,7 +99,7 @@ Apache
 ------
 
 The Apache plugin currently `supports
-<https://github.com/certbot/certbot/blob/main/certbot-apache/src/certbot_apache/_internal/entrypoint.py>`_
+<https://github.com/certbot/certbot/blob/main/certbot/src/certbot/_internal/plugins/apache/entrypoint.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo, CentOS and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
@@ -1241,7 +1241,7 @@ Configuration file
 
 Certbot accepts a global configuration file that applies its options to all invocations
 of Certbot. Certificate-specific configuration choices are stored in the ``.conf``
-files that can be found in ``/etc/letsencrypt/renewal``. See 
+files that can be found in ``/etc/letsencrypt/renewal``. See
 `Modifying the Renewal Configuration of Existing Certificates`_ for more information
 about modifying certificate-specific options. Note that it is not recommended to modify
 these certificate-specific renewal configuration files manually.
