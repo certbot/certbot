@@ -45,7 +45,7 @@ def _generate_augeas_lens_dir_static() -> str:
     file_manager = ExitStack()
     atexit.register(file_manager.close)
     augeas_lens_dir_ref = importlib.resources.files("certbot") / "_internal" \
-        / "apache" / "augeas_lens"
+        "plugins" / "apache" / "augeas_lens"
     return str(file_manager.enter_context(importlib.resources.as_file(augeas_lens_dir_ref)))
 
 AUGEAS_LENS_DIR = _generate_augeas_lens_dir_static()
