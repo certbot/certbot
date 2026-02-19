@@ -90,6 +90,31 @@ including for renewal, and cannot be silenced except by addressing the issue
     Python module.
 
 
+DNS delegation
+--------------
+
+DNS delegation, also known as DNS aliasing, is a process of allowing a secondary DNS zone
+to handle validation in place of the primary zone. For example, you would like to acquire
+a certificate for ``example.com`` but have the validation performed on a secondary domain
+``example.org``. You would create a ``_acme-challenge.example.com`` CNAME on the
+``example.com`` nameserver with the value of ``_acme-challenge.example.org``. The ACME
+server will resolve the CNAME and validate the TXT record ``_acme-challenge.example.org``
+instead. Certbot itself does not support CNAME aliasing, therefore this plugin does what
+it can to support it.
+
+To enable DNS checking for correct zone detection add ``dns_cloudflare_check_cname`` flag
+to Cloudflare credentials config.
+
+.. code-block:: ini
+   :name: certbot_cloudflare_cname.ini
+   :caption: Example credentials file using restricted API Token (recommended):
+
+   # Cloudflare API token used by Certbot
+   dns_cloudflare_api_token = 0123456789abcdef0123456789abcdef01234567
+   # Find DNS record by CNAME
+   dns_cloudflare_check_cname = true
+
+
 Examples
 --------
 
