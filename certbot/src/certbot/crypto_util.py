@@ -12,7 +12,6 @@ import re
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
-import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature

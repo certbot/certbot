@@ -11,7 +11,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding
 
-from acme import crypto_util as acme_crypto_util
 from certbot import errors
 from certbot import util
 from certbot.compat import filesystem

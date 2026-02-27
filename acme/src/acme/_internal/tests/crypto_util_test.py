@@ -3,8 +3,6 @@ import ipaddress
 import itertools
 import sys
 import unittest
-from unittest import mock
-import warnings
 
 import pytest
 from cryptography import x509
@@ -91,6 +89,57 @@ class CryptographyCertOrReqSANTest(unittest.TestCase):
     def test_csr_idn_sans(self):
         assert self._call_csr('csr-idnsans.pem') == \
                          self._get_idn_names()
+
+    def test_critical_san(self):
+        assert self._call_cert('critical-san.pem') == \
+                         ['chicago-cubs.venafi.example', 'cubs.venafi.example']
+
+
+class GetNamesFromSubjectAndExtensionsTest(unittest.TestCase):
+    """Test for get_names_from_subject_and_extensions."""
+
+    @classmethod
+    def _call_cert(cls, name: str):
+        from acme.crypto_util import get_names_from_subject_and_extensions
+        cert = test_util.load_cert(name)
+        return get_names_from_subject_and_extensions(cert.subject, cert.extensions)
+
+    @classmethod
+    def _call_csr(cls, name: str):
+        from acme.crypto_util import get_names_from_subject_and_extensions
+        csr = test_util.load_csr(name)
+        return get_names_from_subject_and_extensions(csr.subject, csr.extensions)
+
+    def test_cert_one_cn_no_sans(self):
+        assert self._call_cert('cert.pem') == ['example.com']
+
+    def test_cert_two_sans(self):
+        assert self._call_cert('cert-san.pem') == \
+                         ['example.com', 'www.example.com']
+
+    def test_cert_hundred_sans(self):
+        assert self._call_cert('cert-100sans.pem') == \
+                         ['example.com'] + ['example{0}.com'.format(i) for i in range(1, 101)]
+
+    def test_csr_one_cn_no_sans(self):
+        assert self._call_csr('csr-nosans.pem') == ['example.org']
+
+    def test_csr_one_san(self):
+        assert self._call_csr('csr.pem') == ['example.com']
+
+    def test_csr_two_sans(self):
+        assert self._call_csr('csr-san.pem') == \
+                         ['example.com', 'www.example.com']
+
+    def test_csr_six_sans(self):
+        assert self._call_csr('csr-6sans.pem') == \
+                         ['example.com', 'example.org', 'example.net',
+                          'example.info', 'subdomain.example.com',
+                          'other.subdomain.example.com']
+
+    def test_csr_hundred_sans(self):
+        assert self._call_csr('csr-100sans.pem') == \
+                        ['example.com'] + ['example{0}.com'.format(i) for i in range(1, 101)]
 
     def test_critical_san(self):
         assert self._call_cert('critical-san.pem') == \

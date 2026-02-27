@@ -1,20 +1,14 @@
 """Crypto utilities."""
-import enum
-from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
-from types import ModuleType
 import typing
-from typing import Any
 from typing import Literal
 from typing import Optional
 from typing import Union
-import warnings
-import sys
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448, types
+from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448
 from cryptography.hazmat.primitives.serialization import Encoding
 
 logger = logging.getLogger(__name__)
@@ -172,11 +166,6 @@ def _cryptography_cert_or_req_san(
         return []
 
     return san_ext.value.get_values_for_type(x509.DNSName)
-
-
-# Helper function that can be mocked in unit tests
-def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
 
 
 def dump_cryptography_chain(
