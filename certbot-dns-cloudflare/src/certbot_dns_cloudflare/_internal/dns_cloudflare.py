@@ -1,11 +1,19 @@
 """DNS Authenticator for Cloudflare."""
 import logging
+import warnings
 from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import cast
 
-import cloudflare
+# cloudflare 4.x includes a pydantic v1 compatibility shim that raises a
+# UserWarning on Python 3.14+.  Suppress it here so that certbot's
+# filterwarnings=error test configuration does not turn the warning into a
+# fatal exception during plugin discovery.
+with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', message='Core Pydantic V1 functionality',
+                            category=UserWarning)
+    import cloudflare
 
 from certbot import errors
 from certbot.plugins import dns_common
@@ -112,14 +120,10 @@ class _CloudflareClient:
 
         zone_id = self._find_zone_id(domain)
 
-        data = {'type': 'TXT',
-                'name': record_name,
-                'content': record_content,
-                'ttl': record_ttl}
-
         try:
-            logger.debug('Attempting to add record to zone %s: %s', zone_id, data)
-            self.cf.dns.records.create(zone_id=zone_id, **data)
+            logger.debug('Attempting to add record to zone %s: %s', zone_id, record_name)
+            self.cf.dns.records.create(zone_id=zone_id, type='TXT', name=record_name,
+                                       content=record_content, ttl=record_ttl)
         except cloudflare.APIStatusError as e:
             code = _cf_error_code(e)
             hint = None
@@ -240,8 +244,8 @@ class _CloudflareClient:
 
         try:
             records = list(self.cf.dns.records.list(
-                zone_id=zone_id, type='TXT', name=record_name,
-                content=record_content, per_page=1))
+                zone_id=zone_id, type='TXT', name={'exact': record_name},
+                content={'exact': record_content}, per_page=1))
         except cloudflare.APIStatusError as e:
             logger.debug('Encountered Cloudflare API error getting TXT record_id: %s', e)
             records = []
@@ -249,7 +253,7 @@ class _CloudflareClient:
         if records:
             # Cleanup is returning the system to the state we found it. If, for some reason,
             # there are multiple matching records, we only delete one because we only added one.
-            return cast(str, records[0].id)
+            return records[0].id
         logger.debug('Unable to find TXT record.')
         return None
 
