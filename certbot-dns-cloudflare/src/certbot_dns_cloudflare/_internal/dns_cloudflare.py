@@ -5,7 +5,7 @@ from typing import Callable
 from typing import Optional
 from typing import cast
 
-import CloudFlare
+import cloudflare
 
 from certbot import errors
 from certbot.plugins import dns_common
@@ -94,16 +94,9 @@ class _CloudflareClient:
     def __init__(self, email: Optional[str] = None, api_key: Optional[str] = None,
                  api_token: Optional[str] = None) -> None:
         if email:
-            # If an email was specified, we're using an email/key combination and not a token.
-            # We can't use named arguments in this case, as it would break compatibility with
-            # the Cloudflare library since version 2.10.1, as the `token` argument was used for
-            # tokens and keys alike and the `key` argument did not exist in earlier versions.
-            self.cf = CloudFlare.CloudFlare(email, api_key)
+            self.cf = cloudflare.Cloudflare(api_email=email, api_key=api_key)
         else:
-            # If no email was specified, we're using just a token. Let's use the named argument
-            # for simplicity, which is compatible with all (current) versions of the Cloudflare
-            # library.
-            self.cf = CloudFlare.CloudFlare(token=api_token)
+            self.cf = cloudflare.Cloudflare(api_token=api_token)
 
     def add_txt_record(self, domain: str, record_name: str, record_content: str,
                        record_ttl: int) -> None:
@@ -126,15 +119,15 @@ class _CloudflareClient:
 
         try:
             logger.debug('Attempting to add record to zone %s: %s', zone_id, data)
-            self.cf.zones.dns_records.post(zone_id, data=data)  # zones | pylint: disable=no-member
-        except CloudFlare.exceptions.CloudFlareAPIError as e:
-            code = int(e)
+            self.cf.dns.records.create(zone_id=zone_id, **data)
+        except cloudflare.APIStatusError as e:
+            code = _cf_error_code(e)
             hint = None
 
             if code == 1009:
                 hint = 'Does your API token have "Zone:DNS:Edit" permissions?'
 
-            logger.error('Encountered CloudFlareAPIError adding TXT record: %d %s', e, e)
+            logger.error('Encountered Cloudflare API error adding TXT record: %s', e)
             raise errors.PluginError('Error communicating with the Cloudflare API: {0}{1}'
                                      .format(e, ' ({0})'.format(hint) if hint else ''))
 
@@ -165,11 +158,10 @@ class _CloudflareClient:
             record_id = self._find_txt_record_id(zone_id, record_name, record_content)
             if record_id:
                 try:
-                    # zones | pylint: disable=no-member
-                    self.cf.zones.dns_records.delete(zone_id, record_id)
+                    self.cf.dns.records.delete(dns_record_id=record_id, zone_id=zone_id)
                     logger.debug('Successfully deleted TXT record.')
-                except CloudFlare.exceptions.CloudFlareAPIError as e:
-                    logger.warning('Encountered CloudFlareAPIError deleting TXT record: %s', e)
+                except cloudflare.APIStatusError as e:
+                    logger.warning('Encountered Cloudflare API error deleting TXT record: %s', e)
             else:
                 logger.debug('TXT record not found; no cleanup needed.')
         else:
@@ -186,25 +178,19 @@ class _CloudflareClient:
         """
 
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
-        zones: list[dict[str, Any]] = []
+        zones: list[Any] = []
         code = msg = None
 
         for zone_name in zone_name_guesses:
-            params = {'name': zone_name,
-                      'per_page': 1}
-
             try:
-                zones = self.cf.zones.get(params=params)  # zones | pylint: disable=no-member
-            except CloudFlare.exceptions.CloudFlareAPIError as e:
-                code = int(e)
+                zones = list(self.cf.zones.list(name=zone_name, per_page=1))
+            except cloudflare.APIStatusError as e:
+                code = _cf_error_code(e)
                 msg = str(e)
                 hint = None
 
                 if code == 6003:
-                    hint = ('Did you copy your entire API token/key? To use Cloudflare tokens, '
-                            'you\'ll need the python package cloudflare>=2.3.1.{}'
-                    .format(' This certbot is running cloudflare ' + str(CloudFlare.__version__)
-                    if hasattr(CloudFlare, '__version__') else ''))
+                    hint = 'Did you copy your entire API token/key?'
                 elif code == 9103:
                     hint = 'Did you enter the correct email address and Global key?'
                 elif code == 9109:
@@ -215,11 +201,11 @@ class _CloudflareClient:
                                   'that you have supplied valid Cloudflare API credentials. ({2})'
                                                                          .format(code, msg, hint))
                 else:
-                    logger.debug('Unrecognised CloudFlareAPIError while finding zone_id: %d %s. '
-                                 'Continuing with next zone guess...', e, e)
+                    logger.debug('Unrecognised Cloudflare API error while finding zone_id: %s. '
+                                 'Continuing with next zone guess...', e)
 
             if zones:
-                zone_id: str = zones[0]['id']
+                zone_id = cast(str, zones[0].id)
                 logger.debug('Found zone_id of %s for %s using name %s', zone_id, domain, zone_name)
                 return zone_id
 
@@ -252,20 +238,26 @@ class _CloudflareClient:
         :rtype: str
         """
 
-        params = {'type': 'TXT',
-                  'name': record_name,
-                  'content': record_content,
-                  'per_page': 1}
         try:
-            # zones | pylint: disable=no-member
-            records = self.cf.zones.dns_records.get(zone_id, params=params)
-        except CloudFlare.exceptions.CloudFlareAPIError as e:
-            logger.debug('Encountered CloudFlareAPIError getting TXT record_id: %s', e)
+            records = list(self.cf.dns.records.list(
+                zone_id=zone_id, type='TXT', name=record_name,
+                content=record_content, per_page=1))
+        except cloudflare.APIStatusError as e:
+            logger.debug('Encountered Cloudflare API error getting TXT record_id: %s', e)
             records = []
 
         if records:
             # Cleanup is returning the system to the state we found it. If, for some reason,
             # there are multiple matching records, we only delete one because we only added one.
-            return cast(str, records[0]['id'])
+            return cast(str, records[0].id)
         logger.debug('Unable to find TXT record.')
+        return None
+
+
+def _cf_error_code(e: cloudflare.APIStatusError) -> Optional[int]:
+    """Extract the first Cloudflare error code from an API error response."""
+    try:
+        body = e.response.json()
+        return int(body['errors'][0]['code'])
+    except (ValueError, KeyError, IndexError, TypeError):  # pragma: no cover
         return None
