@@ -4,7 +4,6 @@ import warnings
 from typing import Any
 from typing import Callable
 from typing import Optional
-from typing import cast
 
 # cloudflare 4.x includes a pydantic v1 compatibility shim that raises a
 # UserWarning on Python 3.14+.  Suppress it here so that certbot's
@@ -14,6 +13,7 @@ with warnings.catch_warnings():
     warnings.filterwarnings('ignore', message='Core Pydantic V1 functionality',
                             category=UserWarning)
     import cloudflare
+    from cloudflare.types.zones import Zone
 
 from certbot import errors
 from certbot.plugins import dns_common
@@ -103,9 +103,14 @@ class _CloudflareClient:
                  api_token: Optional[str] = None) -> None:
         if email:
             # If an email was specified, we're using an email/key combination and not a token.
+            # We use named arguments here to match the cloudflare 4.x SDK's explicit parameter
+            # names (api_email and api_key), which correspond to the Global API Key credentials
+            # found in the Cloudflare dashboard under My Profile > API Tokens.
             self.cf = cloudflare.Cloudflare(api_email=email, api_key=api_key)
         else:
-            # If no email was specified, we're using just an API token.
+            # If no email was specified, we're using just an API token. We use the named argument
+            # for clarity. API Tokens are the recommended authentication method as they support
+            # fine-grained permissions scoped to specific zones and operations.
             self.cf = cloudflare.Cloudflare(api_token=api_token)
 
     def add_txt_record(self, domain: str, record_name: str, record_content: str,
@@ -186,7 +191,7 @@ class _CloudflareClient:
         """
 
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
-        zones: list[Any] = []
+        zones: list[Zone] = []
         code = msg = None
 
         for zone_name in zone_name_guesses:
@@ -213,8 +218,8 @@ class _CloudflareClient:
                     logger.debug('Unrecognised Cloudflare API error while finding zone_id: %s. '
                                  'Continuing with next zone guess...', e)
 
-            if zones:
-                zone_id = cast(str, zones[0].id)
+            if zones and zones[0].id:
+                zone_id = zones[0].id
                 logger.debug('Found zone_id of %s for %s using name %s', zone_id, domain, zone_name)
                 return zone_id
 
