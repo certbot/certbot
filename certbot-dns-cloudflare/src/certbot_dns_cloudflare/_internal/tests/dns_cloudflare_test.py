@@ -133,8 +133,8 @@ class CloudflareClientTest(unittest.TestCase):
     record_name = "foo"
     record_content = "bar"
     record_ttl = 42
-    zone_id = 1
-    record_id = 2
+    zone_id = "zone-id-1"
+    record_id = "record-id-2"
 
     def setUp(self):
         from certbot_dns_cloudflare._internal.dns_cloudflare import _CloudflareClient
