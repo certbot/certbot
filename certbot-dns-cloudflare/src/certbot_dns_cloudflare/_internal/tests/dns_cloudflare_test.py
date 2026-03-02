@@ -114,6 +114,22 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         with pytest.raises(errors.PluginError):
             self.auth.perform([self.achall])
 
+    def test_get_cloudflare_client_with_api_token(self):
+        from certbot_dns_cloudflare._internal.dns_cloudflare import Authenticator
+        from certbot_dns_cloudflare._internal.dns_cloudflare import _CloudflareClient
+        mock_auth = mock.MagicMock()
+        mock_auth.credentials.conf.return_value = API_TOKEN
+        client = Authenticator._get_cloudflare_client(mock_auth)
+        self.assertIsInstance(client, _CloudflareClient)
+
+    def test_get_cloudflare_client_with_email_key(self):
+        from certbot_dns_cloudflare._internal.dns_cloudflare import Authenticator
+        from certbot_dns_cloudflare._internal.dns_cloudflare import _CloudflareClient
+        mock_auth = mock.MagicMock()
+        mock_auth.credentials.conf.side_effect = lambda k: None if k == 'api-token' else 'some_value'
+        client = Authenticator._get_cloudflare_client(mock_auth)
+        self.assertIsInstance(client, _CloudflareClient)
+
 
 def _mock_zone(zone_id: Optional[str]) -> mock.MagicMock:
     """Create a mock zone object with an .id attribute."""
