@@ -2,9 +2,16 @@
 
 import sys
 import unittest
+from typing import Any
+from typing import Optional
 from unittest import mock
 
-import cloudflare
+import warnings
+
+with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', message='Core Pydantic V1 functionality',
+                            category=UserWarning)
+    import cloudflare
 import httpx
 import pytest
 
@@ -15,9 +22,10 @@ from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
 
-def _make_api_error(cf_code, msg='', http_status=400):
+def _make_api_error(cf_code: int, msg: str = '', http_status: int = 400
+                    ) -> cloudflare.APIStatusError:
     """Build a cloudflare.APIStatusError with a Cloudflare error code in the body."""
-    body = {'success': False, 'errors': [{'code': cf_code, 'message': msg}]}
+    body: Any = {'success': False, 'errors': [{'code': cf_code, 'message': msg}]}
     response = httpx.Response(http_status, json=body,
                               request=httpx.Request('GET', 'https://api.cloudflare.com'))
     return cloudflare.APIStatusError(message=msg or str(cf_code), response=response, body=body)
@@ -107,14 +115,14 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
             self.auth.perform([self.achall])
 
 
-def _mock_zone(zone_id):
+def _mock_zone(zone_id: Optional[str]) -> mock.MagicMock:
     """Create a mock zone object with an .id attribute."""
     zone = mock.MagicMock()
     zone.id = zone_id
     return zone
 
 
-def _mock_record(record_id):
+def _mock_record(record_id: Optional[str]) -> mock.MagicMock:
     """Create a mock DNS record object with an .id attribute."""
     record = mock.MagicMock()
     record.id = record_id
@@ -198,8 +206,8 @@ class CloudflareClientTest(unittest.TestCase):
 
         self.cf.zones.list.assert_called_once()
         self.cf.dns.records.list.assert_called_once_with(
-            zone_id=self.zone_id, type='TXT', name=self.record_name,
-            content=self.record_content, per_page=1)
+            zone_id=self.zone_id, type='TXT', name={'exact': self.record_name},
+            content={'exact': self.record_content}, per_page=1)
         self.cf.dns.records.delete.assert_called_once_with(
             dns_record_id=self.record_id, zone_id=self.zone_id)
 
