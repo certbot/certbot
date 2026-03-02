@@ -102,8 +102,10 @@ class _CloudflareClient:
     def __init__(self, email: Optional[str] = None, api_key: Optional[str] = None,
                  api_token: Optional[str] = None) -> None:
         if email:
+            # If an email was specified, we're using an email/key combination and not a token.
             self.cf = cloudflare.Cloudflare(api_email=email, api_key=api_key)
         else:
+            # If no email was specified, we're using just an API token.
             self.cf = cloudflare.Cloudflare(api_token=api_token)
 
     def add_txt_record(self, domain: str, record_name: str, record_content: str,
@@ -121,7 +123,9 @@ class _CloudflareClient:
         zone_id = self._find_zone_id(domain)
 
         try:
-            logger.debug('Attempting to add record to zone %s: %s', zone_id, record_name)
+            logger.debug('Attempting to add record to zone %s: %s', zone_id,
+                         {'type': 'TXT', 'name': record_name,
+                          'content': record_content, 'ttl': record_ttl})
             self.cf.dns.records.create(zone_id=zone_id, type='TXT', name=record_name,
                                        content=record_content, ttl=record_ttl)
         except cloudflare.APIStatusError as e:
@@ -194,7 +198,8 @@ class _CloudflareClient:
                 hint = None
 
                 if code == 6003:
-                    hint = 'Did you copy your entire API token/key?'
+                    hint = ('Did you copy your entire API token/key? '
+                            'See {} to manage your API tokens.'.format(ACCOUNT_URL))
                 elif code == 9103:
                     hint = 'Did you enter the correct email address and Global key?'
                 elif code == 9109:
