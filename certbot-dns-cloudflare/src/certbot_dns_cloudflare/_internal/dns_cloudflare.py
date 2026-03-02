@@ -218,10 +218,13 @@ class _CloudflareClient:
                     logger.debug('Unrecognised Cloudflare API error while finding zone_id: %s. '
                                  'Continuing with next zone guess...', e)
 
-            if zones and zones[0].id:
+            if zones:
                 zone_id = zones[0].id
-                logger.debug('Found zone_id of %s for %s using name %s', zone_id, domain, zone_name)
-                return zone_id
+                if zone_id:
+                    logger.debug('Found zone_id of %s for %s using name %s',
+                                 zone_id, domain, zone_name)
+                    return zone_id
+                break  # Found a zone but it has no usable ID; stop searching
 
         if msg is not None:
             if 'com.cloudflare.api.account.zone.list' in msg:
