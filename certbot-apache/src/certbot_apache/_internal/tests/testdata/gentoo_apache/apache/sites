@@ -1,0 +1,3 @@
+vhosts.d/gentoo.example.com.conf, gentoo.example.com
+vhosts.d/00_default_vhost.conf, localhost
+vhosts.d/00_default_ssl_vhost.conf, localhost

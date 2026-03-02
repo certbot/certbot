@@ -1,0 +1,1 @@
+"""certbot-dns-luadns tests"""

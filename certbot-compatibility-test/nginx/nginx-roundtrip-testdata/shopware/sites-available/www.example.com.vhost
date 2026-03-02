@@ -1,0 +1,75 @@
+server {
+       listen 80;
+
+       ## SSL directives might go here
+       ## see http://www.howtoforge.com/how_to_set_up_ssl_vhosts_under_nginx_plus_sni_support_ubuntu_11.04_debian_squeeze
+       ## if you want to enable SSL for this vhost
+
+       server_name www.example.com example.com;
+       root /var/www/www.example.com/web;
+       if ($http_host != "www.example.com") {
+                 rewrite ^ http://www.example.com$request_uri permanent;
+       }
+       index index.php index.html;
+
+       location = /favicon.ico {
+                log_not_found off;
+                access_log off;
+       }
+       location = /robots.txt {
+                allow all;
+                log_not_found off;
+                access_log off;
+       }
+
+       location ~ /\. {
+                deny all;
+       }
+
+       location / {
+                # Set DirectoryIndex
+                index  shopware.php index.php;
+
+                # Deny direct access to all smarty templates
+                location ~ ^/templates/.*/*.tpl {
+                         deny all;
+                }
+
+                # Deny access to php files in web readable directories
+                location ~ ^/cache/.*/.*\.(php|cgi|php5|php3|php4|phtml|pl|py) {
+                         deny all;
+                }
+                location ~ ^/images/.*/.*\.(php|cgi|php5|php3|php4|phtml|pl|py) {
+                         deny all;
+                }
+                location ~ ^/files/.*/.*\.(php|cgi|php5|php3|php4|phtml|pl|py) {
+                         deny all;
+                }
+                location ~ ^/upload/.*/.*\.(php|cgi|php5|php3|php4|phtml|pl|py) {
+                         deny all;
+                }
+
+                # Defining rewrite rules
+                rewrite /images/ayww/(.*) /images/banner/$1 last;
+                rewrite /files/documents/.* /engine last;
+                rewrite /templates/(.*(css|js))$ /engine/backend/php/sCacheTemplate.php?file=/templates/$1 last;
+                rewrite /sitemap.xml(.*) /shopware.php?controller=SitemapXml;
+                rewrite /application.yaml /engine last;
+                rewrite /engine/core/php/sAjaxSearch.php$ /engine/backend/php/sAjaxSearch.php last;
+                rewrite /engine/core/php/campaigns.php$ /engine/backend/php/campaigns.php last;
+
+                # Defining controller based route processing behaviour
+                if (!-e $request_filename) {
+                         rewrite . /shopware.php last;
+                }
+       }
+
+       location ~ \.php$ {
+                try_files $uri =404;
+                include /etc/nginx/fastcgi_params;
+                fastcgi_pass 127.0.0.1:9000;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_param  HTTPS $fastcgi_https;
+       }
+
+}

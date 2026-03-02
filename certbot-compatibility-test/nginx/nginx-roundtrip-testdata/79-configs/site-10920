@@ -1,0 +1,16 @@
+server {
+        listen 80 default; 
+
+        location / {
+          proxy_set_header X-Real-IP  $remote_addr;
+          proxy_set_header X-Forwarded-For $remote_addr;
+          proxy_set_header Host $host;
+          proxy_pass http://127.0.0.1:81;
+        }
+
+        location ~ /\.ht {
+          deny all;
+        }
+
+        access_log /var/log/nginx/random27802/access.log combined_plus;
+}

@@ -1,0 +1,10 @@
+include README.rst
+include CHANGELOG.md
+include LICENSE.txt
+recursive-include docs *
+recursive-include examples *
+recursive-include src/certbot/tests/testdata *
+include src/certbot/ssl-dhparams.pem
+include src/certbot/py.typed
+global-exclude __pycache__
+global-exclude *.py[cod]

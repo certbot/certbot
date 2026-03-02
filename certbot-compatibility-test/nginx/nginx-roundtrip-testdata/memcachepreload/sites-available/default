@@ -1,0 +1,12 @@
+server {
+        listen          80;
+        server_name     <webserver>;
+        root            /var/www/;
+
+        location / {
+                index                   index.html;
+                default_type            text/plain;
+                set $memcached_key      memfis://<hostname>$uri;
+                memcached_pass          127.0.0.1:11211;
+        }
+}

@@ -1,0 +1,27 @@
+Eventually there will also be a compatibility test here like the Apache one.
+
+Right now, this is data for the roundtrip test (checking that the parser
+can parse each file and that the reserialized config file it generates is
+identical to the original).
+
+If run in a virtualenv or otherwise so that certbot_nginx can be imported,
+the roundtrip test can run as
+
+python roundtrip.py nginx-roundtrip-testdata
+
+It gives exit status 0 for success and 1 if at least one parse or roundtrip
+failure occurred.
+
+
+The directory nginx-roundtrip-testdata includes some config files that were
+contributed to our project as well as most of the configs linked from
+
+https://www.nginx.com/resources/wiki/start/
+
+Some exceptions that were skipped are
+
+https://www.nginx.com/resources/wiki/start/topics/recipes/moinmoin/
+https://www.nginx.com/resources/wiki/start/topics/examples/SSL-Offloader/ (not much nginx configuration)
+https://www.nginx.com/resources/wiki/start/topics/examples/xsendfile/ (likewise)
+https://www.nginx.com/resources/wiki/start/topics/examples/x-accel/
+https://www.nginx.com/resources/wiki/start/topics/examples/fcgiwrap/

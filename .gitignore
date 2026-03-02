@@ -1,0 +1,70 @@
+*.pyc
+*.egg-info/
+.eggs/
+build/
+dist*/
+/venv*/
+/.tox/
+/releases*/
+/log*
+letsencrypt.log
+certbot.log
+poetry.lock
+
+# coverage
+.coverage
+.coverage.*
+/htmlcov/
+
+/.vagrant
+
+tags
+
+# editor temporary files
+*~
+*.sw?
+\#*#
+.idea
+.ropeproject
+.vscode
+*.sublime-project
+*.sublime-workspace
+
+# auth --cert-path --chain-path
+/*.pem
+
+.venv
+
+# pytest cache
+.cache
+.mypy_cache/
+.pytest_cache/
+
+# docker files
+.docker
+
+# certbot tests
+.certbot_test_workspace
+**/assets/pebble*
+**/assets/challtestsrv*
+
+# snap files
+.snapcraft
+parts
+prime
+stage
+*.snap
+snap-constraints.txt
+qemu-*
+certbot-dns*/certbot-dns*_amd64*.txt
+certbot-dns*/certbot-dns*_arm*.txt
+/certbot_amd64*.txt
+/certbot_arm*.txt
+certbot-dns*/snap
+snapcraft.cfg
+
+# pyenv files
+.python-version
+
+# macOS files
+.DS_Store

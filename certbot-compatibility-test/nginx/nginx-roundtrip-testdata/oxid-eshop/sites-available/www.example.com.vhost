@@ -1,0 +1,66 @@
+server {
+       listen 80;
+
+       ## SSL directives might go here
+       ## see http://www.howtoforge.com/how_to_set_up_ssl_vhosts_under_nginx_plus_sni_support_ubuntu_11.04_debian_squeeze
+       ## if you want to enable SSL for this vhost
+
+       server_name www.example.com example.com;
+       root /var/www/www.example.com/web;
+       if ($http_host != "www.example.com") {
+                 rewrite ^ http://www.example.com$request_uri permanent;
+       }
+       index index.php index.html;
+
+       if ($request_method ~ ^(TRACE|TRACK)$ ) {
+                return 403;
+       }
+
+       location = /favicon.ico {
+                log_not_found off;
+                access_log off;
+       }
+       location = /robots.txt {
+                allow all;
+                log_not_found off;
+                access_log off;
+       }
+
+       location ~ (/\.|EXCEPTION_LOG\.txt|\.log$|\.tpl$|pkg.rev) {
+                deny all;
+       }
+
+       location ~ /out/pictures/.*(\.jpg|\.gif|\.png)$ {
+                try_files $uri /core/utils/getimg.php;
+       }
+
+       location ~ ^/(admin|setup)/?$ {
+       }
+
+       location ~ /(core|export|modules|out|tmp|views)/ {
+       }
+
+       location / {
+                try_files $uri $uri/ /oxseo.php;
+       }
+
+       location = /oxseo.php {
+                if ($args ~ "mod_rewrite_module_is=off") {
+                       rewrite /oxseo.php /oxseo.php?mod_rewrite_module_is=on? break;
+                }
+                try_files $uri =404;
+                include /etc/nginx/fastcgi_params;
+                fastcgi_pass 127.0.0.1:9000;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_param  HTTPS $fastcgi_https;
+       }
+
+       location ~ \.php$ {
+                try_files $uri =404;
+                include /etc/nginx/fastcgi_params;
+                fastcgi_pass 127.0.0.1:9000;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_param  HTTPS $fastcgi_https;
+       }
+
+}

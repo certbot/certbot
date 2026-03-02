@@ -1,0 +1,8 @@
+include LICENSE.txt
+include README.rst
+recursive-include docs *
+recursive-include examples *
+recursive-include src/acme/_internal/tests/testdata *
+include src/acme/py.typed
+global-exclude __pycache__
+global-exclude *.py[cod]

@@ -1,0 +1,6 @@
+Issues for which some kind of test case should be constructable, but we do not
+currently have one:
+
+https://github.com/certbot/certbot/issues/1213
+https://github.com/certbot/certbot/issues/1602
+

@@ -1,0 +1,37 @@
+upstream django_server_random24036.example.org {
+    server unix:/srv/http/random1006/live/website.sock;
+}
+
+server {
+    listen 80;
+    server_name random24036.example.org;
+    gzip on;
+    gzip_http_version 1.0;
+    gzip_types *;
+    gzip_vary on;
+    gzip_proxied any;
+
+    location ~ /media/(.*)$ {
+        alias /srv/http/random1006/live/website/static/$1;
+        expires 7d;
+        gzip on;
+    }
+
+
+    location / {
+        proxy_pass http://django_server_random24036.example.org;
+        include          /etc/nginx/proxy_params;
+
+        # You can configure access rules here
+    }
+
+    access_log /var/log/nginx/random1006/live/access.log combined_plus;
+    error_log  /var/log/nginx/random1006/live/error.log;
+}
+
+server {
+    server_name www.random24036.example.org;
+    server_name random32349.example.org www.random32349.example.org;
+    server_name random23794.example.org www.random23794.example.org;
+    rewrite ^ http://random24036.example.org$request_uri permanent;
+}

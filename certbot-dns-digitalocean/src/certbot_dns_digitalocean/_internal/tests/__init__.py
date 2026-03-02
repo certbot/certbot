@@ -1,0 +1,1 @@
+"""certbot-dns-digitalocean tests"""

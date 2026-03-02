@@ -1,0 +1,6 @@
+FROM certbot-compatibility-test
+LABEL org.opencontainers.image.authors="certbot-dev@eff.org"
+
+RUN apt-get install apache2 -y
+
+ENTRYPOINT [ "certbot-compatibility-test", "-p", "apache" ]

@@ -1,0 +1,44 @@
+server {
+    listen 80;
+    server_name random3674.example.org www.random3674.example.org;
+
+    root /srv/http/random3674.example.org;
+    index index.html index.htm;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    access_log /var/log/nginx/random3674.example.org/access.log combined_plus;
+    error_log  /var/log/nginx/random3674.example.org/error.log;
+}
+
+server {
+    listen 80;
+    server_name random27569.example.org www.random27569.example.org;
+
+    root /srv/http/random27569.example.org;
+    index index.html index.htm;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    access_log /var/log/nginx/random27569.example.org/access.log combined_plus;
+    error_log  /var/log/nginx/random27569.example.org/error.log;
+}
+
+server {
+    listen 80;
+    server_name random11055.example.org www.random11055.example.org;
+
+    root /srv/http/random11055.example.org;
+    index index.html index.htm;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    access_log /var/log/nginx/random11055.example.org/access.log combined_plus;
+    error_log  /var/log/nginx/random11055.example.org/error.log;
+}

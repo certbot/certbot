@@ -1,0 +1,15 @@
+name: Task
+description: A codebase upkeep task such as managing deprecations and refactoring
+title: "[Task]: "
+type: Task
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Task description
+      description: Describe the work that needs to happen, and why.
+      placeholder: >
+        For example, "In issue [link here], we noted that we cannot update [dependency] until
+        [something happens]. That thing has happened, so now we should update [dependency]."
+    validations:
+      required: true

@@ -1,0 +1,4 @@
+server {
+    server_name www.random5115;
+    return 301 http://www.random10305.example.org;
+}

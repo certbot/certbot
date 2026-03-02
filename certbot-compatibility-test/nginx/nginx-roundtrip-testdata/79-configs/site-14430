@@ -1,0 +1,54 @@
+upstream django_server_random17507.example.org {
+    server unix:/srv/http/random7740/live/website.sock;
+}
+
+server {
+    listen 80;
+    server_name random17507.example.org;
+
+    location ^~ /media/ {
+        alias /srv/http/random7740/live/dynamic/public/;
+        expires 7d;
+    }
+    location ^~ /static/ {
+        alias /srv/http/random7740/live/static_collected/;
+        expires 7d;
+    }
+
+    location / {
+        proxy_pass http://django_server_random17507.example.org;
+        include          /etc/nginx/proxy_params;
+
+        # You can configure access rules here
+    }
+
+    access_log /var/log/nginx/random7740/live/access.log combined_plus;
+    error_log  /var/log/nginx/random7740/live/error.log;
+}
+
+server {
+    server_name www.random17507.example.org;
+    server_name random31197.example.org www.random31197.example.org;
+    server_name random19579.example.org www.random19579.example.org;
+    server_name random16629.example.org www.random16629.example.org;
+    server_name random28363.example.org www.random28363.example.org;
+    server_name random30185.example.org www.random30185.example.org;
+    server_name random22326.example.org www.random22326.example.org;
+    server_name random3622.example.org www.random3622.example.org;
+    server_name random1463.example.org www.random1463.example.org;
+    server_name random23341.example.org www.random23341.example.org;
+    server_name random2214.example.org www.random2214.example.org;
+    server_name random22684.example.org www.random22684.example.org;
+    server_name random6606.example.org www.random6606.example.org;
+    server_name random29138.example.org www.random29138.example.org;
+    server_name random15109.example.org www.random15109.example.org;
+    server_name random8002.example.org www.random8002.example.org;
+    server_name random16836.example.org www.random16836.example.org;
+    server_name random22283.example.org www.random22283.example.org;
+
+    location  = /googleXXXXXXXXXXXXXXXX.html {
+        alias /srv/http/random7740/live/website/templates/googleXXXXXXXXXXXXXXXX.html;
+    }
+
+    rewrite ^ http://random17507.example.org$request_uri permanent;
+}

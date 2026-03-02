@@ -1,0 +1,29 @@
+server {
+    listen 80;
+    listen 7891; # User0
+    listen 8080; # User1
+    listen 8900; # User2
+    listen 8912; # User3
+    listen 3567; # User4
+
+    server_name random666.example.org www.random666.example.org;
+
+    root /srv/http/random666.example.org;
+    index index.html index.htm;
+
+    location /duif_assets/ {
+        try_files $uri $uri/ =404;
+    }
+  
+    location /index.html {
+        try_files $uri $uri/ =404;
+    }
+
+    location / {
+        rewrite ^.+$ / break;
+        try_files $uri $uri/ =404;
+    }
+
+    access_log /var/log/nginx/random666.example.org/access.log combined_plus;
+    error_log  /var/log/nginx/random666.example.org/error.log;
+}

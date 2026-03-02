@@ -1,0 +1,3 @@
+# generate-csr.sh:
+/key.pem
+/csr.der

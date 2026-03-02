@@ -1,0 +1,16 @@
+#Default, normalize CRLF into LF in non-binary files
+# Files identified as binary by Git are not changed
+* crlf=auto
+
+# special files
+*.sh crlf=input
+*.py crlf=input
+
+*.bat text eol=crlf
+
+*.der binary
+*.gz binary
+*.jpeg binary
+*.jpg binary
+*.png binary
+*.gz binary

@@ -1,0 +1,12 @@
+# vhost created by moving from marauder, but there it was an apache vhost.
+
+server {
+    listen 80;
+    server_name random3080.example.org www.random3080.example.org random26833.example.org www.random26833.example.org;
+
+    root /srv/http/random10391.example.org/;
+
+    if ($request_uri != '/googleYYYYYYYYYYYYYYYY.html') {
+      rewrite ^ http://random10305.example.org/ permanent;
+    }
+}

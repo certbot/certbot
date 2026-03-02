@@ -1,0 +1,1 @@
+"""Certbot compatibility test configurators"""

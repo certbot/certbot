@@ -1,0 +1,9 @@
+
+This directory holds configuration files for the Apache HTTP Server;
+any files in this directory which have the ".conf" extension will be
+processed as httpd configuration files.  The directory is used in
+addition to the directory /etc/httpd/conf.modules.d/, which contains
+configuration files necessary to load modules.
+
+Files are processed in alphabetical order.
+

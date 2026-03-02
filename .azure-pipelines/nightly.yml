@@ -1,0 +1,19 @@
+# Nightly pipeline running each day for main.
+trigger: none
+pr: none
+schedules:
+  - cron: "30 4 * * *"
+    displayName: Nightly build
+    branches:
+      include:
+      - main
+    always: true
+
+variables:
+  dockerTag: nightly
+  snapBuildTimeout: 19800
+
+stages:
+  - template: templates/stages/test-and-package-stage.yml
+  - template: templates/stages/changelog-stage.yml
+  - template: templates/stages/nightly-deploy-stage.yml

@@ -1,0 +1,71 @@
+# ServerAdmin: Your address, where problems with the server should be
+# e-mailed.  This address appears on some server-generated pages, such
+# as error documents.  e.g. admin@your-domain.com
+ServerAdmin root@localhost
+
+# DocumentRoot: The directory out of which you will serve your
+# documents. By default, all requests are taken from this directory, but
+# symbolic links and aliases may be used to point to other locations.
+#
+# If you change this to something that isn't under /var/www then suexec
+# will no longer work.
+DocumentRoot "/var/www/localhost/htdocs"
+
+# This should be changed to whatever you set DocumentRoot to.
+<Directory "/var/www/localhost/htdocs">
+	# Possible values for the Options directive are "None", "All",
+	# or any combination of:
+	#   Indexes Includes FollowSymLinks SymLinksifOwnerMatch ExecCGI MultiViews
+	#
+	# Note that "MultiViews" must be named *explicitly* --- "Options All"
+	# doesn't give it to you.
+	#
+	# The Options directive is both complicated and important.  Please see
+	# http://httpd.apache.org/docs/2.4/mod/core.html#options
+	# for more information.
+	Options Indexes FollowSymLinks
+
+	# AllowOverride controls what directives may be placed in .htaccess files.
+	# It can be "All", "None", or any combination of the keywords:
+	#   Options FileInfo AuthConfig Limit
+	AllowOverride All
+
+	# Controls who can get stuff from this server.
+	Require all granted
+</Directory>
+
+<IfModule alias_module>
+	# Redirect: Allows you to tell clients about documents that used to
+	# exist in your server's namespace, but do not anymore. The client
+	# will make a new request for the document at its new location.
+	# Example:
+	#   Redirect permanent /foo http://www.example.com/bar
+
+	# Alias: Maps web paths into filesystem paths and is used to
+	# access content that does not live under the DocumentRoot.
+	# Example:
+	#   Alias /webpath /full/filesystem/path
+	#
+	# If you include a trailing / on /webpath then the server will
+	# require it to be present in the URL.  You will also likely
+	# need to provide a <Directory> section to allow access to
+	# the filesystem path.
+
+	# ScriptAlias: This controls which directories contain server scripts.
+	# ScriptAliases are essentially the same as Aliases, except that
+	# documents in the target directory are treated as applications and
+	# run by the server when requested rather than as documents sent to the
+	# client.  The same rules about trailing "/" apply to ScriptAlias
+	# directives as to Alias.
+	ScriptAlias /cgi-bin/ "/var/www/localhost/cgi-bin/"
+</IfModule>
+
+# "/var/www/localhost/cgi-bin" should be changed to whatever your ScriptAliased
+# CGI directory exists, if you have that configured.
+<Directory "/var/www/localhost/cgi-bin">
+	AllowOverride None
+	Options None
+	Require all granted
+</Directory>
+
+# vim: ts=4 filetype=apache

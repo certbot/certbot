@@ -1,0 +1,11 @@
+line-length = 100
+
+extend-exclude = ['tools', 'letstest']
+
+[lint]
+# Check for PEP 585 style annotations to prevent regressions in
+# https://github.com/certbot/certbot/issues/10195
+extend-select = ["UP006"]
+# Skip bare `except` rules (`E722`).
+# Skip ambiguous variable name (`E741`).
+ignore = ["E722", "E741",]

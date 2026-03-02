@@ -1,0 +1,67 @@
+server {
+	listen 80;
+	#listen [::]:80 default_server ipv6only=on;
+	root /var/www/random616_log/;
+	server_name random12800.example.org;
+
+	# pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+	location ~ \.php$ {
+		fastcgi_split_path_info ^(.+\.php)(/.+)$;
+		# NOTE: You should have "cgi.fix_pathinfo = 0;" in php.ini
+	
+		# With php5-fpm:
+		fastcgi_pass unix:/var/run/php5-fpm.sock;
+		fastcgi_index index.php;
+		include fastcgi_params;
+	}
+
+	# deny access to .htaccess files, if Apache's document root
+	# concurs with nginx's one
+	location ~ /\.ht {
+		deny all;
+	}
+
+  location /nginx_status {
+    stub_status on;
+    access_log   off;
+    allow 127.0.0.1;
+    deny all;
+  }
+
+  access_log /var/log/nginx/random12543/access.log combined_plus;
+  error_log /var/log/nginx/random12543/error.log;
+}
+
+server {
+	listen 443 default_server;
+	#listen [::]:443 default_server ipv6only=on;
+	root /var/www/random616_log/;
+	server_name random12800.example.org;
+
+  # We created (will create) this SSL certificate ourselves, using our own CA. This way, we can control strictly which CA the XXX trusts.
+  # See ytec #6244
+  # However, we're working on a fix for high SSL overhead. We're hoping to be able to keep the connections open between log POSTs, like SSL can.
+  ssl on;
+  ssl_certificate     /etc/ssl/public/random12800.example.org.crt;
+  ssl_certificate_key /etc/ssl/private/random12800.example.org.key;
+
+	# pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+	location ~ \.php$ {
+		fastcgi_split_path_info ^(.+\.php)(/.+)$;
+		# NOTE: You should have "cgi.fix_pathinfo = 0;" in php.ini
+	
+		# With php5-fpm:
+		fastcgi_pass unix:/var/run/php5-fpm.sock;
+		fastcgi_index index.php;
+		include fastcgi_params;
+	}
+
+	# deny access to .htaccess files, if Apache's document root
+	# concurs with nginx's one
+	location ~ /\.ht {
+		deny all;
+	}
+
+  access_log /var/log/nginx/random12543/access.log combined_plus;
+  error_log /var/log/nginx/random12543/error.log;
+}

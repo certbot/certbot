@@ -1,0 +1,37 @@
+{
+    "Version": "2012-10-17",
+    "Id": "certbot-dns-route53 sample policy",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "route53:ListHostedZones",
+                "route53:GetChange"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Effect" : "Allow",
+            "Action" : [
+                "route53:ChangeResourceRecordSets"
+            ],
+            "Resource" : [
+                "arn:aws:route53:::hostedzone/YOURHOSTEDZONEID"
+            ],
+            "Condition": {
+                "ForAllValues:StringLike": {
+                    "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+                        "_acme-challenge.*"
+                    ]
+                },
+                "ForAllValues:StringEquals": {
+                    "route53:ChangeResourceRecordSetsRecordTypes": [
+                        "TXT"
+                    ]
+                }
+            }
+        }
+    ]
+}
