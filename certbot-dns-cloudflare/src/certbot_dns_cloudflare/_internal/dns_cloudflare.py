@@ -167,18 +167,15 @@ class _CloudflareClient:
             logger.debug('Encountered error finding zone_id during deletion: %s', e)
             return
 
-        if zone_id:
-            record_id = self._find_txt_record_id(zone_id, record_name, record_content)
-            if record_id:
-                try:
-                    self.cf.dns.records.delete(dns_record_id=record_id, zone_id=zone_id)
-                    logger.debug('Successfully deleted TXT record.')
-                except cloudflare.APIStatusError as e:
-                    logger.warning('Encountered Cloudflare API error deleting TXT record: %s', e)
-            else:
-                logger.debug('TXT record not found; no cleanup needed.')
+        record_id = self._find_txt_record_id(zone_id, record_name, record_content)
+        if record_id:
+            try:
+                self.cf.dns.records.delete(dns_record_id=record_id, zone_id=zone_id)
+                logger.debug('Successfully deleted TXT record.')
+            except cloudflare.APIStatusError as e:
+                logger.warning('Encountered Cloudflare API error deleting TXT record: %s', e)
         else:
-            logger.debug('Zone not found; no cleanup needed.')
+            logger.debug('TXT record not found; no cleanup needed.')
 
     def _find_zone_id(self, domain: str) -> str:
         """
