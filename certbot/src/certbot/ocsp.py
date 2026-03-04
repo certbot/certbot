@@ -4,6 +4,7 @@ from datetime import timedelta
 from datetime import timezone
 import logging
 from typing import Optional
+import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -167,6 +168,7 @@ def _check_ocsp_response(response_ocsp: 'ocsp.OCSPResponse', request_ocsp: 'ocsp
     # https://github.com/openssl/openssl/blob/ef45aa14c5af024fcb8bef1c9007f3d1c115bd85/crypto/ocsp/ocsp_cl.c#L338-L391
     # thisUpdate/nextUpdate are expressed in UTC/GMT time zone
     now = datetime.now(timezone.utc)
+    warnings.warn("This is a test of the deprecation warnings system. This is only a test.", DeprecationWarning)
     if not response_ocsp.this_update_utc:
         raise AssertionError('param thisUpdate is not set.')
     if response_ocsp.this_update_utc > now + timedelta(minutes=5):
