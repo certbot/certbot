@@ -188,12 +188,12 @@ class _CloudflareClient:
         """
 
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
-        zones: list[Zone] = []
+        zone: Optional[Zone] = None
         code = msg = None
 
         for zone_name in zone_name_guesses:
             try:
-                zones = list(self.cf.zones.list(name=zone_name, per_page=1))
+                zone = next(iter(self.cf.zones.list(name=zone_name, per_page=1)), None)
             except cloudflare.APIStatusError as e:
                 code = _cf_error_code(e)
                 msg = str(e)
@@ -215,8 +215,8 @@ class _CloudflareClient:
                     logger.debug('Unrecognised Cloudflare API error while finding zone_id: %s. '
                                  'Continuing with next zone guess...', e)
 
-            if zones:
-                zone_id = zones[0].id
+            if zone:
+                zone_id = zone.id
                 if zone_id:
                     logger.debug('Found zone_id of %s for %s using name %s',
                                  zone_id, domain, zone_name)
