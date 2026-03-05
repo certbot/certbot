@@ -1,6 +1,7 @@
 ## Pull Request Checklist
 
 - [ ] The Certbot team has recently expressed interest in reviewing a PR for this. If not, this PR may be closed due our limited resources and need to prioritize how we spend them.
+- [ ] If you used AI to create this PR, you have done a self-review of all AI-generated code and disclosed that your contribution was AI-generated per [EFF's AI-generated contribution policy](https://www.eff.org/about/opportunities/volunteer/coding-with-eff). You assert you have thoroughly understood, reviewed, and tested your entire submission.
 - [ ] If the change being made is to a [distributed component](https://certbot.eff.org/docs/contributing.html#code-components-and-layout), add a description of your change to the `newsfragments` directory. This should be a file called `<title>.<type>`, where `<title>` is either a GitHub issue number or some other unique name starting with `+`, and `<type>` is either `changed`, `fixed`, or `added`.
   * For example, if you fixed a bug for issue number 42, create a file called `42.fixed` and put a description of your change in that file.
 - [ ] Add or update any documentation as needed to support the changes in this PR.
