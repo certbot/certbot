@@ -26,7 +26,6 @@ Submodules
    certbot.errors
    certbot.interfaces
    certbot.main
-   certbot.ocsp
    certbot.reverter
    certbot.util
 

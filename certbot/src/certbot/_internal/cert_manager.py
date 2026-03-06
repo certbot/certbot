@@ -13,10 +13,10 @@ from typing import Union
 from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
-from certbot import ocsp
 from certbot import util
-from certbot._internal import storage
+from certbot._internal import ocsp
 from certbot._internal import san
+from certbot._internal import storage
 from certbot.compat import os
 from certbot.display import util as display_util
 
