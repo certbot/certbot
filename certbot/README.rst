@@ -85,3 +85,10 @@ Current Features
 * Configuration changes are logged and can be reverted.
 
 .. Do not modify this comment unless you know what you're doing. tag:features-end
+
+Thanks
+------
+
+We appreciate `Digital Ocean`_ for donating credits to help us test and develop Certbot.
+
+.. _Digital Ocean: https://www.digitalocean.com/
