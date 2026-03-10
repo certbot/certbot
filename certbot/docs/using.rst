@@ -1082,11 +1082,11 @@ This will run the ``authenticator.sh`` script, attempt the validation, and then 
 the ``cleanup.sh`` script. Additionally certbot will pass relevant environment
 variables to these scripts:
 
-- ``CERTBOT_DOMAIN``: The domain being authenticated
+- ``CERTBOT_IDENTIFIER``: The domain or IP address being authenticated
 - ``CERTBOT_VALIDATION``: The validation string
 - ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenge (HTTP-01 only)
 - ``CERTBOT_REMAINING_CHALLENGES``: Number of challenges remaining after the current challenge
-- ``CERTBOT_ALL_DOMAINS``: A comma-separated list of all domains challenged for the current certificate
+- ``CERTBOT_ALL_IDENTIFIERS``: A comma-separated list of all identifiers challenged for the current certificate
 
 Additionally for cleanup:
 
@@ -1129,7 +1129,7 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
    EMAIL="your.email@example.com"
 
    # Strip only the top domain to get the zone id
-   DOMAIN=$(expr match "$CERTBOT_DOMAIN" '.*\.\(.*\..*\)')
+   DOMAIN=$(expr match "$CERTBOT_IDENTIFIER" '.*\.\(.*\..*\)')
 
    # Get the Cloudflare zone id
    ZONE_EXTRA_PARAMS="status=active&page=1&per_page=20&order=status&direction=desc&match=all"
@@ -1139,7 +1139,7 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
         -H     "Content-Type: application/json" | python -c "import sys,json;print(json.load(sys.stdin)['result'][0]['id'])")
 
    # Create TXT record
-   CREATE_DOMAIN="_acme-challenge.$CERTBOT_DOMAIN"
+   CREATE_DOMAIN="_acme-challenge.$CERTBOT_IDENTIFIER"
    RECORD_ID=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
         -H     "X-Auth-Email: $EMAIL" \
         -H     "X-Auth-Key: $API_KEY" \
@@ -1147,11 +1147,11 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
         --data '{"type":"TXT","name":"'"$CREATE_DOMAIN"'","content":"'"$CERTBOT_VALIDATION"'","ttl":120}' \
                 | python -c "import sys,json;print(json.load(sys.stdin)['result']['id'])")
    # Save info for cleanup
-   if [ ! -d /tmp/CERTBOT_$CERTBOT_DOMAIN ];then
-           mkdir -m 0700 /tmp/CERTBOT_$CERTBOT_DOMAIN
+   if [ ! -d /tmp/CERTBOT_$CERTBOT_IDENTIFIER ];then
+           mkdir -m 0700 /tmp/CERTBOT_$CERTBOT_IDENTIFIER
    fi
-   echo $ZONE_ID > /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID
-   echo $RECORD_ID > /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID
+   echo $ZONE_ID > /tmp/CERTBOT_$CERTBOT_IDENTIFIER/ZONE_ID
+   echo $RECORD_ID > /tmp/CERTBOT_$CERTBOT_IDENTIFIER/RECORD_ID
 
    # Sleep to make sure the change has time to propagate over to DNS
    sleep 25
@@ -1166,14 +1166,14 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
    API_KEY="your-api-key"
    EMAIL="your.email@example.com"
 
-   if [ -f /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID ]; then
-           ZONE_ID=$(cat /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID)
-           rm -f /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID
+   if [ -f /tmp/CERTBOT_$CERTBOT_IDENTIFIER/ZONE_ID ]; then
+           ZONE_ID=$(cat /tmp/CERTBOT_$CERTBOT_IDENTIFIER/ZONE_ID)
+           rm -f /tmp/CERTBOT_$CERTBOT_IDENTIFIER/ZONE_ID
    fi
 
-   if [ -f /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID ]; then
-           RECORD_ID=$(cat /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID)
-           rm -f /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID
+   if [ -f /tmp/CERTBOT_$CERTBOT_IDENTIFIER/RECORD_ID ]; then
+           RECORD_ID=$(cat /tmp/CERTBOT_$CERTBOT_IDENTIFIER/RECORD_ID)
+           rm -f /tmp/CERTBOT_$CERTBOT_IDENTIFIER/RECORD_ID
    fi
 
    # Remove the challenge TXT record from the zone
