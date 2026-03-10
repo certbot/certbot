@@ -4,6 +4,17 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.4.0 - 2026-03-10
+
+### Added
+
+- The webroot plugin now supports IP address issuance. ([#10543](https://github.com/certbot/certbot/issues/10543))
+
+### Changed
+
+- certbot-nginx now requires pyparsing>=3.0.0. ([#10560](https://github.com/certbot/certbot/issues/10560))
+
+
 ## 5.3.1 - 2026-02-09
 
 ### Fixed

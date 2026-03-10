@@ -147,7 +147,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/5.3.1 (certbot;
+                        "". (default: CertbotACMEClient/5.4.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -759,18 +759,18 @@ webroot:
 
   --webroot-path WEBROOT_PATH, -w WEBROOT_PATH
                         public_html / webroot path. This can be specified
-                        multiple times to handle different domains; each
-                        domain will have the webroot path that preceded it.
-                        For instance: `-w /var/www/example -d example.com -d
-                        www.example.com -w /var/www/thing -d thing.net -d
+                        multiple times to handle different identifiers; each
+                        identifier will have the webroot path that preceded
+                        it. For instance: `-w /var/www/example -d example.com
+                        -d www.example.com -w /var/www/thing -d thing.net -d
                         m.thing.net` (default: Ask)
   --webroot-map WEBROOT_MAP
-                        JSON dictionary mapping domains to webroot paths; this
-                        implies -d for each entry. You may need to escape this
-                        from your shell. E.g.: --webroot-map
-                        '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}'
-                        This option is merged with, but takes precedence over,
-                        -w / -d entries. At present, if you put webroot-map in
-                        a config file, it needs to be on a single line, like:
-                        webroot-map = {"example.com":"/var/www"}. (default:
-                        {})
+                        JSON dictionary mapping identifiers to webroot paths;
+                        this implies -d or --ip-address for each entry. You
+                        may need to escape this from your shell. E.g.:
+                        --webroot-map '{"eg1.is,m.eg1.is":"/www/eg1/",
+                        "eg2.is":"/www/eg2"}' This option is merged with, but
+                        takes precedence over, -w / -d entries. At present, if
+                        you put webroot-map in a config file, it needs to be
+                        on a single line, like: webroot-map =
+                        {"example.com":"/var/www"}. (default: {})
