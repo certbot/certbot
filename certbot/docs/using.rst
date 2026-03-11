@@ -1092,6 +1092,11 @@ Additionally for cleanup:
 
 - ``CERTBOT_AUTH_OUTPUT``: Whatever the auth script wrote to stdout
 
+Certbot also sets ``CERTBOT_DOMAIN`` and ``CERTBOT_ALL_DOMAINS`` to the same values as
+``CERTBOT_IDENTIFIER`` and ``CERTBOT_ALL_IDENTIFIERS`` respectively for backwards compatibility,
+however, the variables names containing "identifier" are preferred since Certbot has added support
+for obtaining certificates for IP addresses.
+
 Example usage for HTTP-01:
 
 ::
