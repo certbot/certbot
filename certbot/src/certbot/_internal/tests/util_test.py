@@ -490,6 +490,53 @@ class EnforceDomainSanityTest(unittest.TestCase):
         self._call('this.is.xn--ls8h.tld')
 
 
+class IsIpAddressTest(unittest.TestCase):
+    """Tests for is_ipaddress."""
+
+    def _call(self, address):
+        from certbot.util import is_ipaddress
+        return is_ipaddress(address)
+
+    def test_is_ipaddress(self):
+        cases = [
+            # IPv4
+            ("127.0.0.1", True),
+            ("192.168.1.1", True),
+            ("255.255.255.255", True),
+            ("0.0.0.0", True),
+            ("1.2.3.4 ", False),
+            (" 1.2.3.4", False),
+            ("1.2.3.256", False),
+            ("1.2.3", False),
+            ("1.2.3.4.5", False),
+            ("a.b.c.d", False),
+
+            # IPv6
+            ("::1", True),
+            ("fe80::1", True),
+            ("2001:db8::ff00:42:8329", True),
+            ("2001:0db8:85a3:0000:0000:8a2e:0370:7334", True),
+            ("2001:db8:85a3:0:0:8a2e:370:7334", True),
+            ("2001:db8:85a3::8a2e:370:7334", True),
+            ("::", True),
+            ("::ffff:192.168.0.1", True),  # IPv4-mapped IPv6
+            ("2001:db8::1::1", False),    # Multiple double colons
+            ("2001:db8:g::1", False),     # Invalid hex
+            ("1:2:3:4:5:6:7:8:9", False), # Too many segments
+
+            # General
+            ("example.com", False),
+            ("", False),
+            (" ", False),
+            ("127.0.0.1/24", False),      # CIDR notation
+            ("2001:db8::/32", False),     # CIDR notation IPv6
+            ("[::1]", False),             # Bracketed IPv6
+        ]
+        for addr, expected in cases:
+            result = self._call(addr)
+            self.assertEqual(result, expected, f"is_ipaddress failed for {addr}")
+
+
 class IsWildcardDomainTest(unittest.TestCase):
     """Tests for is_wildcard_domain."""
 
