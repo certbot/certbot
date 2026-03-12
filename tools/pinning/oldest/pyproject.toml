@@ -39,7 +39,7 @@ certbot-dns-rfc2136 = {path = "../../../certbot-dns-rfc2136"}
 certbot-dns-route53 = {path = "../../../certbot-dns-route53"}
 certbot-dns-sakuracloud = {path = "../../../certbot-dns-sakuracloud"}
 certbot-nginx = {path = "../../../certbot-nginx"}
-certbot-apache = {path = "../../../certbot-apache", extras = ["dev"]}
+certbot-apache = {path = "../../../certbot-apache"}
 certbot = {path = "../../../certbot", extras = ["test"]}
 acme = {path = "../../../acme", extras = ["test"]}
 
