@@ -1,0 +1,6 @@
+Deprecated functions have been removed from `acme` and `certbot`:
+* Removed: `certbot.crypto_util.get_sans_from_cert`
+* Removed: `certbot.crypto_util.get_names_from_cert`
+* Removed: `certbot.crypto_util.get_names_from_req`
+* Removed: `certbot.crypto_util.import_csr_file`
+* Removed: `acme.crypto_util.Format`
