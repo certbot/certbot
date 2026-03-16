@@ -89,6 +89,9 @@ Current Features
 Thanks
 ------
 
-We appreciate `Digital Ocean`_ for donating credits to help us test and develop Certbot.
+We appreciate the donation of credits to help us test and develop Certbot from:
 
-.. _Digital Ocean: https://www.digitalocean.com/
+.. image:: https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/SVG/DO_Logo_horizontal_blue.svg
+  :width: 201
+  :alt: EFF Certbot Logo
+  :target: https://www.digitalocean.com/
