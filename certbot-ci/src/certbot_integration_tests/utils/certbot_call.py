@@ -89,7 +89,12 @@ def _prepare_environ(workspace: str) -> dict[str, str]:
     # source: https://docs.pytest.org/en/stable/reference/customize.html#finding-the-rootdir
     #
     # Certbot's is located in its root directory. Let's just walk up the tree from this file.
-    warning_filters: list = []
+    # In case we can't find it, we still do want to error, so add a default. It's fine to have
+    # error in there twice. Also, ignore the unverified HTTPS request specifically for this call.
+    warning_filters: list = [
+        'error',
+        "ignore:Unverified HTTPS request is being made to host 'localhost'",
+        ]
     base_path: str = os.path.realpath(__file__)
     while base_path != os.sep:
         ini_loc: str = os.path.join(base_path, 'pytest.ini')
@@ -97,13 +102,13 @@ def _prepare_environ(workspace: str) -> dict[str, str]:
             ini_config: configparser.ConfigParser = configparser.ConfigParser()
             ini_config.read(ini_loc)
             if ini_config is not None:
-                warning_filters = ini_config['pytest']['filterwarnings'].split('\n')
+                ini_filters = ini_config.get('pytest', 'filterwarnings', fallback='')
+                warning_filters.extend(ini_filters.split('\n'))
             break
         else:
             base_path = os.path.dirname(base_path)
 
-    if warning_filters:
-        new_environ['PYTHONWARNINGS'] = ','.join(warning_filters)
+    new_environ['PYTHONWARNINGS'] = ','.join(warning_filters)
 
     return new_environ
 
