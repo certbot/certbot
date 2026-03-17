@@ -91,7 +91,7 @@ def _prepare_environ(workspace: str) -> dict[str, str]:
     # Certbot's is located in its root directory. Let's just walk up the tree from this file.
     # In case we can't find it, we still do want to error, so add a default. It's fine to have
     # error in there twice. Also, ignore the unverified HTTPS request specifically for this call.
-    warning_filters: list = [
+    warning_filters: list[str]= [
         'error',
         "ignore:Unverified HTTPS request is being made to host 'localhost'",
         ]

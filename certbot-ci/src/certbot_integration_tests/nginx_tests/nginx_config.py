@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """General purpose nginx test configuration generator."""
 import atexit
-import getpass
 import importlib.resources
 from contextlib import ExitStack
 from typing import Optional
