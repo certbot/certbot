@@ -647,7 +647,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         with pytest.raises(errors.CertStorageError):
             self.test_rc._update_link_to("elephant", 17)
 
-    @mock.patch("certbot.ocsp.RevocationChecker.ocsp_revoked_by_paths")
+    @mock.patch("certbot._internal.ocsp.RevocationChecker.ocsp_revoked_by_paths")
     def test_ocsp_revoked(self, mock_checker):
         # Write out test files
         for kind in ALL_FOUR:

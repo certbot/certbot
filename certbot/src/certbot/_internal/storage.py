@@ -26,9 +26,9 @@ from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
-from certbot import ocsp
 from certbot import util
 from certbot._internal import error_handler
+from certbot._internal import ocsp
 from certbot._internal import san
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import filesystem

@@ -1,0 +1,1 @@
+The certbot.ocsp module has been deprecated and will be removed in the next major release. This is not a change to Certbot's OCSP functionality. The code is just being removed from Certbot's public API.

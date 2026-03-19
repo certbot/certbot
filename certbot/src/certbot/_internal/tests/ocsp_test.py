@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.x509 import ocsp as ocsp_lib
 import pytest
 
+from certbot import crypto_util
 from certbot.tests import util as test_util
 
 
@@ -25,7 +26,7 @@ class OSCPTestCryptography(unittest.TestCase):
     """
 
     def setUp(self):
-        from certbot import ocsp
+        from certbot._internal import ocsp
         self.checker = ocsp.RevocationChecker()
         self.cert_path = test_util.vector_path('ocsp_certificate.pem')
         self.chain_path = test_util.vector_path('ocsp_issuer_certificate.pem')
@@ -33,14 +34,14 @@ class OSCPTestCryptography(unittest.TestCase):
         self.cert_obj.cert_path = self.cert_path
         self.cert_obj.chain_path = self.chain_path
         now = datetime.now(timezone.utc)
-        self.mock_notAfter = mock.patch('certbot.ocsp.crypto_util.notAfter',
+        self.mock_notAfter = mock.patch('certbot._internal.ocsp.crypto_util.notAfter',
                                         return_value=now + timedelta(hours=2))
         self.mock_notAfter.start()
         # Ensure the mock.patch is stopped even if test raises an exception
         self.addCleanup(self.mock_notAfter.stop)
 
-    @mock.patch('certbot.ocsp._determine_ocsp_server')
-    @mock.patch('certbot.ocsp._check_ocsp_cryptography')
+    @mock.patch('certbot._internal.ocsp._determine_ocsp_server')
+    @mock.patch('certbot._internal.ocsp._check_ocsp_cryptography')
     def test_ensure_cryptography_toggled(self, mock_check, mock_determine):
         mock_determine.return_value = ('http://example.com', 'example.com')
         self.checker.ocsp_revoked(self.cert_obj)
@@ -170,7 +171,7 @@ class OSCPTestCryptography(unittest.TestCase):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
             # This mock is necessary to avoid the first call contained in _determine_ocsp_server
             # of the method cryptography.x509.Extensions.get_extension_for_class.
-            with mock.patch('certbot.ocsp._determine_ocsp_server') as mock_server:
+            with mock.patch('certbot._internal.ocsp._determine_ocsp_server') as mock_server:
                 mock_server.return_value = ('https://example.com', 'example.com')
                 with mock.patch('cryptography.x509.Extensions.get_extension_for_class',
                                 side_effect=x509.ExtensionNotFound(
@@ -179,15 +180,35 @@ class OSCPTestCryptography(unittest.TestCase):
         assert revoked is False
 
 
+class TestDeprecation:
+    """Tests related to the deprecation of certbot.ocsp.
+
+    These tests can be deleted after this module is removed from Certbot.
+
+    """
+    def test_deprecation_warning(self):
+        with pytest.warns(DeprecationWarning, match='certbot.ocsp is deprecated'):
+            import certbot.ocsp  # noqa: F401
+
+    def test_no_changes(self):
+        from certbot._internal import ocsp
+        expected_hash = '4f595b3c6e63749af1f71b5b4890b94e04734bb75f8bff95cf7d7a7e4752d5c1'
+        failure_message = ('Despite being prefixed by _internal, certbot._internal.ocsp is still '
+            'part of our public API while certbot.ocsp exists. You are free to make changes to '
+            'this file and update the hash in this test however, please be sure your changes do '
+            'not affect the API of the certbot.ocsp module.')
+        assert crypto_util.sha256sum(ocsp.__file__) == expected_hash, failure_message
+
+
 @contextlib.contextmanager
 def _ocsp_mock(certificate_status, response_status,
                http_status_code=200, check_signature_side_effect=None):
-    with mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response') as mock_response:
+    with mock.patch('certbot._internal.ocsp.ocsp.load_der_ocsp_response') as mock_response:
         mock_response.return_value = _construct_mock_ocsp_response(
             certificate_status, response_status)
-        with mock.patch('certbot.ocsp.requests.post') as mock_post:
+        with mock.patch('certbot._internal.ocsp.requests.post') as mock_post:
             mock_post.return_value = mock.Mock(status_code=http_status_code)
-            with mock.patch('certbot.ocsp.crypto_util.verify_signed_payload') \
+            with mock.patch('certbot._internal.ocsp.crypto_util.verify_signed_payload') \
                 as mock_check:
                 if check_signature_side_effect:
                     mock_check.side_effect = check_signature_side_effect
