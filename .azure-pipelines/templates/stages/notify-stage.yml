@@ -16,6 +16,8 @@ stages:
             displayName: Send mattermost success message
   - stage: NotifyFailure
     condition: failed()
+    variables:
+      MyStatus: $[variables['Agent.JobStatus']]
     jobs:
       - job: notify_release_build_failure
         pool:
