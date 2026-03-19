@@ -4,7 +4,7 @@ Script to notify the person doing the release that the Azure run was successful.
 
 Run:
 
-python tools/notify_mattermost.py GITHUB_AUTHOR_NAME MATTERMOST_WEBHOOK_URL STATUS
+python tools/notify_mattermost.py GITHUB_USERNAME MATTERMOST_WEBHOOK_URL STATUS
 
 where STATUS is either SUCCESS or FAILURE
 """
@@ -15,10 +15,10 @@ import sys
 # We use github author here because it's what we have access to. If the name sometimes
 # changes, add any name it might be. Check the git log.
 requested_for = sys.argv[1].rstrip()
+# This is a map of github username to opensource mattermost username
 usernames_map = {
-    'Will Greenberg': 'willg',
-    'Erica Portnoy': 'erica',
-    'Brad Warren': 'brad',
+    'wgreenberg': 'willg',
+    'bmw': 'brad',
     'ohemorange': 'erica',
 }
 

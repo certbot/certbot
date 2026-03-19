@@ -16,6 +16,5 @@ jobs:
           secureFile: mattermost_webhook_url_release_notify
       - bash: |
           set -e
-          AUTHOR_NAME="$(git log -1 --pretty=format:'%an')"
-          "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" "${AUTHOR_NAME}" $(webhook_url.secureFilePath) ${{ parameters.buildStatus }}
+          "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" "${BUILD_SOURCEVERSIONAUTHOR}" $(webhook_url.secureFilePath) ${{ parameters.buildStatus }}
         displayName: Send mattermost message
