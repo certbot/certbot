@@ -17,7 +17,7 @@ stages:
   - stage: NotifyFailure
     condition: failed()
     variables:
-      MyStatus: $[variables.Agent.JobStatus]
+      MyStatus: $[variables.Agent.OS]
     jobs:
       - job: notify_release_build_failure
         pool:
