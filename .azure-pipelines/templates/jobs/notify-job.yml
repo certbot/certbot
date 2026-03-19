@@ -1,0 +1,21 @@
+parameters:
+- name: buildStatus
+  type: string
+  values:
+  - SUCCESS
+  - FAILURE
+
+jobs:
+  - job: notify_release_finished
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - task: DownloadSecureFile@1
+        name: webhook_url
+        inputs:
+          secureFile: mattermost_webhook_url_release_notify
+      - bash: |
+          set -e
+          AUTHOR_NAME="$(git log -1 --pretty=format:'%an')"
+          "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" "${AUTHOR_NAME}" $(webhook_url.secureFilePath) ${{ parameters.buildStatus }}
+        displayName: Send mattermost message
