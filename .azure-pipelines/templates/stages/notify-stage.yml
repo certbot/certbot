@@ -1,8 +1,11 @@
 stages:
   - stage: Notify
     condition: succeededOrFailed()
+    dependsOn: Deploy
     jobs:
       - job: notify_release_build
+        variables:
+          STAGE_STATUS: $[stageDependencies.Deploy.succeed_for_status.result]
         pool:
           vmImage: ubuntu-latest
         steps:
@@ -13,5 +16,5 @@ stages:
           - bash: |
               set -e
               AUTHOR_NAME="$(git log -1 --pretty=format:'%an')"
-              "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" "${AUTHOR_NAME}" $(webhook_url.secureFilePath) "${AGENT_JOBSTATUS}"
+              "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" "${AUTHOR_NAME}" $(webhook_url.secureFilePath) "$(STAGE_STATUS)"
             displayName: Send mattermost message
