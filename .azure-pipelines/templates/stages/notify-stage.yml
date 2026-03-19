@@ -1,12 +1,12 @@
 stages:
-  - stage: NotifySuccess
-    jobs:
-      - template: ../jobs/notify-job.yml
-        parameters:
-          buildStatus: SUCCESS
   - stage: NotifyFailure
     condition: failed()
     jobs:
       - template: ../jobs/notify-job.yml
         parameters:
           buildStatus: FAILURE
+  - stage: NotifySuccess
+    jobs:
+      - template: ../jobs/notify-job.yml
+        parameters:
+          buildStatus: SUCCESS
