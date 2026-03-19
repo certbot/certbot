@@ -4,17 +4,18 @@ Script to notify the person doing the release that the Azure run was successful.
 
 Run:
 
-python tools/notify_mattermost.py GITHUB_USERNAME MATTERMOST_WEBHOOK_URL STATUS
+python tools/notify_mattermost.py MATTERMOST_WEBHOOK_URL STATUS
 
 where STATUS is either SUCCESS or FAILURE
 """
+import os
 import random
 import requests
 import sys
 
 # We use github author here because it's what we have access to. If the name sometimes
 # changes, add any name it might be. Check the git log.
-requested_for = sys.argv[1].rstrip()
+requested_for = os.environ.get('BUILD_SOURCEVERSIONAUTHOR', '')
 # This is a map of github username to opensource mattermost username
 usernames_map = {
     'wgreenberg': 'willg',
@@ -26,11 +27,11 @@ usernames_map = {
 # created by certbotbot, with a file containing the url saved in azure pipelines secret
 # files, under pipelines > library. The secret file will need to be given permission to
 # be used by the specific pipeline, in this case 'release.'
-url_path = sys.argv[2]
+url_path = sys.argv[1]
 with open(url_path, 'r') as file:
     url = file.read().rstrip()
 
-status = sys.argv[3].rstrip()
+status = sys.argv[2].rstrip()
 
 headers = {
     'Content-Type': 'application/json',
@@ -56,9 +57,9 @@ elif status == 'FAILURE':
 else:
     raise RuntimeError("STATUS must be either SUCCESS or FAILURE")
 
-
-azure_url = 'https://dev.azure.com/certbot/certbot/_build?definitionId=3'
-
+repo_name = os.environ['BUILD_REPOSITORY_ID']
+build_id = os.environ['BUILD_BUILDID']
+azure_url = f'https://dev.azure.com/{repo_name}/_build/results?buildId={build_id}&view=results'
 
 greeting = random.choice(fun_greetings)
 

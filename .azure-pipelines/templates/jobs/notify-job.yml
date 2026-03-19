@@ -19,5 +19,5 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           tools/pip_install.py requests
-          "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" "${BUILD_SOURCEVERSIONAUTHOR}" $(webhook_url.secureFilePath) ${{ parameters.buildStatus }}
+          "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" $(webhook_url.secureFilePath) ${{ parameters.buildStatus }}
         displayName: Send mattermost message
