@@ -17,5 +17,5 @@ jobs:
       - bash: |
           set -e
           AUTHOR_NAME="$(git log -1 --pretty=format:'%an')"
-          "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" "${AUTHOR_NAME}" $(webhook_url.secureFilePath) ${{ parameters.snapReleaseChannel }}
+          "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" "${AUTHOR_NAME}" $(webhook_url.secureFilePath) ${{ parameters.buildStatus }}
         displayName: Send mattermost message
