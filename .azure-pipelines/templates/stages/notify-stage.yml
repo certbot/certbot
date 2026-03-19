@@ -8,7 +8,7 @@ stages:
           - task: DownloadSecureFile@1
             name: webhook_url
             inputs:
-              secureFile: mattermost_webhook_url_release_notify
+              secureFile: brads-test-webhook
           - bash: |
               set -e
               AUTHOR_NAME="$(git log -1 --pretty=format:'%an')"
@@ -24,9 +24,10 @@ stages:
           - task: DownloadSecureFile@1
             name: webhook_url
             inputs:
-              secureFile: mattermost_webhook_url_release_notify
+              secureFile: brads-test-webhook
           - bash: |
               set -e
+              env
               AUTHOR_NAME="$(git log -1 --pretty=format:'%an')"
               "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" "${AUTHOR_NAME}" $(webhook_url.secureFilePath) FAILURE
             displayName: Send mattermost failure message
