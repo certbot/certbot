@@ -16,5 +16,8 @@ jobs:
           secureFile: mattermost_webhook_url_release_notify
       - bash: |
           set -e
+          python -m venv venv
+          source venv/bin/activate
+          tools/pip_install.py requests
           "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" "${BUILD_SOURCEVERSIONAUTHOR}" $(webhook_url.secureFilePath) ${{ parameters.buildStatus }}
         displayName: Send mattermost message
