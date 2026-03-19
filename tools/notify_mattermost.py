@@ -49,12 +49,12 @@ fun_success_messages = [
     'all certbot release systems are set for launch!',
 ]
 
-if status == 'SUCCESS':
+if status in ['Succeeded', 'SucceededWithIssues ']:
     message = random.choice(fun_success_messages)
-elif status == 'FAILURE':
+elif status == 'Failed':
     message = "the release pipeline has failed."
 else:
-    raise RuntimeError("STATUS must be either SUCCESS or FAILURE")
+    raise RuntimeError("Unexpected Azure job status encountered")
 
 
 azure_url = 'https://dev.azure.com/certbot/certbot/_build?definitionId=3'
