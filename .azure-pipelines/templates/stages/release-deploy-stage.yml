@@ -25,12 +25,3 @@ stages:
             releaseNotesFilePath: '$(Pipeline.Workspace)/release_notes.md'
             assets: '$(Build.SourcesDirectory)/packages/{*.tar.gz,SHA256SUMS*}'
             addChangeLog: false
-      - job: succeed_for_status
-        dependsOn:
-          - create_github_release
-          - publish_snap
-          - publish_docker_by_arch
-          - publish_docker_multiarch
-        steps:
-          - bash: echo "success"
-            displayName: 'Succeed to grab status for notification'
