@@ -4,80 +4,97 @@ Script to notify the person doing the release that the Azure run was successful.
 
 Run:
 
-python tools/notify_mattermost.py MATTERMOST_WEBHOOK_URL STATUS
-
-where STATUS is either SUCCESS or FAILURE
+python tools/notify_mattermost.py MATTERMOST_WEBHOOK_URL
 """
 import os
 import random
 import requests
 import sys
 
-# We use github author here because it's what we have access to. If the name sometimes
-# changes, add any name it might be. Check the git log.
-requested_for = os.environ.get('BUILD_SOURCEVERSIONAUTHOR', '')
-# This is a map of github username to opensource mattermost username
-usernames_map = {
-    'wgreenberg': 'willg',
-    'bmw': 'brad',
-    'ohemorange': 'erica',
-}
-
-# This should be a mattermost webhook url that posts to a specific channel,
-# created by certbotbot, with a file containing the url saved in azure pipelines secret
-# files, under pipelines > library. The secret file will need to be given permission to
-# be used by the specific pipeline, in this case 'release.'
-url_path = sys.argv[1]
-with open(url_path, 'r') as file:
-    url = file.read().rstrip()
-
-status = sys.argv[2].rstrip()
-
-headers = {
-    'Content-Type': 'application/json',
-}
-
-fun_greetings = [
-    'Hey',
-    'Paging',
-    'Hi',
-    'Pinging',
-]
-
-fun_success_messages = [
-    'the certbot release is ready to come out of the oven!',
-    "it's release-finishing go time!",
-    'all certbot release systems are set for launch!',
-]
-
-if status == 'SUCCESS':
-    message = random.choice(fun_success_messages)
-elif status == 'FAILURE':
-    message = "the release pipeline has failed."
-else:
-    raise RuntimeError("STATUS must be either SUCCESS or FAILURE")
-
 repo_name = os.environ['BUILD_REPOSITORY_ID']
 build_id = os.environ['BUILD_BUILDID']
-azure_url = f'https://dev.azure.com/{repo_name}/_build/results?buildId={build_id}&view=results'
 
-greeting = random.choice(fun_greetings)
+def get_greeting():
+    fun_greetings = [
+        'Hey',
+        'Paging',
+        'Hi',
+        'Pinging',
+    ]
+    return random.choice(fun_greetings)
 
-if requested_for in usernames_map:
-    text_body = f'{greeting} @{usernames_map[requested_for]}, {message}\n{azure_url}'
-else:
-    text_body = (f"{greeting} {requested_for}, {message} If you'd like to get @ mentioned for "
-        "releases you do in the future, please modify tools/notify_mattermost.py with your "
-        f"git author name.\n{azure_url}")
+def get_message():
+    fun_success_messages = [
+        'the certbot release is ready to come out of the oven!',
+        "it's release-finishing go time!",
+        'all certbot release systems are set for launch!',
+    ]
 
-content = {
-    'text': text_body,
-}
+    timeline_url = f'https://dev.azure.com/{repo_name}/_apis/build/builds/{build_id}/timeline/?api-version=7.1'
+    r = requests.get(timeline_url)
+    data = r.json()
+    for x in data['records']:
+        if x['name'] == 'Deploy':
+            deploy_result = x['result']
+            break
+
+    # or data[-6(-ish)]['result']
+
+    # https://learn.microsoft.com/en-us/rest/api/azure/devops/build/timeline/get?view=azure-devops-rest-7.1
+    if deploy_result in ['succeeded', 'succeededWithIssues']:
+        message = random.choice(fun_success_messages)
+    elif deploy_result in ['skipped', 'failed', 'abandoned']:
+        message = "the release pipeline has failed."
+    else:
+        raise RuntimeError("Unknown stage status result {0}".format(deploy_result))
+    return message
+
+
+def get_mattermost_url():
+    # This should be a mattermost webhook url that posts to a specific channel,
+    # created by certbotbot, with a file containing the url saved in azure pipelines secret
+    # files, under pipelines > library. The secret file will need to be given permission to
+    # be used by the specific pipeline, in this case 'release.'
+    url_path = sys.argv[1]
+    with open(url_path, 'r') as file:
+        url = file.read().rstrip()
+    return url
+
+def get_headers():
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    return headers
+
+def get_content():
+    build_url = f'https://dev.azure.com/{repo_name}/_build/results?buildId={build_id}&view=results'
+
+    # We use github author here because it's what we have access to. If the name sometimes
+    # changes, add any name it might be. Check the git log.
+    requested_for = os.environ.get('BUILD_SOURCEVERSIONAUTHOR', '')
+    # This is a map of github username to opensource mattermost username
+    usernames_map = {
+        'wgreenberg': 'willg',
+        'bmw': 'brad',
+        'ohemorange': 'erica',
+    }
+
+    if requested_for in usernames_map:
+        text_body = f'{get_greeting()} @{usernames_map[requested_for]}, {get_message()}\n{build_url}'
+    else:
+        text_body = (f"{get_greeting()} {requested_for}, {get_message()} If you'd like to get @ mentioned for "
+            "releases you do in the future, please modify tools/notify_mattermost.py with your "
+            f"git author name.\n{build_url}")
+
+    content = {
+        'text': text_body,
+    }
+    return content
 
 response = requests.request(
     method='POST',
-    url=url,
-    headers=headers,
-    json=content,
+    url=get_mattermost_url(),
+    headers=get_headers(),
+    json=get_content(),
 )
 response.raise_for_status()
