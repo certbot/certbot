@@ -43,7 +43,7 @@ def get_message():
     deploy_result = deploy_record['result']
     if deploy_result in ['succeeded', 'succeededWithIssues']:
         message = random.choice(fun_success_messages)
-    elif deploy_result in ['failed']:
+    elif deploy_result == 'failed':
         message = "the release pipeline has failed."
     else:
         raise RuntimeError('Unexpected stage result {0}'.format(deploy_result))
