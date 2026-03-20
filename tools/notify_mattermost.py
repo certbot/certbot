@@ -34,9 +34,10 @@ def get_message():
     timeline_url = f'https://dev.azure.com/{repo_name}/_apis/build/builds/{build_id}/timeline/?api-version=7.1'
     response = requests.get(timeline_url)
     response.raise_for_status()
+    data = response.json()
 
     stage_name = 'TestAndPackage'
-    deploy_record = next((rec for rec in response['records'] if rec['name'] == stage_name), None)
+    deploy_record = next((rec for rec in data['records'] if rec['name'] == stage_name), None)
     if deploy_record is None:
         raise RuntimeError(f'Unable to find the record for the {stage_name} stage')
 
