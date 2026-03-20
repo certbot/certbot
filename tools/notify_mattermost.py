@@ -36,10 +36,9 @@ def get_message():
     response.raise_for_status()
     data = response.json()
 
-    stage_name = 'TestAndPackage'
-    deploy_record = next((rec for rec in data['records'] if rec['name'] == stage_name), None)
+    deploy_record = next((rec for rec in data['records'] if rec['name'] == 'TestAndPackage'), None)
     if deploy_record is None:
-        raise RuntimeError(f'Unable to find the record for the {stage_name} stage')
+        raise RuntimeError('Unable to find the record for the Deploy stage')
 
     deploy_result = deploy_record['result']
     if deploy_result in ['succeeded', 'succeededWithIssues']:
