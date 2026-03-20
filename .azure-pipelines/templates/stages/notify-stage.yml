@@ -15,5 +15,5 @@ stages:
               python -m venv venv
               source venv/bin/activate
               tools/pip_install.py requests
-              "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py" $(webhook_url.secureFilePath)
+              tools/notify_mattermost.py" $(webhook_url.secureFilePath)
             displayName: Send mattermost message
