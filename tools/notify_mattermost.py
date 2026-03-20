@@ -35,7 +35,7 @@ def get_message():
     response = requests.get(timeline_url)
     response.raise_for_status()
     data = response.json()
-    deploy_record = next((rec for rec in data['records'] if rec['name'] == 'Deploy'), None)
+    deploy_record = next((rec for rec in data['records'] if rec['name'] == 'Stage2'), None)
     if deploy_record is None:
         raise RuntimeError('Unable to find the record for the Deploy stage')
     deploy_result = deploy_record['result']
