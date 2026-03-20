@@ -82,7 +82,7 @@ def get_content():
     if requested_for in usernames_map:
         text_body = f'{get_greeting()} @{usernames_map[requested_for]}, {get_message()}\n{build_url}'
     else:
-        text_body = (f"{get_greeting()} {requested_for}, {get_message()} If you'd like to get @ mentioned for "
+        text_body = (f"{get_greeting()} {requested_for}, {get_message()}\nIf you'd like to get @ mentioned for "
             "releases you do in the future, please modify tools/notify_mattermost.py with your "
             f"git author name.\n{build_url}")
 
