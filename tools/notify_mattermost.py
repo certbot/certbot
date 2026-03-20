@@ -34,9 +34,10 @@ def get_message():
     r = requests.get(timeline_url)
     data = r.json()
     for x in data['records']:
-        if x['name'] == 'Deploy':
+        if x['name'] == 'Changelog':
             deploy_result = x['result']
             break
+    print(f'deploy_result is {deploy_result}')
 
     # or data[-6(-ish)]['result']
 
