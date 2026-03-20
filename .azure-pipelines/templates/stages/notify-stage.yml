@@ -6,14 +6,10 @@ stages:
         pool:
           vmImage: ubuntu-latest
         steps:
-          - task: DownloadSecureFile@1
-            name: webhook_url
-            inputs:
-              secureFile: mattermost_webhook_url_release_notify
           - bash: |
               set -e
               python -m venv venv
               source venv/bin/activate
               tools/pip_install.py requests
-              tools/notify_mattermost.py" $(webhook_url.secureFilePath)
+              "${BUILD_REPOSITORY_LOCALPATH}/tools/notify_mattermost.py"
             displayName: Send mattermost message

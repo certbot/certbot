@@ -91,10 +91,4 @@ def get_content():
     }
     return content
 
-response = requests.request(
-    method='POST',
-    url=get_mattermost_url(),
-    headers=get_headers(),
-    json=get_content(),
-)
-response.raise_for_status()
+print(get_content())
