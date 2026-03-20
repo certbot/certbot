@@ -30,25 +30,22 @@ def get_message():
         'all certbot release systems are set for launch!',
     ]
 
-    timeline_url = f'https://dev.azure.com/{repo_name}/_apis/build/builds/{build_id}/timeline/?api-version=7.1'
-    r = requests.get(timeline_url)
-    data = r.json()
-    for x in data['records']:
-        if x['name'] == 'Deploy':
-            deploy_result = x['result']
-            break
-
-    # or data[-6(-ish)]['result']
-
     # https://learn.microsoft.com/en-us/rest/api/azure/devops/build/timeline/get?view=azure-devops-rest-7.1
+    timeline_url = f'https://dev.azure.com/{repo_name}/_apis/build/builds/{build_id}/timeline/?api-version=7.1'
+    response = requests.get(timeline_url)
+    response.raise_for_status()
+    data = response.json()
+    deploy_record = next((rec for rec in data['records'] if rec['name'] == 'Deploy'), None)
+    if deploy_record is None:
+        raise RuntimeError('Unable to find the record for the Deploy stage')
+    deploy_result = deploy_record['result']
     if deploy_result in ['succeeded', 'succeededWithIssues']:
         message = random.choice(fun_success_messages)
     elif deploy_result in ['skipped', 'failed', 'abandoned']:
         message = "the release pipeline has failed."
     else:
-        raise RuntimeError("Unknown stage status result {0}".format(deploy_result))
+        raise RuntimeError('Unexpected stage result {0}'.format(deploy_result))
     return message
-
 
 def get_mattermost_url():
     # This should be a mattermost webhook url that posts to a specific channel,
