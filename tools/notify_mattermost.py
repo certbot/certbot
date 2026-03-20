@@ -4,7 +4,7 @@ Script to notify the person doing the release that the Azure run was successful.
 
 Run:
 
-python tools/notify_mattermost.py MATTERMOST_WEBHOOK_URL
+python tools/notify_mattermost.py GITHUB_AUTHOR_NAME MATTERMOST_WEBHOOK_URL
 """
 import os
 import random
@@ -55,7 +55,7 @@ def get_mattermost_url():
     # created by certbotbot, with a file containing the url saved in azure pipelines secret
     # files, under pipelines > library. The secret file will need to be given permission to
     # be used by the specific pipeline, in this case 'release.'
-    url_path = sys.argv[1]
+    url_path = sys.argv[2]
     with open(url_path, 'r') as file:
         url = file.read().rstrip()
     return url
@@ -71,11 +71,12 @@ def get_content():
 
     # We use github author here because it's what we have access to. If the name sometimes
     # changes, add any name it might be. Check the git log.
-    requested_for = os.environ.get('BUILD_SOURCEVERSIONAUTHOR', '')
-    # This is a map of github username to opensource mattermost username
+    requested_for = sys.argv[1].rstrip()
+    # This is a map of team member github author names to opensource mattermost username
     usernames_map = {
-        'wgreenberg': 'willg',
-        'bmw': 'brad',
+        'Will Greenberg': 'willg',
+        'Erica Portnoy': 'erica',
+        'Brad Warren': 'brad',
         'ohemorange': 'erica',
     }
 

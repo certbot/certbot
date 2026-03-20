@@ -15,5 +15,6 @@ stages:
               python -m venv venv
               source venv/bin/activate
               tools/pip_install.py requests
-              tools/notify_mattermost.py" $(webhook_url.secureFilePath)
+              AUTHOR_NAME="$(git log -1 --pretty=format:'%an')"
+              tools/notify_mattermost.py" "${AUTHOR_NAME}" $(webhook_url.secureFilePath)
             displayName: Send mattermost message
