@@ -36,7 +36,7 @@ def get_message():
     response.raise_for_status()
 
     stage_name = 'TestAndPackage'
-    deploy_record = next(rec for rec in response['records'] if rec['name'] == stage_name, None)
+    deploy_record = next((rec for rec in response['records'] if rec['name'] == stage_name), None)
     if deploy_record is None:
         raise RuntimeError(f'Unable to find the record for the {stage_name} stage')
 
