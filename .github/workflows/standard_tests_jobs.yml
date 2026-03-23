@@ -42,7 +42,7 @@ jobs:
           TOXENV: py310
     steps:
     - name: Checkout
-      uses: actions/checkout@v4.1.0
+      uses: actions/checkout@v6.0.2
     - name: Setup tox
       uses: "./.github/actions/setup_tox"
     - name: Run tox
@@ -56,5 +56,5 @@ jobs:
       - ubuntu-22.04
     steps:
     - name: checkout
-      uses: actions/checkout@v4.1.0
+      uses: actions/checkout@v6.0.2
     - uses: "./.github/actions/sphinx_steps"

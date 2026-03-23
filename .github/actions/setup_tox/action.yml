@@ -22,7 +22,7 @@ runs:
       sudo systemctl stop nginx
       sudo sysctl net.ipv4.ip_unprivileged_port_start=0
     shell: bash
-  - uses: actions/setup-python@v5.0.0
+  - uses: actions/setup-python@v6.2.0
     with:
       python-version: "${{ matrix.PYTHON_VERSION }}"
   - name: Install runtime dependencies
