@@ -1,0 +1,51 @@
+# Environment variables defined in a calling workflow are not accessible to this reusable workflow. Refer to the documentation for further details on this limitation.
+name: standard_tests_jobs
+on:
+  workflow_call:
+jobs:
+  test:
+    runs-on:
+      - self-hosted
+      - "${{ matrix.IMAGE_NAME }}"
+    env:
+      PYTHON_VERSION: 3.14
+    strategy:
+      matrix:
+        include:
+        - IMAGE_NAME: macOS-15
+          TOXENV: cover
+          PIP_USE_PEP517: 'true'
+        - IMAGE_NAME: ubuntu-22.04
+          PYTHON_VERSION: 3.1
+          TOXENV: oldest
+        - IMAGE_NAME: ubuntu-22.04
+          PYTHON_VERSION: 3.1
+          TOXENV: py310
+        - IMAGE_NAME: ubuntu-22.04
+          TOXENV: cover
+        - IMAGE_NAME: ubuntu-22.04
+          TOXENV: lint-posix
+        - IMAGE_NAME: ubuntu-22.04
+          TOXENV: mypy
+        - IMAGE_NAME: ubuntu-22.04
+          TOXENV: integration
+        - IMAGE_NAME: ubuntu-22.04
+          TOXENV: apache_compat
+        - IMAGE_NAME: ubuntu-22.04
+          TOXENV: apacheconftest-with-pebble
+        - IMAGE_NAME: ubuntu-22.04
+          TOXENV: nginxroundtrip
+        - IMAGE_NAME: ubuntu-22.04
+          TOXENV: validate-changelog
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+    - uses: "./.github/actions/tox_steps"
+  test_sphinx_builds:
+    runs-on:
+      - self-hosted
+      - ubuntu-22.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+    - uses: "./.github/actions/sphinx_steps"

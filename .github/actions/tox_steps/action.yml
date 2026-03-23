@@ -1,0 +1,73 @@
+name: tox_steps
+runs:
+  using: composite
+  steps:
+  - name: Install MacOS dependencies
+    if: startsWith(env.IMAGE_NAME, 'macOS')
+    run: |-
+      set -e
+      unset HOMEBREW_NO_INSTALL_FROM_API
+      brew untap homebrew/core homebrew/cask
+      brew update
+      brew install augeas
+    shell: bash
+  - name: Install Linux dependencies
+    if: startsWith(env.IMAGE_NAME, 'ubuntu')
+    run: |-
+      set -e
+      sudo apt-get update
+      sudo apt-get install -y --no-install-recommends \
+        libaugeas-dev \
+        nginx-light
+      sudo systemctl stop nginx
+      sudo sysctl net.ipv4.ip_unprivileged_port_start=0
+    shell: bash
+  - uses: actions/setup-python@v5.0.0
+    with:
+      python-version: "${{ matrix.PYTHON_VERSION }}"
+  - name: Install runtime dependencies
+    run: |-
+      set -e
+      python3 tools/pip_install.py tox
+    shell: bash
+#   # This item has no matching transformer
+#   - task: DownloadSecureFile@1
+#     name: testFarmPem
+#     inputs:
+#       secureFile: azure-test-farm.pem
+#     condition: contains(variables['TOXENV'], 'test-farm')
+  - name: Run tox
+    env:
+      AWS_ACCESS_KEY_ID: "${{ env.AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "${{ env.AWS_SECRET_ACCESS_KEY }}"
+      AWS_EC2_PEM_FILE: "${{ env.testFarmPem_secureFilePath }}"
+    run: |-
+      set -e
+      export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
+      [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
+      env
+      python3 -m tox run
+    shell: bash
+  - name: Upload coverage data
+    if: env.uploadCoverage == true && (startsWith(env.TOXENV, 'cover') || startsWith(env.TOXENV, 'integration'))
+    run: |-
+      python3 tools/pip_install.py -I coverage
+      case "${{ runner.os }}" in
+        Darwin)
+          CODECOV_URL="https://uploader.codecov.io/latest/macos/codecov"
+          ;;
+        Linux)
+          CODECOV_URL="https://uploader.codecov.io/latest/linux/codecov"
+          ;;
+        Windows_NT)
+          CODECOV_URL="https://uploader.codecov.io/latest/windows/codecov.exe"
+          ;;
+        *)
+          echo "Unexpected OS"
+          exit 0
+      esac
+      curl --retry 3 -o codecov "$CODECOV_URL"
+      chmod +x codecov
+      coverage xml
+      ./codecov || echo "Uploading coverage data failed"
+    shell: bash

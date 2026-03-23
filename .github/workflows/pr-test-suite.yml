@@ -1,0 +1,16 @@
+name: certbot/pr-test-suite
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - master
+    - main
+    - "*.x"
+env:
+  uploadCoverage: true
+jobs:
+  standard_tests_jobs:
+    name: standard_tests_jobs
+    uses: "./.github/workflows/standard_tests_jobs.yml"
