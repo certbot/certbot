@@ -1,0 +1,27 @@
+name: upload_coverage
+runs:
+  using: composite
+  steps:
+  - name: Upload coverage data
+    if: env.uploadCoverage == true && (startsWith(matrix.TOXENV, 'cover') || startsWith(matrix.TOXENV, 'integration'))
+    run: |-
+      python3 tools/pip_install.py -I coverage
+      case "${{ runner.os }}" in
+        Darwin)
+          CODECOV_URL="https://uploader.codecov.io/latest/macos/codecov"
+          ;;
+        Linux)
+          CODECOV_URL="https://uploader.codecov.io/latest/linux/codecov"
+          ;;
+        Windows_NT)
+          CODECOV_URL="https://uploader.codecov.io/latest/windows/codecov.exe"
+          ;;
+        *)
+          echo "Unexpected OS"
+          exit 0
+      esac
+      curl --retry 3 -o codecov "$CODECOV_URL"
+      chmod +x codecov
+      coverage xml
+      ./codecov || echo "Uploading coverage data failed"
+    shell: bash

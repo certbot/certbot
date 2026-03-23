@@ -43,7 +43,9 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v4.1.0
-    - uses: "./.github/actions/tox_steps"
+    - uses: "./.github/actions/setup_tox"
+    - uses: "./.github/actions/run_tox"
+    - uses: "./.github/actions/upload_coverage"
   test_sphinx_builds:
     permissions:
       contents: read
