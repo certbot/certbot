@@ -1,0 +1,33 @@
+# Environment variables defined in a calling workflow are not accessible to this reusable workflow. Refer to the documentation for further details on this limitation.
+name: test_and_package_stage
+on:
+  workflow_call:
+    inputs:
+      dockerTag:
+        description: 'docker tag to push to'
+        type: string
+      snapBuildTimeout:
+        description: 'timeout for snap builds'
+        type: number
+
+jobs:
+  standard_tests_jobs:
+    name: standard_tests_jobs
+    uses: "./.github/workflows/standard_tests_jobs.yml"
+    permissions:
+      contents: read
+  extended_tests_jobs:
+    name: extended_tests_jobs
+    uses: "./.github/workflows/extended_tests_jobs.yml"
+    permissions:
+      contents: read
+    secrets: inherit
+  packaging_jobs:
+    name: packaging_jobs
+    uses: "./.github/workflows/packaging_jobs.yml"
+    permissions:
+      contents: read
+    with:
+      dockerTag: ${{ inputs.dockerTag }}
+      snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
+    secrets: inherit
