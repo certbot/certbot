@@ -41,11 +41,14 @@ jobs:
           PYTHON_VERSION: '3.10'
           TOXENV: py310
     steps:
-    - name: checkout
+    - name: Checkout
       uses: actions/checkout@v4.1.0
-    - uses: "./.github/actions/setup_tox"
-    - uses: "./.github/actions/run_tox"
-    - uses: "./.github/actions/upload_coverage"
+    - name: Setup tox
+      uses: "./.github/actions/setup_tox"
+    - name: Run tox
+      uses: "./.github/actions/run_tox"
+    - name: Upload coverage
+      uses: "./.github/actions/upload_coverage"
   test_sphinx_builds:
     permissions:
       contents: read
