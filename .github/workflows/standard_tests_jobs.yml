@@ -9,6 +9,7 @@ on:
         default: false
 jobs:
   test:
+    name: test ${{ matrix.IMAGE_NAME }}-${{ matrix.TOXENV }}
     permissions:
       contents: read
     runs-on:
