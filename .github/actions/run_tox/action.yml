@@ -1,14 +1,34 @@
 name: run_tox
+
+inputs:
+  AWS_ACCESS_KEY_ID:
+    description: 'access key ID for AWS'
+  AWS_SECRET_ACCESS_KEY:
+    description: 'access key for AWS'
+  AWS_TEST_FARM_PEM:
+    description: 'contents of AWS PEM file to be placed in $AWS_EC2_PEM_FILE from environment'
+  PIP_USE_PEP517:
+    description: 'a pip flag'
+  TOXENV:
+    description: 'the tox environment to run'
+
 runs:
   using: composite
   steps:
+  - name: Create test farm pem file
+    if: contains(matrix.TOXENV, 'test-farm')
+    env:
+      PEM_CONTENTS: "${{ inputs.AWS_TEST_FARM_PEM }}"
+    run: |-
+      set -e
+      echo "${PEM_CONTENTS}" >> $AWS_EC2_PEM_FILE
+    shell: bash
   - name: Run tox
     env:
-      AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
-      AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-      AWS_EC2_PEM: "github-test-farm.pem"
-      PIP_USE_PEP517: "${{ matrix.PIP_USE_PEP517 }}"
-      TOXENV: "${{ matrix.TOXENV }}"
+      AWS_ACCESS_KEY_ID: "${{ inputs.AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "${{ inputs.AWS_SECRET_ACCESS_KEY }}"
+      PIP_USE_PEP517: "${{ inputs.PIP_USE_PEP517 }}"
+      TOXENV: "${{ inputs.TOXENV }}"
     run: |-
       set -e
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"

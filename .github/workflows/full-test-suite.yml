@@ -1,0 +1,19 @@
+# Advanced pipeline for running our full test suite on demand.
+name: certbot/full-test-suite
+on:
+  push:
+    branches:
+    # When changing these triggers, please ensure the documentation under
+    # "Running tests in CI" is still correct.
+    - test-*
+
+jobs:
+  test_and_package_stage:
+    name: test_and_package_stage
+    uses: "./.github/workflows/test_and_package_stage.yml"
+    with:
+      # We don't publish our Docker images in this pipeline, but when building them
+      # for testing, let's use the nightly tag.
+      dockerTag: nightly
+      snapBuildTimeout: 5400
+    secrets: inherit

@@ -1,0 +1,64 @@
+# Environment variables defined in a calling workflow are not accessible to this reusable workflow. Refer to the documentation for further details on this limitation.
+name: extended_tests_jobs
+on:
+  workflow_call:
+
+jobs:
+  test:
+    name: extended_test ${{ matrix.TOXENV }} ${{ matrix.PYTHON_VERSION }}
+    permissions:
+      contents: read
+    runs-on:
+      - 'ubuntu-22.04'
+    env:
+      uploadCoverage: ${{ inputs.uploadCoverage }}
+    strategy:
+      fail-fast: false
+      matrix:
+        PYTHON_VERSION: ['3.14']
+        TOXENV:
+        - isolated-acme,isolated-certbot,isolated-apache,isolated-cloudflare,isolated-digitalocean,isolated-dnsimple,isolated-dnsmadeeasy,isolated-gehirn,isolated-google,isolated-linode,isolated-luadns,isolated-nsone,isolated-ovh,isolated-rfc2136,isolated-route53,isolated-sakuracloud,isolated-nginx
+        - nginx_compat
+        - modification
+        include:
+        - PYTHON_VERSION: '3.11'
+          TOXENV: py311
+        - PYTHON_VERSION: '3.12'
+          TOXENV: py312
+        - PYTHON_VERSION: '3.13'
+          TOXENV: py313
+        - PYTHON_VERSION: '3.10'
+          TOXENV: integration-certbot-oldest
+        - PYTHON_VERSION: '3.10'
+          TOXENV: integration-nginx-oldest
+        - PYTHON_VERSION: '3.10'
+          TOXENV: integration
+        - PYTHON_VERSION: '3.11'
+          TOXENV: integration
+        - PYTHON_VERSION: '3.12'
+          TOXENV: integration
+        - PYTHON_VERSION: '3.13'
+          TOXENV: integration
+        # python 3.14 integration tests are not run here because they're run as
+        # part of the standard test suite
+        - PYTHON_VERSION: '3.12'
+          TOXENV: integration-dns-rfc2136
+        - PYTHON_VERSION: '3.12'
+          TOXENV: test-farm-apache2
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6.0.2
+    - name: Setup tox
+      uses: "./.github/actions/setup_tox"
+    - name: Run tox
+      uses: "./.github/actions/run_tox"
+      env:
+        AWS_EC2_PEM_FILE: ${{ github.workspace }}/GHAKeyPair.pem
+      with:
+        AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+        AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+        AWS_TEST_FARM_PEM: "${{ secrets.AWS_TEST_FARM_PEM }}"
+        PIP_USE_PEP517: "${{ matrix.PIP_USE_PEP517 }}"
+        TOXENV: "${{ matrix.TOXENV }}"
+    - name: Upload coverage
+      uses: "./.github/actions/upload_coverage"

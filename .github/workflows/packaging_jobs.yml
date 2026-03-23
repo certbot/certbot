@@ -1,0 +1,188 @@
+# Environment variables defined in a calling workflow are not accessible to this reusable workflow. Refer to the documentation for further details on this limitation.
+name: packaging_jobs
+on:
+  workflow_call:
+    inputs:
+      dockerTag:
+        description: 'docker tag to push to'
+        type: string
+      snapBuildTimeout:
+        description: 'timeout for snap builds'
+        type: number
+
+env:
+  dockerTag: ${{ inputs.dockerTag }}
+  snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
+
+jobs:
+  docker_build:
+    runs-on:
+      - ubuntu-24.04
+    # The default timeout of 60 minutes is a little low for compiling
+    # cryptography on ARM architectures.
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        DOCKER_ARCH:
+        - arm32v6
+        - arm64v8
+        - amd64
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - name: Build the Docker images
+      # We don't filter for the Docker Hub organization to continue to allow
+      # easy testing of these scripts on forks.
+      run: set -e && tools/docker/build.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
+      shell: bash
+    - name: Save the Docker images
+      run: |-
+        set -e
+        DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
+        docker save --output images.tar $DOCKER_IMAGES
+      shell: bash
+    # If the name of the tar file or artifact changes, the deploy stage will
+    # also need to be updated.
+    - name: Prepare Docker artifact
+      run: set -e && mv images.tar ${{ runner.temp }}
+      shell: bash
+    - name: Store Docker artifact
+      uses: actions/upload-artifact@v4.1.0
+      with:
+        name: docker_${{ matrix.DOCKER_ARCH }}
+        path: "${{ runner.temp }}"
+  docker_test:
+    needs:
+    - docker_build
+    runs-on:
+      - ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        DOCKER_ARCH:
+        - arm32v6
+        - arm64v8
+        - amd64
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - name: Retrieve Docker images
+      uses: actions/download-artifact@v8.0.1
+      with:
+        name: docker_${{ matrix.DOCKER_ARCH }}
+        github_token: "${{ secrets.GITHUB_TOKEN }}"
+        path: "${{ github.workspace }}"
+        repo: "${{ github.repository }}"
+    - name: Load Docker images
+      run: set -e && docker load --input ${{ github.workspace }}/images.tar
+      shell: bash
+    - name: Run integration tests for Docker images
+      run: set -e && tools/docker/test.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
+      shell: bash
+  snaps_build:
+    runs-on:
+      - ubuntu-22.04
+    timeout-minutes: 0
+    strategy:
+      fail-fast: false
+      matrix:
+        SNAP_ARCH:
+        - amd64
+        - armhf
+        - arm64
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - name: Install dependencies
+      run: |-
+        set -e
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends snapd
+        sudo snap install --classic snapcraft
+    - uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.12'
+    - name: Build snaps
+      env:
+        SNAPCRAFT_STORE_CREDENTIALS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"
+      run: |-
+        set -e
+        git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+        git config --global user.name "${{ github.actor }}"
+        python3 tools/snap/build_remote.py ALL --archs ${{ matrix.SNAP_ARCH }} --timeout ${{ env.snapBuildTimeout }}
+    - name: Prepare artifacts
+      run: |-
+        set -e
+        mv *.snap ${{ runner.temp }}
+        mv certbot-dns-*/*.snap ${{ runner.temp }}
+    - name: Store snaps artifacts
+      uses: actions/upload-artifact@v4.1.0
+      with:
+        name: snaps_${{ matrix.SNAP_ARCH }}
+        path: "${{ runner.temp }}"
+  snap_run:
+    needs:
+    - snaps_build
+    runs-on:
+      - ubuntu-22.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.12'
+    - name: Install dependencies
+      run: |-
+        set -e
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends nginx-light snapd
+        python3 -m venv venv
+        venv/bin/python tools/pip_install.py -U tox
+    - name: Retrieve Certbot snaps
+      uses: actions/download-artifact@v8.0.1
+      with:
+        name: snaps_amd64
+        github_token: "${{ secrets.GITHUB_TOKEN }}"
+        path: "${{ github.workspace }}/snap"
+        repo: "${{ github.repository }}"
+    - name: Install Certbot snap
+      run: |-
+        set -e
+        sudo snap install --dangerous --classic snap/certbot_*.snap
+    - name: Run tox
+      run: |-
+        set -e
+        venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
+  snap_dns_run:
+    needs:
+    - snaps_build
+    runs-on:
+      - ubuntu-22.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - name: Install dependencies
+      run: |-
+        set -e
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends snapd
+    - uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.12'
+    - name: Retrieve Certbot snaps
+      uses: actions/download-artifact@v8.0.1
+      with:
+        name: snaps_amd64
+        github_token: "${{ secrets.GITHUB_TOKEN }}"
+        path: "${{ github.workspace }}/snap"
+        repo: "${{ github.repository }}"
+    - name: Prepare Certbot-CI
+      run: |-
+        set -e
+        python3 -m venv venv
+        venv/bin/python tools/pip_install.py -e certbot-ci
+    - name: Test DNS plugins snaps
+      run: |-
+        set -e
+        sudo -E venv/bin/pytest certbot-ci/src/snap_integration_tests/dns_tests --allow-persistent-changes --snap-folder ${{ github.workspace }}/snap --snap-arch amd64
