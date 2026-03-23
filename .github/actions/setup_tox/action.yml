@@ -1,9 +1,16 @@
 name: setup_tox
+
+inputs:
+  AWS_TEST_FARM_PEM:
+    description: 'Contents of keyfile for AWS'
+  AWS_EC2_PEM_FILE:
+    description: 'Location of keyfile for AWS'
+
 runs:
   using: composite
   steps:
   - name: Install MacOS dependencies
-    if: startsWith(matrix.IMAGE_NAME, 'macOS')
+    if: runner.os == 'macOS'
     run: |-
       set -e
       unset HOMEBREW_NO_INSTALL_FROM_API
@@ -12,7 +19,7 @@ runs:
       brew install augeas
     shell: bash
   - name: Install Linux dependencies
-    if: startsWith(matrix.IMAGE_NAME, 'ubuntu')
+    if: runner.os == 'Linux'
     run: |-
       set -e
       sudo apt-get update
@@ -29,10 +36,4 @@ runs:
     run: |-
       set -e
       python3 tools/pip_install.py tox
-    shell: bash
-  - name: Create test farm pem file
-    if: contains(matrix.TOXENV, 'test-farm')
-    env:
-      PEM_CONTENTS: "${{ secrets.AWS_TEST_FARM_PEM }}"
-    run: 'echo ${PEM_CONTENTS} >> github-test-farm.pem'
     shell: bash
