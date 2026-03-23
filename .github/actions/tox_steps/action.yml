@@ -3,7 +3,7 @@ runs:
   using: composite
   steps:
   - name: Install MacOS dependencies
-    if: startsWith(env.IMAGE_NAME, 'macOS')
+    if: startsWith(matrix.IMAGE_NAME, 'macOS')
     run: |-
       set -e
       unset HOMEBREW_NO_INSTALL_FROM_API
@@ -12,7 +12,7 @@ runs:
       brew install augeas
     shell: bash
   - name: Install Linux dependencies
-    if: startsWith(env.IMAGE_NAME, 'ubuntu')
+    if: startsWith(matrix.IMAGE_NAME, 'ubuntu')
     run: |-
       set -e
       sudo apt-get update
@@ -30,17 +30,19 @@ runs:
       set -e
       python3 tools/pip_install.py tox
     shell: bash
-#   # This item has no matching transformer
-#   - task: DownloadSecureFile@1
-#     name: testFarmPem
-#     inputs:
-#       secureFile: azure-test-farm.pem
-#     condition: contains(variables['TOXENV'], 'test-farm')
+  - name: Create test farm pem file
+    if: contains(matrix.TOXENV, 'test-farm')
+    env:
+      PEM_CONTENTS: "${{ secrets.AWS_TEST_FARM_PEM }}"
+    run: 'echo ${PEM_CONTENTS} >> github-test-farm.pem'
+    shell: bash
   - name: Run tox
     env:
-      AWS_ACCESS_KEY_ID: "${{ env.AWS_ACCESS_KEY_ID }}"
-      AWS_SECRET_ACCESS_KEY: "${{ env.AWS_SECRET_ACCESS_KEY }}"
-      AWS_EC2_PEM_FILE: "${{ env.testFarmPem_secureFilePath }}"
+      AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+      AWS_EC2_PEM: "github-test-farm.pem"
+      PIP_USE_PEP517: "${{ matrix.PIP_USE_PEP517 }}"
+      TOXENV: "${{ matrix.TOXENV }}"
     run: |-
       set -e
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
@@ -49,7 +51,7 @@ runs:
       python3 -m tox run
     shell: bash
   - name: Upload coverage data
-    if: env.uploadCoverage == true && (startsWith(env.TOXENV, 'cover') || startsWith(env.TOXENV, 'integration'))
+    if: env.uploadCoverage == true && (startsWith(matrix.TOXENV, 'cover') || startsWith(matrix.TOXENV, 'integration'))
     run: |-
       python3 tools/pip_install.py -I coverage
       case "${{ runner.os }}" in

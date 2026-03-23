@@ -2,48 +2,51 @@
 name: standard_tests_jobs
 on:
   workflow_call:
+    inputs:
+      uploadCoverage:
+        description: 'Upload coverage to Codecov'
+        type: boolean
+        default: false
 jobs:
   test:
+    permissions:
+      contents: read
     runs-on:
-      - self-hosted
       - "${{ matrix.IMAGE_NAME }}"
     env:
-      PYTHON_VERSION: 3.14
+      uploadCoverage: ${{ inputs.uploadCoverage }}
     strategy:
       matrix:
+        PYTHON_VERSION: ['3.14']
+        IMAGE_NAME: ['ubuntu-22.04']
+        TOXENV:
+          - 'cover'
+          - 'lint-posix'
+          - 'mypy'
+          - 'integration'
+          - 'apache_compat'
+          - 'apacheconftest-with-pebble'
+          - 'nginxroundtrip'
+          - 'validate-changelog'
         include:
         - IMAGE_NAME: macOS-15
+          PYTHON_VERSION: '3.14'
           TOXENV: cover
           PIP_USE_PEP517: 'true'
         - IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.1
+          PYTHON_VERSION: '3.10'
           TOXENV: oldest
         - IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: 3.1
+          PYTHON_VERSION: '3.10'
           TOXENV: py310
-        - IMAGE_NAME: ubuntu-22.04
-          TOXENV: cover
-        - IMAGE_NAME: ubuntu-22.04
-          TOXENV: lint-posix
-        - IMAGE_NAME: ubuntu-22.04
-          TOXENV: mypy
-        - IMAGE_NAME: ubuntu-22.04
-          TOXENV: integration
-        - IMAGE_NAME: ubuntu-22.04
-          TOXENV: apache_compat
-        - IMAGE_NAME: ubuntu-22.04
-          TOXENV: apacheconftest-with-pebble
-        - IMAGE_NAME: ubuntu-22.04
-          TOXENV: nginxroundtrip
-        - IMAGE_NAME: ubuntu-22.04
-          TOXENV: validate-changelog
     steps:
     - name: checkout
       uses: actions/checkout@v4.1.0
     - uses: "./.github/actions/tox_steps"
   test_sphinx_builds:
+    permissions:
+      contents: read
     runs-on:
-      - self-hosted
       - ubuntu-22.04
     steps:
     - name: checkout
