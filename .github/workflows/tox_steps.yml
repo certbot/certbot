@@ -9,6 +9,7 @@ on:
         default: false
 jobs:
   test:
+    if: ${{ ! cancelled() }}
     permissions:
       contents: read
     runs-on:
@@ -16,7 +17,6 @@ jobs:
     env:
       uploadCoverage: ${{ inputs.uploadCoverage }}
     strategy:
-      fail-fast: false
       matrix:
         PYTHON_VERSION: ['3.14']
         IMAGE_NAME: ['ubuntu-22.04']
