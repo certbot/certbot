@@ -9,6 +9,10 @@ on:
     branches:
     - main
     - "*.x"
+concurrency:
+  # https://stackoverflow.com/questions/74117321/if-condition-in-concurrency-in-gha
+  group: ${{ github.workflow }}-${{ github.head_ref && github.ref || github.run_id }}
+  cancel-in-progress: true
 jobs:
   standard_tests_jobs:
     name: standard_tests_jobs
