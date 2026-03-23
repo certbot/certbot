@@ -9,6 +9,7 @@ on:
         default: false
 jobs:
   test:
+    if: ${{ ! cancelled() }}
     permissions:
       contents: read
     runs-on:
