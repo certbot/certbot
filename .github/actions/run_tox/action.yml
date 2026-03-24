@@ -22,6 +22,7 @@ runs:
     run: |-
       set -e
       echo ${PEM_CONTENTS} >> $AWS_EC2_PEM_FILE
+      chmod 0600 $AWS_EC2_PEM_FILE
     shell: bash
   - name: Run tox
     env:
