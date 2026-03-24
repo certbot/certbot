@@ -32,6 +32,7 @@ runs:
       TOXENV: "${{ inputs.TOXENV }}"
     run: |-
       set -e
+      ssh-keygen -e -f $AWS_EC2_PEM_FILE
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
       [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
       env
