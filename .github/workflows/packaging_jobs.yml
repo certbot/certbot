@@ -80,12 +80,31 @@ jobs:
   #   - name: Run integration tests for Docker images
   #     run: set -e && tools/docker/test.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
   #     shell: bash
-  snaps_build_action:
-    name: Snap build using action
-    runs-on: ubuntu-latest
+  snap_build_amd:
+    name: Build amd snap
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: snapcore/action-build@v1.3.0
+        id: build
+        with:
+          snapcraft-args: "--build-for=amd64"
+      - name: Prepare artifact
+        run: |-
+          set -e
+          mv *.snap ${{ runner.temp }}
+      - name: Store snap artifact
+        uses: actions/upload-artifact@v4.1.0
+        with:
+          name: snaps_amd64
+          path: "${{ runner.temp }}"
+
+  snap_build_arm:
+    name: Build arm snaps
+    runs-on: ubuntu-24.04-arm
     strategy:
       matrix:
-        arch: [amd64, arm64, armhf]
+        arch: [arm64, armhf]
     steps:
       - uses: actions/checkout@v6.0.2
       - uses: snapcore/action-build@v1.3.0
@@ -145,7 +164,8 @@ jobs:
   #       path: "${{ runner.temp }}"
   snap_run:
     needs:
-    - snaps_build_action
+    - snap_build_amd
+    - snap_build_arm
     runs-on:
       - ubuntu-22.04
     steps:
