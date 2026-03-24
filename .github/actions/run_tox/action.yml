@@ -21,7 +21,7 @@ runs:
       PEM_CONTENTS: "${{ inputs.AWS_TEST_FARM_PEM }}"
     run: |-
       set -e
-      echo ${PEM_CONTENTS} >> $AWS_EC2_PEM_FILE
+      echo "${PEM_CONTENTS}" >> $AWS_EC2_PEM_FILE
       chmod 0600 $AWS_EC2_PEM_FILE
     shell: bash
   - name: Run tox
