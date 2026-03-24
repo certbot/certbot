@@ -226,12 +226,12 @@ jobs:
         set -e
         sudo dpkg --add-architecture "armhf"
         sudo apt-get update
-        sudo apt install -y nginx-light:armhf fuse3:armhf snapd:armhf
+        sudo apt install -y fuse3:armhf snapd:armhf
     - name: Install dependencies
       run: |-
         set -e
         # sudo apt-get update
-        # sudo apt-get install -y --no-install-recommends nginx-light snapd
+        sudo apt-get install -y --no-install-recommends nginx-light # snapd
         python3 -m venv venv
         venv/bin/python tools/pip_install.py -U tox
     - name: Retrieve Certbot snaps
