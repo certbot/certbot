@@ -80,37 +80,67 @@ jobs:
   #   - name: Run integration tests for Docker images
   #     run: set -e && tools/docker/test.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
   #     shell: bash
-  snap_build_amd:
-    name: Build amd snap
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: snapcore/action-build@v1.3.0
-        id: build
-        with:
-          snapcraft-args: "--build-for=amd64"
-      - name: Prepare artifact
-        run: |-
-          set -e
-          mv *.snap ${{ runner.temp }}
-      - name: Store snap artifact
-        uses: actions/upload-artifact@v4.1.0
-        with:
-          name: snaps_amd64
-          path: "${{ runner.temp }}"
 
-  snap_build_arm:
-    name: Build arm snaps
-    runs-on: ubuntu-24.04-arm
+  # snap_build_arm:
+  #   name: Build snaps
+  #   runs-on: ubuntu-24.04-arm
+  #   strategy:
+  #     matrix:
+  #       arch: [arm64, armhf]
+  #   steps:
+  #     - uses: actions/checkout@v6.0.2
+  #     - uses: snapcore/action-build@v1.3.0
+  #       id: build
+  #       with:
+  #         snapcraft-args: "--build-for=${{ matrix.arch }}"
+  #     - name: Prepare artifact
+  #       run: |-
+  #         set -e
+  #         mv *.snap ${{ runner.temp }}
+  #     - name: Store snap artifact
+  #       uses: actions/upload-artifact@v4.1.0
+  #       with:
+  #         name: snaps_${{ matrix.arch }}
+  #         path: "${{ runner.temp }}"
+
+
+  # snap_build_amd:
+  #   name: Build amd snap
+  #   runs-on: ubuntu-24.04
+  #   steps:
+  #     - uses: actions/checkout@v6.0.2
+  #     - uses: snapcore/action-build@v1.3.0
+  #       id: build
+  #       with:
+  #         snapcraft-args: "--build-for=amd64"
+  #     - name: Prepare artifact
+  #       run: |-
+  #         set -e
+  #         mv *.snap ${{ runner.temp }}
+  #     - name: Store snap artifact
+  #       uses: actions/upload-artifact@v4.1.0
+  #       with:
+  #         name: snaps_amd64
+  #         path: "${{ runner.temp }}"
+
+  snap_build:
+    name: Build ${{ matrix.build-for }} snap
+    runs-on: ${{ matrix.build-on }}
     strategy:
       matrix:
-        arch: [arm64, armhf]
+        include:
+        - build-for: arm64
+          build-on: ubuntu-24.04-arm
+        - build-for: armhf
+          build-on: ubuntu-24.04-arm
+        - build-for: amd64
+          build-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6.0.2
       - uses: snapcore/action-build@v1.3.0
         id: build
         with:
-          snapcraft-args: "--build-for=${{ matrix.arch }}"
+          snapcraft-args: "--build-for=${{ matrix.build-for }}"
       - name: Prepare artifact
         run: |-
           set -e
@@ -118,8 +148,57 @@ jobs:
       - name: Store snap artifact
         uses: actions/upload-artifact@v4.1.0
         with:
-          name: snaps_${{ matrix.arch }}
+          name: snaps_${{ matrix.build-for }}
           path: "${{ runner.temp }}"
+
+  snap_run:
+    needs:
+    - snap_build
+    runs-on:
+      - ${{ matrix.build-on }}
+    strategy:
+      matrix:
+        include:
+        - build-for: arm64
+          build-on: ubuntu-24.04-arm
+        - build-for: armhf
+          build-on: ubuntu-24.04-arm
+        - build-for: amd64
+          build-on: ubuntu-24.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.12'
+    - name: Set armhf architecture if applicable
+      if: matrix.build-for == 'armhf'
+      run: |-
+        set -e
+        dpkg --add-architecture "armhf"
+        apt-get update
+    - name: Install dependencies
+      run: |-
+        set -e
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends nginx-light snapd
+        python3 -m venv venv
+        venv/bin/python tools/pip_install.py -U tox
+    - name: Retrieve Certbot snaps
+      uses: actions/download-artifact@v8.0.1
+      with:
+        name: snaps_${{ matrix.build-for }}
+        github_token: "${{ secrets.GITHUB_TOKEN }}"
+        path: "${{ github.workspace }}/snap"
+        repo: "${{ github.repository }}"
+    - name: Install Certbot snap
+      run: |-
+        set -e
+        sudo snap install --dangerous --classic snap/certbot_*.snap
+    - name: Run tox
+      run: |-
+        set -e
+        venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
 
   # snaps_build:
   #   runs-on:
@@ -162,40 +241,40 @@ jobs:
   #     with:
   #       name: snaps_${{ matrix.SNAP_ARCH }}
   #       path: "${{ runner.temp }}"
-  snap_run:
-    needs:
-    - snap_build_amd
-    - snap_build_arm
-    runs-on:
-      - ubuntu-22.04
-    steps:
-    - name: checkout
-      uses: actions/checkout@v6.0.2
-    - uses: actions/setup-python@v5.0.0
-      with:
-        python-version: '3.12'
-    - name: Install dependencies
-      run: |-
-        set -e
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends nginx-light snapd
-        python3 -m venv venv
-        venv/bin/python tools/pip_install.py -U tox
-    - name: Retrieve Certbot snaps
-      uses: actions/download-artifact@v8.0.1
-      with:
-        name: snaps_amd64
-        github_token: "${{ secrets.GITHUB_TOKEN }}"
-        path: "${{ github.workspace }}/snap"
-        repo: "${{ github.repository }}"
-    - name: Install Certbot snap
-      run: |-
-        set -e
-        sudo snap install --dangerous --classic snap/certbot_*.snap
-    - name: Run tox
-      run: |-
-        set -e
-        venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
+  # snap_run_arm:
+  #   needs:
+  #   - snap_build_amd
+  #   - snap_build_arm
+  #   runs-on:
+  #     - ubuntu-22.04
+  #   steps:
+  #   - name: checkout
+  #     uses: actions/checkout@v6.0.2
+  #   - uses: actions/setup-python@v5.0.0
+  #     with:
+  #       python-version: '3.12'
+  #   - name: Install dependencies
+  #     run: |-
+  #       set -e
+  #       sudo apt-get update
+  #       sudo apt-get install -y --no-install-recommends nginx-light snapd
+  #       python3 -m venv venv
+  #       venv/bin/python tools/pip_install.py -U tox
+  #   - name: Retrieve Certbot snaps
+  #     uses: actions/download-artifact@v8.0.1
+  #     with:
+  #       name: snaps_amd64
+  #       github_token: "${{ secrets.GITHUB_TOKEN }}"
+  #       path: "${{ github.workspace }}/snap"
+  #       repo: "${{ github.repository }}"
+  #   - name: Install Certbot snap
+  #     run: |-
+  #       set -e
+  #       sudo snap install --dangerous --classic snap/certbot_*.snap
+  #   - name: Run tox
+  #     run: |-
+  #       set -e
+  #       venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
   # snap_dns_run:
   #   needs:
   #   - snaps_build
