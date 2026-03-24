@@ -177,6 +177,10 @@ jobs:
         set -e
         sudo dpkg --add-architecture "armhf"
         sudo apt-get update
+        sudo apt install linux-image-armhf:armhf
+        sudo apt install crossgrader
+        crossgrader armhf
+        crossgrader --second-stage --force-unavailable armhf
     - name: Install dependencies
       run: |-
         set -e
