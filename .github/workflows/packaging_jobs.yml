@@ -129,12 +129,12 @@ jobs:
     strategy:
       matrix:
         include:
-        - build-for: arm64
-          build-on: ubuntu-24.04-arm
+        # - build-for: arm64
+        #   build-on: ubuntu-24.04-arm
         - build-for: armhf
           build-on: ubuntu-24.04-arm
-        - build-for: amd64
-          build-on: ubuntu-24.04
+        # - build-for: amd64
+        #   build-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6.0.2
       - uses: snapcore/action-build@v1.3.0
@@ -159,12 +159,12 @@ jobs:
     strategy:
       matrix:
         include:
-        - build-for: arm64
-          build-on: ubuntu-24.04-arm
+        # - build-for: arm64
+        #   build-on: ubuntu-24.04-arm
         - build-for: armhf
           build-on: ubuntu-24.04-arm
-        - build-for: amd64
-          build-on: ubuntu-24.04
+        # - build-for: amd64
+        #   build-on: ubuntu-24.04
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
@@ -175,8 +175,8 @@ jobs:
       if: matrix.build-for == 'armhf'
       run: |-
         set -e
-        dpkg --add-architecture "armhf"
-        apt-get update
+        sudo dpkg --add-architecture "armhf"
+        sudo apt-get update
     - name: Install dependencies
       run: |-
         set -e
