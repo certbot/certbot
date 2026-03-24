@@ -1,0 +1,66 @@
+""" Entry point for Apache Plugin """
+
+from certbot import util
+from certbot._internal.plugins.apache import configurator
+from certbot._internal.plugins.apache import override_alpine
+from certbot._internal.plugins.apache import override_arch
+from certbot._internal.plugins.apache import override_centos
+from certbot._internal.plugins.apache import override_darwin
+from certbot._internal.plugins.apache import override_debian
+from certbot._internal.plugins.apache import override_fedora
+from certbot._internal.plugins.apache import override_gentoo
+from certbot._internal.plugins.apache import override_suse
+from certbot._internal.plugins.apache import override_void
+
+OVERRIDE_CLASSES: dict[str, type[configurator.ApacheConfigurator]] = {
+    "alpine": override_alpine.AlpineConfigurator,
+    "arch": override_arch.ArchConfigurator,
+    "cloudlinux": override_centos.CentOSConfigurator,
+    "darwin": override_darwin.DarwinConfigurator,
+    "debian": override_debian.DebianConfigurator,
+    "ubuntu": override_debian.DebianConfigurator,
+    "centos": override_centos.CentOSConfigurator,
+    "centos linux": override_centos.CentOSConfigurator,
+    "fedora_old": override_centos.CentOSConfigurator,
+    "fedora": override_fedora.FedoraConfigurator,
+    "linuxmint": override_debian.DebianConfigurator,
+    "ol": override_centos.CentOSConfigurator,
+    "oracle": override_centos.CentOSConfigurator,
+    "redhatenterpriseserver": override_centos.CentOSConfigurator,
+    "red hat enterprise linux server": override_centos.CentOSConfigurator,
+    "rhel": override_centos.CentOSConfigurator,
+    "amazon": override_centos.CentOSConfigurator,
+    "gentoo": override_gentoo.GentooConfigurator,
+    "gentoo base system": override_gentoo.GentooConfigurator,
+    "opensuse": override_suse.OpenSUSEConfigurator,
+    "suse": override_suse.OpenSUSEConfigurator,
+    "sles": override_suse.OpenSUSEConfigurator,
+    "scientific": override_centos.CentOSConfigurator,
+    "scientific linux": override_centos.CentOSConfigurator,
+    "void": override_void.VoidConfigurator,
+}
+
+
+def get_configurator() -> type[configurator.ApacheConfigurator]:
+    """ Get correct configurator class based on the OS fingerprint """
+    os_name, os_version = util.get_os_info()
+    os_name = os_name.lower()
+    override_class = None
+
+    # Special case for older Fedora versions
+    min_version = util.parse_loose_version('29')
+    if os_name == 'fedora' and util.parse_loose_version(os_version) < min_version:
+        os_name = 'fedora_old'
+
+    try:
+        override_class = OVERRIDE_CLASSES[os_name]
+    except KeyError:
+        # OS not found in the list
+        os_like = util.get_systemd_os_like()
+        if os_like:
+            for os_name in os_like:
+                override_class = OVERRIDE_CLASSES.get(os_name)
+        if not override_class:
+            # No override class found, return the generic configurator
+            override_class = configurator.ApacheConfigurator
+    return override_class
