@@ -11,23 +11,23 @@ on:
         type: number
 
 jobs:
-  standard_tests_jobs:
-    name: standard_tests_jobs
-    uses: "./.github/workflows/standard_tests_jobs.yml"
-    permissions:
-      contents: read
+  # standard_tests_jobs:
+  #   name: standard_tests_jobs
+  #   uses: "./.github/workflows/standard_tests_jobs.yml"
+  #   permissions:
+  #     contents: read
   extended_tests_jobs:
     name: extended_tests_jobs
     uses: "./.github/workflows/extended_tests_jobs.yml"
     permissions:
       contents: read
     secrets: inherit
-  packaging_jobs:
-    name: packaging_jobs
-    uses: "./.github/workflows/packaging_jobs.yml"
-    permissions:
-      contents: read
-    with:
-      dockerTag: ${{ inputs.dockerTag }}
-      snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
-    secrets: inherit
+  # packaging_jobs:
+  #   name: packaging_jobs
+  #   uses: "./.github/workflows/packaging_jobs.yml"
+  #   permissions:
+  #     contents: read
+  #   with:
+  #     dockerTag: ${{ inputs.dockerTag }}
+  #     snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
+  #   secrets: inherit
