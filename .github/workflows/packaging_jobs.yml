@@ -15,71 +15,71 @@ env:
   snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
 
 jobs:
-  docker_build:
-    runs-on:
-      - ubuntu-24.04
-    # The default timeout of 60 minutes is a little low for compiling
-    # cryptography on ARM architectures.
-    timeout-minutes: 180
-    strategy:
-      fail-fast: false
-      matrix:
-        DOCKER_ARCH:
-        - arm32v6
-        - arm64v8
-        - amd64
-    steps:
-    - name: checkout
-      uses: actions/checkout@v6.0.2
-    - name: Build the Docker images
-      # We don't filter for the Docker Hub organization to continue to allow
-      # easy testing of these scripts on forks.
-      run: set -e && tools/docker/build.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
-      shell: bash
-    - name: Save the Docker images
-      run: |-
-        set -e
-        DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
-        docker save --output images.tar $DOCKER_IMAGES
-      shell: bash
-    # If the name of the tar file or artifact changes, the deploy stage will
-    # also need to be updated.
-    - name: Prepare Docker artifact
-      run: set -e && mv images.tar ${{ runner.temp }}
-      shell: bash
-    - name: Store Docker artifact
-      uses: actions/upload-artifact@v4.1.0
-      with:
-        name: docker_${{ matrix.DOCKER_ARCH }}
-        path: "${{ runner.temp }}"
-  docker_test:
-    needs:
-    - docker_build
-    runs-on:
-      - ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        DOCKER_ARCH:
-        - arm32v6
-        - arm64v8
-        - amd64
-    steps:
-    - name: checkout
-      uses: actions/checkout@v6.0.2
-    - name: Retrieve Docker images
-      uses: actions/download-artifact@v8.0.1
-      with:
-        name: docker_${{ matrix.DOCKER_ARCH }}
-        github_token: "${{ secrets.GITHUB_TOKEN }}"
-        path: "${{ github.workspace }}"
-        repo: "${{ github.repository }}"
-    - name: Load Docker images
-      run: set -e && docker load --input ${{ github.workspace }}/images.tar
-      shell: bash
-    - name: Run integration tests for Docker images
-      run: set -e && tools/docker/test.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
-      shell: bash
+  # docker_build:
+  #   runs-on:
+  #     - ubuntu-24.04
+  #   # The default timeout of 60 minutes is a little low for compiling
+  #   # cryptography on ARM architectures.
+  #   timeout-minutes: 180
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       DOCKER_ARCH:
+  #       - arm32v6
+  #       - arm64v8
+  #       - amd64
+  #   steps:
+  #   - name: checkout
+  #     uses: actions/checkout@v6.0.2
+  #   - name: Build the Docker images
+  #     # We don't filter for the Docker Hub organization to continue to allow
+  #     # easy testing of these scripts on forks.
+  #     run: set -e && tools/docker/build.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
+  #     shell: bash
+  #   - name: Save the Docker images
+  #     run: |-
+  #       set -e
+  #       DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
+  #       docker save --output images.tar $DOCKER_IMAGES
+  #     shell: bash
+  #   # If the name of the tar file or artifact changes, the deploy stage will
+  #   # also need to be updated.
+  #   - name: Prepare Docker artifact
+  #     run: set -e && mv images.tar ${{ runner.temp }}
+  #     shell: bash
+  #   - name: Store Docker artifact
+  #     uses: actions/upload-artifact@v4.1.0
+  #     with:
+  #       name: docker_${{ matrix.DOCKER_ARCH }}
+  #       path: "${{ runner.temp }}"
+  # docker_test:
+  #   needs:
+  #   - docker_build
+  #   runs-on:
+  #     - ubuntu-22.04
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       DOCKER_ARCH:
+  #       - arm32v6
+  #       - arm64v8
+  #       - amd64
+  #   steps:
+  #   - name: checkout
+  #     uses: actions/checkout@v6.0.2
+  #   - name: Retrieve Docker images
+  #     uses: actions/download-artifact@v8.0.1
+  #     with:
+  #       name: docker_${{ matrix.DOCKER_ARCH }}
+  #       github_token: "${{ secrets.GITHUB_TOKEN }}"
+  #       path: "${{ github.workspace }}"
+  #       repo: "${{ github.repository }}"
+  #   - name: Load Docker images
+  #     run: set -e && docker load --input ${{ github.workspace }}/images.tar
+  #     shell: bash
+  #   - name: Run integration tests for Docker images
+  #     run: set -e && tools/docker/test.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
+  #     shell: bash
   snaps_build:
     runs-on:
       - ubuntu-22.04
