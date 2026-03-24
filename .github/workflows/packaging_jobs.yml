@@ -151,107 +151,104 @@ jobs:
           name: snaps_${{ matrix.build-for }}
           path: "${{ runner.temp }}"
 
-  snap_run_qemu:
-    needs:
-    - snap_build
-    runs-on:
-    - ubuntu-24.04
-    name: run armhf snap using qemu
+  # snap_run_qemu:
+  #   needs:
+  #   - snap_build
+  #   runs-on:
+  #   - ubuntu-24.04
+  #   name: run armhf snap using qemu
 
-    steps:
-    - name: checkout
-      uses: actions/checkout@v6.0.2
-    - name: Retrieve Certbot snaps
-      uses: actions/download-artifact@v8.0.1
-      with:
-        name: snaps_armhf
-        github_token: "${{ secrets.GITHUB_TOKEN }}"
-        path: "${{ github.workspace }}/snap"
-        repo: "${{ github.repository }}"
-    - uses: uraimo/run-on-arch-action@v3
-      name: Run commands
-      id: runcmd
-      with:
-        arch: armhf
-        distro: ubuntu24.04
+  #   steps:
+  #   - name: checkout
+  #     uses: actions/checkout@v6.0.2
+  #   - name: Retrieve Certbot snaps
+  #     uses: actions/download-artifact@v8.0.1
+  #     with:
+  #       name: snaps_armhf
+  #       github_token: "${{ secrets.GITHUB_TOKEN }}"
+  #       path: "${{ github.workspace }}/snap"
+  #       repo: "${{ github.repository }}"
+  #   - uses: uraimo/run-on-arch-action@v3
+  #     name: Run commands
+  #     id: runcmd
+  #     with:
+  #       arch: armhf
+  #       distro: ubuntu24.04
 
-        # Not required, but speeds up builds by storing container images in
-        # a GitHub package registry.
-        # githubToken: ${{ github.token }}
+  #       # Not required, but speeds up builds by storing container images in
+  #       # a GitHub package registry.
+  #       # githubToken: ${{ github.token }}
 
-        # Mount the snap directory as /snap in the container
-        dockerRunArgs: |
-          --volume "${PWD}/snap:/snap" --volume "${PWD}:/certbot"
+  #       # Mount the snap directory as /snap in the container
+  #       dockerRunArgs: |
+  #         --volume "${PWD}/snap:/snap" --volume "${PWD}:/certbot"
 
-        install: |
-          set -e
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends nginx-light snapd
-          cd "/certbot"
-          python3 -m venv venv
-          venv/bin/python tools/pip_install.py -U tox
+  #       install: |
+  #         set -e
+  #         sudo apt-get update
+  #         sudo apt-get install -y --no-install-recommends nginx-light snapd
+  #         cd "/certbot"
+  #         python3 -m venv venv
+  #         venv/bin/python tools/pip_install.py -U tox
 
-        # Set an output parameter `uname` for use in subsequent steps
-        run: |
-          sudo snap install --dangerous --classic snap/certbot_*.snap
-          venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
+  #       # Set an output parameter `uname` for use in subsequent steps
+  #       run: |
+  #         sudo snap install --dangerous --classic snap/certbot_*.snap
+  #         venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
 
     # - uses: actions/setup-python@v5.0.0
     #   with:
     #     python-version: '3.12'
 
-  # snap_run:
-  #   needs:
-  #   - snap_build
-  #   runs-on:
-  #     - ${{ matrix.build-on }}
-  #   strategy:
-  #     matrix:
-  #       include:
-  #       # - build-for: arm64
-  #       #   build-on: ubuntu-24.04-arm
-  #       - build-for: armhf
-  #         build-on: ubuntu-24.04-arm
-  #       # - build-for: amd64
-  #       #   build-on: ubuntu-24.04
-  #   steps:
-  #   - name: checkout
-  #     uses: actions/checkout@v6.0.2
-  #   - uses: actions/setup-python@v5.0.0
-  #     with:
-  #       python-version: '3.12'
-  #   - name: Set armhf architecture if applicable
-  #     if: matrix.build-for == 'armhf'
-  #     run: |-
-  #       set -e
-  #       sudo dpkg --add-architecture "armhf"
-  #       sudo apt-get update
-  #       sudo apt install linux-image-armhf:armhf
-  #       sudo apt install crossgrader
-  #       crossgrader armhf
-  #       crossgrader --second-stage --force-unavailable armhf
-  #   - name: Install dependencies
-  #     run: |-
-  #       set -e
-  #       sudo apt-get update
-  #       sudo apt-get install -y --no-install-recommends nginx-light snapd
-  #       python3 -m venv venv
-  #       venv/bin/python tools/pip_install.py -U tox
-  #   - name: Retrieve Certbot snaps
-  #     uses: actions/download-artifact@v8.0.1
-  #     with:
-  #       name: snaps_${{ matrix.build-for }}
-  #       github_token: "${{ secrets.GITHUB_TOKEN }}"
-  #       path: "${{ github.workspace }}/snap"
-  #       repo: "${{ github.repository }}"
-  #   - name: Install Certbot snap
-  #     run: |-
-  #       set -e
-  #       sudo snap install --dangerous --classic snap/certbot_*.snap
-  #   - name: Run tox
-  #     run: |-
-  #       set -e
-  #       venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
+  snap_run:
+    needs:
+    - snap_build
+    runs-on:
+      - ${{ matrix.build-on }}
+    strategy:
+      matrix:
+        include:
+        # - build-for: arm64
+        #   build-on: ubuntu-24.04-arm
+        - build-for: armhf
+          build-on: ubuntu-24.04-arm
+        # - build-for: amd64
+        #   build-on: ubuntu-24.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.12'
+    - name: Set armhf architecture if applicable
+      if: matrix.build-for == 'armhf'
+      run: |-
+        set -e
+        sudo dpkg --add-architecture "armhf"
+        sudo apt-get update
+        sudo apt install -y --no-install-recommends snapd:armhf
+    - name: Install dependencies
+      run: |-
+        set -e
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends nginx-light # snapd
+        python3 -m venv venv
+        venv/bin/python tools/pip_install.py -U tox
+    - name: Retrieve Certbot snaps
+      uses: actions/download-artifact@v8.0.1
+      with:
+        name: snaps_${{ matrix.build-for }}
+        github_token: "${{ secrets.GITHUB_TOKEN }}"
+        path: "${{ github.workspace }}/snap"
+        repo: "${{ github.repository }}"
+    - name: Install Certbot snap
+      run: |-
+        set -e
+        sudo snap install --dangerous --classic snap/certbot_*.snap
+    - name: Run tox
+      run: |-
+        set -e
+        venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
 
   # snaps_build:
   #   runs-on:
