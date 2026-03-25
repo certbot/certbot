@@ -56,6 +56,18 @@ apps:
     # Run approximately twice a day with randomization
     timer: 00:00~24:00/2
 
+package-repositories:
+  - type: apt
+    architectures: [$CRAFT_ARCH_BUILD_FOR]
+    formats: [deb, deb-src]
+    components: [main]
+    suites: [noble, noble-updates, noble-backports]
+    key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
+    url: http://ports.ubuntu.com/ubuntu-ports
+
+lint:
+  ignore:
+    - library
 
 parts:
   certbot:
@@ -77,33 +89,33 @@ parts:
       # python-augeas pinning, unstaging this file had a different, unintended
       # effect so we now stage the file to keep the auto-generated cffi file.
     stage-packages:
-      - libaugeas0
-      - libpython3.12-dev
+      - "libaugeas0:$CRAFT_ARCH_BUILD_FOR"
+      - "libpython3.12-dev:$CRAFT_ARCH_BUILD_FOR"
       # This library included so openssl has a legacy provider available at
       # runtime when we are unable to use cryptography's pre-built wheels. See
       # https://github.com/certbot/certbot/issues/10055.
-      - libssl3t64
+      - "libssl3t64:$CRAFT_ARCH_BUILD_FOR"
       # added to stage python:
-      - libpython3-stdlib
-      - libpython3.12-stdlib
-      - libpython3.12-minimal
-      - python3-pip
-      - python3-wheel
-      - python3-venv
-      - python3-minimal
-      - python3-pkg-resources
-      - python3.12-minimal
+      - "libpython3-stdlib:$CRAFT_ARCH_BUILD_FOR"
+      - "libpython3.12-stdlib:$CRAFT_ARCH_BUILD_FOR"
+      - "libpython3.12-minimal:$CRAFT_ARCH_BUILD_FOR"
+      - "python3-pip:$CRAFT_ARCH_BUILD_FOR"
+      - "python3-wheel:$CRAFT_ARCH_BUILD_FOR"
+      - "python3-venv:$CRAFT_ARCH_BUILD_FOR"
+      - "python3-minimal:$CRAFT_ARCH_BUILD_FOR"
+      - "python3-pkg-resources:$CRAFT_ARCH_BUILD_FOR"
+      - "python3.12-minimal:$CRAFT_ARCH_BUILD_FOR"
     # To build cryptography and cffi if needed
     build-packages:
-      - gcc
-      - git
-      - libaugeas-dev
-      - build-essential
-      - libssl-dev
-      - libffi-dev
-      - python3-dev
-      - cargo
-      - pkg-config
+      - "gcc:$CRAFT_ARCH_BUILD_FOR"
+      - "git:$CRAFT_ARCH_BUILD_FOR"
+      - "libaugeas-dev:$CRAFT_ARCH_BUILD_FOR"
+      - "build-essential:$CRAFT_ARCH_BUILD_FOR"
+      - "libssl-dev:$CRAFT_ARCH_BUILD_FOR"
+      - "libffi-dev:$CRAFT_ARCH_BUILD_FOR"
+      - "python3-dev:$CRAFT_ARCH_BUILD_FOR"
+      - "cargo:$CRAFT_ARCH_BUILD_FOR"
+      - "pkg-config:$CRAFT_ARCH_BUILD_FOR"
     build-environment:
       # We set this environment variable while building to try and increase the
       # stability of fetching the rust crates needed to build the cryptography
@@ -120,6 +132,7 @@ parts:
       # https://github.com/pypa/setuptools/issues/5039 forcing pip to use
       # modern build conventions even in the absence of pyproject.toml files.
       - PIP_USE_PEP517: "true"
+      - PKG_CONFIG_PATH: "/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/pkgconfig"
     override-build: |
       python3 -m venv "${CRAFT_PART_INSTALL}"
       "${CRAFT_PART_INSTALL}/bin/python3" "${CRAFT_PART_SRC}/tools/pipstrap.py"
