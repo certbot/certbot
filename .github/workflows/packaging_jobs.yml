@@ -179,7 +179,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
       - uses: docker/setup-qemu-action@v1
-      - uses: diddlesnaps/snapcraft-multiarch-action@v1
+      - uses: soumyaDghosh/snapcraft-multiarch-action@7234040e53df776dfca8416aea6b91a5e4fe5b59
         with:
           architecture: ${{ matrix.platform }}
       # - name: build snap
