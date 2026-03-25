@@ -144,9 +144,9 @@ jobs:
           sudo apt-get update
           sudo apt install -y fuse3:armhf snapd:armhf
           sudo snap install snapcraft --classic
-          sudo snap install lxd
           sudo usermod -a -G lxd "$(whoami)"
-          sudo sg lxd newgrp
+          newgrp lxd
+          sudo snap install lxd
           sudo lxd init --auto
           echo "::endgroup::"
           snapcraft pack "--build-for=${{ matrix.build-for }}"
