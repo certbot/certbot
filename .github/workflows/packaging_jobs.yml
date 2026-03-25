@@ -144,10 +144,14 @@ jobs:
           sudo apt-get update
           sudo apt install -y fuse3:armhf snapd:armhf
           sudo snap install snapcraft --classic
-          sudo usermod -a -G lxd "$(whoami)"
+          sudo apt-get remove -qy lxd lxd-client
+          sudo groupadd --force --system lxd
+          sudo usermod --append --groups lxd $USER
           newgrp lxd
-          sudo snap install lxd
+          sudp snap install lxd
+          echo "installed lxd"
           sudo lxd init --auto
+          echo "initialized lxd"
           echo "::endgroup::"
           snapcraft pack "--build-for=${{ matrix.build-for }}"
       # - uses: snapcore/action-build@v1.3.0
