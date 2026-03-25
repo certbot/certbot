@@ -137,10 +137,22 @@ jobs:
         #   build-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6.0.2
-      - uses: snapcore/action-build@v1.3.0
-        id: build
-        with:
-          snapcraft-args: "--build-for=${{ matrix.build-for }}"
+      - name: build snap
+        run: |-
+          echo "::group::Installing snapcraft dependencies"
+          sudo dpkg --add-architecture "armhf"
+          sudo apt-get update
+          sudo apt install -y fuse3:armhf snapd:armhf
+          sudo snap install snapcraft --classic
+          sudo snap install lxd
+          sudo usermod -a -G lxd "$(whoami)"
+          sudo lxd init --auto
+          echo "::endgroup::"
+          snapcraft pack "--build-for=${{ matrix.build-for }}"
+      # - uses: snapcore/action-build@v1.3.0
+      #   id: build
+      #   with:
+      #     snapcraft-args: "--build-for=${{ matrix.build-for }}"
       - name: Prepare artifact
         run: |-
           set -e
