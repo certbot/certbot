@@ -146,6 +146,7 @@ jobs:
           sudo snap install snapcraft --classic
           sudo snap install lxd
           sudo usermod -a -G lxd "$(whoami)"
+          sudo newgrp lxd
           sudo lxd init --auto
           echo "::endgroup::"
           snapcraft pack "--build-for=${{ matrix.build-for }}"
