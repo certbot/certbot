@@ -144,12 +144,12 @@ jobs:
           sudo apt-get update
           sudo apt install -y fuse3:armhf snapd:armhf
           sudo snap install snapcraft --classic
-          sudo apt-get remove -qy lxd lxd-client
           sudo groupadd --force --system lxd
           sudo usermod --append --groups lxd $USER
           newgrp lxd
-          sudp snap install lxd
+          sudo snap install lxd
           echo "installed lxd"
+          sudo snap refresh
           sudo lxd init --auto
           echo "initialized lxd"
           echo "::endgroup::"
