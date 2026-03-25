@@ -123,41 +123,85 @@ jobs:
   #         name: snaps_amd64
   #         path: "${{ runner.temp }}"
 
+  # snap_build:
+  #   name: Build ${{ matrix.build-for }} snap
+  #   runs-on: ${{ matrix.build-on }}
+  #   strategy:
+  #     matrix:
+  #       include:
+  #       # - build-for: arm64
+  #       #   build-on: ubuntu-24.04-arm
+  #       - build-for: armhf
+  #         build-on: ubuntu-24.04-arm
+  #       # - build-for: amd64
+  #       #   build-on: ubuntu-24.04
+  #   steps:
+  #     - uses: actions/checkout@v6.0.2
+  #     - name: build snap
+  #       run: |-
+  #         echo "::group::Installing snapcraft dependencies"
+  #         sudo dpkg --add-architecture "armhf"
+  #         sudo apt-get update
+  #         sudo apt install -y fuse3:armhf snapd:armhf
+  #         sudo snap install snapcraft --classic
+  #         sudo groupadd --force --system lxd
+  #         sudo usermod --append --groups lxd $USER
+  #         newgrp lxd
+  #         sudo snap install lxd
+  #         echo "installed lxd"
+  #         sudo snap refresh
+  #         sudo lxd init --auto
+  #         echo "initialized lxd"
+  #         echo "::endgroup::"
+  #         snapcraft pack "--build-for=${{ matrix.build-for }}"
+  #     # - uses: snapcore/action-build@v1.3.0
+  #     #   id: build
+  #     #   with:
+  #     #     snapcraft-args: "--build-for=${{ matrix.build-for }}"
+  #     - name: Prepare artifact
+  #       run: |-
+  #         set -e
+  #         mv *.snap ${{ runner.temp }}
+  #     - name: Store snap artifact
+  #       uses: actions/upload-artifact@v7.0.0
+  #       with:
+  #         name: snaps_${{ matrix.build-for }}
+  #         path: "${{ runner.temp }}"
+
   snap_build:
     name: Build ${{ matrix.build-for }} snap
-    runs-on: ${{ matrix.build-on }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-        # - build-for: arm64
-        #   build-on: ubuntu-24.04-arm
-        - build-for: armhf
-          build-on: ubuntu-24.04-arm
-        # - build-for: amd64
-        #   build-on: ubuntu-24.04
+        platform:
+        - armhf
     steps:
       - uses: actions/checkout@v6.0.2
-      - name: build snap
-        run: |-
-          echo "::group::Installing snapcraft dependencies"
-          sudo dpkg --add-architecture "armhf"
-          sudo apt-get update
-          sudo apt install -y fuse3:armhf snapd:armhf
-          sudo snap install snapcraft --classic
-          sudo groupadd --force --system lxd
-          sudo usermod --append --groups lxd $USER
-          newgrp lxd
-          sudo snap install lxd
-          echo "installed lxd"
-          sudo snap refresh
-          sudo lxd init --auto
-          echo "initialized lxd"
-          echo "::endgroup::"
-          snapcraft pack "--build-for=${{ matrix.build-for }}"
-      # - uses: snapcore/action-build@v1.3.0
-      #   id: build
-      #   with:
-      #     snapcraft-args: "--build-for=${{ matrix.build-for }}"
+      - uses: docker/setup-qemu-action@v1
+      - uses: diddlesnaps/snapcraft-multiarch-action@v1
+        with:
+          architecture: ${{ matrix.platform }}
+      # - name: build snap
+      #   run: |-
+      #     echo "::group::Installing snapcraft dependencies"
+      #     sudo dpkg --add-architecture "armhf"
+      #     sudo apt-get update
+      #     sudo apt install -y fuse3:armhf snapd:armhf
+      #     sudo snap install snapcraft --classic
+      #     sudo groupadd --force --system lxd
+      #     sudo usermod --append --groups lxd $USER
+      #     newgrp lxd
+      #     sudo snap install lxd
+      #     echo "installed lxd"
+      #     sudo snap refresh
+      #     sudo lxd init --auto
+      #     echo "initialized lxd"
+      #     echo "::endgroup::"
+      #     snapcraft pack "--build-for=${{ matrix.build-for }}"
+      # # - uses: snapcore/action-build@v1.3.0
+      # #   id: build
+      # #   with:
+      # #     snapcraft-args: "--build-for=${{ matrix.build-for }}"
       - name: Prepare artifact
         run: |-
           set -e
@@ -165,7 +209,7 @@ jobs:
       - name: Store snap artifact
         uses: actions/upload-artifact@v7.0.0
         with:
-          name: snaps_${{ matrix.build-for }}
+          name: snaps_${{ matrix.platform }}
           path: "${{ runner.temp }}"
 
   # snap_run_qemu:
