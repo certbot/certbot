@@ -174,7 +174,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform:
+        build-for:
         - armhf
     steps:
       - uses: actions/checkout@v6.0.2
@@ -210,7 +210,7 @@ jobs:
       - name: Store snap artifact
         uses: actions/upload-artifact@v7.0.0
         with:
-          name: snaps_${{ matrix.platform }}
+          name: snaps_${{ matrix.build-for }}
           path: "${{ runner.temp }}"
 
   # snap_run_qemu:
