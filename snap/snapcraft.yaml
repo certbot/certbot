@@ -108,14 +108,14 @@ parts:
     # To build cryptography and cffi if needed
     build-packages:
       - "gcc:$CRAFT_ARCH_BUILD_FOR"
-      - "git:$CRAFT_ARCH_BUILD_FOR"
+      - "git"
       - "libaugeas-dev:$CRAFT_ARCH_BUILD_FOR"
       - "build-essential:$CRAFT_ARCH_BUILD_FOR"
       - "libssl-dev:$CRAFT_ARCH_BUILD_FOR"
       - "libffi-dev:$CRAFT_ARCH_BUILD_FOR"
       - "python3-dev:$CRAFT_ARCH_BUILD_FOR"
       - "cargo:$CRAFT_ARCH_BUILD_FOR"
-      - "pkg-config:$CRAFT_ARCH_BUILD_FOR"
+      - "pkg-config:"
     build-environment:
       # We set this environment variable while building to try and increase the
       # stability of fetching the rust crates needed to build the cryptography
