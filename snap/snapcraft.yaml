@@ -115,7 +115,7 @@ parts:
       - "libffi-dev:$CRAFT_ARCH_BUILD_FOR"
       - "python3-dev:$CRAFT_ARCH_BUILD_FOR"
       - "cargo:$CRAFT_ARCH_BUILD_FOR"
-      - "pkg-config:"
+      - "pkg-config"
     build-environment:
       # We set this environment variable while building to try and increase the
       # stability of fetching the rust crates needed to build the cryptography
