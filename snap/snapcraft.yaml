@@ -134,8 +134,6 @@ parts:
       - PIP_USE_PEP517: "true"
       - PKG_CONFIG_PATH: "/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/pkgconfig"
     override-build: |
-      dpkg --add-architecture "armhf"
-      apt-get update
       python3 -m venv "${CRAFT_PART_INSTALL}"
       "${CRAFT_PART_INSTALL}/bin/python3" "${CRAFT_PART_SRC}/tools/pipstrap.py"
       craftctl default
@@ -144,6 +142,8 @@ parts:
       sed -i "${CRAFT_PART_INSTALL}/pyvenv.cfg" \
           -e 's@^home = '"${CRAFT_PART_INSTALL}"'/usr/bin$@home = /snap/certbot/current/usr/bin@g'
     override-pull: |
+      dpkg --add-architecture "armhf"
+      apt-get update
       craftctl default
       grep -v python-augeas "${CRAFT_PART_SRC}/tools/requirements.txt" >> "${CRAFT_PART_SRC}/snap-constraints.txt"
       craftctl set version=$(grep -oP "__version__ = '\K.*(?=')" "${CRAFT_PART_SRC}/certbot/src/certbot/__init__.py")
