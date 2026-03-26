@@ -134,6 +134,8 @@ parts:
       - PIP_USE_PEP517: "true"
       - PKG_CONFIG_PATH: "/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/pkgconfig"
     override-build: |
+      dpkg --add-architecture "armhf"
+      apt-get update
       python3 -m venv "${CRAFT_PART_INSTALL}"
       "${CRAFT_PART_INSTALL}/bin/python3" "${CRAFT_PART_SRC}/tools/pipstrap.py"
       craftctl default
