@@ -180,6 +180,7 @@ jobs:
       - uses: actions/checkout@v6.0.2
       - uses: pguyot/arm-runner-action@v2.6.5
         with:
+          base_image: https://cloud-images.ubuntu.com/noble/20260323/noble-server-cloudimg-armhf.tar.gz
           cpu: cortex-a7
           commands: |
             uname -m
