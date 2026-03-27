@@ -171,7 +171,7 @@ jobs:
 
   snap_build:
     name: Build ${{ matrix.build-for }} snap
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     strategy:
       matrix:
         platform:
@@ -180,16 +180,17 @@ jobs:
       - uses: actions/checkout@v6.0.2
       - uses: pguyot/arm-runner-action@v2.6.5
         with:
+          cpu: cortex-a7
           commands: |
             uname -m
             sudo groupadd --force --system lxd
-            sudo usermod --append --groups lxd runner
+            sudo usermod --append --groups lxd $USER
+            newgrp lxd
             sudo snap install lxd
             sudo lxd init --auto
             sudo iptables -P FORWARD ACCEPT
             sudo snap install --channel stable --classic snapcraft
-            sudo -u runner -E snapcraft pack --build-for=armhf
-
+            sudo -u $USER -E snapcraft pack --build-for=armhf
 
       # - name: build snap
       #   run: |-
