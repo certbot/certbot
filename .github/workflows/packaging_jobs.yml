@@ -178,10 +178,19 @@ jobs:
         - armhf
     steps:
       - uses: actions/checkout@v6.0.2
-      - uses: docker/setup-qemu-action@v1
-      - uses: soumyaDghosh/snapcraft-multiarch-action@7234040e53df776dfca8416aea6b91a5e4fe5b59
+      - uses: pguyot/arm-runner-action@v2.6.5
         with:
-          architecture: ${{ matrix.platform }}
+          commands: |
+            uname -m
+            sudo groupadd --force --system lxd
+            sudo usermod --append --groups lxd runner
+            sudo snap install lxd
+            sudo lxd init --auto
+            sudo iptables -P FORWARD ACCEPT
+            sudo snap install --channel stable --classic snapcraft
+            sudo -u runner -E snapcraft pack --build-for=armhf
+
+
       # - name: build snap
       #   run: |-
       #     echo "::group::Installing snapcraft dependencies"
