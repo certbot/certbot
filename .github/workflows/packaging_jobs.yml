@@ -186,6 +186,8 @@ jobs:
             sudo groupadd --force --system lxd
             sudo usermod --append --groups lxd $USER
             newgrp lxd
+            sudo apt-get update
+            sudo apt install -y fuse3:armhf snapd:armhf
             sudo snap install lxd
             sudo lxd init --auto
             sudo iptables -P FORWARD ACCEPT
