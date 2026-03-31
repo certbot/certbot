@@ -65,3 +65,6 @@ snapcraft.cfg
 
 # pyenv files
 .python-version
+
+# macOS files
+.DS_Store

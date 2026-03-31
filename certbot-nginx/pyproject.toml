@@ -10,7 +10,7 @@ readme = "README.rst"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [
-    { name = "Certbot Project", email = "certbot-dev@eff.org" },
+    { name = "Certbot Project" },
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -23,6 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Security",
     "Topic :: System :: Installation/Setup",
@@ -37,7 +38,7 @@ test = [
 ]
 
 [project.entry-points."certbot.plugins"]
-nginx = "certbot_nginx._internal.configurator:NginxConfigurator"
+nginx = "certbot_nginx._internal.entrypoint:ENTRYPOINT"
 
 [project.urls]
 Homepage = "https://github.com/certbot/certbot"

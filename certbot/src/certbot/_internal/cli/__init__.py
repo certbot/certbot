@@ -22,16 +22,16 @@ from certbot._internal.cli.cli_constants import HELP_AND_VERSION_USAGE
 from certbot._internal.cli.cli_constants import SHORT_USAGE
 from certbot._internal.cli.cli_constants import VAR_MODIFIERS
 from certbot._internal.cli.cli_constants import ZERO_ARG_ACTIONS
-from certbot._internal.cli.cli_utils import _DeployHookAction
-from certbot._internal.cli.cli_utils import _DomainsAction
 from certbot._internal.cli.cli_utils import _EncodeReasonAction
 from certbot._internal.cli.cli_utils import _PrefChallAction
-from certbot._internal.cli.cli_utils import _RenewHookAction
 from certbot._internal.cli.cli_utils import _user_agent_comment_type
-from certbot._internal.cli.cli_utils import add_domains
+from certbot._internal.cli.cli_utils import add_dns_name
+from certbot._internal.cli.cli_utils import add_ip_address
 from certbot._internal.cli.cli_utils import CaseInsensitiveList
 from certbot._internal.cli.cli_utils import config_help
 from certbot._internal.cli.cli_utils import CustomHelpFormatter
+from certbot._internal.cli.cli_utils import DomainsAction
+from certbot._internal.cli.cli_utils import IPAddressAction
 from certbot._internal.cli.cli_utils import flag_default
 from certbot._internal.cli.cli_utils import HelpfulArgumentGroup
 from certbot._internal.cli.cli_utils import nonnegative_int
@@ -115,7 +115,7 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[st
     helpful.add(
         [None, "run", "certonly", "certificates", "enhance"],
         "-d", "--domains", "--domain", dest="domains",
-        metavar="DOMAIN", action=_DomainsAction,
+        metavar="DOMAIN", action=DomainsAction,
         default=flag_default("domains"),
         help="Domain names to include. For multiple domains you can use multiple -d flags "
              "or enter a comma separated list of domains as a parameter. All domains will "
@@ -123,6 +123,14 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[st
              "will be used as the certificate name, unless otherwise specified or if you "
              "already have a certificate with the same name. In the case of a name conflict, "
              "a number like -0001 will be appended to the certificate name. (default: Ask)")
+    helpful.add(
+        [None, "certonly", "certificates"],
+        "--ip-address", dest="ip_addresses",
+        action=IPAddressAction,
+        default=flag_default("ip_addresses"),
+        help="IP addresses to include. For multiple IP addresses you can use multiple "
+             "--ip-address flags. All IP addresses will be included as Subject Alternative Names "
+             "on the certificate.")
     helpful.add(
         [None, "run", "certonly", "register"],
         "--eab-kid", dest="eab_kid",
@@ -422,13 +430,13 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: list[st
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
     helpful.add(["renew", "reconfigure"], "--renew-hook",
-                action=_RenewHookAction, help=argparse.SUPPRESS)
+                dest="deploy_hook", help=argparse.SUPPRESS)
     helpful.add(
         "renew", "--no-random-sleep-on-renew", action="store_false",
         default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
         help=argparse.SUPPRESS)
     helpful.add(
-        ["certonly", "renew", "reconfigure", "run"], "--deploy-hook", action=_DeployHookAction,
+        ["certonly", "renew", "reconfigure", "run"], "--deploy-hook",
         help='Command to be run in a shell once for each successfully'
         ' issued certificate, including on subsequent renewals.'
         ' Unless --disable-hook-validation is used, the command’s first word'

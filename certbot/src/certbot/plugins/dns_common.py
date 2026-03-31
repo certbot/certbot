@@ -54,7 +54,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
             .format(name=self.name, secs=delay, suffix='s' if delay != 1 else '')
         )
 
-    def get_chall_pref(self, unused_domain: str) -> Iterable[type[challenges.Challenge]]:  # pylint: disable=missing-function-docstring
+    def get_chall_pref(self, unused_identifier: str) -> Iterable[type[challenges.Challenge]]:  # pylint: disable=missing-function-docstring
         return [challenges.DNS01]
 
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
@@ -71,7 +71,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
 
         responses = []
         for achall in achalls:
-            domain = achall.domain
+            domain = achall.identifier.value
             validation_domain_name = achall.validation_domain_name(domain)
             validation = achall.validation(achall.account_key)
 
@@ -90,7 +90,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
     def cleanup(self, achalls: list[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
         if self._attempt_cleanup:
             for achall in achalls:
-                domain = achall.domain
+                domain = achall.identifier.value
                 validation_domain_name = achall.validation_domain_name(domain)
                 validation = achall.validation(achall.account_key)
 

@@ -13,8 +13,8 @@ from typing import Union
 from acme import challenges
 from certbot import configuration
 from certbot import errors
-from certbot import util
 from certbot._internal import constants
+from certbot._internal import san
 from certbot.compat import os
 
 if TYPE_CHECKING:
@@ -92,44 +92,64 @@ class CustomHelpFormatter(argparse.HelpFormatter):
         return helpstr
 
 
-class _DomainsAction(argparse.Action):
+class DomainsAction(argparse.Action):
     """Action class for parsing domains."""
 
     def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
-                 domain: Union[str, Sequence[Any], None],
-                 option_string: Optional[str] = None) -> None:
-        """Just wrap add_domains in argparseese."""
-        add_domains(namespace, str(domain) if domain is not None else None)
+                 values: str | Sequence[Any] | None,
+                 option_string: str | None = None) -> None:
+        match values:
+            case str():
+                for domain in values.split(","):
+                    add_dns_name(namespace, san.DNSName(domain.strip()))
+            case _:
+                # https://docs.python.org/3/library/argparse.html#nargs
+                raise TypeError("shouldn't happen: non-str passed by argparse when nargs=None")
 
 
-def add_domains(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
-                domains: Optional[str]) -> list[str]:
-    """Registers new domains to be used during the current client run.
+def add_dns_name(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
+                 dns_name: san.DNSName) -> None:
+    """Registers a new domain to be used during the current client run.
 
-    Domains are not added to the list of requested domains if they have
-    already been registered.
+    The domain is not added if it has already been registered.
 
     :param args_or_config: parsed command line arguments
     :type args_or_config: argparse.Namespace or
         configuration.NamespaceConfig
-    :param str domain: one or more comma separated domains
-
-    :returns: domains after they have been normalized and validated
-    :rtype: `list` of `str`
-
+    :param san.DNSName dns_name: a DNS name
     """
-    validated_domains: list[str] = []
-    if not domains:
-        return validated_domains
+    if dns_name not in args_or_config.domains:
+        args_or_config.domains.append(dns_name)
 
-    for domain in domains.split(","):
-        domain = util.enforce_domain_sanity(domain.strip())
-        validated_domains.append(domain)
-        if domain not in args_or_config.domains:
-            args_or_config.domains.append(domain)
 
-    return validated_domains
+class IPAddressAction(argparse.Action):
+    """Action class for parsing IP addresses."""
 
+    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
+                 values: str | Sequence[Any] | None,
+                 option_string: Optional[str] = None) -> None:
+        match values:
+            case str():
+                # This will throw an exception if the IP address doesn't parse.
+                add_ip_address(namespace, san.IPAddress(values))
+            case _:
+                # https://docs.python.org/3/library/argparse.html#nargs
+                raise TypeError("shouldn't happen: non-str passed by argparse when nargs=None")
+
+
+def add_ip_address(args_or_config: Union[argparse.Namespace, configuration.NamespaceConfig],
+                   ip_address: san.IPAddress) -> None:
+    """Registers a new IP address to be used during the current client run.
+
+    The IP address is not added if it has already been registered.
+
+    :param args_or_config: parsed command line arguments
+    :type args_or_config: argparse.Namespace or
+        configuration.NamespaceConfig
+    :param san.IPAddress ip_address: an IP address
+    """
+    if ip_address not in args_or_config.ip_addresses:
+        args_or_config.ip_addresses.append(ip_address)
 
 class CaseInsensitiveList(list):
     """A list that will ignore case when searching.
@@ -199,32 +219,6 @@ class _PrefChallAction(argparse.Action):
         except errors.Error as error:
             raise argparse.ArgumentError(self, str(error))
         namespace.pref_challs.extend(challs)
-
-
-class _DeployHookAction(argparse.Action):
-    """Action class for parsing deploy hooks."""
-
-    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
-                 values: Union[str, Sequence[Any], None],
-                 option_string: Optional[str] = None) -> None:
-        renew_hook_set = namespace.deploy_hook != namespace.renew_hook
-        if renew_hook_set and namespace.renew_hook != values:
-            raise argparse.ArgumentError(
-                self, "conflicts with --renew-hook value")
-        namespace.deploy_hook = namespace.renew_hook = values
-
-
-class _RenewHookAction(argparse.Action):
-    """Action class for parsing renew hooks."""
-
-    def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
-                 values: Union[str, Sequence[Any], None],
-                 option_string: Optional[str] = None) -> None:
-        deploy_hook_set = namespace.deploy_hook is not None
-        if deploy_hook_set and namespace.deploy_hook != values:
-            raise argparse.ArgumentError(
-                self, "conflicts with --deploy-hook value")
-        namespace.renew_hook = values
 
 
 def nonnegative_int(value: str) -> int:

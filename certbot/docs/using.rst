@@ -99,7 +99,7 @@ Apache
 ------
 
 The Apache plugin currently `supports
-<https://github.com/certbot/certbot/blob/main/certbot-apache/src/certbot_apache/_internal/entrypoint.py>`_
+<https://github.com/certbot/certbot/blob/main/certbot/src/certbot/_internal/plugins/apache/entrypoint.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo, CentOS and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
@@ -332,6 +332,10 @@ dns-mijn-host_          Y    N    DNS Authentication using mijn.host DNS
 nginx-unit_             Y    Y    Automates obtaining and installing a certificate with Nginx Unit
 dns-cdmon_              Y    N    DNS Authentication using cdmon's API
 dns-synergy-wholesale_  Y    N    DNS Authentication using Synergy Wholesale DNS
+pkcs12_                 N    Y    Install certificates as PKCS#12 archives
+dns-hetzner-cloud_      Y    N    DNS Authentication for Hetzner Cloud DNS
+dns-czechia_            Y    N    DNS Authentication for czechia.com
+dns-eurodns_            Y    N    DNS Authentication for EuroDNS
 ======================= ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -347,7 +351,7 @@ dns-synergy-wholesale_  Y    N    DNS Authentication using Synergy Wholesale DNS
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 .. _dns-lightsail: https://github.com/noi/certbot-dns-lightsail
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
-.. _dns-azure: https://github.com/binkhq/certbot-dns-azure
+.. _dns-azure: https://github.com/terricain/certbot-dns-azure
 .. _dns-godaddy: https://github.com/miigotu/certbot-dns-godaddy
 .. _dns-yandexcloud: https://github.com/PykupeJIbc/certbot-dns-yandexcloud
 .. _dns-bunny: https://github.com/mwt/certbot-dns-bunny
@@ -365,6 +369,10 @@ dns-synergy-wholesale_  Y    N    DNS Authentication using Synergy Wholesale DNS
 .. _nginx-unit: https://github.com/kea/certbot-nginx-unit
 .. _dns-cdmon: https://github.com/rascazzione/certbot-dns-cdmon
 .. _dns-synergy-wholesale: https://github.com/ALameLlama/certbot-dns-synergy-wholesale
+.. _pkcs12: https://github.com/nasa-gcn/certbot-pkcs12
+.. _dns-hetzner-cloud: https://github.com/rolschewsky/certbot-dns-hetzner-cloud
+.. _dns-czechia: https://github.com/CZECHIA-COM/certbot-dns-czechia
+.. _dns-eurodns: https://pypi.org/project/certbot-dns-eurodns/
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -1076,15 +1084,20 @@ This will run the ``authenticator.sh`` script, attempt the validation, and then 
 the ``cleanup.sh`` script. Additionally certbot will pass relevant environment
 variables to these scripts:
 
-- ``CERTBOT_DOMAIN``: The domain being authenticated
+- ``CERTBOT_IDENTIFIER``: The domain or IP address being authenticated
 - ``CERTBOT_VALIDATION``: The validation string
 - ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenge (HTTP-01 only)
 - ``CERTBOT_REMAINING_CHALLENGES``: Number of challenges remaining after the current challenge
-- ``CERTBOT_ALL_DOMAINS``: A comma-separated list of all domains challenged for the current certificate
+- ``CERTBOT_ALL_IDENTIFIERS``: A comma-separated list of all identifiers challenged for the current certificate
 
 Additionally for cleanup:
 
 - ``CERTBOT_AUTH_OUTPUT``: Whatever the auth script wrote to stdout
+
+Certbot also sets ``CERTBOT_DOMAIN`` and ``CERTBOT_ALL_DOMAINS`` to the same values as
+``CERTBOT_IDENTIFIER`` and ``CERTBOT_ALL_IDENTIFIERS`` respectively for backwards compatibility,
+however, the variables names containing "identifier" are preferred since Certbot has added support
+for obtaining certificates for IP addresses.
 
 Example usage for HTTP-01:
 
@@ -1123,7 +1136,7 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
    EMAIL="your.email@example.com"
 
    # Strip only the top domain to get the zone id
-   DOMAIN=$(expr match "$CERTBOT_DOMAIN" '.*\.\(.*\..*\)')
+   DOMAIN=$(expr match "$CERTBOT_IDENTIFIER" '.*\.\(.*\..*\)')
 
    # Get the Cloudflare zone id
    ZONE_EXTRA_PARAMS="status=active&page=1&per_page=20&order=status&direction=desc&match=all"
@@ -1133,7 +1146,7 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
         -H     "Content-Type: application/json" | python -c "import sys,json;print(json.load(sys.stdin)['result'][0]['id'])")
 
    # Create TXT record
-   CREATE_DOMAIN="_acme-challenge.$CERTBOT_DOMAIN"
+   CREATE_DOMAIN="_acme-challenge.$CERTBOT_IDENTIFIER"
    RECORD_ID=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
         -H     "X-Auth-Email: $EMAIL" \
         -H     "X-Auth-Key: $API_KEY" \
@@ -1141,11 +1154,11 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
         --data '{"type":"TXT","name":"'"$CREATE_DOMAIN"'","content":"'"$CERTBOT_VALIDATION"'","ttl":120}' \
                 | python -c "import sys,json;print(json.load(sys.stdin)['result']['id'])")
    # Save info for cleanup
-   if [ ! -d /tmp/CERTBOT_$CERTBOT_DOMAIN ];then
-           mkdir -m 0700 /tmp/CERTBOT_$CERTBOT_DOMAIN
+   if [ ! -d /tmp/CERTBOT_$CERTBOT_IDENTIFIER ];then
+           mkdir -m 0700 /tmp/CERTBOT_$CERTBOT_IDENTIFIER
    fi
-   echo $ZONE_ID > /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID
-   echo $RECORD_ID > /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID
+   echo $ZONE_ID > /tmp/CERTBOT_$CERTBOT_IDENTIFIER/ZONE_ID
+   echo $RECORD_ID > /tmp/CERTBOT_$CERTBOT_IDENTIFIER/RECORD_ID
 
    # Sleep to make sure the change has time to propagate over to DNS
    sleep 25
@@ -1160,14 +1173,14 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
    API_KEY="your-api-key"
    EMAIL="your.email@example.com"
 
-   if [ -f /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID ]; then
-           ZONE_ID=$(cat /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID)
-           rm -f /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID
+   if [ -f /tmp/CERTBOT_$CERTBOT_IDENTIFIER/ZONE_ID ]; then
+           ZONE_ID=$(cat /tmp/CERTBOT_$CERTBOT_IDENTIFIER/ZONE_ID)
+           rm -f /tmp/CERTBOT_$CERTBOT_IDENTIFIER/ZONE_ID
    fi
 
-   if [ -f /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID ]; then
-           RECORD_ID=$(cat /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID)
-           rm -f /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID
+   if [ -f /tmp/CERTBOT_$CERTBOT_IDENTIFIER/RECORD_ID ]; then
+           RECORD_ID=$(cat /tmp/CERTBOT_$CERTBOT_IDENTIFIER/RECORD_ID)
+           rm -f /tmp/CERTBOT_$CERTBOT_IDENTIFIER/RECORD_ID
    fi
 
    # Remove the challenge TXT record from the zone
@@ -1234,8 +1247,11 @@ Configuration file
 ==================
 
 Certbot accepts a global configuration file that applies its options to all invocations
-of Certbot. Certificate specific configuration choices should be set in the ``.conf``
-files that can be found in ``/etc/letsencrypt/renewal``.
+of Certbot. Certificate-specific configuration choices are stored in the ``.conf``
+files that can be found in ``/etc/letsencrypt/renewal``. See
+`Modifying the Renewal Configuration of Existing Certificates`_ for more information
+about modifying certificate-specific options. Note that it is not recommended to modify
+these certificate-specific renewal configuration files manually.
 
 By default no cli.ini file is created (though it may exist already if you installed Certbot
 via a package manager, for instance).

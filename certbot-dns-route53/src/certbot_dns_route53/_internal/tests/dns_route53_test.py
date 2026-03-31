@@ -9,7 +9,7 @@ from botocore.exceptions import NoCredentialsError
 import josepy as jose
 import pytest
 
-from acme import challenges
+from acme import challenges, messages
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import os
@@ -24,7 +24,9 @@ class AuthenticatorTest(unittest.TestCase):
     # pylint: disable=protected-access
 
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.DNS01, domain=DOMAIN, account_key=KEY)
+        challb=acme_util.DNS01,
+        identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=DOMAIN),
+        account_key=KEY)
 
     def setUp(self):
         from certbot_dns_route53._internal.dns_route53 import Authenticator

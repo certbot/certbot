@@ -5,7 +5,7 @@ Docker is an amazingly simple and quick way to obtain a certificate. However, th
  
 **Most users should install Certbot by following the installation instructions at https://certbot.eff.org/instructions. You should only use Docker if you are sure you know what you are doing (you understand [volumes](https://docs.docker.com/storage/volumes/)) and have a good reason to do so, such as following the [one service per container rule](https://docs.docker.com/config/containers/multi-service_container/).**
 
-For more information, please read [Certbot - Running with Docker](https://certbot.eff.org/docs/install.html#running-with-docker).
+For more information, please read [Certbot - Alternative 1: Docker](https://eff-certbot.readthedocs.io/en/latest/install.html#alternative-1-docker).
 
 
 Certbot Docker Tools

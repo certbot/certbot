@@ -22,7 +22,8 @@ AUTH_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 ACHALL = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(challenges.HTTP01(token=b'token1'),
                                              messages.STATUS_PENDING),
-            domain="encryption-example.demo", account_key=AUTH_KEY)
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="encryption-example.demo"),
+            account_key=AUTH_KEY)
 
 
 class NamespaceFunctionsTest(unittest.TestCase):

@@ -4,17 +4,27 @@ on:
   pull_request_target:
     types:
       - closed
-
+permissions: {}  # let's not use any permissions we don't need here
 jobs:
   if_merged:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-    - uses: mattermost/action-mattermost-notify@master
+    # github actions workflows triggered by pull_request_target can be
+    # dangerous because they run with additional privileges in an environment
+    # containing values that can be controlled by an attacker. because of
+    # this, please take extra caution when modifying the steps taken by this
+    # workflow. for additional information, see
+    # https://github.com/certbot/certbot/pull/10490
+    #
+    # we pin this action to a version tested and audited by certbot's
+    # maintainers for extra security. the full hash is used as doing so is
+    # recommended by zizmor
+    - uses: mattermost/action-mattermost-notify@b7d118e440bf2749cd18a4a8c88e7092e696257a
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_MERGE_WEBHOOK }}
         TEXT: >
           [${{ github.repository }}] |
           [${{ github.event.pull_request.title }}
           #${{ github.event.number }}](https://github.com/${{ github.repository }}/pull/${{ github.event.number }})
-          was merged into main by ${{ github.actor }}
+          was merged into ${{ github.event.pull_request.base.ref }} by ${{ github.actor }}

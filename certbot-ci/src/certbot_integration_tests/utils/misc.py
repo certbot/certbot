@@ -12,6 +12,7 @@ import json
 import os
 import re
 import shutil
+import socket
 import socketserver
 import stat
 import sys
@@ -74,6 +75,10 @@ class GracefulTCPServer(socketserver.TCPServer):
     just been released by another instance of TCPServer.
     """
     allow_reuse_address = True
+    # AF_INET is the default, but make it explicit. We don't want to conflict with
+    # test_ipv6_address_standalone in the integration tests, which listens on [::1]:5002
+    # (that is, AF_INET6).
+    address_family = socket.AF_INET
 
 
 @contextlib.contextmanager

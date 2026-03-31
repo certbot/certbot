@@ -96,7 +96,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         from certbot._internal import renewal
 
-        with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
+        with mock.patch('certbot._internal.renewal.hooks.deploy_hook'):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
         assert self.config.elliptic_curve == 'secp256r1'
@@ -121,7 +121,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         from certbot._internal import renewal
 
-        with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
+        with mock.patch('certbot._internal.renewal.hooks.deploy_hook'):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
         assert self.config.elliptic_curve == 'secp256r1'
@@ -145,7 +145,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         from certbot._internal import renewal
 
-        with mock.patch('certbot._internal.renewal.hooks.renew_hook'):
+        with mock.patch('certbot._internal.renewal.hooks.deploy_hook'):
             renewal.renew_cert(self.config, None, le_client, lineage)
 
         assert self.config.elliptic_curve == 'secp256r1'
@@ -154,9 +154,9 @@ class RenewalTest(test_util.ConfigTestCase):
         # None is passed as the existing key, i.e. the key is not actually being reused.
         le_client.obtain_certificate.assert_called_with(mock.ANY, None)
 
-    @mock.patch('certbot._internal.renewal.hooks.renew_hook')
+    @mock.patch('certbot._internal.renewal.hooks.deploy_hook')
     @mock.patch.object(configuration.NamespaceConfig, 'set_by_user')
-    def test_reuse_key_conflicts(self, mock_set_by_user, unused_mock_renew_hook):
+    def test_reuse_key_conflicts(self, mock_set_by_user, unused_mock_deploy_hook):
         mock_set_by_user.return_value = False
 
         # When renewing with reuse_key and a conflicting key parameter (size, curve)

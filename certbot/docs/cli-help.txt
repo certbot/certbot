@@ -68,6 +68,11 @@ options:
                         already have a certificate with the same name. In the
                         case of a name conflict, a number like -0001 will be
                         appended to the certificate name. (default: Ask)
+  --ip-address IP_ADDRESSES
+                        IP addresses to include. For multiple IP addresses you
+                        can use multiple --ip-address flags. All IP addresses
+                        will be included as Subject Alternative Names on the
+                        certificate. (default: [])
   --eab-kid EAB_KID     Key Identifier for External Account Binding (default:
                         None)
   --eab-hmac-key EAB_HMAC_KEY
@@ -142,7 +147,7 @@ options:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/5.0.0 (certbot;
+                        "". (default: CertbotACMEClient/5.4.0 (certbot;
                         OS_NAME OS_VERSION) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/major.minor.patchlevel).
                         The flags encoded in the user agent are: --duplicate,
@@ -324,6 +329,20 @@ run:
 certonly:
   Options for modifying how a certificate is obtained
 
+  --deploy-hook DEPLOY_HOOK
+                        Command to be run in a shell once for each
+                        successfully issued certificate, including on
+                        subsequent renewals. Unless --disable-hook-validation
+                        is used, the command’s first word must be the absolute
+                        pathname of an executable or one found via the PATH
+                        environment variable. For this command, the shell
+                        variable $RENEWED_LINEAGE will point to the config
+                        live subdirectory (for example,
+                        "/etc/letsencrypt/live/example.com") containing the
+                        new certificates and keys; the shell variable
+                        $RENEWED_DOMAINS will contain a space-delimited list
+                        of renewed certificate domains (for example,
+                        "example.com www.example.com") (default: None)
   --csr CSR             Path to a Certificate Signing Request (CSR) in DER or
                         PEM format. Currently --csr only works with the
                         'certonly' subcommand. (default: None)
@@ -360,19 +379,6 @@ renew:
                         an attempt was made to obtain/renew a certificate. If
                         multiple renewed certificates have identical post-
                         hooks, only one will be run. (default: None)
-  --deploy-hook DEPLOY_HOOK
-                        Command to be run in a shell once for each
-                        successfully issued certificate. Unless --disable-
-                        hook-validation is used, the command’s first word must
-                        be the absolute pathname of an executable or one found
-                        via the PATH environment variable. For this command,
-                        the shell variable $RENEWED_LINEAGE will point to the
-                        config live subdirectory (for example,
-                        "/etc/letsencrypt/live/example.com") containing the
-                        new certificates and keys; the shell variable
-                        $RENEWED_DOMAINS will contain a space-delimited list
-                        of renewed certificate domains (for example,
-                        "example.com www.example.com") (default: None)
   --disable-hook-validation
                         Ordinarily the commands specified for --pre-
                         hook/--post-hook/--deploy-hook will be checked for
@@ -704,17 +710,17 @@ manual:
   Authenticate through manual configuration or custom shell scripts. When
   using shell scripts, an authenticator script must be provided. The
   environment variables available to this script depend on the type of
-  challenge. $CERTBOT_DOMAIN will always contain the domain being
-  authenticated. For HTTP-01 and DNS-01, $CERTBOT_VALIDATION is the
-  validation string, and $CERTBOT_TOKEN is the filename of the resource
-  requested when performing an HTTP-01 challenge. An additional cleanup
-  script can also be provided and can use the additional variable
+  challenge. $CERTBOT_IDENTIFIER will always contain the domain or IP
+  address being authenticated. For HTTP-01 and DNS-01, $CERTBOT_VALIDATION
+  is the validation string, and $CERTBOT_TOKEN is the filename of the
+  resource requested when performing an HTTP-01 challenge. An additional
+  cleanup script can also be provided and can use the additional variable
   $CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth
   script. For both authenticator and cleanup script, on HTTP-01 and DNS-01
   challenges, $CERTBOT_REMAINING_CHALLENGES will be equal to the number of
-  challenges that remain after the current one, and $CERTBOT_ALL_DOMAINS
-  contains a comma-separated list of all domains that are challenged for the
-  current certificate.
+  challenges that remain after the current one, and $CERTBOT_ALL_IDENTIFIERS
+  contains a comma-separated list of all identifiers that are challenged for
+  the current certificate.
 
   --manual-auth-hook MANUAL_AUTH_HOOK
                         Path or command to execute for the authentication
@@ -753,18 +759,18 @@ webroot:
 
   --webroot-path WEBROOT_PATH, -w WEBROOT_PATH
                         public_html / webroot path. This can be specified
-                        multiple times to handle different domains; each
-                        domain will have the webroot path that preceded it.
-                        For instance: `-w /var/www/example -d example.com -d
-                        www.example.com -w /var/www/thing -d thing.net -d
+                        multiple times to handle different identifiers; each
+                        identifier will have the webroot path that preceded
+                        it. For instance: `-w /var/www/example -d example.com
+                        -d www.example.com -w /var/www/thing -d thing.net -d
                         m.thing.net` (default: Ask)
   --webroot-map WEBROOT_MAP
-                        JSON dictionary mapping domains to webroot paths; this
-                        implies -d for each entry. You may need to escape this
-                        from your shell. E.g.: --webroot-map
-                        '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}'
-                        This option is merged with, but takes precedence over,
-                        -w / -d entries. At present, if you put webroot-map in
-                        a config file, it needs to be on a single line, like:
-                        webroot-map = {"example.com":"/var/www"}. (default:
-                        {})
+                        JSON dictionary mapping identifiers to webroot paths;
+                        this implies -d or --ip-address for each entry. You
+                        may need to escape this from your shell. E.g.:
+                        --webroot-map '{"eg1.is,m.eg1.is":"/www/eg1/",
+                        "eg2.is":"/www/eg2"}' This option is merged with, but
+                        takes precedence over, -w / -d entries. At present, if
+                        you put webroot-map in a config file, it needs to be
+                        on a single line, like: webroot-map =
+                        {"example.com":"/var/www"}. (default: {})

@@ -14,6 +14,7 @@ from typing import Optional
 from typing import Union
 
 import configobj
+from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
@@ -25,9 +26,10 @@ from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
-from certbot import ocsp
 from certbot import util
 from certbot._internal import error_handler
+from certbot._internal import ocsp
+from certbot._internal import san
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -210,6 +212,16 @@ def make_renewal_configobj(archive_dir: str, target: Mapping[str, str],
         config[kind] = target[kind]
     config['renewalparams'] = {}
     config['renewalparams'].update(relevant_values(cli_config))
+
+    # MAGIC CODE ALERT
+    # In keeping with the code in RenewableCert.__init__, we use deploy_hook internally,
+    # but write out the value as renew_hook to allow downgrade compatibility.
+    # So, if there's a deploy_hook (the internal name), change it to renew_hook (the renewal
+    # config file name).
+    if "deploy_hook" in config["renewalparams"]:
+        config["renewalparams"]["renew_hook"] = config["renewalparams"]["deploy_hook"]
+        del config["renewalparams"]["deploy_hook"]
+
     return config
 
 
@@ -491,6 +503,17 @@ class RenewableCert(interfaces.RenewableCert):
         self.chain = self.configuration["chain"]
         self.fullchain = self.configuration["fullchain"]
         self.live_dir = os.path.dirname(self.cert)
+
+        # MAGIC CODE ALERT
+        # We changed the name of the internal property from deploy hook to renew hook
+        # There are already configs out there with renew_hook saved, so we're going to keep saving
+        # it out as renew_hook to allow downgrade compatibility. Load it in as deploy
+        # hook. Then, renewal.py's STR_CONFIG_ITEMS will check against the new internal name.
+        if "renewalparams" in self.configuration:
+            if "renew_hook" in self.configuration["renewalparams"]:
+                self.configuration["renewalparams"]["deploy_hook"] = \
+                    self.configuration["renewalparams"]["renew_hook"]
+                del self.configuration["renewalparams"]["renew_hook"]
 
         self._fix_symlinks()
         self._check_symlinks()
@@ -913,10 +936,19 @@ class RenewableCert(interfaces.RenewableCert):
                 os.unlink(link)
 
     def names(self) -> list[str]:
-        """What are the subject names of this certificate?
+        """Return the DNS names and IP addresses from this certificate as strings.
 
         :returns: the subject names
         :rtype: `list` of `str`
+        :raises .CertStorageError: if could not find cert file.
+        """
+        return list(map(str, self.sans()))
+
+    def sans(self) -> list[san.SAN]:
+        """Return the DNS names and IP addresses from this certificate as SAN objects.
+
+        :returns: the subject names
+        :rtype: `list` of `san.SAN`
         :raises .CertStorageError: if could not find cert file.
 
         """
@@ -924,7 +956,10 @@ class RenewableCert(interfaces.RenewableCert):
         if target is None:
             raise errors.CertStorageError("could not find the certificate file")
         with open(target, "rb") as f:
-            return crypto_util.get_names_from_cert(f.read())
+            cert_bytes = f.read()
+        x509_cert = x509.load_pem_x509_certificate(cert_bytes)
+        dns_names, ip_addrs = san.from_x509(x509_cert.subject, x509_cert.extensions)
+        return cast(list[san.SAN], dns_names + ip_addrs)
 
     def ocsp_revoked(self, version: int) -> bool:
         """Is the specified cert version revoked according to OCSP?

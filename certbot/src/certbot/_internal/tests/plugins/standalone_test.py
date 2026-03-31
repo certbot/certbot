@@ -8,7 +8,7 @@ from unittest import mock
 import josepy as jose
 import pytest
 
-from acme import challenges
+from acme import challenges, messages
 from acme import standalone as acme_standalone
 from certbot import achallenges
 from certbot import errors
@@ -86,7 +86,7 @@ class AuthenticatorTest(unittest.TestCase):
         assert isinstance(self.auth.more_info(), str)
 
     def test_get_chall_pref(self):
-        assert self.auth.get_chall_pref(domain=None) == \
+        assert self.auth.get_chall_pref(identifier=None) == \
                          [challenges.HTTP01]
 
     def test_perform(self):
@@ -144,7 +144,9 @@ class AuthenticatorTest(unittest.TestCase):
         domain = b'localhost'
         key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
         http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.HTTP01_P, domain=domain, account_key=key)
+            challb=acme_util.HTTP01_P,
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=domain),
+            account_key=key)
 
         return [http_01]
 

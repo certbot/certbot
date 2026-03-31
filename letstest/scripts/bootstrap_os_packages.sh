@@ -23,8 +23,8 @@ elif [ -f /etc/redhat-release ]; then
   # the "codeready builder" repository must be enabled to install the
   # augeas-devel package needed to compile newer versions of python-augeas
   sudo yum config-manager --set-enabled crb
-  PYENV_DEPS="gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel \
-              tk-devel libffi-devel xz-devel git"
+  PYENV_DEPS="gcc make patch zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel \
+              openssl-devel tk-devel libffi-devel xz-devel git"
   ALL_DEPS="augeas-devel $PYENV_DEPS"
 
   if yum list installed "httpd" >/dev/null 2>&1; then

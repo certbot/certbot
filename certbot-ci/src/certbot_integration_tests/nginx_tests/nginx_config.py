@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """General purpose nginx test configuration generator."""
 import atexit
-import getpass
 import importlib.resources
 from contextlib import ExitStack
 from typing import Optional
@@ -49,7 +48,6 @@ error_log {nginx_root}/error.log;
 # The pidfile will be written to /var/run unless this is set.
 pid {nginx_root}/nginx.pid;
 
-user {user};
 worker_processes 1;
 
 events {{
@@ -136,7 +134,7 @@ http {{
     ssl_certificate_key {key_path};
   }}
 }}
-'''.format(nginx_root=nginx_root, nginx_webroot=nginx_webroot, user=getpass.getuser(),
+'''.format(nginx_root=nginx_root, nginx_webroot=nginx_webroot,
            http_port=http_port, https_port=https_port, other_port=other_port,
            default_server='default_server' if default_server else '', wtf_prefix=wtf_prefix,
            key_path=key_path, cert_path=cert_path)
