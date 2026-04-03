@@ -1,0 +1,61 @@
+# Environment variables defined in a calling workflow are not accessible to this reusable workflow. Refer to the documentation for further details on this limitation.
+name: standard_tests_jobs
+on:
+  workflow_call:
+    inputs:
+      uploadCoverage:
+        description: 'Upload coverage to Codecov'
+        type: boolean
+        default: false
+jobs:
+  test:
+    name: test ${{ matrix.IMAGE_NAME }}-${{ matrix.TOXENV }}
+    permissions:
+      contents: read
+    runs-on:
+      - "${{ matrix.IMAGE_NAME }}"
+    env:
+      uploadCoverage: ${{ inputs.uploadCoverage }}
+    strategy:
+      fail-fast: false
+      matrix:
+        PYTHON_VERSION: ['3.14']
+        IMAGE_NAME: ['ubuntu-22.04']
+        TOXENV:
+          - 'cover'
+          - 'lint-posix'
+          - 'mypy'
+          - 'integration'
+          - 'apache_compat'
+          - 'apacheconftest-with-pebble'
+          - 'nginxroundtrip'
+          - 'validate-changelog'
+        include:
+        - IMAGE_NAME: macOS-15
+          PYTHON_VERSION: '3.14'
+          TOXENV: cover
+          PIP_USE_PEP517: 'true'
+        - IMAGE_NAME: ubuntu-22.04
+          PYTHON_VERSION: '3.10'
+          TOXENV: oldest
+        - IMAGE_NAME: ubuntu-22.04
+          PYTHON_VERSION: '3.10'
+          TOXENV: py310
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6.0.2
+    - name: Setup tox
+      uses: "./.github/actions/setup_tox"
+    - name: Run tox
+      uses: "./.github/actions/run_tox"
+    - name: Upload coverage
+      uses: "./.github/actions/upload_coverage"
+  test_sphinx_builds:
+    permissions:
+      contents: read
+    runs-on:
+      - ubuntu-22.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - uses: "./.github/actions/sphinx_steps"

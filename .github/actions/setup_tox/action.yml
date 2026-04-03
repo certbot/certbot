@@ -1,0 +1,39 @@
+name: setup_tox
+
+inputs:
+  AWS_TEST_FARM_PEM:
+    description: 'Contents of keyfile for AWS'
+  AWS_EC2_PEM_FILE:
+    description: 'Location of keyfile for AWS'
+
+runs:
+  using: composite
+  steps:
+  - name: Install MacOS dependencies
+    if: runner.os == 'macOS'
+    run: |-
+      set -e
+      unset HOMEBREW_NO_INSTALL_FROM_API
+      brew untap homebrew/core homebrew/cask
+      brew update
+      brew install augeas
+    shell: bash
+  - name: Install Linux dependencies
+    if: runner.os == 'Linux'
+    run: |-
+      set -e
+      sudo apt-get update
+      sudo apt-get install -y --no-install-recommends \
+        libaugeas-dev \
+        nginx-light
+      sudo systemctl stop nginx
+      sudo sysctl net.ipv4.ip_unprivileged_port_start=0
+    shell: bash
+  - uses: actions/setup-python@v6.2.0
+    with:
+      python-version: "${{ matrix.PYTHON_VERSION }}"
+  - name: Install runtime dependencies
+    run: |-
+      set -e
+      python3 tools/pip_install.py tox
+    shell: bash
