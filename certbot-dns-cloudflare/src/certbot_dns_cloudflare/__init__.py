@@ -18,6 +18,9 @@ Named Arguments
                                           to propagate before asking the ACME
                                           server to verify the DNS record.
                                           (Default: 10)
+``--dns-cloudflare-delegate-via``         The domain of the target zone, where
+                                          existing CNAME delegation records
+                                          point to
 ========================================  =====================================
 
 
@@ -119,6 +122,19 @@ Examples
      --dns-cloudflare \\
      --dns-cloudflare-credentials ~/.secrets/certbot/cloudflare.ini \\
      --dns-cloudflare-propagation-seconds 60 \\
+     -d example.com
+
+.. code-block:: bash
+   :caption: To acquire a certificate for ``example.com``, using Cloudflare
+             credentials with write access for the CNAME delegation zone
+             ``acme-delegation.org``
+
+    # Assuming the following CNAME record has already been set:
+    # _acme-challenge.example.com. <TTL> IN CNAME _acme-challenge.example.com.acme-delegation.org.
+   certbot certonly \\
+     --dns-cloudflare \\
+     --dns-cloudflare-credentials ~/.secrets/certbot/cloudflare.ini \\
+     --dns-cloudflare-delegate-via acme-delegation.org \\
      -d example.com
 
 """
