@@ -1,72 +1,17 @@
 """Crypto utilities."""
-import enum
-from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
-from types import ModuleType
 import typing
-from typing import Any
 from typing import Literal
 from typing import Optional
 from typing import Union
-import warnings
-import sys
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448, types
+from cryptography.hazmat.primitives.asymmetric import dsa, rsa, ec, ed25519, ed448
 from cryptography.hazmat.primitives.serialization import Encoding
-from OpenSSL import crypto
 
 logger = logging.getLogger(__name__)
-
-
-# https://github.com/pyca/cryptography/blob/1eab7a67dcc34b568e3c0df64e6222a2ac74b1ee/src/cryptography/utils.py#L66-L113
-class _ClientDeprecationModule(ModuleType):
-    """
-    Internal class delegating to a module, and displaying warnings when attributes
-    related to deprecated attributes in the acme.client module.
-    """
-    def __init__(self, module: ModuleType) -> None:
-        super().__init__(module.__name__)
-        self.__dict__['_module'] = module
-
-    def __getattr__(self, attr: str) -> Any:
-        if attr == 'Format':
-            warnings.warn("acme.crypto_util.Format is deprecated and will be removed in "
-                "the next major release.", DeprecationWarning)
-        return getattr(self._module, attr)
-
-    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
-        setattr(self._module, attr, value)
-
-    def __delattr__(self, attr: str) -> None:  # pragma: no cover
-        delattr(self._module, attr)
-
-    def __dir__(self) -> list[str]:  # pragma: no cover
-        return ['_module'] + dir(self._module)
-
-
-# Patching ourselves to warn about deprecation and planned removal of some elements in the module.
-sys.modules[__name__] = _ClientDeprecationModule(sys.modules[__name__])
-
-
-class Format(enum.IntEnum):
-    """File format to be used when parsing or serializing X.509 structures. Deprecated.
-
-    Backwards compatible with the `FILETYPE_ASN1` and `FILETYPE_PEM` constants
-    from pyOpenSSL.
-    """
-    DER = crypto.FILETYPE_ASN1
-    PEM = crypto.FILETYPE_PEM
-
-    def to_cryptography_encoding(self) -> Encoding:
-        """Converts the Format to the corresponding cryptography `Encoding`.
-        """
-        if self == Format.DER:
-            return Encoding.DER
-        else:
-            return Encoding.PEM
 
 
 # Annoyingly, due to a mypy bug, we can't use Union[] types in
@@ -221,88 +166,6 @@ def _cryptography_cert_or_req_san(
         return []
 
     return san_ext.value.get_values_for_type(x509.DNSName)
-
-
-# Helper function that can be mocked in unit tests
-def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
-
-
-def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
-                          domains: Optional[list[str]] = None,
-                          not_before: Optional[datetime] = None,
-                          validity: Optional[timedelta] = None, force_san: bool = True,
-                          extensions: Optional[list[x509.Extension]] = None,
-                          ips: Optional[list[Union[ipaddress.IPv4Address,
-                                                   ipaddress.IPv6Address]]] = None
-                          ) -> x509.Certificate:
-    """Generate new self-signed certificate.
-    :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
-    :type domains: `list` of `str`
-    :param int not_before: A datetime after which the cert is valid. If no
-    timezone is specified, UTC is assumed
-    :type not_before: `datetime.datetime`
-    :param validity: Duration for which the cert will be valid. Defaults to 1
-    week
-    :type validity: `datetime.timedelta`
-    :param buffer private_key_pem: One of
-    `cryptography.hazmat.primitives.asymmetric.types.CertificateIssuerPrivateKeyTypes`
-    :param bool force_san:
-    :param extensions: List of additional extensions to include in the cert.
-    :type extensions: `list` of `x509.Extension[x509.ExtensionType]`
-    :type ips: `list` of (`ipaddress.IPv4Address` or `ipaddress.IPv6Address`)
-    If more than one domain is provided, all of the domains are put into
-    ``subjectAltName`` X.509 extension and first domain is set as the
-    subject CN. If only one domain is provided no ``subjectAltName``
-    extension is used, unless `force_san` is ``True``.
-    """
-    warnings.warn("make_self_signed_cert is deprecated and will be removed in "
-                  "an upcoming release", DeprecationWarning)
-    assert domains or ips, "Must provide one or more hostnames or IPs for the cert."
-
-    builder = x509.CertificateBuilder()
-    builder = builder.serial_number(x509.random_serial_number())
-
-    if extensions is not None:
-        for ext in extensions:
-            builder = builder.add_extension(ext.value, ext.critical)
-    if domains is None:
-        domains = []
-    if ips is None:
-        ips = []
-    builder = builder.add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
-
-    name_attrs = []
-    if len(domains) > 0:
-        name_attrs.append(x509.NameAttribute(
-            x509.OID_COMMON_NAME,
-            domains[0]
-        ))
-
-    builder = builder.subject_name(x509.Name(name_attrs))
-    builder = builder.issuer_name(x509.Name(name_attrs))
-
-    sanlist: list[x509.GeneralName] = []
-    for address in domains:
-        sanlist.append(x509.DNSName(address))
-    for ip in ips:
-        sanlist.append(x509.IPAddress(ip))
-    if force_san or len(domains) > 1 or len(ips) > 0:
-        builder = builder.add_extension(
-            x509.SubjectAlternativeName(sanlist),
-            critical=False
-        )
-
-    if not_before is None:
-        not_before = _now()
-    if validity is None:
-        validity = timedelta(seconds=7 * 24 * 60 * 60)
-    builder = builder.not_valid_before(not_before)
-    builder = builder.not_valid_after(not_before + validity)
-
-    public_key = private_key.public_key()
-    builder = builder.public_key(public_key)
-    return builder.sign(private_key, hashes.SHA256())
 
 
 def dump_cryptography_chain(

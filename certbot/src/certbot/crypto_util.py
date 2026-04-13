@@ -12,7 +12,6 @@ import re
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
-import warnings
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -199,44 +198,6 @@ def read_csr_file(
     return util.CSR(file=csrfile, data=data_pem, form="pem")
 
 
-def import_csr_file(
-    csrfile: str, data: bytes
-) -> tuple['acme_crypto_util.Format', util.CSR, list[str]]:
-    """Import a CSR file, which can be either PEM or DER.
-
-    :param str csrfile: CSR filename
-    :param bytes data: contents of the CSR file
-
-    :returns: (`acme_crypto_util.Format.PEM`,
-               util.CSR object representing the CSR,
-               list of domains requested in the CSR)
-    :rtype: tuple
-
-    """
-    warnings.warn("certbot.crypto_util.import_csr_file is deprecated and "
-        "will be removed in the next major release. Please use "
-        "certbot.crypto_util.read_csr_file instead.", DeprecationWarning)
-    try:
-        # Try to parse as DER first, then fall back to PEM.
-        csr = x509.load_der_x509_csr(data)
-    except ValueError:
-        try:
-            csr = x509.load_pem_x509_csr(data)
-        except ValueError:
-            raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
-
-    domains = acme_crypto_util.get_names_from_subject_and_extensions(csr.subject, csr.extensions)
-    # Internally we always use PEM, so re-encode as PEM before returning.
-    data_pem = csr.public_bytes(serialization.Encoding.PEM)
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "acme.crypto_util.Format is deprecated")
-        return (
-            acme_crypto_util.Format.PEM,
-            util.CSR(file=csrfile, data=data_pem, form="pem"),
-            domains,
-        )
-
-
 def make_key(bits: int = 2048, key_type: str = "rsa",
              elliptic_curve: Optional[str] = None) -> bytes:
     """Generate PEM encoded RSA|EC key.
@@ -419,98 +380,6 @@ def verify_fullchain(renewable_cert: interfaces.RenewableCert) -> None:
         raise errors.Error(error_str)
     except errors.Error as e:
         raise e
-
-
-def get_sans_from_cert(
-    cert: bytes, typ: 'acme_crypto_util.Format | int | None' = None
-) -> list[str]:
-    """Get a list of Subject Alternative Names from a certificate.
-
-    :param str cert: Certificate (encoded).
-    :param Format typ: Which format the `cert` bytes are in.
-
-    :returns: A list of Subject Alternative Names.
-    :rtype: list
-
-    """
-    warnings.warn("get_sans_from_cert is deprecated and will be removed in the next "
-        "major release.", DeprecationWarning)
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "acme.crypto_util.Format is deprecated")
-        if typ is None:
-            typ = acme_crypto_util.Format.PEM
-        typ = acme_crypto_util.Format(typ)
-        if typ == acme_crypto_util.Format.PEM:
-            x509_cert = x509.load_pem_x509_certificate(cert)
-        else:
-            assert typ == acme_crypto_util.Format.DER
-            x509_cert = x509.load_der_x509_certificate(cert)
-
-    try:
-        san_ext = x509_cert.extensions.get_extension_for_class(
-            x509.SubjectAlternativeName
-        )
-    except x509.ExtensionNotFound:
-        return []
-
-    return san_ext.value.get_values_for_type(x509.DNSName)
-
-
-def get_names_from_cert(
-    cert: bytes, typ: 'acme_crypto_util.Format | int | None' = None
-) -> list[str]:
-    """Get a list of domains from a cert, including the CN if it is set.
-
-    :param str cert: Certificate (encoded).
-    :param Format typ: Which format the `cert` bytes are in.
-
-    :returns: A list of domain names.
-    :rtype: list
-
-    """
-    warnings.warn("get_names_from_cert is deprecated and will be removed in the next "
-        "major release.", DeprecationWarning)
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "acme.crypto_util.Format is deprecated")
-        if typ is None:
-            typ = acme_crypto_util.Format.PEM
-        typ = acme_crypto_util.Format(typ)
-        if typ == acme_crypto_util.Format.PEM:
-            x509_cert = x509.load_pem_x509_certificate(cert)
-        else:
-            assert typ == acme_crypto_util.Format.DER
-            x509_cert = x509.load_der_x509_certificate(cert)
-    return acme_crypto_util.get_names_from_subject_and_extensions(
-        x509_cert.subject, x509_cert.extensions
-    )
-
-
-def get_names_from_req(
-    csr: bytes, typ: 'acme_crypto_util.Format | int | None' = None
-) -> list[str]:
-    """Get a list of domains from a CSR, including the CN if it is set.
-
-    :param str csr: CSR (encoded).
-    :param acme_crypto_util.Format typ: Which format the `csr` bytes are in.
-    :returns: A list of domain names.
-    :rtype: list
-
-    """
-    warnings.warn("get_names_from_req is deprecated and will be removed in the next "
-        "major release.", DeprecationWarning)
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "acme.crypto_util.Format is deprecated")
-        if typ is None:
-            typ = acme_crypto_util.Format.PEM
-        typ = acme_crypto_util.Format(typ)
-        if typ == acme_crypto_util.Format.PEM:
-            x509_req = x509.load_pem_x509_csr(csr)
-        else:
-            assert typ == acme_crypto_util.Format.DER
-            x509_req = x509.load_der_x509_csr(csr)
-    return acme_crypto_util.get_names_from_subject_and_extensions(
-        x509_req.subject, x509_req.extensions
-    )
 
 
 def notBefore(cert_path: str) -> datetime.datetime:
