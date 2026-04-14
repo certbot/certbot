@@ -794,7 +794,7 @@ class Client:
             try:
                 self.installer.rollback_checkpoints()
                 self.installer.restart()
-            except:
+            except Exception:
                 logger.error(
                     "An error occurred and we failed to restore your config and "
                     "restart your server. Please post to "
