@@ -143,6 +143,10 @@ class _CloudflareClient:
             logger.error('Encountered Cloudflare API error adding TXT record: %s', e)
             raise errors.PluginError('Error communicating with the Cloudflare API: {0}{1}'
                                      .format(e, ' ({0})'.format(hint) if hint else ''))
+        except cloudflare.APIConnectionError as e:
+            logger.error('Network error talking to the Cloudflare API: %s', e)
+            raise errors.PluginError('Network error communicating with the Cloudflare API '
+                                     'while adding a TXT record: {0}'.format(e))
 
         record_id = self._find_txt_record_id(zone_id, record_name, record_content)
         logger.debug('Successfully added TXT record with record_id: %s', record_id)
@@ -174,6 +178,8 @@ class _CloudflareClient:
                 logger.debug('Successfully deleted TXT record.')
             except cloudflare.APIStatusError as e:
                 logger.warning('Encountered Cloudflare API error deleting TXT record: %s', e)
+            except cloudflare.APIConnectionError as e:
+                logger.warning('Network error deleting TXT record from Cloudflare: %s', e)
         else:
             logger.debug('TXT record not found; no cleanup needed.')
 
@@ -214,6 +220,9 @@ class _CloudflareClient:
                 else:
                     logger.debug('Unrecognised Cloudflare API error while finding zone_id: %s. '
                                  'Continuing with next zone guess...', e)
+            except cloudflare.APIConnectionError as e:
+                raise errors.PluginError('Network error contacting the Cloudflare API while '
+                                         'looking up the zone for {0}: {1}'.format(domain, e))
 
             if zone:
                 zone_id = zone.id
@@ -258,6 +267,9 @@ class _CloudflareClient:
                 content={'exact': record_content}, per_page=1))
         except cloudflare.APIStatusError as e:
             logger.debug('Encountered Cloudflare API error getting TXT record_id: %s', e)
+            records = []
+        except cloudflare.APIConnectionError as e:
+            logger.debug('Network error getting TXT record_id from Cloudflare: %s', e)
             records = []
 
         if records:
