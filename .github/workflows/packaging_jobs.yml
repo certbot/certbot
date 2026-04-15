@@ -119,10 +119,12 @@ jobs:
         DNS_NAMES=$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')
         MATRIX_PARAMS_COMBINATIONS='
           "dns-dir": '$DNS_NAMES',
-          {"build-for": "arm64", "build-on": "ubuntu-24.04-arm"},
-          {"build-for": "amd64", "build-on": "ubuntu-24.04"},
+          "include": [
+            {"build-for": "arm64", "build-on": "ubuntu-24.04-arm"},
+            {"build-for": "amd64", "build-on": "ubuntu-24.04"},
+          ]
         '
-        echo ::set-output name=matrix::{\"include\":[$MATRIX_PARAMS_COMBINATIONS]}
+        echo 'matrix='$MATRIX_PARAMS_COMBINATIONS >> $GITHUB_OUTPUT
   gha_build_dns:
     name: Build ${{ matrix.build-for }} snap
     needs: generate_dns_list_matrix
