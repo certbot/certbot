@@ -1,0 +1,1 @@
+The certbot-dns-cloudflare plugin now catches `cloudflare.APIConnectionError` (the parent of `APITimeoutError`) in addition to `cloudflare.APIStatusError`, so that transient network failures during a renewal are surfaced as a clean `PluginError` rather than crashing with an unhandled exception.

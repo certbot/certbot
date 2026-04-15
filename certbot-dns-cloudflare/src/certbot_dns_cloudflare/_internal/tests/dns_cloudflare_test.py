@@ -31,7 +31,15 @@ def _make_api_error(cf_code: int, msg: str = '', http_status: int = 400
     return cloudflare.APIStatusError(message=msg or str(cf_code), response=response, body=body)
 
 
+def _make_connection_error(msg: str = 'Connection error.') -> cloudflare.APIConnectionError:
+    """Build a cloudflare.APIConnectionError (e.g. transient network failure)."""
+    return cloudflare.APIConnectionError(
+        message=msg,
+        request=httpx.Request('GET', 'https://api.cloudflare.com'))
+
+
 API_ERROR = _make_api_error(1000)
+CONNECTION_ERROR = _make_connection_error()
 
 API_TOKEN = 'an-api-token'
 
@@ -193,6 +201,21 @@ class CloudflareClientTest(unittest.TestCase):
             self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
                                                   self.record_ttl)
 
+    def test_add_txt_record_connection_error_on_create(self):
+        self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
+        self.cf.dns.records.create.side_effect = CONNECTION_ERROR
+
+        with pytest.raises(errors.PluginError, match='Network error'):
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
+                                                  self.record_ttl)
+
+    def test_add_txt_record_connection_error_during_zone_lookup(self):
+        self.cf.zones.list.side_effect = CONNECTION_ERROR
+
+        with pytest.raises(errors.PluginError, match='Network error'):
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
+                                                  self.record_ttl)
+
     def test_add_txt_record_bad_creds(self):
         self.cf.zones.list.side_effect = _make_api_error(6003)
         with pytest.raises(errors.PluginError):
@@ -266,6 +289,25 @@ class CloudflareClientTest(unittest.TestCase):
         self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
         self.cf.zones.list.assert_called_once()
+
+    def test_del_txt_record_connection_error_on_delete(self):
+        self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
+        self.cf.dns.records.list.return_value = [_mock_record(self.record_id)]
+        self.cf.dns.records.delete.side_effect = CONNECTION_ERROR
+
+        self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+
+        self.cf.dns.records.delete.assert_called_once_with(
+            dns_record_id=self.record_id, zone_id=self.zone_id)
+
+    def test_del_txt_record_connection_error_on_get(self):
+        self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
+        self.cf.dns.records.list.side_effect = CONNECTION_ERROR
+
+        self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+
+        self.cf.dns.records.list.assert_called_once()
+        self.cf.dns.records.delete.assert_not_called()
 
 
 if __name__ == "__main__":
