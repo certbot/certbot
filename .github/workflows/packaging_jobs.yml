@@ -80,17 +80,79 @@ jobs:
     - name: Run integration tests for Docker images
       run: set -e && tools/docker/test.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
       shell: bash
-  snaps_build:
-    runs-on:
-      - ubuntu-22.04
-    timeout-minutes: 0
+  gha_build:
+    name: Build ${{ matrix.build-for }} certbot snap
+    runs-on: ${{ matrix.build-on }}
     strategy:
       fail-fast: false
       matrix:
+        include:
+        - build-for: arm64
+          build-on: ubuntu-24.04-arm
+        - build-for: amd64
+          build-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: snapcore/action-build@v1.3.0
+          id: build
+          with:
+            snapcraft-args: "--build-for=${{ matrix.build-for }}"
+      - name: Prepare artifact
+        run: |-
+          set -e
+          mv *.snap ${{ runner.temp }}
+      - name: Store snap artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: snaps_${{ matrix.build-for }}
+          path: "${{ runner.temp }}"
+  generate_dns_list_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - id: set-matrix
+      run: |
+        tools/snap/generate_dnsplugins_all.sh
+        DNS_NAMES=$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')
+        MATRIX_PARAMS_COMBINATIONS='
+          "dns-dir": $DNS_NAMES,
+          {"build-for": "arm64", "build-on": "ubuntu-24.04-arm"},
+          {"build-for": "amd64", "build-on": "ubuntu-24.04"},
+        '
+        echo ::set-output name=matrix-combinations::{\"include\":[$MATRIX_PARAMS_COMBINATIONS]}
+  gha_build_dns:
+    name: Build ${{ matrix.build-for }} snap
+    needs: generate_dns_list_matrix
+    runs-on: ${{ matrix.build-on }}
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJson(needs.generate_dns_list_matrix.outputs.matrix)}}
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: cd
+        run: cd ${{ matrix.dns-dir }}
+      - uses: snapcore/action-build@v1.3.0
+          id: build
+          with:
+            snapcraft-args: "--build-for=${{ matrix.build-for }}"
+      - name: Prepare artifact
+        run: |-
+          set -e
+          mv *.snap ${{ runner.temp }}
+      - name: Store snap artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: snaps_${{ matrix.build-for }}
+          path: "${{ runner.temp }}"
+  launchpad_build:
+    name: Build armhf snaps
+    runs-on:
+      - ubuntu-24.04
+    strategy:
+      matrix:
         SNAP_ARCH:
-        - amd64
         - armhf
-        - arm64
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
@@ -125,7 +187,7 @@ jobs:
     needs:
     - snaps_build
     runs-on:
-      - ubuntu-22.04
+      - ubuntu-24.04
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
