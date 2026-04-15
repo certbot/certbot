@@ -118,13 +118,14 @@ jobs:
         DNS_NAMES=$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')
         echo 'dns-dirs='$DNS_NAMES >> "$GITHUB_OUTPUT"
   gha_build_dns:
-    name: Build ${{ matrix.build-for }} snap
+    name: Build ${{ matrix.dns-dir }} ${{ matrix.build-for }} snap
     needs: generate_dns_list_matrix
     runs-on: ${{ matrix.build-on }}
     strategy:
       fail-fast: false
       matrix:
         dns-dir: ${{ fromJSON(needs.generate_dns_list_matrix.outputs.dns-dirs) }}
+        build-for: [arm64, amd64]
         include:
         - build-for: arm64
           build-on: ubuntu-24.04-arm
