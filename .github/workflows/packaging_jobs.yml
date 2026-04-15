@@ -115,25 +115,26 @@ jobs:
       uses: actions/checkout@v6.0.2
     - id: set-matrix
       run: |
-        tools/snap/generate_dnsplugins_all.sh
         DNS_NAMES=$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')
-        MATRIX_PARAMS_COMBINATIONS='
-          "dns-dir": '$DNS_NAMES',
-          "include": [
-            {"build-for": "arm64", "build-on": "ubuntu-24.04-arm"},
-            {"build-for": "amd64", "build-on": "ubuntu-24.04"},
-          ]
-        '
-        echo 'matrix='$MATRIX_PARAMS_COMBINATIONS >> $GITHUB_OUTPUT
+        echo 'dns-dirs='$DNS_NAMES >> $GITHUB_OUTPUT
   gha_build_dns:
     name: Build ${{ matrix.build-for }} snap
     needs: generate_dns_list_matrix
     runs-on: ${{ matrix.build-on }}
     strategy:
       fail-fast: false
-      matrix: ${{fromJson(needs.generate_dns_list_matrix.outputs.matrix)}}
+      matrix:
+        dns-dir: ${{ fromJSON(needs.generate_dns_list_matrix.outputs.dns-dirs) }}
+        include:
+        - build-for: arm64
+          build-on: ubuntu-24.04-arm
+        - build-for: amd64
+          build-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6.0.2
+      - name: generate dns snapcraft.yamls
+        run: |
+          tools/snap/generate_dnsplugins_all.sh # unnecessarily doing every file
       - name: cd
         run: cd ${{ matrix.dns-dir }}
       - uses: snapcore/action-build@v1.3.0
