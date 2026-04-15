@@ -122,7 +122,7 @@ jobs:
           {"build-for": "arm64", "build-on": "ubuntu-24.04-arm"},
           {"build-for": "amd64", "build-on": "ubuntu-24.04"},
         '
-        echo ::set-output name=matrix-combinations::{\"include\":[$MATRIX_PARAMS_COMBINATIONS]}
+        echo ::set-output name=matrix::{\"include\":[$MATRIX_PARAMS_COMBINATIONS]}
   gha_build_dns:
     name: Build ${{ matrix.build-for }} snap
     needs: generate_dns_list_matrix
