@@ -6,12 +6,7 @@ from typing import Any
 from typing import Optional
 from unittest import mock
 
-import warnings
-
-with warnings.catch_warnings():
-    warnings.filterwarnings('ignore', message='Core Pydantic V1 functionality',
-                            category=UserWarning)
-    import cloudflare
+import cloudflare
 import httpx
 import pytest
 

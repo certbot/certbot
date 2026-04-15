@@ -5,10 +5,10 @@ from typing import Any
 from typing import Callable
 from typing import Optional
 
-# cloudflare 4.x includes a pydantic v1 compatibility shim that raises a
-# UserWarning on Python 3.14+.  Suppress it here so that certbot's
-# filterwarnings=error test configuration does not turn the warning into a
-# fatal exception during plugin discovery.
+# cloudflare 4.x includes a pydantic v1 compatibility shim that emits a
+# UserWarning on Python 3.14+.  Suppress it here so that this internal-detail
+# warning is not shown to users during plugin discovery.  In our test suite it
+# is filtered out via pytest.ini so it does not affect filterwarnings=error.
 with warnings.catch_warnings():
     warnings.filterwarnings('ignore', message='Core Pydantic V1 functionality',
                             category=UserWarning)
