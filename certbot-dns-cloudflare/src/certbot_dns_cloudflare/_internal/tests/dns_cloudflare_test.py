@@ -3,7 +3,6 @@
 import sys
 import unittest
 from typing import Any
-from typing import Optional
 from unittest import mock
 
 import cloudflare
@@ -131,14 +130,14 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.assertIsInstance(client, _CloudflareClient)
 
 
-def _mock_zone(zone_id: Optional[str]) -> mock.MagicMock:
+def _mock_zone(zone_id: str | None) -> mock.MagicMock:
     """Create a mock zone object with an .id attribute."""
     zone = mock.MagicMock()
     zone.id = zone_id
     return zone
 
 
-def _mock_record(record_id: Optional[str]) -> mock.MagicMock:
+def _mock_record(record_id: str | None) -> mock.MagicMock:
     """Create a mock DNS record object with an .id attribute."""
     record = mock.MagicMock()
     record.id = record_id

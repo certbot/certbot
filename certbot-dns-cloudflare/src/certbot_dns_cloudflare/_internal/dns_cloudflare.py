@@ -169,6 +169,7 @@ class _CloudflareClient:
             zone_id = self._find_zone_id(domain)
         except errors.PluginError as e:
             logger.debug('Encountered error finding zone_id during deletion: %s', e)
+            logger.debug('Zone not found; no cleanup needed.')
             return
 
         record_id = self._find_txt_record_id(zone_id, record_name, record_content)
@@ -188,13 +189,15 @@ class _CloudflareClient:
         Find the zone_id for a given domain.
 
         :param str domain: The domain for which to find the zone_id.
-        :returns: The zone_id, if found.
+        :returns: The zone_id for the first matching zone that has a non-empty
+            identifier. A zone with an empty/invalid id is treated as if no zone
+            were found, so this method never returns an empty string.
         :rtype: str
         :raises certbot.errors.PluginError: if no zone_id is found.
         """
 
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
-        zone: Optional[Zone] = None
+        zone: Zone | None = None
         code = msg = None
 
         for zone_name in zone_name_guesses:
@@ -280,7 +283,7 @@ class _CloudflareClient:
         return None
 
 
-def _cf_error_code(e: cloudflare.APIStatusError) -> Optional[int]:
+def _cf_error_code(e: cloudflare.APIStatusError) -> int | None:
     """Extract the first Cloudflare error code from an API error response."""
     try:
         body = e.response.json()
