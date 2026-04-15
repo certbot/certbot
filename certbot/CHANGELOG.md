@@ -4,6 +4,14 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.5.0 - 2026-04-07
+
+### Changed
+
+- Moved nearly all code for the certbot-nginx and certbot-apache plugins into private modules in the certbot package which now offers "apache" and "nginx" [extras](https://packaging.python.org/en/latest/specifications/dependency-specifiers/#extras). Users should notice no major changes. certbot-apache and certbot-nginx will continue to exist as simple packages that depend on certbot and also help register the plugin with certbot so it knows the functionality is available. Unit tests for these plugins are now also part of the certbot package. ([#10484](https://github.com/certbot/certbot/issues/10484))
+- The certbot.ocsp module has been deprecated and will be removed in the next major release. This is not a change to Certbot's OCSP functionality. The code is just being removed from Certbot's public API. ([#10584](https://github.com/certbot/certbot/issues/10584))
+
+
 ## 5.4.0 - 2026-03-10
 
 ### Added

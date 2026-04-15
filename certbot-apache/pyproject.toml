@@ -32,14 +32,6 @@ classifiers = [
     "Topic :: Utilities",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "apacheconfig>=0.3.2",
-]
-test = [
-    "pytest",
-]
-
 [project.entry-points."certbot.plugins"]
 apache = "certbot_apache._internal.entrypoint:ENTRYPOINT"
 

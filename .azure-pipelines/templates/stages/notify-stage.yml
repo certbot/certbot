@@ -1,0 +1,20 @@
+stages:
+  - stage: Notify
+    condition: succeededOrFailed()
+    jobs:
+      - job: notify_release_finished
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: DownloadSecureFile@1
+            name: webhook_url
+            inputs:
+              secureFile: mattermost_webhook_url_release_notify
+          - bash: |
+              set -e
+              python -m venv venv
+              source venv/bin/activate
+              tools/pip_install.py requests
+              AUTHOR_NAME="$(git log -1 --pretty=format:'%an')"
+              tools/notify_mattermost.py "${AUTHOR_NAME}" $(webhook_url.secureFilePath)
+            displayName: Send mattermost message

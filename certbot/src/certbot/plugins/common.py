@@ -431,7 +431,7 @@ def install_version_controlled_file(dest_path: str, digest_path: str, src_path: 
             dest_path, src_path, dest_path)
 
 
-# test utils used by certbot_apache/certbot_nginx (hence
+# test utils used by the apache/nginx plugins (hence
 # "pragma: no cover") TODO: this might quickly lead to dead code (also
 # c.f. #383)
 
