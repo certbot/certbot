@@ -7,7 +7,6 @@ from typing import Optional
 from unittest import mock
 
 import cloudflare
-import httpx
 import pytest
 
 from certbot import errors
@@ -21,16 +20,14 @@ def _make_api_error(cf_code: int, msg: str = '', http_status: int = 400
                     ) -> cloudflare.APIStatusError:
     """Build a cloudflare.APIStatusError with a Cloudflare error code in the body."""
     body: Any = {'success': False, 'errors': [{'code': cf_code, 'message': msg}]}
-    response = httpx.Response(http_status, json=body,
-                              request=httpx.Request('GET', 'https://api.cloudflare.com'))
+    response = mock.Mock(status_code=http_status, request=mock.Mock())
+    response.json.return_value = body
     return cloudflare.APIStatusError(message=msg or str(cf_code), response=response, body=body)
 
 
 def _make_connection_error(msg: str = 'Connection error.') -> cloudflare.APIConnectionError:
     """Build a cloudflare.APIConnectionError (e.g. transient network failure)."""
-    return cloudflare.APIConnectionError(
-        message=msg,
-        request=httpx.Request('GET', 'https://api.cloudflare.com'))
+    return cloudflare.APIConnectionError(message=msg, request=mock.Mock())
 
 
 API_ERROR = _make_api_error(1000)
