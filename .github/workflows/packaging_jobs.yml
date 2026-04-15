@@ -111,6 +111,8 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
     - id: set-matrix
       run: |
         tools/snap/generate_dnsplugins_all.sh
