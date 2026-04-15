@@ -109,14 +109,14 @@ jobs:
   generate_dns_list_matrix:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      dns-dirs: ${{ steps.set-dns-dirs.outputs.dns-dirs }}
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
-    - id: set-matrix
+    - id: set-dns-dirs
       run: |
         DNS_NAMES=$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')
-        echo 'DNS_DIRS='$DNS_NAMES >> "$GITHUB_OUTPUT"
+        echo 'dns-dirs='$DNS_NAMES >> "$GITHUB_OUTPUT"
   gha_build_dns:
     name: Build ${{ matrix.build-for }} snap
     needs: generate_dns_list_matrix
@@ -124,7 +124,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dns-dir: ${{ fromJSON(needs.generate_dns_list_matrix.outputs.DNS_DIRS) }}
+        dns-dir: ${{ fromJSON(needs.generate_dns_list_matrix.outputs.dns-dirs) }}
         include:
         - build-for: arm64
           build-on: ubuntu-24.04-arm
