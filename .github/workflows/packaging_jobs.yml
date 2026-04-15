@@ -185,7 +185,7 @@ jobs:
         path: "${{ runner.temp }}"
   snap_run:
     needs:
-    - snaps_build
+    - gha_build
     runs-on:
       - ubuntu-24.04
     steps:
@@ -218,7 +218,7 @@ jobs:
         venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
   snap_dns_run:
     needs:
-    - snaps_build
+    - gha_build_dns
     runs-on:
       - ubuntu-22.04
     steps:
