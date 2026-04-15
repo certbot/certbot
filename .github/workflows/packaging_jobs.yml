@@ -133,9 +133,9 @@ jobs:
       - name: cd
         run: cd ${{ matrix.dns-dir }}
       - uses: snapcore/action-build@v1.3.0
-          id: build
-          with:
-            snapcraft-args: "--build-for=${{ matrix.build-for }}"
+        id: build
+        with:
+          snapcraft-args: "--build-for=${{ matrix.build-for }}"
       - name: Prepare artifact
         run: |-
           set -e
