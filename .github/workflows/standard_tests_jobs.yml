@@ -1,5 +1,5 @@
 # Environment variables defined in a calling workflow are not accessible to this reusable workflow. Refer to the documentation for further details on this limitation.
-name: standard_tests_jobs
+name: Standard tests jobs
 on:
   workflow_call:
     inputs:
