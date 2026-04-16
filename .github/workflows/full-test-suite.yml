@@ -1,5 +1,5 @@
 # Advanced pipeline for running our full test suite on demand.
-name: certbot/full-test-suite
+name: Full test suite
 on:
   push:
     branches:

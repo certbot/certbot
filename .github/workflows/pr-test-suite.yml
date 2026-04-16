@@ -1,6 +1,6 @@
 # We run the test suite on commits to main so codecov gets coverage data
 # about the main branch and can use it to track coverage changes.
-name: certbot/pr-test-suite
+name: PR test suite
 on:
   push:
     branches:

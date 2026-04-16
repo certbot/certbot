@@ -1,0 +1,25 @@
+# Nightly pipeline running each day for main.
+name: Nightly build
+on:
+  schedule:
+  - cron: 30 4 * * *
+
+jobs:
+  test_and_package_stage:
+    name: Test and Package
+    uses: "./.github/workflows/test_and_package_stage.yml"
+    with:
+      dockerTag: nightly
+      snapBuildTimeout: 19800
+    secrets: inherit
+  changelog_stage:
+    name: Create changelog
+    uses: "./.github/workflows/changelog_stage.yml"
+  nightly_deploy_stage:
+    name: Nightly deploy
+    needs: test_and_package_stage
+    uses: "./.github/workflows/common_deploy_jobs.yml"
+    secrets: inherit
+    with:
+      dockerTag: nightly
+      snapReleaseChannel: edge
