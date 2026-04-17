@@ -1,0 +1,98 @@
+name: Tox steps
+on:
+  workflow_call:
+    inputs:
+      PYTHON_VERSION:
+        type: string
+      IMAGE_NAME:
+        type: string
+      TOXENV:
+        type: string
+      PIP_USE_PEP517:
+        type: string
+      uploadCoverage:
+        description: 'Upload coverage to Codecov'
+        type: boolean
+        default: false
+      AWS_ACCESS_KEY_ID:
+        description: 'access key ID for AWS'
+        type: string
+      AWS_SECRET_ACCESS_KEY:
+        description: 'access key for AWS'
+        type: string
+      AWS_TEST_FARM_PEM:
+        description: 'contents of AWS PEM file to be placed in $AWS_EC2_PEM_FILE from environment'
+        type: string
+
+env:
+  uploadCoverage: ${{ inputs.uploadCoverage }}
+
+jobs:
+  tox_all:
+    runs-on:
+      - "${{ inputs.IMAGE_NAME }}"
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6.0.2
+    # We run brew update because we've seen attempts to install an older version
+    # of a package fail. See
+    # https://github.com/actions/virtual-environments/issues/3165.
+    #
+    # We untap homebrew/core and homebrew/cask and unset HOMEBREW_NO_INSTALL_FROM_API (which
+    # is maybe set by the CI macOS env) because GitHub has been having issues, making these jobs
+    # fail on git clones: https://github.com/orgs/Homebrew/discussions/4612.
+    - name: Install MacOS dependencies
+      if: runner.os == 'macOS'
+      id: mac_install
+      run: |-
+        set -e
+        unset HOMEBREW_NO_INSTALL_FROM_API
+        brew untap homebrew/core homebrew/cask
+        brew update
+        brew install augeas
+        BREW_PREFIX=$(brew --prefix)
+        CFLAGS="$CFLAGS -I$BREW_PREFIX/include -L$BREW_PREFIX/lib"
+        echo "CFLAGS=$CFLAGS" >> $GITHUB_ENV
+      shell: bash
+    - name: Install Linux dependencies
+      if: runner.os == 'Linux'
+      run: |-
+        set -e
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          libaugeas-dev \
+          nginx-light
+        sudo systemctl stop nginx
+        sudo sysctl net.ipv4.ip_unprivileged_port_start=0
+      shell: bash
+    - uses: actions/setup-python@v6.2.0
+      with:
+        python-version: "${{ inputs.PYTHON_VERSION }}"
+    - name: Install runtime dependencies
+      run: |-
+        set -e
+        python3 tools/pip_install.py tox
+      shell: bash
+    - name: Create test farm pem file
+      if: contains(inputs.TOXENV, 'test-farm')
+      env:
+        PEM_CONTENTS: "${{ inputs.AWS_TEST_FARM_PEM }}"
+      run: |-
+        set -e
+        echo "${PEM_CONTENTS}" >> $AWS_EC2_PEM_FILE
+      shell: bash
+    - name: Run tox
+      env:
+        AWS_ACCESS_KEY_ID: "${{ inputs.AWS_ACCESS_KEY_ID }}"
+        AWS_SECRET_ACCESS_KEY: "${{ inputs.AWS_SECRET_ACCESS_KEY }}"
+        PIP_USE_PEP517: "${{ inputs.PIP_USE_PEP517 }}"
+        TOXENV: "${{ inputs.TOXENV }}"
+      run: |-
+        set -e
+        export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
+        [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
+        env
+        python3 -m tox run
+      shell: bash
+    - name: Upload coverage
+      uses: "./.github/actions/upload_coverage"

@@ -9,13 +9,9 @@ on:
         default: false
 jobs:
   test:
-    name: test ${{ matrix.IMAGE_NAME }}-${{ matrix.TOXENV }}
+    name: test ${{ inputs.IMAGE_NAME }}-${{ inputs.TOXENV }}
     permissions:
       contents: read
-    runs-on:
-      - "${{ matrix.IMAGE_NAME }}"
-    env:
-      uploadCoverage: ${{ inputs.uploadCoverage }}
     strategy:
       fail-fast: false
       matrix:
@@ -41,22 +37,13 @@ jobs:
         - IMAGE_NAME: ubuntu-22.04
           PYTHON_VERSION: '3.10'
           TOXENV: py310
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v6.0.2
-    - name: Setup tox
-      uses: "./.github/actions/setup_tox"
-      id: setup
-      with:
-        PYTHON_VERSION: "${{  matrix.PYTHON_VERSION  }}"
-    - name: Run tox
-      uses: "./.github/actions/run_tox"
-      with:
-        PIP_USE_PEP517: "${{ matrix.PIP_USE_PEP517 }}"
-        TOXENV: "${{ matrix.TOXENV }}"
-        CFLAGS: "${{ steps.setup.outputs.CFLAGS }}"
-    - name: Upload coverage
-      uses: "./.github/actions/upload_coverage"
+    uses: "./.github/workflows/tox_steps.yml"
+    with:
+      PYTHON_VERSION: "${{  matrix.PYTHON_VERSION  }}"
+      PIP_USE_PEP517: "${{ matrix.PIP_USE_PEP517 }}"
+      TOXENV: "${{ matrix.TOXENV }}"
+      uploadCoverage: "${{ inputs.uploadCoverage }}"
+      IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
   test_sphinx_builds:
     permissions:
       contents: read
