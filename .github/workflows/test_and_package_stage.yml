@@ -13,14 +13,14 @@ permissions:
 
 jobs:
   standard_tests_jobs:
-    name: standard_tests_jobs
+    name: Standard tests
     uses: "./.github/workflows/standard_tests_jobs.yml"
   extended_tests_jobs:
-    name: extended_tests_jobs
+    name: Extended tests
     uses: "./.github/workflows/extended_tests_jobs.yml"
     secrets: inherit
   packaging_jobs:
-    name: packaging_jobs
+    name: Packaging jobs
     uses: "./.github/workflows/packaging_jobs.yml"
     with:
       dockerTag: ${{ inputs.dockerTag }}
