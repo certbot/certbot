@@ -19,9 +19,7 @@ concurrency:
 
 jobs:
   standard_tests_jobs:
-    name: standard_tests_jobs
     uses: "./.github/workflows/standard_tests_jobs.yml"
-
     with:
       # We set this here to avoid coverage data being uploaded from things like our
       # nightly pipeline. This is done because codecov (helpfully) keeps track of
@@ -29,3 +27,9 @@ jobs:
       # comparing two commits with an unequal number of uploads. Only uploading
       # coverage here should keep the number of uploads it sees consistent.
       uploadCoverage: true
+  all_success:
+    name: PR test suite success
+    needs: standard_tests_jobs
+    runs-on: ubuntu-latest
+    steps:
+      - run: true
