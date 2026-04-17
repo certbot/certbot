@@ -6,6 +6,7 @@ on:
     # When changing these triggers, please ensure the documentation under
     # "Running tests in CI" is still correct.
     - test-*
+  workflow_dispatch:
 
 jobs:
   test_and_package_stage:
