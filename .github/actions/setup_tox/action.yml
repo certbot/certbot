@@ -5,6 +5,9 @@ inputs:
     description: 'Contents of keyfile for AWS'
   AWS_EC2_PEM_FILE:
     description: 'Location of keyfile for AWS'
+  PYTHON_VERSION:
+    description: 'Python version to run tests with'
+    required: true
 
 runs:
   using: composite
@@ -31,7 +34,7 @@ runs:
     shell: bash
   - uses: actions/setup-python@v6.2.0
     with:
-      python-version: "${{ matrix.PYTHON_VERSION }}"
+      python-version: "${{ inputs.PYTHON_VERSION }}"
   - name: Install runtime dependencies
     run: |-
       set -e

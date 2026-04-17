@@ -16,7 +16,7 @@ runs:
   using: composite
   steps:
   - name: Create test farm pem file
-    if: contains(matrix.TOXENV, 'test-farm')
+    if: contains(inputs.TOXENV, 'test-farm')
     env:
       PEM_CONTENTS: "${{ inputs.AWS_TEST_FARM_PEM }}"
     run: |-
