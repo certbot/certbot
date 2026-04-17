@@ -189,6 +189,7 @@ jobs:
     runs-on:
       - ${{ matrix.run-on }}
     strategy:
+      fail-fast: false
       matrix:
         include:
         - arch-name: arm64
@@ -229,6 +230,7 @@ jobs:
     runs-on:
       - ${{ matrix.run-on }}
     strategy:
+      fail-fast: false
       matrix:
         include:
         - arch-name: arm64
