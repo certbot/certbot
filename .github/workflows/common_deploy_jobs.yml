@@ -7,11 +7,13 @@ on:
         description: 'docker tag to push to'
         type: string
       snapReleaseChannel:
+        description: 'snap channel to release to'
+        required: true
         type: choice
         options:
         - edge
         - beta
-        required: true
+
 
 jobs:
   # This job relies on credentials used to publish the Certbot snaps. This
