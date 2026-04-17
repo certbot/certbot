@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   standard_tests_jobs:
+    name: Standard tests
     uses: "./.github/workflows/standard_tests_jobs.yml"
     with:
       # We set this here to avoid coverage data being uploaded from things like our

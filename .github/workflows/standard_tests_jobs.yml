@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   test:
+    name: '-' # Makes results viewing cleaner
     strategy:
       fail-fast: false
       matrix:
