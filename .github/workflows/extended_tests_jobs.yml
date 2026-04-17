@@ -5,13 +5,8 @@ on:
 
 jobs:
   test:
-    name: extended_test ${{ matrix.TOXENV }} ${{ matrix.PYTHON_VERSION }}
     permissions:
       contents: read
-    runs-on:
-      - 'ubuntu-22.04'
-    env:
-      uploadCoverage: ${{ inputs.uploadCoverage }}
     strategy:
       fail-fast: false
       matrix:
@@ -45,22 +40,10 @@ jobs:
           TOXENV: integration-dns-rfc2136
         - PYTHON_VERSION: '3.12'
           TOXENV: test-farm-apache2
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v6.0.2
-    - name: Setup tox
-      uses: "./.github/actions/setup_tox"
-      with:
-        PYTHON_VERSION: "${{  matrix.PYTHON_VERSION  }}"
-    - name: Run tox
-      uses: "./.github/actions/run_tox"
-      env:
-        AWS_EC2_PEM_FILE: ${{ github.workspace }}/GHAKeyPair.pem
-      with:
-        AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
-        AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-        AWS_TEST_FARM_PEM: "${{ secrets.AWS_TEST_FARM_PEM }}"
-        PIP_USE_PEP517: "${{ matrix.PIP_USE_PEP517 }}"
-        TOXENV: "${{ matrix.TOXENV }}"
-    - name: Upload coverage
-      uses: "./.github/actions/upload_coverage"
+    uses: "./.github/workflows/tox_steps.yml"
+    with:
+      PYTHON_VERSION: "${{  matrix.PYTHON_VERSION  }}"
+      TOXENV: "${{ matrix.TOXENV }}"
+      uploadCoverage: "${{ inputs.uploadCoverage }}"
+      IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
+      test_name: "extended_test"

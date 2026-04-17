@@ -9,7 +9,6 @@ on:
         default: false
 jobs:
   test:
-    name: test ${{ inputs.IMAGE_NAME }}-${{ inputs.TOXENV }}
     permissions:
       contents: read
     strategy:
@@ -44,6 +43,7 @@ jobs:
       TOXENV: "${{ matrix.TOXENV }}"
       uploadCoverage: "${{ inputs.uploadCoverage }}"
       IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
+      test_name: "test"
   test_sphinx_builds:
     permissions:
       contents: read

@@ -23,12 +23,15 @@ on:
       AWS_TEST_FARM_PEM:
         description: 'contents of AWS PEM file to be placed in $AWS_EC2_PEM_FILE from environment'
         type: string
+      test_name:
+        type: string
 
 env:
   uploadCoverage: ${{ inputs.uploadCoverage }}
 
 jobs:
   tox_all:
+    name: ${{ inputs.test_name }} ${{ inputs.IMAGE_NAME }}-${{ inputs.TOXENV }}
     runs-on:
       - "${{ inputs.IMAGE_NAME }}"
     steps:
