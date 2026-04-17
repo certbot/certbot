@@ -25,6 +25,8 @@ on:
         type: string
       test_name:
         type: string
+permissions:
+  contents: read
 
 env:
   uploadCoverage: ${{ inputs.uploadCoverage }}

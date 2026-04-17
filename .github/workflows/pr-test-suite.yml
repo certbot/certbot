@@ -10,16 +10,18 @@ on:
     - main
     - "*.x"
   workflow_dispatch:
+permissions:
+  contents: read
 concurrency:
   # https://stackoverflow.com/questions/74117321/if-condition-in-concurrency-in-gha
   group: ${{ github.workflow }}-${{ github.head_ref && github.ref || github.run_id }}
   cancel-in-progress: true
+
 jobs:
   standard_tests_jobs:
     name: standard_tests_jobs
     uses: "./.github/workflows/standard_tests_jobs.yml"
-    permissions:
-      contents: read
+
     with:
       # We set this here to avoid coverage data being uploaded from things like our
       # nightly pipeline. This is done because codecov (helpfully) keeps track of

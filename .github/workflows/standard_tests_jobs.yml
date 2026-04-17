@@ -7,10 +7,11 @@ on:
         description: 'Upload coverage to Codecov'
         type: boolean
         default: false
+permissions:
+  contents: read
+
 jobs:
   test:
-    permissions:
-      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -45,8 +46,6 @@ jobs:
       IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
       test_name: "test"
   test_sphinx_builds:
-    permissions:
-      contents: read
     runs-on:
       - ubuntu-22.04
     steps:

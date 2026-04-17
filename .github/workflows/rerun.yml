@@ -3,6 +3,10 @@ on:
     inputs:
       run_id:
         required: true
+permissions:
+  actions: write
+  checks: write
+
 jobs:
   rerun:
     runs-on: ubuntu-latest

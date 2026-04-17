@@ -10,6 +10,8 @@ on:
         description: 'snap channel to release to'
         required: true
         type: string
+permissions:
+  contents: read
 
 jobs:
   # This job relies on credentials used to publish the Certbot snaps. This
@@ -30,8 +32,6 @@ jobs:
   publish_snap:
     name: Publish snap
     if: ${{ inputs.snapReleaseChannel == 'edge' || inputs.snapReleaseChannel == 'beta' }}
-    permissions:
-      contents: read
     runs-on:
       - 'ubuntu-24.04'
     strategy:
@@ -95,8 +95,6 @@ jobs:
   # https://github.com/docker/login-action?tab=readme-ov-file#docker-hub
   publish_docker_by_arch:
     name: Publish docker by arch
-    permissions:
-      contents: read
     runs-on:
       - 'ubuntu-24.04'
     strategy:
@@ -128,8 +126,6 @@ jobs:
   publish_docker_multiarch:
     name: Publish docker multiarch
     needs: publish_docker_by_arch
-    permissions:
-      contents: read
     runs-on:
       - 'ubuntu-24.04'
     steps:

@@ -2,11 +2,11 @@
 name: Extended tests jobs
 on:
   workflow_call:
+permissions:
+  contents: read
 
 jobs:
   test:
-    permissions:
-      contents: read
     strategy:
       fail-fast: false
       matrix:

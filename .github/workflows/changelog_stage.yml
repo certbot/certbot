@@ -1,6 +1,9 @@
 name: Changelog stage
 on:
   workflow_call:
+permissions:
+  contents: read
+
 jobs:
   prepare:
     runs-on: ubuntu-latest

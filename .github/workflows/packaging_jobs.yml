@@ -9,6 +9,8 @@ on:
       snapBuildTimeout:
         description: 'timeout for snap builds'
         type: number
+permissions:
+  contents: read
 
 env:
   dockerTag: ${{ inputs.dockerTag }}

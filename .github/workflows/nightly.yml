@@ -8,6 +8,8 @@ on:
 jobs:
   test_and_package_stage:
     name: Test and Package
+    permissions:
+      contents: read
     uses: "./.github/workflows/test_and_package_stage.yml"
     with:
       dockerTag: nightly
@@ -15,9 +17,13 @@ jobs:
     secrets: inherit
   changelog_stage:
     name: Create changelog
+    permissions:
+      contents: read
     uses: "./.github/workflows/changelog_stage.yml"
   nightly_deploy_stage:
     name: Nightly deploy
+    permissions:
+      contents: read
     needs: test_and_package_stage
     uses: "./.github/workflows/common_deploy_jobs.yml"
     secrets: inherit
@@ -30,6 +36,9 @@ jobs:
     - changelog_stage
     - nightly_deploy_stage
     if: failure() && fromJSON(github.run_attempt) < 3
+    permissions:
+      actions: write
+      checks: write
     runs-on: ubuntu-latest
     steps:
       - env:
