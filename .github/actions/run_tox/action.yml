@@ -11,6 +11,8 @@ inputs:
     description: 'a pip flag'
   TOXENV:
     description: 'the tox environment to run'
+  CFLAGS:
+    description: 'needed to help pip find augeas headers on mac'
 
 runs:
   using: composite
@@ -29,6 +31,7 @@ runs:
       AWS_SECRET_ACCESS_KEY: "${{ inputs.AWS_SECRET_ACCESS_KEY }}"
       PIP_USE_PEP517: "${{ inputs.PIP_USE_PEP517 }}"
       TOXENV: "${{ inputs.TOXENV }}"
+      CFLAGS: "${{ inputs.CFLAGS }}"
     run: |-
       set -e
       export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
