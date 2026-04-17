@@ -27,7 +27,7 @@ runs:
       brew untap homebrew/core homebrew/cask
       brew update
       brew install augeas
-      BREW_PREFIX=$(brew --prefix augeas)
+      BREW_PREFIX=$(brew --prefix)
       CFLAGS="$CFLAGS -I$BREW_PREFIX/include -L$BREW_PREFIX/lib"
       echo "CFLAGS=$CFLAGS" >> $GITHUB_OUTPUT
     shell: bash
