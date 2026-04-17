@@ -9,11 +9,7 @@ on:
       snapReleaseChannel:
         description: 'snap channel to release to'
         required: true
-        type: choice
-        options:
-        - edge
-        - beta
-
+        type: string
 
 jobs:
   # This job relies on credentials used to publish the Certbot snaps. This
@@ -33,6 +29,7 @@ jobs:
   # info.
   publish_snap:
     name: Publish snap
+    if: ${{ inputs.snapReleaseChannel == 'edge' || inputs.snapReleaseChannel == 'beta' }}
     permissions:
       contents: read
     runs-on:
@@ -62,6 +59,16 @@ jobs:
         for SNAP_FILE in snap/*.snap; do
           tools/retry.sh eval snapcraft upload --release=${{ inputs.snapReleaseChannel }} "${SNAP_FILE}"
         done
+      shell: bash
+  publish_snap_invalid:
+    # Fail instead of silently skipping snap release
+    name: Fail on invalid snapReleaseChannel
+    if: ${{ inputs.snapReleaseChannel != 'edge' && inputs.snapReleaseChannel != 'beta' }}
+    runs-on:
+      - 'ubuntu-latest'
+    steps:
+    - name: Fail
+      run: exit 1
       shell: bash
   # The credentials used in the following jobs are for the shared
   # certbotbot account on Docker Hub.
