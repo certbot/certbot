@@ -1,4 +1,4 @@
-name: run_tox
+name: Run tox
 
 inputs:
   AWS_ACCESS_KEY_ID:
