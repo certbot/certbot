@@ -46,8 +46,13 @@ jobs:
       uses: actions/checkout@v6.0.2
     - name: Setup tox
       uses: "./.github/actions/setup_tox"
+      with:
+        PYTHON_VERSION: "${{  matrix.PYTHON_VERSION  }}"
     - name: Run tox
       uses: "./.github/actions/run_tox"
+      with:
+        PIP_USE_PEP517: "${{ matrix.PIP_USE_PEP517 }}"
+        TOXENV: "${{ matrix.TOXENV }}"
     - name: Upload coverage
       uses: "./.github/actions/upload_coverage"
   test_sphinx_builds:
