@@ -46,9 +46,4 @@ jobs:
       IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
       test_name: "test"
   test_sphinx_builds:
-    runs-on:
-      - ubuntu-22.04
-    steps:
-    - name: checkout
-      uses: actions/checkout@v6.0.2
-    - uses: "./.github/actions/sphinx_steps"
+    uses: "./.github/workflows/sphinx_steps.yml"
