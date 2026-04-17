@@ -49,13 +49,13 @@ jobs:
         sudo snap install --classic snapcraft
       shell: bash
     - name: Retrieve Certbot snaps
-      if: ${{ matrix.arch-name == armhf }}
+      if: ${{ matrix.arch-name == 'armhf' }}
       uses: actions/download-artifact@v8.0.1
       with:
         name: snaps_${{ matrix.SNAP_ARCH }}
         path: "${{ github.workspace }}/snap"
     - name: Retrieve Certbot snaps
-      if: ${{ matrix.arch-name != armhf }}
+      if: ${{ matrix.arch-name != 'armhf' }}
       uses: actions/download-artifact@v8.0.1
       with:
         pattern: snap-*-${{ matrix.arch-name }}
