@@ -1,4 +1,3 @@
-# Environment variables defined in a calling workflow are not accessible to this reusable workflow. Refer to the documentation for further details on this limitation.
 name: Extended tests jobs
 on:
   workflow_call:
