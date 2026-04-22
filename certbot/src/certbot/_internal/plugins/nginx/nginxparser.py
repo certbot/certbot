@@ -55,14 +55,60 @@ class RawNginxParser:
 
     comment = space + Literal('#') + restOfLine
 
+    # Strict tokens exclude `#`; used only for block_begin when it is followed
+    # by pre-bracket comments so we can recognize the comment as a comment
+    # rather than absorbing its `#` into the header's tokens. See #10264.
+    head_tokenchars_strict = Regex(r"(\$\{)|[^{};\s'\"#]")
+    tail_tokenchars_strict = Regex(r"(\$\{)|[^{;\s#]")
+    tokenchars_strict = Combine(head_tokenchars_strict + ZeroOrMore(tail_tokenchars_strict))
+    paren_quote_extend_strict = Combine(
+        quoted + Literal(')') + ZeroOrMore(tail_tokenchars_strict)
+    )
+    token_strict = paren_quote_extend_strict | tokenchars_strict | quoted
+    whitespace_token_group_strict = (
+        space + token_strict + ZeroOrMore(required_space + token_strict) + space
+    )
+
     block = Forward()
 
     # order matters! see issue 518, and also http { # server { \n}
     contents = Group(comment) | Group(block) | Group(assignment)
 
     block_begin = Group(whitespace_token_group)
+    block_begin_strict = Group(whitespace_token_group_strict)
     block_innards = Group(ZeroOrMore(contents) + space).leave_whitespace()
-    block << block_begin + left_bracket + block_innards + right_bracket
+
+    # Pre-bracket comments: comments that appear between the block header and
+    # its opening `{`. Nginx ignores such comments, but the original grammar
+    # would absorb their leading `#` into the block header as a token, which
+    # then left a stray `{` on the following line with nowhere to bind. We
+    # capture them here and fold them into the start of the block body so
+    # they round-trip through dumps(). See #10264.
+    pre_bracket_comments = ZeroOrMore(Group(comment) + space.suppress())
+
+    @staticmethod
+    def _merge_pre_bracket_comments(tokens: ParseResults) -> Any:
+        if len(tokens) <= 2:
+            return None
+        parts = tokens.asList()
+        begin = parts[0]
+        innards = parts[-1]
+        # Wrap each moved comment in leading and trailing newlines so it dumps
+        # on its own line inside the block body; otherwise it would be
+        # concatenated with the following directive and, on reparse, the
+        # comment would swallow that directive.
+        prepared_comments = [['\n'] + c + ['\n'] for c in parts[1:-1]]
+        return [begin, prepared_comments + innards]
+
+    block_with_pre_bracket_comments = (
+        block_begin_strict + pre_bracket_comments
+        + left_bracket + block_innards + right_bracket
+    ).set_parse_action(_merge_pre_bracket_comments)
+    block_legacy = block_begin + left_bracket + block_innards + right_bracket
+    # Try strict form first so pre-bracket comments are recognized; fall back
+    # to the legacy form for configs where `#` appears mid-directive (e.g.
+    # multi-line `server_name foo\n# comment\n bar;`).
+    block << (block_with_pre_bracket_comments | block_legacy)
 
     script = ZeroOrMore(contents) + space + stringEnd
     script.parse_with_tabs().leave_whitespace()
