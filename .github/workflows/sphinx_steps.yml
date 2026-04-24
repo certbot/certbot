@@ -15,15 +15,17 @@ jobs:
           persist-credentials: false
       - name: Build Sphinx Documentation
         run: |-
+          echo "::group::Install dependencies"
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libaugeas-dev
+          echo "::endgroup::"
           FINAL_STATUS=0
           declare -a FAILED_BUILDS
           tools/venv.py
           source venv/bin/activate
           for doc_path in */docs
           do
-            echo "" # add comment to test if debug logging turned off correctly
+            echo ""
             echo "::group::Building $doc_path"
             if ! sphinx-build -W --keep-going -b html $doc_path $doc_path/_build/html; then
               FINAL_STATUS=1
