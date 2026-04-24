@@ -82,8 +82,6 @@ jobs:
         PIP_USE_PEP517: "${{ inputs.PIP_USE_PEP517 }}"
         TOXENV: "${{ inputs.TOXENV }}"
       run: |-
-        export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
-        [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
         env
         python3 -m tox run
       shell: bash
