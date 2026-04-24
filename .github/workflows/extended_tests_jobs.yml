@@ -44,6 +44,5 @@ jobs:
     with:
       PYTHON_VERSION: "${{  matrix.PYTHON_VERSION  }}"
       TOXENV: "${{ matrix.TOXENV }}"
-      uploadCoverage: "${{ inputs.uploadCoverage }}"
       IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
       test_name: "extended_test"
