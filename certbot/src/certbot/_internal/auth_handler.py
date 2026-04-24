@@ -383,6 +383,8 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
             challb=challb, account_key=account_key, identifier=identifier)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, identifier=identifier)
+    elif isinstance(chall, challenges.DNSPersist01):
+        return achallenges.DNSPersist(challb=challb, identifier=identifier)
     else:
         return achallenges.Other(challb=challb, identifier=identifier)
 

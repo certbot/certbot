@@ -25,7 +25,21 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.http_achall = acme_util.HTTP01_A
         self.dns_achall = acme_util.DNS01_A
         self.dns_achall_2 = acme_util.DNS01_A_2
-        self.achalls = [self.http_achall, self.dns_achall, self.dns_achall_2]
+        self.dns_persist_achall = acme_util.DNS_PERSIST_01_A
+        self.dns_persist_achall_wildcard = acme_util.DNS_PERSIST_01_A_WILDCARD
+        self.achalls = [
+            self.http_achall,
+            self.dns_achall,
+            self.dns_achall_2,
+            self.dns_persist_achall,
+            self.dns_persist_achall_wildcard,
+        ]
+        self.responses: list[challenges.ChallengeResponse] = []
+        for achall in self.achalls:
+            if isinstance(achall.chall, challenges.DNSPersist01):
+                self.responses.append(achall.response())
+            else:
+                self.responses.append(achall.response(achall.account_key))
         for d in ["config_dir", "work_dir", "in_progress"]:
             filesystem.mkdir(os.path.join(self.tempdir, d))
             # "backup_dir" and "temp_checkpoint_dir" get created in
@@ -60,7 +74,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     def test_get_chall_pref(self):
         assert self.auth.get_chall_pref('example.org') == \
-                         [challenges.HTTP01, challenges.DNS01]
+                         [challenges.DNSPersist01, challenges.HTTP01, challenges.DNS01]
 
     def test_script_perform(self):
         self.config.manual_auth_hook = (
@@ -90,13 +104,32 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             ','.join(achall.identifier.value for achall in self.achalls),
             ','.join(achall.identifier.value for achall in self.achalls),
             len(self.achalls) - self.achalls.index(self.http_achall) - 1)
+        dns_persist_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}'.format(
+            self.dns_persist_achall.identifier.value,
+            self.dns_persist_achall.identifier.value,
+            'notoken',
+            self.dns_persist_achall.get_validation_rdata(False),
+            ','.join(achall.identifier.value for achall in self.achalls),
+            ','.join(achall.identifier.value for achall in self.achalls),
+            len(self.achalls) - self.achalls.index(self.dns_persist_achall) - 1)
+        dns_persist_wildcard_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}'.format(
+            self.dns_persist_achall_wildcard.identifier.value,
+            self.dns_persist_achall_wildcard.identifier.value,
+            'notoken',
+            self.dns_persist_achall_wildcard.get_validation_rdata(True),
+            ','.join(achall.identifier.value for achall in self.achalls),
+            ','.join(achall.identifier.value for achall in self.achalls),
+            len(self.achalls) - self.achalls.index(self.dns_persist_achall_wildcard) - 1)
 
-        assert self.auth.perform(self.achalls) == \
-            [achall.response(achall.account_key) for achall in self.achalls]
+        assert self.auth.perform(self.achalls) == self.responses
         assert self.auth.env[self.dns_achall]['CERTBOT_AUTH_OUTPUT'] == \
             dns_expected
         assert self.auth.env[self.http_achall]['CERTBOT_AUTH_OUTPUT'] == \
             http_expected
+        assert self.auth.env[self.dns_persist_achall]['CERTBOT_AUTH_OUTPUT'] == \
+            dns_persist_expected
+        assert self.auth.env[self.dns_persist_achall_wildcard]['CERTBOT_AUTH_OUTPUT'] == \
+            dns_persist_wildcard_expected
 
         # Successful hook output should be sent to notify
         assert self.mock_get_display().notification.call_count == len(self.achalls)
@@ -105,13 +138,15 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             assert needle in args[0]
 
     def test_manual_perform(self):
-        assert self.auth.perform(self.achalls) == \
-            [achall.response(achall.account_key) for achall in self.achalls]
+        assert self.auth.perform(self.achalls) == self.responses
 
         assert self.mock_get_display().notification.call_count == len(self.achalls)
         for i, (args, kwargs) in enumerate(self.mock_get_display().notification.call_args_list):
             achall = self.achalls[i]
-            assert achall.validation(achall.account_key) in args[0]
+            if isinstance(achall.chall, challenges.DNSPersist01):
+                assert achall.validation_domain_name(achall.identifier.value) in args[0]
+            else:
+                assert achall.validation(achall.account_key) in args[0]
             assert kwargs['wrap'] is False
 
     def test_cleanup(self):
