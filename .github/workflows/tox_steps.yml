@@ -72,6 +72,7 @@ jobs:
       if: contains(inputs.TOXENV, 'test-farm')
       env:
         PEM_CONTENTS: "${{ secrets.AWS_TEST_FARM_PEM }}"
+        AWS_EC2_PEM_FILE: ${{ github.workspace }}/GHAKeyPair.pem
       run: |-
         echo "${PEM_CONTENTS}" >> $AWS_EC2_PEM_FILE
       shell: bash
