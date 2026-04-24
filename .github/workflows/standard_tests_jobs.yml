@@ -39,4 +39,5 @@ jobs:
       TOXENV: "${{ matrix.TOXENV }}"
       IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
   test_sphinx_builds:
+    name: '-' # Makes results viewing cleaner
     uses: "./.github/workflows/sphinx_steps.yml"
