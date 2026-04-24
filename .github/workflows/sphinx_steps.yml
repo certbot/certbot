@@ -6,14 +6,14 @@ permissions:
 
 jobs:
   test_sphinx_builds:
-    name: Build Sphinx Documentation
+    name: build sphinx documentation
     runs-on: ubuntu-latest
     steps:
       - name: checkout
         uses: actions/checkout@v6.0.2
         with:
           persist-credentials: false
-      - name: build sphinx documentation
+      - name: Build Sphinx Documentation
         run: |-
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libaugeas-dev
