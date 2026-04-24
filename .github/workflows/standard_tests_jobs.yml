@@ -1,12 +1,6 @@
-# Environment variables defined in a calling workflow are not accessible to this reusable workflow. Refer to the documentation for further details on this limitation.
 name: Standard tests jobs
 on:
   workflow_call:
-    inputs:
-      uploadCoverage:
-        description: 'Upload coverage to Codecov'
-        type: boolean
-        default: false
 permissions:
   contents: read
 
@@ -43,7 +37,6 @@ jobs:
       PYTHON_VERSION: "${{  matrix.PYTHON_VERSION  }}"
       PIP_USE_PEP517: "${{ matrix.PIP_USE_PEP517 }}"
       TOXENV: "${{ matrix.TOXENV }}"
-      uploadCoverage: "${{ inputs.uploadCoverage }}"
       IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
       test_name: "test"
   test_sphinx_builds:

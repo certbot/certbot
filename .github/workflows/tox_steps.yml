@@ -10,17 +10,10 @@ on:
         type: string
       PIP_USE_PEP517:
         type: string
-      uploadCoverage:
-        description: 'Upload coverage to Codecov'
-        type: boolean
-        default: false
       test_name:
         type: string
 permissions:
   contents: read
-
-env:
-  uploadCoverage: ${{ inputs.uploadCoverage }}
 
 jobs:
   tox_all:
@@ -84,27 +77,4 @@ jobs:
       run: |-
         env
         python3 -m tox run
-      shell: bash
-    - name: Upload coverage data
-      if: env.uploadCoverage == true && (startsWith(matrix.TOXENV, 'cover') || startsWith(matrix.TOXENV, 'integration'))
-      run: |-
-        python3 tools/pip_install.py -I coverage
-        case "${{ runner.os }}" in
-          Darwin)
-            CODECOV_URL="https://uploader.codecov.io/latest/macos/codecov"
-            ;;
-          Linux)
-            CODECOV_URL="https://uploader.codecov.io/latest/linux/codecov"
-            ;;
-          Windows_NT)
-            CODECOV_URL="https://uploader.codecov.io/latest/windows/codecov.exe"
-            ;;
-          *)
-            echo "Unexpected OS"
-            exit 0
-        esac
-        curl --retry 3 -o codecov "$CODECOV_URL"
-        chmod +x codecov
-        coverage xml
-        ./codecov || echo "Uploading coverage data failed"
       shell: bash
