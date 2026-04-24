@@ -38,6 +38,5 @@ jobs:
       PIP_USE_PEP517: "${{ matrix.PIP_USE_PEP517 }}"
       TOXENV: "${{ matrix.TOXENV }}"
       IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
-      test_name: "test"
   test_sphinx_builds:
     uses: "./.github/workflows/sphinx_steps.yml"
