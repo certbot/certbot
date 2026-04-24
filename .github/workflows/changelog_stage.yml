@@ -14,7 +14,6 @@ jobs:
       uses: actions/checkout@v6.0.2
     - name: Prepare changelog
       run: |-
-        set -e
         CERTBOT_VERSION="$(cd certbot/src && python -c "import certbot; print(certbot.__version__)" && cd ~-)"
         tools/extract_changelog.py "${CERTBOT_VERSION}" >> "${{ runner.temp }}/release_notes.md"
       shell: bash

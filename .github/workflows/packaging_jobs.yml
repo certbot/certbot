@@ -35,18 +35,17 @@ jobs:
     - name: Build the Docker images
       # We don't filter for the Docker Hub organization to continue to allow
       # easy testing of these scripts on forks.
-      run: set -e && tools/docker/build.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
+      run: tools/docker/build.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
       shell: bash
     - name: Save the Docker images
       run: |-
-        set -e
         DOCKER_IMAGES=$(docker images --filter reference='*/certbot' --filter reference='*/dns-*' --format '{{.Repository}}')
         docker save --output images.tar $DOCKER_IMAGES
       shell: bash
     # If the name of the tar file or artifact changes, the deploy stage will
     # also need to be updated.
     - name: Prepare Docker artifact
-      run: set -e && mv images.tar ${{ runner.temp }}
+      run: mv images.tar ${{ runner.temp }}
       shell: bash
     - name: Store Docker artifact
       uses: actions/upload-artifact@v7.0.0
@@ -74,10 +73,10 @@ jobs:
         name: docker_${{ matrix.DOCKER_ARCH }}
         path: "${{ github.workspace }}"
     - name: Load Docker images
-      run: set -e && docker load --input ${{ github.workspace }}/images.tar
+      run: docker load --input ${{ github.workspace }}/images.tar
       shell: bash
     - name: Run integration tests for Docker images
-      run: set -e && tools/docker/test.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
+      run: tools/docker/test.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
       shell: bash
   gha_build:
     name: Build ${{ matrix.build-for }} certbot snap
@@ -156,7 +155,6 @@ jobs:
         fetch-depth: 0 # need a non-shallow clone for launchpad
     - name: Install dependencies
       run: |-
-        set -e
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends snapd
         sudo snap install --classic snapcraft
@@ -167,7 +165,6 @@ jobs:
       env:
         LAUNCHPAD_CREDS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"
       run: |-
-        set -e
         git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
         git config --global user.name "${{ github.actor }}"
         mkdir -p ~/.local/share/snapcraft/
@@ -175,7 +172,6 @@ jobs:
         python3 tools/snap/build_remote.py ALL --archs ${{ matrix.SNAP_ARCH }} --timeout ${{ env.snapBuildTimeout }}
     - name: Prepare artifacts
       run: |-
-        set -e
         mv *.snap ${{ runner.temp }}
         mv certbot-dns-*/*.snap ${{ runner.temp }}
     - name: Store snaps artifacts
@@ -205,7 +201,6 @@ jobs:
         python-version: '3.12'
     - name: Install dependencies
       run: |-
-        set -e
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends nginx-light snapd
         python3 -m venv venv
@@ -217,11 +212,9 @@ jobs:
         path: "${{ github.workspace }}/snap"
     - name: Install Certbot snap
       run: |-
-        set -e
         sudo snap install --dangerous --classic snap/certbot_*.snap
     - name: Run tox
       run: |-
-        set -e
         venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
   snap_dns_run:
     name: snap_dns_run ${{ matrix.arch-name }}
@@ -243,7 +236,6 @@ jobs:
       uses: actions/checkout@v6.0.2
     - name: Install dependencies
       run: |-
-        set -e
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends snapd
     - uses: actions/setup-python@v5.0.0
@@ -257,10 +249,8 @@ jobs:
         path: "${{ github.workspace }}/snap"
     - name: Prepare Certbot-CI
       run: |-
-        set -e
         python3 -m venv venv
         venv/bin/python tools/pip_install.py -e certbot-ci
     - name: Test DNS plugins snaps
       run: |-
-        set -e
         sudo -E venv/bin/pytest certbot-ci/src/snap_integration_tests/dns_tests --allow-persistent-changes --snap-folder ${{ github.workspace }}/snap --snap-arch ${{ matrix.arch-name }}
