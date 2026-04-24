@@ -13,6 +13,7 @@ permissions:
   contents: read
 concurrency:
   # https://stackoverflow.com/questions/74117321/if-condition-in-concurrency-in-gha
+  # adding this comment to push again to check concurrency"
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
