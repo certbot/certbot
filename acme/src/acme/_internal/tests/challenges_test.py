@@ -1,4 +1,5 @@
 """Tests for acme.challenges."""
+import copy
 import sys
 from typing import TYPE_CHECKING
 import unittest
@@ -142,6 +143,63 @@ class DNS01Test(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.challenges import DNS01
         hash(DNS01.from_json(self.jmsg))
+
+
+class DNSPersist01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNSPersist01
+        self.jmsg = {
+            'type': 'dns-persist-01',
+            'accounturi': 'https://ca.example/acct/123',
+            'issuer-domain-names': ['authority.example', 'ca.example.net']
+        }
+        self.msg = DNSPersist01(
+            account_uri=self.jmsg['accounturi'],
+            issuer_domain_names=tuple(self.jmsg['issuer-domain-names']))
+
+    def test_to_partial_json(self):
+        expected_json = copy.deepcopy(self.jmsg)
+        # josepy converts lists into tuples
+        expected_json['issuer-domain-names'] = tuple(expected_json['issuer-domain-names'])
+        assert expected_json == self.msg.to_partial_json()
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNSPersist01
+        hash(DNSPersist01.from_json(self.jmsg))
+
+    def test_from_json(self):
+        from acme.challenges import DNSPersist01
+        assert self.msg == DNSPersist01.from_json(self.jmsg)
+
+    def test_get_rdata(self):
+        expected_rdata = 'authority.example; accounturi=https://ca.example/acct/123'
+        assert expected_rdata == self.msg.get_validation_rdata(False)
+        assert expected_rdata + '; policy=wildcard' == \
+            self.msg.get_validation_rdata(True)
+
+    def test_validation_name(self):
+        assert '_validation-persist.example.com' == \
+            self.msg.validation_domain_name('example.com')
+        assert '_validation-persist.example.com' == \
+            self.msg.validation_domain_name(name='*.example.com')
+
+    def test_response(self):
+        from acme.challenges import DNSPersist01Response
+        assert isinstance(self.msg.response(), DNSPersist01Response)
+
+
+class DNSPersist01ResponseTest(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNSPersist01Response
+        self.response = DNSPersist01Response()
+
+    def test_truthiness(self):
+        assert self.response
+
+    def test_empty_json(self):
+        assert {} == self.response
 
 
 class HTTP01ResponseTest(unittest.TestCase):

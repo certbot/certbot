@@ -11,6 +11,7 @@ from typing import Optional
 from typing import TypeVar
 from typing import Union
 
+from acme import util
 from cryptography.hazmat.primitives import hashes
 import josepy as jose
 import requests
@@ -476,3 +477,59 @@ class DNSResponse(ChallengeResponse):
 
         """
         return chall.check_validation(self.validation, account_public_key)
+
+
+@ChallengeResponse.register
+class DNSPersist01Response(ChallengeResponse):
+    """ACME "dns-persist-01" challenge response."""
+
+    def __bool__(self) -> bool:
+        # Because this response yields an empty JSON object whose __len__() == 0, manually set a
+        # truthy value
+        return True
+
+
+@Challenge.register
+class DNSPersist01(Challenge):
+    """ACME "dns-persist-01" challenge"""
+
+    typ = "dns-persist-01"
+
+    LABEL = "_validation-persist"
+    """Label clients prepend to the domain name being validated."""
+
+    account_uri: str = jose.field("accounturi")
+    issuer_domain_names: tuple[str] = jose.field("issuer-domain-names")
+
+    def get_validation_rdata(self, is_wildcard: bool) -> str:
+        """Validation TXT record rdata.
+
+        :param bool is_wildcard: Whether to set policy=wildcard.
+        :rtype: str
+        """
+        parts = [
+            self.issuer_domain_names[0],
+            "accounturi={0}".format(self.account_uri),
+        ]
+
+        if is_wildcard:
+            parts.append("policy=wildcard")
+
+        return '; '.join(parts)
+
+    def validation_domain_name(self, name: str) -> str:
+        """Domain name for TXT validation record.
+
+        :param str name: Domain name being validated.
+        :rtype: str
+        """
+        if util.is_wildcard_domain(name):
+            name = name.removeprefix('*.')
+        return "{0}.{1}".format(self.LABEL, name)
+
+    def response(self) -> DNSPersist01Response:
+        """ACME "dns-persist-01" challenge response object.
+
+        :rtype: DNSPersist01Response
+        """
+        return DNSPersist01Response()
