@@ -21,8 +21,10 @@ jobs:
           echo "::endgroup::"
           FINAL_STATUS=0
           declare -a FAILED_BUILDS
+          echo "::group::Setup venv"
           tools/venv.py
           source venv/bin/activate
+          echo "::endgroup::"
           for doc_path in */docs
           do
             echo ""
