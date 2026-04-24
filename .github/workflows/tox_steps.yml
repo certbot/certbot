@@ -41,7 +41,6 @@ jobs:
     # fail on git clones: https://github.com/orgs/Homebrew/discussions/4612.
     - name: Install MacOS dependencies
       if: runner.os == 'macOS'
-      id: mac_install
       run: |-
         unset HOMEBREW_NO_INSTALL_FROM_API
         brew untap homebrew/core homebrew/cask
