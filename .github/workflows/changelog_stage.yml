@@ -12,6 +12,8 @@ jobs:
     # If we change the output filename from `release_notes.md`, it should also be changed in tools/create_github_release.py
     - name: checkout
       uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
     - name: Prepare changelog
       run: |-
         CERTBOT_VERSION="$(cd certbot/src && python -c "import certbot; print(certbot.__version__)" && cd ~-)"
