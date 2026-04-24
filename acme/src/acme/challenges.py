@@ -11,6 +11,8 @@ from typing import Optional
 from typing import TypeVar
 from typing import Union
 
+from acme import util
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 import josepy as jose
 import requests
@@ -476,3 +478,84 @@ class DNSResponse(ChallengeResponse):
 
         """
         return chall.check_validation(self.validation, account_public_key)
+
+
+@ChallengeResponse.register
+class DNSPersist01Response(ChallengeResponse):
+    """ACME "dns-persist-01" challenge response."""
+
+    def __bool__(self) -> bool:
+        # Because this response yields an empty JSON object whose __len__() == 0, manually set a
+        # truthy value
+        return True
+
+
+@Challenge.register
+class DNSPersist01(Challenge):
+    """ACME "dns-persist-01" challenge"""
+
+    typ = "dns-persist-01"
+
+    LABEL = "_validation-persist"
+    """Label clients prepend to the domain name being validated."""
+
+    account_uri: str = jose.field("accounturi")
+    issuer_domain_names: tuple[str] = jose.field("issuer-domain-names")
+
+    def hash_account_uri(self, domain: str, account_public_key: jose.JWK,
+                         account_hash_prefix: str) -> str:
+        """Computes the hashed account information needed to bind our account to the domain. The RFC
+        mandates that the CA support SHA256, that the hashed value is:
+
+            SHA256(length_of_domain || domain_name || key || account_URL)
+
+        and the final URI has the format:
+
+            <accountHashPrefix><hash-alg>/<base64url hash value>
+
+        :param str name: Domain name being validated.
+        :param .JWK account_public_key: Account public key.
+        :param str account_hash_prefix: The account hash URI prefix defined by the CA.
+        :returns: A URI representing the hashed account URI.
+        :rtype: str
+        """
+        hash_alg = "sha-256"
+        digest = hashes.Hash(hashes.SHA256(), default_backend())
+        domain_bytes = domain.encode('utf8')
+        digest.update(bytes([len(domain_bytes)]))
+        digest.update(domain_bytes)
+        thumbprint = jose.encode_b64jose(account_public_key.thumbprint())
+        digest.update(thumbprint.encode('utf8'))
+        digest.update(self.account_uri.encode('utf8'))
+        base64_hash_value = jose.encode_b64jose(digest.finalize())
+        return f"{account_hash_prefix}{hash_alg}/{base64_hash_value}"
+
+    def get_dns_txt_record(self, name: str, account_public_key: jose.JWK,
+                           account_hash_prefix: str) -> tuple[str, str]:
+        """Returns both the domain and value for the DNS TXT record.
+
+        :param str name: Domain name being validated.
+        :returns: The domain and rdata value for the TXT record.
+        :rtype: tuple[str, str]
+        """
+        accounturi = self.hash_account_uri(name, account_public_key,
+            account_hash_prefix)
+        rdata_parts = [
+            self.issuer_domain_names[0],
+            "accounturi={0}".format(accounturi),
+        ]
+
+        if util.is_wildcard_domain(name):
+            name = name.removeprefix('*.')
+            rdata_parts.append("policy=wildcard")
+
+        domain = "{0}.{1}".format(self.LABEL, name)
+        rdata = '; '.join(rdata_parts)
+        return (domain, rdata)
+
+    def response(self) -> DNSPersist01Response:
+        """ACME "dns-persist-01" challenge response object.
+
+        :rtype: DNSPersist01Response
+        """
+        return DNSPersist01Response()
