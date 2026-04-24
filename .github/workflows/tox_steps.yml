@@ -58,18 +58,8 @@ jobs:
       run: |-
         python3 tools/pip_install.py tox
       shell: bash
-    - name: Create test farm pem file
-      if: contains(inputs.TOXENV, 'test-farm')
-      env:
-        PEM_CONTENTS: "${{ secrets.AWS_TEST_FARM_PEM }}"
-        AWS_EC2_PEM_FILE: ${{ github.workspace }}/GHAKeyPair.pem
-      run: |-
-        echo "${PEM_CONTENTS}" >> $AWS_EC2_PEM_FILE
-      shell: bash
     - name: Run tox
       env:
-        AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
-        AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
         PIP_USE_PEP517: "${{ inputs.PIP_USE_PEP517 }}"
         TOXENV: "${{ inputs.TOXENV }}"
       run: |-
