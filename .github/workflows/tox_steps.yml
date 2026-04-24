@@ -10,35 +10,19 @@ on:
         type: string
       PIP_USE_PEP517:
         type: string
-      uploadCoverage:
-        description: 'Upload coverage to Codecov'
-        type: boolean
-        default: false
-      AWS_ACCESS_KEY_ID:
-        description: 'access key ID for AWS'
-        type: string
-      AWS_SECRET_ACCESS_KEY:
-        description: 'access key for AWS'
-        type: string
-      AWS_TEST_FARM_PEM:
-        description: 'contents of AWS PEM file to be placed in $AWS_EC2_PEM_FILE from environment'
-        type: string
-      test_name:
-        type: string
 permissions:
   contents: read
 
-env:
-  uploadCoverage: ${{ inputs.uploadCoverage }}
-
 jobs:
   tox_all:
-    name: ${{ inputs.test_name }} ${{ inputs.IMAGE_NAME }}-${{ inputs.TOXENV }}
+    name: ${{ inputs.TOXENV }} ${{ inputs.IMAGE_NAME }}
     runs-on:
       - "${{ inputs.IMAGE_NAME }}"
     steps:
     - name: Checkout
       uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
     # We run brew update because we've seen attempts to install an older version
     # of a package fail. See
     # https://github.com/actions/virtual-environments/issues/3165.
@@ -48,9 +32,7 @@ jobs:
     # fail on git clones: https://github.com/orgs/Homebrew/discussions/4612.
     - name: Install MacOS dependencies
       if: runner.os == 'macOS'
-      id: mac_install
       run: |-
-        set -e
         unset HOMEBREW_NO_INSTALL_FROM_API
         brew untap homebrew/core homebrew/cask
         brew update
@@ -62,7 +44,6 @@ jobs:
     - name: Install Linux dependencies
       if: runner.os == 'Linux'
       run: |-
-        set -e
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
           libaugeas-dev \
@@ -75,50 +56,23 @@ jobs:
         python-version: "${{ inputs.PYTHON_VERSION }}"
     - name: Install runtime dependencies
       run: |-
-        set -e
         python3 tools/pip_install.py tox
       shell: bash
     - name: Create test farm pem file
       if: contains(inputs.TOXENV, 'test-farm')
       env:
-        PEM_CONTENTS: "${{ inputs.AWS_TEST_FARM_PEM }}"
+        PEM_CONTENTS: "${{ secrets.AWS_TEST_FARM_PEM }}"
+        AWS_EC2_PEM_FILE: ${{ github.workspace }}/GHAKeyPair.pem
       run: |-
-        set -e
         echo "${PEM_CONTENTS}" >> $AWS_EC2_PEM_FILE
       shell: bash
     - name: Run tox
       env:
-        AWS_ACCESS_KEY_ID: "${{ inputs.AWS_ACCESS_KEY_ID }}"
-        AWS_SECRET_ACCESS_KEY: "${{ inputs.AWS_SECRET_ACCESS_KEY }}"
+        AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+        AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
         PIP_USE_PEP517: "${{ inputs.PIP_USE_PEP517 }}"
         TOXENV: "${{ inputs.TOXENV }}"
       run: |-
-        set -e
-        export TARGET_BRANCH="`echo "${BUILD_SOURCEBRANCH}" | sed -E 's!refs/(heads|tags)/!!g'`"
-        [ -z "${SYSTEM_PULLREQUEST_TARGETBRANCH}" ] || export TARGET_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH}"
         env
         python3 -m tox run
-      shell: bash
-    - name: Upload coverage data
-      if: env.uploadCoverage == true && (startsWith(matrix.TOXENV, 'cover') || startsWith(matrix.TOXENV, 'integration'))
-      run: |-
-        python3 tools/pip_install.py -I coverage
-        case "${{ runner.os }}" in
-          Darwin)
-            CODECOV_URL="https://uploader.codecov.io/latest/macos/codecov"
-            ;;
-          Linux)
-            CODECOV_URL="https://uploader.codecov.io/latest/linux/codecov"
-            ;;
-          Windows_NT)
-            CODECOV_URL="https://uploader.codecov.io/latest/windows/codecov.exe"
-            ;;
-          *)
-            echo "Unexpected OS"
-            exit 0
-        esac
-        curl --retry 3 -o codecov "$CODECOV_URL"
-        chmod +x codecov
-        coverage xml
-        ./codecov || echo "Uploading coverage data failed"
       shell: bash
