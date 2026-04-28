@@ -35,6 +35,7 @@ jobs:
           name: snap-certbot-${{ matrix.build-for }}
           path: ${{ steps.build.outputs.snap }}
   generate_dns_list_matrix:
+    name: List DNS package names
     runs-on: ubuntu-latest
     outputs:
       dns-dirs: ${{ steps.set-dns-dirs.outputs.dns-dirs }}
