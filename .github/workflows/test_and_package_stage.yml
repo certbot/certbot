@@ -52,7 +52,10 @@ jobs:
       run: |-
         sudo dpkg --add-architecture armhf
         sudo apt-get update
-        # sudo apt-get install -y nginx-light snapd:armhf
+        sudo apt-get install -y nginx-light
+        echo "nginx light installed"
+        sudo apt-get install -y snapd:armhf
+        echo "snapd:armhf installed"
     - name: Setup venv
       run: |-
         python3 -m venv venv
