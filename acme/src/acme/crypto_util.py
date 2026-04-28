@@ -6,7 +6,6 @@ import logging
 from types import ModuleType
 import typing
 from typing import Any
-from typing import Literal
 from typing import Optional
 from typing import Union
 import warnings
