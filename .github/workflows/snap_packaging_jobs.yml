@@ -117,6 +117,7 @@ jobs:
     name: snap_run ${{ matrix.arch-name }}
     needs:
     - gha_build_snap
+    - launchpad_build_all
     runs-on:
       - ${{ matrix.run-on }}
     strategy:
