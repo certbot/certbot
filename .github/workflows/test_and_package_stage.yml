@@ -12,13 +12,13 @@ permissions:
   contents: read
 
 jobs:
-  # standard_tests_jobs:
-  #   name: Standard tests
-  #   uses: "./.github/workflows/standard_tests_jobs.yml"
-  # extended_tests_jobs:
-  #   name: Extended tests
-  #   uses: "./.github/workflows/extended_tests_jobs.yml"
-  #   secrets: inherit
+  standard_tests_jobs:
+    name: Standard tests
+    uses: "./.github/workflows/standard_tests_jobs.yml"
+  extended_tests_jobs:
+    name: Extended tests
+    uses: "./.github/workflows/extended_tests_jobs.yml"
+    secrets: inherit
   docker_packaging_jobs:
     name: Docker packaging
     uses: "./.github/workflows/docker_packaging_jobs.yml"
