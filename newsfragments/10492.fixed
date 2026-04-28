@@ -1,0 +1,1 @@
+In the certbot snap, DNS OVH challenge now properly deletes the TXT record after the challenge is completed, by requiring dns-lexicon 3.25.1 which contains the fix.
