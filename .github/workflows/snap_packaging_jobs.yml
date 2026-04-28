@@ -141,7 +141,7 @@ jobs:
       run: |-
         sudo dpkg --add-architecture "armhf"
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends nginx-light snapd:armhf
+        sudo apt-get install -y nginx-light snapd:armhf
     - name: Install non-armhf depdencies
       if: ${{ matrix.arch-name != 'armhf' }}
       run: |-
