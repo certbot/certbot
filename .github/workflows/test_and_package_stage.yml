@@ -1,4 +1,4 @@
-name: Test and package stage
+name: Test and package
 on:
   workflow_call:
     inputs:
@@ -19,10 +19,15 @@ jobs:
     name: Extended tests
     uses: "./.github/workflows/extended_tests_jobs.yml"
     secrets: inherit
-  packaging_jobs:
-    name: Packaging jobs
-    uses: "./.github/workflows/packaging_jobs.yml"
+  docker_packaging_jobs:
+    name: Docker packaging
+    uses: "./.github/workflows/docker_packaging_jobs.yml"
     with:
       dockerTag: ${{ inputs.dockerTag }}
+    secrets: inherit
+  snap_packaging_jobs:
+    name: Snap packaging
+    uses: "./.github/workflows/snap_packaging_jobs.yml"
+    with:
       snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
     secrets: inherit

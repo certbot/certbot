@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   test_and_package_stage:
-    name: test_and_package_stage
+    name: Test and package
     uses: "./.github/workflows/test_and_package_stage.yml"
     with:
       # We don't publish our Docker images in this pipeline, but when building them
