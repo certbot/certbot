@@ -12,7 +12,7 @@ env:
   snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
 
 jobs:
-  gha_build:
+  gha_build_snap:
     name: Build ${{ matrix.build-for }} certbot snap
     runs-on: ${{ matrix.build-on }}
     strategy:
@@ -45,7 +45,7 @@ jobs:
       run: |
         DNS_NAMES="$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')"
         echo "dns-dirs=$DNS_NAMES" >> "$GITHUB_OUTPUT"
-  gha_build_dns:
+  gha_build_dns_snaps:
     name: Build ${{ matrix.dns-dir }} ${{ matrix.build-for }} snap
     needs: generate_dns_list_matrix
     runs-on: ${{ matrix.build-on }}
@@ -74,7 +74,7 @@ jobs:
         with:
           name: snap-${{ matrix.dns-dir }}-${{ matrix.build-for }}
           path: ${{ steps.build.outputs.snap }}
-  launchpad_build:
+  launchpad_build_all:
     name: Build armhf snaps
     runs-on:
       - ubuntu-24.04
@@ -116,7 +116,7 @@ jobs:
   snap_run:
     name: snap_run ${{ matrix.arch-name }}
     needs:
-    - gha_build
+    - gha_build_snap
     runs-on:
       - ${{ matrix.run-on }}
     strategy:
@@ -127,16 +127,27 @@ jobs:
           run-on: ubuntu-24.04-arm
         - arch-name: amd64
           run-on: ubuntu-24.04
+        - arch-name: armhf
+          run-on: ubuntu-24.04-arm
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
     - uses: actions/setup-python@v5.0.0
       with:
         python-version: '3.12'
-    - name: Install dependencies
+    - name: Install armhf dependencies
+      if: ${{ matrix.arch-name == 'armhf' }}
+      run: |-
+        sudo dpkg --add-architecture "armhf"
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends nginx-light snapd:armhf
+    - name: Install non-armhf depdencies
+      if: ${{ matrix.arch-name != 'armhf' }}
       run: |-
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends nginx-light snapd
+    - name: Setup venv
+      run: |-
         python3 -m venv venv
         venv/bin/python tools/pip_install.py -U tox
     - name: Retrieve Certbot snaps
@@ -153,8 +164,8 @@ jobs:
   snap_dns_run:
     name: snap_dns_run ${{ matrix.arch-name }}
     needs:
-    - gha_build_dns
-    - gha_build
+    - gha_build_dns_snaps
+    - gha_build_snap
     runs-on:
       - ${{ matrix.run-on }}
     strategy:
