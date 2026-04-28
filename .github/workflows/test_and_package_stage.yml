@@ -33,7 +33,6 @@ jobs:
   #   secrets: inherit
   snap_run:
     name: snap_run ${{ matrix.arch-name }}
-    needs:
     runs-on:
       - ${{ matrix.run-on }}
     strategy:
@@ -51,7 +50,7 @@ jobs:
     - name: Install armhf dependencies
       if: ${{ matrix.arch-name == 'armhf' }}
       run: |-
-        sudo dpkg --add-architecture "armhf"
+        sudo dpkg --add-architecture armhf
         sudo apt-get update
         # sudo apt-get install -y nginx-light snapd:armhf
     - name: Setup venv
