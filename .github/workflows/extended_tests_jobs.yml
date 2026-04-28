@@ -11,6 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         PYTHON_VERSION: ['3.14']
+        IMAGE_NAME: ['ubuntu-22.04']
         TOXENV:
         - isolated-acme,isolated-certbot,isolated-apache,isolated-cloudflare,isolated-digitalocean,isolated-dnsimple,isolated-dnsmadeeasy,isolated-gehirn,isolated-google,isolated-linode,isolated-luadns,isolated-nsone,isolated-ovh,isolated-rfc2136,isolated-route53,isolated-sakuracloud,isolated-nginx
         - nginx_compat
