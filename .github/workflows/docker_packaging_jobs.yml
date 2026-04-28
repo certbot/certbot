@@ -37,8 +37,8 @@ jobs:
       shell: bash
     - name: Save the Docker images
       run: |-
-        DOCKER_IMAGES="$(docker images --filter 'reference=*/certbot' --filter 'reference=*/dns-*' --format '{{.Repository}}')"
-        docker save --output images.tar "$DOCKER_IMAGES"
+        DOCKER_IMAGES=$(docker images --filter reference="*/certbot" --filter reference="*/dns-*"" --format "{{.Repository}}")
+        docker save --output images.tar $DOCKER_IMAGES
       shell: bash
     # If the name of the tar file or artifact changes, the deploy stage will
     # also need to be updated.
