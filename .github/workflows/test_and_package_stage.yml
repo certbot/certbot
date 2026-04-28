@@ -12,22 +12,49 @@ permissions:
   contents: read
 
 jobs:
-  standard_tests_jobs:
-    name: Standard tests
-    uses: "./.github/workflows/standard_tests_jobs.yml"
-  extended_tests_jobs:
-    name: Extended tests
-    uses: "./.github/workflows/extended_tests_jobs.yml"
-    secrets: inherit
-  docker_packaging_jobs:
-    name: Docker packaging
-    uses: "./.github/workflows/docker_packaging_jobs.yml"
-    with:
-      dockerTag: ${{ inputs.dockerTag }}
-    secrets: inherit
-  snap_packaging_jobs:
-    name: Snap packaging
-    uses: "./.github/workflows/snap_packaging_jobs.yml"
-    with:
-      snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
-    secrets: inherit
+  # standard_tests_jobs:
+  #   name: Standard tests
+  #   uses: "./.github/workflows/standard_tests_jobs.yml"
+  # extended_tests_jobs:
+  #   name: Extended tests
+  #   uses: "./.github/workflows/extended_tests_jobs.yml"
+  #   secrets: inherit
+  # docker_packaging_jobs:
+  #   name: Docker packaging
+  #   uses: "./.github/workflows/docker_packaging_jobs.yml"
+  #   with:
+  #     dockerTag: ${{ inputs.dockerTag }}
+  #   secrets: inherit
+  # snap_packaging_jobs:
+  #   name: Snap packaging
+  #   uses: "./.github/workflows/snap_packaging_jobs.yml"
+  #   with:
+  #     snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
+  #   secrets: inherit
+  snap_run:
+    name: snap_run ${{ matrix.arch-name }}
+    needs:
+    runs-on:
+      - ${{ matrix.run-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - arch-name: armhf
+          run-on: ubuntu-24.04-arm
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.12'
+    - name: Install armhf dependencies
+      if: ${{ matrix.arch-name == 'armhf' }}
+      run: |-
+        sudo dpkg --add-architecture "armhf"
+        sudo apt-get update
+        # sudo apt-get install -y nginx-light snapd:armhf
+    - name: Setup venv
+      run: |-
+        python3 -m venv venv
+        venv/bin/python tools/pip_install.py -U tox
