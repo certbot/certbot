@@ -42,6 +42,6 @@ jobs:
           TOXENV: test-farm-apache2
     uses: "./.github/workflows/tox_steps.yml"
     with:
-      PYTHON_VERSION: "${{  matrix.PYTHON_VERSION  }}"
+      PYTHON_VERSION: "${{ matrix.PYTHON_VERSION }}"
       TOXENV: "${{ matrix.TOXENV }}"
       IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
