@@ -39,9 +39,9 @@ jobs:
         brew untap homebrew/core homebrew/cask
         brew update
         brew install augeas
-        BREW_PREFIX=$(brew --prefix)
+        BREW_PREFIX="$(brew --prefix)"
         CFLAGS="$CFLAGS -I$BREW_PREFIX/include -L$BREW_PREFIX/lib"
-        echo "CFLAGS=$CFLAGS" >> $GITHUB_ENV
+        echo "CFLAGS=$CFLAGS" >> "$GITHUB_ENV"
       shell: bash
     - name: Install Linux dependencies
       if: runner.os == 'Linux'

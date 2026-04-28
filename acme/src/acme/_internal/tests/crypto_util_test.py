@@ -36,6 +36,12 @@ class MiscTests(unittest.TestCase):
         # default is PEM encoding Encoding.PEM
         assert isinstance(dumped, bytes)
 
+    def test_dump_cryptography_chain_wrong_encoding(self):
+        from acme.crypto_util import dump_cryptography_chain
+
+        with pytest.raises(ValueError):
+            dump_cryptography_chain(mock.Mock(), serialization.Encoding.SMIME)
+
 
 class CryptographyCertOrReqSANTest(unittest.TestCase):
     """Test for acme.crypto_util._cryptography_cert_or_req_san."""
