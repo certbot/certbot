@@ -140,9 +140,11 @@ jobs:
     - name: Install armhf dependencies
       if: ${{ matrix.arch-name == 'armhf' }}
       run: |-
-        sudo dpkg --add-architecture "armhf"
+        sudo dpkg --add-architecture armhf
         sudo apt-get update
-        sudo apt-get install -y nginx-light snapd:armhf
+        # apparmor will conflict with snapd:armhf dependency if not removed first
+        sudo apt-get remove -y apparmor
+        sudo apt-get install -y --no-install-recommends snapd:armhf nginx-light
     - name: Install non-armhf depdencies
       if: ${{ matrix.arch-name != 'armhf' }}
       run: |-
