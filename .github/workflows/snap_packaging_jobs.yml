@@ -218,6 +218,8 @@ jobs:
         pattern: snap-*-${{ matrix.arch-name }}
         merge-multiple: true
         path: "${{ github.workspace }}/snap"
+    - name: Display structure of downloaded files
+      run: ls -R "${{ github.workspace }}/snap"
     - name: Prepare Certbot-CI
       run: |-
         python3 -m venv venv
