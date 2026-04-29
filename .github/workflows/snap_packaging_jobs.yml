@@ -79,10 +79,8 @@ jobs:
     name: Build armhf snaps
     runs-on:
       - ubuntu-24.04
-    strategy:
-      matrix:
-        SNAP_ARCH:
-        - armhf
+    env:
+      SNAP_ARCH: "armhf"
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
@@ -104,7 +102,7 @@ jobs:
         git config --global user.name "${{ github.actor }}"
         mkdir -p ~/.local/share/snapcraft/
         echo "$LAUNCHPAD_CREDS" > ~/.local/share/snapcraft/launchpad-credentials
-        python3 tools/snap/build_remote.py ALL --archs ${{ matrix.SNAP_ARCH }} --timeout ${{ env.snapBuildTimeout }}
+        python3 tools/snap/build_remote.py ALL --archs "$SNAP_ARCH" --timeout ${{ env.snapBuildTimeout }}
     - name: Prepare artifacts
       run: |-
         mv *.snap ${{ runner.temp }}
@@ -112,7 +110,7 @@ jobs:
     - name: Store snaps artifacts
       uses: actions/upload-artifact@v7.0.0
       with:
-        name: snaps_${{ matrix.SNAP_ARCH }}
+        name: snaps_"$SNAP_ARCH"
         path: "${{ runner.temp }}"
   snap_run:
     name: snap_run ${{ matrix.arch-name }}
