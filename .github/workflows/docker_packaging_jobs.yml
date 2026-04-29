@@ -14,17 +14,20 @@ env:
 jobs:
   docker_build:
     runs-on:
-      - ubuntu-24.04
+      - ${{ matrix.run-on }}
     # The default timeout of 60 minutes is a little low for compiling
     # cryptography on ARM architectures.
     timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
-        DOCKER_ARCH:
-        - arm32v6
-        - arm64v8
-        - amd64
+        include:
+        - DOCKER_ARCH: arm64
+          run-on: ubuntu-24.04-arm
+        - DOCKER_ARCH: amd64
+          run-on: ubuntu-24.04
+        - DOCKER_ARCH: armhf
+          run-on: ubuntu-24.04-arm
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
@@ -54,14 +57,17 @@ jobs:
     needs:
     - docker_build
     runs-on:
-      - ubuntu-22.04
+      - ${{ matrix.run-on }}
     strategy:
       fail-fast: false
       matrix:
-        DOCKER_ARCH:
-        - arm32v6
-        - arm64v8
-        - amd64
+        include:
+        - DOCKER_ARCH: arm64
+          run-on: ubuntu-24.04-arm
+        - DOCKER_ARCH: amd64
+          run-on: ubuntu-24.04
+        - DOCKER_ARCH: armhf
+          run-on: ubuntu-24.04-arm
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
