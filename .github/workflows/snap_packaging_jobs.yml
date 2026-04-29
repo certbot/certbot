@@ -13,7 +13,7 @@ env:
 
 jobs:
   gha_build_snap:
-    name: Build ${{ matrix.build-for }} certbot snap
+    name: Build certbot ${{ matrix.build-for }}
     runs-on: ${{ matrix.build-on }}
     strategy:
       fail-fast: false
@@ -47,7 +47,7 @@ jobs:
         DNS_NAMES="$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')"
         echo "dns-dirs=$DNS_NAMES" >> "$GITHUB_OUTPUT"
   gha_build_dns_snaps:
-    name: Build ${{ matrix.dns-dir }} ${{ matrix.build-for }} snap
+    name: Build ${{ matrix.dns-dir }} ${{ matrix.build-for }}
     needs: generate_dns_list_matrix
     runs-on: ${{ matrix.build-on }}
     strategy:
@@ -111,7 +111,7 @@ jobs:
           *.snap
           certbot-dns-*/*.snap
   snap_run:
-    name: Test ${{ matrix.arch-name }} certbot snap
+    name: Test certbot ${{ matrix.arch-name }}
     needs:
     - gha_build_snap
     - launchpad_build_all
@@ -169,7 +169,7 @@ jobs:
       run: |-
         venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
   snap_dns_run:
-    name: Test ${{ matrix.arch-name }} dns snaps
+    name: Test DNS ${{ matrix.arch-name }}
     needs:
     - gha_build_dns_snaps
     - gha_build_snap

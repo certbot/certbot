@@ -13,7 +13,7 @@ env:
 
 jobs:
   docker_build:
-    name: Build ${{ matrix.DOCKER_ARCH }} docker image
+    name: Build ${{ matrix.DOCKER_ARCH }}
     runs-on:
       - ${{ matrix.run-on }}
     # The default timeout of 60 minutes is a little low for compiling
@@ -55,7 +55,7 @@ jobs:
         name: docker_${{ matrix.DOCKER_ARCH }}
         path: "${{ runner.temp }}"
   docker_test:
-    name: Test ${{ matrix.DOCKER_ARCH }} docker image
+    name: Test ${{ matrix.DOCKER_ARCH }}
     needs:
     - docker_build
     runs-on:
