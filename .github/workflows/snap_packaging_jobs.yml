@@ -1,0 +1,231 @@
+name: Snap packaging
+on:
+  workflow_call:
+    inputs:
+      snapBuildTimeout:
+        description: 'timeout for snap builds'
+        type: number
+permissions:
+  contents: read
+
+env:
+  snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
+
+jobs:
+  gha_build_snap:
+    name: Build certbot ${{ matrix.build-for }}
+    runs-on: ${{ matrix.build-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - build-for: arm64
+          build-on: ubuntu-24.04-arm
+        - build-for: amd64
+          build-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: snapcore/action-build@v1.3.0
+        id: build
+        with:
+          snapcraft-args: "--build-for=${{ matrix.build-for }}"
+      - name: Store snap artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: snap-certbot-${{ matrix.build-for }}
+          path: ${{ steps.build.outputs.snap }}
+  generate_dns_list_matrix:
+    name: List DNS package names
+    runs-on: ubuntu-latest
+    outputs:
+      dns-dirs: ${{ steps.set-dns-dirs.outputs.dns-dirs }}
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - id: set-dns-dirs
+      run: |
+        DNS_NAMES="$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')"
+        echo "dns-dirs=$DNS_NAMES" >> "$GITHUB_OUTPUT"
+  gha_build_dns_snaps:
+    name: Build ${{ matrix.dns-dir }} ${{ matrix.build-for }}
+    needs: generate_dns_list_matrix
+    runs-on: ${{ matrix.build-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        dns-dir: ${{ fromJSON(needs.generate_dns_list_matrix.outputs.dns-dirs) }}
+        build-for: [arm64, amd64]
+        include:
+        - build-for: arm64
+          build-on: ubuntu-24.04-arm
+        - build-for: amd64
+          build-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: generate dns snapcraft.yamls
+        run: |
+          tools/snap/generate_dnsplugins_all.sh # unnecessarily doing every file
+      - uses: snapcore/action-build@v1.3.0
+        id: build
+        with:
+          snapcraft-args: "--build-for=${{ matrix.build-for }}"
+          path: ${{ matrix.dns-dir }}
+      - name: Store snap artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: snap-${{ matrix.dns-dir }}-${{ matrix.build-for }}
+          path: ${{ steps.build.outputs.snap }}
+  launchpad_build_all:
+    name: Build armhf snaps
+    runs-on:
+      - ubuntu-24.04
+    env:
+      SNAP_ARCH: "armhf"
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+      with:
+        fetch-depth: 0 # need a non-shallow clone for launchpad
+    - name: Install dependencies
+      run: |-
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends snapd
+        sudo snap install --classic snapcraft
+    - uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.12'
+    - name: Build snaps
+      env:
+        LAUNCHPAD_CREDS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"
+      run: |-
+        git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+        git config --global user.name "${{ github.actor }}"
+        mkdir -p ~/.local/share/snapcraft/
+        echo "$LAUNCHPAD_CREDS" > ~/.local/share/snapcraft/launchpad-credentials
+        python3 tools/snap/build_remote.py ALL --archs "$SNAP_ARCH" --timeout ${{ env.snapBuildTimeout }}
+    - name: Flatten snaps layout
+      run: |-
+        mv *.snap ${{ runner.temp }}
+        mv certbot-dns-*/*.snap ${{ runner.temp }}
+    - name: Store snaps artifacts
+      uses: actions/upload-artifact@v7.0.0
+      with:
+        name: snaps_${{ env.SNAP_ARCH }}
+        path: "${{ runner.temp }}"
+  snap_run:
+    name: Test certbot ${{ matrix.arch-name }}
+    needs:
+    - gha_build_snap
+    - launchpad_build_all
+    runs-on:
+      - ${{ matrix.run-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - arch-name: arm64
+          run-on: ubuntu-24.04-arm
+        - arch-name: amd64
+          run-on: ubuntu-24.04
+        - arch-name: armhf
+          run-on: ubuntu-24.04-arm
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.12'
+    - name: Install armhf dependencies
+      if: ${{ matrix.arch-name == 'armhf' }}
+      run: |-
+        sudo dpkg --add-architecture armhf
+        sudo apt-get update
+        # apparmor will conflict with snapd:armhf dependency if not removed first
+        sudo apt-get remove -y apparmor
+        sudo apt-get install -y --no-install-recommends snapd:armhf nginx-light
+    - name: Install non-armhf depdencies
+      if: ${{ matrix.arch-name != 'armhf' }}
+      run: |-
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends nginx-light snapd
+    - name: Setup venv
+      run: |-
+        python3 -m venv venv
+        venv/bin/python tools/pip_install.py -U tox
+    - name: Retrieve Certbot snaps armhf
+      if: ${{ matrix.arch-name == 'armhf' }}
+      uses: actions/download-artifact@v8.0.1
+      with:
+        name: snaps_${{ matrix.arch-name }}
+        path: "${{ github.workspace }}/snap"
+    - name: Retrieve Certbot snaps non-armhf
+      if: ${{ matrix.arch-name != 'armhf' }}
+      uses: actions/download-artifact@v8.0.1
+      with:
+        pattern: snap-certbot-${{ matrix.arch-name }}
+        path: "${{ github.workspace }}/snap"
+    - name: Install Certbot snap
+      run: |-
+        sudo snap install --dangerous --classic snap/certbot_*.snap
+    - name: Run tox
+      run: |-
+        venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
+  snap_dns_run:
+    name: Test DNS ${{ matrix.arch-name }}
+    needs:
+    - gha_build_dns_snaps
+    - gha_build_snap
+    - launchpad_build_all
+    runs-on:
+      - ${{ matrix.run-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - arch-name: arm64
+          run-on: ubuntu-24.04-arm
+        - arch-name: amd64
+          run-on: ubuntu-24.04
+        - arch-name: armhf
+          run-on: ubuntu-24.04-arm
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+    - name: Install armhf dependencies
+      if: ${{ matrix.arch-name == 'armhf' }}
+      run: |-
+        sudo dpkg --add-architecture armhf
+        sudo apt-get update
+        # apparmor will conflict with snapd:armhf dependency if not removed first
+        sudo apt-get remove -y apparmor
+        sudo apt-get install -y --no-install-recommends snapd:armhf
+    - name: Install non-armhf depdencies
+      if: ${{ matrix.arch-name != 'armhf' }}
+      run: |-
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends snapd
+    - uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.12'
+    - name: Retrieve Certbot snaps armhf
+      if: ${{ matrix.arch-name == 'armhf' }}
+      uses: actions/download-artifact@v8.0.1
+      with:
+        name: snaps_${{ matrix.arch-name }}
+        path: "${{ github.workspace }}/snap"
+    - name: Retrieve Certbot snaps non-armhf
+      if: ${{ matrix.arch-name != 'armhf' }}
+      uses: actions/download-artifact@v8.0.1
+      with:
+        pattern: snap-*-${{ matrix.arch-name }}
+        merge-multiple: true
+        path: "${{ github.workspace }}/snap"
+    - name: Display structure of downloaded files
+      run: ls -R "${{ github.workspace }}/snap"
+    - name: Prepare Certbot-CI
+      run: |-
+        python3 -m venv venv
+        venv/bin/python tools/pip_install.py -e certbot-ci
+    - name: Test DNS plugins snaps
+      run: |-
+        sudo -E venv/bin/pytest certbot-ci/src/snap_integration_tests/dns_tests --allow-persistent-changes --snap-folder ${{ github.workspace }}/snap --snap-arch ${{ matrix.arch-name }}
