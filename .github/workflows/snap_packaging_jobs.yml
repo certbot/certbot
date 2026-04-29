@@ -103,13 +103,15 @@ jobs:
         mkdir -p ~/.local/share/snapcraft/
         echo "$LAUNCHPAD_CREDS" > ~/.local/share/snapcraft/launchpad-credentials
         python3 tools/snap/build_remote.py ALL --archs "$SNAP_ARCH" --timeout ${{ env.snapBuildTimeout }}
+    - name: Flatten snaps layout
+      run: |-
+        mv *.snap ${{ runner.temp }}
+        mv certbot-dns-*/*.snap ${{ runner.temp }
     - name: Store snaps artifacts
       uses: actions/upload-artifact@v7.0.0
       with:
         name: snaps_${{ env.SNAP_ARCH }}
-        path: |
-          *.snap
-          certbot-dns-*/*.snap
+        path: "${{ runner.temp }}"
   snap_run:
     name: Test certbot ${{ matrix.arch-name }}
     needs:
