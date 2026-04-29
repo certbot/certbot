@@ -28,7 +28,7 @@ jobs:
         - DOCKER_ARCH: amd64
           run-on: ubuntu-24.04
         - DOCKER_ARCH: arm32v6
-          run-on: ubuntu-24.04-arm
+          run-on: ubuntu-24.04
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
