@@ -7,8 +7,6 @@ permissions:
 jobs:
   test:
     name: '-' # Makes results viewing cleaner
-    env:
-      IMAGE_NAME: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -46,4 +44,4 @@ jobs:
     with:
       PYTHON_VERSION: "${{ matrix.PYTHON_VERSION }}"
       TOXENV: "${{ matrix.TOXENV }}"
-      IMAGE_NAME: "${{ env.IMAGE_NAME }}"
+      IMAGE_NAME: ubuntu-22.04
