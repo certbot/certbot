@@ -45,3 +45,4 @@ jobs:
       PYTHON_VERSION: "${{ matrix.PYTHON_VERSION }}"
       TOXENV: "${{ matrix.TOXENV }}"
       IMAGE_NAME: ubuntu-22.04
+    secrets: inherit
