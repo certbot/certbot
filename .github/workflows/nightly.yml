@@ -36,7 +36,11 @@ jobs:
     name: Nightly deploy
     permissions:
       contents: read
-    needs: test_and_package_stage
+    needs:
+      - standard_tests_jobs
+      - extended_tests_jobs
+      - docker_packaging_jobs
+      - snap_packaging_jobs
     uses: "./.github/workflows/common_deploy_jobs.yml"
     secrets: inherit
     with:
@@ -44,9 +48,12 @@ jobs:
       snapReleaseChannel: edge
   re-run:
     needs:
-    - test_and_package_stage
-    - changelog_stage
-    - nightly_deploy_stage
+      - standard_tests_jobs
+      - extended_tests_jobs
+      - docker_packaging_jobs
+      - snap_packaging_jobs
+      - changelog_stage
+      - nightly_deploy_stage
     if: failure() && fromJSON(github.run_attempt) < 3
     permissions:
       actions: write
