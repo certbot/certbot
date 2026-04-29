@@ -111,7 +111,7 @@ jobs:
           *.snap
           certbot-dns-*/*.snap
   snap_run:
-    name: snap_run ${{ matrix.arch-name }}
+    name: Test ${{ matrix.arch-name }} certbot snap
     needs:
     - gha_build_snap
     - launchpad_build_all
@@ -169,7 +169,7 @@ jobs:
       run: |-
         venv/bin/python -m tox run -e integration-external,apacheconftest-external-with-pebble
   snap_dns_run:
-    name: snap_dns_run ${{ matrix.arch-name }}
+    name: Test ${{ matrix.arch-name }} dns snaps
     needs:
     - gha_build_dns_snaps
     - gha_build_snap
