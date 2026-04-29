@@ -9,40 +9,41 @@ jobs:
     name: '-' # Makes results viewing cleaner
     strategy:
       fail-fast: false
+      env:
+        IMAGE_NAME: ubuntu-22.04
       matrix:
         PYTHON_VERSION: ['3.14']
-        IMAGE_NAME: ['ubuntu-22.04']
         TOXENV:
-        - isolated-acme,isolated-certbot,isolated-apache,isolated-cloudflare,isolated-digitalocean,isolated-dnsimple,isolated-dnsmadeeasy,isolated-gehirn,isolated-google,isolated-linode,isolated-luadns,isolated-nsone,isolated-ovh,isolated-rfc2136,isolated-route53,isolated-sakuracloud,isolated-nginx
-        - nginx_compat
-        - modification
+          - isolated-acme,isolated-certbot,isolated-apache,isolated-cloudflare,isolated-digitalocean,isolated-dnsimple,isolated-dnsmadeeasy,isolated-gehirn,isolated-google,isolated-linode,isolated-luadns,isolated-nsone,isolated-ovh,isolated-rfc2136,isolated-route53,isolated-sakuracloud,isolated-nginx
+          - nginx_compat
+          - modification
         include:
-        - PYTHON_VERSION: '3.11'
-          TOXENV: py311
-        - PYTHON_VERSION: '3.12'
-          TOXENV: py312
-        - PYTHON_VERSION: '3.13'
-          TOXENV: py313
-        - PYTHON_VERSION: '3.10'
-          TOXENV: integration-certbot-oldest
-        - PYTHON_VERSION: '3.10'
-          TOXENV: integration-nginx-oldest
-        - PYTHON_VERSION: '3.10'
-          TOXENV: integration
-        - PYTHON_VERSION: '3.11'
-          TOXENV: integration
-        - PYTHON_VERSION: '3.12'
-          TOXENV: integration
-        - PYTHON_VERSION: '3.13'
-          TOXENV: integration
-        # python 3.14 integration tests are not run here because they're run as
-        # part of the standard test suite
-        - PYTHON_VERSION: '3.12'
-          TOXENV: integration-dns-rfc2136
-        - PYTHON_VERSION: '3.12'
-          TOXENV: test-farm-apache2
+          - PYTHON_VERSION: '3.11'
+            TOXENV: py311
+          - PYTHON_VERSION: '3.12'
+            TOXENV: py312
+          - PYTHON_VERSION: '3.13'
+            TOXENV: py313
+          - PYTHON_VERSION: '3.10'
+            TOXENV: integration-certbot-oldest
+          - PYTHON_VERSION: '3.10'
+            TOXENV: integration-nginx-oldest
+          - PYTHON_VERSION: '3.10'
+            TOXENV: integration
+          - PYTHON_VERSION: '3.11'
+            TOXENV: integration
+          - PYTHON_VERSION: '3.12'
+            TOXENV: integration
+          - PYTHON_VERSION: '3.13'
+            TOXENV: integration
+          # python 3.14 integration tests are not run here because they're run as
+          # part of the standard test suite
+          - PYTHON_VERSION: '3.12'
+            TOXENV: integration-dns-rfc2136
+          - PYTHON_VERSION: '3.12'
+            TOXENV: test-farm-apache2
     uses: "./.github/workflows/tox_steps.yml"
     with:
       PYTHON_VERSION: "${{ matrix.PYTHON_VERSION }}"
       TOXENV: "${{ matrix.TOXENV }}"
-      IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
+      IMAGE_NAME: "${{ env.IMAGE_NAME }}"
