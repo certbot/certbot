@@ -7,10 +7,10 @@ permissions:
 jobs:
   test:
     name: '-' # Makes results viewing cleaner
+    env:
+      IMAGE_NAME: ubuntu-22.04
     strategy:
       fail-fast: false
-      env:
-        IMAGE_NAME: ubuntu-22.04
       matrix:
         PYTHON_VERSION: ['3.14']
         TOXENV:
