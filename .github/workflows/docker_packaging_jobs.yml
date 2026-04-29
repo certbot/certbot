@@ -22,11 +22,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - DOCKER_ARCH: arm64
+        - DOCKER_ARCH: arm64v8
           run-on: ubuntu-24.04-arm
         - DOCKER_ARCH: amd64
           run-on: ubuntu-24.04
-        - DOCKER_ARCH: armhf
+        - DOCKER_ARCH: arm32v6
           run-on: ubuntu-24.04-arm
     steps:
     - name: checkout
@@ -62,11 +62,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - DOCKER_ARCH: arm64
+        - DOCKER_ARCH: arm64v8
           run-on: ubuntu-24.04-arm
         - DOCKER_ARCH: amd64
           run-on: ubuntu-24.04
-        - DOCKER_ARCH: armhf
+        - DOCKER_ARCH: arm32v6
           run-on: ubuntu-24.04-arm
     steps:
     - name: checkout
