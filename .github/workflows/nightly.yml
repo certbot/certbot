@@ -6,13 +6,25 @@ on:
   workflow_dispatch:
 
 jobs:
-  test_and_package_stage:
-    name: Test and Package
-    permissions:
-      contents: read
-    uses: "./.github/workflows/test_and_package_stage.yml"
+  # The first four jobs could be grouped in a separate workflow, but the github actions UI
+  # is much nicer if they are instead listed explicitly here.
+  standard_tests_jobs:
+    name: Standard tests
+    uses: "./.github/workflows/standard_tests_jobs.yml"
+  extended_tests_jobs:
+    name: Extended tests
+    uses: "./.github/workflows/extended_tests_jobs.yml"
+    secrets: inherit
+  docker_packaging_jobs:
+    name: Docker packaging
+    uses: "./.github/workflows/docker_packaging_jobs.yml"
     with:
       dockerTag: nightly
+    secrets: inherit
+  snap_packaging_jobs:
+    name: Snap packaging
+    uses: "./.github/workflows/snap_packaging_jobs.yml"
+    with:
       snapBuildTimeout: 19800
     secrets: inherit
   changelog_stage:
