@@ -106,7 +106,7 @@ jobs:
     - name: Flatten snaps layout
       run: |-
         mv *.snap ${{ runner.temp }}
-        mv certbot-dns-*/*.snap ${{ runner.temp }
+        mv certbot-dns-*/*.snap ${{ runner.temp }}
     - name: Store snaps artifacts
       uses: actions/upload-artifact@v7.0.0
       with:
