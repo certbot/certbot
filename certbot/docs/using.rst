@@ -70,23 +70,25 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
 |dns_plugs| Y    N    | This category of plugins automates obtaining a certificate by dns-01_ (53)
                       | modifying DNS records to prove you have control over a
                       | domain. Doing domain validation in this way is
-                      | the only way to obtain wildcard certificates from Let's
+                      | one way to obtain wildcard certificates from Let's
                       | Encrypt.
-manual_     Y    N    | Obtain a certificate by manually following instructions to    http-01_ (80) or
-                      | perform domain validation yourself. Certificates created this dns-01_ (53)
-                      | way do not support autorenewal.
+manual_     Y    N    | Obtain a certificate by manually following instructions to    http-01_ (80),
+                      | perform domain validation yourself. Certificates created this dns-01_ (53),
+                      | way do not support autorenewal.                               or dns-persist-01_ (53)
                       | Autorenewal may be enabled by providing an authentication
-                      | hook script to automate the domain validation steps.
+                      | hook script to automate the domain validation steps. Using
+                      | the ``dns-persist-01`` challenge type is another way to
+                      | obtain wildcard certificates from Let's Encrypt.
 =========== ==== ==== =============================================================== =============================
 
 .. |dns_plugs| replace:: :ref:`DNS plugins <dns_plugins>`
 
 Under the hood, plugins use one of several ACME protocol challenges_ to
-prove you control a domain. The options are http-01_ (which uses port 80)
-and dns-01_ (requiring configuration of a DNS server on
-port 53, though that's often not the same machine as your webserver). A few
-plugins support more than one challenge type, in which case you can choose one
-with ``--preferred-challenges``.
+prove you control a domain. The challenge options are http-01_ (which uses port 80),
+and the two DNS-based challenges: dns-01_, or dns-persist-01_ (which both
+require configuration of a DNS server on port 53, though that's often not the
+same machine as your webserver). A few plugins support more than one challenge
+type, in which case you can choose one with ``--preferred-challenges``.
 
 There are also many third-party-plugins_ available. Below we describe in more detail
 the circumstances in which each plugin can be used, and how to use it.
@@ -94,6 +96,7 @@ the circumstances in which each plugin can be used, and how to use it.
 .. _challenges: https://datatracker.ietf.org/doc/html/rfc8555#section-8
 .. _http-01: https://datatracker.ietf.org/doc/html/rfc8555#section-8.3
 .. _dns-01: https://datatracker.ietf.org/doc/html/rfc8555#section-8.4
+.. _dns-persist-01: https://datatracker.ietf.org/doc/draft-ietf-acme-dns-persist/
 
 Apache
 ------
@@ -230,23 +233,46 @@ the UI, you can use the plugin to obtain a certificate by specifying
 to copy and paste commands into another terminal session, which may
 be on a different computer.
 
-The manual plugin can use either the ``http`` or the ``dns`` challenge. You can use the ``--preferred-challenges`` option
-to choose the challenge of your preference.
+The manual plugin can use either the ``http``, ``dns``, or ``dns-persist``
+challenges. You can use the ``--preferred-challenges`` option to choose the
+challenge of your preference.
 
 The ``http`` challenge will ask you to place a file with a specific name and
 specific content in the ``/.well-known/acme-challenge/`` directory directly
 in the top-level directory (“web root”) containing the files served by your
 webserver. In essence it's the same as the webroot_ plugin, but not automated.
 
-When using the ``dns`` challenge, ``certbot`` will ask you to place a TXT DNS
-record with specific contents under the domain name consisting of the hostname
-for which you want a certificate issued, prepended by ``_acme-challenge``.
+When using the ``dns`` or ``dns-persist` challenges, ``certbot`` will ask you to
+place a TXT DNS record with specific contents under the domain name consisting
+of the hostname for which you want a certificate issued, prepended by a
+subdomain (either ``_acme-challenge`` or ``_validation-persist``, depending on
+the challenge).
 
-For example, for the domain ``example.com``, a zone file entry would look like:
+For example, when performing the ``dns`` challenge for the domain
+``example.com``, the zone entry file to succeed the challenge might look like:
 
 ::
 
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
+
+This validation string is only valid for this challenge, and the CA validates
+it, the TXT record can be removed.
+
+On the other hand, the ``dns-persist`` challenge works a bit differently. After
+initiating the challenge, the manual plugin will ask you to make a DNS TXT
+record like this:
+
+::
+
+        _validation-persist.example.com. IN TXT "authority.example; accounturi=https://ca.example/acct/123"
+
+Once made, this TXT record can remain active indefinitely for future
+certificate issuances with the CA.
+
+The ``dns-persist`` challenge type also supports the issuance of wildcard
+certificates: if the manual plugin detects a wildcard domain, you will be
+asked to add the appropriate ``policy=wildcard`` record for the parent
+fully-qualified domain name (FQDN).
 
 .. _manual-renewal:
 
@@ -254,7 +280,10 @@ For example, for the domain ``example.com``, a zone file entry would look like:
 
 Certificates created using ``--manual`` **do not** support automatic renewal unless
 combined with an `authentication hook script <#hooks>`_  via ``--manual-auth-hook``
-to automatically set up the required HTTP and/or TXT challenges.
+to automatically set up the required HTTP and/or TXT challenges. In the case of a
+certificate issued via the ``dns-persist`` challenge, once the DNS TXT record is
+live, no further action is needed and thus your authentication script doesn't
+need to perform any additional actions.
 
 If you can use one of the other plugins_ which support autorenewal to create
 your certificate, doing so is highly recommended.
