@@ -74,7 +74,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
 
     def test_get_chall_pref(self):
         assert self.auth.get_chall_pref('example.org') == \
-                         [challenges.DNSPersist01, challenges.HTTP01, challenges.DNS01]
+                         [challenges.HTTP01, challenges.DNS01, challenges.DNSPersist01]
 
     def test_script_perform(self):
         self.config.manual_auth_hook = (

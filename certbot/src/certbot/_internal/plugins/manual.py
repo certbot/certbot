@@ -171,7 +171,7 @@ permitted by DNS standards.)
 
     def get_chall_pref(self, identifier: str) -> Iterable[type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
-        return [challenges.DNSPersist01, challenges.HTTP01, challenges.DNS01]
+        return [challenges.HTTP01, challenges.DNS01, challenges.DNSPersist01]
 
     def perform(self, achalls: list[achallenges.AnnotatedChallenge]
                 ) -> list[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
