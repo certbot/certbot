@@ -19,7 +19,10 @@ jobs:
   extended_tests_jobs:
     name: Extended tests
     uses: "./.github/workflows/extended_tests_jobs.yml"
-    secrets: inherit
+    secrets:
+      AWS_TEST_FARM_PEM: "${{ secrets.AWS_TEST_FARM_PEM }}"
+      AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
   docker_packaging_jobs:
     name: Docker packaging
     uses: "./.github/workflows/docker_packaging_jobs.yml"
@@ -27,11 +30,10 @@ jobs:
       # We don't publish our Docker images in this pipeline, but when building them
       # for testing, let's use the nightly tag.
       dockerTag: nightly
-    secrets: inherit
   snap_packaging_jobs:
     name: Snap packaging
     uses: "./.github/workflows/snap_packaging_jobs.yml"
     with:
       snapBuildTimeout: 5400
-    secrets: inherit
-
+    secrets:
+      LAUNCHPAD_CREDENTIALS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"

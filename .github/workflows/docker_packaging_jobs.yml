@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  dockerTag: ${{ inputs.dockerTag }}
+  DOCKER_TAG: ${{ inputs.dockerTag }}
 
 jobs:
   docker_build:
@@ -34,7 +34,7 @@ jobs:
     - name: Build the Docker images
       # We don't filter for the Docker Hub organization to continue to allow
       # easy testing of these scripts on forks.
-      run: tools/docker/build.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
+      run: tools/docker/build.sh "$DOCKER_TAG" ${{ matrix.DOCKER_ARCH }}
       shell: bash
     - name: Save the Docker images
       run: |-
@@ -70,6 +70,8 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
     - name: Retrieve Docker images
       uses: actions/download-artifact@v8.0.1
       with:
@@ -79,5 +81,5 @@ jobs:
       run: docker load --input ${{ github.workspace }}/images.tar
       shell: bash
     - name: Run integration tests for Docker images
-      run: tools/docker/test.sh ${{ env.dockerTag }} ${{ matrix.DOCKER_ARCH }}
+      run: tools/docker/test.sh "$DOCKER_TAG" ${{ matrix.DOCKER_ARCH }}
       shell: bash

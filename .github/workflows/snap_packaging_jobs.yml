@@ -5,11 +5,15 @@ on:
       snapBuildTimeout:
         description: 'timeout for snap builds in seconds'
         type: number
+    secrets:
+      LAUNCHPAD_CREDENTIALS:
+        required: true
+
 permissions:
   contents: read
 
 env:
-  snapBuildTimeout: ${{ inputs.snapBuildTimeout }}
+  SNAP_BUILD_TIMEOUT: ${{ inputs.snapBuildTimeout }}
 
 jobs:
   gha_build_snap:
@@ -24,7 +28,10 @@ jobs:
         - build-for: amd64
           build-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6.0.2
+      - name: checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
       - uses: snapcore/action-build@v1.3.0
         id: build
         with:
@@ -42,6 +49,8 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
     - id: set-dns-dirs
       run: |
         DNS_NAMES="$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')"
@@ -61,7 +70,10 @@ jobs:
         - build-for: amd64
           build-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6.0.2
+      - name: checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
       - name: generate dns snapcraft.yamls
         run: |
           tools/snap/generate_dnsplugins_all.sh # unnecessarily doing every file
@@ -86,6 +98,7 @@ jobs:
       uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0 # need a non-shallow clone for launchpad
+        persist-credentials: false
     - name: Install dependencies
       run: |-
         sudo apt-get update
@@ -102,7 +115,7 @@ jobs:
         git config --global user.name ""41898282+github-actions[bot]@users.noreply.github.com"
         mkdir -p ~/.local/share/snapcraft/
         echo "$LAUNCHPAD_CREDS" > ~/.local/share/snapcraft/launchpad-credentials
-        python3 tools/snap/build_remote.py ALL --archs "$SNAP_ARCH" --timeout ${{ env.snapBuildTimeout }}
+        python3 tools/snap/build_remote.py ALL --archs "$SNAP_ARCH" --timeout "$SNAP_BUILD_TIMEOUT"
     - name: Flatten snaps layout
       run: |-
         mv *.snap ${{ runner.temp }}
@@ -132,6 +145,8 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
     - uses: actions/setup-python@v5.0.0
       with:
         python-version: '3.12'
@@ -191,6 +206,8 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
     - name: Install armhf dependencies
       if: ${{ matrix.arch-name == 'armhf' }}
       run: |-
