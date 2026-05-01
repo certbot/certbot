@@ -26,13 +26,15 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.dns_achall = acme_util.DNS01_A
         self.dns_achall_2 = acme_util.DNS01_A_2
         self.dns_persist_achall = acme_util.DNS_PERSIST_01_A
-        self.dns_persist_achall_wildcard = acme_util.DNS_PERSIST_01_A_WILDCARD
+        self.dns_persist_achall_wildcard = acme_util.DNS_PERSIST_01_A_WILDCARD_A
+        self.dns_persist_achall_long = acme_util.DNS_PERSIST_01_LONG_A
         self.achalls = [
             self.http_achall,
             self.dns_achall,
             self.dns_achall_2,
             self.dns_persist_achall,
             self.dns_persist_achall_wildcard,
+            self.dns_persist_achall_long,
         ]
         self.responses: list[challenges.ChallengeResponse] = []
         for achall in self.achalls:
@@ -147,6 +149,8 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                 assert achall.validation_domain_name(achall.identifier.value) in args[0]
             else:
                 assert achall.validation(achall.account_key) in args[0]
+            if achall == self.dns_persist_achall_long:
+                assert "WARNING: Because the above DNS record's value is longer than 255 bytes" in args[0]
             assert kwargs['wrap'] is False
 
     def test_cleanup(self):
@@ -169,23 +173,26 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             else:
                 assert 'CERTBOT_TOKEN' not in os.environ
 
+
     def test_auth_hint_hook(self):
         self.config.manual_auth_hook = '/bin/true'
-        assert self.auth.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A]) == \
-            'The Certificate Authority failed to verify the DNS TXT records and challenge ' \
-            'files created by the --manual-auth-hook. Ensure that this hook is functioning ' \
-            'correctly and that it waits a sufficient duration of time for DNS propagation. ' \
-            'Refer to "certbot --help manual" and the Certbot User Guide.'
+        for dns_achall in [acme_util.DNS01_A, acme_util.DNS_PERSIST_01_A]:
+            assert self.auth.auth_hint([dns_achall, acme_util.HTTP01_A]) == \
+                'The Certificate Authority failed to verify the DNS TXT records and challenge ' \
+                'files created by the --manual-auth-hook. Ensure that this hook is functioning ' \
+                'correctly and that it waits a sufficient duration of time for DNS propagation. ' \
+                'Refer to "certbot --help manual" and the Certbot User Guide.'
         assert self.auth.auth_hint([acme_util.HTTP01_A]) == \
             'The Certificate Authority failed to verify the challenge files created by the ' \
             '--manual-auth-hook. Ensure that this hook is functioning correctly. Refer to ' \
             '"certbot --help manual" and the Certbot User Guide.'
 
     def test_auth_hint_no_hook(self):
-        assert self.auth.auth_hint([acme_util.DNS01_A, acme_util.HTTP01_A]) == \
-            'The Certificate Authority failed to verify the manually created DNS TXT records ' \
-            'and challenge files. Ensure that you created these in the correct location, or ' \
-            'try waiting longer for DNS propagation on the next attempt.'
+        for dns_achall in [acme_util.DNS01_A, acme_util.DNS_PERSIST_01_A]:
+            assert self.auth.auth_hint([dns_achall, acme_util.HTTP01_A]) == \
+                'The Certificate Authority failed to verify the manually created DNS TXT records ' \
+                'and challenge files. Ensure that you created these in the correct location, or ' \
+                'try waiting longer for DNS propagation on the next attempt.'
         assert self.auth.auth_hint([acme_util.HTTP01_A, acme_util.HTTP01_A, acme_util.HTTP01_A]) == \
             'The Certificate Authority failed to verify the manually created challenge files. ' \
             'Ensure that you created these in the correct location.'
