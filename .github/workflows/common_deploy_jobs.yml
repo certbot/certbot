@@ -4,7 +4,7 @@ on:
     inputs:
       dockerTag:
         required: true
-        description: 'docker tag to push to'
+        description: 'tag to assign docker images'
         type: string
       snapReleaseChannel:
         description: 'snap channel to release to'

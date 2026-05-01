@@ -24,4 +24,4 @@ jobs:
       with:
         # If we change the artifact's name, it should also be changed in tools/create_github_release.py
         name: changelog
-        path: "${{ runner.temp }}"
+        path: "${{ runner.temp }}/release_notes.md"
