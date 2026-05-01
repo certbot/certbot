@@ -8,15 +8,18 @@ permissions:
   actions: write
   checks: write
 
+env:
+  RUN_ID: "${{ inputs.run_id }}"
+
 jobs:
   rerun:
     runs-on: ubuntu-latest
     steps:
-      - name: rerun ${{ inputs.run_id }}
+      - name: rerun "$RUN_ID"
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           GH_DEBUG: api
         run: |
-          gh run watch ${{ inputs.run_id }} > /dev/null 2>&1
-          gh run rerun ${{ inputs.run_id }} --failed
+          gh run watch "$RUN_ID" > /dev/null 2>&1
+          gh run rerun "$RUN_ID" --failed

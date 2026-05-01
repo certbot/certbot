@@ -10,8 +10,18 @@ on:
         description: 'snap channel to release to'
         required: true
         type: string
+    secrets:
+      SNAPCRAFTCFG:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
 permissions:
   contents: read
+
+env:
+  DOCKER_TAG: "${{ inputs.dockerTag }}"
+  SNAP_RELEASE_CHANNEL: "${{ inputs.snapReleaseChannel }}"
 
 jobs:
   # This job relies on credentials used to publish the Certbot snaps. This
@@ -68,7 +78,7 @@ jobs:
       run: |-
         export SNAPCRAFT_STORE_CREDENTIALS="${{ secrets.SNAPCRAFTCFG }}"
         for SNAP_FILE in snap/*.snap; do
-          tools/retry.sh eval snapcraft upload --release=${{ inputs.snapReleaseChannel }} "${SNAP_FILE}"
+          tools/retry.sh eval snapcraft upload --release="${SNAP_RELEASE_CHANNEL}" "${SNAP_FILE}"
         done
       shell: bash
   publish_snap_invalid:
@@ -123,7 +133,7 @@ jobs:
         username: "${{ vars.DOCKERHUB_USERNAME }}"
         password: "${{ secrets.DOCKERHUB_TOKEN }}"
     - name: Deploy the Docker images by architecture
-      run: tools/docker/deploy_images.sh ${{ inputs.dockerTag }} ${{ matrix.DOCKER_ARCH }}
+      run: tools/docker/deploy_images.sh "$DOCKER_TAG" ${{ matrix.DOCKER_ARCH }}
       shell: bash
   publish_docker_multiarch:
     name: Publish docker multiarch
@@ -141,5 +151,5 @@ jobs:
         username: "${{ vars.DOCKERHUB_USERNAME }}"
         password: "${{ secrets.DOCKERHUB_TOKEN }}"
     - name: Deploy the Docker multiarch manifests
-      run: tools/docker/deploy_manifests.sh ${{ inputs.dockerTag }} all
+      run: tools/docker/deploy_manifests.sh "$DOCKER_TAG" all
       shell: bash
