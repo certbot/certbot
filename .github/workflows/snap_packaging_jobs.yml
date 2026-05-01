@@ -124,7 +124,7 @@ jobs:
       uses: actions/upload-artifact@v7.0.0
       with:
         name: snaps_${{ env.SNAP_ARCH }}
-        path: "${{ runner.temp }}"
+        path: "${{ runner.temp }}/*.snap"
   snap_run:
     name: Test certbot ${{ matrix.arch-name }}
     needs:

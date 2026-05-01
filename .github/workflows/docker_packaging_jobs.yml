@@ -43,14 +43,11 @@ jobs:
       shell: bash
     # If the name of the tar file or artifact changes, the deploy stage will
     # also need to be updated.
-    - name: Prepare Docker artifact
-      run: mv images.tar ${{ runner.temp }}
-      shell: bash
     - name: Store Docker artifact
       uses: actions/upload-artifact@v7.0.0
       with:
         name: docker_${{ matrix.DOCKER_ARCH }}
-        path: "${{ runner.temp }}"
+        path: "${{ github.workspace }}/images.tar"
   docker_test:
     name: Test ${{ matrix.DOCKER_ARCH }}
     needs:
