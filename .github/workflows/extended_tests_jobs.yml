@@ -1,6 +1,13 @@
 name: Extended tests jobs
 on:
   workflow_call:
+    secrets:
+      AWS_TEST_FARM_PEM:
+        required: false
+      AWS_ACCESS_KEY_ID:
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        required: false
 permissions:
   contents: read
 
@@ -45,4 +52,7 @@ jobs:
       PYTHON_VERSION: "${{ matrix.PYTHON_VERSION }}"
       TOXENV: "${{ matrix.TOXENV }}"
       IMAGE_NAME: ubuntu-22.04
-    secrets: inherit
+    secrets:
+      AWS_TEST_FARM_PEM: "${{ secrets.AWS_TEST_FARM_PEM }}"
+      AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"

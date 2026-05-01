@@ -10,6 +10,14 @@ on:
         type: string
       PIP_USE_PEP517:
         type: string
+    secrets:
+      AWS_TEST_FARM_PEM:
+        required: false
+      AWS_ACCESS_KEY_ID:
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        required: false
+
 permissions:
   contents: read
 
