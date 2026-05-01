@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       dockerTag:
-        description: 'docker tag to push to'
+        description: 'tag to assign docker images'
         type: string
 permissions:
   contents: read
@@ -16,9 +16,6 @@ jobs:
     name: Build ${{ matrix.DOCKER_ARCH }}
     runs-on:
       - ${{ matrix.run-on }}
-    # The default timeout of 60 minutes is a little low for compiling
-    # cryptography on ARM architectures.
-    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
