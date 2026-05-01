@@ -1,0 +1,80 @@
+# Nightly pipeline running each day for main.
+name: Nightly build
+on:
+  schedule:
+  - cron: 30 4 * * *
+  workflow_dispatch:
+
+jobs:
+  # The first four jobs could be grouped in a separate workflow, but the github actions UI
+  # is much nicer if they are instead listed explicitly here.
+  standard_tests_jobs:
+    name: Standard tests
+    permissions:
+      contents: read
+    uses: "./.github/workflows/standard_tests_jobs.yml"
+  extended_tests_jobs:
+    name: Extended tests
+    permissions:
+      contents: read
+    uses: "./.github/workflows/extended_tests_jobs.yml"
+    secrets:
+      AWS_TEST_FARM_PEM: "${{ secrets.AWS_TEST_FARM_PEM }}"
+      AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+  docker_packaging_jobs:
+    name: Docker packaging
+    permissions:
+      contents: read
+    uses: "./.github/workflows/docker_packaging_jobs.yml"
+    with:
+      dockerTag: nightly
+  snap_packaging_jobs:
+    name: Snap packaging
+    permissions:
+      contents: read
+    uses: "./.github/workflows/snap_packaging_jobs.yml"
+    with:
+      snapBuildTimeout: 19800
+    secrets:
+      LAUNCHPAD_CREDENTIALS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"
+  changelog_stage:
+    name: Create changelog
+    permissions:
+      contents: read
+    uses: "./.github/workflows/changelog_stage.yml"
+  nightly_deploy_stage:
+    name: Nightly deploy
+    permissions:
+      contents: read
+    needs:
+      - standard_tests_jobs
+      - extended_tests_jobs
+      - docker_packaging_jobs
+      - snap_packaging_jobs
+    uses: "./.github/workflows/common_deploy_jobs.yml"
+    secrets:
+      SNAPCRAFTCFG: "${{ secrets.SNAPCRAFTCFG }}"
+      DOCKERHUB_TOKEN: "${{ secrets.DOCKERHUB_TOKEN }}"
+    with:
+      dockerTag: nightly
+      snapReleaseChannel: edge
+  re-run:
+    needs:
+      - standard_tests_jobs
+      - extended_tests_jobs
+      - docker_packaging_jobs
+      - snap_packaging_jobs
+      - changelog_stage
+      - nightly_deploy_stage
+    if: failure() && fromJSON(github.run_attempt) < 3
+    permissions:
+      actions: write
+      checks: write
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          GH_DEBUG: api
+        run: gh workflow run rerun.yml -F run_id=${{ github.run_id }}
