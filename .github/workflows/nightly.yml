@@ -4,6 +4,10 @@ on:
   schedule:
   - cron: 30 4 * * *
   workflow_dispatch:
+  push:
+    branches:
+    # Add this temporarily to see these tests running; remove before merging!
+    - convert-nightly-pipeline
 
 jobs:
   # While many of these jobs could be grouped in a separate workflow, the github actions UI
