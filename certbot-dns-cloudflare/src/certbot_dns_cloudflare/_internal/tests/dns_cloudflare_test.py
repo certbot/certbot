@@ -32,7 +32,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY}, path)
 
         self.config = mock.MagicMock(cloudflare_credentials=path,
-                                     cloudflare_propagation_seconds=0)  # don't wait during tests
+                                     cloudflare_propagation_seconds=0,  # don't wait during tests
+                                     cloudflare_delegate_via=None)
 
         self.auth = Authenticator(self.config, "cloudflare")
 
@@ -96,6 +97,50 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         with pytest.raises(errors.PluginError):
             self.auth.perform([self.achall])
 
+    @test_util.patch_display_util()
+    def test_delegation_single_domain(self, unused_mock_get_utility):
+        self.config.cloudflare_delegate_via = 'acme-zone.org'
+        self.auth.perform([self.achall])
+        expected = [mock.call.add_txt_record('acme-zone.org', '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
+        assert expected == self.mock_client.mock_calls
+
+    @test_util.patch_display_util()
+    def test_delegation_multiple_domains(self, unused_mock_get_utility):
+        from certbot import achallenges
+        from certbot.tests import acme_util
+        from certbot.plugins.dns_test_common import KEY
+        # Create second challenge for different domain
+        achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.DNS01_P_2, domain='second-domain.com', account_key=KEY)
+        self.config.cloudflare_delegate_via = 'acme-zone.org'
+        self.auth.perform([self.achall, achall2])
+        expected = [
+            mock.call.add_txt_record('acme-zone.org', '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY),
+            mock.call.add_txt_record('acme-zone.org', '_acme-challenge.second-domain.com', mock.ANY, mock.ANY)
+        ]
+        assert expected == self.mock_client.mock_calls
+
+    @test_util.patch_display_util()
+    def test_delegation_wildcard(self, unused_mock_get_utility):
+        from certbot import achallenges
+        from certbot.tests import acme_util
+        from certbot.plugins.dns_test_common import KEY
+        wildcard_achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.DNS01_P, domain='*.'+DOMAIN, account_key=KEY)
+        self.config.cloudflare_delegate_via = 'acme-zone.org'
+        self.auth.perform([wildcard_achall])
+        # Wildcard domain creates validation name with *.  - delegation zone is still used
+        expected = [mock.call.add_txt_record('acme-zone.org', '_acme-challenge.*.'+DOMAIN, mock.ANY, mock.ANY)]
+        assert expected == self.mock_client.mock_calls
+
+    def test_cleanup_with_delegation(self):
+        # _attempt_cleanup | pylint: disable=protected-access
+        self.auth._attempt_cleanup = True
+        # delegate_zone | pylint: disable=protected-access
+        self.auth.delegate_zone = 'acme-zone.org'
+        self.auth.cleanup([self.achall])
+        expected = [mock.call.del_txt_record('acme-zone.org', '_acme-challenge.'+DOMAIN, mock.ANY)]
+        assert expected == self.mock_client.mock_calls
 
 class CloudflareClientTest(unittest.TestCase):
     record_name = "foo"
