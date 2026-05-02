@@ -101,6 +101,7 @@ Authors
 * [Garrett Robinson](https://github.com/garrettr)
 * [Gene Wood](https://github.com/gene1wood)
 * [Geoffroy Doucet](https://www.geoffroydoucet.com)
+* [George Melikov](https://github.com/gmelikov)
 * [Gian Carlo Pace](https://github.com/gicappa)
 * [Gilles Pietri](https://github.com/gilou)
 * [Giovanni Pellerano](https://github.com/evilaliv3)
