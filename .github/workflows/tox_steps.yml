@@ -1,0 +1,68 @@
+name: Tox steps
+on:
+  workflow_call:
+    inputs:
+      PYTHON_VERSION:
+        type: string
+      IMAGE_NAME:
+        type: string
+      TOXENV:
+        type: string
+      PIP_USE_PEP517:
+        type: string
+permissions:
+  contents: read
+
+jobs:
+  tox_all:
+    name: ${{ inputs.TOXENV }} ${{ inputs.IMAGE_NAME }}
+    runs-on:
+      - "${{ inputs.IMAGE_NAME }}"
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
+    # We run brew update because we've seen attempts to install an older version
+    # of a package fail. See
+    # https://github.com/actions/virtual-environments/issues/3165.
+    #
+    # We untap homebrew/core and homebrew/cask and unset HOMEBREW_NO_INSTALL_FROM_API (which
+    # is maybe set by the CI macOS env) because GitHub has been having issues, making these jobs
+    # fail on git clones: https://github.com/orgs/Homebrew/discussions/4612.
+    - name: Install MacOS dependencies
+      if: runner.os == 'macOS'
+      run: |-
+        unset HOMEBREW_NO_INSTALL_FROM_API
+        brew untap homebrew/core homebrew/cask
+        brew update
+        brew install augeas
+        BREW_PREFIX="$(brew --prefix)"
+        CFLAGS="$CFLAGS -I$BREW_PREFIX/include -L$BREW_PREFIX/lib"
+        echo "CFLAGS=$CFLAGS" >> "$GITHUB_ENV"
+      shell: bash
+    - name: Install Linux dependencies
+      if: runner.os == 'Linux'
+      run: |-
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          libaugeas-dev \
+          nginx-light
+        sudo systemctl stop nginx
+        sudo sysctl net.ipv4.ip_unprivileged_port_start=0
+      shell: bash
+    - uses: actions/setup-python@v6.2.0
+      with:
+        python-version: "${{ inputs.PYTHON_VERSION }}"
+    - name: Install runtime dependencies
+      run: |-
+        python3 tools/pip_install.py tox
+      shell: bash
+    - name: Run tox
+      env:
+        PIP_USE_PEP517: "${{ inputs.PIP_USE_PEP517 }}"
+        TOXENV: "${{ inputs.TOXENV }}"
+      run: |-
+        env
+        python3 -m tox run
+      shell: bash

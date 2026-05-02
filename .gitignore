@@ -68,3 +68,7 @@ snapcraft.cfg
 
 # macOS files
 .DS_Store
+
+# azure workflow migration
+.env.local
+tmp

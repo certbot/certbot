@@ -6,7 +6,6 @@ import logging
 from types import ModuleType
 import typing
 from typing import Any
-from typing import Literal
 from typing import Optional
 from typing import Union
 import warnings
@@ -307,7 +306,7 @@ def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
 
 def dump_cryptography_chain(
     chain: list[x509.Certificate],
-    encoding: Literal[Encoding.PEM, Encoding.DER] = Encoding.PEM,
+    encoding: Encoding = Encoding.PEM,
 ) -> bytes:
     """Dump certificate chain into a bundle.
 
@@ -321,6 +320,8 @@ def dump_cryptography_chain(
     """
     # XXX: returns empty string when no chain is available, which
     # shuts up RenewableCert, but might not be the best solution...
+    if encoding not in (Encoding.PEM, Encoding.DER):
+        raise ValueError("Encoding must be PEM or DER")
 
     def _dump_cert(cert: x509.Certificate) -> bytes:
         return cert.public_bytes(encoding)
