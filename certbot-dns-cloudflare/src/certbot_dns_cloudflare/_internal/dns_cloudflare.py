@@ -3,7 +3,9 @@ import logging
 import warnings
 from typing import Any
 from typing import Callable
+from typing import Literal
 from typing import Optional
+from typing import TypedDict
 
 # cloudflare 4.x includes a pydantic v1 compatibility shim that emits a
 # UserWarning on Python 3.14+.  Suppress it here so that this internal-detail
@@ -127,12 +129,16 @@ class _CloudflareClient:
 
         zone_id = self._find_zone_id(domain)
 
+        data: _RecordData = {
+            'type': 'TXT',
+            'name': record_name,
+            'content': record_content,
+            'ttl': record_ttl,
+        }
+
         try:
-            logger.debug('Attempting to add record to zone %s: %s', zone_id,
-                         {'type': 'TXT', 'name': record_name,
-                          'content': record_content, 'ttl': record_ttl})
-            self.cf.dns.records.create(zone_id=zone_id, type='TXT', name=record_name,
-                                       content=record_content, ttl=record_ttl)
+            logger.debug('Attempting to add record to zone %s: %s', zone_id, data)
+            self.cf.dns.records.create(zone_id=zone_id, **data)
         except cloudflare.APIStatusError as e:
             code = _cf_error_code(e)
             hint = None
@@ -281,6 +287,15 @@ class _CloudflareClient:
             return records[0].id
         logger.debug('Unable to find TXT record.')
         return None
+
+
+class _RecordData(TypedDict):
+    """Offers type hints for dictionaries of Cloudflare API parameters."""
+
+    type: Literal['TXT']
+    name: str
+    content: str
+    ttl: int
 
 
 def _cf_error_code(e: cloudflare.APIStatusError) -> int | None:

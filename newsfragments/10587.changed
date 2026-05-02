@@ -1,0 +1,1 @@
+certbot now requires version 1.7+ of the library distro and certbot-dns-cloudflare requires 4.0+ of the Cloudflare Python library.
