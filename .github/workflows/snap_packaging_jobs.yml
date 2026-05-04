@@ -112,7 +112,7 @@ jobs:
         LAUNCHPAD_CREDS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"
       run: |-
         git config --global user.email "github-actions[bot]"
-        git config --global user.name ""41898282+github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "41898282+github-actions[bot]@users.noreply.github.com"
         mkdir -p ~/.local/share/snapcraft/
         echo "$LAUNCHPAD_CREDS" > ~/.local/share/snapcraft/launchpad-credentials
         python3 tools/snap/build_remote.py ALL --archs "$SNAP_ARCH" --timeout "$SNAP_BUILD_TIMEOUT"
