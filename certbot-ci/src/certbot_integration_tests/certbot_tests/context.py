@@ -45,24 +45,29 @@ class IntegrationTestsContext:
         self.manual_dns_persist_cleanup_hook = self.generate_dns_cleanup_hook('_validation-persist')
 
     def generate_dns_auth_hook(self, challenge_subdomain: str, fail_on_subdomain: bool) -> str:
-        """Generates a python one-liner script which sets a DNS challenge TXT record challtestsrv URL,
-        and optionally fails if the subdomain starts with the word "fail" to simulate a faulty script"""
-        script_lines = ['import os', 'import requests', 'import json']
+        """Generates a python one-liner script which sets a DNS challenge TXT record challtestsrv
+        URL, and optionally fails if the subdomain starts with the word "fail" to simulate a faulty
+        script"""
+        lines = ['import os', 'import requests', 'import json']
         if fail_on_subdomain:
-            script_lines.append("assert not os.environ.get('CERTBOT_DOMAIN').startswith('fail')")
-        script_lines.append(f"data = {{'host':'{challenge_subdomain}.{{0}}.'.format("
-                            "os.environ.get('CERTBOT_DOMAIN')), 'value':"
-                            "os.environ.get('CERTBOT_VALIDATION')}")
-        script_lines.append(f"request = requests.post('{self.challtestsrv_url}/set-txt', data=json.dumps(data))")
-        script_lines.append("request.raise_for_status()")
-        script = '; '.join(script_lines)
+            lines.append("assert not os.environ.get('CERTBOT_DOMAIN').startswith('fail')")
+        lines.append(f"data = {{'host':'{challenge_subdomain}.{{0}}.'.format("
+                      "os.environ.get('CERTBOT_DOMAIN')), 'value':"
+                      "os.environ.get('CERTBOT_VALIDATION')}")
+        lines.append(f"request = requests.post('{self.challtestsrv_url}/set-txt', "
+                      "data=json.dumps(data))")
+        lines.append("request.raise_for_status()")
+        script = '; '.join(lines)
         return f'{sys.executable} -c "{script}"'
 
     def generate_dns_cleanup_hook(self, challenge_subdomain: str) -> str:
-        """Generates a python one-liner script which cleans up the TXT record made by `generate_dns_auth_hook`"""
+        """Generates a python one-liner script which cleans up the TXT record made by
+        `generate_dns_auth_hook`"""
         script_lines = ['import os', 'import requests', 'import json']
-        script_lines.append(f"data = {{'host':'{challenge_subdomain}.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN'))}}")
-        script_lines.append(f"request = requests.post('{self.challtestsrv_url}/clear-txt', data=json.dumps(data))")
+        script_lines.append(f"data = {{'host':'{challenge_subdomain}.{{0}}.'"
+                             ".format(os.environ.get('CERTBOT_DOMAIN'))}}")
+        script_lines.append(f"request = requests.post('{self.challtestsrv_url}/clear-txt', "
+                             "data=json.dumps(data))")
         script_lines.append("request.raise_for_status()")
         script = '; '.join(script_lines)
         return f'{sys.executable} -c "{script}"'
