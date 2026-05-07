@@ -206,6 +206,22 @@ def test_manual_dns_auth(context: IntegrationTestsContext) -> None:
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
 
 
+def test_manual_dns_persist_auth(context: IntegrationTestsContext) -> None:
+    """Test the DNS-PERSIST-01 challenge using manual plugin."""
+    certname = context.get_domain('dns-persist')
+    context.certbot([
+        '-a', 'manual', '-d', certname, '--preferred-challenges', 'dns-persist',
+        'run', '--cert-name', certname,
+        '--manual-auth-hook', context.manual_dns_persist_auth_hook,
+        '--manual-cleanup-hook', context.manual_dns_persist_cleanup_hook,
+        '--deploy-hook', misc.echo('deploy', context.hook_probe),
+    ])
+
+    assert_hook_execution(context.hook_probe, 'deploy')
+    assert_saved_deploy_hook(context.config_dir, certname)
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+
+
 def test_certonly(context: IntegrationTestsContext) -> None:
     """Test the certonly verb on certbot."""
     context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname')])
