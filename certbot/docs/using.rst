@@ -248,45 +248,71 @@ of the hostname for which you want a certificate issued, prepended by a
 subdomain (either ``_acme-challenge`` or ``_validation-persist``, depending on
 the challenge).
 
-For example, when performing the ``dns`` challenge for the domain
-``example.com``, the zone entry file to succeed the challenge might look like:
+To perform a ``dns`` challenge with the manual plugin, you'd invoke Certbot like this:
+
+::
+
+        certbot certonly --preferred-challenges dns -d example.com --manual
+
+The CA would then provide Certbot with a single-use validation token, which you (or
+your auth hook script) would then use to create a TXT record at the subdomain
+``_acme-challenge``, like this:
 
 ::
 
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
-This validation string is only valid for this challenge, and the CA validates
-it, the TXT record can be removed.
+This validation token is only valid for this challenge, and once the CA
+validates it, the TXT record can be removed.
 
-On the other hand, the ``dns-persist`` challenge works a bit differently. After
-initiating the challenge, the manual plugin will ask you to make a DNS TXT
-record like this:
+The ``dns-persist`` challenge is different, and allows you to create a single
+long-lived DNS record for certificate issuance and renewals. To perform a
+``dns-persist`` challenge with the manual plugin, you'd invoke Certbot like
+this:
 
 ::
 
-        _validation-persist.example.com. IN TXT "authority.example; accounturi=https://ca.example/acct/123"
+        certbot certonly --preferred-challenges dns-persist -d example.com --manual
 
-Once made, this TXT record can remain active indefinitely for future
-certificate issuances with the CA.
+Afterward, you (or your auth hook script) will be prompted to create a TXT record like this:
+
+::
+
+        __validation-persist.example.com. IN TXT "authority.example; accounturi=https://ca.example/acct/123"
+
+This record can persist indefinitely, and as long as it's available, any future
+certificate issuances at that subdomain will automatically be approved by the
+CA. As such, ``dns-persist`` allows for easy automated certificate renewals.
+
+However, because Certbot's manual plugin requires manual intervention unless an
+auth hook script is provided, fully automated renewals with ``dns-persist``
+requires some sort of dummy auth hook, like this:
+
+::
+
+        certbot certonly --preferred-challenges dns-persist-01 -d example.com --manual --manual-auth-hook=/bin/true
 
 The ``dns-persist`` challenge type also supports the issuance of wildcard
-certificates: if the manual plugin detects a wildcard domain, you will be
-asked to add the appropriate ``policy=wildcard`` record for the parent
-fully-qualified domain name (FQDN).
+certificates. If the manual plugin detects that you're issuing a certificate for
+a wildcard domain (e.g. ``*.example.com``), you (or your auth hook) will be
+instructed to add ``policy=wildcard`` to the TXT record for the wildcard's
+parent domain (e.g. ``example.com``).
 
 .. _manual-renewal:
 
 **Renewal with the manual plugin**
 
-Certificates created using ``--manual`` **do not** support automatic renewal unless
-combined with an `authentication hook script <#hooks>`_  via ``--manual-auth-hook``
-to automatically set up the required HTTP and/or TXT challenges. In the case of a
-certificate issued via the ``dns-persist`` challenge, once the DNS TXT record is
-live, no further action is needed and thus your authentication script doesn't
-need to perform any additional actions.
+Certificates created using ``--manual`` only support automatic renewal with the
+``dns-persist`` challenge, or when combined with an `authentication hook script
+<#hooks>`_ via ``--manual-auth-hook`` to automatically set up the required HTTP
+and/or TXT challenges.
 
-If you can use one of the other plugins_ which support autorenewal to create
-your certificate, doing so is highly recommended.
+If your certificate was issued via the ``dns-persist`` challenge, automated renewal
+is possible by providing a dummy auth hook, for example:
+
+::
+
+        certbot certonly --preferred-challenges dns-persist-01 -d example.com --manual --manual-auth-hook=/bin/true
 
 To manually renew a certificate using ``--manual`` without hooks, repeat the same
 ``certbot --manual`` command you used to create the certificate originally. As this
