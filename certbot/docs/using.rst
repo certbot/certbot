@@ -278,7 +278,7 @@ Afterward, you (or your auth hook script) will be prompted to create a TXT recor
 
 ::
 
-        __validation-persist.example.com. IN TXT "authority.example; accounturi=https://ca.example/acct/123"
+        _validation-persist.example.com. IN TXT "authority.example; accounturi=https://ca.example/acct/123"
 
 This record can persist indefinitely, and as long as it's available, any future
 certificate issuances at that subdomain will automatically be approved by the
