@@ -86,7 +86,7 @@ manual_     Y    N    | Obtain a certificate by manually following instructions 
 Under the hood, plugins use one of several ACME protocol challenges_ to
 prove you control a domain. The challenge options are http-01_ (which uses port 80),
 and the two DNS-based challenges: dns-01_, or dns-persist-01_ (which both
-require configuration of a DNS server on port 53, though that's often not the
+require configuration of a DNS server on port 53, though that may not be the
 same machine as your webserver). A few plugins support more than one challenge
 type, in which case you can choose one with ``--preferred-challenges``.
 
