@@ -242,7 +242,7 @@ specific content in the ``/.well-known/acme-challenge/`` directory directly
 in the top-level directory (“web root”) containing the files served by your
 webserver. In essence it's the same as the webroot_ plugin, but not automated.
 
-When using the ``dns`` or ``dns-persist` challenges, ``certbot`` will ask you to
+When using the ``dns`` or ``dns-persist`` challenges, ``certbot`` will ask you to
 place a TXT DNS record with specific contents under the domain name consisting
 of the hostname for which you want a certificate issued, prepended by a
 subdomain (either ``_acme-challenge`` or ``_validation-persist``, depending on
