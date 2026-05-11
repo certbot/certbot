@@ -104,7 +104,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends snapd
         sudo snap install --classic snapcraft
-    - uses: actions/setup-python@v5.0.0
+    - uses: actions/setup-python@v6.2.0
       with:
         python-version: '3.12'
     - name: Build snaps
@@ -147,7 +147,7 @@ jobs:
       uses: actions/checkout@v6.0.2
       with:
         persist-credentials: false
-    - uses: actions/setup-python@v5.0.0
+    - uses: actions/setup-python@v6.2.0
       with:
         python-version: '3.12'
     - name: Install armhf dependencies
@@ -221,7 +221,7 @@ jobs:
       run: |-
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends snapd
-    - uses: actions/setup-python@v5.0.0
+    - uses: actions/setup-python@v6.2.0
       with:
         python-version: '3.12'
     - name: Retrieve Certbot snaps armhf
