@@ -17,6 +17,7 @@ from certbot import achallenges
 from certbot import configuration
 from certbot import errors
 from certbot import interfaces
+from certbot import util
 from certbot._internal import error_handler
 from certbot._internal.account import Account
 from certbot.display import util as display_util
@@ -338,25 +339,30 @@ class AuthHandler:
         if config.verbose_count > 0:
             msg = []
             http01_achalls = {}
-            dns01_achalls = {}
+            dns_achalls = {}
             for achall in achalls:
                 if isinstance(achall.chall, challenges.HTTP01):
                     http01_achalls[achall.chall.uri(achall.identifier.value)] = (
                         achall.validation(achall.account_key) + "\n"
                     )
                 if isinstance(achall.chall, challenges.DNS01):
-                    dns01_achalls[achall.validation_domain_name(achall.identifier.value)] = (
+                    dns_achalls[achall.validation_domain_name(achall.identifier.value)] = (
                         achall.validation(achall.account_key) + "\n"
+                    )
+                if isinstance(achall.chall, challenges.DNSPersist01):
+                    is_wildcard = util.is_wildcard_domain(achall.identifier.value)
+                    dns_achalls[achall.validation_domain_name(achall.identifier.value)] = (
+                        achall.get_validation_rdata(is_wildcard) + "\n"
                     )
             if http01_achalls:
                 msg.append("The following URLs should be accessible from the "
                            "internet and return the value mentioned:\n")
                 for uri, key_authz in http01_achalls.items():
                     msg.append(f"URL: {uri}\nExpected value: {key_authz}")
-            if dns01_achalls:
+            if dns_achalls:
                 msg.append("The following FQDNs should return a TXT resource "
                            "record with the value mentioned:\n")
-                for fqdn, key_authz_hash in dns01_achalls.items():
+                for fqdn, key_authz_hash in dns_achalls.items():
                     msg.append(f"FQDN: {fqdn}\nExpected value: {key_authz_hash}")
             return "\n" + "\n".join(msg)
         else:
