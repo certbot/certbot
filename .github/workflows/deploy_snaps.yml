@@ -1,4 +1,4 @@
-name: Snap deploy jobs
+name: Deploy snaps
 on:
   workflow_call:
     inputs:
