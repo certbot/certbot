@@ -221,6 +221,14 @@ def test_manual_dns_persist_auth(context: IntegrationTestsContext) -> None:
     assert_saved_deploy_hook(context.config_dir, certname)
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
+    # test renewal with a no-op auth hook, as per our docs
+    context.certbot([
+        'renew', '--cert-name', certname, '--authenticator', 'manual',
+        '--manual-auth-hook', '/bin/true'
+    ])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+
 
 def test_certonly(context: IntegrationTestsContext) -> None:
     """Test the certonly verb on certbot."""
