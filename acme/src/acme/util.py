@@ -13,12 +13,10 @@ def is_wildcard_domain(domain: str) -> bool:
     """"Is domain a wildcard domain?
 
     :param domain: domain to check
-    :type domain: `bytes` or `str`
+    :type domain: `str`
 
     :returns: True if domain is a wildcard, otherwise, False
     :rtype: bool
 
     """
-    if isinstance(domain, str):
-        return domain.startswith("*.")
-    return domain.startswith(b"*.")
+    return domain.startswith("*.")
