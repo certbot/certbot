@@ -44,15 +44,15 @@ jobs:
       snapBuildTimeout: 19800
     secrets:
       LAUNCHPAD_CREDENTIALS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"
-  changelog_stage:
+  create_changelog:
     name: Create changelog
     permissions:
       contents: read
-    uses: "./.github/workflows/changelog_stage.yml"
+    uses: "./.github/workflows/create_changelog.yml"
   ############################
   ####     deploy jobs     ###
   ############################
-  docker_deploy_stage:
+  docker_deploy_jobs:
     name: Deploy docker images
     permissions:
       contents: read
@@ -60,12 +60,12 @@ jobs:
       - standard_tests_jobs
       - extended_tests_jobs
       - docker_packaging_jobs
-    uses: "./.github/workflows/docker_deploy_jobs.yml"
+    uses: "./.github/workflows/deploy_docker_images.yml"
     secrets:
       DOCKERHUB_TOKEN: "${{ secrets.DOCKERHUB_TOKEN }}"
     with:
       dockerTag: nightly
-  snap_deploy_stage:
+  snap_deploy_jobs:
     name: Deploy snaps
     permissions:
       contents: read
@@ -73,7 +73,7 @@ jobs:
       - standard_tests_jobs
       - extended_tests_jobs
       - snap_packaging_jobs
-    uses: "./.github/workflows/snap_deploy_jobs.yml"
+    uses: "./.github/workflows/deploy_snaps.yml"
     secrets:
       SNAPCRAFTCFG: "${{ secrets.SNAPCRAFTCFG }}"
     with:
@@ -87,9 +87,9 @@ jobs:
       - extended_tests_jobs
       - docker_packaging_jobs
       - snap_packaging_jobs
-      - changelog_stage
-      - docker_deploy_stage
-      - snap_deploy_stage
+      - create_changelog
+      - docker_deploy_jobs
+      - snap_deploy_jobs
     if: failure() && fromJSON(github.run_attempt) < 3
     permissions:
       actions: write

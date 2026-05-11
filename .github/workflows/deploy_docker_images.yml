@@ -1,4 +1,4 @@
-name: Docker deploy jobs
+name: Deploy docker images
 on:
   workflow_call:
     inputs:
