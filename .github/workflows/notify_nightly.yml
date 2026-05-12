@@ -51,7 +51,7 @@ jobs:
                     "short": true
                   }
                 ],
-                "pretext": "Run <https://github.com/certbot/actions/runs/${{ github.run_id }}|${{ github.run_id }}> failed",
+                "pretext": "Run <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.run_id }}> failed",
                 "mrkdwn_in": [
                   "pretext"
                 ],
