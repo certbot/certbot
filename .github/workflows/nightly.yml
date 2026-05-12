@@ -86,6 +86,7 @@ jobs:
   ####      rerun job      ###
   ############################
   re-run:
+    name: Re-run
     needs:
       - standard_tests_jobs
       - extended_tests_jobs
@@ -110,6 +111,7 @@ jobs:
   ####       notify       ###
   ###########################
   notify:
+    name: Notify
     needs:
       - re-run
     # Returns true when any previous step of a job fails. If you have a chain of dependent
