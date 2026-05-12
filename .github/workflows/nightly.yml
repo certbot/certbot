@@ -4,6 +4,10 @@ on:
   schedule:
   - cron: 30 4 * * *
   workflow_dispatch:
+  push:
+    branches:
+      # Add this temporarily to see these tests running; remove before merging!
+    - convert-nightly-pipeline
 
 jobs:
   # While many of these jobs could be grouped in a separate workflow, the github actions UI
@@ -15,12 +19,16 @@ jobs:
     name: Standard tests
     permissions:
       contents: read
-    uses: "./.github/workflows/standard_tests_jobs.yml"
+    steps:
+      - run: exit 1
+        shell: bash
   extended_tests_jobs:
     name: Extended tests
     permissions:
       contents: read
-    uses: "./.github/workflows/extended_tests_jobs.yml"
+    steps:
+      - run: exit 0
+        shell: bash
     secrets:
       AWS_TEST_FARM_PEM: "${{ secrets.AWS_TEST_FARM_PEM }}"
       AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
@@ -32,14 +40,18 @@ jobs:
     name: Docker packaging
     permissions:
       contents: read
-    uses: "./.github/workflows/docker_packaging_jobs.yml"
+    steps:
+      - run: exit 0
+        shell: bash
     with:
       dockerTag: nightly
   snap_packaging_jobs:
     name: Snap packaging
     permissions:
       contents: read
-    uses: "./.github/workflows/snap_packaging_jobs.yml"
+    steps:
+      - run: exit 0
+        shell: bash
     with:
       snapBuildTimeout: 19800
     secrets:
@@ -60,7 +72,9 @@ jobs:
       - standard_tests_jobs
       - extended_tests_jobs
       - docker_packaging_jobs
-    uses: "./.github/workflows/deploy_docker_images.yml"
+    steps:
+      - run: exit 0
+        shell: bash
     secrets:
       DOCKERHUB_TOKEN: "${{ secrets.DOCKERHUB_TOKEN }}"
     with:
@@ -73,7 +87,9 @@ jobs:
       - standard_tests_jobs
       - extended_tests_jobs
       - snap_packaging_jobs
-    uses: "./.github/workflows/deploy_snaps.yml"
+    steps:
+      - run: exit 0
+        shell: bash
     secrets:
       SNAPCRAFTCFG: "${{ secrets.SNAPCRAFTCFG }}"
     with:
