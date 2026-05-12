@@ -1,0 +1,59 @@
+name: Notify nightly failure
+
+on:
+  workflow_call:
+    secrets:
+      MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK:
+        required: true
+
+permissions:
+  actions: read
+
+jobs:
+  notify_mattermost:
+    name: Notify mattermost
+    runs-on: ubuntu-latest
+    steps:
+    - name: Calculate duration
+      shell: bash
+      id: duration
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+      run: |-
+        START=$(gh run view "$GITHUB_RUN_ID" --json startedAt --jq ".startedAt")
+        START_SECONDS=$(date -d"$START" +%s)
+        NOW_SECONDS=$(date +%s)
+        DURATION=$(date -d@"$((NOW_SECONDS - START_SECONDS))"  -u +%H:%M:%S)
+        echo "result = $DURATION"
+        echo "result=$DURATION" >> "$GITHUB_OUTPUT"
+    - name: Send to mattermost
+      uses: mattermost/action-mattermost-notify@b7d118e440bf2749cd18a4a8c88e7092e696257a
+      with:
+        MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK }}
+        PAYLOAD: |-
+          {
+            "attachments": [
+              {
+                "color": "danger",
+                "fields": [
+                  null,
+                  {
+                    "title": "Duration",
+                    "value": "${{ steps.duration.outputs.result }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Workflow",
+                    "value": "nightly",
+                    "short": true
+                  }
+                ],
+                "pretext": "Run <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.run_id }}> failed",
+                "mrkdwn_in": [
+                  "pretext"
+                ],
+                "fallback": "Run ${{ github.run_id }} failed https://github.com/certbot/actions/runs/${{ github.run_id }}"
+              }
+            ]
+          }
