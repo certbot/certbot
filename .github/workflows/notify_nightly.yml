@@ -1,0 +1,57 @@
+name: Notify nightly failure
+
+on:
+  workflow_call:
+    secrets:
+      MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK:
+        required: true
+
+permissions: {}
+jobs:
+  notify_mattermost:
+    name: Notify mattermost
+    runs-on: ubuntu-latest
+    steps:
+    # we pin this action to a version tested and audited by certbot's
+    # maintainers for extra security. the full hash is used as doing so is
+    # recommended by zizmor
+    - name: Calculate duration
+      shell: bash
+      id: duration
+      run: |-
+        ms=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2026-03-10" \
+          "/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/timing" | jq '.run_duration_ms')
+        DURATION==$(date -d@"$(("$ms" / 1000))"  -u +%H:%M:%S)
+        echo "result=$DURATION" >> "$GITHUB_OUTPUT"
+    - name: Send to mattermost
+      uses: mattermost/action-mattermost-notify@b7d118e440bf2749cd18a4a8c88e7092e696257a
+      with:
+        MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK }}
+        PAYLOAD: |-
+          {
+            "attachments": [
+              {
+                "color": "danger",
+                "fields": [
+                  null,
+                  {
+                    "title": "Duration",
+                    "value": "${{ steps.duration.outputs.result }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Workflow",
+                    "value": "nightly",
+                    "short": true
+                  }
+                ],
+                "pretext": "Run <https://github.com/certbot/actions/runs/$GITHUB_RUN_ID|$GITHUB_RUN_ID> failed",
+                "mrkdwn_in": [
+                  "pretext"
+                ],
+                "fallback": "Run $GITHUB_RUN_ID failed https://github.com/certbot/actions/runs/$GITHUB_RUN_ID"
+              }
+            ]
+          }

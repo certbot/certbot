@@ -101,3 +101,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_DEBUG: api
         run: gh workflow run rerun.yml -F run_id=${{ github.run_id }}
+        shell: bash
+  ###########################
+  ####       notify       ###
+  ###########################
+  notify:
+    needs:
+      - re-run
+    # Returns true when any previous step of a job fails. If you have a chain of dependent
+    # jobs, failure() returns true if any ancestor job fails.
+    if: failure() && needs.re-run.result == 'skipped'
+    uses: "./.github/workflows/notify_nightly.yml"
+    permissions: {}
+    secrets:
+      MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK: "${{ secrets.MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK }}"
