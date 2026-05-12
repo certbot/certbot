@@ -7,7 +7,7 @@ on:
   push:
     branches:
       # Add this temporarily to see these tests running; remove before merging!
-    - convert-nightly-pipeline
+    - nightly-convert-nightly-pipeline
 
 jobs:
   # While many of these jobs could be grouped in a separate workflow, the github actions UI
