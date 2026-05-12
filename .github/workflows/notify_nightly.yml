@@ -23,11 +23,13 @@ jobs:
       shell: bash
       id: duration
       run: |-
-        ms=$(gh api \
+        MILLIS=$(gh api \
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2026-03-10" \
           "/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/timing" | jq '.run_duration_ms')
-        DURATION=$(date -d@"$(("$ms" / 1000))"  -u +%H:%M:%S)
+        echo "ms = $MILLIS"
+        DURATION=$(date -d@"$(("$MILLIS" / 1000))"  -u +%H:%M:%S)
+        echo "result = $DURATION"
         echo "result=$DURATION" >> "$GITHUB_OUTPUT"
     - name: Send to mattermost
       uses: mattermost/action-mattermost-notify@b7d118e440bf2749cd18a4a8c88e7092e696257a
