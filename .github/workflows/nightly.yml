@@ -118,6 +118,7 @@ jobs:
     # jobs, failure() returns true if any ancestor job fails.
     if: failure() && (needs.re-run.result == 'skipped' || needs.re-run.result == 'failure')
     uses: "./.github/workflows/notify_nightly.yml"
-    permissions: {}
+    permissions:
+      actions: read
     secrets:
       MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK: "${{ secrets.MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK }}"

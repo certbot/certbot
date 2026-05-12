@@ -6,11 +6,15 @@ on:
       MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK:
         required: true
 
-permissions: {}
+permissions:
+  actions: read
+
 jobs:
   notify_mattermost:
     name: Notify mattermost
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
     # we pin this action to a version tested and audited by certbot's
     # maintainers for extra security. the full hash is used as doing so is
