@@ -114,7 +114,7 @@ jobs:
       - re-run
     # Returns true when any previous step of a job fails. If you have a chain of dependent
     # jobs, failure() returns true if any ancestor job fails.
-    if: failure() && needs.re-run.result == 'skipped'
+    if: failure() && (needs.re-run.result == 'skipped' || needs.re-run.result == 'failure')
     uses: "./.github/workflows/notify_nightly.yml"
     permissions: {}
     secrets:
