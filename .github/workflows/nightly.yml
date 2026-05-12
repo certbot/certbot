@@ -31,10 +31,6 @@ jobs:
     steps:
       - run: exit 0
         shell: bash
-    secrets:
-      AWS_TEST_FARM_PEM: "${{ secrets.AWS_TEST_FARM_PEM }}"
-      AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
-      AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
   ###########################
   ####   packaging jobs   ###
   ###########################
@@ -46,8 +42,6 @@ jobs:
     steps:
       - run: exit 0
         shell: bash
-    with:
-      dockerTag: nightly
   snap_packaging_jobs:
     name: Snap packaging
     permissions:
@@ -56,10 +50,6 @@ jobs:
     steps:
       - run: exit 0
         shell: bash
-    with:
-      snapBuildTimeout: 19800
-    secrets:
-      LAUNCHPAD_CREDENTIALS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"
   create_changelog:
     name: Create changelog
     permissions:
@@ -80,10 +70,6 @@ jobs:
     steps:
       - run: exit 0
         shell: bash
-    secrets:
-      DOCKERHUB_TOKEN: "${{ secrets.DOCKERHUB_TOKEN }}"
-    with:
-      dockerTag: nightly
   snap_deploy_jobs:
     name: Deploy snaps
     permissions:
@@ -96,10 +82,6 @@ jobs:
     steps:
       - run: exit 0
         shell: bash
-    secrets:
-      SNAPCRAFTCFG: "${{ secrets.SNAPCRAFTCFG }}"
-    with:
-      snapReleaseChannel: edge
   ############################
   ####      rerun job      ###
   ############################
