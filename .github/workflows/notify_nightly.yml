@@ -13,8 +13,6 @@ jobs:
   notify_mattermost:
     name: Notify mattermost
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
     # we pin this action to a version tested and audited by certbot's
     # maintainers for extra security. the full hash is used as doing so is
@@ -22,6 +20,9 @@ jobs:
     - name: Calculate duration
       shell: bash
       id: duration
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
       run: |-
         START=$(gh run view "$GITHUB_RUN_ID" --json startedAt --jq ".startedAt")
         START_SECONDS=$(date -d"$START" +%s)
