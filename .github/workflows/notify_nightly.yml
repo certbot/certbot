@@ -23,12 +23,10 @@ jobs:
       shell: bash
       id: duration
       run: |-
-        MILLIS=$(gh api \
-          -H "Accept: application/vnd.github+json" \
-          -H "X-GitHub-Api-Version: 2026-03-10" \
-          "/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/timing" | jq '.run_duration_ms')
-        echo "ms = $MILLIS"
-        DURATION=$(date -d@"$(("$MILLIS" / 1000))"  -u +%H:%M:%S)
+        START=$(gh run view "$GITHUB_RUN_ID" --json startedAt --jq ".startedAt")
+        START_SECONDS=$(date -d"$START" +%s)
+        NOW_SECONDS=$(date +%s)
+        DURATION=$(date -d@"$((NOW_SECONDS - START_SECONDS))"  -u +%H:%M:%S)
         echo "result = $DURATION"
         echo "result=$DURATION" >> "$GITHUB_OUTPUT"
     - name: Send to mattermost
