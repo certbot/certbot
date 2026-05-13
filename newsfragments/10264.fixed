@@ -1,0 +1,1 @@
+The nginx plugin now parses configs that place a comment between a block header and its opening `{` (e.g. `location = /resume\n# note\n{ ... }`) without raising a parse error or silently dropping the comment.
