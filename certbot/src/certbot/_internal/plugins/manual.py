@@ -112,11 +112,6 @@ permitted by DNS standards.)
             help='Path or command to execute for the cleanup script')
 
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
-        if self.config.noninteractive_mode and not self.conf('auth-hook'):
-            raise errors.PluginError(
-                'An authentication script must be provided with --{0} when '
-                'using the manual plugin non-interactively.'.format(
-                    self.option_name('auth-hook')))
         self._validate_hooks()
 
     def _validate_hooks(self) -> None:
@@ -178,6 +173,13 @@ permitted by DNS standards.)
         responses = []
         last_dns_achall = 0
         for i, achall in enumerate(achalls):
+            # only dns-persist-01 challenges should be both non-interactive and have no auth hook
+            if not isinstance(achall.chall, challenges.DNSPersist01) \
+                and self.config.noninteractive_mode and not self.conf('auth-hook'):
+                raise errors.PluginError(
+                    'An authentication script must be provided with --{0} when '
+                    'using the manual plugin non-interactively.'.format(
+                        self.option_name('auth-hook')))
             if isinstance(achall.chall, (challenges.DNS01, challenges.DNSPersist01)):
                 last_dns_achall = i
         for i, achall in enumerate(achalls):

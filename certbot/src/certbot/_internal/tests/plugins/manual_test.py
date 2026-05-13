@@ -60,10 +60,14 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         from certbot._internal.plugins.manual import Authenticator
         self.auth = Authenticator(self.config, name='manual')
 
-    def test_prepare_no_hook_noninteractive(self):
+    def test_perform_no_hook_noninteractive(self):
         self.config.noninteractive_mode = True
         with pytest.raises(errors.PluginError):
-            self.auth.prepare()
+            _ = self.auth.perform(self.achalls)
+        dns_persist_achalls = [achall for achall in self.achalls \
+            if isinstance(achall.chall, challenges.DNSPersist01)]
+        assert len(dns_persist_achalls) == 3
+        _ = self.auth.perform(dns_persist_achalls)
 
     def test_prepare_bad_hook(self):
         self.config.manual_auth_hook = os.path.abspath(os.sep)  # is / on UNIX
