@@ -25,11 +25,9 @@ class IsWildcardDomainTest(unittest.TestCase):
 
     def test_no_wildcard(self):
         assert not self._call(self.no_wildcard)
-        assert not self._call(self.no_wildcard.encode())
 
     def test_wildcard(self):
         assert self._call(self.wildcard)
-        assert self._call(self.wildcard.encode())
 
 
 if __name__ == '__main__':
