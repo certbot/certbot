@@ -13,7 +13,7 @@ import pytest
 
 import certbot
 from certbot import errors
-from certbot._internal.storage import ALL_FOUR
+from certbot._internal.storage import ALL_FOUR, relevant_values
 from certbot._internal import san
 from certbot.compat import filesystem
 from certbot.compat import os
@@ -110,6 +110,13 @@ class RelevantValuesTest(unittest.TestCase):
     def test_with_required_profile(self):
         self.values["required_profile"] = "shortlived"
         expected_relevant_values = self.values.copy()
+        assert self._call(self.values) == expected_relevant_values
+
+    def test_manual_hooks(self):
+        self.values["manual_setup_hook"] = '"# setup'
+        self.values["manual_auth_hook"] = '"# auth'
+        expected_relevant_values = self.values.copy()
+        del expected_relevant_values["manual_setup_hook"]
         assert self._call(self.values) == expected_relevant_values
 
 class BaseRenewableCertTest(test_util.ConfigTestCase):

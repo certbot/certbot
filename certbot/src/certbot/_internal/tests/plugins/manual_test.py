@@ -49,8 +49,8 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             # initialization.
         self.config = mock.MagicMock(
             http01_port=0, manual_auth_hook=None, manual_cleanup_hook=None,
-            noninteractive_mode=False, validate_hooks=False,
-            config_dir=os.path.join(self.tempdir, "config_dir"),
+            manual_setup_hook=None, noninteractive_mode=False,
+            validate_hooks=False, config_dir=os.path.join(self.tempdir, "config_dir"),
             work_dir=os.path.join(self.tempdir, "work_dir"),
             backup_dir=os.path.join(self.tempdir, "backup_dir"),
             temp_checkpoint_dir=os.path.join(
@@ -83,49 +83,55 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                          [challenges.HTTP01, challenges.DNS01, challenges.DNSPersist01]
 
     def test_script_perform(self):
-        self.config.manual_auth_hook = (
-            '{0} -c "'
-            'from certbot.compat import os;'
-            'print(os.environ.get(\'CERTBOT_DOMAIN\'));'
-            'print(os.environ.get(\'CERTBOT_IDENTIFIER\'));'
-            'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
-            'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));'
-            'print(os.environ.get(\'CERTBOT_ALL_DOMAINS\'));'
-            'print(os.environ.get(\'CERTBOT_ALL_IDENTIFIERS\'));'
-            'print(os.environ.get(\'CERTBOT_REMAINING_CHALLENGES\'));"'
-            .format(sys.executable))
-        dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}'.format(
+        script_template = textwrap.dedent("""
+            {0} -c "from certbot.compat import os
+            print(os.environ.get(\'CERTBOT_DOMAIN\'))
+            print(os.environ.get(\'CERTBOT_IDENTIFIER\'))
+            print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'))
+            print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'))
+            print(os.environ.get(\'CERTBOT_ALL_DOMAINS\'))
+            print(os.environ.get(\'CERTBOT_ALL_IDENTIFIERS\'))
+            print(os.environ.get(\'CERTBOT_REMAINING_CHALLENGES\'))
+            print('{1}')"
+        """)
+        self.config.manual_auth_hook = script_template.format(sys.executable, "auth_hook")
+        self.config.manual_setup_hook = script_template.format(sys.executable, "setup_hook")
+        dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}'.format(
             self.dns_achall.identifier.value,
             self.dns_achall.identifier.value,
             'notoken',
             self.dns_achall.validation(self.dns_achall.account_key),
             ','.join(achall.identifier.value for achall in self.achalls),
             ','.join(achall.identifier.value for achall in self.achalls),
-            len(self.achalls) - self.achalls.index(self.dns_achall) - 1)
-        http_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}'.format(
+            len(self.achalls) - self.achalls.index(self.dns_achall) - 1,
+            "auth_hook")
+        http_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}'.format(
             self.http_achall.identifier.value,
             self.http_achall.identifier.value,
             self.http_achall.chall.encode('token'),
             self.http_achall.validation(self.http_achall.account_key),
             ','.join(achall.identifier.value for achall in self.achalls),
             ','.join(achall.identifier.value for achall in self.achalls),
-            len(self.achalls) - self.achalls.index(self.http_achall) - 1)
-        dns_persist_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}'.format(
+            len(self.achalls) - self.achalls.index(self.http_achall) - 1,
+            "auth_hook")
+        dns_persist_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}'.format(
             self.dns_persist_achall.identifier.value,
             self.dns_persist_achall.identifier.value,
             'notoken',
             self.dns_persist_achall.get_validation_rdata(False),
             ','.join(achall.identifier.value for achall in self.achalls),
             ','.join(achall.identifier.value for achall in self.achalls),
-            len(self.achalls) - self.achalls.index(self.dns_persist_achall) - 1)
-        dns_persist_wildcard_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}'.format(
+            len(self.achalls) - self.achalls.index(self.dns_persist_achall) - 1,
+            "setup_hook")
+        dns_persist_wildcard_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}'.format(
             self.dns_persist_achall_wildcard.identifier.value,
             self.dns_persist_achall_wildcard.identifier.value,
             'notoken',
             self.dns_persist_achall_wildcard.get_validation_rdata(True),
             ','.join(achall.identifier.value for achall in self.achalls),
             ','.join(achall.identifier.value for achall in self.achalls),
-            len(self.achalls) - self.achalls.index(self.dns_persist_achall_wildcard) - 1)
+            len(self.achalls) - self.achalls.index(self.dns_persist_achall_wildcard) - 1,
+            "setup_hook")
 
         assert self.auth.perform(self.achalls) == self.responses
         assert self.auth.env[self.dns_achall]['CERTBOT_AUTH_OUTPUT'] == \
@@ -164,6 +170,8 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.auth.perform(self.achalls)
 
         for achall in self.achalls:
+            if isinstance(achall.chall, challenges.DNSPersist01):
+                continue
             self.auth.cleanup([achall])
             assert os.environ['CERTBOT_AUTH_OUTPUT'] == 'foo'
             assert os.environ['CERTBOT_DOMAIN'] == achall.identifier.value
@@ -176,7 +184,6 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                     achall.chall.encode('token')
             else:
                 assert 'CERTBOT_TOKEN' not in os.environ
-
 
     def test_auth_hint_hook(self):
         self.config.manual_auth_hook = '/bin/true'

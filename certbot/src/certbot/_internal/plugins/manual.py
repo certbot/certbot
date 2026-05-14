@@ -110,13 +110,15 @@ permitted by DNS standards.)
             help='Path or command to execute for the authentication script')
         add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
+        add('setup-hook',
+            help='Path or command to execute just this once. Only used for dns-persist challenges')
 
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
         self._validate_hooks()
 
     def _validate_hooks(self) -> None:
         if self.config.validate_hooks:
-            for name in ('auth-hook', 'cleanup-hook'):
+            for name in ('auth-hook', 'cleanup-hook', 'setup-hook'):
                 hook = self.conf(name)
                 if hook is not None:
                     hook_prefix = self.option_name(name)[:-len('-hook')]
@@ -168,22 +170,54 @@ permitted by DNS standards.)
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01, challenges.DNS01, challenges.DNSPersist01]
 
+    def _check_hook_achall_match(self, achalls: list[achallenges.AnnotatedChallenge]) -> None:
+        """Checks whether the user has provided the appropriate hook type for the given list of
+        challenges, and emits a helpful warning if not. Raises an exception if we're in
+        non-interactive mode, have at least 1 non-DNS-PERSIST-01 challenge, and no auth hook
+        was provided."""
+        num_dns_persist_achalls = sum(1 for achall in achalls \
+            if isinstance(achall.chall, challenges.DNSPersist01))
+        num_other_achalls = len(achalls) - num_dns_persist_achalls
+        auth_hook_provided = self.conf('auth-hook')
+        setup_hook_provided = self.conf('setup-hook')
+        if num_other_achalls > 0 and self.config.noninteractive_mode and not auth_hook_provided:
+            raise errors.PluginError(
+                'An authentication script must be provided with --{0} when using the manual '
+                'plugin non-interactively on HTTP-01 or DNS-01 challenges.'.format(
+                    self.option_name('auth-hook')))
+        if num_dns_persist_achalls == 0 and setup_hook_provided:
+            msg = ('A setup script was provided with --{0}, but because no DNS-PERSIST-01 '
+                'challenges are being attempted, it will be ignored.').format(
+                        self.option_name('setup-hook'))
+            if not auth_hook_provided:
+                msg += ' Did you mean to use --{0} instead?'.format(
+                    self.option_name('auth-hook'))
+            logger.warning(msg)
+        if num_other_achalls == 0 and auth_hook_provided:
+            msg = ('An authentication script was provided with --{0}, but because only '
+                'DNS-PERSIST-01 challenges are being attempted, it will be ignored.').format(
+                    self.option_name('auth-hook'))
+            if not setup_hook_provided:
+                msg += ' Did you mean to use --{0} instead?'.format(
+                    self.option_name('setup-hook'))
+            logger.warning(msg)
+
+    def _achall_has_hook(self, achall: achallenges.AnnotatedChallenge) -> bool:
+        if isinstance(achall.chall, challenges.DNSPersist01):
+            return self.conf('setup-hook')
+        else:
+            return self.conf('auth-hook')
+
     def perform(self, achalls: list[achallenges.AnnotatedChallenge]
                 ) -> list[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
+        self._check_hook_achall_match(achalls)
         responses = []
         last_dns_achall = 0
         for i, achall in enumerate(achalls):
-            # only dns-persist-01 challenges should be both non-interactive and have no auth hook
-            if not isinstance(achall.chall, challenges.DNSPersist01) \
-                and self.config.noninteractive_mode and not self.conf('auth-hook'):
-                raise errors.PluginError(
-                    'An authentication script must be provided with --{0} when '
-                    'using the manual plugin non-interactively.'.format(
-                        self.option_name('auth-hook')))
             if isinstance(achall.chall, (challenges.DNS01, challenges.DNSPersist01)):
                 last_dns_achall = i
         for i, achall in enumerate(achalls):
-            if self.conf('auth-hook'):
+            if self._achall_has_hook(achall):
                 self._perform_achall_with_script(achall, achalls)
             else:
                 self._perform_achall_manually(achall, i == last_dns_achall)
@@ -222,7 +256,11 @@ permitted by DNS standards.)
         else:
             os.environ.pop('CERTBOT_TOKEN', None)
         os.environ.update(env)
-        _, out = self._execute_hook('auth-hook', identifier_value)
+        if isinstance(achall.chall, challenges.DNSPersist01):
+            hook_name = 'setup-hook'
+        else:
+            hook_name = 'auth-hook'
+        _, out = self._execute_hook(hook_name, identifier_value)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
@@ -265,6 +303,8 @@ permitted by DNS standards.)
     def cleanup(self, achalls: Iterable[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
         if self.conf('cleanup-hook'):
             for achall in achalls:
+                if isinstance(achall.chall, challenges.DNSPersist01):
+                    continue
                 env = self.env.pop(achall)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
