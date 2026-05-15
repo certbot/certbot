@@ -5,6 +5,7 @@ on:
     inputs:
       run_id:
         required: true
+        description: github.run_id of workflow to rerun
 permissions:
   actions: write
   checks: write
