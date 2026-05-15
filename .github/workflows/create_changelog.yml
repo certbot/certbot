@@ -9,7 +9,7 @@ jobs:
     name: Changelog
     runs-on: ubuntu-latest
     steps:
-    # If we change the output filename from `release_notes.md`, it should also be changed in tools/create_github_release.py
+    # If we change the output filename from `release_notes.md`, it should also be changed in .github/workflows/release.yml
     - name: checkout
       uses: actions/checkout@v6.0.2
       with:
@@ -22,6 +22,6 @@ jobs:
     - name: Publish changelog
       uses: actions/upload-artifact@v7.0.0
       with:
-        # If we change the artifact's name, it should also be changed in tools/create_github_release.py
+        # If we change the artifact's name, it should also be changed in .github/workflows/release.yml
         name: changelog
         path: "${{ runner.temp }}/release_notes.md"

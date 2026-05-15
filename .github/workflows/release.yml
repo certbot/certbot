@@ -1,0 +1,133 @@
+# Release pipeline to run our full test suite, build artifacts, and deploy them
+# for GitHub release tags.
+name: Release
+run-name: Release Certbot ${{ github.ref_name }}
+on:
+  push:
+    tags:
+    - v*
+
+permissions:
+  contents: read
+
+jobs:
+  # While many of these jobs could be grouped in a separate workflow, the github actions UI
+  # is much nicer if they are instead listed explicitly here.
+  ###########################
+  ####    testing jobs    ###
+  ###########################
+  standard_tests_jobs:
+    name: Standard tests
+    uses: "./.github/workflows/standard_tests_jobs.yml"
+  extended_tests_jobs:
+    name: Extended tests
+    uses: "./.github/workflows/extended_tests_jobs.yml"
+    secrets:
+      AWS_TEST_FARM_PEM: "${{ secrets.AWS_TEST_FARM_PEM }}"
+      AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+  ###########################
+  ####   packaging jobs   ###
+  ###########################
+  docker_packaging_jobs:
+    name: Docker packaging
+    uses: "./.github/workflows/docker_packaging_jobs.yml"
+    with:
+      dockerTag: "${{ github.ref_name }}"
+  snap_packaging_jobs:
+    name: Snap packaging
+    uses: "./.github/workflows/snap_packaging_jobs.yml"
+    with:
+      snapBuildTimeout: 19800
+    secrets:
+      LAUNCHPAD_CREDENTIALS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"
+  create_changelog:
+    name: Create changelog
+    uses: "./.github/workflows/create_changelog.yml"
+  ############################
+  ####     deploy jobs     ###
+  ############################
+  docker_deploy_jobs:
+    name: Deploy docker images
+    needs:
+      - standard_tests_jobs
+      - extended_tests_jobs
+      - docker_packaging_jobs
+    uses: "./.github/workflows/deploy_docker_images.yml"
+    secrets:
+      DOCKERHUB_TOKEN: "${{ secrets.DOCKERHUB_TOKEN }}"
+    with:
+      dockerTag: "${{ github.ref_name }}"
+  snap_deploy_jobs:
+    name: Deploy snaps
+    needs:
+      - standard_tests_jobs
+      - extended_tests_jobs
+      - snap_packaging_jobs
+    uses: "./.github/workflows/deploy_snaps.yml"
+    secrets:
+      SNAPCRAFTCFG: "${{ secrets.SNAPCRAFTCFG }}"
+    with:
+      snapReleaseChannel: beta
+  create_github_release:
+    name: Create GitHub release
+    needs:
+      - standard_tests_jobs
+      - extended_tests_jobs
+      - docker_packaging_jobs
+      - snap_packaging_jobs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+      - name: Download changelog
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: changelog
+          path: "${{ github.workspace }}"
+      - name: GitHub release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |-
+          gh release create "$TAG" "${GITHUB_WORKSPACE}/packages/"{*.tar.gz,SHA256SUMS*} \
+            --title "Certbot ${TAG#v}" \
+            --notes-file "$GITHUB_WORKSPACE/release_notes.md"
+
+  ###########################
+  ####       notify       ###
+  ###########################
+  notify_success:
+    name: Notify success
+    needs:
+      - docker_deploy_jobs
+      - snap_deploy_jobs
+      - create_github_release
+    uses: "./.github/workflows/notify_release.yml"
+    permissions:
+      actions: read
+      contents: read
+    with:
+      success: 'True'
+    secrets:
+      MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK: "${{ secrets.MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK }}"
+  notify_failure:
+    name: Notify failure
+    needs:
+      - docker_deploy_jobs
+      - snap_deploy_jobs
+      - create_github_release
+    if: ${{ failure() }}
+    uses: "./.github/workflows/notify_release.yml"
+    permissions:
+      actions: read
+      contents: read
+    with:
+      success: 'False'
+    secrets:
+      MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK: "${{ secrets.MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK }}"
