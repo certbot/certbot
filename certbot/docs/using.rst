@@ -327,6 +327,7 @@ dns-dnsmanager_         Y    N    DNS Authentication for dnsmanager.io
 standalone-nfq_         Y    N    HTTP Authentication that works with any webserver (Linux only)
 dns-solidserver_        Y    N    DNS Authentication using SOLIDserver (EfficientIP)
 dns-stackit_            Y    N    DNS Authentication using STACKIT DNS
+dns-ionos_              Y    N    DNS Authentication using IONOS DNS for IONOS-registered domains
 dns-ionos-cloud_        Y    N    DNS Authentication using IONOS Cloud DNS [#ionos-cloud]_
 dns-mijn-host_          Y    N    DNS Authentication using mijn.host DNS
 nginx-unit_             Y    Y    Automates obtaining and installing a certificate with Nginx Unit
@@ -364,6 +365,7 @@ dns-eurodns_            Y    N    DNS Authentication for EuroDNS
 .. _standalone-nfq: https://github.com/alexzorin/certbot-standalone-nfq
 .. _dns-solidserver: https://gitlab.com/charlyhong/certbot-dns-solidserver
 .. _dns-stackit: https://github.com/stackitcloud/certbot-dns-stackit
+.. _dns-ionos: https://github.com/dlenski/certbot-dns-ionos
 .. _dns-ionos-cloud: https://github.com/ionos-cloud/certbot-dns-ionos-cloud
 .. _dns-mijn-host: https://github.com/mijnhost/certbot-dns-mijn-host
 .. _nginx-unit: https://github.com/kea/certbot-nginx-unit
