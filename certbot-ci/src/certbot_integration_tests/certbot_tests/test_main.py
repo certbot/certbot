@@ -212,8 +212,7 @@ def test_manual_dns_persist_auth(context: IntegrationTestsContext) -> None:
     context.certbot([
         '-a', 'manual', '-d', certname, '--preferred-challenges', 'dns-persist',
         'run', '--cert-name', certname,
-        '--manual-auth-hook', context.manual_dns_persist_auth_hook,
-        '--manual-cleanup-hook', context.manual_dns_persist_cleanup_hook,
+        '--manual-setup-hook', context.manual_dns_persist_setup_hook,
         '--deploy-hook', misc.echo('deploy', context.hook_probe),
     ])
 
