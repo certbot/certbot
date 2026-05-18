@@ -1,0 +1,86 @@
+name: Deploy snaps
+on:
+  workflow_call:
+    inputs:
+      snapReleaseChannel:
+        description: 'snap channel to release to'
+        required: true
+        type: string
+    secrets:
+      SNAPCRAFTCFG:
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  SNAP_RELEASE_CHANNEL: "${{ inputs.snapReleaseChannel }}"
+
+jobs:
+  # This job relies on credentials used to publish the Certbot snaps. This
+  # credential file was created by running:
+  #
+  #   snapcraft logout
+  #   snapcraft export-login --channels=beta,edge snapcraft.cfg
+  #     (provide the shared snapcraft credentials when prompted)
+  #
+  # Then the contents of the file were added as a secret in Github
+  # with the name SNAPCRAFTCFG under the Secrets and Variables -> Actions
+  # section of the settings for the certbot organization.
+  #
+  # Revoking these credentials can be done by changing the password of the
+  # account used to generate the credentials. See
+  # https://forum.snapcraft.io/t/revoking-exported-credentials/19031 for more
+  # info.
+  publish_snap:
+    name: Publish snap
+    if: ${{ inputs.snapReleaseChannel == 'edge' || inputs.snapReleaseChannel == 'beta' }}
+    runs-on:
+      - 'ubuntu-24.04'
+    strategy:
+      fail-fast: false
+      matrix:
+        SNAP_ARCH: [amd64, armhf, arm64]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
+    - name: Install dependencies
+      run: |-
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends snapd
+        sudo snap install --classic snapcraft
+      shell: bash
+    - name: Retrieve Certbot snaps
+      if: ${{ matrix.SNAP_ARCH == 'armhf' }}
+      uses: actions/download-artifact@v8.0.1
+      with:
+        name: snaps_${{ matrix.SNAP_ARCH }}
+        path: "${{ github.workspace }}/snap"
+    - name: Retrieve Certbot snaps
+      if: ${{ matrix.SNAP_ARCH != 'armhf' }}
+      uses: actions/download-artifact@v8.0.1
+      with:
+        pattern: snap-*-${{ matrix.SNAP_ARCH }}
+        merge-multiple: true
+        path: "${{ github.workspace }}/snap"
+    - name: Display structure of downloaded files
+      run: ls -R "${{ github.workspace }}/snap"
+    - name: Publish to Snap store
+      run: |-
+        export SNAPCRAFT_STORE_CREDENTIALS="${{ secrets.SNAPCRAFTCFG }}"
+        for SNAP_FILE in snap/*.snap; do
+          tools/retry.sh eval snapcraft upload --release="${SNAP_RELEASE_CHANNEL}" "${SNAP_FILE}"
+        done
+      shell: bash
+  publish_snap_invalid:
+    # Fail instead of silently skipping snap release
+    name: Fail on invalid snapReleaseChannel
+    if: ${{ inputs.snapReleaseChannel != 'edge' && inputs.snapReleaseChannel != 'beta' }}
+    runs-on:
+      - 'ubuntu-latest'
+    steps:
+    - name: Fail
+      run: exit 1
+      shell: bash
