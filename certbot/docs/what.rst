@@ -15,7 +15,7 @@ someone in between you and the server you think you are talking to is able to in
 content.
 
 You can use Certbot to easily obtain and configure a free certificate from Let's Encrypt, a
-joint project of EFF, Mozilla, and many other sponsors.
+joint project of EFF, Mozilla, and many other sponsors, or any other ACME CA.
 
 Certificates and Lineages
 =========================
