@@ -43,7 +43,8 @@ class IntegrationTestsContext:
         self.manual_dns_auth_hook_allow_fail = self.generate_dns_auth_hook('_acme-challenge', False)
         self.manual_dns_cleanup_hook = self.generate_dns_cleanup_hook('_acme-challenge')
 
-        self.manual_dns_persist_setup_hook = self.generate_dns_auth_hook('_validation-persist', True)
+        self.manual_dns_persist_setup_hook = self.generate_dns_auth_hook(
+            '_validation-persist', True)
 
     def generate_dns_auth_hook(self, challenge_subdomain: str, fail_on_subdomain: bool) -> str:
         """Generates a python one-liner script which sets a DNS challenge TXT record challtestsrv
