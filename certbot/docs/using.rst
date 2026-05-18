@@ -375,7 +375,7 @@ dns-eurodns_            Y    N    DNS Authentication for EuroDNS
 .. _dns-hetzner-cloud: https://github.com/rolschewsky/certbot-dns-hetzner-cloud
 .. _dns-czechia: https://github.com/CZECHIA-COM/certbot-dns-czechia
 .. _dns-eurodns: https://pypi.org/project/certbot-dns-eurodns/
-.. [#ionos-cloud] This plugin used the name ``dns-ionos`` prior to version 2.0.0.
+.. [#ionos-cloud] This plugin was listed under the name ``dns-ionos`` prior to version 2.0.0.
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
