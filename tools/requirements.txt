@@ -194,7 +194,7 @@ types-setuptools==82.0.0.20260408 ; python_version >= "3.10" and python_version 
 typing-extensions==4.15.0 ; python_version >= "3.10" and python_version < "4.0"
 typing-inspection==0.4.2 ; python_version >= "3.10" and python_version < "4.0"
 uritemplate==4.2.0 ; python_version >= "3.10" and python_version < "4.0"
-urllib3==2.6.3 ; python_version >= "3.10" and python_version < "4.0"
+urllib3==2.7.0 ; python_version >= "3.10" and python_version < "4.0"
 uv==0.11.8 ; python_version >= "3.10" and python_version < "4.0"
 virtualenv==21.3.0 ; python_version >= "3.10" and python_version < "4.0"
 wcwidth==0.6.0 ; python_version >= "3.10" and python_version < "4.0"
