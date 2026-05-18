@@ -13,7 +13,7 @@ import pytest
 
 import certbot
 from certbot import errors
-from certbot._internal.storage import ALL_FOUR, relevant_values
+from certbot._internal.storage import ALL_FOUR
 from certbot._internal import san
 from certbot.compat import filesystem
 from certbot.compat import os
