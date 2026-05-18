@@ -18,6 +18,12 @@ HTTP01 = challenges.HTTP01(
     token=b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 DNS01 = challenges.DNS01(token=b"17817c66b60ce2e4012dfad92657527a")
 DNS01_2 = challenges.DNS01(token=b"cafecafecafecafecafecafe0feedbac")
+DNS_PERSIST_01 = challenges.DNSPersist01(
+    issuer_domain_names=('ca.example',),
+    account_uri='https://ca.example/acct/123')
+DNS_PERSIST_01_LONG = challenges.DNSPersist01(
+    issuer_domain_names=('ca.example',),
+    account_uri=f"https://ca.example/acct/{'a' * 256}")
 
 CHALLENGES = [HTTP01, DNS01]
 
@@ -40,8 +46,8 @@ def chall_to_challb(chall: challenges.Challenge, status: messages.Status) -> mes
 HTTP01_P = chall_to_challb(HTTP01, messages.STATUS_PENDING)
 DNS01_P = chall_to_challb(DNS01, messages.STATUS_PENDING)
 DNS01_P_2 = chall_to_challb(DNS01_2, messages.STATUS_PENDING)
-
-CHALLENGES_P = [HTTP01_P, DNS01_P]
+DNS_PERSIST_01_P = chall_to_challb(DNS_PERSIST_01, messages.STATUS_PENDING)
+DNS_PERSIST_01_LONG_P = chall_to_challb(DNS_PERSIST_01_LONG, messages.STATUS_PENDING)
 
 
 # AnnotatedChallenge objects
@@ -51,8 +57,12 @@ DNS01_A = auth_handler.challb_to_achall(DNS01_P, JWK, messages.Identifier(
     typ=messages.IDENTIFIER_FQDN, value="example.org"))
 DNS01_A_2 = auth_handler.challb_to_achall(DNS01_P_2, JWK, messages.Identifier(
     typ=messages.IDENTIFIER_FQDN, value="esimerkki.example.org"))
-
-ACHALLENGES = [HTTP01_A, DNS01_A]
+DNS_PERSIST_01_A = auth_handler.challb_to_achall(DNS_PERSIST_01_P, JWK,
+    messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="example.net"))
+DNS_PERSIST_01_LONG_A = auth_handler.challb_to_achall(DNS_PERSIST_01_LONG_P, JWK,
+    messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="example.net"))
+DNS_PERSIST_01_A_WILDCARD_A = auth_handler.challb_to_achall(DNS_PERSIST_01_P, JWK,
+    messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="*.example.net"))
 
 
 def gen_authzr(authz_status: messages.Status, domain: str, challs: Iterable[challenges.Challenge],
