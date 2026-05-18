@@ -7,7 +7,8 @@ on:
 
 jobs:
   # While many of these jobs could be grouped in a separate workflow, the github actions UI
-  # is much nicer if they are instead listed explicitly here.
+  # is much nicer if they are instead listed explicitly here. As a result, changes made here
+  # may need to be mirrored in .github/workflows/release.yml.
   ###########################
   ####    testing jobs    ###
   ###########################
