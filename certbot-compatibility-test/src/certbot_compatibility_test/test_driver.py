@@ -113,7 +113,10 @@ def _create_achalls(plugin: common.Proxy) -> list[achallenges.AnnotatedChallenge
                 challb = acme_util.chall_to_challb(
                     chall, messages.STATUS_PENDING)
                 achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-                    challb=challb, domain=domain, account_key=util.JWK)
+                    challb=challb,
+                    identifier=messages.Identifier(
+                        typ=messages.IDENTIFIER_FQDN, value=domain),
+                    account_key=util.JWK)
                 achalls.append(achall)
 
     return achalls
