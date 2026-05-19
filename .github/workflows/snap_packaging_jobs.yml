@@ -44,7 +44,7 @@ jobs:
         git config --global user.name "41898282+github-actions[bot]@users.noreply.github.com"
         mkdir -p ~/.local/share/snapcraft/
         echo "$LAUNCHPAD_CREDS" > ~/.local/share/snapcraft/launchpad-credentials
-        python3 tools/snap/build_remote.py ALL --archs "$SNAP_ARCH" --timeout "$SNAP_BUILD_TIMEOUT"
+        python3 tools/snap/build_remote.py certbot --archs "$SNAP_ARCH" --timeout "$SNAP_BUILD_TIMEOUT"
     - name: Flatten snaps layout
       run: |-
         mv *.snap ${{ runner.temp }}
