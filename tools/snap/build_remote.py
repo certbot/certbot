@@ -145,7 +145,11 @@ def _build_snap(
                     snap_path_list = glob.glob(join(workspace, f'{target}_*_{arch}.snap'))
                     assert len(snap_path_list) == 1
                     with open(snap_path_list[0], 'r') as f:
-                        if f.readline().rstrip() == "<!DOCTYPE html>":
+                        try:
+                            first_line = f.readline().rstrip()
+                        except UnicodeDecodeError:
+                            first_line = ''
+                        if first_line == "<!DOCTYPE html>":
                             failed_archs.add(arch)
                             print(f'The {target} {arch} snap file contains html instead of a snap')
                 dump_output = bool(failed_archs)
