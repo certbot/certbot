@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+>
+<head>
+  <title>Launchpad is temporarily unavailable</title>
+  <link
+    type="text/css" rel="stylesheet" media="screen, print"
+    href="https://launchpad.net/+icing/basic-error.css" />
+</head>
+<body>
+  <div class="page-center-wrap">
+    <div class="page-center">
+      <div class="page-center-content">
+        <div id="header">
+          <div class="graphic">
+            :(
+          </div>
+          <div class="content">
+            <!-- Before editing, please see
+                https://bugs.launchpad.net/bugs/475371, especially comment #2,
+                for details on this file. In particular, please maintain the
+                \r\n line endings, at least for the HTTP header lines. -->
+            <h1>Uh oh!</h1>
+            <h2>Something has gone wrong. We're sorry!</h2>
+            <p>
+              If we are in the middle of an update, Launchpad will be
+              back in a couple of minutes.  Otherwise, we are working to
+              fix the unexpected problems. Check
+              <a href="https://ubuntu.social/@launchpadstatus">@launchpadstatus@ubuntu.social</a>
+              on Mastodon for updates.
+            </p>
+            <p>
+              If the problem persists, let us know in
+              <a href="https://matrix.to/#/#launchpad:ubuntu.com"
+              >the #launchpad Matrix channel</a>.
+            </p>
+            <p class="sub">
+              Technically, the load balancer took too long to connect to
+              an application server.
+            </p>
+            <p><a href="javascript:window.location.reload()">Reload</a>
+              this page or try again in a few minutes</p>
+          </div>
+        </div>
+        <div id="footer">
+          <a href="https://launchpad.net/">
+            <img src="https://launchpad.net/@@/launchpad-logo-and-name.png"
+            width="100"
+            alt="Launchpad" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
