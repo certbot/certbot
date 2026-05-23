@@ -13,6 +13,7 @@ from typing import SupportsIndex
 from typing import Union
 
 from pyparsing import Combine
+from pyparsing import FollowedBy
 from pyparsing import Forward
 from pyparsing import Group
 from pyparsing import Literal
@@ -50,15 +51,29 @@ class RawNginxParser:
 
     token = paren_quote_extend | tokenchars | quoted
 
-    whitespace_token_group = space + token + ZeroOrMore(required_space + token) + space
+    # An nginx comment runs from '#' to the end of the line. `restOfLine` does
+    # not consume the trailing newline; the following `required_space` does.
+    comment = Literal('#') + restOfLine
+    # A separator between two tokens is whitespace, optionally interleaved with
+    # one or more comments. The `FollowedBy(token)` lookahead means a comment is
+    # only treated as inline when a real token follows it — otherwise we leave
+    # the `#` alone so existing fallback paths (e.g. comment-as-token in a block
+    # header) still parse. This lets a multi-line directive contain comment
+    # lines between its tokens (valid nginx), which the old grammar mis-parsed:
+    # an unbalanced `"` inside such a comment would be sucked up by the
+    # `multiline=True` quoted strings and run away across the rest of the file
+    # (issue #10598).
+    token_separator = required_space + ZeroOrMore(
+        comment + required_space + FollowedBy(token)
+    )
+    
+    whitespace_token_group = space + token + ZeroOrMore(token_separator + token) + space
     assignment = whitespace_token_group + semicolon
-
-    comment = space + Literal('#') + restOfLine
 
     block = Forward()
 
     # order matters! see issue 518, and also http { # server { \n}
-    contents = Group(comment) | Group(block) | Group(assignment)
+    contents = Group(space + comment) | Group(block) | Group(assignment)
 
     block_begin = Group(whitespace_token_group)
     block_innards = Group(ZeroOrMore(contents) + space).leave_whitespace()
