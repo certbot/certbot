@@ -66,7 +66,7 @@ class RawNginxParser:
     token_separator = required_space + ZeroOrMore(
         comment + required_space + FollowedBy(token)
     )
-    
+
     whitespace_token_group = space + token + ZeroOrMore(token_separator + token) + space
     assignment = whitespace_token_group + semicolon
 
