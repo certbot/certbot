@@ -84,6 +84,7 @@ Authors
 * [Eric Engestrom](https://github.com/1ace)
 * [Eric Rescorla](https://github.com/ekr)
 * [Eric Wustrow](https://github.com/ewust)
+* [Erik Morén](https://github.com/morre95)
 * [Erik Rose](https://github.com/erikrose)
 * [Eugene Kazakov](https://github.com/xgin)
 * [Fabian](https://github.com/faerbit)
@@ -306,3 +307,4 @@ Authors
 * [Zach Shepherd](https://github.com/zjs)
 * [陈三](https://github.com/chenxsan)
 * [Shahar Naveh](https://github.com/ShaharNaveh)
+
