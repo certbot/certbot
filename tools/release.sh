@@ -40,6 +40,13 @@ if [ -n "$SNAP_BUILD" ]; then
     exit 1
 fi
 
+if [ -n "$VIRTUAL_ENV" ]; then
+    echo "Deactivating venv..."
+    export PATH="${PATH#*:}"
+    hash -r 2> /dev/null
+    unset VIRTUAL_ENV
+fi
+
 export RELEASE_DIR="./releases"
 mv "$RELEASE_DIR" "$RELEASE_DIR.$(date +%s).bak" || true
 LOG_PATH="log"
