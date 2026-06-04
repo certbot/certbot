@@ -141,7 +141,7 @@ jobs:
         - arch-name: amd64
           run-on: ubuntu-24.04
         - arch-name: armhf
-          run-on: ubuntu-24.04-arm
+          run-on: ubuntu-26.04-arm
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
@@ -202,7 +202,7 @@ jobs:
         - arch-name: amd64
           run-on: ubuntu-24.04
         - arch-name: armhf
-          run-on: ubuntu-24.04-arm
+          run-on: ubuntu-26.04-arm
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
