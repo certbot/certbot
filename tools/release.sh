@@ -40,18 +40,6 @@ if [ -n "$SNAP_BUILD" ]; then
     exit 1
 fi
 
-if [ -n "$VIRTUAL_ENV" ]; then
-    if [[ "$PATH" != $VIRTUAL_ENV* ]]; then
-        echo "Unexpected PATH and VIRTUAL_ENV value. Please deactivate any"
-        echo "Python virtual environments and try running this script again."
-        exit 1
-    fi
-    echo "Deactivating venv..."
-    export PATH="${PATH#*:}"
-    hash -r 2> /dev/null
-    unset VIRTUAL_ENV
-fi
-
 export RELEASE_DIR="./releases"
 mv "$RELEASE_DIR" "$RELEASE_DIR.$(date +%s).bak" || true
 LOG_PATH="log"
