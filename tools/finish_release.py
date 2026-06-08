@@ -176,10 +176,34 @@ def fetch_version_number(major_version=None):
             return version
     raise ValueError('Release not found on Azure Pipelines!')
 
+def generate_community_forum_post(version: str):
+    print('Generating announcement text for community forum post')
+
+    cmd = f"gh release view v{version} --json body -t {{{{.body}}}}".split()
+
+    try:
+        process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, universal_newlines=True)
+    except (subprocess.CalledProcessError, OSError):
+        print("Generating announcement text failed.")
+        sys.exit(1)
+
+    changelog = process.stdout
+
+    print('Subject:')
+    print()
+    print(f'Certbot {version} Release')
+    print()
+    print('Contents:')
+    print()
+    print(f'Certbot {version} has just been released. The changelog for the release is:')
+    print()
+    print(changelog)
+
 def main(args):
     parsed_args = parse_args(args)
     version = fetch_version_number()
     promote_snaps(ALL_SNAPS, 'beta', version)
+    generate_community_forum_post(version)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
