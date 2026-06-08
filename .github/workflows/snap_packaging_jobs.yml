@@ -13,31 +13,31 @@ permissions:
   contents: read
 
 jobs:
-  gha_build_snap:
-    name: Build certbot ${{ matrix.build-for }}
-    runs-on: ${{ matrix.build-on }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - build-for: arm64
-          build-on: ubuntu-24.04-arm
-        - build-for: amd64
-          build-on: ubuntu-24.04
-    steps:
-      - name: checkout
-        uses: actions/checkout@v6.0.2
-        with:
-          persist-credentials: false
-      - uses: snapcore/action-build@v1.3.0
-        id: build
-        with:
-          snapcraft-args: "--build-for=${{ matrix.build-for }}"
-      - name: Store snap artifact
-        uses: actions/upload-artifact@v7.0.0
-        with:
-          name: snap-certbot-${{ matrix.build-for }}
-          path: ${{ steps.build.outputs.snap }}
+  # gha_build_snap:
+  #   name: Build certbot ${{ matrix.build-for }}
+  #   runs-on: ${{ matrix.build-on }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #       - build-for: arm64
+  #         build-on: ubuntu-24.04-arm
+  #       - build-for: amd64
+  #         build-on: ubuntu-24.04
+  #   steps:
+  #     - name: checkout
+  #       uses: actions/checkout@v6.0.2
+  #       with:
+  #         persist-credentials: false
+  #     - uses: snapcore/action-build@v1.3.0
+  #       id: build
+  #       with:
+  #         snapcraft-args: "--build-for=${{ matrix.build-for }}"
+  #     - name: Store snap artifact
+  #       uses: actions/upload-artifact@v7.0.0
+  #       with:
+  #         name: snap-certbot-${{ matrix.build-for }}
+  #         path: ${{ steps.build.outputs.snap }}
   generate_dns_list_matrix:
     name: List DNS package names
     runs-on: ubuntu-latest
@@ -52,38 +52,38 @@ jobs:
       run: |
         DNS_NAMES="$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')"
         echo "dns-dirs=$DNS_NAMES" >> "$GITHUB_OUTPUT"
-  gha_build_dns_snaps:
-    name: Build ${{ matrix.dns-dir }} ${{ matrix.build-for }}
-    needs: generate_dns_list_matrix
-    runs-on: ${{ matrix.build-on }}
-    strategy:
-      fail-fast: false
-      matrix:
-        dns-dir: ${{ fromJSON(needs.generate_dns_list_matrix.outputs.dns-dirs) }}
-        build-for: [arm64, amd64]
-        include:
-        - build-for: arm64
-          build-on: ubuntu-24.04-arm
-        - build-for: amd64
-          build-on: ubuntu-24.04
-    steps:
-      - name: checkout
-        uses: actions/checkout@v6.0.2
-        with:
-          persist-credentials: false
-      - name: generate dns snapcraft.yamls
-        run: |
-          tools/snap/generate_dnsplugins_all.sh # unnecessarily doing every file
-      - uses: snapcore/action-build@v1.3.0
-        id: build
-        with:
-          snapcraft-args: "--build-for=${{ matrix.build-for }}"
-          path: ${{ matrix.dns-dir }}
-      - name: Store snap artifact
-        uses: actions/upload-artifact@v7.0.0
-        with:
-          name: snap-${{ matrix.dns-dir }}-${{ matrix.build-for }}
-          path: ${{ steps.build.outputs.snap }}
+  # gha_build_dns_snaps:
+  #   name: Build ${{ matrix.dns-dir }} ${{ matrix.build-for }}
+  #   needs: generate_dns_list_matrix
+  #   runs-on: ${{ matrix.build-on }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       dns-dir: ${{ fromJSON(needs.generate_dns_list_matrix.outputs.dns-dirs) }}
+  #       build-for: [arm64, amd64]
+  #       include:
+  #       - build-for: arm64
+  #         build-on: ubuntu-24.04-arm
+  #       - build-for: amd64
+  #         build-on: ubuntu-24.04
+  #   steps:
+  #     - name: checkout
+  #       uses: actions/checkout@v6.0.2
+  #       with:
+  #         persist-credentials: false
+  #     - name: generate dns snapcraft.yamls
+  #       run: |
+  #         tools/snap/generate_dnsplugins_all.sh # unnecessarily doing every file
+  #     - uses: snapcore/action-build@v1.3.0
+  #       id: build
+  #       with:
+  #         snapcraft-args: "--build-for=${{ matrix.build-for }}"
+  #         path: ${{ matrix.dns-dir }}
+  #     - name: Store snap artifact
+  #       uses: actions/upload-artifact@v7.0.0
+  #       with:
+  #         name: snap-${{ matrix.dns-dir }}-${{ matrix.build-for }}
+  #         path: ${{ steps.build.outputs.snap }}
   launchpad_build_all:
     name: Build ${{ matrix.target }} armhf
     runs-on:
@@ -132,7 +132,7 @@ jobs:
   snap_run:
     name: Test certbot ${{ matrix.arch-name }}
     needs:
-    - gha_build_snap
+    # - gha_build_snap
     - launchpad_build_all
     runs-on:
       - ${{ matrix.run-on }}
@@ -140,10 +140,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - arch-name: arm64
-          run-on: ubuntu-24.04-arm
-        - arch-name: amd64
-          run-on: ubuntu-24.04
+        # - arch-name: arm64
+        #   run-on: ubuntu-24.04-arm
+        # - arch-name: amd64
+        #   run-on: ubuntu-24.04
         - arch-name: armhf
           run-on: ubuntu-24.04-arm
     steps:
@@ -185,8 +185,8 @@ jobs:
   snap_dns_run:
     name: Test DNS ${{ matrix.arch-name }}
     needs:
-    - gha_build_dns_snaps
-    - gha_build_snap
+    # - gha_build_dns_snaps
+    # - gha_build_snap
     - launchpad_build_all
     runs-on:
       - ${{ matrix.run-on }}
@@ -194,10 +194,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - arch-name: arm64
-          run-on: ubuntu-24.04-arm
-        - arch-name: amd64
-          run-on: ubuntu-24.04
+        # - arch-name: arm64
+        #   run-on: ubuntu-24.04-arm
+        # - arch-name: amd64
+        #   run-on: ubuntu-24.04
         - arch-name: armhf
           run-on: ubuntu-24.04-arm
     steps:
