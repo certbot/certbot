@@ -140,8 +140,8 @@ jobs:
           run-on: ubuntu-24.04-arm
         - arch-name: amd64
           run-on: ubuntu-24.04
-        - arch-name: armhf
-          run-on: ubuntu-24.04-arm
+        # - arch-name: armhf # temporarily turned off due to github's migration
+        #   run-on: ubuntu-24.04-arm
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
@@ -201,8 +201,8 @@ jobs:
           run-on: ubuntu-24.04-arm
         - arch-name: amd64
           run-on: ubuntu-24.04
-        - arch-name: armhf
-          run-on: ubuntu-24.04-arm
+        # - arch-name: armhf # temporarily turned off due to github's migration
+        #   run-on: ubuntu-24.04-arm
     steps:
     - name: checkout
       uses: actions/checkout@v6.0.2
