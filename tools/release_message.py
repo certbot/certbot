@@ -62,5 +62,5 @@ def get_content(requested_for: str, success: bool):
 
 random.seed()
 requested_for: str = sys.argv[1].rstrip()
-success: bool = eval(sys.argv[2].rstrip())
+success: bool = (sys.argv[2].rstrip().lower() == 'true')
 print(get_content(requested_for, success))
