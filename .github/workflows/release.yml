@@ -105,30 +105,25 @@ jobs:
   ###########################
   notify_success:
     name: Notify success
-    needs:
+    with:
+      success: 'True'
+    needs: &notify_needs
       - docker_deploy_jobs
       - snap_deploy_jobs
       - create_github_release
-    uses: "./.github/workflows/notify_release.yml"
-    permissions:
+    uses: &notify_uses
+      - "./.github/workflows/notify_release.yml"
+    permissions: &notify_permissions
       actions: read
       contents: read
-    with:
-      success: 'True'
-    secrets:
+    secrets: &notify_secrets
       MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK: "${{ secrets.MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK }}"
   notify_failure:
     name: Notify failure
-    needs:
-      - docker_deploy_jobs
-      - snap_deploy_jobs
-      - create_github_release
-    if: ${{ failure() }}
-    uses: "./.github/workflows/notify_release.yml"
-    permissions:
-      actions: read
-      contents: read
     with:
       success: 'False'
-    secrets:
-      MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK: "${{ secrets.MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK }}"
+    if: ${{ failure() }}
+    needs: *notify_needs
+    uses: *notify_uses
+    permissions: *notify_permissions
+    secrets: *notify_secrets
