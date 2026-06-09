@@ -42,6 +42,11 @@ if [ -n "$VIRTUAL_ENV" ]; then
     unset VIRTUAL_ENV
 fi
 
+if [ "$(git branch --show-current)" != "$RELEASE_BRANCH" ]; then
+    echo "Creating $RELEASE_BRANCH branch..."
+    git switch -c "$RELEASE_BRANCH"
+fi
+
 # If RELEASE_GPG_KEY isn't set, determine the key to use.
 if [ "$RELEASE_GPG_KEY" = "" ]; then
     TRUSTED_KEYS="
@@ -103,9 +108,6 @@ echo "Cloning into fresh copy at $root"  # clean repo = no artifacts
 git clone . $root
 git rev-parse HEAD
 cd $root
-if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
-    git branch -f "$RELEASE_BRANCH"
-fi
 git checkout "$RELEASE_BRANCH"
 
 # Update changelog. `--yes` automatically clears out older newsfragments,
