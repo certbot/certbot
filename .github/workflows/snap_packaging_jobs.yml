@@ -161,7 +161,7 @@ jobs:
         sudo apt-get update
         # apparmor will conflict with snapd:armhf dependency if not removed first
         sudo apt-get remove -y apparmor
-        sudo apt-get install -y --no-install-recommends snapd:armhf nginx-light
+        sudo apt-get install -y --no-install-recommends fuse3:armhf snapd:armhf nginx-light
     - name: Install non-armhf depdencies
       if: ${{ matrix.arch-name != 'armhf' }}
       run: |-
@@ -212,7 +212,7 @@ jobs:
         sudo apt-get update
         # apparmor will conflict with snapd:armhf dependency if not removed first
         sudo apt-get remove -y apparmor
-        sudo apt-get install -y --no-install-recommends snapd:armhf
+        sudo apt-get install -y --no-install-recommends fuse3:armhf snapd:armhf
     - name: Install non-armhf depdencies
       if: ${{ matrix.arch-name != 'armhf' }}
       run: |-
