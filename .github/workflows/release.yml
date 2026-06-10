@@ -77,6 +77,7 @@ jobs:
       - extended_tests_jobs
       - docker_packaging_jobs
       - snap_packaging_jobs
+      - create_changelog
     runs-on: ubuntu-latest
     permissions:
       contents: write

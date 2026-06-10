@@ -5,7 +5,7 @@ of the result of the workflow run.
 
 Run:
 
-python tools/notify_mattermost.py GITHUB_AUTHOR_NAME SUCCESS
+python tools/release_message.py GITHUB_AUTHOR_NAME SUCCESS
 
 where SUCCESS is True or False
 """
@@ -56,7 +56,7 @@ def get_content(requested_for: str, success: bool):
         text_body = f'{get_greeting()} @{usernames_map[requested_for]}, {get_message(success)}\n{build_url}'
     else:
         text_body = (f"{get_greeting()} {requested_for}, {get_message(success)}\nIf you'd like to get @ mentioned for "
-            "releases you do in the future, please modify tools/notify_mattermost.py with your "
+            "releases you do in the future, please modify tools/release_message.py with your "
             f"git author name.\n{build_url}")
     return text_body
 
