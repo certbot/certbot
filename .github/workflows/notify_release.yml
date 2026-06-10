@@ -1,0 +1,40 @@
+name: Notify release workflow finished
+
+on:
+  workflow_call:
+    inputs:
+      success:
+        type: string
+    secrets:
+      MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK:
+        required: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  notify_mattermost:
+    name: Notify mattermost
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
+    - name: Generate message text
+      shell: bash
+      id: message
+      env:
+        SUCCESS: "${{ inputs.success }}"
+      run: |-
+        AUTHOR_NAME="$(git log -1 --pretty=format:'%an')"
+        MESSAGE=$(tools/release_message.py "${AUTHOR_NAME}" "${SUCCESS}")
+        echo "result<<EOF" >> $GITHUB_OUTPUT
+        echo "$MESSAGE" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    - name: Send to mattermost
+      uses: mattermost/action-mattermost-notify@ae31bb6f9e26a54336e79696f108a2c91cf55b4e
+      with:
+        MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK }}
+        TEXT: "${{ steps.message.outputs.result }}"

@@ -1,26 +1,27 @@
-# Nightly pipeline running each day for main.
-name: Nightly build
+# Release pipeline to run our full test suite, build artifacts, and deploy them
+# for GitHub release tags.
+name: Release
+run-name: Release Certbot ${{ github.ref_name }}
 on:
-  schedule:
-  - cron: 30 4 * * *
-  workflow_dispatch:
+  push:
+    tags:
+    - v*
+
+permissions:
+  contents: read
 
 jobs:
   # While many of these jobs could be grouped in a separate workflow, the github actions UI
   # is much nicer if they are instead listed explicitly here. As a result, changes made here
-  # may need to be mirrored in .github/workflows/release.yml.
+  # may need to be mirrored in .github/workflows/nightly.yml.
   ###########################
   ####    testing jobs    ###
   ###########################
   standard_tests_jobs:
     name: Standard tests
-    permissions:
-      contents: read
     uses: "./.github/workflows/standard_tests_jobs.yml"
   extended_tests_jobs:
     name: Extended tests
-    permissions:
-      contents: read
     uses: "./.github/workflows/extended_tests_jobs.yml"
     secrets:
       AWS_TEST_FARM_PEM: "${{ secrets.AWS_TEST_FARM_PEM }}"
@@ -31,15 +32,11 @@ jobs:
   ###########################
   docker_packaging_jobs:
     name: Docker packaging
-    permissions:
-      contents: read
     uses: "./.github/workflows/docker_packaging_jobs.yml"
     with:
-      dockerTag: nightly
+      dockerTag: "${{ github.ref_name }}"
   snap_packaging_jobs:
     name: Snap packaging
-    permissions:
-      contents: read
     uses: "./.github/workflows/snap_packaging_jobs.yml"
     with:
       snapBuildTimeout: 19800
@@ -47,16 +44,12 @@ jobs:
       LAUNCHPAD_CREDENTIALS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"
   create_changelog:
     name: Create changelog
-    permissions:
-      contents: read
     uses: "./.github/workflows/create_changelog.yml"
   ############################
   ####     deploy jobs     ###
   ############################
   docker_deploy_jobs:
     name: Deploy docker images
-    permissions:
-      contents: read
     needs:
       - standard_tests_jobs
       - extended_tests_jobs
@@ -65,11 +58,9 @@ jobs:
     secrets:
       DOCKERHUB_TOKEN: "${{ secrets.DOCKERHUB_TOKEN }}"
     with:
-      dockerTag: nightly
+      dockerTag: "${{ github.ref_name }}"
   snap_deploy_jobs:
     name: Deploy snaps
-    permissions:
-      contents: read
     needs:
       - standard_tests_jobs
       - extended_tests_jobs
@@ -78,44 +69,61 @@ jobs:
     secrets:
       SNAPCRAFTCFG: "${{ secrets.SNAPCRAFTCFG }}"
     with:
-      snapReleaseChannel: edge
-  ############################
-  ####      rerun job      ###
-  ############################
-  re-run:
-    name: Re-run
+      snapReleaseChannel: beta
+  create_github_release:
+    name: Create GitHub release
     needs:
       - standard_tests_jobs
       - extended_tests_jobs
       - docker_packaging_jobs
       - snap_packaging_jobs
       - create_changelog
-      - docker_deploy_jobs
-      - snap_deploy_jobs
-    if: failure() && fromJSON(github.run_attempt) < 3
-    permissions:
-      actions: write
-      checks: write
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - env:
-          GH_REPO: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
-          GH_DEBUG: api
-        run: gh workflow run rerun.yml -F run_id=${{ github.run_id }}
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+      - name: Download changelog
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: changelog
+          path: "${{ github.workspace }}"
+      - name: GitHub release
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |-
+          gh release create "$TAG" "${GITHUB_WORKSPACE}/packages/"{*.tar.gz,SHA256SUMS*} \
+            --title "Certbot ${TAG#v}" \
+            --notes-file "$GITHUB_WORKSPACE/release_notes.md"
+
   ###########################
   ####       notify       ###
   ###########################
-  notify:
-    name: Notify
-    needs:
-      - re-run
-    # Returns true when any previous step of a job fails. If you have a chain of dependent
-    # jobs, failure() returns true if any ancestor job fails.
-    if: failure() && (needs.re-run.result == 'skipped' || needs.re-run.result == 'failure')
-    uses: "./.github/workflows/notify_nightly.yml"
-    permissions:
+  notify_success:
+    name: Notify success
+    with:
+      success: 'True'
+    needs: &notify_needs
+      - docker_deploy_jobs
+      - snap_deploy_jobs
+      - create_github_release
+    uses: &notify_uses "./.github/workflows/notify_release.yml"
+    permissions: &notify_permissions
       actions: read
-    secrets:
+      contents: read
+    secrets: &notify_secrets
       MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK: "${{ secrets.MATTERMOST_PUBLIC_CERTBOT_CHANNEL_WEBHOOK }}"
+  notify_failure:
+    name: Notify failure
+    with:
+      success: 'False'
+    if: ${{ failure() }}
+    needs: *notify_needs
+    uses: *notify_uses
+    permissions: *notify_permissions
+    secrets: *notify_secrets
