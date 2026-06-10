@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Post-release script to publish artifacts created from Azure Pipelines.
+Post-release script to publish artifacts created from GitHub Actions.
 
 This currently includes:
 
@@ -28,8 +28,6 @@ import os.path
 import re
 import subprocess
 import sys
-
-from azure.devops.connection import Connection
 
 # Path to the root directory of the Certbot repository containing this script
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -153,28 +151,25 @@ def promote_snaps(snaps, source_channel, version, progressive_percentage=None):
                 print(e.stdout)
                 raise
 
-def fetch_version_number(major_version=None):
-    """Retrieve version number for release from Azure Pipelines
-
-    :param major_version: only consider releases for the specified major
-        version
-    :type major_version: str or None
+def fetch_version_number():
+    """Retrieve latest release version number from GitHub
 
     :returns: version number
 
     """
-    # Create a connection to the azure org
-    organization_url = 'https://dev.azure.com/certbot'
-    connection = Connection(base_url=organization_url)
+    jq_arg = '.[] | select(.isLatest)|.name'
+    cmd = ['gh', 'release', 'list', '--json', 'name,isLatest', '--jq', jq_arg]
+    try:
+        process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, universal_newlines=True)
+    except (subprocess.CalledProcessError, OSError):
+        print("Getting version number from GitHub release failed.")
+        sys.exit(1)
 
-    # Find the build artifacts
-    build_client = connection.clients.get_build_client()
-    builds = build_client.get_builds('certbot', definitions='3')
-    for build in builds:
-        version = build_client.get_build('certbot', build.id).source_branch.split('v')[1]
-        if major_version is None or version.split('.')[0] == major_version:
-            return version
-    raise ValueError('Release not found on Azure Pipelines!')
+    name = process.stdout.rstrip().split(' ')
+    assert len(name) == 2
+    version = name[-1]
+    assert len(version.split('.')) == 3
+    return version
 
 def generate_community_forum_post(version: str):
     print('Generating announcement text for community forum post')

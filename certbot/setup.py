@@ -43,7 +43,6 @@ install_requires = [
 extras_require = {
     "dev": [
         "apacheconfig>=0.3.2",
-        "azure-devops",
         "build",
         "ipdb",
         # allows us to use newer urllib3 https://github.com/python-poetry/poetry-plugin-export/issues/183
