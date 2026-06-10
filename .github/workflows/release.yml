@@ -112,8 +112,7 @@ jobs:
       - docker_deploy_jobs
       - snap_deploy_jobs
       - create_github_release
-    uses: &notify_uses
-      - "./.github/workflows/notify_release.yml"
+    uses: &notify_uses "./.github/workflows/notify_release.yml"
     permissions: &notify_permissions
       actions: read
       contents: read
