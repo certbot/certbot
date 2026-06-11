@@ -174,7 +174,13 @@ def fetch_version_number():
 
 def _sync_candidate_from_temp_to_origin(version: str) -> None:
     cmd = f'git pull temp candidate-{version}'.split()
-    subprocess.run(cmd, check=True, universal_newlines=True, capture_output=True)
+    try:
+        proc = subprocess.run(cmd, check=True, universal_newlines=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        print(f'Error running `git pull temp candidate-{version}. Make the fixes described by'
+               'git and rerun this script.')
+        print(e.stderr)
+        raise e
     cmd = f'git push origin candidate-{version}'.split()
     subprocess.run(cmd, check=True, universal_newlines=True, capture_output=True)
 
@@ -297,7 +303,7 @@ def generate_community_forum_post(version: str):
 def main(args):
     parsed_args = parse_args(args)
     version = fetch_version_number()
-    version = '4.22.0'
+    version = '4.23.0'
     # promote_snaps(ALL_SNAPS, 'beta', version)
     synchonize_github_repo(version)
     generate_community_forum_post(version)
