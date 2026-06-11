@@ -302,14 +302,10 @@ def generate_community_forum_post(version: str):
 
 def main(args):
     parsed_args = parse_args(args)
-    version = fetch_version_number()
-<<<<<<< HEAD
-    promote_snaps(ALL_SNAPS, 'beta', version)
-=======
-    version = '4.23.0'
+    # version = fetch_version_number()
+    version = '4.23.1'
     # promote_snaps(ALL_SNAPS, 'beta', version)
     synchonize_github_repo(version)
->>>>>>> 643aea521 (automate synchronizing github repo post-release)
     generate_community_forum_post(version)
 
 if __name__ == "__main__":
