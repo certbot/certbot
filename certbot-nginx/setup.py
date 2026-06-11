@@ -1,6 +1,6 @@
 from setuptools import setup
 
-version = '5.7.0.dev0'
+version = '1.2.3'
 
 install_requires = [
     # We specify the minimum certbot version as the current plugin
