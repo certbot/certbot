@@ -216,6 +216,7 @@ git commit -m "Remove built packages from git"
 
 if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
+    # If this message changes, it should also be changed in tools/finish_release.py
     git commit -m "Bump version to $nextversion"
 fi
 
