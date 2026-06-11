@@ -176,10 +176,13 @@ def _build_snap(
 
 def _extract_log_location(line: str) -> str:
     result = ""
-    match = re.match(r"^Full execution log: '(.+)'$", line)
+    pattern = r"^Full execution log: '(.+)'$"
+    match = re.match(pattern, line)
 
     if match:
         result = match.group(1)
+    else:
+        print(f'warning: unable to extract log location, expected pattern "{pattern}", got "{line}"')
     return result
 
 
