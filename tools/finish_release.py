@@ -319,8 +319,8 @@ def generate_community_forum_post(version: str):
 
 def main(args):
     parsed_args = parse_args(args)
-    test_version = parsed_args.test_version
-    if not test_version:
+    version = parsed_args.test_version
+    if not version:
         version = fetch_version_number()
     # promote_snaps(ALL_SNAPS, 'beta', version)
     synchronize_github_repo(version)
