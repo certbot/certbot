@@ -200,6 +200,7 @@ def _run_silent_except_error(cmd: list[str], message: str = None) -> subprocess.
         print(e.stderr)
         raise e
     else:
+        print(process)
         return process
 
 
@@ -263,10 +264,10 @@ def _create_and_push_branch_without_version_bump(version: str, branch_name: str)
                 print(f'Protected branch {branch_name} already pushed...skipping.')
             else:
                 raise e
-    else:
-        print('Created.')
     finally:
         _run_silent_except_error(f'git switch candidate-{version}'.split())
+
+    print('Created.')
 
 
 def _check_branch_matches_version(version: str) -> None:
