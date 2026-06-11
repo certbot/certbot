@@ -1,10 +1,6 @@
 name: Snap packaging
 on:
   workflow_call:
-    inputs:
-      snapBuildTimeout:
-        description: 'timeout for snap builds in seconds'
-        type: number
     secrets:
       LAUNCHPAD_CREDENTIALS:
         required: true
