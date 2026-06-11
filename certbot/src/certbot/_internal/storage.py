@@ -280,6 +280,12 @@ def _relevant(namespaces: Iterable[str], option: str) -> bool:
     """
     from certbot._internal import renewal
 
+    # an awkward special case: future renewals shouldn't depend on whether the user set
+    # --manual-setup-hook now, since it's meant to represent a (potentially) one-off script.
+    # if a user wants it to run again in the future, they must set it explicitly via CLI
+    if option == "manual_setup_hook":
+        return False
+
     return (option in renewal.CONFIG_ITEMS or
             any(option.startswith(namespace) for namespace in namespaces))
 

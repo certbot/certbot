@@ -1,0 +1,2 @@
+Add support for [`dns-persist-01`](https://datatracker.ietf.org/doc/draft-ietf-acme-dns-persist/) challenges to certbot's manual plugin. This challenge type allows users to verify control over a domain with a single DNS TXT record which can remain active and unchanged indefinitely, allowing for easy renewals when traditional challenge methods are impractical. `dns-persist-01` also allows for the issuance of wildcard certificates.
+
