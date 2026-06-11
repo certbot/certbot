@@ -171,6 +171,106 @@ def fetch_version_number():
     assert len(version.split('.')) == 3
     return version
 
+
+def _sync_candidate_from_temp_to_origin(version: str) -> None:
+    cmd = f'git pull temp candidate-{version}'.split()
+    subprocess.run(cmd, check=True, universal_newlines=True, capture_output=True)
+    cmd = f'git push origin candidate-{version}'.split()
+    subprocess.run(cmd, check=True, universal_newlines=True, capture_output=True)
+
+
+def _run_allow_exists(cmd: list[str], description: str) -> None:
+    try:
+        subprocess.run(cmd, check=True, universal_newlines=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        if 'already exists' in e.stderr:
+            print(f'{description} already exists...skipping creation.')
+        else:
+            raise e
+
+
+def _create_release_pr_to_main(version: str) -> None:
+    print(f'Creating PR to merge candidate-{version} into main')
+    title = f'update files from {version} release'
+    body = 'this PR only needs 1 review and should be merged, not squashed'
+    cmd = ['gh', 'pr', 'create', '--title', title, '--body', body, '--draft'] # remove draft
+    _run_allow_exists(cmd, 'PR to merge release changes into main')
+
+
+def _create_release_pr_to_minor_branch(version: str, branch_name:str, point_x_branch_name: str) -> None:
+    print(f'Creating PR to merge {branch_name} into {point_x_branch_name}')
+    title = f'update files from {version} release'
+    body = 'this PR only needs 1 review and should be merged, not squashed'
+    cmd = ['gh', 'pr', 'create',
+           '--title', title,
+           '--body', body,
+           '--head', branch_name,
+           '--base', point_x_branch_name, '--draft'] # remove draft
+    _run_allow_exists(cmd, 'PR to merge release changes into .x branch')
+
+
+def _create_and_push_branch_without_version_bump(version: str, branch_name: str) -> None:
+    # Usually a 1.2.x branch.
+    # When it's a point release, it'll be any name, and then merged back into 1.2.x.
+    print(f'Creating branch without version bump commit named {branch_name}')
+    try:
+        cmd = f'git checkout -b {branch_name}'.split()
+        _run_allow_exists(cmd, f'Branch {branch_name}')
+
+        # Check if there are uncommited changes, since reset will blow them away
+        cmd = 'git diff --quiet HEAD'.split()
+        try:
+            subprocess.run(cmd, check=True, universal_newlines=True)
+        except subprocess.CalledProcessError as e:
+            print('You have uncommitted changes that will be deleted.')
+            print('Please commit your changes or stash them before rerunning this script.')
+            print('Aborting')
+            raise e
+        cmd = 'git reset --hard HEAD~1'.split()
+        subprocess.run(cmd, check=True, universal_newlines=True, capture_output=True)
+        cmd = f'git push origin {branch_name}'.split()
+        try:
+            subprocess.run(cmd, check=True, universal_newlines=True, stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError as e:
+            if 'protected branch' in e.stderr:
+                print(f'Protected branch {branch_name} already pushed...skipping.')
+    finally:
+        cmd = f'git switch candidate-{version}'.split()
+        subprocess.run(cmd, check=True, universal_newlines=True, capture_output=True)
+
+
+def _check_branch_matches_version(version: str) -> None:
+    # This function assumes we're on a branch like `candidate-1.2.0` or `candidate-1.2.3`
+    # where the number after candidate should be equal to the version number
+    cmd = 'git branch --show'.split()
+    process = subprocess.run(cmd, check=True, universal_newlines=True, stdout=subprocess.PIPE)
+    current_branch = process.stdout.rstrip()
+    if current_branch != f'candidate-{version}':
+        print(f'Unexpected branch name found. The current branch should be candidate-{version}.')
+        sys.exit(1)
+
+
+def synchonize_github_repo(version: str):
+    _check_branch_matches_version(version)
+
+    _sync_candidate_from_temp_to_origin(version)
+    _create_release_pr_to_main(version)
+
+    # Check the last element of the version number to see if this is a point release
+    point_version = version.split('.')[-1]
+    point_release = point_version != '0'
+    point_x_branch_name = '.'.join(version.split('.')[:-1]) + '.x'
+    if not point_release:
+        branch_name = point_x_branch_name
+    else:
+        branch_name = f'point-candidate-{version}'
+
+    _create_and_push_branch_without_version_bump(version, branch_name)
+
+    if point_release:
+        _create_release_pr_to_minor_branch(version, branch_name, point_x_branch_name)
+
+
 def generate_community_forum_post(version: str):
     print('Generating announcement text for community forum post')
 
@@ -197,7 +297,9 @@ def generate_community_forum_post(version: str):
 def main(args):
     parsed_args = parse_args(args)
     version = fetch_version_number()
-    promote_snaps(ALL_SNAPS, 'beta', version)
+    version = '4.22.0'
+    # promote_snaps(ALL_SNAPS, 'beta', version)
+    synchonize_github_repo(version)
     generate_community_forum_post(version)
 
 if __name__ == "__main__":
