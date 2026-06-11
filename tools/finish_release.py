@@ -171,6 +171,76 @@ def fetch_version_number():
     assert len(version.split('.')) == 3
     return version
 
+
+def _sync_candidate_from_temp_to_origin(version: str) -> None:
+    cmd = f'git pull temp candidate-{version}'.split()
+    subprocess.run(cmd, check=True, universal_newlines=True)
+    cmd = f'git push origin candidate-{version}'.split()
+    subprocess.run(cmd, check=True, universal_newlines=True)
+
+
+def _run_allow_exists(cmd: list[str]) -> None:
+    try:
+        subprocess.run(cmd, check=True, universal_newlines=True, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        if 'already exists' in e.stderr:
+            print(e.stderr)
+            print('Continuing.')
+        else:
+            raise e
+
+
+def _create_release_pr_to_main(version: str) -> None:
+    title = f'update files from {version} release'
+    body = 'this PR only needs 1 review and should be merged, not squashed'
+    cmd = ['gh', 'pr', 'create', '--title', title, '--body', body, '--draft'] # remove draft
+    _run_allow_exists(cmd)
+
+
+def _create_release_pr_to_minor_branch(version: str, point_x_branch_name: str) -> None:
+    title = f'update files from {version} release'
+    body = 'this PR only needs 1 review and should be merged, not squashed'
+    cmd = ['gh', 'pr', 'create', '--title', title, '--body', body, '--base', point_x_branch_name, '--draft'] # remove draft
+    _run_pr_allow_exists(cmd)
+
+
+def _create_and_push_branch_without_version_bump(branch_name: str) -> None:
+    cmd = f'git checkout -b {branch_name}'.split()
+    _run_allow_exists(cmd)
+
+    # Check if there are uncommited changes, since reset will blow them away
+    cmd = 'git diff --quiet HEAD'.split()
+    try:
+        subprocess.run(cmd, check=True, universal_newlines=True)
+    except subprocess.CalledProcessError as e:
+        print('You have uncommitted changes that will be deleted.')
+        print('Please commit your changes or stash them before rerunning this script.')
+        print('Aborting')
+        raise e
+    cmd = 'git reset --hard HEAD~1'.split()
+    subprocess.run(cmd, check=True, universal_newlines=True)
+    cmd = f'git push origin {branch_name}'.split()
+    subprocess.run(cmd, check=True, universal_newlines=True)
+
+
+def synchonize_github_repo(version: str):
+    _sync_candidate_from_temp_to_origin(version)
+    _create_release_pr_to_main(version)
+
+    point_version = version.split('.')[-1]
+    point_release = point_version != '0'
+    point_x_branch_name = '.'.join(version.split('.')[:-1]) + '.x'
+    if not point_release:
+        branch_name = point_x_branch_name
+    else:
+        branch_name = f'point-ready-{version}'
+
+    _create_and_push_branch_without_version_bump(branch_name)
+
+    if point_release:
+        _create_release_pr_to_minor_branch(version, point_x_branch_name)
+
+
 def generate_community_forum_post(version: str):
     print('Generating announcement text for community forum post')
 
@@ -197,7 +267,9 @@ def generate_community_forum_post(version: str):
 def main(args):
     parsed_args = parse_args(args)
     version = fetch_version_number()
-    promote_snaps(ALL_SNAPS, 'beta', version)
+    version = '4.20.0'
+    # promote_snaps(ALL_SNAPS, 'beta', version)
+    synchonize_github_repo(version)
     generate_community_forum_post(version)
 
 if __name__ == "__main__":
