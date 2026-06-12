@@ -1475,7 +1475,7 @@ class MainTest(test_util.ConfigTestCase):
                     mock_client.obtain_certificate.assert_called_once_with([mock.ANY], None)
             else:
                 assert mock_client.obtain_certificate.call_count == 0
-        except:
+        except Exception:
             self._dump_log()
             raise
         finally:
