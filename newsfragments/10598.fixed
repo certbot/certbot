@@ -1,1 +1,0 @@
-Fixed nginx configuration parsing when comments appear between tokens of a multi-line directive.
