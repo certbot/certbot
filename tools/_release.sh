@@ -103,6 +103,7 @@ tools/pip_install.py build towncrier uv virtualenv
 
 root_without_le="$version.$$"
 root="$RELEASE_DIR/le.$root_without_le"
+REPO_ROOT="$(pwd)"
 
 echo "Cloning into fresh copy at $root"  # clean repo = no artifacts
 git clone . $root
@@ -217,3 +218,7 @@ if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
     git commit -m "Bump version to $nextversion"
 fi
+
+cd $REPO_ROOT
+git remote rm temp || :
+git remote add temp $root && git fetch temp
