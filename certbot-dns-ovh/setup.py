@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup
 
-version = '4.31.0'
+version = '4.32.0.dev0'
 
 install_requires = [
     'dns-lexicon>=3.15.1',
