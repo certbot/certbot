@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup
 
-version = '4.31.1'
+version = '4.32.0.dev0'
 
 install_requires = [
     'cloudflare>=4.0',
