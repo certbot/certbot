@@ -1,6 +1,6 @@
 from setuptools import setup
 
-version = '5.7.0.dev0'
+version = '4.30.0'
 
 setup(
     version=version,
