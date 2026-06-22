@@ -396,6 +396,11 @@ class Client:
             self.config.auth_chain_path = "./chain-ecdsa.pem"
             self.config.auth_cert_path = "./cert-ecdsa.pem"
             self.config.key_path = "./key-ecdsa.pem"
+        elif self.config.key_type.lower().startswith('ml-dsa-'):
+            slug = self.config.key_type.lower()
+            self.config.auth_chain_path = f"./chain-{slug}.pem"
+            self.config.auth_cert_path = f"./cert-{slug}.pem"
+            self.config.key_path = f"./key-{slug}.pem"
         elif self.config.rsa_key_size and self.config.key_type.lower() == 'rsa':
             key_size = self.config.rsa_key_size
 

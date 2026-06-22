@@ -20,6 +20,14 @@ import configobj
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+
+try:
+    from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA44PrivateKey
+    from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA65PrivateKey
+    from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA87PrivateKey
+    HAS_MLDSA = True
+except ImportError:
+    HAS_MLDSA = False
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 import parsedatetime
 import pytz
@@ -1110,24 +1118,32 @@ class RenewableCert(interfaces.RenewableCert):
             target, values)
         return cls(new_config.filename, cli_config)
 
-    def _private_key(self) -> Union[RSAPrivateKey, EllipticCurvePrivateKey]:
+    def _private_key(self):
         with open(self.configuration["privkey"], "rb") as priv_key_file:
             key = load_pem_private_key(
                 data=priv_key_file.read(),
                 password=None,
                 backend=default_backend()
             )
-            return cast(Union[RSAPrivateKey, EllipticCurvePrivateKey], key)
+            return key
 
     @property
     def private_key_type(self) -> str:
         """
-        :returns: The type of algorithm for the private, RSA or ECDSA
+        :returns: The type of algorithm for the private key: RSA, ECDSA,
+            ML-DSA-44, ML-DSA-65, or ML-DSA-87
         :rtype: str
         """
         key = self._private_key()
         if isinstance(key, RSAPrivateKey):
             return "RSA"
+        if HAS_MLDSA:
+            if isinstance(key, MLDSA44PrivateKey):
+                return "ML-DSA-44"
+            if isinstance(key, MLDSA65PrivateKey):
+                return "ML-DSA-65"
+            if isinstance(key, MLDSA87PrivateKey):
+                return "ML-DSA-87"
         return "ECDSA"
 
     @property

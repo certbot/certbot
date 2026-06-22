@@ -19,6 +19,12 @@ from typing import Union
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
+
+try:
+    from cryptography.hazmat.primitives.asymmetric import mldsa
+    HAS_MLDSA = True
+except ImportError:
+    HAS_MLDSA = False
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 from certbot import configuration
@@ -575,6 +581,13 @@ def handle_renewal_request(config: configuration.NamespaceConfig) -> Tuple[list,
     return (renewed_domains, failed_domains)
 
 
+_MLDSA_PRIVATE_KEY_TYPE_MAP: dict = ({
+    mldsa.MLDSA44PrivateKey: 'ml-dsa-44',
+    mldsa.MLDSA65PrivateKey: 'ml-dsa-65',
+    mldsa.MLDSA87PrivateKey: 'ml-dsa-87',
+} if HAS_MLDSA else {})
+
+
 def _update_renewal_params_from_key(key_path: str, config: configuration.NamespaceConfig) -> None:
     with open(key_path, 'rb') as file_h:
         key = load_pem_private_key(file_h.read(), password=None, backend=default_backend())
@@ -584,5 +597,8 @@ def _update_renewal_params_from_key(key_path: str, config: configuration.Namespa
     elif isinstance(key, ec.EllipticCurvePrivateKey):
         config.key_type = 'ecdsa'
         config.elliptic_curve = key.curve.name
+    elif HAS_MLDSA and isinstance(key, (mldsa.MLDSA44PrivateKey, mldsa.MLDSA65PrivateKey,
+                                        mldsa.MLDSA87PrivateKey)):
+        config.key_type = _MLDSA_PRIVATE_KEY_TYPE_MAP[type(key)]
     else:
         raise errors.Error(f'Key at {key_path} is of an unsupported type: {type(key)}.')
