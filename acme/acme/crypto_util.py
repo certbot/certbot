@@ -16,11 +16,27 @@ from typing import Set
 from typing import Tuple
 from typing import Union
 
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.serialization import Encoding
+
+try:
+    from cryptography.hazmat.primitives.asymmetric import mldsa
+    HAS_MLDSA = True
+except ImportError:
+    HAS_MLDSA = False
+
 import josepy as jose
 from OpenSSL import crypto
 from OpenSSL import SSL
 
 from acme import errors
+
+_MLDSA_PRIVATE_KEY_TYPES = (
+    (mldsa.MLDSA44PrivateKey, mldsa.MLDSA65PrivateKey,
+     mldsa.MLDSA87PrivateKey) if HAS_MLDSA else ()
+)
 
 logger = logging.getLogger(__name__)
 
@@ -222,6 +238,48 @@ def probe_sni(name: bytes, host: bytes, port: int = 443, timeout: int = 300,  # 
     return cert
 
 
+def _make_csr_cryptography(private_key_pem: bytes,
+                           domains: List[str],
+                           ipaddrs: List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]],
+                           must_staple: bool) -> bytes:
+    """Generate a CSR using the cryptography library (needed for ML-DSA keys).
+
+    :param bytes private_key_pem: Private key in PEM format.
+    :param list domains: DNS names for SAN.
+    :param list ipaddrs: IP addresses for SAN.
+    :param bool must_staple: Whether to include OCSP Must Staple.
+    :returns: PEM-encoded CSR.
+    """
+    private_key = serialization.load_pem_private_key(private_key_pem, password=None)
+
+    builder = (
+        x509.CertificateSigningRequestBuilder()
+        .subject_name(x509.Name([]))
+        .add_extension(
+            x509.SubjectAlternativeName(
+                [x509.DNSName(d) for d in domains]
+                + [x509.IPAddress(i) for i in ipaddrs]
+            ),
+            critical=False,
+        )
+    )
+    if must_staple:
+        builder = builder.add_extension(
+            x509.TLSFeature([x509.TLSFeatureType.status_request]),
+            critical=False,
+        )
+
+    # ML-DSA algorithms have a built-in hash and must be signed with
+    # algorithm=None.  Traditional key types use SHA-256.
+    if isinstance(private_key, _MLDSA_PRIVATE_KEY_TYPES):
+        hash_algorithm = None
+    else:
+        hash_algorithm = hashes.SHA256()
+
+    csr = builder.sign(private_key, hash_algorithm)
+    return csr.public_bytes(Encoding.PEM)
+
+
 def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]]] = None,
              must_staple: bool = False,
              ipaddrs: Optional[List[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]] = None
@@ -237,10 +295,6 @@ def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]
     params ordered this way for backward competablity when called by positional argument.
     :returns: buffer PEM-encoded Certificate Signing Request.
     """
-    private_key = crypto.load_privatekey(
-        crypto.FILETYPE_PEM, private_key_pem)
-    csr = crypto.X509Req()
-    sanlist = []
     # if domain or ip list not supplied make it empty list so it's easier to iterate
     if domains is None:
         domains = []
@@ -248,6 +302,22 @@ def make_csr(private_key_pem: bytes, domains: Optional[Union[Set[str], List[str]
         ipaddrs = []
     if len(domains)+len(ipaddrs) == 0:
         raise ValueError("At least one of domains or ipaddrs parameter need to be not empty")
+
+    # ML-DSA keys are not supported by pyOpenSSL, so use the cryptography
+    # library directly for CSR generation when an ML-DSA key is detected.
+    if HAS_MLDSA:
+        try:
+            pk = serialization.load_pem_private_key(private_key_pem, password=None)
+            if isinstance(pk, _MLDSA_PRIVATE_KEY_TYPES):
+                return _make_csr_cryptography(
+                    private_key_pem, list(domains), list(ipaddrs), must_staple)
+        except Exception:
+            pass  # fall through to pyOpenSSL path
+
+    private_key = crypto.load_privatekey(
+        crypto.FILETYPE_PEM, private_key_pem)
+    csr = crypto.X509Req()
+    sanlist = []
     for address in domains:
         sanlist.append('DNS:' + address)
     for ips in ipaddrs:
