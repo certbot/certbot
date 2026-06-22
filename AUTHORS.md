@@ -303,3 +303,4 @@ Authors
 * [Zach Shepherd](https://github.com/zjs)
 * [陈三](https://github.com/chenxsan)
 * [Shahar Naveh](https://github.com/ShaharNaveh)
+* [Netan Mangal](https://github.com/netanmangal)
