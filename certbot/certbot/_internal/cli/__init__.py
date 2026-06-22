@@ -304,8 +304,14 @@ def prepare_and_parse_args(plugins: plugins_disco.PluginsRegistry, args: List[st
     helpful.add(
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
+    _key_type_choices = ['rsa', 'ecdsa']
+    try:
+        from cryptography.hazmat.primitives.asymmetric import mldsa as _mldsa_check  # noqa: F811,F401
+        _key_type_choices += ['ml-dsa-44', 'ml-dsa-65', 'ml-dsa-87']
+    except ImportError:
+        pass
     helpful.add(
-        "security", "--key-type", choices=['rsa', 'ecdsa'], type=str,
+        "security", "--key-type", choices=_key_type_choices, type=str,
         default=flag_default("key_type"), help=config_help("key_type"))
     helpful.add(
         "security", "--elliptic-curve", type=str, choices=[
