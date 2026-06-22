@@ -21,7 +21,15 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
+
+try:
+    from cryptography.hazmat.primitives.asymmetric import mldsa
+    HAS_MLDSA = True
+except ImportError:
+    HAS_MLDSA = False
 from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
@@ -96,8 +104,10 @@ def generate_key(key_size: int, key_dir: Optional[str], key_type: str = "rsa",
             key_f.write(key_pem)
         if key_type == 'rsa':
             logger.debug("Generating RSA key (%d bits): %s", key_size, key_path)
-        else:
+        elif key_type == 'ecdsa':
             logger.debug("Generating ECDSA key (%d bits): %s", key_size, key_path)
+        elif key_type.startswith('ml-dsa-'):
+            logger.debug("Generating %s key: %s", key_type.upper(), key_path)
 
     return util.Key(key_path, key_pem)
 
@@ -208,24 +218,33 @@ def import_csr_file(csrfile: str, data: bytes) -> Tuple[int, util.CSR, List[str]
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
+_MLDSA_KEY_CLASSES: dict = {
+    'ml-dsa-44': mldsa.MLDSA44PrivateKey,
+    'ml-dsa-65': mldsa.MLDSA65PrivateKey,
+    'ml-dsa-87': mldsa.MLDSA87PrivateKey,
+} if HAS_MLDSA else {}
+"""Mapping of ML-DSA key type names to their private key classes."""
+
+
 def make_key(bits: int = 2048, key_type: str = "rsa",
              elliptic_curve: Optional[str] = None) -> bytes:
-    """Generate PEM encoded RSA|EC key.
+    """Generate PEM encoded RSA|EC|ML-DSA key.
 
     :param int bits: Number of bits if key_type=rsa. At least 2048 for RSA.
-    :param str key_type: The type of key to generate, but be rsa or ecdsa
+    :param str key_type: The type of key to generate: rsa, ecdsa, or
+        ml-dsa-44, ml-dsa-65, ml-dsa-87.
     :param str elliptic_curve: The elliptic curve to use.
 
-    :returns: new RSA or ECDSA key in PEM form with specified number of bits
-              or of type ec_curve when key_type ecdsa is used.
-    :rtype: str
+    :returns: new RSA, ECDSA, or ML-DSA key in PEM form with specified number
+              of bits or of type ec_curve when key_type ecdsa is used.
+    :rtype: bytes
+
     """
     if key_type == 'rsa':
         if bits < 2048:
             raise errors.Error("Unsupported RSA key length: {}".format(bits))
 
-        key = crypto.PKey()
-        key.generate_key(crypto.TYPE_RSA, bits)
+        key = rsa.generate_private_key(public_exponent=65537, key_size=bits)
     elif key_type == 'ecdsa':
         if not elliptic_curve:
             raise errors.Error("When key_type == ecdsa, elliptic_curve must be set.")
@@ -235,7 +254,7 @@ def make_key(bits: int = 2048, key_type: str = "rsa",
                 curve = getattr(ec, elliptic_curve.upper())
                 if not curve:
                     raise errors.Error(f"Invalid curve type: {elliptic_curve}")
-                _key = ec.generate_private_key(
+                key = ec.generate_private_key(
                     curve=curve(),
                     backend=default_backend()
                 )
@@ -245,15 +264,23 @@ def make_key(bits: int = 2048, key_type: str = "rsa",
             raise errors.Error("Unsupported elliptic curve: {}".format(elliptic_curve))
         except UnsupportedAlgorithm as e:
             raise e from errors.Error(str(e))
-        _key_pem = _key.private_bytes(
-            encoding=Encoding.PEM,
-            format=PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=NoEncryption()
-        )
-        key = crypto.load_privatekey(crypto.FILETYPE_PEM, _key_pem)
+    elif key_type in _MLDSA_KEY_CLASSES:
+        try:
+            key = _MLDSA_KEY_CLASSES[key_type].generate()
+        except UnsupportedAlgorithm as e:
+            raise errors.Error(
+                "ML-DSA key generation failed. Ensure your cryptography library "
+                "version supports ML-DSA: {}".format(e)
+            )
     else:
-        raise errors.Error("Invalid key_type specified: {}.  Use [rsa|ecdsa]".format(key_type))
-    return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+        raise errors.Error(
+            "Invalid key_type specified: {}.  Use [rsa|ecdsa|ml-dsa-44|ml-dsa-65|ml-dsa-87]"
+            .format(key_type))
+    return key.private_bytes(
+        encoding=Encoding.PEM,
+        format=PrivateFormat.PKCS8,
+        encryption_algorithm=NoEncryption()
+    )
 
 
 def valid_privkey(privkey: Union[str, bytes]) -> bool:
@@ -304,7 +331,11 @@ def verify_renewable_cert_sig(renewable_cert: interfaces.RenewableCert) -> None:
         with open(renewable_cert.cert_path, 'rb') as cert_file:
             cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
         pk = chain.public_key()
-        assert cert.signature_hash_algorithm # always present for RSA and ECDSA
+        # ML-DSA has a built-in hash so signature_hash_algorithm is None
+        _mldsa_pub_types = ((mldsa.MLDSA44PublicKey, mldsa.MLDSA65PublicKey,
+                             mldsa.MLDSA87PublicKey) if HAS_MLDSA else ())
+        if not isinstance(pk, _mldsa_pub_types):
+            assert cert.signature_hash_algorithm  # always present for RSA and ECDSA
         verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,
                                 cert.signature_hash_algorithm)
     except (IOError, ValueError, InvalidSignature) as e:
@@ -318,13 +349,14 @@ def verify_signed_payload(public_key: Union[DSAPublicKey, 'Ed25519PublicKey', 'E
                                             EllipticCurvePublicKey, RSAPublicKey,
                                             'X25519PublicKey', 'X448PublicKey'],
                           signature: bytes, payload: bytes,
-                          signature_hash_algorithm: hashes.HashAlgorithm) -> None:
+                          signature_hash_algorithm: Optional[hashes.HashAlgorithm]) -> None:
     """Check the signature of a payload.
 
     :param RSAPublicKey/EllipticCurvePublicKey public_key: the public_key to check signature
     :param bytes signature: the signature bytes
     :param bytes payload: the payload bytes
-    :param hashes.HashAlgorithm signature_hash_algorithm: algorithm used to hash the payload
+    :param hashes.HashAlgorithm signature_hash_algorithm: algorithm used to hash the payload.
+        None for ML-DSA keys which have a built-in hash.
 
     :raises InvalidSignature: If signature verification fails.
     :raises errors.Error: If public key type is not supported
@@ -337,8 +369,24 @@ def verify_signed_payload(public_key: Union[DSAPublicKey, 'Ed25519PublicKey', 'E
         public_key.verify(
             signature, payload, ECDSA(signature_hash_algorithm)
         )
+    elif HAS_MLDSA and isinstance(public_key, (mldsa.MLDSA44PublicKey, mldsa.MLDSA65PublicKey,
+                                               mldsa.MLDSA87PublicKey)):
+        public_key.verify(signature, payload)
     else:
         raise errors.Error("Unsupported public key type.")
+
+
+def _is_mldsa_key_file(key_path: str) -> bool:
+    """Check if the key file contains an ML-DSA private key."""
+    if not HAS_MLDSA:
+        return False
+    try:
+        with open(key_path, 'rb') as f:
+            key = serialization.load_pem_private_key(f.read(), password=None)
+        return isinstance(key, (mldsa.MLDSA44PrivateKey, mldsa.MLDSA65PrivateKey,
+                                mldsa.MLDSA87PrivateKey))
+    except Exception:
+        return False
 
 
 def verify_cert_matches_priv_key(cert_path: str, key_path: str) -> None:
@@ -349,6 +397,28 @@ def verify_cert_matches_priv_key(cert_path: str, key_path: str) -> None:
 
     :raises errors.Error: If they don't match.
     """
+    if _is_mldsa_key_file(key_path):
+        # pyOpenSSL does not support ML-DSA, so use cryptography directly
+        try:
+            with open(cert_path, 'rb') as f:
+                cert = x509.load_pem_x509_certificate(f.read())
+            with open(key_path, 'rb') as f:
+                key = serialization.load_pem_private_key(f.read(), password=None)
+            if cert.public_key() != key.public_key():
+                raise errors.Error(
+                    "verifying the certificate located at {0} matches the "
+                    "private key located at {1} has failed. "
+                    "Details: public keys do not match".format(cert_path, key_path))
+        except errors.Error:
+            raise
+        except Exception as e:
+            error_str = ("verifying the certificate located at {0} matches the "
+                         "private key located at {1} has failed. "
+                         "Details: {2}".format(cert_path, key_path, e))
+            logger.exception(error_str)
+            raise errors.Error(error_str)
+        return
+
     try:
         context = SSL.Context(SSL.SSLv23_METHOD)
         context.use_certificate_file(cert_path)
