@@ -179,6 +179,17 @@ def csr_matches_pubkey(csr: bytes, privkey: bytes) -> bool:
     :rtype: bool
 
     """
+    # pyOpenSSL cannot handle ML-DSA keys, so use the cryptography library
+    if HAS_MLDSA:
+        try:
+            key = serialization.load_pem_private_key(privkey, password=None)
+            if isinstance(key, (mldsa.MLDSA44PrivateKey, mldsa.MLDSA65PrivateKey,
+                                mldsa.MLDSA87PrivateKey)):
+                csr_obj = x509.load_pem_x509_csr(csr)
+                return csr_obj.public_key() == key.public_key()
+        except Exception:
+            logger.debug("", exc_info=True)
+            return False
     req = crypto.load_certificate_request(
         crypto.FILETYPE_PEM, csr)
     pkey = crypto.load_privatekey(crypto.FILETYPE_PEM, privkey)

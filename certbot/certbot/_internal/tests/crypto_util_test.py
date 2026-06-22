@@ -7,12 +7,22 @@ from unittest import mock
 
 import OpenSSL
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
 
+from acme import crypto_util as acme_crypto_util
 from certbot import errors
 from certbot import util
 from certbot.compat import filesystem
 from certbot.compat import os
 import certbot.tests.util as test_util
+
+try:
+    from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA44PrivateKey
+    MLDSA44PrivateKey.generate()
+    HAS_MLDSA = True
+except Exception:
+    HAS_MLDSA = False
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
@@ -198,9 +208,62 @@ class MakeKeyTest(unittest.TestCase):
 
         # Try a bad --key-type
         with pytest.raises(errors.Error,
-                           match=re.escape('Invalid key_type specified: unf.  Use [rsa|ecdsa]')):
+                           match=re.escape('Invalid key_type specified: unf.  '
+                                           'Use [rsa|ecdsa|ml-dsa-44|ml-dsa-65|ml-dsa-87]')):
             OpenSSL.crypto.load_privatekey(
                 OpenSSL.crypto.FILETYPE_PEM, make_key(2048, key_type='unf'))
+
+    @unittest.skipUnless(HAS_MLDSA, "ML-DSA not supported by backend")
+    def test_mldsa(self):
+        """Test ML-DSA key generation for all parameter sets."""
+        from cryptography.hazmat.primitives.asymmetric import mldsa
+        from certbot.crypto_util import make_key
+
+        expected_types = {
+            'ml-dsa-44': mldsa.MLDSA44PrivateKey,
+            'ml-dsa-65': mldsa.MLDSA65PrivateKey,
+            'ml-dsa-87': mldsa.MLDSA87PrivateKey,
+        }
+        for key_type_name, expected_cls in expected_types.items():
+            pem = make_key(key_type=key_type_name)
+            assert b"BEGIN PRIVATE KEY" in pem
+            pkey = serialization.load_pem_private_key(pem, password=None)
+            assert isinstance(pkey, expected_cls)
+
+    @unittest.skipUnless(HAS_MLDSA, "ML-DSA not supported by backend")
+    def test_mldsa_csr(self):
+        """Test that ML-DSA keys can produce a valid CSR."""
+        from certbot.crypto_util import make_key
+
+        for key_type_name in ('ml-dsa-44', 'ml-dsa-65', 'ml-dsa-87'):
+            pem = make_key(key_type=key_type_name)
+            csr_pem = acme_crypto_util.make_csr(pem, ['example.com'])
+            csr = x509.load_pem_x509_csr(csr_pem)
+            assert csr.is_signature_valid
+
+    @unittest.skipUnless(HAS_MLDSA, "ML-DSA not supported by backend")
+    def test_mldsa_csr_matches_pubkey(self):
+        """Test csr_matches_pubkey works with ML-DSA keys."""
+        from certbot.crypto_util import csr_matches_pubkey
+        from certbot.crypto_util import make_key
+
+        for key_type_name in ('ml-dsa-44', 'ml-dsa-65', 'ml-dsa-87'):
+            pem = make_key(key_type=key_type_name)
+            csr_pem = acme_crypto_util.make_csr(pem, ['example.com'])
+            assert csr_matches_pubkey(csr_pem, pem)
+
+    @unittest.skipUnless(HAS_MLDSA, "ML-DSA not supported by backend")
+    def test_mldsa_unsupported_algorithm_error(self):
+        """Test that UnsupportedAlgorithm during ML-DSA key generation gives a user-friendly error."""
+        from cryptography.exceptions import UnsupportedAlgorithm
+        from certbot.crypto_util import make_key
+
+        with mock.patch.dict('certbot.crypto_util._MLDSA_KEY_CLASSES',
+                             {'ml-dsa-44': mock.MagicMock(
+                                 generate=mock.MagicMock(
+                                     side_effect=UnsupportedAlgorithm("not supported")))}):
+            with pytest.raises(errors.Error, match="ML-DSA key generation failed"):
+                make_key(key_type='ml-dsa-44')
 
 
 class VerifyCertSetup(unittest.TestCase):
