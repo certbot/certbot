@@ -4,6 +4,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 4.35.0 - 2026-06-23
+
+### Fixed
+
+- Fixed nginx configuration parsing when comments appear between tokens of a multi-line directive. ([#10598](https://github.com/certbot/certbot/issues/10598))
+
+
 ## 5.6.0 - 2026-05-11
 
 ### Changed
