@@ -189,6 +189,7 @@ def _run_silent_except_error(cmd: list[str], message: str = None) -> subprocess.
         print(f'Error running `{' '.join(cmd)}`')
         if message is not None:
             print(message)
+        print(e.output)
         print(e.stderr)
         print(SKIP_SYNC_MESSAGE)
         raise e
