@@ -274,9 +274,6 @@ def _create_and_push_branch_without_version_bump(version: str, branch_name: str)
     print(f'Creating branch without version bump commit named {branch_name}...')
     # Check if there are uncommited changes, since reset will blow them away
 
-    message = ('You have uncommitted changes that will be deleted. '
-               'Stash your changes before rerunning this script.')
-    _run_silent_except_error('git diff --quiet HEAD'.split(), message)
     try:
         msg = (f'Branch {branch_name} already exists. Delete it using '
                f'`git branch -D {branch_name}`.')
@@ -313,6 +310,9 @@ def _check_branch_matches_version(version: str) -> None:
 
 def synchronize_github_repo(version: str):
     _check_branch_matches_version(version)
+    message = ('You have uncommitted changes that will be deleted. '
+               'Stash your changes before rerunning this script.')
+    _run_silent_except_error('git diff --quiet HEAD'.split(), message)
 
     _sync_candidate_from_temp_to_origin(version)
     _create_release_pr_to_main(version)
