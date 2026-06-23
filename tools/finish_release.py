@@ -264,7 +264,7 @@ def _create_release_pr_to_minor_branch(
     body = 'this PR only needs 1 review and should be merged, not squashed'
     pr_opts = [ '--head', branch_name,
                 '--base', point_x_branch_name]
-    result = _create_pr(title, body, 'PR to merge release changes into .x branch', create_pr_opts)
+    result = _create_pr(title, body, 'PR to merge release changes into .x branch', pr_opts)
     print(f'PR location: {result}')
 
 
