@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup
 
-version = '5.7.0.dev0'
+version = '4.34.0'
 
 install_requires = [
     'google-api-python-client>=1.6.5',
