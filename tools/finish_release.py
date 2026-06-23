@@ -196,7 +196,8 @@ def _run_silent_except_error(cmd: list[str], message: str = None) -> subprocess.
         return process
 
 
-def _run_allow_exists(cmd: list[str], description: str) -> str:
+def _create_pr(title: str, body: str, other_opts: list[str], description: str) -> str:
+    cmd = ['gh', 'pr', 'create', '--title', title, '--body', body] + other_opts
     try:
         proc = subprocess.run(cmd, check=True, universal_newlines=True, capture_output=True)
     except subprocess.CalledProcessError as e:
@@ -233,8 +234,7 @@ def _create_release_pr_to_main(version: str) -> None:
     print(f'Creating PR to merge candidate-{version} into main...')
     title = f'update files from {version} release'
     body = 'this PR only needs 1 review and should be merged, not squashed'
-    cmd = ['gh', 'pr', 'create', '--title', title, '--body', body, '--draft'] # remove draft
-    result = _run_allow_exists(cmd, 'PR to merge release changes into main')
+    result = _create_pr(title, body, ['--draft'], 'PR to merge release changes into main') # remove draft
     print(f'PR location: {result}')
 
 
@@ -245,12 +245,10 @@ def _create_release_pr_to_minor_branch(
     print(f'Creating PR to merge {branch_name} into {point_x_branch_name}...')
     title = f'update files from {version} release'
     body = 'this PR only needs 1 review and should be merged, not squashed'
-    cmd = ['gh', 'pr', 'create',
-           '--title', title,
-           '--body', body,
-           '--head', branch_name,
-           '--base', point_x_branch_name, '--draft'] # remove draft
-    result = _run_allow_exists(cmd, 'PR to merge release changes into .x branch')
+    pr_opts = [ '--head', branch_name,
+                '--base', point_x_branch_name,
+                '--draft'] # remove draft
+    result = _create_pr(title, body, create_pr_opts, 'PR to merge release changes into .x branch')
     print(f'PR location: {result}')
 
 
