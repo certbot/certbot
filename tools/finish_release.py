@@ -1,24 +1,38 @@
 #!/usr/bin/env python
 """
-Post-release script to publish artifacts created from GitHub Actions.
+Post-release script to publish artifacts created from GitHub Actions, synchronize the repo
+  on Github, and print a formatted changelog for the latest release.
 
 This currently includes:
 
 * Moving snaps from the beta channel to the stable channel
+* Pushing the candidate branch to GitHub
+* Creating a minor release branch if it's not a point release
+* Opening PR(s) to merge the release changes back into `main` and/or the minor release branch
+* Printing a formmated changelog for the latest release for distribution
 
 Setup:
- - Install the snapcraft command line tool and log in to a privileged account.
+ - Install the `snapcraft` command line tool and log in to a privileged account.
    - https://snapcraft.io/docs/installing-snapcraft
    - Use the command `snapcraft login` to log in.
+ - Install the `gh` command line tool and log in to a privileged account.
+   - https://github.com/cli/cli#installation
+   - Use the command `gh auth login` to log in.
 
 Run:
 
-python tools/finish_release.py
+python tools/finish_release.py [--skip-snaps] [--skip-github-sync] [--test version <VERSION_NUM>]
 
 Testing:
 
 This script can be safely run between releases. When this is done, the script
-should execute successfully.
+should execute successfully, if it has not run before. Promoting snaps from beta
+and printing the changelog are idempotent, but synchronizing the github repo is not.
+
+To skip syncing with github, use the `--skip-github-sync` flag.
+To skip promoting snaps, use the `--skip-snaps` flag.
+To test with a version other than the latest release, use the `--test-version <VERSION_NUM>` flag
+  with a version number formatted as <A.B.C>.
 
 """
 
