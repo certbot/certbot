@@ -1,0 +1,1 @@
+Fixed run_saved_post_hooks truncating the wrong variable when the joined failed-domain string exceeds 16k characters, which corrupted RENEWED_DOMAINS and left FAILED_DOMAINS untruncated.
