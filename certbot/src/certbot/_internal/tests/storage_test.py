@@ -112,6 +112,13 @@ class RelevantValuesTest(unittest.TestCase):
         expected_relevant_values = self.values.copy()
         assert self._call(self.values) == expected_relevant_values
 
+    def test_manual_hooks(self):
+        self.values["manual_setup_hook"] = '"# setup'
+        self.values["manual_auth_hook"] = '"# auth'
+        expected_relevant_values = self.values.copy()
+        del expected_relevant_values["manual_setup_hook"]
+        assert self._call(self.values) == expected_relevant_values
+
 class BaseRenewableCertTest(test_util.ConfigTestCase):
     """Base class for setting up Renewable Cert tests.
 

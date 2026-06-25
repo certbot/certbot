@@ -37,15 +37,16 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         'When using shell scripts, an authenticator script must be provided. '
         'The environment variables available to this script depend on the '
         'type of challenge. $CERTBOT_IDENTIFIER will always contain the domain or IP address '
-        'being authenticated. For HTTP-01 and DNS-01, $CERTBOT_VALIDATION '
+        'being authenticated. For HTTP-01, DNS-01, and DNS-PERSIST-01, $CERTBOT_VALIDATION '
         'is the validation string, and $CERTBOT_TOKEN is the filename of the '
         'resource requested when performing an HTTP-01 challenge. An additional '
         'cleanup script can also be provided and can use the additional variable '
         '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script. '
-        'For both authenticator and cleanup script, on HTTP-01 and DNS-01 challenges, '
-        '$CERTBOT_REMAINING_CHALLENGES will be equal to the number of challenges that '
-        'remain after the current one, and $CERTBOT_ALL_IDENTIFIERS contains a comma-separated '
-        'list of all identifiers that are challenged for the current certificate.')
+        'For both authenticator and cleanup script, on HTTP-01, DNS-01, and DNS-PERSIST-01 '
+        'challenges, $CERTBOT_REMAINING_CHALLENGES will be equal to the number of challenges '
+        'that remain after the current one, and $CERTBOT_ALL_IDENTIFIERS contains a '
+        'comma-separated list of all identifiers that are challenged for the current '
+        'certificate.')
     # Include the full stop at the end of the FQDN in the instructions below for the null
     # label of the DNS root, as stated in section 3.1 of RFC 1035. While not necessary
     # for most day to day usage of hostnames, when adding FQDNs to a DNS zone editor, this
@@ -61,6 +62,11 @@ Please deploy a DNS TXT record under the name:
 with the following value:
 
 {validation}
+"""
+    _DNS_RDATA_TOO_LONG = """
+WARNING: Because the above DNS record's value is longer than 255 bytes, you will
+need to either split it into multiple substrings, or verify that your DNS provider
+does so automatically.
 """
     _DNS_VERIFY_INSTRUCTIONS = """
 Before continuing, verify the TXT record has been deployed. Depending on the DNS
@@ -104,18 +110,15 @@ permitted by DNS standards.)
             help='Path or command to execute for the authentication script')
         add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
+        add('setup-hook',
+            help='Path or command to execute just this once. Only used for dns-persist challenges')
 
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
-        if self.config.noninteractive_mode and not self.conf('auth-hook'):
-            raise errors.PluginError(
-                'An authentication script must be provided with --{0} when '
-                'using the manual plugin non-interactively.'.format(
-                    self.option_name('auth-hook')))
         self._validate_hooks()
 
     def _validate_hooks(self) -> None:
         if self.config.validate_hooks:
-            for name in ('auth-hook', 'cleanup-hook'):
+            for name in ('auth-hook', 'cleanup-hook', 'setup-hook'):
                 hook = self.conf(name)
                 if hook is not None:
                     hook_prefix = self.option_name(name)[:-len('-hook')]
@@ -128,13 +131,13 @@ permitted by DNS standards.)
             'the user or by performing the setup manually.')
 
     def auth_hint(self, failed_achalls: Iterable[achallenges.AnnotatedChallenge]) -> str:
-        def has_chall(cls: type[challenges.Challenge]) -> bool:
+        def has_chall(cls: tuple[type[challenges.Challenge], ...]) -> bool:
             return any(isinstance(achall.chall, cls) for achall in failed_achalls)
 
-        has_dns = has_chall(challenges.DNS01)
+        has_dns = has_chall((challenges.DNS01, challenges.DNSPersist01))
         resource_names = {
-            challenges.DNS01: 'DNS TXT records',
-            challenges.HTTP01: 'challenge files',
+            (challenges.DNS01, challenges.DNSPersist01): 'DNS TXT records',
+            (challenges.HTTP01,): 'challenge files',
         }
         resources = ' and '.join(sorted([v for k, v in resource_names.items() if has_chall(k)]))
 
@@ -165,22 +168,76 @@ permitted by DNS standards.)
 
     def get_chall_pref(self, identifier: str) -> Iterable[type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
-        return [challenges.HTTP01, challenges.DNS01]
+        return [challenges.HTTP01, challenges.DNS01, challenges.DNSPersist01]
+
+    def _check_hook_achall_match(self, achalls: list[achallenges.AnnotatedChallenge]) -> None:
+        """Checks whether the user has provided the appropriate hook type for the given list of
+        challenges, and emits a helpful warning if not. Raises an exception if we're in
+        non-interactive mode, have at least 1 non-DNS-PERSIST-01 challenge, and no auth hook
+        was provided."""
+        num_dns_persist_achalls = sum(1 for achall in achalls \
+            if isinstance(achall.chall, challenges.DNSPersist01))
+        num_other_achalls = len(achalls) - num_dns_persist_achalls
+        auth_hook_provided = self.conf('auth-hook')
+        setup_hook_provided = self.conf('setup-hook')
+        if num_other_achalls > 0 and self.config.noninteractive_mode and not auth_hook_provided:
+            raise errors.PluginError(
+                'An authentication script must be provided with --{0} when using the manual '
+                'plugin non-interactively on HTTP-01 or DNS-01 challenges.'.format(
+                    self.option_name('auth-hook')))
+        if num_dns_persist_achalls == 0 and setup_hook_provided:
+            msg = ('A setup script was provided with --{0}, but because no DNS-PERSIST-01 '
+                'challenges are being attempted, it will be ignored.').format(
+                        self.option_name('setup-hook'))
+            if not auth_hook_provided:
+                msg += ' Did you mean to use --{0} instead?'.format(
+                    self.option_name('auth-hook'))
+            logger.warning(msg)
+        if num_other_achalls == 0 and auth_hook_provided:
+            msg = ('An authentication script was provided with --{0}, but because only '
+                'DNS-PERSIST-01 challenges are being attempted, it will be ignored.').format(
+                    self.option_name('auth-hook'))
+            if not setup_hook_provided:
+                msg += ' Did you mean to use --{0} instead?'.format(
+                    self.option_name('setup-hook'))
+            logger.warning(msg)
+
+    def _achall_has_hook(self, achall: achallenges.AnnotatedChallenge) -> bool:
+        if isinstance(achall.chall, challenges.DNSPersist01):
+            return self.conf('setup-hook')
+        else:
+            return self.conf('auth-hook')
 
     def perform(self, achalls: list[achallenges.AnnotatedChallenge]
                 ) -> list[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
+        self._check_hook_achall_match(achalls)
         responses = []
         last_dns_achall = 0
         for i, achall in enumerate(achalls):
-            if isinstance(achall.chall, challenges.DNS01):
+            if isinstance(achall.chall, (challenges.DNS01, challenges.DNSPersist01)):
                 last_dns_achall = i
         for i, achall in enumerate(achalls):
-            if self.conf('auth-hook'):
+            if self._achall_has_hook(achall):
                 self._perform_achall_with_script(achall, achalls)
             else:
                 self._perform_achall_manually(achall, i == last_dns_achall)
-            responses.append(achall.response(achall.account_key))
+            responses.append(self._get_response(achall))
         return responses
+
+    def _get_response(self, achall: achallenges.AnnotatedChallenge) -> challenges.ChallengeResponse:
+        if isinstance(achall.chall, (challenges.HTTP01, challenges.DNS01)):
+            return achall.response(achall.account_key)
+        else:
+            assert isinstance(achall.chall, challenges.DNSPersist01)
+            return achall.response()
+
+    def _get_validation(self, achall: achallenges.AnnotatedChallenge) -> str:
+        if isinstance(achall.chall, (challenges.HTTP01, challenges.DNS01)):
+            return achall.validation(achall.account_key)
+        else:
+            assert isinstance(achall.chall, challenges.DNSPersist01)
+            is_wildcard = util.is_wildcard_domain(achall.identifier.value)
+            return achall.get_validation_rdata(is_wildcard)
 
     def _perform_achall_with_script(self, achall: achallenges.AnnotatedChallenge,
                                     achalls: list[achallenges.AnnotatedChallenge]) -> None:
@@ -188,7 +245,7 @@ permitted by DNS standards.)
         env = {
             "CERTBOT_DOMAIN": identifier_value,
             "CERTBOT_IDENTIFIER": identifier_value,
-            "CERTBOT_VALIDATION": achall.validation(achall.account_key),
+            "CERTBOT_VALIDATION": self._get_validation(achall),
             "CERTBOT_ALL_DOMAINS": ','.join(one_achall.identifier.value for one_achall in achalls),
             "CERTBOT_ALL_IDENTIFIERS":
                 ','.join(one_achall.identifier.value for one_achall in achalls),
@@ -199,36 +256,42 @@ permitted by DNS standards.)
         else:
             os.environ.pop('CERTBOT_TOKEN', None)
         os.environ.update(env)
-        _, out = self._execute_hook('auth-hook', identifier_value)
+        if isinstance(achall.chall, challenges.DNSPersist01):
+            hook_name = 'setup-hook'
+        else:
+            hook_name = 'auth-hook'
+        _, out = self._execute_hook(hook_name, identifier_value)
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
     def _perform_achall_manually(self, achall: achallenges.AnnotatedChallenge,
                                  last_dns_achall: bool = False) -> None:
         identifier_value = achall.identifier.value
-        validation = achall.validation(achall.account_key)
+        validation = self._get_validation(achall)
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
                 achall=achall, encoded_token=achall.chall.encode('token'),
                 port=self.config.http01_port,
                 uri=achall.chall.uri(identifier_value), validation=validation)
         else:
-            assert isinstance(achall.chall, challenges.DNS01)
+            assert isinstance(achall.chall, (challenges.DNS01, challenges.DNSPersist01))
             assert achall.identifier.typ == messages.IDENTIFIER_FQDN
             msg = self._DNS_INSTRUCTIONS.format(
                 domain=achall.validation_domain_name(identifier_value),
                 validation=validation)
-        if isinstance(achall.chall, challenges.DNS01):
+            if len(validation) > 255:
+                msg += self._DNS_RDATA_TOO_LONG
+        if isinstance(achall.chall, (challenges.DNS01, challenges.DNSPersist01)):
             if self.subsequent_dns_challenge:
-                # 2nd or later dns-01 challenge
+                # 2nd or later dns challenge
                 msg += self._SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS
             elif self.subsequent_any_challenge:
-                # 1st dns-01 challenge, but 2nd or later *any* challenge, so
+                # 1st dns challenge, but 2nd or later *any* challenge, so
                 # instruct user not to remove any previous http-01 challenge
                 msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
             self.subsequent_dns_challenge = True
             if last_dns_achall:
-                # last dns-01 challenge
+                # last dns challenge
                 msg += self._DNS_VERIFY_INSTRUCTIONS.format(
                     domain=achall.validation_domain_name(identifier_value))
         elif self.subsequent_any_challenge:
@@ -240,6 +303,8 @@ permitted by DNS standards.)
     def cleanup(self, achalls: Iterable[achallenges.AnnotatedChallenge]) -> None:  # pylint: disable=missing-function-docstring
         if self.conf('cleanup-hook'):
             for achall in achalls:
+                if isinstance(achall.chall, challenges.DNSPersist01):
+                    continue
                 env = self.env.pop(achall)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
