@@ -310,7 +310,7 @@ class TempUmaskTests(test_util.TempDirTestCase):
             with filesystem.temp_umask(0o0077):
                 assert self._check_umask() == 0o0077
                 raise Exception()
-        except:
+        except Exception:
             assert self._check_umask() == 0o0022
 
 
