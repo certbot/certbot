@@ -41,8 +41,6 @@ jobs:
     permissions:
       contents: read
     uses: "./.github/workflows/snap_packaging_jobs.yml"
-    with:
-      snapBuildTimeout: 19800
     secrets:
       LAUNCHPAD_CREDENTIALS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"
   create_changelog:
