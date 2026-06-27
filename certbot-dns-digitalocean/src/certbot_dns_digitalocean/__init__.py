@@ -26,8 +26,14 @@ Credentials
 -----------
 
 Use of this plugin requires a configuration file containing DigitalOcean API
-credentials, obtained from your DigitalOcean account's `Applications & API
-Tokens page <https://cloud.digitalocean.com/settings/api/tokens>`_.
+credentials, obtained from your DigitalOcean account's `API Tokens page
+<https://cloud.digitalocean.com/account/api/tokens>`_.
+
+The token requires the following scopes (under **domain**):
+
+- ``create``
+- ``read``
+- ``delete``
 
 .. code-block:: ini
    :name: credentials.ini
