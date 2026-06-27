@@ -189,7 +189,8 @@ class NamespaceConfig:
 
     @property
     def server(self) -> str:
-        """ACME Directory Resource URI."""
+        """ACME Directory Resource URI. Defaults to Let's Encrypt. May also
+        be set via the CERTBOT_SERVER environment variable."""
         return self.namespace.server
 
     @server.setter

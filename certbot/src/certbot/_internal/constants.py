@@ -105,7 +105,7 @@ CLI_DEFAULTS: dict[str, Any] = dict(  # pylint: disable=use-dict-literal
     config_dir=misc.get_default_folder('config'),
     work_dir=misc.get_default_folder('work'),
     logs_dir=misc.get_default_folder('logs'),
-    server="https://acme-v02.api.letsencrypt.org/directory",
+    server=os.environ.get("CERTBOT_SERVER", "https://acme-v02.api.letsencrypt.org/directory"),
 
     # Plugins parsers
     configurator=None,
