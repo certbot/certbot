@@ -1,0 +1,25 @@
+name: Workflow security (zizmor)
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/**'
+  pull_request:
+    branches:
+      - main
+      - "*.x"
+    paths:
+      - '.github/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  zizmor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: pipx install zizmor
+      - run: zizmor .
