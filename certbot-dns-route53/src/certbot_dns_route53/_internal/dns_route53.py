@@ -43,6 +43,7 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         self._attempt_cleanup = False
         self._resource_records: collections.defaultdict[str, list[dict[str, str]]] = \
             collections.defaultdict(list)
+        self._resource_records_change_ids: dict[str, str] = {}
 
     def more_info(self) -> str:
         return "Solve a DNS01 challenge using AWS Route53"
@@ -142,6 +143,11 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
                 # Create a new list containing the record to use with DELETE
                 rrecords = [challenge]
         else:
+            if challenge in rrecords:
+                # Some ACME CAs return identical challenge values for apex and
+                # wildcard on the same domain. Route53 rejects duplicate resource
+                # records, so return the previous change ID without re-submitting.
+                return self._resource_records_change_ids[validation_domain_name]
             rrecords.append(challenge)
 
         response = self.r53.change_resource_record_sets(
@@ -161,7 +167,9 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
                 ]
             }
         )
-        return cast(str, response["ChangeInfo"]["Id"])
+        change_id = cast(str, response["ChangeInfo"]["Id"])
+        self._resource_records_change_ids[validation_domain_name] = change_id
+        return change_id
 
     def _wait_for_change(self, change_id: str) -> None:
         """Wait for a change to be propagated to all Route53 DNS servers.

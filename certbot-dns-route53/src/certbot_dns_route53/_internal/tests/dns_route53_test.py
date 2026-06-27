@@ -221,6 +221,21 @@ class ClientTest(unittest.TestCase):
         call_count = self.client.r53.change_resource_record_sets.call_count
         assert call_count == 1
 
+    def test_change_txt_record_duplicate(self):
+        self.client._find_zone_id_for_domain = mock.MagicMock() # type: ignore [method-assign, unused-ignore]
+        self.client.r53.change_resource_record_sets = mock.MagicMock(
+            return_value={"ChangeInfo": {"Id": "first-change-id"}})
+
+        # First call should go through
+        change_id = self.client._change_txt_record("UPSERT", DOMAIN, "same-value")
+        assert change_id == "first-change-id"
+        assert self.client.r53.change_resource_record_sets.call_count == 1
+
+        # Second call with same domain and value should return previous change ID
+        change_id = self.client._change_txt_record("UPSERT", DOMAIN, "same-value")
+        assert change_id == "first-change-id"
+        assert self.client.r53.change_resource_record_sets.call_count == 1
+
     def test_change_txt_record_delete(self):
         self.client._find_zone_id_for_domain = mock.MagicMock() # type: ignore[ method-assign, unused-ignore]
         self.client.r53.change_resource_record_sets = mock.MagicMock(

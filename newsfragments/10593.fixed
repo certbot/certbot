@@ -1,0 +1,1 @@
+Fixed certbot-dns-route53 failing with "Duplicate Resource Record" when the ACME CA returns identical DNS-01 challenge values for apex and wildcard domains.
