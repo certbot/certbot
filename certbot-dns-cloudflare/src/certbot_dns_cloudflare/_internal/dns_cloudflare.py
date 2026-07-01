@@ -120,6 +120,10 @@ class _CloudflareClient:
         """
         Add a TXT record using the supplied information.
 
+        If a TXT record with the same name and content already exists (e.g. from a
+        previous failed attempt or a reused authorization), the existing record is
+        left in place and this method returns successfully.
+
         :param str domain: The domain to use to look up the Cloudflare zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
@@ -128,6 +132,14 @@ class _CloudflareClient:
         """
 
         zone_id = self._find_zone_id(domain)
+
+        # Check if the record already exists (e.g. from a prior unclean termination
+        # or the ACME server reusing a pending authorization).
+        existing_record_id = self._find_txt_record_id(zone_id, record_name, record_content)
+        if existing_record_id:
+            logger.debug('TXT record already exists with record_id: %s; no action needed.',
+                         existing_record_id)
+            return
 
         data: _RecordData = {
             'type': 'TXT',
@@ -141,6 +153,15 @@ class _CloudflareClient:
             self.cf.dns.records.create(zone_id=zone_id, **data)
         except cloudflare.APIStatusError as e:
             code = _cf_error_code(e)
+
+            # Error 81057 means "Record already exists" — this can happen due to a
+            # race condition between the pre-check above and a concurrent create
+            # (e.g. parallel certbot invocations for the same domain).
+            if code == 81057:
+                logger.debug('TXT record was created concurrently (error 81057); '
+                             'treating as success.')
+                return
+
             hint = None
 
             if code == 1009:
