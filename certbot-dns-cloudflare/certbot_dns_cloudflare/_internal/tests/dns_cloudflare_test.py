@@ -112,6 +112,7 @@ class CloudflareClientTest(unittest.TestCase):
 
     def test_add_txt_record(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
+        self.cf.zones.dns_records.get.return_value = []
 
         self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
                                               self.record_ttl)
@@ -125,8 +126,31 @@ class CloudflareClientTest(unittest.TestCase):
         assert self.record_content == post_data['content']
         assert self.record_ttl == post_data['ttl']
 
+    def test_add_txt_record_already_exists(self):
+        self.cf.zones.get.return_value = [{'id': self.zone_id}]
+        self.cf.zones.dns_records.get.return_value = [{'id': self.record_id}]
+
+        self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
+                                              self.record_ttl)
+
+        # Should not attempt to create since it already exists
+        self.cf.zones.dns_records.post.assert_not_called()
+
+    def test_add_txt_record_duplicate_race_condition(self):
+        self.cf.zones.get.return_value = [{'id': self.zone_id}]
+        # Pre-check finds nothing (record doesn't exist yet)
+        self.cf.zones.dns_records.get.return_value = []
+        # But create fails because another process created it concurrently
+        self.cf.zones.dns_records.post.side_effect = \
+            CloudFlare.exceptions.CloudFlareAPIError(81057, '', '')
+
+        # Should not raise — treat duplicate as success
+        self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
+                                              self.record_ttl)
+
     def test_add_txt_record_error(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
+        self.cf.zones.dns_records.get.return_value = []
 
         self.cf.zones.dns_records.post.side_effect = CloudFlare.exceptions.CloudFlareAPIError(1009, '', '')
 
