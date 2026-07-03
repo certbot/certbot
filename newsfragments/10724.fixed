@@ -1,0 +1,1 @@
+Fixed ``CERTBOT_AUTH_OUTPUT`` environment variable exceeding ``ARG_MAX`` limits when manual auth-hook produces large stdout output, which caused cleanup hooks to fail with ``E2BIG`` errors.

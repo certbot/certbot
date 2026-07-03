@@ -156,5 +156,26 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             'Ensure that you created these in the correct location.'
 
 
+    def test_auth_output_truncation(self):
+        """Test that CERTBOT_AUTH_OUTPUT is truncated when it exceeds the limit."""
+        from certbot._internal.plugins.manual import _MAX_AUTH_OUTPUT_BYTES
+        import tempfile
+        big_output = 'x' * (_MAX_AUTH_OUTPUT_BYTES + 1000)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as tmp:
+            tmp.write(big_output)
+            tmp_path = tmp.name
+        self.config.manual_auth_hook = (
+            '{0} -c "print(open(\'{1}\').read(), end=\'\')"'.format(
+                sys.executable, tmp_path))
+        self.config.manual_cleanup_hook = '# cleanup'
+        try:
+            self.auth.perform(self.achalls)
+            for achall in self.achalls:
+                stored = self.auth.env[achall]['CERTBOT_AUTH_OUTPUT']
+                assert len(stored.encode('utf-8')) <= _MAX_AUTH_OUTPUT_BYTES
+                assert len(stored) < len(big_output)
+        finally:
+            os.unlink(tmp_path)
+
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
