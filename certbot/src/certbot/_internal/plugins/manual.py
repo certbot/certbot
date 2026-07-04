@@ -206,11 +206,12 @@ permitted by DNS standards.)
         os.environ.update(env)
         _, out = self._execute_hook('auth-hook', identifier_value)
         auth_output = out.strip()
-        if len(auth_output.encode('utf-8')) > _MAX_AUTH_OUTPUT_BYTES:
+        auth_output_bytes = auth_output.encode('utf-8')
+        if len(auth_output_bytes) > _MAX_AUTH_OUTPUT_BYTES:
             logger.warning(
                 'auth-hook output exceeded %d bytes; truncating CERTBOT_AUTH_OUTPUT '
                 'to avoid ARG_MAX limits in cleanup hook', _MAX_AUTH_OUTPUT_BYTES)
-            auth_output = auth_output.encode('utf-8')[:_MAX_AUTH_OUTPUT_BYTES].decode(
+            auth_output = auth_output_bytes[:_MAX_AUTH_OUTPUT_BYTES].decode(
                 'utf-8', errors='ignore')
         env['CERTBOT_AUTH_OUTPUT'] = auth_output
         self.env[achall] = env
