@@ -46,7 +46,8 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         'is the validation string, and $CERTBOT_TOKEN is the filename of the '
         'resource requested when performing an HTTP-01 challenge. An additional '
         'cleanup script can also be provided and can use the additional variable '
-        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script. '
+        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script '
+        '(truncated to 10 KB to avoid ARG_MAX limits in the cleanup hook). '
         'For both authenticator and cleanup script, on HTTP-01 and DNS-01 challenges, '
         '$CERTBOT_REMAINING_CHALLENGES will be equal to the number of challenges that '
         'remain after the current one, and $CERTBOT_ALL_IDENTIFIERS contains a comma-separated '
@@ -206,12 +207,12 @@ permitted by DNS standards.)
         os.environ.update(env)
         _, out = self._execute_hook('auth-hook', identifier_value)
         auth_output = out.strip()
-        auth_output_bytes = auth_output.encode('utf-8')
-        if len(auth_output_bytes) > _MAX_AUTH_OUTPUT_BYTES:
+        encoded = auth_output.encode('utf-8')
+        if len(encoded) > _MAX_AUTH_OUTPUT_BYTES:
             logger.warning(
                 'auth-hook output exceeded %d bytes; truncating CERTBOT_AUTH_OUTPUT '
                 'to avoid ARG_MAX limits in cleanup hook', _MAX_AUTH_OUTPUT_BYTES)
-            auth_output = auth_output_bytes[:_MAX_AUTH_OUTPUT_BYTES].decode(
+            auth_output = encoded[:_MAX_AUTH_OUTPUT_BYTES].decode(
                 'utf-8', errors='ignore')
         env['CERTBOT_AUTH_OUTPUT'] = auth_output
         self.env[achall] = env

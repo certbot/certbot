@@ -161,12 +161,14 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         from certbot._internal.plugins.manual import _MAX_AUTH_OUTPUT_BYTES
         import tempfile
         big_output = 'x' * (_MAX_AUTH_OUTPUT_BYTES + 1000)
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as tmp:
-            tmp.write(big_output)
-            tmp_path = tmp.name
-        self.config.manual_auth_hook = (
-            '{0} -c "print(open(\'{1}\').read(), end=\'\')"'.format(
-                sys.executable, tmp_path))
+        # Write a helper script to a temp file instead of embedding the path
+        # in a -c snippet to avoid Windows backslash escape issues.
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as script:
+            script.write('import sys\n')
+            script.write(f'data = "x" * {_MAX_AUTH_OUTPUT_BYTES + 1000}\n')
+            script.write('sys.stdout.write(data)\n')
+            script_path = script.name
+        self.config.manual_auth_hook = '{0} {1}'.format(sys.executable, script_path)
         self.config.manual_cleanup_hook = '# cleanup'
         try:
             self.auth.perform(self.achalls)
@@ -175,7 +177,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                 assert len(stored.encode('utf-8')) <= _MAX_AUTH_OUTPUT_BYTES
                 assert len(stored) < len(big_output)
         finally:
-            os.unlink(tmp_path)
+            os.unlink(script_path)
 
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover
