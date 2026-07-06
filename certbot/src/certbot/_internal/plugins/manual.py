@@ -207,7 +207,7 @@ permitted by DNS standards.)
         os.environ.update(env)
         _, out = self._execute_hook('auth-hook', identifier_value)
         auth_output = out.strip()
-        encoded = auth_output.encode('utf-8')
+        encoded = auth_output.encode('utf-8', errors='ignore')
         if len(encoded) > _MAX_AUTH_OUTPUT_BYTES:
             logger.warning(
                 'auth-hook output exceeded %d bytes; truncating CERTBOT_AUTH_OUTPUT '
