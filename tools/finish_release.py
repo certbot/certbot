@@ -200,7 +200,7 @@ def _run_silent_except_error(cmd: list[str], message: str = None) -> subprocess.
     try:
         process = subprocess.run(cmd, check=True, universal_newlines=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        print(f'Error running `{' '.join(cmd)}`')
+        print(f'Error running `{" ".join(cmd)}`')
         if message is not None:
             print(message)
         print(e.output)
