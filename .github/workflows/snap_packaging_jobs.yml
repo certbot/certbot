@@ -29,7 +29,7 @@ jobs:
         persist-credentials: false
     - id: set-dns-dirs
       run: |
-        DNS_NAMES="$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')"
+        DNS_NAMES="$(echo certbot-dns-* | jq -R -s -c 'gsub("\n"; "") | split(" ")')"
         echo "dns-dirs=$DNS_NAMES" >> "$GITHUB_OUTPUT"
         echo $DNS_NAMES
 
