@@ -53,7 +53,7 @@ jobs:
         persist-credentials: false
     - id: set-dns-dirs
       run: |
-        DNS_NAMES="$(echo certbot-dns-* | jq -R -s -c 'split(" ")[:-1]')"
+        DNS_NAMES="$(echo certbot-dns-* | jq -R -s -c 'gsub("\n"; "") | split(" ")')"
         echo "dns-dirs=$DNS_NAMES" >> "$GITHUB_OUTPUT"
   gha_build_dns_snaps:
     name: Build ${{ matrix.dns-dir }} ${{ matrix.build-for }}
