@@ -75,8 +75,8 @@ credentials <https://boto3.readthedocs.io/en/latest/guide/configuration.html
    :name: certbot_route53.ini
    :caption: Example certbot credentials file for --dns-route53-credentials:
 
-   dns_route53_access_key_id=AKIAIOSFODNN7EXAMPLE
-   dns_route53_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+   route53_access_key_id=AKIAIOSFODNN7EXAMPLE
+   route53_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 .. code-block:: ini
    :name: config.ini

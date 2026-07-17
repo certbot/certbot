@@ -72,8 +72,8 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
     def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         add("credentials",
             help="Path to a certbot-style credentials INI file containing "
-                 "dns_route53_access_key_id and dns_route53_secret_access_key "
-                 "(and optionally dns_route53_session_token). If not provided, "
+                 "route53_access_key_id and route53_secret_access_key "
+                 "(and optionally route53_session_token). If not provided, "
                  "boto3's standard credential resolution chain is used.",
             default=None)
 
