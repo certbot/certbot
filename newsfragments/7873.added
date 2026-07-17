@@ -1,0 +1,4 @@
+The ``--dns-route53-credentials`` option was added to certbot-dns-route53,
+allowing AWS credentials to be supplied via a certbot-style credentials INI
+file instead of relying solely on boto3's standard credential resolution
+chain.

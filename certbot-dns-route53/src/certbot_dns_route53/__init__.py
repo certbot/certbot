@@ -60,6 +60,9 @@ discussed in more detail in the Boto3 library's documentation about `configuring
 credentials <https://boto3.readthedocs.io/en/latest/guide/configuration.html
 #best-practices-for-configuring-credentials>`_.
 
+* Using a certbot-style credentials INI file supplied via
+  ``--dns-route53-credentials``. This pins the credentials used at issuance
+  and renewal, independent of the environment certbot runs in.
 * Using the ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` environment
   variables.
 * Using a credentials configuration file at the default location,
@@ -69,8 +72,15 @@ credentials <https://boto3.readthedocs.io/en/latest/guide/configuration.html
   ``AWS_CONFIG_FILE`` environment variable.
 
 .. code-block:: ini
+   :name: certbot_route53.ini
+   :caption: Example certbot credentials file for --dns-route53-credentials:
+
+   dns_route53_access_key_id=AKIAIOSFODNN7EXAMPLE
+   dns_route53_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+.. code-block:: ini
    :name: config.ini
-   :caption: Example credentials config file:
+   :caption: Example AWS shared credentials file:
 
    [default]
    aws_access_key_id=AKIAIOSFODNN7EXAMPLE
@@ -92,6 +102,15 @@ Examples
 
    certbot certonly \\
      --dns-route53 \\
+     -d example.com
+
+.. code-block:: bash
+   :caption: To acquire a certificate for ``example.com`` using a certbot
+             credentials file
+
+   certbot certonly \\
+     --dns-route53 \\
+     --dns-route53-credentials ~/.secrets/certbot/route53.ini \\
      -d example.com
 
 .. code-block:: bash

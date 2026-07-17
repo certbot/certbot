@@ -13,6 +13,7 @@ from acme import challenges, messages
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import os
+from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -33,7 +34,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         super().setUp()
 
-        self.config = mock.MagicMock()
+        self.config = mock.MagicMock(route53_credentials=None)
 
         # Set up dummy credentials for testing
         os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
@@ -143,7 +144,7 @@ class ClientTest(unittest.TestCase):
     def setUp(self):
         from certbot_dns_route53._internal.dns_route53 import Authenticator
 
-        self.config = mock.MagicMock()
+        self.config = mock.MagicMock(route53_credentials=None)
 
         # Set up dummy credentials for testing
         os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
@@ -268,6 +269,57 @@ class ClientTest(unittest.TestCase):
         self.client._wait_for_change("1")
 
         assert self.client.r53.get_change.called
+
+
+class CredentialsFileTest(test_util.TempDirTestCase):
+    """Tests for the optional --dns-route53-credentials INI file."""
+
+    def _make_authenticator(self, values):
+        from certbot_dns_route53._internal.dns_route53 import Authenticator
+
+        path = os.path.join(self.tempdir, "file.ini")
+        dns_test_common.write(values, path)
+        config = mock.MagicMock(route53_credentials=path)
+        return Authenticator(config, "route53")
+
+    @mock.patch("certbot_dns_route53._internal.dns_route53.boto3.client")
+    def test_client_created_from_credentials_file(self, mock_client):
+        self._make_authenticator({
+            "route53_access_key_id": "AKIAEXAMPLE",
+            "route53_secret_access_key": "secret-example",
+        })
+        mock_client.assert_called_once_with(
+            "route53",
+            aws_access_key_id="AKIAEXAMPLE",
+            aws_secret_access_key="secret-example",
+            aws_session_token=None,
+        )
+
+    @mock.patch("certbot_dns_route53._internal.dns_route53.boto3.client")
+    def test_session_token_passed_through(self, mock_client):
+        self._make_authenticator({
+            "route53_access_key_id": "AKIAEXAMPLE",
+            "route53_secret_access_key": "secret-example",
+            "route53_session_token": "a-session-token",
+        })
+        mock_client.assert_called_once_with(
+            "route53",
+            aws_access_key_id="AKIAEXAMPLE",
+            aws_secret_access_key="secret-example",
+            aws_session_token="a-session-token",
+        )
+
+    def test_missing_required_key_raises(self):
+        with pytest.raises(errors.PluginError):
+            self._make_authenticator({"route53_access_key_id": "AKIAEXAMPLE"})
+
+    def test_missing_file_raises(self):
+        from certbot_dns_route53._internal.dns_route53 import Authenticator
+
+        config = mock.MagicMock(
+            route53_credentials=os.path.join(self.tempdir, "missing.ini"))
+        with pytest.raises(errors.PluginError):
+            Authenticator(config, "route53")
 
 
 if __name__ == "__main__":

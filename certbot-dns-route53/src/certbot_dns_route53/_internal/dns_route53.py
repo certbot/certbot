@@ -17,6 +17,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot.achallenges import AnnotatedChallenge
 from certbot.plugins import common
+from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 
@@ -39,18 +40,42 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.r53 = boto3.client("route53")
+        self.r53 = self._create_route53_client()
         self._attempt_cleanup = False
         self._resource_records: collections.defaultdict[str, list[dict[str, str]]] = \
             collections.defaultdict(list)
+
+    def _create_route53_client(self) -> Any:
+        """Create the Route53 client, using an explicit credentials file if
+        one was supplied via --dns-route53-credentials, and otherwise falling
+        back to boto3's standard credential resolution chain."""
+        credentials_path = self.conf("credentials")
+        if not credentials_path:
+            return boto3.client("route53")
+
+        credentials = dns_common.CredentialsConfiguration(credentials_path, self.dest)
+        credentials.require({
+            "access-key-id": "an AWS access key ID",
+            "secret-access-key": "an AWS secret access key",
+        })
+        return boto3.client(
+            "route53",
+            aws_access_key_id=credentials.conf("access-key-id"),
+            aws_secret_access_key=credentials.conf("secret-access-key"),
+            aws_session_token=credentials.conf("session-token"),
+        )
 
     def more_info(self) -> str:
         return "Solve a DNS01 challenge using AWS Route53"
 
     @classmethod
     def add_parser_arguments(cls, add: Callable[..., None]) -> None:
-        # This authenticator currently adds no extra arguments.
-        pass
+        add("credentials",
+            help="Path to a certbot-style credentials INI file containing "
+                 "dns_route53_access_key_id and dns_route53_secret_access_key "
+                 "(and optionally dns_route53_session_token). If not provided, "
+                 "boto3's standard credential resolution chain is used.",
+            default=None)
 
     def auth_hint(self, failed_achalls: list[achallenges.AnnotatedChallenge]) -> str:
         return (
