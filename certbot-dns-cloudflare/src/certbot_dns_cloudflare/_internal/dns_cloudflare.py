@@ -154,12 +154,14 @@ class _CloudflareClient:
         except cloudflare.APIStatusError as e:
             code = _cf_error_code(e)
 
-            # Error 81057 means "Record already exists" — this can happen due to a
-            # race condition between the pre-check above and a concurrent create
-            # (e.g. parallel certbot invocations for the same domain).
-            if code == 81057:
-                logger.debug('TXT record was created concurrently (error 81057); '
-                             'treating as success.')
+            # Errors 81057 ("Record already exists") and 81058 ("A record with
+            # identical settings already exists") can happen due to a race
+            # condition between the pre-check above and a concurrent create
+            # (e.g. parallel certbot invocations for the same challenge).
+            # Matches the codes tolerated by lexicon's cloudflare provider.
+            if code in (81057, 81058):
+                logger.debug('TXT record already exists (error %s); '
+                             'treating as success.', code)
                 return
 
             hint = None

@@ -181,15 +181,17 @@ class CloudflareClientTest(unittest.TestCase):
         self.cf.dns.records.create.assert_not_called()
 
     def test_add_txt_record_duplicate_race_condition(self):
-        self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
-        # Pre-check finds nothing (record doesn't exist yet)
-        self.cf.dns.records.list.return_value = []
-        # But create fails because another process created it concurrently
-        self.cf.dns.records.create.side_effect = _make_api_error(81057)
+        # Both "already exists" codes (matching lexicon's cloudflare provider)
+        for error_code in (81057, 81058):
+            self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
+            # Pre-check finds nothing (record doesn't exist yet)
+            self.cf.dns.records.list.return_value = []
+            # But create fails because another process created it concurrently
+            self.cf.dns.records.create.side_effect = _make_api_error(error_code)
 
-        # Should not raise — treat duplicate as success
-        self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
-                                              self.record_ttl)
+            # Should not raise — treat duplicate as success
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
+                                                  self.record_ttl)
 
     def test_add_txt_record_error(self):
         self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
