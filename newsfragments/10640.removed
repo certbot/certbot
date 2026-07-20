@@ -1,0 +1,4 @@
+The deprecated `domain` attribute of `certbot.achallenges.AnnotatedChallenge` has
+been removed. Use `AnnotatedChallenge.identifier.value` instead, and pass
+`identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=<domain>)`
+when constructing annotated challenges.
