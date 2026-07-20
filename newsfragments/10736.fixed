@@ -1,0 +1,5 @@
+When saving a renewal configuration, Certbot now only persists plugin-specific
+options belonging to the currently used authenticator and installer. Previously,
+commands like `certbot reconfigure --authenticator <new-plugin>` would leave
+stale options from the old plugin (e.g. `webroot_path` and `webroot_map`) in the
+renewal configuration file.

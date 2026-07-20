@@ -268,20 +268,32 @@ def _write_live_readme_to(readme_path: str, is_base_dir: bool = False) -> None:
                                     "certificates.\n".format(prefix=prefix))
 
 
-def _relevant(namespaces: Iterable[str], option: str) -> bool:
+def _relevant(namespaces: Iterable[str], used_namespaces: Iterable[str], option: str) -> bool:
     """
     Is this option one that could be restored for future renewal purposes?
 
+    Plugin-specific options (those prefixed by a plugin's dest namespace)
+    are only relevant if they belong to a plugin currently in use as the
+    authenticator or installer. This prevents stale options from a
+    previously used plugin from being persisted after switching plugins
+    (e.g. with ``certbot reconfigure``). See
+    https://github.com/certbot/certbot/issues/10736.
+
     :param namespaces: plugin namespaces for configuration options
     :type namespaces: `list` of `str`
+    :param used_namespaces: namespaces of the plugins currently in use
+    :type used_namespaces: `list` of `str`
     :param str option: the name of the option
 
     :rtype: bool
     """
     from certbot._internal import renewal
 
-    return (option in renewal.CONFIG_ITEMS or
-            any(option.startswith(namespace) for namespace in namespaces))
+    if option in renewal.CONFIG_ITEMS:
+        return True
+    if any(option.startswith(namespace) for namespace in namespaces):
+        return any(option.startswith(namespace) for namespace in used_namespaces)
+    return False
 
 
 def relevant_values(config: configuration.NamespaceConfig) -> dict[str, Any]:
@@ -296,11 +308,17 @@ def relevant_values(config: configuration.NamespaceConfig) -> dict[str, Any]:
     all_values = config.to_dict()
     plugins = plugins_disco.PluginsRegistry.find_all()
     namespaces = [plugins_common.dest_namespace(plugin) for plugin in plugins]
+    used_plugins = {
+        plugin_name for plugin_name in (all_values.get("authenticator"),
+                                        all_values.get("installer"))
+        if isinstance(plugin_name, str)
+    }
+    used_namespaces = [plugins_common.dest_namespace(plugin) for plugin in used_plugins]
 
     rv = {
         option: value
         for option, value in all_values.items()
-        if _relevant(namespaces, option) and config.set_by_user(option)
+        if _relevant(namespaces, used_namespaces, option) and config.set_by_user(option)
     }
     # We always save the server value to help with forward compatibility
     # and behavioral consistency when versions of Certbot with different

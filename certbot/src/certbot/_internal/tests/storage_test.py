@@ -51,8 +51,25 @@ class RelevantValuesTest(unittest.TestCase):
         mock_find_all.return_value = ["certbot-foo:bar"]
         self.mock_config.set_by_user.return_value = True
 
+        self.values["authenticator"] = "certbot-foo:bar"
         self.values["certbot_foo:bar_baz"] = 42
         assert self._call(self.values.copy()) == self.values
+
+    @mock.patch("certbot._internal.plugins.disco.PluginsRegistry.find_all")
+    def test_unused_plugin_namespace_dropped(self, mock_find_all):
+        # Options belonging to a plugin that is not the current authenticator
+        # or installer should not be persisted. See
+        # https://github.com/certbot/certbot/issues/10736
+        mock_find_all.return_value = ["certbot-foo:bar", "webroot"]
+        self.mock_config.set_by_user.return_value = True
+
+        self.values["authenticator"] = "certbot-foo:bar"
+        self.values["certbot_foo:bar_baz"] = 42
+        expected_relevant_values = self.values.copy()
+        self.values["webroot_path"] = ["/var/www/html"]
+        self.values["webroot_map"] = {"example.com": "/var/www/html"}
+
+        assert self._call(self.values.copy()) == expected_relevant_values
 
     def test_option_set(self):
         self.mock_config.set_by_user.return_value = True
