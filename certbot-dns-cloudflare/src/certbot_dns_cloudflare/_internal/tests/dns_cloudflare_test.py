@@ -179,6 +179,26 @@ class CloudflareClientTest(unittest.TestCase):
 
         # Should not attempt to create since it already exists
         self.cf.dns.records.create.assert_not_called()
+        # The pre-check must match on name AND content: ACME tokens are unique
+        # per authorization, so a concurrent invocation (different token, thus
+        # different content) must never be treated as "already exists".
+        self.cf.dns.records.list.assert_called_with(
+            zone_id=self.zone_id, type='TXT', name={'exact': self.record_name},
+            content={'exact': self.record_content}, per_page=1)
+
+    def test_add_txt_record_same_name_different_content_still_created(self):
+        # A record at the same name created by a concurrent invocation (with a
+        # different validation token) must not suppress creation of our record.
+        self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
+        # Exact-content filter finds no match for OUR content
+        self.cf.dns.records.list.return_value = []
+
+        self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
+                                              self.record_ttl)
+
+        self.cf.dns.records.create.assert_called_with(
+            zone_id=self.zone_id, type='TXT', name=self.record_name,
+            content=self.record_content, ttl=self.record_ttl)
 
     def test_add_txt_record_duplicate_race_condition(self):
         # Both "already exists" codes (matching lexicon's cloudflare provider)

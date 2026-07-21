@@ -134,7 +134,12 @@ class _CloudflareClient:
         zone_id = self._find_zone_id(domain)
 
         # Check if the record already exists (e.g. from a prior unclean termination
-        # or the ACME server reusing a pending authorization).
+        # or the ACME server reusing a pending authorization). This matches on both
+        # name AND content: since ACME validation tokens are unique per authorization,
+        # an identical record can only be a leftover for this same authorization.
+        # Concurrent invocations hold different tokens and thus create records with
+        # different content at the same name (which DNS and Cloudflare both permit),
+        # so they are never affected by this check.
         existing_record_id = self._find_txt_record_id(zone_id, record_name, record_content)
         if existing_record_id:
             logger.debug('TXT record already exists with record_id: %s; no action needed.',
