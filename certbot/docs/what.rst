@@ -2,21 +2,24 @@
 What is a Certificate?
 ======================
 
-A digital (X.509) *certificate* uses a public key and a private key to enable secure communication between a client program (web browser, email client,
+A digital (X.509) certificate uses a public key and a private key to enable secure communication between a client program (web browser, email client,
 etc.) and a server over an encrypted TLS (transport layer security) connection.
 
-The certificate is used both to encrypt the initial stage of communication (secure key exchange) and to identify the server. 
+The certificate is used **both to encrypt** the **initial stage** of communication (secure key exchange) and to **identify the server**. 
 
 The certificate includes information about:
+
 - the key
 - validity dates
 - the server identity
 - the digital signature of the certificate issuer
 
-If the issuer is trusted by the software that initiates the communication,
-and the signature is valid, then the key can be used to communicate securely with the server identified by the certificate.
+How Certbot Works With Certificate Authorities
+==============================================
 
-Using a certificate is a good way to prevent "machine-in-the-middle" attacks, in which someone in between you and the server you think you are talking to is able to insert their own (harmful) content.
+Certbot trusts the certificate issuer (e.g. Let's Encrypt) to verify that the server is who it claims to be. This is done by proving control of the domain(s) for which the certificate is requested. The responsible Certificate Authority (CA) will verify that the server is authorized to use the domain name(s) in the certificate request. Certbot then uses the CA's public key to verify the CA's digital signature on the certificate. If the certificate is valid, then the client (e.g., a web browser) can trust that the server is who it claims to be.
+
+Obtaining a certificate is a good way to prevent "machine-in-the-middle" attacks, in which someone in between you and the server you think you are talking to is able to insert their own (harmful) content.
 
 You can use Certbot to easily obtain and configure a free certificate from Let's Encrypt, a joint project of EFF, Mozilla, and many other sponsors.
 
