@@ -153,7 +153,7 @@ def _build_snap(
                         try:
                             first_block_str = first_block.decode()
                         except UnicodeDecodeError:
-                            first_block_str = first_block.hex()
+                            first_block_str = first_block.hex(sep=',')
                         print(f'The {target} {arch} snap file began with invalid data: {first_block_str}')
                 dump_output = bool(failed_archs)
 
