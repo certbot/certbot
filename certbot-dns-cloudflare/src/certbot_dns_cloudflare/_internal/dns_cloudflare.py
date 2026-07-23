@@ -133,19 +133,6 @@ class _CloudflareClient:
 
         zone_id = self._find_zone_id(domain)
 
-        # Check if the record already exists (e.g. from a prior unclean termination
-        # or the ACME server reusing a pending authorization). This matches on both
-        # name AND content: since ACME validation tokens are unique per authorization,
-        # an identical record can only be a leftover for this same authorization.
-        # Concurrent invocations hold different tokens and thus create records with
-        # different content at the same name (which DNS and Cloudflare both permit),
-        # so they are never affected by this check.
-        existing_record_id = self._find_txt_record_id(zone_id, record_name, record_content)
-        if existing_record_id:
-            logger.debug('TXT record already exists with record_id: %s; no action needed.',
-                         existing_record_id)
-            return
-
         data: _RecordData = {
             'type': 'TXT',
             'name': record_name,
@@ -160,9 +147,16 @@ class _CloudflareClient:
             code = _cf_error_code(e)
 
             # Errors 81057 ("Record already exists") and 81058 ("A record with
-            # identical settings already exists") can happen due to a race
-            # condition between the pre-check above and a concurrent create
-            # (e.g. parallel certbot invocations for the same challenge).
+            # identical settings already exists") mean an identical TXT record
+            # (same name and content) is already present. This can happen when:
+            # - a previous certbot run terminated uncleanly after creating the
+            #   record but before cleanup, and the ACME server replays the same
+            #   pending authorization (leftover record, same validation token);
+            # - the same challenge record is requested twice in one run, e.g.
+            #   for an apex + wildcard certificate where both validations map
+            #   to the same TXT name and content;
+            # - a concurrent certbot invocation created the record first.
+            # In all cases the desired record exists, so treat it as success.
             # Matches the codes tolerated by lexicon's cloudflare provider.
             if code in (81057, 81058):
                 logger.debug('TXT record already exists (error %s); '
