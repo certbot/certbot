@@ -144,14 +144,17 @@ def _build_snap(
                 for arch in archs:
                     snap_path_list = glob.glob(join(workspace, f'{target}_*_{arch}.snap'))
                     assert len(snap_path_list) == 1
-                    with open(snap_path_list[0], 'r') as f:
+                    with open(snap_path_list[0], 'rb') as f:
+                        first_block = f.read(10)
+                        # 'hsqs' is the magic number that SquashFS files start with
+                        if first_block.startswith(b'hsqs'):
+                            continue
+                        failed_archs.add(arch)
                         try:
-                            first_line = f.readline().rstrip()
+                            first_block_str = first_block.decode()
                         except UnicodeDecodeError:
-                            first_line = ''
-                        if first_line == "<!DOCTYPE html>":
-                            failed_archs.add(arch)
-                            print(f'The {target} {arch} snap file contains html instead of a snap')
+                            first_block_str = first_block.hex(sep=',')
+                        print(f'The {target} {arch} snap file began with invalid data: {first_block_str}')
                 dump_output = bool(failed_archs)
 
             if not dump_output:
