@@ -136,14 +136,16 @@ def build_snap(target: str, arch: str) -> None:
 
     # Check if the snap file just contains html
     if not failed:
-        with open(snap_path_list[0], 'r') as f:
-            try:
-                first_line = f.readline().rstrip()
-            except UnicodeDecodeError:
-                first_line = ''
-            if first_line == "<!DOCTYPE html>":
+        with open(snap_path_list[0], 'rb') as f:
+            first_block = f.read(10)
+            # 'hsqs' is the magic number that SquashFS files start with
+            if not first_block.startswith(b'hsqs'):
                 failed = True
-                print(f'The {target} {arch} snap file contains html instead of a snap')
+                try:
+                    first_block_str = first_block.decode()
+                except UnicodeDecodeError:
+                    first_block_str = first_block.hex(sep=',')
+                print(f'The {target} {arch} snap file began with invalid data: {first_block_str}')
 
     if failed:
         print('Dumping snapcraft remote-build logs:')
