@@ -6,13 +6,9 @@ You can also include your your name in `AUTHORS.md` if you like.
 
 ## AI Assistance Disclosure
 <!--
-If you used AI to create this PR, you have done a self-review of all AI-generated code and disclosed that your contribution was AI-generated per [EFF's AI-generated contribution policy](https://www.eff.org/about/opportunities/volunteer/coding-with-eff#ai-policy). You assert you have thoroughly understood, reviewed, and tested your entire submission.
+The use of AI/LLM tools is allowed so long as it is in line with [EFF's AI-generated contribution policy](https://www.eff.org/about/opportunities/volunteer/coding-with-eff#ai-policy).
 
-The use of AI/LLM tools is allowed so long as it is disclosed, so
-that we can provide better code review and maintain project quality.
-
-If you used AI/LLM tooling in any way related to this PR, please
-let us know to what extent it was utilized.
+If you used AI/LLM tooling in any way related to this PR, please let us know how it was used.
 
 Examples:
 
@@ -22,9 +18,9 @@ Examples:
 "Cody generated the code, and I verified it is correct."
 "Copilot provided tab completion for code and comments."
 
-We expect that you have vetted your contributions for correctness.
-Additionally, signing our CLA certifies that you have the rights to
-contribute this change.
+We expect that you have thoroughly understood and tested your entire submission, and reviewed it for correctness and code quality/maintainability.
+
+Do not respond to our questions or requests with the output of your AI coding tools; we took the time to have a human craft a response to you, please extend us the same courtesy.
 
 Replace the text below with your disclosure:
 -->
