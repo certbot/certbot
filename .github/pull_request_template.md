@@ -1,5 +1,5 @@
 <!--
-Thank you for contributing! The Certbot team receives many PR requests, and ask that you fill out the following sections to help the team prioritize the PR and make the review process more smooth.
+Thank you for contributing! The Certbot team receives many PR requests, and we ask that you fill out the following sections to help the team prioritize the PR and make the review process more smooth.
 
 You can also include your your name in `AUTHORS.md` if you like.
 -->
