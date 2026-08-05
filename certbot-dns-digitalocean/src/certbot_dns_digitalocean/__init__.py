@@ -26,8 +26,15 @@ Credentials
 -----------
 
 Use of this plugin requires a configuration file containing DigitalOcean API
-credentials, obtained from your DigitalOcean account's `Applications & API
-Tokens page <https://cloud.digitalocean.com/settings/api/tokens>`_.
+credentials, obtained from your DigitalOcean account's `API
+Tokens page <https://cloud.digitalocean.com/account/api/tokens>`_.
+
+The API token requires the following scopes:
+
+- **domain** (read, create, update, delete)
+
+These scopes allow Certbot to list your domains, create and delete TXT records
+for DNS challenges, and update domain TTL settings.
 
 .. code-block:: ini
    :name: credentials.ini
