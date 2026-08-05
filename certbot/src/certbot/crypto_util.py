@@ -25,7 +25,11 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
-from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA44PublicKey, MLDSA65PublicKey, MLDSA87PublicKey
+from cryptography.hazmat.primitives.asymmetric.mldsa import (
+    MLDSA44PublicKey,
+    MLDSA65PublicKey,
+    MLDSA87PublicKey,
+)
 from cryptography.hazmat.primitives.asymmetric.mlkem import MLKEM768PublicKey, MLKEM1024PublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
