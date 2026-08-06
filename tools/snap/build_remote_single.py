@@ -48,7 +48,7 @@ def _execute_build(
     # to the shape of snapcraft's build ID: using a MD5 hash represented as a
     # 32 character hex string (we use a larger character set).
 
-    status: str = "..."
+    status = "..."
 
     random_string = ''.join(random.choice(string.ascii_lowercase + string.digits)
                             for _ in range(32))
@@ -67,22 +67,23 @@ def _execute_build(
 
     killed = False
     process_output: List[str] = []
-    for line in process.stdout:
-        print(line.rstrip())
-        process_output.append(line.rstrip())
-        status = _extract_state(target, line, status)
+    if process.stdout:
+        for line in process.stdout:
+            print(line.rstrip())
+            process_output.append(line.rstrip())
+            status = _extract_state(target, line, status)
 
-        if not killed and status == 'Chroot problem':
-            # On this error the snapcraft process hangs. Let's finish it.
-            #
-            # killed is used to stop us from executing this code path
-            # multiple times per build that encounters "Chroot problem".
-            print('Chroot problem encountered for build '
-                  f'{target} for {arch}.\n'
-                  'Launchpad seems to be unable to recover from this '
-                  'state so we are terminating the build.')
-            process.kill()
-            killed = True
+            if not killed and status == 'Chroot problem':
+                # On this error the snapcraft process hangs. Let's finish it.
+                #
+                # killed is used to stop us from executing this code path
+                # multiple times per build that encounters "Chroot problem".
+                print('Chroot problem encountered for build '
+                      f'{target} for {arch}.\n'
+                      'Launchpad seems to be unable to recover from this '
+                      'state so we are terminating the build.')
+                process.kill()
+                killed = True
 
     process_state = process.wait()
 
@@ -102,7 +103,8 @@ def _extract_state(project: str, output: str, state: str) -> str:
     return state
 
 
-def _snap_command_failure_msg(target: str, arch: str, status: str, exit_code: int) -> str | None:
+def _snap_command_failure_msg(
+        workspace: str, target: str, arch: str, status: str, exit_code: int) -> str | None:
     '''
     Runs various tests to see if the executed build succeeded.
     If it hits a failure condition, returns a string with information about that condition.
@@ -154,7 +156,7 @@ def build_snap(target: str, arch: str) -> None:
     print(f'Build {target} for {arch} ended with '
           f'exit code {exit_code}.')
 
-    failure_msg = _snap_command_failure_msg(target, arch, status, exit_code)
+    failure_msg = _snap_command_failure_msg(workspace, target, arch, status, exit_code)
     if failure_msg:
         print(failure_msg)
         print('Dumping snapcraft remote-build logs:')
@@ -191,7 +193,7 @@ def _dump_failed_build_logs(build_output_path: str) -> None:
     print()
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('target', choices=['certbot', *PLUGINS],
                         help='the snap to build')
@@ -214,6 +216,8 @@ def main():
     print()
 
     build_snap(target, arch)
+
+    return 0
 
 
 if __name__ == '__main__':
