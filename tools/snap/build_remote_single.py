@@ -124,7 +124,7 @@ def build_snap(target: str, arch: str) -> None:
 
     # If the command failed, let's try to print all the output about the problem
     # that we can.
-    failed = exit_code != 0 or failed
+    failed |= exit_code != 0
 
     # Check that snap file exists
     # We expect to have the target snap available, or something bad happened.
