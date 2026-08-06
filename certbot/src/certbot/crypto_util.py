@@ -25,6 +25,12 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
+from cryptography.hazmat.primitives.asymmetric.mldsa import (
+    MLDSA44PublicKey,
+    MLDSA65PublicKey,
+    MLDSA87PublicKey,
+)
+from cryptography.hazmat.primitives.asymmetric.mlkem import MLKEM768PublicKey, MLKEM1024PublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.primitives.serialization import Encoding
@@ -346,7 +352,9 @@ def verify_renewable_cert_sig(renewable_cert: interfaces.RenewableCert) -> None:
 
 
 def verify_signed_payload(public_key: Union[DSAPublicKey, 'Ed25519PublicKey', 'Ed448PublicKey',
-                                            EllipticCurvePublicKey, RSAPublicKey,
+                                            EllipticCurvePublicKey, MLDSA44PublicKey,
+                                            MLDSA65PublicKey, MLDSA87PublicKey, MLKEM768PublicKey,
+                                            MLKEM1024PublicKey, RSAPublicKey,
                                             'X25519PublicKey', 'X448PublicKey'],
                           signature: bytes, payload: bytes,
                           signature_hash_algorithm: hashes.HashAlgorithm) -> None:

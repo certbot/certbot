@@ -3,6 +3,9 @@ line-length = 100
 extend-exclude = ['tools', 'letstest']
 
 [lint]
+# Revert default rules to pre-16.0.0 version. Expanding the list to match the new defaults is
+# tracked by https://github.com/certbot/certbot/issues/10749.
+select = ["E4", "E7", "E9", "F"]
 # Check for PEP 585 style annotations to prevent regressions in
 # https://github.com/certbot/certbot/issues/10195
 extend-select = ["UP006"]
