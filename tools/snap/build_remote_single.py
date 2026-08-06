@@ -102,6 +102,42 @@ def _extract_state(project: str, output: str, state: str) -> str:
     return state
 
 
+def _snap_command_failure_msg(target: str, arch: str, status: str, exit_code: int) -> str | None:
+    '''
+    Runs various tests to see if the executed build succeeded.
+    If it hits a failure condition, returns a string with information about that condition.
+    Otherwise, if the command passes, returns `None`.
+    '''
+    # This output may change, and is set by
+    # https://github.com/canonical/snapcraft/blob/8ab7fd0c8a1d3f13045bec41a6e0158c063faa9b/snapcraft/commands/remote.py#L278
+    if status != 'Succeeded':
+        return f'Failed with status output {status}'
+
+    # If the command failed, let's try to print all the output about the problem
+    # that we can.
+    if exit_code != 0:
+        return f'Failed with exit code {exit_code}'
+
+    # Check that snap file exists
+    # We expect to have the target snap available, or something bad happened.
+    snap_path_list = glob.glob(join(workspace, f'{target}_*_{arch}.snap'))
+    if not len(snap_path_list) == 1:
+        return 'The expected snap is missing.'
+
+    # Check if the snap file just contains html
+    with open(snap_path_list[0], 'rb') as f:
+        first_block = f.read(10)
+        # 'hsqs' is the magic number that SquashFS files start with
+        if not first_block.startswith(b'hsqs'):
+            try:
+                first_block_str = first_block.decode()
+            except UnicodeDecodeError:
+                first_block_str = first_block.hex(sep=',')
+            return f'The {target} {arch} snap file began with invalid data: {first_block_str}'
+
+    return None
+
+
 def build_snap(target: str, arch: str) -> None:
     if target == 'certbot':
         workspace = CERTBOT_DIR
@@ -118,36 +154,9 @@ def build_snap(target: str, arch: str) -> None:
     print(f'Build {target} for {arch} ended with '
           f'exit code {exit_code}.')
 
-    # This output may change, and is set by
-    # https://github.com/canonical/snapcraft/blob/8ab7fd0c8a1d3f13045bec41a6e0158c063faa9b/snapcraft/commands/remote.py#L278
-    failed = status != 'Succeeded'
-
-    # If the command failed, let's try to print all the output about the problem
-    # that we can.
-    failed |= exit_code != 0
-
-    # Check that snap file exists
-    # We expect to have the target snap available, or something bad happened.
-    if not failed:
-        snap_path_list = glob.glob(join(workspace, f'{target}_*_{arch}.snap'))
-        if not len(snap_path_list) == 1:
-            print('The expected snap is missing.')
-            failed = True
-
-    # Check if the snap file just contains html
-    if not failed:
-        with open(snap_path_list[0], 'rb') as f:
-            first_block = f.read(10)
-            # 'hsqs' is the magic number that SquashFS files start with
-            if not first_block.startswith(b'hsqs'):
-                failed = True
-                try:
-                    first_block_str = first_block.decode()
-                except UnicodeDecodeError:
-                    first_block_str = first_block.hex(sep=',')
-                print(f'The {target} {arch} snap file began with invalid data: {first_block_str}')
-
-    if failed:
+    failure_msg = _snap_command_failure_msg(target, arch, status, exit_code)
+    if failure_msg:
+        print(failure_msg)
         print('Dumping snapcraft remote-build logs:')
         log_location = _extract_log_location(process_output[-1])
         _dump_failed_build_logs(log_location)
