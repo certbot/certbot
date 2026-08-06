@@ -86,7 +86,6 @@ def get_apache_configurator(
         openssl_version: str = "1.1.1a") -> configurator.ApacheConfigurator:
     """Create an Apache Configurator with the specified options.
 
-    :param conf: Function that returns binary paths. self.conf in Configurator
 
     """
     backups = os.path.join(work_dir, "backups")

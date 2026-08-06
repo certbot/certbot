@@ -30,13 +30,6 @@ class NginxHttp01(common.ChallengePerformer):
         class:`~certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
         challenges
 
-    :param list indices: Meant to hold indices of challenges in a
-        larger array. NginxHttp01 is capable of solving many challenges
-        at once which causes an indexing issue within NginxConfigurator
-        who must return all responses in order. Imagine
-        NginxConfigurator maintaining state about where all of the
-        challenges, possibly of different types, belong in the response
-        array. This is an optional utility.
 
     """
 

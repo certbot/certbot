@@ -1164,8 +1164,8 @@ class ApacheConfigurator(common.Configurator):
 
     def _populate_vhost_names_v2(self, vhost: obj.VirtualHost) -> None:
         """Helper function that populates the VirtualHost names.
-        :param host: In progress vhost whose names will be added
-        :type host: :class:`~certbot._internal.plugins.apache.obj.VirtualHost`
+        :param vhost: In progress vhost whose names will be added
+        :type vhost: :class:`~certbot._internal.plugins.apache.obj.VirtualHost`
         """
         if not vhost.node:
             raise errors.PluginError("Current VirtualHost has no node.")  # pragma: no cover
@@ -2288,7 +2288,7 @@ class ApacheConfigurator(common.Configurator):
     def _get_proposed_addrs(self, vhost: obj.VirtualHost, port: str = "80") -> Iterable[obj.Addr]:
         """Return all addrs of vhost with the port replaced with the specified.
 
-        :param obj.VirtualHost ssl_vhost: Original Vhost
+        :param obj.VirtualHost vhost: Original Vhost
         :param str port: Desired port for new addresses
 
         :returns: `set` of :class:`~obj.Addr`

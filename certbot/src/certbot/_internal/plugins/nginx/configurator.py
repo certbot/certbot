@@ -617,7 +617,7 @@ class NginxConfigurator(common.Configurator):
         """Tests whether a vhost has an address listening on a port with SSL enabled or disabled.
 
         :param `obj.VirtualHost` vhost: The vhost whose addresses will be tested
-        :param port str: The port number as a string that the address should be bound to
+        :param str port: The port number as a string that the address should be bound to
         :param bool ssl: Whether SSL should be enabled or disabled on the address
 
         :returns: Whether the vhost has an address listening on the port and protocol.

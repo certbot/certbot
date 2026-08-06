@@ -31,12 +31,12 @@ class Addr(common.Addr):
     .. todo:: Old-style nginx configs define SSL vhosts in a separate
               block instead of using 'ssl' in the listen directive.
 
-    :param str addr: addr part of vhost address, may be hostname, IPv4, IPv6,
+    :param str host: addr part of vhost address, may be hostname, IPv4, IPv6,
         "", or "\*"
     :param str port: port number or "\*" or ""
     :param bool ssl: Whether the directive includes 'ssl'
     :param bool default: Whether the directive includes 'default_server'
-    :param bool default: Whether this is an IPv6 address
+    :param bool ipv6: Whether this is an IPv6 address
     :param bool ipv6only: Whether the directive includes 'ipv6only=on'
 
     """

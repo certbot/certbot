@@ -240,7 +240,7 @@ class AuthHandler:
     def _get_chall_pref(self, identifier: str) -> list[type[challenges.Challenge]]:
         """Return list of challenge preferences.
 
-        :param str domain: domain for which you are requesting preferences
+        :param str identifier: domain for which you are requesting preferences
 
         """
         chall_prefs = []
@@ -369,7 +369,7 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
 
     :param .ChallengeBody challb: ChallengeBody
     :param .JWK account_key: Authorized Account Key
-    :param str domain: Domain of the challb
+    :param str identifier: Domain of the challb
 
     :returns: Appropriate AnnotatedChallenge
     :rtype: :class:`certbot.achallenges.AnnotatedChallenge`

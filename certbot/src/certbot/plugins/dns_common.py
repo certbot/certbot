@@ -110,7 +110,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
         Performs a dns-01 challenge by creating a DNS TXT record.
 
         :param str domain: The domain being validated.
-        :param str validation_domain_name: The validation record domain name.
+        :param str validation_name: The validation record domain name.
         :param str validation: The validation record content.
         :raises errors.PluginError: If the challenge cannot be performed
         """
@@ -125,7 +125,7 @@ class DNSAuthenticator(common.Plugin, interfaces.Authenticator, metaclass=abc.AB
         Fails gracefully if no such record exists.
 
         :param str domain: The domain being validated.
-        :param str validation_domain_name: The validation record domain name.
+        :param str validation_name: The validation record domain name.
         :param str validation: The validation record content.
         """
         raise NotImplementedError()

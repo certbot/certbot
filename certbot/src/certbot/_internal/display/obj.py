@@ -369,7 +369,7 @@ class FileDisplay:
     def _get_valid_int_ans(self, max_: int) -> tuple[str, int]:
         """Get a numerical selection.
 
-        :param int max: The maximum entry (len of choices), must be positive
+        :param int max_: The maximum entry (len of choices), must be positive
 
         :returns: tuple of the form (`code`, `selection`) where
             `code` - str display exit code ('ok' or cancel')

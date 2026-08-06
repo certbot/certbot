@@ -118,8 +118,8 @@ def find_duplicative_certs(config: configuration.NamespaceConfig,
 
     :param config: Configuration.
     :type config: :class:`certbot._internal.configuration.NamespaceConfig`
-    :param domains: List of domain names
-    :type domains: `list` of `str`
+    :param sans: List of domain names
+    :type sans: `list` of `str`
 
     :returns: lineages representing the identically matching cert and the
         largest subset if they exist

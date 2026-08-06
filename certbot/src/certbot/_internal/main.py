@@ -1493,8 +1493,8 @@ def _csr_get_and_save_cert(config: configuration.NamespaceConfig,
     :param config: Configuration object
     :type config: configuration.NamespaceConfig
 
-    :param client: Client object
-    :type client: client.Client
+    :param le_client: Client object
+    :type le_client: client.Client
 
     :returns: `cert_path`, `chain_path` and `fullchain_path` as absolute
               paths to the actual files, or None for each if it's a dry-run.

@@ -376,8 +376,6 @@ class ApacheParser:
 
         :param str aug_conf_path: Augeas configuration path
         :param str mod: module ie. mod_ssl.c
-        :param bool beginning: If the IfModule should be created to the beginning
-            of augeas path DOM tree.
 
         :returns: Augeas path of the requested IfModule directive that pre-existed
             or was created during the process. The path may be dynamic,
@@ -620,7 +618,7 @@ class ApacheParser:
         """Determine if directive passes a filter.
 
         :param str match: Augeas path
-        :param list filter: list of tuples of form
+        :param list filter_: list of tuples of form
             [("lowercase if directive", set of relevant parameters)]
 
         """
