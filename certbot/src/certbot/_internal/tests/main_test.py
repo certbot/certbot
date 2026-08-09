@@ -47,6 +47,16 @@ P256_KEY_PATH = test_util.vector_path('p256_key.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 
 
+def test_get_added_removed_with_iterators():
+    after = map(str, [san.DNSName("example.com"), san.DNSName("new.example.com")])
+    before = map(str, [san.DNSName("example.com"), san.DNSName("old.example.com")])
+
+    added, removed = main._get_added_removed(after, before)
+
+    assert added == ["new.example.com"]
+    assert removed == ["old.example.com"]
+
+
 class TestHandleCerts(unittest.TestCase):
     """Test for certbot._internal.main._handle_* methods"""
     @mock.patch("certbot._internal.main._handle_unexpected_key_type_migration")
