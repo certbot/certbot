@@ -31,10 +31,10 @@ Tokens page <https://cloud.digitalocean.com/account/api/tokens>`_.
 
 The API token requires the following scopes:
 
-- **domain** (read, create, update, delete)
+- **domain** (read, create, delete)
 
-These scopes allow Certbot to list your domains, create and delete TXT records
-for DNS challenges, and update domain TTL settings.
+These scopes allow Certbot to list your domains, and create and delete TXT records
+for DNS challenges.
 
 .. code-block:: ini
    :name: credentials.ini
