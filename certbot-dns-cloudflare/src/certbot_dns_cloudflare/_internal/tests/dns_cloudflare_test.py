@@ -177,7 +177,10 @@ class CloudflareClientTest(unittest.TestCase):
         # as Cloudflare errors 81057/81058 on create. Both must be treated as
         # success, matching the codes tolerated by lexicon's cloudflare
         # provider.
-        for error_code in (81057, 81058):
+        from certbot_dns_cloudflare._internal.dns_cloudflare import ERR_IDENTICAL_RECORD_EXISTS
+        from certbot_dns_cloudflare._internal.dns_cloudflare import ERR_RECORD_EXISTS
+
+        for error_code in (ERR_RECORD_EXISTS, ERR_IDENTICAL_RECORD_EXISTS):
             self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
             self.cf.dns.records.list.return_value = []
             self.cf.dns.records.create.side_effect = _make_api_error(error_code)
