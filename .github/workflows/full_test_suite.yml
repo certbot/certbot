@@ -33,7 +33,5 @@ jobs:
   snap_packaging_jobs:
     name: Snap packaging
     uses: "./.github/workflows/snap_packaging_jobs.yml"
-    with:
-      snapBuildTimeout: 5400
     secrets:
       LAUNCHPAD_CREDENTIALS: "${{ secrets.LAUNCHPAD_CREDENTIALS }}"

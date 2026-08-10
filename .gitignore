@@ -62,6 +62,7 @@ certbot-dns*/certbot-dns*_arm*.txt
 /certbot_arm*.txt
 certbot-dns*/snap
 snapcraft.cfg
+build_id
 
 # pyenv files
 .python-version
