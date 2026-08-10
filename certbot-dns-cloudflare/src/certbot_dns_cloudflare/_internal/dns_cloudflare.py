@@ -25,6 +25,10 @@ logger = logging.getLogger(__name__)
 
 ACCOUNT_URL = 'https://dash.cloudflare.com/?to=/:account/profile/api-tokens'
 
+# Cloudflare API error codes (https://developers.cloudflare.com/api/)
+ERR_RECORD_EXISTS = 81057  # "Record already exists."
+ERR_IDENTICAL_RECORD_EXISTS = 81058  # "A record with identical settings already exists."
+
 
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator for Cloudflare
@@ -158,7 +162,7 @@ class _CloudflareClient:
             # - a concurrent certbot invocation created the record first.
             # In all cases the desired record exists, so treat it as success.
             # Matches the codes tolerated by lexicon's cloudflare provider.
-            if code in (81057, 81058):
+            if code in (ERR_RECORD_EXISTS, ERR_IDENTICAL_RECORD_EXISTS):
                 logger.debug('TXT record already exists (error %s); '
                              'treating as success.', code)
                 return
