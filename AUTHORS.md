@@ -138,6 +138,7 @@ Authors
 * [Joe Ranweiler](https://github.com/ranweiler)
 * [Joerg Sonnenberger](https://github.com/jsonn)
 * [John Leach](https://github.com/johnl)
+* [John Muirhead-Gould](https://github.com/jmg421)
 * [John Reed](https://github.com/leerspace)
 * [Jonas Berlin](https://github.com/xkr47)
 * [Jonathan Herlin](https://github.com/Jonher937)

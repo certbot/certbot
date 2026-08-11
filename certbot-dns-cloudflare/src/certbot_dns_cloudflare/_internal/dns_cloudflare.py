@@ -25,6 +25,10 @@ logger = logging.getLogger(__name__)
 
 ACCOUNT_URL = 'https://dash.cloudflare.com/?to=/:account/profile/api-tokens'
 
+# Cloudflare API error codes (https://developers.cloudflare.com/api/)
+ERR_RECORD_EXISTS = 81057  # "Record already exists."
+ERR_IDENTICAL_RECORD_EXISTS = 81058  # "A record with identical settings already exists."
+
 
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator for Cloudflare
@@ -120,6 +124,10 @@ class _CloudflareClient:
         """
         Add a TXT record using the supplied information.
 
+        If a TXT record with the same name and content already exists (e.g. from a
+        previous failed attempt or a reused authorization), the existing record is
+        left in place and this method returns successfully.
+
         :param str domain: The domain to use to look up the Cloudflare zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
@@ -141,6 +149,24 @@ class _CloudflareClient:
             self.cf.dns.records.create(zone_id=zone_id, **data)
         except cloudflare.APIStatusError as e:
             code = _cf_error_code(e)
+
+            # Errors 81057 ("Record already exists") and 81058 ("A record with
+            # identical settings already exists") mean an identical TXT record
+            # (same name and content) is already present. This can happen when:
+            # - a previous certbot run terminated uncleanly after creating the
+            #   record but before cleanup, and the ACME server replays the same
+            #   pending authorization (leftover record, same validation token);
+            # - the same challenge record is requested twice in one run, e.g.
+            #   for an apex + wildcard certificate where both validations map
+            #   to the same TXT name and content;
+            # - a concurrent certbot invocation created the record first.
+            # In all cases the desired record exists, so treat it as success.
+            # Matches the codes tolerated by lexicon's cloudflare provider.
+            if code in (ERR_RECORD_EXISTS, ERR_IDENTICAL_RECORD_EXISTS):
+                logger.debug('TXT record already exists (error %s); '
+                             'treating as success.', code)
+                return
+
             hint = None
 
             if code == 1009:

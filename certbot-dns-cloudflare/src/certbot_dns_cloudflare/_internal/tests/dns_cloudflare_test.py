@@ -161,6 +161,7 @@ class CloudflareClientTest(unittest.TestCase):
 
     def test_add_txt_record(self):
         self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
+        self.cf.dns.records.list.return_value = []
 
         self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
                                               self.record_ttl)
@@ -169,8 +170,28 @@ class CloudflareClientTest(unittest.TestCase):
             zone_id=self.zone_id, type='TXT', name=self.record_name,
             content=self.record_content, ttl=self.record_ttl)
 
+    def test_add_txt_record_already_exists(self):
+        # An identical record already existing (leftover from an uncleanly
+        # terminated run, apex + wildcard mapping to the same TXT name and
+        # content, or a concurrent invocation that created it first) surfaces
+        # as Cloudflare errors 81057/81058 on create. Both must be treated as
+        # success, matching the codes tolerated by lexicon's cloudflare
+        # provider.
+        from certbot_dns_cloudflare._internal.dns_cloudflare import ERR_IDENTICAL_RECORD_EXISTS
+        from certbot_dns_cloudflare._internal.dns_cloudflare import ERR_RECORD_EXISTS
+
+        for error_code in (ERR_RECORD_EXISTS, ERR_IDENTICAL_RECORD_EXISTS):
+            self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
+            self.cf.dns.records.list.return_value = []
+            self.cf.dns.records.create.side_effect = _make_api_error(error_code)
+
+            # Should not raise — treat duplicate as success
+            self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
+                                                  self.record_ttl)
+
     def test_add_txt_record_error(self):
         self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
+        self.cf.dns.records.list.return_value = []
 
         self.cf.dns.records.create.side_effect = _make_api_error(1009)
 
