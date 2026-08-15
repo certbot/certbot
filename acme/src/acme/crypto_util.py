@@ -192,7 +192,19 @@ def get_identifiers_from_x509(
     else:
         # We only include the first CN, if there are multiple. This matches
         # the behavior of the previous implementation using pyOpenSSL.
-        return [cns[0]] + [d for d in dns_names if d != cns[0]], ip_addresses
+        cn = cns[0]
+        try:
+            # Some CAs copy an IPAddress SAN into the CN for compatibility
+            # with older clients that only look at the CN. If the CN is a
+            # bare IP address, classify it as an IP address rather than a
+            # DNS name, since it isn't a syntactically valid DNS name.
+            normalized_cn = str(ipaddress.ip_address(cn))
+        except ValueError:
+            return [cn] + [d for d in dns_names if d != cn], ip_addresses
+        else:
+            return dns_names, [normalized_cn] + [
+                ip for ip in ip_addresses if ip != normalized_cn
+            ]
 
 
 def _cryptography_cert_or_req_san(

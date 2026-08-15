@@ -1,0 +1,1 @@
+Fixed a bug where certificates whose Common Name is a bare IP address (e.g. copied from an IPAddress SAN for compatibility with older clients) would raise a ConfigurationError when deploying, since the CN was always treated as a DNS name.
