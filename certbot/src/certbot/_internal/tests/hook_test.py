@@ -313,6 +313,19 @@ class RunSavedPostHooksTest(HookTest):
         assert mock_execute.call_args.kwargs['env']["RENEWED_DOMAINS"] == "success.org"
         assert mock_execute.call_args.kwargs['env']["FAILED_DOMAINS"] == "failed.org"
 
+    def test_env_overflow(self):
+        self.eventually = ["foo"]
+        # we cap the env variable at 16,000 characters, so go 1 domain beyond that
+        success = []
+        while len(' '.join(success)) < 16_000:
+            success.append("success.org")
+        failed = []
+        while len(' '.join(failed)) < 16_000:
+            failed.append("failed.org")
+        mock_execute = self._call_with_mock_execute_and_eventually(success, failed)
+        assert mock_execute.call_args.kwargs['env']["RENEWED_DOMAINS"] == ' '.join(success[:-1])
+        assert mock_execute.call_args.kwargs['env']["FAILED_DOMAINS"] == ' '.join(failed[:-1])
+
 
 class RenewalHookTest(HookTest):
     """Common base class for testing deploy/renew hooks."""

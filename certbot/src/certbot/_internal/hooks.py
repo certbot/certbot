@@ -172,11 +172,16 @@ def run_saved_post_hooks(renewed_sans: list[san.SAN], failed_sans: list[san.SAN]
     # 32k combined is reasonable on Windows and likely quite conservative on other platforms
     if len(renewed_sans_str) > 16_000:
         logger.warning("Limiting RENEWED_DOMAINS environment variable to 16k characters")
-        renewed_sans_str = renewed_sans_str[:16_000]
+        while len(renewed_sans_str) > 16_000:
+            renewed_sans = renewed_sans[:-1]
+            renewed_sans_str = ' '.join(map(str, renewed_sans))
+
 
     if len(failed_sans_str) > 16_000:
         logger.warning("Limiting FAILED_DOMAINS environment variable to 16k characters")
-        renewed_sans_str = failed_sans_str[:16_000]
+        while len(failed_sans_str) > 16_000:
+            failed_sans = failed_sans[:-1]
+            failed_sans_str = ' '.join(map(str, failed_sans))
 
     for cmd in post_hooks:
         _run_hook(
