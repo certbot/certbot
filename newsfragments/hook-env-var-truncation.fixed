@@ -1,1 +1,1 @@
-Fixes a bug where certbot would sometimes incorrectly pass successfully renewed domains as failed domains to a renewal hook.
+Fixes a bug where certbot would sometimes incorrectly pass failed SANs as successfully renewed SANs to renewal hooks.
