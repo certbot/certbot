@@ -229,13 +229,15 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
     if not acme.net.key:
         raise errors.Error("acme client with no private key cannot register account.")
 
-    eab_credentials_supplied = config.eab_kid and config.eab_hmac_key
+    eab_kid = config.eab_kid or os.environ.get("CERTBOT_EAB_KID")
+    eab_hmac_key = config.eab_hmac_key or os.environ.get("CERTBOT_EAB_HMAC_KEY")
+    eab_credentials_supplied = eab_kid and eab_hmac_key
     eab: Optional[dict[str, Any]]
     if eab_credentials_supplied:
         account_public_key = acme.net.key.public_key()
         eab = messages.ExternalAccountBinding.from_data(account_public_key=account_public_key,
-                                                        kid=config.eab_kid,
-                                                        hmac_key=config.eab_hmac_key,
+                                                        kid=str(eab_kid),
+                                                        hmac_key=str(eab_hmac_key),
                                                         directory=acme.directory,
                                                         hmac_alg=config.eab_hmac_alg)
     else:
@@ -243,8 +245,11 @@ def perform_registration(acme: acme_client.ClientV2, config: configuration.Names
 
     if acme.external_account_required():
         if not eab_credentials_supplied:
-            msg = ("Server requires external account binding."
-                   " Please use --eab-kid and --eab-hmac-key.")
+            msg = ("Server at {0} requires External Account Binding (EAB). "
+                   "Please provide --eab-kid and --eab-hmac-key, or set the "
+                   "CERTBOT_EAB_KID and CERTBOT_EAB_HMAC_KEY environment variables. "
+                   "Obtain these credentials from your CA account portal."
+                   .format(config.server))
             raise errors.Error(msg)
 
     tos = acme.directory.meta.terms_of_service
