@@ -377,11 +377,11 @@ def safely_remove(path: str) -> None:
 
 
 def get_filtered_names(all_names: set[str]) -> set[str]:
-    """Removes names that aren't considered valid by Let's Encrypt.
+    """Removes names that aren't considered valid for certificate issuance.
 
     :param set all_names: all names found in the configuration
 
-    :returns: all found names that are considered valid by LE
+    :returns: all found names that are considered valid for the default CA
     :rtype: set
 
     """
@@ -565,14 +565,14 @@ def add_deprecated_argument(add_argument: Callable[..., None], argument_name: st
 
 
 def enforce_le_validity(domain: str) -> str:
-    """Checks that Let's Encrypt will consider domain to be valid.
+    """Checks that the default CA will consider domain to be valid.
 
     :param str domain: FQDN to check
     :type domain: `str`
     :returns: The domain cast to `str`, with ASCII-only contents
     :rtype: str
-    :raises ConfigurationError: for invalid domains and cases where Let's
-                                Encrypt currently will not issue certificates
+    :raises ConfigurationError: for invalid domains and cases where the
+                                default CA will not issue certificates
 
     """
 
@@ -637,9 +637,10 @@ def enforce_domain_sanity(domain: Union[str, bytes]) -> str:
 
     if is_ipaddress(domain):
         raise errors.ConfigurationError(
-            "Requested name {0} is an IP address. The Let's Encrypt "
-            "certificate authority will not issue certificates for a "
-            "bare IP address.".format(domain))
+            "Requested name {0} is an IP address. The default certificate "
+            "authority will not issue certificates for a bare IP address. "
+            "If your CA supports IP certificates, use --ip-address instead "
+            "of -d.".format(domain))
 
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
