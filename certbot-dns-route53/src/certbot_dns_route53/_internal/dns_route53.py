@@ -49,8 +49,9 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
 
     @classmethod
     def add_parser_arguments(cls, add: Callable[..., None]) -> None:
-        # This authenticator currently adds no extra arguments.
-        pass
+        add('hosted-zone-id',
+            type=str,
+            help='Route 53 zone ID to use to create the verification record')
 
     def auth_hint(self, failed_achalls: list[achallenges.AnnotatedChallenge]) -> str:
         return (
@@ -128,7 +129,9 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         return zones[0][1]
 
     def _change_txt_record(self, action: str, validation_domain_name: str, validation: str) -> str:
-        zone_id = self._find_zone_id_for_domain(validation_domain_name)
+        zone_id = self.conf('hosted-zone-id')
+        if not zone_id:
+            zone_id = self._find_zone_id_for_domain(validation_domain_name)
 
         rrecords = self._resource_records[validation_domain_name]
         challenge = {"Value": '"{0}"'.format(validation)}
