@@ -313,6 +313,24 @@ class RunSavedPostHooksTest(HookTest):
         assert mock_execute.call_args.kwargs['env']["RENEWED_DOMAINS"] == "success.org"
         assert mock_execute.call_args.kwargs['env']["FAILED_DOMAINS"] == "failed.org"
 
+    def test_env_truncation_oversize_failed(self):
+        self.eventually = ["foo"]
+        renewed = ["success.org"]
+        failed = [f"fail{i}.example.com" for i in range(1000)]
+        mock_execute = self._call_with_mock_execute_and_eventually(renewed, failed)
+        env = mock_execute.call_args.kwargs['env']
+        assert env["RENEWED_DOMAINS"] == "success.org"
+        assert len(env["FAILED_DOMAINS"]) <= 16_000
+
+    def test_env_truncation_oversize_renewed(self):
+        self.eventually = ["foo"]
+        renewed = [f"renew{i}.example.com" for i in range(1000)]
+        failed = ["failed.org"]
+        mock_execute = self._call_with_mock_execute_and_eventually(renewed, failed)
+        env = mock_execute.call_args.kwargs['env']
+        assert len(env["RENEWED_DOMAINS"]) <= 16_000
+        assert env["FAILED_DOMAINS"] == "failed.org"
+
 
 class RenewalHookTest(HookTest):
     """Common base class for testing deploy/renew hooks."""

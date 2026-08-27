@@ -176,7 +176,7 @@ def run_saved_post_hooks(renewed_sans: list[san.SAN], failed_sans: list[san.SAN]
 
     if len(failed_sans_str) > 16_000:
         logger.warning("Limiting FAILED_DOMAINS environment variable to 16k characters")
-        renewed_sans_str = failed_sans_str[:16_000]
+        failed_sans_str = failed_sans_str[:16_000]
 
     for cmd in post_hooks:
         _run_hook(
