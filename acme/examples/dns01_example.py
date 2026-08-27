@@ -1,4 +1,4 @@
-"""Example ACME-V2 API for HTTP-01 challenge.
+"""Example ACME-V2 API for DNS-01 challenge.
 
 Brief:
 
@@ -7,7 +7,7 @@ This a complete usage example of the python-acme API.
 Limitations of this example:
     - Works for only one Domain name
       (see acme.crypto_util.make_csr() `domains` arg to add multiple domains)
-    - Performs only HTTP-01 challenge
+    - Performs only DNS-01 challenge
     - Uses ACME-v2
 
 Workflow:
@@ -15,10 +15,9 @@ Workflow:
     - Create account key
     - Register account and accept TOS
     (Certificate actions)
-    - Select HTTP-01 within offered challenges by the CA server
-    - Set up http challenge resource
-    - Set up standalone web server
+    - Select DNS-01 within offered challenges by the CA server
     - Create domain private key and CSR
+    - Wait for challenge TXT record to be added
     - Issue certificate
     - Renew certificate
     - Revoke certificate
@@ -26,7 +25,7 @@ Workflow:
     - Change contact information
     - Deactivate Account
 """
-from contextlib import contextmanager
+import time
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -39,7 +38,6 @@ from acme import client
 from acme import crypto_util
 from acme import errors
 from acme import messages
-from acme import standalone
 
 # Constants:
 
@@ -56,11 +54,6 @@ CERT_PKEY_BITS = 2048
 
 # Domain name for the certificate.
 DOMAIN = 'client.example.com'
-
-# If you are running Boulder locally, it is possible to configure any port
-# number to execute the challenge, but real CA servers will always use port
-# 80, as described in the ACME specification.
-PORT = 80
 
 
 # Useful methods and classes:
@@ -79,7 +72,7 @@ def new_csr_comp(domain_name, pkey_pem=None):
     return pkey_pem, csr_pem
 
 
-def select_http01_chall(orderr):
+def select_dns01_chall(orderr):
     """Extract authorization resource from within order resource."""
     # Authorization Resource: authz.
     # This object holds the offered challenges by the server and their status.
@@ -90,44 +83,33 @@ def select_http01_chall(orderr):
         # authz.body.challenges is a set of ChallengeBody objects.
         for i in authz.body.challenges:
             # Find the supported challenge.
-            if isinstance(i.chall, challenges.HTTP01):
+            if isinstance(i.chall, challenges.DNS01):
                 return i
 
-    raise Exception('HTTP-01 challenge was not offered by the CA server.')
+    raise Exception('DNS-01 challenge was not offered by the CA server.')
 
 
-@contextmanager
-def challenge_server(http_01_resources):
-    """Manage standalone server set up and shutdown."""
-
-    # Setting up a fake server that binds at PORT and any address.
-    address = ('', PORT)
-    try:
-        servers = standalone.HTTP01DualNetworkedServers(address,
-                                                        http_01_resources)
-        # Start client standalone web server.
-        servers.serve_forever()
-        yield servers
-    finally:
-        # Shutdown client web server and unbind from PORT
-        servers.shutdown_and_server_close()
-
-
-def perform_http01(client_acme, challb, orderr):
-    """Set up standalone webserver and perform HTTP-01 challenge."""
+def perform_dns01(domain, client_acme, challb, orderr):
+    """Set up standalone webserver and perform DNS-01 challenge."""
 
     response, validation = challb.response_and_validation(client_acme.net.key)
 
-    resource = standalone.HTTP01RequestHandler.HTTP01Resource(
-        chall=challb.chall, response=response, validation=validation)
+    input(f"Add DNS TXT record and press Enter when ready:\n"
+          f"TXT Record Name: _acme-challenge.{domain}\n"
+          f"Value: {validation}\n")
 
-    with challenge_server({resource}):
-        # Let the CA server know that we are ready for the challenge.
-        client_acme.answer_challenge(challb, response)
+    # Replace it with retries
+    print("Waiting 20 seconds for DNS propagation...")
+    time.sleep(20)
 
-        # Wait for challenge status and then issue a certificate.
-        # It is possible to set a deadline time.
-        finalized_orderr = client_acme.poll_and_finalize(orderr)
+    # Let the CA server know that we are ready for the challenge.
+    client_acme.answer_challenge(challb, response)
+
+    # Wait for challenge status and then issue a certificate.
+    # It is possible to set a deadline time.
+    finalized_orderr = client_acme.poll_and_finalize(orderr)
+
+    print("Success!")
 
     return finalized_orderr.fullchain_pem
 
@@ -135,8 +117,8 @@ def perform_http01(client_acme, challb, orderr):
 # Main examples:
 
 
-def example_http():
-    """This example executes the whole process of fulfilling a HTTP-01
+def example_dns():
+    """This example executes the whole process of fulfilling a DNS-01
     challenge for one specific domain.
 
     The workflow consists of:
@@ -144,10 +126,9 @@ def example_http():
     - Create account key
     - Register account and accept TOS
     (Certificate actions)
-    - Select HTTP-01 within offered challenges by the CA server
-    - Set up http challenge resource
-    - Set up standalone web server
+    - Select DNS-01 within offered challenges by the CA server
     - Create domain private key and CSR
+    - Wait for challenge TXT record to be added
     - Issue certificate
     - Renew certificate
     - Revoke certificate
@@ -181,11 +162,11 @@ def example_http():
 
     orderr = client_acme.new_order(csr_pem)
 
-    # Select HTTP-01 within offered challenges by the CA server
-    challb = select_http01_chall(orderr)
+    # Select DNS-01 within offered challenges by the CA server
+    challb = select_dns01_chall(orderr)
 
     # The certificate is ready to be used in the variable "fullchain_pem".
-    fullchain_pem = perform_http01(client_acme, challb, orderr)
+    fullchain_pem = perform_dns01(DOMAIN, client_acme, challb, orderr)
 
     # Renew certificate
 
@@ -193,10 +174,10 @@ def example_http():
 
     orderr = client_acme.new_order(csr_pem)
 
-    challb = select_http01_chall(orderr)
+    challb = select_dns01_chall(orderr)
 
     # Performing challenge
-    fullchain_pem = perform_http01(client_acme, challb, orderr)
+    fullchain_pem = perform_dns01(DOMAIN, client_acme, challb, orderr)
 
     # Revoke certificate
 
@@ -235,4 +216,4 @@ def example_http():
 
 
 if __name__ == "__main__":
-    example_http()
+    example_dns()
