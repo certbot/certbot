@@ -173,7 +173,8 @@ def _build_sans_env_var(sans: list[san.SAN], char_limit: int, var_name: str) -> 
         if len(sans) > 1:
             env_var_len += 1
         if env_var_len > char_limit:
-            logger.warning(f"Limiting {var_name} environment variable to {char_limit} characters")
+            logger.warning("Limiting %s environment variable to %s characters",
+                           var_name, char_limit)
             break
         truncated_sans.append(san_str)
     return ' '.join(truncated_sans)
