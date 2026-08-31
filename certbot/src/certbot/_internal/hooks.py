@@ -164,7 +164,7 @@ def _run_eventually(command: str) -> None:
 
 
 def _build_sans_env_var(sans: list[san.SAN], char_limit: int, var_name: str) -> str:
-    truncated_sans = []
+    truncated_sans: list[str] = []
     env_var_len = 0
     for s in sans:
         san_str = str(s)
