@@ -317,25 +317,25 @@ class RunSavedPostHooksTest(HookTest):
         self.eventually = ["foo"]
         # build two lists of domains that, when joined into an env var, are just under the 16,000
         # character count
-        success = ['a.org'] * 2666
-        assert len(' '.join(success)) == 15_995
-        failed = ['b.org'] * 2666
-        assert len(' '.join(failed)) == 15_995
+        success = ['a.io'] * 3200
+        assert len(' '.join(success)) == 15_999
+        failed = ['b.io'] * 3200
+        assert len(' '.join(failed)) == 15_999
 
         mock_execute = self._call_with_mock_execute_and_eventually(success, failed)
         assert mock_execute.call_args.kwargs['env']["RENEWED_DOMAINS"] == ' '.join(success)
         assert mock_execute.call_args.kwargs['env']["FAILED_DOMAINS"] == ' '.join(failed)
 
-        # add a domain that puts them at exactly the character limit
-        success.append('a.io')
+        # change them to be exactly equal to the character limit
+        success[-1] = 'a' + success[-1]
         assert len(' '.join(success)) == 16_000
-        failed.append('b.io')
+        failed[-1] = 'b' + failed[-1]
         assert len(' '.join(failed)) == 16_000
         mock_execute = self._call_with_mock_execute_and_eventually(success, failed)
         assert mock_execute.call_args.kwargs['env']["RENEWED_DOMAINS"] == ' '.join(success)
         assert mock_execute.call_args.kwargs['env']["FAILED_DOMAINS"] == ' '.join(failed)
 
-        # add a domain that puts them over the limit
+        # put them over the character limit
         success.append('a.io')
         assert len(' '.join(success)) > 16_000
         failed.append('b.io')
