@@ -166,11 +166,11 @@ def _run_eventually(command: str) -> None:
 def _build_sans_env_var(sans: list[san.SAN], char_limit: int, var_name: str) -> str:
     truncated_sans = []
     env_var_len = 0
-    for s in sans:
+    for i, s in enumerate(sans):
         san_str = str(s)
         env_var_len += len(san_str)
         # add 1 for whitespace delimiter
-        if len(sans) > 1:
+        if len(truncated_sans) > 1:
             env_var_len += 1
         if env_var_len > char_limit:
             logger.warning("Limiting %s environment variable to %s characters",
