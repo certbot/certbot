@@ -170,7 +170,7 @@ def _build_sans_env_var(sans: list[san.SAN], char_limit: int, var_name: str) -> 
         san_str = str(s)
         env_var_len += len(san_str)
         # add 1 for whitespace delimiter
-        if len(truncated_sans) > 1:
+        if len(truncated_sans) > 0:
             env_var_len += 1
         if env_var_len > char_limit:
             logger.warning("Limiting %s environment variable to %s characters",
