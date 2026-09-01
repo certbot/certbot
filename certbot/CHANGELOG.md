@@ -4,6 +4,17 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.8.0 - 2026-09-01
+
+### Changed
+
+- certbot and its acme library now require cryptography>=47.0.0. ([#10748](https://github.com/certbot/certbot/issues/10748))
+
+### Fixed
+
+- Fixed removed domains being omitted from the certificate update confirmation prompt. ([#10767](https://github.com/certbot/certbot/issues/10767))
+
+
 ## 5.7.0 - 2026-07-15
 
 ### Fixed
