@@ -1,1 +1,0 @@
-certbot and its acme library now require cryptography>=47.0.0.
