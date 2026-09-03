@@ -114,6 +114,29 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             assert achall.validation(achall.account_key) in args[0]
             assert kwargs['wrap'] is False
 
+        first_dns_message = self.mock_get_display().notification.call_args_list[1].args[0]
+        assert "do not need to wait" in first_dns_message
+        assert "All required DNS challenge" not in first_dns_message
+
+        last_dns_message = self.mock_get_display().notification.call_args_list[2].args[0]
+        assert "All required DNS challenge TXT records" in last_dns_message
+        assert "verify that all of them have been deployed" in last_dns_message
+        assert "verify all of the DNS challenges when" in last_dns_message
+        assert "do not need to wait" not in last_dns_message
+
+    def test_manual_perform_dns_before_http(self):
+        achalls = [self.dns_achall, self.http_achall]
+
+        self.auth.perform(achalls)
+
+        dns_message = self.mock_get_display().notification.call_args_list[0].args[0]
+        assert "do not need to wait" in dns_message
+        assert "All required DNS challenge" not in dns_message
+
+        http_message = self.mock_get_display().notification.call_args_list[1].args[0]
+        assert "All required DNS challenge TXT records" in http_message
+        assert "verify all of the DNS challenges when" in http_message
+
     def test_cleanup(self):
         self.config.manual_auth_hook = ('{0} -c "import sys; sys.stdout.write(\'foo\')"'
                                         .format(sys.executable))
