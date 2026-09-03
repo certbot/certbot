@@ -116,8 +116,8 @@ def display(sans: Iterable[SAN]) -> str:
 def from_x509(subject: x509.Name, exts: x509.Extensions) -> tuple[list[DNSName], list[IPAddress]]:
     """Get all DNS names and IP addresses, plus the first Common Name from subject.
 
-    The CN will be first in the list, if present. It will always be interpreted
-    as a DNS name.
+    The CN will be first in the list, if present. It is interpreted as an IP
+    address if it parses as one, and as a DNS name otherwise.
 
     :param subject: Name of the x509 object, which may include Common Name
     :type subject: `cryptography.x509.Name`

@@ -150,3 +150,44 @@ class FromX509Test(unittest.TestCase):
             [san.DNSName("example.com")],
             [san.IPAddress("192.168.1.1")],
         )
+
+    def test_cn_ip_address(self) -> None:
+        """A bare IP address in the CN should be classified as an IP
+        address, not a DNS name. Regression test for
+        https://github.com/certbot/certbot/issues/10773.
+        """
+        key = ec.generate_private_key(ec.SECP256R1())
+        csr = (
+            x509.CertificateSigningRequestBuilder()
+            .subject_name(x509.Name([
+                x509.NameAttribute(NameOID.COMMON_NAME, "10.5.0.5"),
+            ]))
+            .add_extension(
+                x509.SubjectAlternativeName(
+                    [x509.IPAddress(ipaddress.ip_address("10.5.0.5"))]
+                ),
+                critical=False,
+            )
+        ).sign(key, hashes.SHA256())
+        result = san.from_x509(csr.subject, csr.extensions)
+        assert result == (
+            [],
+            [san.IPAddress("10.5.0.5")],
+        )
+
+    def test_cn_ip_address_no_san(self) -> None:
+        """A bare IP address in the CN is classified as an IP address even
+        when there is no SubjectAlternativeName extension at all.
+        """
+        key = ec.generate_private_key(ec.SECP256R1())
+        csr = (
+            x509.CertificateSigningRequestBuilder()
+            .subject_name(x509.Name([
+                x509.NameAttribute(NameOID.COMMON_NAME, "10.5.0.5"),
+            ]))
+        ).sign(key, hashes.SHA256())
+        result = san.from_x509(csr.subject, csr.extensions)
+        assert result == (
+            [],
+            [san.IPAddress("10.5.0.5")],
+        )
