@@ -313,6 +313,37 @@ class RunSavedPostHooksTest(HookTest):
         assert mock_execute.call_args.kwargs['env']["RENEWED_DOMAINS"] == "success.org"
         assert mock_execute.call_args.kwargs['env']["FAILED_DOMAINS"] == "failed.org"
 
+    def test_env_overflow(self):
+        self.eventually = ["foo"]
+        # build two lists of domains that, when joined into an env var, are just under the 16,000
+        # character count
+        success = ['a.io'] * 3200
+        assert len(' '.join(success)) == 15_999
+        failed = ['b.io'] * 3200
+        assert len(' '.join(failed)) == 15_999
+
+        mock_execute = self._call_with_mock_execute_and_eventually(success, failed)
+        assert mock_execute.call_args.kwargs['env']["RENEWED_DOMAINS"] == ' '.join(success)
+        assert mock_execute.call_args.kwargs['env']["FAILED_DOMAINS"] == ' '.join(failed)
+
+        # change them to be exactly equal to the character limit
+        success[-1] = 'a' + success[-1]
+        assert len(' '.join(success)) == 16_000
+        failed[-1] = 'b' + failed[-1]
+        assert len(' '.join(failed)) == 16_000
+        mock_execute = self._call_with_mock_execute_and_eventually(success, failed)
+        assert mock_execute.call_args.kwargs['env']["RENEWED_DOMAINS"] == ' '.join(success)
+        assert mock_execute.call_args.kwargs['env']["FAILED_DOMAINS"] == ' '.join(failed)
+
+        # put them over the character limit
+        success.append('a.io')
+        assert len(' '.join(success)) > 16_000
+        failed.append('b.io')
+        assert len(' '.join(failed)) > 16_000
+        mock_execute = self._call_with_mock_execute_and_eventually(success, failed)
+        assert mock_execute.call_args.kwargs['env']["RENEWED_DOMAINS"] == ' '.join(success[:-1])
+        assert mock_execute.call_args.kwargs['env']["FAILED_DOMAINS"] == ' '.join(failed[:-1])
+
 
 class RenewalHookTest(HookTest):
     """Common base class for testing deploy/renew hooks."""

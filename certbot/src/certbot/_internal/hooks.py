@@ -163,20 +163,30 @@ def _run_eventually(command: str) -> None:
         post_hooks.append(command)
 
 
+def _build_sans_env_var(sans: list[san.SAN], char_limit: int, var_name: str) -> str:
+    truncated_sans: list[str] = []
+    env_var_len = 0
+    for s in sans:
+        san_str = str(s)
+        env_var_len += len(san_str)
+        # add 1 for whitespace delimiter
+        if len(truncated_sans) > 0:
+            env_var_len += 1
+        if env_var_len > char_limit:
+            logger.warning("Limiting %s environment variable to %s characters",
+                           var_name, char_limit)
+            break
+        truncated_sans.append(san_str)
+    return ' '.join(truncated_sans)
+
+
 def run_saved_post_hooks(renewed_sans: list[san.SAN], failed_sans: list[san.SAN]) -> None:
     """Run any post hooks that were saved up in the course of the 'renew' verb"""
 
-    renewed_sans_str = ' '.join(map(str, renewed_sans))
-    failed_sans_str = ' '.join(map(str, failed_sans))
-
     # 32k combined is reasonable on Windows and likely quite conservative on other platforms
-    if len(renewed_sans_str) > 16_000:
-        logger.warning("Limiting RENEWED_DOMAINS environment variable to 16k characters")
-        renewed_sans_str = renewed_sans_str[:16_000]
-
-    if len(failed_sans_str) > 16_000:
-        logger.warning("Limiting FAILED_DOMAINS environment variable to 16k characters")
-        renewed_sans_str = failed_sans_str[:16_000]
+    char_limit = 16_000
+    renewed_sans_str = _build_sans_env_var(renewed_sans, char_limit, 'RENEWED_DOMAINS')
+    failed_sans_str = _build_sans_env_var(failed_sans, char_limit, 'RENEWED_DOMAINS')
 
     for cmd in post_hooks:
         _run_hook(
