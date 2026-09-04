@@ -358,7 +358,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
 
         # Test Generic warning
         self._setup_three_checkpoints()
-        mock_logger.warning.call_count = 0
+        mock_logger.warning.reset_mock()
         self.reverter.rollback_checkpoints(4)
         assert mock_logger.warning.call_count == 1
 

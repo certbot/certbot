@@ -5,6 +5,7 @@ on:
     # Every week on Thursday @ 10:00
     - cron: "0 10 * * 4"
   workflow_dispatch:
+permissions: {}  # let's not use any permissions we don't need here
 jobs:
   send-mattermost-message:
     runs-on: ubuntu-latest
@@ -15,7 +16,10 @@ jobs:
         DATE=$(date --date="7 days ago" +"%Y-%m-%d")
         echo "ASSIGNED_PRS=https://github.com/pulls?q=is%3Apr+is%3Aopen+updated%3A%3E%3D${DATE}+assignee%3A*+user%3Acertbot" >> $GITHUB_ENV
         echo "UPDATED_URL=https://github.com/issues?q=is%3Aissue+is%3Aopen+sort%3Acomments-desc+updated%3A%3E%3D${DATE}+user%3Acertbot" >> $GITHUB_ENV
-    - uses: mattermost/action-mattermost-notify@master
+    # we pin this action to a version tested and audited by certbot's
+    # maintainers for extra security. the full hash is used as doing so is
+    # recommended by zizmor
+    - uses: mattermost/action-mattermost-notify@b7d118e440bf2749cd18a4a8c88e7092e696257a
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
         MATTERMOST_CHANNEL: private-certbot

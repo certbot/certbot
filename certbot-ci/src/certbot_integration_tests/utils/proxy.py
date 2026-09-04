@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # pylint: disable=missing-module-docstring
+#
+# Note: If you're having trouble with this module, there was some discussion
+# about how it could be ripped out entirely at
+# https://github.com/certbot/certbot/pull/10495#discussion_r2699618989 that you
+# may want to read.
 
 import http.server as BaseHTTPServer
 import json
@@ -11,22 +16,30 @@ import requests
 
 from certbot_integration_tests.utils.misc import GracefulTCPServer
 
-
 def _create_proxy(mapping: Mapping[str, str]) -> type[BaseHTTPServer.BaseHTTPRequestHandler]:
     # pylint: disable=missing-function-docstring
     class ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         # pylint: disable=missing-class-docstring
         def do_GET(self) -> None:
             headers = {key.lower(): value for key, value in self.headers.items()}
-            backend = [backend for pattern, backend in mapping.items()
-                       if re.match(pattern, headers['host'])][0]
-            response = requests.get(backend + self.path, headers=headers, timeout=10)
+            host = headers['host']
+            for pattern, backend in mapping.items():
+                if re.match(pattern, host):
+                    response = requests.get(backend + self.path, headers=headers, timeout=10)
 
-            self.send_response(response.status_code)
-            for key, value in response.headers.items():
-                self.send_header(key, value)
+                    self.send_response(response.status_code)
+                    for key, value in response.headers.items():
+                        self.send_header(key, value)
+                    self.end_headers()
+                    self.wfile.write(response.content)
+                    return
+
+            # We should never hit this if the tests are written correctly, but if we do, this may
+            # be helpful debugging output.
+            print(f"proxy.py: do_GET for {host}: No backend")
+            self.send_response(200, "No backend")
             self.end_headers()
-            self.wfile.write(response.content)
+            self.wfile.write(bytes(f"No backend found for {host}\n", 'utf-8'))
 
     return ProxyHandler
 

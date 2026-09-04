@@ -18,7 +18,6 @@ from cryptography.hazmat.primitives import serialization
 from urllib3.util import connection
 
 from acme import challenges
-from acme import crypto_util
 from acme import messages
 from certbot import achallenges
 from certbot import errors as le_errors
@@ -66,22 +65,22 @@ def test_authenticator(plugin: common.Proxy, config: str, temp_dir: str) -> bool
         if not response:
             logger.error(
                 "Plugin failed to complete %s for %s in %s",
-                type(achall), achall.domain, config)
+                type(achall), achall.identifier.value, config)
             success = False
         elif isinstance(response, challenges.HTTP01Response):
             # We fake the DNS resolution to ensure that any domain is resolved
             # to the local HTTP server setup for the compatibility tests
             with _fake_dns_resolution("127.0.0.1"):
                 verified = response.simple_verify(
-                    achall.chall, achall.domain,
+                    achall.chall, achall.identifier.value,
                     util.JWK.public_key(), port=plugin.http_port)
             if verified:
                 logger.info(
-                    "http-01 verification for %s succeeded", achall.domain)
+                    "http-01 verification for %s succeeded", achall.identifier.value)
             else:
                 logger.error(
                     "**** http-01 verification for %s in %s failed",
-                    achall.domain, config)
+                    achall.identifier.value, config)
                 success = False
 
     if success:
@@ -143,7 +142,7 @@ def test_installer(args: argparse.Namespace, plugin: common.Proxy, config: str,
 
 def test_deploy_cert(plugin: common.Proxy, temp_dir: str, domains: list[str]) -> bool:
     """Tests deploy_cert returning True if the tests are successful"""
-    cert = crypto_util.make_self_signed_cert(util.KEY, domains)
+    cert = util.make_self_signed_cert(util.KEY, domains)
     cert_path = os.path.join(temp_dir, "cert.pem")
     with open(cert_path, "wb") as f:
         f.write(cert.public_bytes(serialization.Encoding.PEM))

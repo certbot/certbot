@@ -85,3 +85,13 @@ Current Features
 * Configuration changes are logged and can be reverted.
 
 .. Do not modify this comment unless you know what you're doing. tag:features-end
+
+Thanks
+------
+
+We appreciate the donation of credits to help us test and develop Certbot from:
+
+.. image:: https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/SVG/DO_Logo_horizontal_blue.svg
+  :width: 201
+  :alt: DigitalOcean Logo
+  :target: https://www.digitalocean.com/

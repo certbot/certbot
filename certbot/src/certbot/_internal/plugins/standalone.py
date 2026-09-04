@@ -133,7 +133,7 @@ running. HTTP challenge only (wildcards not supported)."""
     def prepare(self) -> None:  # pylint: disable=missing-function-docstring
         pass
 
-    def get_chall_pref(self, domain: str) -> Iterable[type[challenges.Challenge]]:
+    def get_chall_pref(self, identifier: str) -> Iterable[type[challenges.Challenge]]:
         # pylint: disable=unused-argument,missing-function-docstring
         return [challenges.HTTP01]
 

@@ -38,9 +38,7 @@ class ValidateHooksTest(unittest.TestCase):
         self._call(config)
 
         types = [call[0][1] for call in mock_validate_hook.call_args_list]
-        assert {"pre", "post", "deploy",} == set(types[:-1])
-        # This ensures error messages are about deploy hooks when appropriate
-        assert "renew" == types[-1]
+        assert {"pre", "post", "deploy",} == set(types)
 
 
 class ValidateHookTest(test_util.TempDirTestCase):
@@ -369,20 +367,22 @@ class DeployHookTest(RenewalHookTest):
         from certbot._internal.hooks import deploy_hook
         return deploy_hook(*args, **kwargs)
 
-    @mock.patch("certbot._internal.hooks.logger")
-    def test_dry_run(self, mock_logger):
+    def setUp(self):
+        super().setUp()
         self.config.deploy_hook = "foo"
-        self.config.dry_run = True
-        mock_execute = self._call_with_mock_execute(
-            self.config, ["example.org"], "/foo/bar")
-        assert mock_execute.called is False
-        assert mock_logger.info.called
 
-    @mock.patch("certbot._internal.hooks.logger")
-    def test_no_hook(self, mock_logger):
+        filesystem.makedirs(self.config.renewal_deploy_hooks_dir)
+        self.dir_hook = os.path.join(self.config.renewal_deploy_hooks_dir,
+                                     "bar")
+        create_hook(self.dir_hook)
+
+    def test_no_hooks(self):
         self.config.deploy_hook = None
-        mock_execute = self._call_with_mock_execute(
-            self.config, ["example.org"], "/foo/bar")
+        os.remove(self.dir_hook)
+
+        with mock.patch("certbot._internal.hooks.logger") as mock_logger:
+            mock_execute = self._call_with_mock_execute(
+                self.config, ["example.org"], "/foo/bar")
         assert mock_execute.called is False
         assert mock_logger.info.called is False
 
@@ -392,31 +392,13 @@ class DeployHookTest(RenewalHookTest):
         self.config.deploy_hook = "foo"
         mock_execute = self._call_with_mock_execute(
             self.config, domains, lineage)
-        mock_execute.assert_called_once_with("deploy-hook", self.config.deploy_hook, env=mock.ANY)
-
-
-class RenewHookTest(RenewalHookTest):
-    """Tests for certbot._internal.hooks.renew_hook"""
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot._internal.hooks import renew_hook
-        return renew_hook(*args, **kwargs)
-
-    def setUp(self):
-        super().setUp()
-        self.config.renew_hook = "foo"
-
-        filesystem.makedirs(self.config.renewal_deploy_hooks_dir)
-        self.dir_hook = os.path.join(self.config.renewal_deploy_hooks_dir,
-                                     "bar")
-        create_hook(self.dir_hook)
+        assert mock_execute.call_count == 2
 
     def test_disabled_dir_hooks(self):
         self.config.directory_hooks = False
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
-        mock_execute.assert_called_once_with("deploy-hook", self.config.renew_hook, env=mock.ANY)
+        mock_execute.assert_called_once_with("deploy-hook", self.config.deploy_hook, env=mock.ANY)
 
     @mock.patch("certbot._internal.hooks.logger")
     def test_dry_run(self, mock_logger):
@@ -426,18 +408,8 @@ class RenewHookTest(RenewalHookTest):
         assert mock_execute.called is False
         assert mock_logger.info.call_count == 2
 
-    def test_no_hooks(self):
-        self.config.renew_hook = None
-        os.remove(self.dir_hook)
-
-        with mock.patch("certbot._internal.hooks.logger") as mock_logger:
-            mock_execute = self._call_with_mock_execute(
-                self.config, ["example.org"], "/foo/bar")
-        assert mock_execute.called is False
-        assert mock_logger.info.called is False
-
     def test_overlap(self):
-        self.config.renew_hook = self.dir_hook
+        self.config.deploy_hook = self.dir_hook
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.net", "example.org"], "/foo/bar")
         mock_execute.assert_called_once_with("deploy-hook", self.dir_hook, env=mock.ANY)
@@ -446,7 +418,7 @@ class RenewHookTest(RenewalHookTest):
         mock_execute = self._call_with_mock_execute(
             self.config, ["example.org"], "/foo/bar")
         mock_execute.assert_any_call("deploy-hook", self.dir_hook, env=mock.ANY)
-        mock_execute.assert_called_with("deploy-hook", self.config.renew_hook, env=mock.ANY)
+        mock_execute.assert_called_with("deploy-hook", self.config.deploy_hook, env=mock.ANY)
 
 
 class ListHooksTest(test_util.TempDirTestCase):

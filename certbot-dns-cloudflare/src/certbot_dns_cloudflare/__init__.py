@@ -26,7 +26,7 @@ Credentials
 
 Use of this plugin requires a configuration file containing Cloudflare API
 credentials, obtained from your
-`Cloudflare dashboard <https://dash.cloudflare.com/?to=/:account/profile/api-tokens>`_.
+`Cloudflare dashboard <https://dash.cloudflare.com/profile/api-tokens>`_.
 
 Previously, Cloudflare's "Global API Key" was used for authentication, however
 this key can access the entire Cloudflare API for all domains in your account,

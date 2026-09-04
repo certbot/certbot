@@ -16,7 +16,8 @@ class FailedChallengesTest(unittest.TestCase):
     def setUp(self):
         from certbot.errors import FailedChallenges
         self.error = FailedChallenges({achallenges.DNS(
-            domain="example.com", challb=messages.ChallengeBody(
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="example.com"),
+            challb=messages.ChallengeBody(
                 chall=acme_util.DNS01, uri=None,
                 error=messages.Error.with_code("tls", detail="detail")))})
 
@@ -29,7 +30,8 @@ class FailedChallengesTest(unittest.TestCase):
         from certbot.errors import FailedChallenges
         arabic_detail = u'\u0639\u062f\u0627\u0644\u0629'
         arabic_error = FailedChallenges({achallenges.DNS(
-            domain="example.com", challb=messages.ChallengeBody(
+            identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="example.com"),
+            challb=messages.ChallengeBody(
                 chall=acme_util.DNS01, uri=None,
                 error=messages.Error.with_code("tls", detail=arabic_detail)))})
 

@@ -26,7 +26,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 import josepy as jose
-from OpenSSL import crypto
 
 from certbot import configuration
 from certbot import util
@@ -120,25 +119,12 @@ def load_jose_rsa_private_key_pem(*names: str) -> jose.ComparableRSAKey:
     return jose.ComparableRSAKey(load_rsa_private_key_pem(*names))
 
 
-def _guess_loader_pyopenssl(filename: str, loader_pem: int, loader_der: int) -> int:
-    # note: used by `load_rsa_private_key_pem`
-    _, ext = os.path.splitext(filename)
-    if ext.lower() == '.pem':
-        return loader_pem
-    elif ext.lower() == '.der':
-        return loader_der
-    raise ValueError("Loader could not be recognized based on extension")  # pragma: no cover
-
-
 def load_rsa_private_key_pem(*names: str) -> RSAPrivateKey:
     """Load RSA private key."""
-    loader = _guess_loader_pyopenssl(names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
-    loader_fn: Callable[..., Any]
-    if loader == crypto.FILETYPE_PEM:
-        loader_fn = serialization.load_pem_private_key
-    else:
-        loader_fn = serialization.load_der_private_key
-    key = loader_fn(load_vector(*names), password=None, backend=default_backend())
+    _, ext = os.path.splitext(names[-1])
+    assert ext.lower() == '.pem'
+    key = serialization.load_pem_private_key(
+        load_vector(*names), password=None, backend=default_backend())
     assert isinstance(key, RSAPrivateKey)
     return key
 

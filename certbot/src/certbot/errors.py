@@ -62,7 +62,7 @@ class FailedChallenges(AuthorizationError):
     def __str__(self) -> str:
         return "Failed authorization procedure. {0}".format(
             ", ".join(
-                "{0} ({1}): {2}".format(achall.domain, achall.typ, achall.error)
+                "{0} ({1}): {2}".format(achall.identifier.value, achall.typ, achall.error)
                 for achall in self.failed_achalls if achall.error is not None))
 
 

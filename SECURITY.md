@@ -6,9 +6,9 @@ Explanation on supported versions [here](https://github.com/certbot/certbot/wiki
 
 | Major Version | Support Level |
 | ------- | ------------------ |
-| >= 4.0  | Full Support |
-| 3.x     | Discretionary Backports |
-| <=2.x   | None |
+| >= 5.0  | Full Support |
+| 4.x     | Discretionary Backports |
+| <=3.x   | None |
 
 
 ## Reporting a Vulnerability

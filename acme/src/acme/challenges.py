@@ -2,6 +2,7 @@
 import abc
 import functools
 import hashlib
+import ipaddress
 import logging
 from typing import Any
 from typing import cast
@@ -365,17 +366,24 @@ class HTTP01(KeyAuthorizationChallenge):
         """
         return '/' + self.URI_ROOT_PATH + '/' + self.encode('token')
 
-    def uri(self, domain: str) -> str:
+    def uri(self, identifier: str) -> str:
         """Create an URI to the provisioned resource.
 
         Forms an URI to the HTTPS server provisioned resource
         (containing :attr:`~SimpleHTTP.token`).
 
-        :param str domain: Domain name being verified.
+        :param str identifier: Domain name or IP address being verified.
         :rtype: str
 
         """
-        return "http://" + domain + self.path
+        try:
+            # https://datatracker.ietf.org/doc/html/rfc2732#section-2
+            # IPv6 addresses in URLs should be enclosed in brackets.
+            ipaddress.IPv6Address(identifier)
+            identifier = "[" + identifier + "]"
+        except ipaddress.AddressValueError:
+            pass
+        return "http://" + identifier + self.path
 
     def validation(self, account_key: jose.JWK, **unused_kwargs: Any) -> str:
         """Generate validation.

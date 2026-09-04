@@ -16,113 +16,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.x509 import ocsp as ocsp_lib
 import pytest
 
-from certbot import errors
+from certbot import crypto_util
 from certbot.tests import util as test_util
-
-out = """Missing = in header key=value
-ocsp: Use -help for summary.
-"""
-
-
-class OCSPTestOpenSSL(unittest.TestCase):
-    """
-    OCSP revocation tests using OpenSSL binary.
-    """
-
-    def setUp(self):
-        from certbot import ocsp
-        with mock.patch('certbot.ocsp.subprocess.run') as mock_run:
-            with mock.patch('certbot.util.exe_exists') as mock_exists:
-                mock_run.stderr = out
-                mock_exists.return_value = True
-                self.checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
-
-    @mock.patch('certbot.ocsp.logger.info')
-    @mock.patch('certbot.ocsp.subprocess.run')
-    @mock.patch('certbot.util.exe_exists')
-    def test_init(self, mock_exists, mock_run, mock_log):
-        mock_run.return_value.stderr = out
-        mock_exists.return_value = True
-
-        from certbot import ocsp
-        checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
-        assert mock_run.call_count == 1
-        assert checker.host_args("x") == ["Host=x"]
-
-        mock_run.return_value.stderr = out.partition("\n")[2]
-        checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
-        assert checker.host_args("x") == ["Host", "x"]
-        assert checker.broken is False
-
-        mock_exists.return_value = False
-        mock_run.call_count = 0
-        checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
-        assert mock_run.call_count == 0
-        assert mock_log.call_count == 1
-        assert checker.broken is True
-
-    @mock.patch('certbot.ocsp._determine_ocsp_server')
-    @mock.patch('certbot.ocsp.crypto_util.notAfter')
-    @mock.patch('certbot.util.run_script')
-    def test_ocsp_revoked(self, mock_run, mock_na, mock_determine):
-        now = datetime.now(timezone.utc)
-        cert_obj = mock.MagicMock()
-        cert_obj.cert_path = "x"
-        cert_obj.chain_path = "y"
-        mock_na.return_value = now + timedelta(hours=2)
-
-        self.checker.broken = True
-        mock_determine.return_value = ("", "")
-        assert self.checker.ocsp_revoked(cert_obj) is False
-
-        self.checker.broken = False
-        mock_run.return_value = tuple(openssl_happy[1:])
-        assert self.checker.ocsp_revoked(cert_obj) is False
-        assert mock_run.call_count == 0
-
-        mock_determine.return_value = ("http://x.co", "x.co")
-        assert self.checker.ocsp_revoked(cert_obj) is False
-        mock_run.side_effect = errors.SubprocessError("Unable to load certificate launcher")
-        assert self.checker.ocsp_revoked(cert_obj) is False
-        assert mock_run.call_count == 2
-
-        # cert expired
-        mock_na.return_value = now
-        mock_determine.return_value = ("", "")
-        count_before = mock_determine.call_count
-        assert self.checker.ocsp_revoked(cert_obj) is False
-        assert mock_determine.call_count == count_before
-
-    def test_determine_ocsp_server(self):
-        cert_path = test_util.vector_path('ocsp_certificate.pem')
-
-        from certbot import ocsp
-        result = ocsp._determine_ocsp_server(cert_path)
-        assert ('http://ocsp.test4.buypass.com', 'ocsp.test4.buypass.com') == result
-
-    @mock.patch('certbot.ocsp.logger')
-    @mock.patch('certbot.util.run_script')
-    def test_translate_ocsp(self, mock_run, mock_log):
-        # pylint: disable=protected-access
-        mock_run.return_value = openssl_confused
-        from certbot import ocsp
-        assert ocsp._translate_ocsp_query(*openssl_happy) is False
-        assert ocsp._translate_ocsp_query(*openssl_confused) is False
-        assert mock_log.debug.call_count == 1
-        assert mock_log.warning.call_count == 0
-        mock_log.debug.call_count = 0
-        assert ocsp._translate_ocsp_query(*openssl_unknown) is False
-        assert mock_log.debug.call_count == 1
-        assert mock_log.warning.call_count == 0
-        assert ocsp._translate_ocsp_query(*openssl_expired_ocsp) is False
-        assert mock_log.debug.call_count == 2
-        assert ocsp._translate_ocsp_query(*openssl_broken) is False
-        assert mock_log.warning.call_count == 1
-        mock_log.info.call_count = 0
-        assert ocsp._translate_ocsp_query(*openssl_revoked) is True
-        assert mock_log.info.call_count == 0
-        assert ocsp._translate_ocsp_query(*openssl_expired_ocsp_revoked) is True
-        assert mock_log.info.call_count == 1
 
 
 class OSCPTestCryptography(unittest.TestCase):
@@ -131,7 +26,7 @@ class OSCPTestCryptography(unittest.TestCase):
     """
 
     def setUp(self):
-        from certbot import ocsp
+        from certbot._internal import ocsp
         self.checker = ocsp.RevocationChecker()
         self.cert_path = test_util.vector_path('ocsp_certificate.pem')
         self.chain_path = test_util.vector_path('ocsp_issuer_certificate.pem')
@@ -139,14 +34,14 @@ class OSCPTestCryptography(unittest.TestCase):
         self.cert_obj.cert_path = self.cert_path
         self.cert_obj.chain_path = self.chain_path
         now = datetime.now(timezone.utc)
-        self.mock_notAfter = mock.patch('certbot.ocsp.crypto_util.notAfter',
+        self.mock_notAfter = mock.patch('certbot._internal.ocsp.crypto_util.notAfter',
                                         return_value=now + timedelta(hours=2))
         self.mock_notAfter.start()
         # Ensure the mock.patch is stopped even if test raises an exception
         self.addCleanup(self.mock_notAfter.stop)
 
-    @mock.patch('certbot.ocsp._determine_ocsp_server')
-    @mock.patch('certbot.ocsp._check_ocsp_cryptography')
+    @mock.patch('certbot._internal.ocsp._determine_ocsp_server')
+    @mock.patch('certbot._internal.ocsp._check_ocsp_cryptography')
     def test_ensure_cryptography_toggled(self, mock_check, mock_determine):
         mock_determine.return_value = ('http://example.com', 'example.com')
         self.checker.ocsp_revoked(self.cert_obj)
@@ -276,7 +171,7 @@ class OSCPTestCryptography(unittest.TestCase):
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED, ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
             # This mock is necessary to avoid the first call contained in _determine_ocsp_server
             # of the method cryptography.x509.Extensions.get_extension_for_class.
-            with mock.patch('certbot.ocsp._determine_ocsp_server') as mock_server:
+            with mock.patch('certbot._internal.ocsp._determine_ocsp_server') as mock_server:
                 mock_server.return_value = ('https://example.com', 'example.com')
                 with mock.patch('cryptography.x509.Extensions.get_extension_for_class',
                                 side_effect=x509.ExtensionNotFound(
@@ -285,15 +180,35 @@ class OSCPTestCryptography(unittest.TestCase):
         assert revoked is False
 
 
+class TestDeprecation:
+    """Tests related to the deprecation of certbot.ocsp.
+
+    These tests can be deleted after this module is removed from Certbot.
+
+    """
+    def test_deprecation_warning(self):
+        with pytest.warns(DeprecationWarning, match='certbot.ocsp is deprecated'):
+            import certbot.ocsp  # noqa: F401
+
+    def test_no_changes(self):
+        from certbot._internal import ocsp
+        expected_hash = '4f595b3c6e63749af1f71b5b4890b94e04734bb75f8bff95cf7d7a7e4752d5c1'
+        failure_message = ('Despite being prefixed by _internal, certbot._internal.ocsp is still '
+            'part of our public API while certbot.ocsp exists. You are free to make changes to '
+            'this file and update the hash in this test however, please be sure your changes do '
+            'not affect the API of the certbot.ocsp module.')
+        assert crypto_util.sha256sum(ocsp.__file__) == expected_hash, failure_message
+
+
 @contextlib.contextmanager
 def _ocsp_mock(certificate_status, response_status,
                http_status_code=200, check_signature_side_effect=None):
-    with mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response') as mock_response:
+    with mock.patch('certbot._internal.ocsp.ocsp.load_der_ocsp_response') as mock_response:
         mock_response.return_value = _construct_mock_ocsp_response(
             certificate_status, response_status)
-        with mock.patch('certbot.ocsp.requests.post') as mock_post:
+        with mock.patch('certbot._internal.ocsp.requests.post') as mock_post:
             mock_post.return_value = mock.Mock(status_code=http_status_code)
-            with mock.patch('certbot.ocsp.crypto_util.verify_signed_payload') \
+            with mock.patch('certbot._internal.ocsp.crypto_util.verify_signed_payload') \
                 as mock_check:
                 if check_signature_side_effect:
                     mock_check.side_effect = check_signature_side_effect
@@ -328,60 +243,6 @@ def _construct_mock_ocsp_response(certificate_status, response_status):
         this_update_utc=datetime.now(timezone.utc) - timedelta(days=1),
         signature_algorithm_oid=x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA1,
     )
-
-
-# pylint: disable=line-too-long
-openssl_confused = ("", """
-/etc/letsencrypt/live/example.org/cert.pem: good
-	This Update: Dec 17 00:00:00 2016 GMT
-	Next Update: Dec 24 00:00:00 2016 GMT
-""",
-"""
-Response Verify Failure
-139903674214048:error:27069065:OCSP routines:OCSP_basic_verify:certificate verify error:ocsp_vfy.c:138:Verify error:unable to get local issuer certificate
-""")
-
-openssl_happy = ("blah.pem", """
-blah.pem: good
-	This Update: Dec 20 18:00:00 2016 GMT
-	Next Update: Dec 27 18:00:00 2016 GMT
-""",
-"Response verify OK")
-
-openssl_revoked = ("blah.pem", """
-blah.pem: revoked
-	This Update: Dec 20 01:00:00 2016 GMT
-	Next Update: Dec 27 01:00:00 2016 GMT
-	Revocation Time: Dec 20 01:46:34 2016 GMT
-""",
-"""Response verify OK""")
-
-openssl_unknown = ("blah.pem", """
-blah.pem: unknown
-	This Update: Dec 20 18:00:00 2016 GMT
-	Next Update: Dec 27 18:00:00 2016 GMT
-""",
-"Response verify OK")
-
-openssl_broken = ("", "tentacles", "Response verify OK")
-
-openssl_expired_ocsp = ("blah.pem", """
-blah.pem: WARNING: Status times invalid.
-140659132298912:error:2707307D:OCSP routines:OCSP_check_validity:status expired:ocsp_cl.c:372:
-good
-	This Update: Apr  6 00:00:00 2016 GMT
-	Next Update: Apr 13 00:00:00 2016 GMT
-""",
-"""Response verify OK""")
-
-openssl_expired_ocsp_revoked = ("blah.pem", """
-blah.pem: WARNING: Status times invalid.
-140659132298912:error:2707307D:OCSP routines:OCSP_check_validity:status expired:ocsp_cl.c:372:
-revoked
-	This Update: Apr  6 00:00:00 2016 GMT
-	Next Update: Apr 13 00:00:00 2016 GMT
-""",
-"""Response verify OK""")
 
 
 if __name__ == '__main__':

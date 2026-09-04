@@ -40,8 +40,7 @@ PGP keys:
 - ``20F201346BF8F3F455A73F9A780CC99432A28621``
 - ``F2871B4152AE13C49519111F447BF683AA3B26C3```
 
-These keys can be found on major key servers and at
-https://dl.eff.org/certbot.pub.
+These keys can be found on major key servers.
 
 Releases before 1.21.0 were signed by the PGP key
 ``A2CFB51FA275A7286234E7B24D17C995CD9775F2`` which can still be found on major

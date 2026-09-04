@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Module to call certbot in test mode"""
 
+import configparser
 import os
 import subprocess
 import sys
@@ -76,6 +77,38 @@ def _prepare_environ(workspace: str) -> dict[str, str]:
             if path != certbot_root
         ]
         new_environ['PYTHONPATH'] = ':'.join(python_paths)
+
+    # Pytest finds its ini file by doing the following:
+    # Determine the common ancestor directory for the specified args that are recognised as paths
+    # that exist in the file system. If no such paths are found, the common ancestor directory is
+    # set to the current working directory.
+    #
+    # Look for pytest.toml, .pytest.toml, pytest.ini, .pytest.ini, pyproject.toml, tox.ini, and
+    # setup.cfg files in the ancestor directory and upwards. If one is matched, it becomes the
+    # configfile and its directory becomes the rootdir.
+    # source: https://docs.pytest.org/en/stable/reference/customize.html#finding-the-rootdir
+    #
+    # Certbot's is located in its root directory. Let's just walk up the tree from this file.
+    # In case we can't find it, we still do want to error, so add a default. It's fine to have
+    # error in there twice. Also, ignore the unverified HTTPS request specifically for this call.
+    warning_filters: list[str]= [
+        'error',
+        "ignore:Unverified HTTPS request is being made to host 'localhost'",
+        ]
+    base_path: str = os.path.realpath(__file__)
+    while base_path != os.sep:
+        ini_loc: str = os.path.join(base_path, 'pytest.ini')
+        if os.path.exists(ini_loc):
+            ini_config: configparser.ConfigParser = configparser.ConfigParser()
+            ini_config.read(ini_loc)
+            if ini_config is not None:
+                ini_filters = ini_config.get('pytest', 'filterwarnings', fallback='')
+                warning_filters.extend(ini_filters.split('\n'))
+            break
+        else:
+            base_path = os.path.dirname(base_path)
+
+    new_environ['PYTHONWARNINGS'] = ','.join(warning_filters)
 
     return new_environ
 

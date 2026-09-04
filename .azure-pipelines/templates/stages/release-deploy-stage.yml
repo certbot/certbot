@@ -1,4 +1,6 @@
 stages:
+  # tools/notify_mattermost.py depends on this stage being named 'Deploy'
+  # If you change the name here, please remember to update that script as well
   - stage: Deploy
     jobs:
       - template: ../jobs/common-deploy-jobs.yml

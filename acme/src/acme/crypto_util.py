@@ -3,10 +3,14 @@ import enum
 from datetime import datetime, timedelta, timezone
 import ipaddress
 import logging
+from types import ModuleType
 import typing
+from typing import Any
 from typing import Literal
 from typing import Optional
 from typing import Union
+import warnings
+import sys
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -17,8 +21,38 @@ from OpenSSL import crypto
 logger = logging.getLogger(__name__)
 
 
+# https://github.com/pyca/cryptography/blob/1eab7a67dcc34b568e3c0df64e6222a2ac74b1ee/src/cryptography/utils.py#L66-L113
+class _ClientDeprecationModule(ModuleType):
+    """
+    Internal class delegating to a module, and displaying warnings when attributes
+    related to deprecated attributes in the acme.client module.
+    """
+    def __init__(self, module: ModuleType) -> None:
+        super().__init__(module.__name__)
+        self.__dict__['_module'] = module
+
+    def __getattr__(self, attr: str) -> Any:
+        if attr == 'Format':
+            warnings.warn("acme.crypto_util.Format is deprecated and will be removed in "
+                "the next major release.", DeprecationWarning)
+        return getattr(self._module, attr)
+
+    def __setattr__(self, attr: str, value: Any) -> None:  # pragma: no cover
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr: str) -> None:  # pragma: no cover
+        delattr(self._module, attr)
+
+    def __dir__(self) -> list[str]:  # pragma: no cover
+        return ['_module'] + dir(self._module)
+
+
+# Patching ourselves to warn about deprecation and planned removal of some elements in the module.
+sys.modules[__name__] = _ClientDeprecationModule(sys.modules[__name__])
+
+
 class Format(enum.IntEnum):
-    """File format to be used when parsing or serializing X.509 structures.
+    """File format to be used when parsing or serializing X.509 structures. Deprecated.
 
     Backwards compatible with the `FILETYPE_ASN1` and `FILETYPE_PEM` constants
     from pyOpenSSL.
@@ -35,7 +69,7 @@ class Format(enum.IntEnum):
             return Encoding.PEM
 
 
-# Even *more* annoyingly, due to a mypy bug, we can't use Union[] types in
+# Annoyingly, due to a mypy bug, we can't use Union[] types in
 # isinstance expressions without causing false mypy errors. So we have to
 # recreate the type collection as a tuple here. And no, typing.get_args doesn't
 # work due to another mypy bug.
@@ -111,7 +145,7 @@ def make_csr(
 def get_names_from_subject_and_extensions(
     subject: x509.Name, exts: x509.Extensions
 ) -> list[str]:
-    """Gets all DNS SAN names as well as the first Common Name from subject.
+    """Gets all DNS SANs as well as the first Common Name from subject.
 
     :param subject: Name of the x509 object, which may include Common Name
     :type subject: `cryptography.x509.Name`
@@ -120,6 +154,24 @@ def get_names_from_subject_and_extensions(
 
     :returns: List of DNS Subject Alternative Names and first Common Name
     :rtype: `list` of `str`
+    """
+    dns_names, _ = get_identifiers_from_x509(subject, exts)
+    return dns_names
+
+
+def get_identifiers_from_x509(
+    subject: x509.Name, exts: x509.Extensions
+) -> tuple[list[str], list[str]]:
+    """Gets all DNS and/or IP address SANs as well as the first Common Name from subject.
+
+    The CN will be first in the list of DNS names, if present.
+
+    :param subject: Name of the x509 object, which may include Common Name
+    :type subject: `cryptography.x509.Name`
+    :param exts: Extensions of the x509 object, which may include SANs
+    :type exts: `cryptography.x509.Extensions`
+
+    :returns: Tuple containing DNS names and IP addresses.
     """
     # We know these are always `str` because `bytes` is only possible for
     # other OIDs.
@@ -131,15 +183,17 @@ def get_names_from_subject_and_extensions(
         san_ext = exts.get_extension_for_class(x509.SubjectAlternativeName)
     except x509.ExtensionNotFound:
         dns_names = []
+        ip_addresses = []
     else:
         dns_names = san_ext.value.get_values_for_type(x509.DNSName)
+        ip_addresses = [str(ip) for ip in san_ext.value.get_values_for_type(x509.IPAddress)]
 
     if not cns:
-        return dns_names
+        return dns_names, ip_addresses
     else:
         # We only include the first CN, if there are multiple. This matches
         # the behavior of the previous implementation using pyOpenSSL.
-        return [cns[0]] + [d for d in dns_names if d != cns[0]]
+        return [cns[0]] + [d for d in dns_names if d != cns[0]], ip_addresses
 
 
 def _cryptography_cert_or_req_san(
@@ -202,6 +256,8 @@ def make_self_signed_cert(private_key: types.CertificateIssuerPrivateKeyTypes,
     subject CN. If only one domain is provided no ``subjectAltName``
     extension is used, unless `force_san` is ``True``.
     """
+    warnings.warn("make_self_signed_cert is deprecated and will be removed in "
+                  "an upcoming release", DeprecationWarning)
     assert domains or ips, "Must provide one or more hostnames or IPs for the cert."
 
     builder = x509.CertificateBuilder()

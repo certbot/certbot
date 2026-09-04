@@ -269,7 +269,7 @@ challenges: HTTP and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
-`get_chall_pref(domain)` to return a sorted list of challenge types in
+`get_chall_pref(identifier)` to return a sorted list of challenge types in
 preference order.
 
 An Authenticator must also implement `perform(achalls)`, which "performs" a list
@@ -658,10 +658,3 @@ current Certbot developers on macOS as of writing this:
 2. If you're using ``pyenv``, make sure you've set up your shell for it by
    following instructions like
    https://github.com/pyenv/pyenv?tab=readme-ov-file#set-up-your-shell-environment-for-pyenv.
-3. Configure ``git`` to ignore the ``.DS_Store`` files that are created by
-   macOS's file manager Finder by running something like:
-
-.. code-block:: shell
-
-   mkdir -p ~/.config/git
-   echo '.DS_Store' >> ~/.config/git/ignore

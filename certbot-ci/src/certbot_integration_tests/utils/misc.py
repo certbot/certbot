@@ -12,6 +12,7 @@ import json
 import os
 import re
 import shutil
+import socket
 import socketserver
 import stat
 import sys
@@ -33,7 +34,7 @@ from cryptography.hazmat.primitives.serialization import NoEncryption
 from cryptography.hazmat.primitives.serialization import PrivateFormat
 from cryptography.x509 import Certificate
 from cryptography.x509 import load_pem_x509_certificate
-from OpenSSL import crypto
+
 import requests
 
 from certbot_integration_tests.utils.constants import PEBBLE_ALTERNATE_ROOTS
@@ -74,6 +75,10 @@ class GracefulTCPServer(socketserver.TCPServer):
     just been released by another instance of TCPServer.
     """
     allow_reuse_address = True
+    # AF_INET is the default, but make it explicit. We don't want to conflict with
+    # test_ipv6_address_standalone in the integration tests, which listens on [::1]:5002
+    # (that is, AF_INET6).
+    address_family = socket.AF_INET
 
 
 @contextlib.contextmanager
@@ -237,20 +242,16 @@ def generate_csr(
         file_h.write(csr.public_bytes(Encoding.DER))
 
 
-def read_certificate(cert_path: str) -> str:
+def read_certificate(cert_path: str) -> Certificate:
     """
-    Load the certificate from the provided path, and return a human readable version
-    of it (TEXT mode).
+    Load the certificate from the provided path and return the certificate object.
     :param str cert_path: the path to the certificate
-    :returns: the TEXT version of the certificate, as it would be displayed by openssl binary
+    :returns: a cryptography.x509.Certificate object
     """
     with open(cert_path, "rb") as file:
         data = file.read()
 
-    cert = x509.load_pem_x509_certificate(data)
-    return crypto.dump_certificate(
-        crypto.FILETYPE_TEXT, crypto.X509.from_cryptography(cert)
-    ).decode("utf-8")
+    return x509.load_pem_x509_certificate(data)
 
 
 def load_sample_data_path(workspace: str) -> str:

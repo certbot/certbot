@@ -62,3 +62,9 @@ certbot-dns*/certbot-dns*_arm*.txt
 /certbot_arm*.txt
 certbot-dns*/snap
 snapcraft.cfg
+
+# pyenv files
+.python-version
+
+# macOS files
+.DS_Store
