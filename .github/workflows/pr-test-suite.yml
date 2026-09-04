@@ -1,0 +1,27 @@
+# We run the test suite on commits to main to double check that everything is good after merging
+name: PR test suite
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+    - "*.x"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  standard_tests_jobs:
+    name: Standard tests
+    uses: "./.github/workflows/standard_tests_jobs.yml"
+  all_success:
+    name: PR test suite success
+    needs: standard_tests_jobs
+    runs-on: ubuntu-latest
+    steps:
+      - run: true

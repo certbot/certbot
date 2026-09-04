@@ -420,8 +420,11 @@ def _get_added_removed(after: Iterable[T], before: Iterable[T]) -> tuple[list[T]
     """Get lists of items removed from `before`
     and a lists of items added to `after`
     """
-    added = list(set(after) - set(before))
-    removed = list(set(before) - set(after))
+    after_set = set(after)
+    before_set = set(before)
+
+    added = list(after_set - before_set)
+    removed = list(before_set - after_set)
     added.sort()
     removed.sort()
     return added, removed

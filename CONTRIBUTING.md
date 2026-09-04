@@ -1,8 +1,8 @@
 <!---
 
-zoracon: (This is an old comment below, not sure how accurate this is anymore. 
+zoracon: (This is an old comment below, not sure how accurate this is anymore.
 Since Github seems to lean more towards Markdown these days, it's still probably accurate)
- 
+
 This file serves as an entry point for GitHub's Contributing
 Guidelines [1] only.
 

@@ -1,0 +1,27 @@
+# based on https://github.com/orgs/community/discussions/67654#discussioncomment-8038649
+name: Rerun
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        required: true
+        description: github.run_id of workflow to rerun
+permissions:
+  actions: write
+  checks: write
+
+env:
+  RUN_ID: "${{ inputs.run_id }}"
+
+jobs:
+  rerun:
+    runs-on: ubuntu-latest
+    steps:
+      - name: rerun "$RUN_ID"
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          GH_DEBUG: api
+        run: |
+          gh run watch "$RUN_ID" > /dev/null 2>&1
+          gh run rerun "$RUN_ID" --failed

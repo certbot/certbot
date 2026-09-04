@@ -336,6 +336,8 @@ pkcs12_                 N    Y    Install certificates as PKCS#12 archives
 dns-hetzner-cloud_      Y    N    DNS Authentication for Hetzner Cloud DNS
 dns-czechia_            Y    N    DNS Authentication for czechia.com
 dns-eurodns_            Y    N    DNS Authentication for EuroDNS
+dns-dnscale_            Y    N    DNS Authenticator for DNScale
+dns-feno_               Y    N    DNS Authentication using the FENO (feno.no) API for .no domains
 ======================= ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -373,6 +375,8 @@ dns-eurodns_            Y    N    DNS Authentication for EuroDNS
 .. _dns-hetzner-cloud: https://github.com/rolschewsky/certbot-dns-hetzner-cloud
 .. _dns-czechia: https://github.com/CZECHIA-COM/certbot-dns-czechia
 .. _dns-eurodns: https://pypi.org/project/certbot-dns-eurodns/
+.. _dns-dnscale: https://github.com/dnscaleou/certbot-dns-dnscale
+.. _dns-feno: https://github.com/mrerikcodes/certbot-dns-feno
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 

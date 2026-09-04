@@ -90,11 +90,9 @@ It is easiest to run this from a local machine.
 ### Build Snaps Remotely
 
 Certbot provides a wrapper around snapcraft's remote build to make building all of our plugins easier. To see all available
-options, run `python3 tools/snap/build_remote.py --help`.
+options, run `python3 tools/snap/build_remote_single.py --help`.
 
-For example, to build all available snaps for all architectures, run `python3 tools/snap/build_remote.py ALL --archs amd64 arm64 armhf`.
-
-To build only the certbot snap on only amd64, run `python3 tools/snap/build_remote.py certbot --archs armhf`.
+For example, to build only the certbot snap on only amd64, run `python3 tools/snap/build_remote_single.py certbot --arch amd64`.
 
 The command will upload the entire contents of the working directory, so if the remote build
 appears to hang, try using a clean clone of the `certbot` repository.

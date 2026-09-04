@@ -156,7 +156,7 @@ adding the `-s` flag to `pytest` invocations.
 Running automated integration tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generally it is sufficient to open a pull request and let Github and Azure Pipelines run
+Generally it is sufficient to open a pull request and let GitHub run
 integration tests for you. However, you may want to run them locally before submitting
 your pull request. You need Docker installed and working.
 
@@ -224,8 +224,8 @@ using an HTTP-01 challenge on a machine with Python 3:
 Running tests in CI
 ~~~~~~~~~~~~~~~~~~~
 
-Certbot uses Azure Pipelines to run continuous integration tests. If you are using our
-Azure setup, a branch whose name starts with `test-` will run all tests on that branch.
+Certbot uses GitHub Actions to run continuous integration tests. If you are using our
+GitHub Actions setup, a branch whose name starts with `test-` will run all tests on that branch.
 
 Code components and layout
 ==========================
@@ -526,7 +526,7 @@ Steps:
    containing your pull request to squash or amend commits. We use `squash
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
-7. Did your tests pass on Azure Pipelines? If they didn't, fix any errors.
+7. Did your tests pass on GitHub Actions? If they didn't, fix any errors.
 
 .. _ask for help:
 

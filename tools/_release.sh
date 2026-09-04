@@ -30,6 +30,23 @@ echo Releasing production version "$version"...
 nextversion="$2"
 RELEASE_BRANCH="candidate-$version"
 
+if [ -n "$VIRTUAL_ENV" ]; then
+    if [[ "$PATH" != $VIRTUAL_ENV* ]]; then
+        echo "Unexpected PATH and VIRTUAL_ENV value. Please deactivate any"
+        echo "Python virtual environments and try running this script again."
+        exit 1
+    fi
+    echo "Deactivating venv..."
+    export PATH="${PATH#*:}"
+    hash -r 2> /dev/null
+    unset VIRTUAL_ENV
+fi
+
+if [ "$(git branch --show-current)" != "$RELEASE_BRANCH" ]; then
+    echo "Creating $RELEASE_BRANCH branch..."
+    git switch -c "$RELEASE_BRANCH"
+fi
+
 # If RELEASE_GPG_KEY isn't set, determine the key to use.
 if [ "$RELEASE_GPG_KEY" = "" ]; then
     TRUSTED_KEYS="
@@ -86,14 +103,12 @@ tools/pip_install.py build towncrier uv virtualenv
 
 root_without_le="$version.$$"
 root="$RELEASE_DIR/le.$root_without_le"
+REPO_ROOT="$(pwd)"
 
 echo "Cloning into fresh copy at $root"  # clean repo = no artifacts
 git clone . $root
 git rev-parse HEAD
 cd $root
-if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
-    git branch -f "$RELEASE_BRANCH"
-fi
 git checkout "$RELEASE_BRANCH"
 
 # Update changelog. `--yes` automatically clears out older newsfragments,
@@ -201,5 +216,10 @@ git commit -m "Remove built packages from git"
 
 if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
+    # If this message changes, it should also be changed in tools/finish_release.py
     git commit -m "Bump version to $nextversion"
 fi
+
+cd $REPO_ROOT
+git remote rm temp || :
+git remote add temp $root && git fetch temp

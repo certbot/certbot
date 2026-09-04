@@ -18,7 +18,7 @@ jobs:
     # we pin this action to a version tested and audited by certbot's
     # maintainers for extra security. the full hash is used as doing so is
     # recommended by zizmor
-    - uses: mattermost/action-mattermost-notify@b7d118e440bf2749cd18a4a8c88e7092e696257a
+    - uses: mattermost/action-mattermost-notify@ae31bb6f9e26a54336e79696f108a2c91cf55b4e
       with:
         MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_ASSIGN_WEBHOOK }}
         TEXT: >

@@ -1,5 +1,5 @@
 #base image
-FROM python:3.12-alpine3.20 AS certbot
+FROM python:3.14-alpine3.23 AS certbot
 
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443

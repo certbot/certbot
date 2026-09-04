@@ -2,12 +2,11 @@ import os
 
 from setuptools import setup
 
-version = '5.5.0'
+version = '5.8.0'
 
 install_requires = [
-    # for now, do not upgrade to cloudflare>=2.20 to avoid deprecation warnings and the breaking
-    # changes in version 3.0. see https://github.com/certbot/certbot/issues/9938
-    'cloudflare>=2.19, <2.20',
+    'cloudflare>=4.0',
+    # Needed to follow CNAME aliases for the _acme-challenge record.
     'dnspython>=2.6.1',
 ]
 

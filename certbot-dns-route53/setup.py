@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup
 
-version = '5.5.0'
+version = '5.8.0'
 
 install_requires = [
     'boto3>=1.20.34',

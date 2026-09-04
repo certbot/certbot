@@ -4,6 +4,36 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.8.0 - 2026-09-01
+
+### Changed
+
+- certbot and its acme library now require cryptography>=47.0.0. ([#10748](https://github.com/certbot/certbot/issues/10748))
+
+### Fixed
+
+- Fixed removed domains being omitted from the certificate update confirmation prompt. ([#10767](https://github.com/certbot/certbot/issues/10767))
+
+
+## 5.7.0 - 2026-07-15
+
+### Fixed
+
+- Fixed nginx configuration parsing when comments appear between tokens of a multi-line directive. ([#10598](https://github.com/certbot/certbot/issues/10598))
+
+
+## 5.6.0 - 2026-05-11
+
+### Changed
+
+- certbot now requires version 1.7+ of the library distro and certbot-dns-cloudflare requires 4.0+ of the Cloudflare Python library. ([#10587](https://github.com/certbot/certbot/issues/10587))
+
+### Fixed
+
+- The certbot-dns-ovh snap and docker image now properly delete any created TXT records after the challenge is completed by requiring dns-lexicon 3.25.1 which contains the fix. ([#10492](https://github.com/certbot/certbot/issues/10492))
+- Our Docker images have been updated to use Python 3.14 and Alpine Linux 3.23. ([#10619](https://github.com/certbot/certbot/issues/10619))
+
+
 ## 5.5.0 - 2026-04-07
 
 ### Changed

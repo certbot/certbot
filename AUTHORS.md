@@ -84,6 +84,7 @@ Authors
 * [Eric Engestrom](https://github.com/1ace)
 * [Eric Rescorla](https://github.com/ekr)
 * [Eric Wustrow](https://github.com/ewust)
+* [Erik Morén](https://github.com/morre95)
 * [Erik Rose](https://github.com/erikrose)
 * [Eugene Kazakov](https://github.com/xgin)
 * [Fabian](https://github.com/faerbit)
@@ -137,6 +138,7 @@ Authors
 * [Joe Ranweiler](https://github.com/ranweiler)
 * [Joerg Sonnenberger](https://github.com/jsonn)
 * [John Leach](https://github.com/johnl)
+* [John Muirhead-Gould](https://github.com/jmg421)
 * [John Reed](https://github.com/leerspace)
 * [Jonas Berlin](https://github.com/xkr47)
 * [Jonathan Herlin](https://github.com/Jonher937)
@@ -306,3 +308,4 @@ Authors
 * [Zach Shepherd](https://github.com/zjs)
 * [陈三](https://github.com/chenxsan)
 * [Shahar Naveh](https://github.com/ShaharNaveh)
+

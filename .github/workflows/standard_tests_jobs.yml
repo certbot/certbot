@@ -1,0 +1,43 @@
+name: Standard tests jobs
+on:
+  workflow_call:
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: '-' # Makes results viewing cleaner
+    strategy:
+      fail-fast: false
+      matrix:
+        PYTHON_VERSION: ['3.14']
+        IMAGE_NAME: ['ubuntu-22.04']
+        TOXENV:
+          - 'cover'
+          - 'lint-posix'
+          - 'mypy'
+          - 'integration'
+          - 'apache_compat'
+          - 'apacheconftest-with-pebble'
+          - 'nginxroundtrip'
+          - 'validate-changelog'
+        include:
+        - IMAGE_NAME: macOS-15
+          PYTHON_VERSION: '3.14'
+          TOXENV: cover
+          PIP_USE_PEP517: 'true'
+        - IMAGE_NAME: ubuntu-22.04
+          PYTHON_VERSION: '3.10'
+          TOXENV: oldest
+        - IMAGE_NAME: ubuntu-22.04
+          PYTHON_VERSION: '3.10'
+          TOXENV: py310
+    uses: "./.github/workflows/tox_steps.yml"
+    with:
+      PYTHON_VERSION: "${{ matrix.PYTHON_VERSION }}"
+      PIP_USE_PEP517: "${{ matrix.PIP_USE_PEP517 }}"
+      TOXENV: "${{ matrix.TOXENV }}"
+      IMAGE_NAME: "${{ matrix.IMAGE_NAME }}"
+  test_sphinx_builds:
+    name: '-' # Makes results viewing cleaner
+    uses: "./.github/workflows/sphinx_steps.yml"

@@ -29,8 +29,8 @@ install_requires = [
     f'acme>={version}',
     'ConfigArgParse>=1.5.3',
     'configobj>=5.0.6',
-    'cryptography>=43.0.0',
-    'distro>=1.0.1',
+    'cryptography>=47.0.0',
+    'distro>=1.7.0',
     'importlib_metadata>=8.6.1; python_version < "3.10"',
     'josepy>=2.0.0',
     'parsedatetime>=2.6',
@@ -43,7 +43,6 @@ install_requires = [
 extras_require = {
     "dev": [
         "apacheconfig>=0.3.2",
-        "azure-devops",
         "build",
         "ipdb",
         # allows us to use newer urllib3 https://github.com/python-poetry/poetry-plugin-export/issues/183

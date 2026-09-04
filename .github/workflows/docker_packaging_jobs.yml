@@ -1,0 +1,82 @@
+name: Docker packaging
+on:
+  workflow_call:
+    inputs:
+      dockerTag:
+        description: 'tag to assign docker images'
+        type: string
+permissions:
+  contents: read
+
+env:
+  DOCKER_TAG: ${{ inputs.dockerTag }}
+
+jobs:
+  docker_build:
+    name: Build ${{ matrix.DOCKER_ARCH }}
+    runs-on:
+      - ${{ matrix.run-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - DOCKER_ARCH: arm64v8
+          run-on: ubuntu-24.04-arm
+        - DOCKER_ARCH: amd64
+          run-on: ubuntu-24.04
+        - DOCKER_ARCH: arm32v6
+          run-on: ubuntu-24.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
+    - name: Build the Docker images
+      # We don't filter for the Docker Hub organization to continue to allow
+      # easy testing of these scripts on forks.
+      run: tools/docker/build.sh "$DOCKER_TAG" ${{ matrix.DOCKER_ARCH }}
+      shell: bash
+    - name: Save the Docker images
+      run: |-
+        DOCKER_IMAGES=$(docker images --filter reference="*/certbot" --filter reference="*/dns-*" --format "{{.Repository}}")
+        docker save --output images.tar $DOCKER_IMAGES
+      shell: bash
+    # If the name of the tar file or artifact changes, the deploy stage will
+    # also need to be updated.
+    - name: Store Docker artifact
+      uses: actions/upload-artifact@v7.0.0
+      with:
+        name: docker_${{ matrix.DOCKER_ARCH }}
+        path: "${{ github.workspace }}/images.tar"
+  docker_test:
+    name: Test ${{ matrix.DOCKER_ARCH }}
+    needs:
+    - docker_build
+    runs-on:
+      - ${{ matrix.run-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - DOCKER_ARCH: arm64v8
+          run-on: ubuntu-24.04-arm
+        - DOCKER_ARCH: amd64
+          run-on: ubuntu-24.04
+        - DOCKER_ARCH: arm32v6
+          run-on: ubuntu-24.04-arm
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.0.2
+      with:
+        persist-credentials: false
+    - name: Retrieve Docker images
+      uses: actions/download-artifact@v8.0.1
+      with:
+        name: docker_${{ matrix.DOCKER_ARCH }}
+        path: "${{ github.workspace }}"
+    - name: Load Docker images
+      run: docker load --input ${{ github.workspace }}/images.tar
+      shell: bash
+    - name: Run integration tests for Docker images
+      run: tools/docker/test.sh "$DOCKER_TAG" ${{ matrix.DOCKER_ARCH }}
+      shell: bash

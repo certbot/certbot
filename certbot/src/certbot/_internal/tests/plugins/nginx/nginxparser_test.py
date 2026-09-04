@@ -201,6 +201,20 @@ class TestRawNginxParser(unittest.TestCase):
              [['#', ' server{']]]
         ]
 
+    def test_comment_inside_multiline_directive(self):
+        # See https://github.com/certbot/certbot/issues/10598
+        # An unbalanced double-quote inside a comment that sits between tokens
+        # of a multi-line directive must not be sucked into a multiline quoted
+        # string and run away across the rest of the file.
+        source = ("http {\n"
+                  "    log_format json_test escape=json '{'\n"
+                  "        #  '\"req\": \"$request\"'  # GET \"/test?...\n"
+                  "    '}';\n"
+                  "}\n")
+        parsed = loads(source)
+        # The config parses and round-trips byte-for-byte.
+        assert dumps(parsed) == source
+
     def test_access_log(self):
         # see issue #3798
         parsed = loads('access_log syslog:server=unix:/dev/log,facility=auth,'
