@@ -1,7 +1,7 @@
 Challenges
 ==========
 
-To receive a certificate from Let's Encrypt certificate authority (CA), you must pass a *challenge* to
+To receive a certificate from Let's Encrypt (or any other ACME CA), you must pass a *challenge* to
 prove you control each of the domain names that will be listed in the certificate. A challenge is one of
 a list of specified tasks that only someone who controls the domain should be able to accomplish, such as:
 

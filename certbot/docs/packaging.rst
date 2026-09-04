@@ -58,7 +58,7 @@ Notes for package maintainers
 3. If you'd like to include automated renewal in your package:
 
   - ``certbot renew -q`` should be added to crontab or systemd timer.
-  - A random per-machine time offset should be included to avoid having a large number of your clients hit Let's Encrypt's servers simultaneously.
+  - A random per-machine time offset should be included to avoid having a large number of your clients hit the CA's servers simultaneously.
   - ``--preconfigured-renewal`` should be included on the CLI or in ``cli.ini`` for all invocations of Certbot, so that it can adjust its interactive output regarding automated renewal (Certbot >= 1.9.0).
 
 4. ``jws`` is an internal script for ``acme`` module and it doesn't have to be packaged - it's mostly for debugging: you can use it as ``echo foo | jws sign | jws verify``.
