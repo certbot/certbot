@@ -155,6 +155,7 @@ Authors
 * [Kenneth Skovhede](https://github.com/kenkendk)
 * [Kevin Burke](https://github.com/kevinburke)
 * [Kevin London](https://github.com/kevinlondon)
+* [Karl Hill](https://github.com/karlhillx)
 * [Kubilay Kocak](https://github.com/koobs)
 * [LeCoyote](https://github.com/LeCoyote)
 * [Lee Watson](https://github.com/TheReverend403)

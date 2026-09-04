@@ -1096,7 +1096,7 @@ variables to these scripts:
 
 Additionally for cleanup:
 
-- ``CERTBOT_AUTH_OUTPUT``: Whatever the auth script wrote to stdout
+- ``CERTBOT_AUTH_OUTPUT``: Whatever the auth script wrote to stdout (truncated to 10 KB to avoid ARG_MAX limits)
 
 Certbot also sets ``CERTBOT_DOMAIN`` and ``CERTBOT_ALL_DOMAINS`` to the same values as
 ``CERTBOT_IDENTIFIER`` and ``CERTBOT_ALL_IDENTIFIERS`` respectively for backwards compatibility,

@@ -715,7 +715,8 @@ manual:
   resource requested when performing an HTTP-01 challenge. An additional
   cleanup script can also be provided and can use the additional variable
   $CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth
-  script. For both authenticator and cleanup script, on HTTP-01 and DNS-01
+  script (truncated to 10 KB to avoid ARG_MAX limits in the cleanup hook).
+  For both authenticator and cleanup script, on HTTP-01 and DNS-01
   challenges, $CERTBOT_REMAINING_CHALLENGES will be equal to the number of
   challenges that remain after the current one, and $CERTBOT_ALL_IDENTIFIERS
   contains a comma-separated list of all identifiers that are challenged for

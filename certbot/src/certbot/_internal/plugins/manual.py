@@ -20,6 +20,11 @@ from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
 
+# Maximum size of CERTBOT_AUTH_OUTPUT passed to cleanup hooks via environment.
+# auth-hook stdout beyond this is truncated to avoid exceeding ARG_MAX (E2BIG)
+# when the env dict is passed to subprocess.run(shell=True, env=...).
+_MAX_AUTH_OUTPUT_BYTES = 10 * 1024  # 10 KB
+
 
 class Authenticator(common.Plugin, interfaces.Authenticator):
     """Manual authenticator
@@ -41,7 +46,8 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         'is the validation string, and $CERTBOT_TOKEN is the filename of the '
         'resource requested when performing an HTTP-01 challenge. An additional '
         'cleanup script can also be provided and can use the additional variable '
-        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script. '
+        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script '
+        '(truncated to 10 KB to avoid ARG_MAX limits in the cleanup hook). '
         'For both authenticator and cleanup script, on HTTP-01 and DNS-01 challenges, '
         '$CERTBOT_REMAINING_CHALLENGES will be equal to the number of challenges that '
         'remain after the current one, and $CERTBOT_ALL_IDENTIFIERS contains a comma-separated '
@@ -200,7 +206,15 @@ permitted by DNS standards.)
             os.environ.pop('CERTBOT_TOKEN', None)
         os.environ.update(env)
         _, out = self._execute_hook('auth-hook', identifier_value)
-        env['CERTBOT_AUTH_OUTPUT'] = out.strip()
+        auth_output = out.strip()
+        encoded = auth_output.encode('utf-8', errors='ignore')
+        if len(encoded) > _MAX_AUTH_OUTPUT_BYTES:
+            logger.warning(
+                'auth-hook output exceeded %d bytes; truncating CERTBOT_AUTH_OUTPUT '
+                'to avoid ARG_MAX limits in cleanup hook', _MAX_AUTH_OUTPUT_BYTES)
+            auth_output = encoded[:_MAX_AUTH_OUTPUT_BYTES].decode(
+                'utf-8', errors='ignore')
+        env['CERTBOT_AUTH_OUTPUT'] = auth_output
         self.env[achall] = env
 
     def _perform_achall_manually(self, achall: achallenges.AnnotatedChallenge,
