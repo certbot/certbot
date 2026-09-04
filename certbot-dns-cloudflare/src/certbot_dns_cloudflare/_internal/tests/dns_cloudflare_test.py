@@ -7,6 +7,7 @@ from unittest import mock
 import CloudFlare
 import pytest
 import dns.exception
+import dns.name
 
 from certbot import errors
 from certbot.compat import os
@@ -272,15 +273,20 @@ class CloudflareClientTest(unittest.TestCase):
         self.cloudflare_client = self.cloudflare_client.__class__(EMAIL, API_KEY, check_cname='true')
         self.cloudflare_client.cf = self.cf
 
-        # Mock the DNS resolver to return a CNAME record
-        mock_dns_resolver.resolve.return_value = [mock.MagicMock(target='cname.example.com')]
+        # Mock the DNS resolver to return a CNAME record. dnspython hands back a
+        # dns.name.Name, which is absolute and renders with a trailing dot; Cloudflare
+        # names never carry that dot, so the plugin has to strip it.
+        cname = dns.name.from_text('cname.example.com')
+        assert str(cname) == 'cname.example.com.'
+        mock_dns_resolver.resolve.return_value = [mock.MagicMock(target=cname)]
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
 
         target = self.cloudflare_client._find_target(DOMAIN, self.record_name)
 
         # Verify that dns.resolver.resolve was called for the original record_name
         mock_dns_resolver.resolve.assert_called_with(self.record_name, 'CNAME')
-        # Verify that the zone lookup was done with the CNAME target
+        # Verify that the zone lookup was done with the CNAME target, without the
+        # trailing dot (which the Cloudflare API would not match).
         self.cf.zones.get.assert_called_with(params={'name': 'cname.example.com', 'per_page': 1})
         # Verify that the returned target has the CNAME target as record_name
         assert target.record_name == 'cname.example.com'

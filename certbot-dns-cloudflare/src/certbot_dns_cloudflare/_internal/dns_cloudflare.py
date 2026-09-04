@@ -212,7 +212,11 @@ class _CloudflareClient:
 
         if self.check_cname:
             try:
-                target = str(dns.resolver.resolve(record_name, 'CNAME')[0].target)
+                # dnspython renders names as absolute (with a trailing dot). Cloudflare
+                # stores and matches record names without it, and its `name` filter is an
+                # exact match, so keeping the dot would make every subsequent lookup miss.
+                target = dns.resolver.resolve(record_name, 'CNAME')[0].target \
+                    .to_text(omit_final_dot=True)
                 if target:
                     zone_name_guesses = dns_common.base_domain_name_guesses(target)
                     target_record_name = target
