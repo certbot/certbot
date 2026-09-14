@@ -628,7 +628,7 @@ class NginxConfiguratorTest(util.NginxTest):
                ['listen', '127.0.0.1'],
                ['server_name', '.example.com'],
                ['server_name', 'example.*'],
-               ['return', '404'], ['#', ' managed by Certbot'], [], [], []]]] == \
+               ['return', '421'], ['#', ' managed by Certbot'], [], [], []]]] == \
             generated_conf
 
     def test_split_for_headers(self):
