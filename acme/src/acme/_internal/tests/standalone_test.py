@@ -110,7 +110,7 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
                 try:
                     self.server_bind()
                     self.server_activate()
-                except:
+                except Exception:
                     self.server_close()
                     raise
 
