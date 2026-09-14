@@ -17,6 +17,9 @@ with warnings.catch_warnings():
     import cloudflare
     from cloudflare.types.zones import Zone
 
+import dns.exception
+import dns.resolver
+
 from certbot import errors
 from certbot.plugins import dns_common
 from certbot.plugins.dns_common import CredentialsConfiguration
@@ -95,9 +98,30 @@ class Authenticator(dns_common.DNSAuthenticator):
         if not self.credentials:  # pragma: no cover
             raise errors.Error("Plugin has not been prepared.")
         if self.credentials.conf('api-token'):
-            return _CloudflareClient(api_token = self.credentials.conf('api-token'))
+            return _CloudflareClient(api_token = self.credentials.conf('api-token'),
+                                     check_cname = self.credentials.conf('check-cname'))
         return _CloudflareClient(email = self.credentials.conf('email'),
-                                 api_key = self.credentials.conf('api-key'))
+                                 api_key = self.credentials.conf('api-key'),
+                                 check_cname = self.credentials.conf('check-cname'))
+
+
+class _CloudflareClientTarget:
+    """Where a challenge record should be written: a zone and a record name.
+
+    When CNAME aliasing is in play these two no longer come from the same domain:
+    the record name is the alias target, which may live in an entirely different
+    zone from the domain being validated.
+    """
+
+    def __init__(self, zone_id: str, record_name: str) -> None:
+        self.zone_id = zone_id
+        self.record_name = record_name
+
+    def __str__(self) -> str:
+        return str(self.zone_id)
+
+    def __bool__(self) -> bool:
+        return bool(self.zone_id)
 
 
 class _CloudflareClient:
@@ -106,7 +130,8 @@ class _CloudflareClient:
     """
 
     def __init__(self, email: Optional[str] = None, api_key: Optional[str] = None,
-                 api_token: Optional[str] = None) -> None:
+                 api_token: Optional[str] = None, check_cname: Optional[str] = None) -> None:
+        self.check_cname = bool(check_cname) and str(check_cname).lower() == 'true'
         if email:
             # If an email was specified, we're using an email/key combination and not a token.
             # We use named arguments here to match the cloudflare 4.x SDK's explicit parameter
@@ -135,18 +160,18 @@ class _CloudflareClient:
         :raises certbot.errors.PluginError: if an error occurs communicating with the Cloudflare API
         """
 
-        zone_id = self._find_zone_id(domain)
+        target = self._find_target(domain, record_name)
 
         data: _RecordData = {
             'type': 'TXT',
-            'name': record_name,
+            'name': target.record_name,
             'content': record_content,
             'ttl': record_ttl,
         }
 
         try:
-            logger.debug('Attempting to add record to zone %s: %s', zone_id, data)
-            self.cf.dns.records.create(zone_id=zone_id, **data)
+            logger.debug('Attempting to add record to zone %s: %s', target, data)
+            self.cf.dns.records.create(zone_id=target.zone_id, **data)
         except cloudflare.APIStatusError as e:
             code = _cf_error_code(e)
 
@@ -180,7 +205,7 @@ class _CloudflareClient:
             raise errors.PluginError('Network error communicating with the Cloudflare API '
                                      'while adding a TXT record: {0}'.format(e))
 
-        record_id = self._find_txt_record_id(zone_id, record_name, record_content)
+        record_id = self._find_txt_record_id(target, record_content)
         logger.debug('Successfully added TXT record with record_id: %s', record_id)
 
     def del_txt_record(self, domain: str, record_name: str, record_content: str) -> None:
@@ -198,16 +223,16 @@ class _CloudflareClient:
         """
 
         try:
-            zone_id = self._find_zone_id(domain)
+            target = self._find_target(domain, record_name)
         except errors.PluginError as e:
             logger.debug('Encountered error finding zone_id during deletion: %s', e)
             logger.debug('Zone not found; no cleanup needed.')
             return
 
-        record_id = self._find_txt_record_id(zone_id, record_name, record_content)
+        record_id = self._find_txt_record_id(target, record_content)
         if record_id:
             try:
-                self.cf.dns.records.delete(dns_record_id=record_id, zone_id=zone_id)
+                self.cf.dns.records.delete(dns_record_id=record_id, zone_id=target.zone_id)
                 logger.debug('Successfully deleted TXT record.')
             except cloudflare.APIStatusError as e:
                 logger.warning('Encountered Cloudflare API error deleting TXT record: %s', e)
@@ -216,19 +241,37 @@ class _CloudflareClient:
         else:
             logger.debug('TXT record not found; no cleanup needed.')
 
-    def _find_zone_id(self, domain: str) -> str:
+    def _find_target(self, domain: str, record_name: str) -> _CloudflareClientTarget:
         """
-        Find the zone_id for a given domain.
+        Find the zone and record name to write the challenge record to.
+
+        With ``dns_cloudflare_check_cname`` enabled, ``record_name`` is resolved as a
+        CNAME first and the alias target supplies both the zone guesses and the record
+        name to write.
 
         :param str domain: The domain for which to find the zone_id.
-        :returns: The zone_id for the first matching zone that has a non-empty
-            identifier. A zone with an empty/invalid id is treated as if no zone
-            were found, so this method never returns an empty string.
-        :rtype: str
+        :param str record_name: The record name (typically beginning with '_acme-challenge.').
+        :returns: The target, whose zone_id is never empty. A zone with an empty/invalid
+            id is treated as if no zone were found.
+        :rtype: _CloudflareClientTarget
         :raises certbot.errors.PluginError: if no zone_id is found.
         """
 
         zone_name_guesses = dns_common.base_domain_name_guesses(domain)
+        target_record_name = record_name
+
+        if self.check_cname:
+            try:
+                # Cloudflare names carry no trailing dot and its name filter is exact,
+                # so strip the dot dnspython puts on absolute names.
+                cname_target = dns.resolver.resolve(record_name, 'CNAME')[0].target \
+                    .to_text(omit_final_dot=True)
+                if cname_target:
+                    zone_name_guesses = dns_common.base_domain_name_guesses(cname_target)
+                    target_record_name = cname_target
+            except dns.exception.DNSException:
+                logger.warning('CNAME record not found, use %s for Zone', domain)
+
         zone: Zone | None = None
         code = msg = None
 
@@ -264,7 +307,7 @@ class _CloudflareClient:
                 if zone_id:
                     logger.debug('Found zone_id of %s for %s using name %s',
                                  zone_id, domain, zone_name)
-                    return zone_id
+                    return _CloudflareClientTarget(zone_id, target_record_name)
                 break  # Found a zone but it has no usable ID; stop searching
 
         if msg is not None:
@@ -284,13 +327,12 @@ class _CloudflareClient:
                                      'supplied Cloudflare account.'
                                      .format(domain, zone_name_guesses))
 
-    def _find_txt_record_id(self, zone_id: str, record_name: str,
+    def _find_txt_record_id(self, target: _CloudflareClientTarget,
                             record_content: str) -> Optional[str]:
         """
         Find the record_id for a TXT record with the given name and content.
 
-        :param str zone_id: The zone_id which contains the record.
-        :param str record_name: The record name (typically beginning with '_acme-challenge.').
+        :param _CloudflareClientTarget target: The zone and record name to look in.
         :param str record_content: The record content (typically the challenge validation).
         :returns: The record_id, if found.
         :rtype: str
@@ -298,7 +340,7 @@ class _CloudflareClient:
 
         try:
             records = list(self.cf.dns.records.list(
-                zone_id=zone_id, type='TXT', name={'exact': record_name},
+                zone_id=target.zone_id, type='TXT', name={'exact': target.record_name},
                 content={'exact': record_content}, per_page=1))
         except cloudflare.APIStatusError as e:
             logger.debug('Encountered Cloudflare API error getting TXT record_id: %s', e)
