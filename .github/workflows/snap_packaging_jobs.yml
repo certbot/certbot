@@ -108,6 +108,7 @@ jobs:
         sudo usermod -a -G lxd $USER
         sudo -s -u ${USER} bash -c 'sudo lxd init --auto'
         sudo iptables -P FORWARD ACCEPT
+        setarch --list
         setarch armv8l bash
         uname -m
     - uses: actions/setup-python@v6.2.0
