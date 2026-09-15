@@ -104,6 +104,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends snapd
         sudo snap install snapcraft --candidate --classic
+        snap install lxd
+        sudo usermod -a -G lxd $USER
+        exec sg lxd "newgrp `id -gn`"
+        sudo lxd init --auto
     - uses: actions/setup-python@v6.2.0
       with:
         python-version: '3.12'
