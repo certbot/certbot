@@ -174,7 +174,6 @@ jobs:
   snap_run:
     name: Test certbot ${{ matrix.arch-name }}
     needs:
-    - gha_build_snap
     - gha_build_armhf
     runs-on:
       - ${{ matrix.run-on }}
