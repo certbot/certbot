@@ -106,8 +106,7 @@ jobs:
         sudo snap install snapcraft --candidate --classic
         sudo snap install lxd
         sudo usermod -a -G lxd $USER
-        sudo -s -u ${USER} bash -c 'whoami && groups'
-        sudo lxd init --auto
+        sudo -s -u ${USER} bash -c 'sudo lxd init --auto'
     - uses: actions/setup-python@v6.2.0
       with:
         python-version: '3.12'
@@ -115,7 +114,7 @@ jobs:
       run: |-
         git config --global user.email "github-actions[bot]"
         git config --global user.name "41898282+github-actions[bot]@users.noreply.github.com"
-        CRAFT_BUILD_ON=armhf snapcraft build
+        sudo -s -u ${USER} bash -c 'CRAFT_BUILD_ON=armhf snapcraft build'
     - name: Flatten snaps layout
       run: |-
         mv *.snap ${{ runner.temp }} || true
