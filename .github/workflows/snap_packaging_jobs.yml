@@ -90,7 +90,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: ${{ fromJSON(needs.generate_dns_list_matrix.outputs.dns-dirs) }}
+        # target: ${{ fromJSON(needs.generate_dns_list_matrix.outputs.dns-dirs) }}
         include:
           - target: certbot
     steps:
