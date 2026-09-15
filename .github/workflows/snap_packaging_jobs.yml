@@ -108,9 +108,7 @@ jobs:
         sudo usermod -a -G lxd $USER
         sudo -s -u ${USER} bash -c 'sudo lxd init --auto'
         sudo iptables -P FORWARD ACCEPT
-        setarch --list
-        setarch armv8l bash
-        uname -m
+        setarch armv8l uname -m
     - uses: actions/setup-python@v6.2.0
       with:
         python-version: '3.12'
@@ -118,10 +116,7 @@ jobs:
       run: |-
         git config --global user.email "github-actions[bot]"
         git config --global user.name "41898282+github-actions[bot]@users.noreply.github.com"
-        uname -m
-        setarch armv8l bash
-        uname -m
-        sudo -s -u ${USER} bash -c 'CRAFT_BUILD_ON=armhf snapcraft build'
+        setarch armv8l sudo -s -u ${USER} bash -c 'CRAFT_BUILD_ON=armhf snapcraft build'
     - name: Flatten snaps layout
       run: |-
         mv *.snap ${{ runner.temp }} || true
