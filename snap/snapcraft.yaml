@@ -114,6 +114,7 @@ parts:
       - PIP_USE_PEP517: "true"
     override-build: |
       python3 -m venv "${CRAFT_PART_INSTALL}"
+      rustup update stable
       "${CRAFT_PART_INSTALL}/bin/python3" "${CRAFT_PART_SRC}/tools/pipstrap.py"
       craftctl default
       # Workaround for misconfigured pyvenv.cfg; see discussion on snapcraft forum for more info
