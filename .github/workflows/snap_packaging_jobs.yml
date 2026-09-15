@@ -104,7 +104,7 @@ jobs:
         sudo dpkg --add-architecture armhf
         sudo apt remove -y snapd
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends snapd:armhf
+        sudo apt-get install -y --no-install-recommends fuse3:armhf snapd:armhf
         sudo snap install snapcraft --candidate --classic
         sudo snap install lxd
         sudo usermod -a -G lxd $USER
