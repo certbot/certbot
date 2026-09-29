@@ -41,8 +41,8 @@ class AuthHandler:
         type strings with the most preferred challenge listed first
 
     """
-    def __init__(self, auth: interfaces.Authenticator, acme_client: Optional[client.ClientV2],
-                 account: Optional[Account], pref_challs: list[str]) -> None:
+    def __init__(self, auth: interfaces.Authenticator, acme_client: client.ClientV2,
+                 account: Account, pref_challs: list[str]) -> None:
         self.auth = auth
         self.acme = acme_client
 
@@ -69,8 +69,6 @@ class AuthHandler:
         authzrs = orderr.authorizations[:]
         if not authzrs:
             raise errors.AuthorizationError('No authorization to handle.')
-        if not self.acme:
-            raise errors.Error("No ACME client defined, authorizations cannot be handled.")
 
         # Retrieve challenges that need to be performed to validate authorizations.
         achalls = self._choose_challenges(authzrs)
@@ -122,9 +120,6 @@ class AuthHandler:
                   list of unsuccessfully deactivated authorizations.
         :rtype: tuple
         """
-        if not self.acme:
-            raise errors.Error("No ACME client defined, cannot deactivate valid authorizations.")
-
         to_deactivate = [authzr for authzr in orderr.authorizations
                          if authzr.body.status == messages.STATUS_VALID]
         deactivated = []
@@ -147,9 +142,6 @@ class AuthHandler:
         all verified. The poll may occur several times, until all authorizations are checked
         (valid or invalid), or a maximum of retries, or the polling deadline is reached.
         """
-        if not self.acme:
-            raise errors.Error("No ACME client defined, cannot poll authorizations.")
-
         authzrs_to_check: dict[int, tuple[messages.AuthorizationResource,
                                           Optional[Response]]] = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
@@ -218,9 +210,6 @@ class AuthHandler:
         NB: Necessary and already validated challenges are not retrieved,
         as they can be reused for a certificate issuance.
         """
-        if not self.acme:
-            raise errors.Error("No ACME client defined, cannot choose the challenges.")
-
         pending_authzrs = [authzr for authzr in authzrs
                            if authzr.body.status != messages.STATUS_VALID]
         achalls: list[achallenges.AnnotatedChallenge] = []
@@ -288,8 +277,6 @@ class AuthHandler:
         :raises .errors.Error: if challenge type is not recognized
 
         """
-        if not self.account:
-            raise errors.Error("Account is not set.")
         achalls = []
 
         for index in path:
@@ -300,8 +287,6 @@ class AuthHandler:
 
     def _report_failed_authzrs(self, failed_authzrs: list[messages.AuthorizationResource]) -> None:
         """Notifies the user about failed authorizations."""
-        if not self.account:
-            raise errors.Error("Account is not set.")
         problems: dict[str, list[achallenges.AnnotatedChallenge]] = {}
         failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier)
                         for authzr in failed_authzrs for challb in authzr.body.challenges

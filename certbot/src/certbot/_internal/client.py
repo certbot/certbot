@@ -299,6 +299,8 @@ class Client:
 
         self.auth_handler: Optional[auth_handler.AuthHandler]
         if auth is not None:
+            if self.acme is None or self.account is None:
+                raise ValueError("Cannot create AuthHandler without ACME client and account")
             self.auth_handler = auth_handler.AuthHandler(
                 auth, self.acme, self.account, self.config.pref_challs)
         else:
