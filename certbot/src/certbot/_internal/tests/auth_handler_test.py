@@ -27,7 +27,7 @@ class ChallengeFactoryTest(unittest.TestCase):
         from certbot._internal.auth_handler import AuthHandler
 
         # Account is mocked...
-        self.handler = AuthHandler(None, None, mock.Mock(key="mock_key"), [])
+        self.handler = AuthHandler(mock.MagicMock(), mock.MagicMock(), mock.Mock(key="mock_key"), [])
 
         self.authzr = acme_util.gen_authzr(
             messages.STATUS_PENDING, "test", acme_util.CHALLENGES,
