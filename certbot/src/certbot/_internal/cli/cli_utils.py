@@ -194,7 +194,11 @@ def parse_preferred_challenges(pref_challs: Iterable[str]) -> list[str]:
     :raises errors.Error: if pref_challs is invalid
 
     """
-    aliases = {"dns": "dns-01", "http": "http-01"}
+    aliases = {
+        "dns": "dns-01",
+        "dns-persist": "dns-persist-01",
+        "http": "http-01",
+    }
     challs = [c.strip() for c in pref_challs]
     challs = [aliases.get(c, c) for c in challs]
 
