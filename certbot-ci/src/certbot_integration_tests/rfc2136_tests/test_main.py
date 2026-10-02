@@ -18,10 +18,11 @@ def test_context(request: pytest.FixtureRequest) -> Generator[IntegrationTestsCo
 
 
 @pytest.mark.parametrize('domain', [('example.com'), ('sub.example.com')])
-def test_get_certificate(domain: str, context: IntegrationTestsContext) -> None:
+@pytest.mark.parametrize('label', [('default'), ('dyndns')])
+def test_get_certificate(domain: str, label: str, context: IntegrationTestsContext) -> None:
     context.skip_if_no_bind9_server()
 
-    with context.rfc2136_credentials() as creds:
+    with context.rfc2136_credentials(label) as creds:
         context.certbot_test_rfc2136([
             'certonly', '--dns-rfc2136-credentials', creds,
             '-d', domain, '-d', '*.{}'.format(domain)

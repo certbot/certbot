@@ -100,13 +100,65 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
             self.auth.perform([self.achall])
 
     @test_util.patch_display_util()
-    def test_valid_server_passes(self, unused_mock_get_utility):
+    def test_valid_server_passes(self, unused_mock_get_utility: mock.MagicMock) -> None:
         config = VALID_CONFIG.copy()
         dns_test_common.write(config, self.config.rfc2136_credentials)
 
         self.auth.perform([self.achall])
 
         config["rfc2136_server"] = "2001:db8:3333:4444:cccc:dddd:eeee:ffff"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+
+    def test_invalid_update_server_raises(self):
+        config = VALID_CONFIG.copy()
+        config["rfc2136_update_server"] = "example.com"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
+
+    @test_util.patch_display_util()
+    def test_valid_update_server_passes(self, unused_mock_get_utility: mock.MagicMock) -> None:
+        config = VALID_CONFIG.copy()
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+
+        config["rfc2136_update_server"] = "2001:db8:3333:4444:cccc:dddd:eeee:ffff"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+
+    def test_invalid_server_proto_pref_raises(self):
+        config = VALID_CONFIG.copy()
+        config["rfc2136_server_proto_pref"] = "invalid_proto"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
+
+    @test_util.patch_display_util()
+    def test_valid_server_proto_pref_passes(self, unused_mock_get_utility: mock.MagicMock) -> None:
+        config = VALID_CONFIG.copy()
+        config["rfc2136_server_proto_pref"] = "tcp_only"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
+
+    def test_invalid_update_server_proto_pref_raises(self):
+        config = VALID_CONFIG.copy()
+        config["rfc2136_update_server_proto_pref"] = "invalid_proto"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        with pytest.raises(errors.PluginError):
+            self.auth.perform([self.achall])
+
+    @test_util.patch_display_util()
+    def test_valid_update_server_proto_pref_passes(self, unused_mock_get_utility: mock.MagicMock) -> None:
+        config = VALID_CONFIG.copy()
+        config["rfc2136_update_server_proto_pref"] = "udp_first"
         dns_test_common.write(config, self.config.rfc2136_credentials)
 
         self.auth.perform([self.achall])
@@ -266,6 +318,17 @@ class RFC2136ClientTest(unittest.TestCase):
 
         mock_make_query.return_value.use_tsig.assert_called_with(mock.ANY,
             algorithm=dns.tsig.HMAC_MD5)
+
+    @mock.patch("dns.query.tcp")
+    def test_timeout_on_last_item_in_try_with_protocols_raises(self, unused_mock_query):
+        from certbot_dns_rfc2136._internal.dns_rfc2136 import ProtoPref
+        from dns.exception import Timeout
+
+        def dns_timeout(*args, **kwargs):
+            raise Timeout() # type: ignore
+
+        with pytest.raises(dns.exception.Timeout):
+            self.rfc2136_client._try_with_protocols(dns_timeout, ProtoPref.TCP_ONLY)
 
 
 if __name__ == "__main__":
