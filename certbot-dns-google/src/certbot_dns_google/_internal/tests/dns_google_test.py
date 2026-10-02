@@ -209,7 +209,7 @@ class GoogleClientTest(unittest.TestCase):
                     "kind": "dns#resourceRecordSet",
                     "type": "TXT",
                     "name": self.record_name + ".",
-                    "rrdatas": [self.record_content, ],
+                    "rrdatas": ["\"" + self.record_content + "\""],
                     "ttl": self.record_ttl,
                 },
             ],
@@ -218,6 +218,25 @@ class GoogleClientTest(unittest.TestCase):
         changes.create.assert_called_with(body=expected_body,
                                                managedZone=self.zone,
                                                project=PROJECT_ID)
+
+    @mock.patch('google.auth.load_credentials_from_file')
+    @mock.patch('certbot_dns_google._internal.dns_google.open',
+                mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
+    def test_add_txt_record_existing_rrset_is_uniformly_quoted(self, credential_mock):
+        credential_mock.return_value = (mock.MagicMock(), PROJECT_ID)
+
+        client, changes = self._setUp_client_with_mock(
+            [{'managedZones': [{'id': self.zone, 'visibility': self.visibility}]}])
+        mock_get_rrs = "certbot_dns_google._internal.dns_google._GoogleClient.get_existing_txt_rrset"
+        with mock.patch(mock_get_rrs) as mock_rrs:
+            # Google's API returns TXT rrdatas as RFC 1035 quoted strings
+            mock_rrs.return_value = {"rrdatas": ["\"existing-token\""], "ttl": self.record_ttl}
+            client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
+        body = changes.create.call_args_list[0][1]["body"]
+        additions_rrdatas = body["additions"][0]["rrdatas"]
+        assert additions_rrdatas == ["\"existing-token\"",
+                                     "\"" + self.record_content + "\""]
 
     @mock.patch('google.auth.load_credentials_from_file')
     @mock.patch('certbot_dns_google._internal.dns_google.open',
