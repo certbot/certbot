@@ -1,0 +1,1 @@
+Made user-facing messages more CA-neutral: suppress donation prompt when using non-Let's Encrypt servers, updated IP address error to mention --ip-address flag, and clarified docstrings.
