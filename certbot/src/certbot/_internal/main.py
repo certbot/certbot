@@ -872,6 +872,9 @@ def unregister(config: configuration.NamespaceConfig,
 
     if not accounts:
         return f"Could not find existing account for server {config.server}."
+
+    acc, acme = _determine_account(config)
+
     prompt = ("Are you sure you would like to irrevocably deactivate "
               "your account?")
     wants_deactivate = display_util.yesno(prompt, yes_label='Deactivate', no_label='Abort',
@@ -880,7 +883,6 @@ def unregister(config: configuration.NamespaceConfig,
     if not wants_deactivate:
         return "Deactivation aborted."
 
-    acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
 
     if not cb_client.acme:
