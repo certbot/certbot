@@ -319,7 +319,7 @@ def test_client_process(fab_config, inqueue, outqueue, log_dir):
                 install_and_launch_certbot(cxn, instance, target, log_dir)
                 outqueue.put((ii, target, Status.PASS))
                 print("%s - %s SUCCESS"%(target['ami'], target['name']))
-            except:
+            except Exception:
                 outqueue.put((ii, target, Status.FAIL))
                 print("%s - %s FAIL"%(target['ami'], target['name']))
                 traceback.print_exc(file=sys.stdout)
@@ -329,7 +329,7 @@ def test_client_process(fab_config, inqueue, outqueue, log_dir):
             print("\n\ncertbot.log\n" + "-"*80 + "\n")
             try:
                 grab_certbot_log(cxn)
-            except:
+            except Exception:
                 print("log fail\n")
                 traceback.print_exc(file=sys.stdout)
                 pass

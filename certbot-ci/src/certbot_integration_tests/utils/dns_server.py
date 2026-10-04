@@ -56,7 +56,7 @@ class DNSServer:
         try:
             self._configure_bind()
             self._start_bind()
-        except:
+        except Exception:
             self.stop()
             raise
 
@@ -111,7 +111,7 @@ class DNSServer:
 
         try:
             self._wait_until_ready()
-        except:
+        except Exception:
             # The container might be running even if we think it isn't
             self.stop()
             raise
