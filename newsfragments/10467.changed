@@ -1,0 +1,1 @@
+certbot-nginx no longer returns 404 (Not Found) on host mismatch inside the HTTP to HTTPS redirect virtual host. 421 (Misdirected Request) is returned instead.
