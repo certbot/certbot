@@ -363,6 +363,10 @@ class ClientV2:
         start = renewal_info.suggested_window.start # pylint: disable=no-member
         end = renewal_info.suggested_window.end # pylint: disable=no-member
 
+        if end <= start:
+            raise errors.ARIError('suggestedWindow end must be after start',
+                                  now + default_retry_after)
+
         delta_seconds = (end - start).total_seconds()
         random_seconds = random.uniform(0, delta_seconds)
         random_time = start + datetime.timedelta(seconds=random_seconds)
