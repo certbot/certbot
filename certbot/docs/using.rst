@@ -67,11 +67,12 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
                       | Requires port 80 to be available. This is useful on
                       | systems with no webserver, or when direct integration with
                       | the local webserver is not supported or not desired.
+dns-persist Y    N    | After a one-time manual setup step in which a DNS record is   dns-persist-01 (53)
+                      | created, this plugin enables indefinite autorenewals.
+                      | Permits wildcard certificates.
 |dns_plugs| Y    N    | This category of plugins automates obtaining a certificate by dns-01_ (53)
                       | modifying DNS records to prove you have control over a
-                      | domain. Doing domain validation in this way is
-                      | the only way to obtain wildcard certificates from Let's
-                      | Encrypt.
+                      | domain. Permits wildcard certificates.
 manual_     Y    N    | Obtain a certificate by manually following instructions to    http-01_ (80) or
                       | perform domain validation yourself. Certificates created this dns-01_ (53)
                       | way do not support autorenewal.
@@ -188,6 +189,39 @@ the bound IPv6 port and the failure during the second bind is expected.
 
 Use ``--<challenge-type>-address`` to explicitly tell Certbot which interface
 (and protocol) to bind.
+
+dns-persist
+-----------
+
+The dns-persist plugin allows for easy and automatic certificate issuance, even
+for wildcard certificates. Also, unlike Certbot's other DNS plugins, the
+dns-persist plugin does not require you to keep sensitive DNS service
+credentials on your machine.
+
+This plugin is named after the dns-persist-01 ACME challenge, and as its name
+would imply, it works by relying on a persistent DNS TXT record to prove domain
+ownership. After a domain's dns-persist-01 TXT record is created, certificates
+for it can be autorenewed indefinitely.
+
+To use this plugin, first run it with the ``--dns-persist-setup`` flag, which
+will walk you through the steps needed to setup your DNS TXT record. Unlike
+Certbot's other DNS plugins, the dns-persist plugin doesn't create these DNS
+records for you, and you'll need to do it manually. Every subsequent certificate
+issuance for that domain will be automatic.
+
+If you'd like to automate this initial setup step, you can pair the
+``--dns-persist-setup`` flag with two other flags:
+
+* ``--dns-persist-setup-hook``: A command to provision each DNS TXT record being
+  validated by Certbot. Certbot will set two special environment variables when
+  invoking the hook:
+
+  * ``CERTBOT_DOMAIN``: the domain of the DNS TXT record
+  * ``CERTBOT_VALIDATION``: the value of the DNS TXT record
+
+* ``--dns-persist-setup-cleanup-hook``: A command Certbot will invoke after all
+  ACME challenges are complete. If your setup hook required any DNS service
+  credentials, you can clean them up with this hook.
 
 .. _dns_plugins:
 
