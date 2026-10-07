@@ -1,0 +1,1 @@
+Adds the dns-persist plugin. This allows for easy, automatic certificate issuance using the new ACME challenge type dns-persist-01. Check out the documentation to learn more.
