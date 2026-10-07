@@ -6,7 +6,7 @@ prove you control each of the domain names that will be listed in the certificat
 a list of specified tasks that only someone who controls the domain should be able to accomplish, such as:
 
 * Posting a specified file in a specified location on a web site (the HTTP-01 challenge)
-* Posting a specified DNS record in the domain name system (the DNS-01 challenge)
+* Posting a specified DNS record in the domain name system (the DNS-01 or DNS-PERSIST-01 challenges)
 
 It’s possible to complete each type of challenge *automatically* (Certbot directly makes the necessary
 changes itself, or runs another program that does so), or *manually* (Certbot tells you to make a
@@ -30,6 +30,8 @@ Some plugins offer an *authenticator*, meaning that they can satisfy challenges:
   your DNS records using an external script (for DNS-01) or your webroot (for HTTP-01). Use the Manual
   plugin if you have the technical knowledge to make configuration changes yourself when asked to do so,
   and are prepared to repeat these steps every time the certificate needs to be renewed.
+* dns-persist plugin: (DNS-PERSIST-01) Tells you what TXT record to add to your domain's DNS, after which
+  certificates for that domain can be automatically issued indefinitely.
 
 Tips for Challenges
 -------------------
@@ -68,3 +70,8 @@ DNS-01 Challenge
 * When using the manual plugin, make sure your DNS records are correctly updated;
   you must be able to make appropriate changes to your DNS zone in order to pass the challenge.
 
+DNS-PERSIST-01 Challenge
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+* In order to pass this challenge, you must be able to manually add a DNS TXT record. Once it's
+  added, no further access to the DNS zone is necessary.
