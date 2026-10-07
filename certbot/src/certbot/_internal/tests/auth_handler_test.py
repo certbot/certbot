@@ -1,4 +1,5 @@
 """Tests for certbot._internal.auth_handler."""
+from typing import Any
 import datetime
 import logging
 import sys
@@ -27,7 +28,7 @@ class ChallengeFactoryTest(unittest.TestCase):
         from certbot._internal.auth_handler import AuthHandler
 
         # Account is mocked...
-        self.handler = AuthHandler(None, None, mock.Mock(key="mock_key"), [])
+        self.handler = AuthHandler(mock.MagicMock(), mock.MagicMock(), mock.Mock(key="mock_key"), [])
 
         self.authzr = acme_util.gen_authzr(
             messages.STATUS_PENDING, "test", acme_util.CHALLENGES,
@@ -428,16 +429,29 @@ def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0, wait_value=1):
 class ChallbToAchallTest(unittest.TestCase):
     """Tests for certbot._internal.auth_handler.challb_to_achall."""
 
-    def _call(self, challb):
+    def _call(self, challb, acme_directory: dict[str, Any]):
         from certbot._internal.auth_handler import challb_to_achall
         ident = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain")
-        return challb_to_achall(challb, "account_key", ident)
+        mock_acme_client = mock.MagicMock()
+        mock_acme_client.directory = messages.Directory.from_json(acme_directory)
+        return challb_to_achall(challb, acme_util.JWK, ident, mock_acme_client)
 
     def test_it(self):
-        assert self._call(acme_util.HTTP01_P) == \
+        assert self._call(acme_util.HTTP01_P, {}) == \
             achallenges.KeyAuthorizationAnnotatedChallenge(
-                challb=acme_util.HTTP01_P, account_key="account_key",
+                challb=acme_util.HTTP01_P, account_key=acme_util.JWK,
                 identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain"))
+
+    def test_dns_persist(self):
+        with pytest.raises(errors.AuthorizationError):
+            assert self._call(acme_util.DNS_PERSIST_01_P, {})
+
+        acme_directory = {'meta': {'accountHashPrefix': 'https://ca.example.com/account-hash/'}}
+        assert self._call(acme_util.DNS_PERSIST_01_P, acme_directory) == \
+            achallenges.DNSPersist(challb=acme_util.DNS_PERSIST_01_P,
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain"),
+                account_key=acme_util.JWK,
+                account_hash_prefix="https://ca.example.com/account-hash/")
 
 
 class GenChallengePathTest(unittest.TestCase):

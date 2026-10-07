@@ -41,8 +41,8 @@ class AuthHandler:
         type strings with the most preferred challenge listed first
 
     """
-    def __init__(self, auth: interfaces.Authenticator, acme_client: Optional[client.ClientV2],
-                 account: Optional[Account], pref_challs: list[str]) -> None:
+    def __init__(self, auth: interfaces.Authenticator, acme_client: client.ClientV2,
+                 account: Account, pref_challs: list[str]) -> None:
         self.auth = auth
         self.acme = acme_client
 
@@ -69,8 +69,6 @@ class AuthHandler:
         authzrs = orderr.authorizations[:]
         if not authzrs:
             raise errors.AuthorizationError('No authorization to handle.')
-        if not self.acme:
-            raise errors.Error("No ACME client defined, authorizations cannot be handled.")
 
         # Retrieve challenges that need to be performed to validate authorizations.
         achalls = self._choose_challenges(authzrs)
@@ -122,9 +120,6 @@ class AuthHandler:
                   list of unsuccessfully deactivated authorizations.
         :rtype: tuple
         """
-        if not self.acme:
-            raise errors.Error("No ACME client defined, cannot deactivate valid authorizations.")
-
         to_deactivate = [authzr for authzr in orderr.authorizations
                          if authzr.body.status == messages.STATUS_VALID]
         deactivated = []
@@ -147,9 +142,6 @@ class AuthHandler:
         all verified. The poll may occur several times, until all authorizations are checked
         (valid or invalid), or a maximum of retries, or the polling deadline is reached.
         """
-        if not self.acme:
-            raise errors.Error("No ACME client defined, cannot poll authorizations.")
-
         authzrs_to_check: dict[int, tuple[messages.AuthorizationResource,
                                           Optional[Response]]] = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
@@ -218,9 +210,6 @@ class AuthHandler:
         NB: Necessary and already validated challenges are not retrieved,
         as they can be reused for a certificate issuance.
         """
-        if not self.acme:
-            raise errors.Error("No ACME client defined, cannot choose the challenges.")
-
         pending_authzrs = [authzr for authzr in authzrs
                            if authzr.body.status != messages.STATUS_VALID]
         achalls: list[achallenges.AnnotatedChallenge] = []
@@ -285,27 +274,29 @@ class AuthHandler:
             :class:`certbot.achallenges.AnnotatedChallenge`
         :rtype: list
 
-        :raises .errors.Error: if challenge type is not recognized
+        :raises .errors.Error: if challenge type is not recognized, or if
+            the challenge type is unsupported by the CA.
 
         """
-        if not self.account:
-            raise errors.Error("Account is not set.")
         achalls = []
 
         for index in path:
             challb = authzr.body.challenges[index]
-            achalls.append(challb_to_achall(challb, self.account.key, authzr.body.identifier))
+            achalls.append(challb_to_achall(challb, self.account.key,
+                authzr.body.identifier, self.acme))
 
         return achalls
 
     def _report_failed_authzrs(self, failed_authzrs: list[messages.AuthorizationResource]) -> None:
         """Notifies the user about failed authorizations."""
-        if not self.account:
-            raise errors.Error("Account is not set.")
         problems: dict[str, list[achallenges.AnnotatedChallenge]] = {}
-        failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier)
-                        for authzr in failed_authzrs for challb in authzr.body.challenges
-                        if challb.error]
+        failed_achalls = []
+        for authzr in failed_authzrs:
+            for challb in authzr.body.challenges:
+                if challb.error:
+                    achall = challb_to_achall(challb, self.account.key,
+                        authzr.body.identifier, self.acme)
+                    failed_achalls.append(achall)
 
         for achall in failed_achalls:
             problems.setdefault(achall.error.typ, []).append(achall)
@@ -364,12 +355,14 @@ class AuthHandler:
 
 
 def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
-                     identifier: messages.Identifier) -> achallenges.AnnotatedChallenge:
+                     identifier: messages.Identifier,
+                     acme_client: client.ClientV2) -> achallenges.AnnotatedChallenge:
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
     :param .ChallengeBody challb: ChallengeBody
     :param .JWK account_key: Authorized Account Key
     :param str domain: Domain of the challb
+    :param .acme.client.ClientV2 acme_client: ACME client
 
     :returns: Appropriate AnnotatedChallenge
     :rtype: :class:`certbot.achallenges.AnnotatedChallenge`
@@ -383,6 +376,13 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
             challb=challb, account_key=account_key, identifier=identifier)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, identifier=identifier)
+    elif isinstance(chall, challenges.DNSPersist01):
+        account_hash_prefix: str | None = acme_client.directory.meta.account_hash_prefix
+        if account_hash_prefix is None:
+            raise errors.AuthorizationError(("Unable to create dns-persist-01 challenge for CA "
+                "because the CA lacks the required metadata fields (accountHashPrefix)."))
+        return achallenges.DNSPersist(challb=challb, identifier=identifier,
+            account_key=account_key, account_hash_prefix=account_hash_prefix)
     else:
         return achallenges.Other(challb=challb, identifier=identifier)
 

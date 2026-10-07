@@ -163,7 +163,9 @@ class DirectoryTest(unittest.TestCase):
                 profiles={
                     "example": "some profile",
                     "other example": "a different profile"
-                }
+                },
+                account_hash_prefix=['https://ca.example/account-hash/'],
+                issuer_domain_names=['authority.example', 'ca.example.net'],
             ),
         })
 
@@ -196,7 +198,9 @@ class DirectoryTest(unittest.TestCase):
                 'profiles': {
                     'example': 'some profile',
                     'other example': 'a different profile'
-                }
+                },
+                'accountHashPrefix': ['https://ca.example/account-hash/'],
+                'issuerDomainNames': ['authority.example', 'ca.example.net'],
             },
         }
 
