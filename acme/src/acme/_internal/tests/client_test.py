@@ -517,7 +517,7 @@ class ClientV2Test(unittest.TestCase):
         self.response.json.return_value = {
             "suggestedWindow": {
                 "start": "2025-03-14T01:01:01Z",
-                "end": "2025-03-14T01:01:01Z",
+                "end": "2025-03-15T01:01:01Z",
             },
             "message": "Keep those certs fresh"
         }
@@ -527,7 +527,8 @@ class ClientV2Test(unittest.TestCase):
         self.net.get.assert_called_once_with("https://www.letsencrypt-demo.org/acme/renewal-info/" +
                                              ari_path_component,
                                              content_type='application/json')
-        assert t == datetime.datetime(2025, 3, 14, 1, 1, 1, tzinfo=datetime.timezone.utc)
+        assert t >= datetime.datetime(2025, 3, 14, 1, 1, 1, tzinfo=datetime.timezone.utc)
+        assert t <= datetime.datetime(2025, 3, 15, 1, 1, 1, tzinfo=datetime.timezone.utc)
 
         self.net.reset_mock()
 
@@ -544,6 +545,42 @@ class ClientV2Test(unittest.TestCase):
                                              content_type='application/json')
         assert t >= datetime.datetime(2025, 3, 16, 1, 1, 1, tzinfo=datetime.timezone.utc)
         assert t <= datetime.datetime(2025, 3, 17, 1, 1, 1, tzinfo=datetime.timezone.utc)
+
+    @mock.patch('acme.client.random.uniform')
+    @mock.patch('acme.client.datetime')
+    def test_renewal_time_invalid_window(self, dt_mock, mock_uniform):
+        mock_uniform.return_value = 0
+        def now(tzinfo=None):
+            return datetime.datetime(2025, 3, 15, tzinfo=tzinfo)
+        dt_mock.datetime.now.side_effect = now
+        dt_mock.timedelta = datetime.timedelta
+        dt_mock.timezone = datetime.timezone
+
+        cert_pem = make_cert_for_renewal(
+            not_before=datetime.datetime(2025, 3, 12),
+            not_after=datetime.datetime(2025, 3, 30),
+        )
+        self.client.directory = messages.Directory({
+            'renewalInfo': 'https://www.letsencrypt-demo.org/acme/renewal-info',
+        })
+        self.response.headers['Retry-After'] = '100'
+        windows = [
+            ('2025-03-14T00:00:00Z', '2025-03-14T00:00:00Z'),
+            ('2025-03-14T00:00:00Z', '2025-03-13T00:00:00Z'),
+            ('2025-03-17T00:00:00Z', '2025-03-17T00:00:00Z'),
+            ('2025-03-17T00:00:00Z', '2025-03-16T00:00:00Z'),
+            ('2025-03-14T01:00:00+01:00', '2025-03-14T00:00:00Z'),
+            ('2025-03-14T00:00:00Z', '2025-03-14T00:30:00+01:00'),
+        ]
+        for start, end in windows:
+            with self.subTest(start=start, end=end):
+                self.response.json.return_value = {
+                    'suggestedWindow': {'start': start, 'end': end},
+                }
+                with pytest.raises(errors.ARIError) as exception_info:
+                    self.client.renewal_time(cert_pem)
+                assert exception_info.value.retry_after == now() + datetime.timedelta(hours=6)
+                mock_uniform.assert_not_called()
 
     @mock.patch('acme.client.datetime')
     def test_renewal_time_renewal_info_errors(self, dt_mock):
@@ -598,7 +635,7 @@ class ClientV2Test(unittest.TestCase):
         self.response.json.return_value = {
             "suggestedWindow": {
                 "start": "2025-03-14T01:01:01Z",
-                "end": "2025-03-14T01:01:01Z",
+                "end": "2025-03-15T01:01:01Z",
             },
             "message": "Keep those certs fresh"
         }
