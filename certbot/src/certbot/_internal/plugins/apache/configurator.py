@@ -16,6 +16,7 @@ from typing import Sequence
 from typing import Union
 
 from acme import challenges
+from acme import util as acme_util
 from certbot import achallenges
 from certbot import errors
 from certbot import util
@@ -545,7 +546,7 @@ class ApacheConfigurator(common.Configurator):
         :rtype: `list` of :class:`~certbot._internal.plugins.apache.obj.VirtualHost`
         """
 
-        if util.is_wildcard_domain(domain):
+        if acme_util.is_wildcard_domain(domain):
             if domain in self._wildcard_vhosts:
                 # Vhosts for a wildcard domain were already selected
                 return self._wildcard_vhosts[domain]
