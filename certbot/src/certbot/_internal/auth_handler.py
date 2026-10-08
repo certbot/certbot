@@ -274,23 +274,29 @@ class AuthHandler:
             :class:`certbot.achallenges.AnnotatedChallenge`
         :rtype: list
 
-        :raises .errors.Error: if challenge type is not recognized
+        :raises .errors.Error: if challenge type is not recognized, or if
+            the challenge type is unsupported by the CA.
 
         """
         achalls = []
 
         for index in path:
             challb = authzr.body.challenges[index]
-            achalls.append(challb_to_achall(challb, self.account.key, authzr.body.identifier))
+            achalls.append(challb_to_achall(challb, self.account.key,
+                authzr.body.identifier, self.acme))
 
         return achalls
 
     def _report_failed_authzrs(self, failed_authzrs: list[messages.AuthorizationResource]) -> None:
         """Notifies the user about failed authorizations."""
         problems: dict[str, list[achallenges.AnnotatedChallenge]] = {}
-        failed_achalls = [challb_to_achall(challb, self.account.key, authzr.body.identifier)
-                        for authzr in failed_authzrs for challb in authzr.body.challenges
-                        if challb.error]
+        failed_achalls = []
+        for authzr in failed_authzrs:
+            for challb in authzr.body.challenges:
+                if challb.error:
+                    achall = challb_to_achall(challb, self.account.key,
+                        authzr.body.identifier, self.acme)
+                    failed_achalls.append(achall)
 
         for achall in failed_achalls:
             problems.setdefault(achall.error.typ, []).append(achall)
@@ -349,12 +355,14 @@ class AuthHandler:
 
 
 def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
-                     identifier: messages.Identifier) -> achallenges.AnnotatedChallenge:
+                     identifier: messages.Identifier,
+                     acme_client: client.ClientV2) -> achallenges.AnnotatedChallenge:
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
     :param .ChallengeBody challb: ChallengeBody
     :param .JWK account_key: Authorized Account Key
     :param str domain: Domain of the challb
+    :param .acme.client.ClientV2 acme_client: ACME client
 
     :returns: Appropriate AnnotatedChallenge
     :rtype: :class:`certbot.achallenges.AnnotatedChallenge`
@@ -368,6 +376,13 @@ def challb_to_achall(challb: messages.ChallengeBody, account_key: josepy.JWK,
             challb=challb, account_key=account_key, identifier=identifier)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, identifier=identifier)
+    elif isinstance(chall, challenges.DNSPersist01):
+        account_hash_prefix: str | None = acme_client.directory.meta.account_hash_prefix
+        if account_hash_prefix is None:
+            raise errors.AuthorizationError(("Unable to create dns-persist-01 challenge for CA "
+                "because the CA lacks the required metadata fields (accountHashPrefix)."))
+        return achallenges.DNSPersist(challb=challb, identifier=identifier,
+            account_key=account_key, account_hash_prefix=account_hash_prefix)
     else:
         return achallenges.Other(challb=challb, identifier=identifier)
 
