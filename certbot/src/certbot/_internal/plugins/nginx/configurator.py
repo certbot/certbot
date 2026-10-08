@@ -19,6 +19,7 @@ from typing import Union
 from typing import cast
 
 from acme import challenges
+from acme import util as acme_util
 from certbot import achallenges
 from certbot import errors
 from certbot import util
@@ -334,7 +335,7 @@ class NginxConfigurator(common.Configurator):
         return vhosts
 
     def _choose_vhosts_common(self, target_name: str) -> list[obj.VirtualHost]:
-        if util.is_wildcard_domain(target_name):
+        if acme_util.is_wildcard_domain(target_name):
             # Ask user which VHosts to support.
             return self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
         else:
@@ -568,7 +569,7 @@ class NginxConfigurator(common.Configurator):
         :rtype: list of :class:`~certbot._internal.plugins.nginx.obj.VirtualHost`
 
         """
-        if util.is_wildcard_domain(target_name):
+        if acme_util.is_wildcard_domain(target_name):
             # Ask user which VHosts to enhance.
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=False,
                 no_ssl_filter_port=port)
@@ -1265,7 +1266,7 @@ def _test_block_from_block(block: list[Any]) -> list[Any]:
 def _redirect_block_for_domain(domain: str) -> list[Any]:
     updated_domain = domain
     match_symbol = '='
-    if util.is_wildcard_domain(domain):
+    if acme_util.is_wildcard_domain(domain):
         match_symbol = '~'
         updated_domain = updated_domain.replace('.', r'\.')
         updated_domain = updated_domain.replace('*', '[^.]+')
