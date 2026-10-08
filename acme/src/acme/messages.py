@@ -230,6 +230,8 @@ class Directory(jose.JSONDeSerializable):
         caa_identities: list[str] = jose.field('caaIdentities', omitempty=True)
         external_account_required: bool = jose.field('externalAccountRequired', omitempty=True)
         profiles: dict[str, str] = jose.field('profiles', omitempty=True)
+        account_hash_prefix: list[str] | None = jose.field('accountHashPrefix', omitempty=True)
+        issuer_domain_names: list[str] | None = jose.field('issuerDomainNames', omitempty=True)
 
         def __init__(self, **kwargs: Any) -> None:
             kwargs = {self._internal_name(k): v for k, v in kwargs.items()}

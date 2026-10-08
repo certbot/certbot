@@ -499,7 +499,8 @@ class IsWildcardDomainTest(unittest.TestCase):
 
     def _call(self, domain):
         from certbot.util import is_wildcard_domain
-        return is_wildcard_domain(domain)
+        with pytest.warns(DeprecationWarning, match='is_wildcard_domain is deprecated'):
+            return is_wildcard_domain(domain)
 
     def test_no_wildcard(self):
         assert not self._call(self.no_wildcard)
