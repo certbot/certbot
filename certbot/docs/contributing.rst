@@ -99,29 +99,21 @@ found in the `virtualenv docs`_.
 Find issues to work on
 ----------------------
 
-Users are not allowed to create Issues directly in this repository. Please open a `GitHub Discussion`_ first for feature requests and potential bugs. This is due to the recent influx of `AI-assisted contributions`_ and our experiences with them.
+You can find open issues in the `Github issue tracker`_. If you're starting work on something, post a comment to let others know and seek feedback on your plan where appropriate.
 
-**Feature Requests**
+Once you've got a working branch, you can open a pull request. All changes in your pull request must have thorough unit test coverage, pass our tests, and be compliant with the :ref:`coding style`.
 
-To avoid under specified feature requests which may not be relevant to Certbot's userbase, we're requiring that all requests begin as discussions that both users and maintainers can weigh in on. Once a discussion reaches a point where a well-understood, actionable item is identified, a maintainer will convert it to an Issue for you. This helps Certbot developers use their time more efficiently and makes it easier for contributors to find issues to work on since every issue is ready to be worked on.
+For more details on how issues are chosen to work on, see the `issue policy`_ in this repository.
 
-**Bugs**
-
-Our experience maintaining open-source projects shows that many reports that look like bugs turn out to be misunderstandings, environment-specific problems, or configuration issues. If your Discussion clearly identifies a reproducible problem in Certbot's scope, a maintainer will convert it to an Issue for you.
-
-For any general questions, go to the `Let's Encrypt Community forum`_ to tap into a group of helpful people with experience and expertise who will respond more quickly than the small development team.
-
-For more details, see `CONTRIBUTING.md`_ and the `Discussions`_ tab in this repository.
+.. _Github issue tracker: https://github.com/certbot/certbot/issues
 
 .. _GitHub Discussion: https://github.com/certbot/certbot/discussions
-
-.. _AI-assisted contributions: https://www.eff.org/about/opportunities/volunteer/coding-with-eff#ai-policy
 
 .. _Let's Encrypt Community forum: https://community.letsencrypt.org/
 
 .. _CONTRIBUTING.md: https://github.com/certbot/certbot#contributing
 
-.. _Discussions: https://github.com/certbot/certbot/discussions
+.. _issue policy: https://github.com/certbot/certbot/issues/10782
 
 
 .. _testing:
@@ -433,7 +425,7 @@ connect your snap to it.
 .. _`python snapcraft plugin`:
     https://snapcraft.io/docs/python-plugin
 
-.. _coding-style:
+.. _coding style:
 
 Coding style
 ============
@@ -521,8 +513,9 @@ Submitting a pull request
 
 Steps:
 
-0. We require a `Github Discussion`_ and a subsequent decision before writing a 
-   pull request to ensure the changes you're making is something we have the time and interest to review.
+0. We recommend you talk with us in a GitHub issue or :ref:`Mattermost <ask for
+   help>` before writing a pull request to ensure the changes you're making is
+   something we have the time and interest to review.
 1. Write your code! When doing this, you should add :ref:`mypy type annotations
    <type annotations>` for any functions you add or modify. You can check that
    you've done this correctly by running ``tox run -e mypy`` on a machine that has
