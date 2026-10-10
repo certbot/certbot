@@ -99,15 +99,22 @@ found in the `virtualenv docs`_.
 Find issues to work on
 ----------------------
 
-You can find the open issues in the `github issue tracker`_. If you're starting
-work on something, post a comment to let others know and seek feedback on your
-plan where appropriate.
+You can find open issues in the `Github issue tracker`_. If you're starting work on something, post a comment to let others know and seek feedback on your plan where appropriate.
 
-Once you've got a working branch, you can open a pull request.  All changes in
-your pull request must have thorough unit test coverage, pass our
-tests, and be compliant with the :ref:`coding style <coding-style>`.
+Once you've got a working branch, you can open a pull request. All changes in your pull request must have thorough unit test coverage, pass our tests, and be compliant with the :ref:`coding style`.
 
-.. _github issue tracker: https://github.com/certbot/certbot/issues
+For more details on how issues are chosen to work on, see the `issue policy`_ in this repository.
+
+.. _Github issue tracker: https://github.com/certbot/certbot/issues
+
+.. _GitHub Discussion: https://github.com/certbot/certbot/discussions
+
+.. _Let's Encrypt Community forum: https://community.letsencrypt.org/
+
+.. _CONTRIBUTING.md: https://github.com/certbot/certbot#contributing
+
+.. _issue policy: https://github.com/certbot/certbot/issues/10782
+
 
 .. _testing:
 
@@ -418,7 +425,7 @@ connect your snap to it.
 .. _`python snapcraft plugin`:
     https://snapcraft.io/docs/python-plugin
 
-.. _coding-style:
+.. _coding style:
 
 Coding style
 ============
