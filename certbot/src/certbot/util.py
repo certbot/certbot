@@ -323,7 +323,7 @@ def _unique_file(path: str, filename_pat: Callable[[int], str], count: int,
         count += 1
 
 
-def unique_file(path: str, chmod: int = 0o777, mode: str = "w") -> tuple[IO, str]:
+def unique_file(path: str, chmod: int = 0o600, mode: str = "w") -> tuple[IO, str]:
     """Safely finds a unique file.
 
     :param str path: path/filename.ext
