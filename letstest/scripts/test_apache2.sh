@@ -48,8 +48,8 @@ eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 
 # Install and configure Python
-pyenv install 3.10
-pyenv shell 3.10
+pyenv install 3.11
+pyenv shell 3.11
 
 tools/venv.py -e acme -e certbot -e certbot-apache -e certbot-ci tox
 PEBBLE_LOGS="acme_server.log"

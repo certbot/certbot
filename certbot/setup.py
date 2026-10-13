@@ -31,7 +31,7 @@ install_requires = [
     'configobj>=5.0.6',
     'cryptography>=47.0.0',
     'distro>=1.7.0',
-    'importlib_metadata>=8.6.1; python_version < "3.10"',
+    'importlib_metadata>=8.6.1; python_version < "3.11"',
     'josepy>=2.0.0',
     'parsedatetime>=2.6',
     'pyrfc3339',
