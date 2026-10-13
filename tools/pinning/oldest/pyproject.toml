@@ -18,7 +18,7 @@ license = "Apache License 2.0"
 [tool.poetry.dependencies]
 # The Python version here should be kept in sync with the one used in our
 # oldest tests in tox.ini.
-python = "<3.11,>=3.10"
+python = "<3.12,>=3.11"
 
 # Local dependencies
 # Any local packages that have dependencies on other local packages must be
@@ -55,8 +55,8 @@ ConfigArgParse = "1.5.3"
 apacheconfig = "0.3.2"
 asn1crypto = "0.24.0"
 # we were already ignoring debian 11 for our boto* versions; this uses the versions from ubuntu 22
-boto3 = "1.20.34"
-botocore = "1.23.34"
+boto3 = "1.26.17"
+botocore = "1.29.17"
 cffi = "2.0.0"
 chardet = "3.0.4"
 cloudflare = "4.0.0"
@@ -79,7 +79,7 @@ pyOpenSSL = "26.1.0"
 pyRFC3339 = "1.0"
 pyasn1 = "0.4.8"
 pycparser = "2.14"
-pyparsing = "3.0.0"
+pyparsing = "3.0.8"
 python-augeas = "0.5.0"
 python-digitalocean = "1.15.0"
 requests = "2.25.1"
