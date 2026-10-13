@@ -1,0 +1,1 @@
+Dropped support for Python 3.10, which hit EOL earlier this month. Certbot's oldest supported Python version is now 3.11.
