@@ -29,11 +29,11 @@ jobs:
             TOXENV: py312
           - PYTHON_VERSION: '3.13'
             TOXENV: py313
-          - PYTHON_VERSION: '3.10'
+          - PYTHON_VERSION: '3.11'
             TOXENV: integration-certbot-oldest
-          - PYTHON_VERSION: '3.10'
+          - PYTHON_VERSION: '3.11'
             TOXENV: integration-nginx-oldest
-          - PYTHON_VERSION: '3.10'
+          - PYTHON_VERSION: '3.11'
             TOXENV: integration
           - PYTHON_VERSION: '3.11'
             TOXENV: integration

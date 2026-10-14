@@ -27,11 +27,11 @@ jobs:
           TOXENV: cover
           PIP_USE_PEP517: 'true'
         - IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: '3.10'
+          PYTHON_VERSION: '3.11'
           TOXENV: oldest
         - IMAGE_NAME: ubuntu-22.04
-          PYTHON_VERSION: '3.10'
-          TOXENV: py310
+          PYTHON_VERSION: '3.11'
+          TOXENV: py311
     uses: "./.github/workflows/tox_steps.yml"
     with:
       PYTHON_VERSION: "${{ matrix.PYTHON_VERSION }}"
