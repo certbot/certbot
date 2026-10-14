@@ -26,4 +26,4 @@ if sys.version_info[:2] == (3, 10):
         "Python 3.10 support will be dropped in the next major release "
         "of acme. Please upgrade your Python version.",
         DeprecationWarning
-    )
+    )  # pragma: no cover

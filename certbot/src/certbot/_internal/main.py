@@ -1887,7 +1887,7 @@ def main(cli_args: Optional[list[str]] = None) -> Optional[Union[str, int]]:
         logger.warning(
             "Python 3.10 support will be dropped in the next major release "
             "of Certbot. Please upgrade your Python version.",
-        )
+        )  # pragma: no cover
 
     with make_displayer(config) as displayer:
         display_obj.set_display(displayer)
