@@ -23,7 +23,7 @@ for mod in list(sys.modules):
 
 if sys.version_info[:2] == (3, 10):
     warnings.warn(
-        "Python 3.10 support will be dropped in the next major release "
+        "Python 3.10 support will be dropped in the next release "
         "of acme. Please upgrade your Python version.",
         DeprecationWarning
     )  # pragma: no cover

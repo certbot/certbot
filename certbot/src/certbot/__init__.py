@@ -7,7 +7,7 @@ __version__ = '5.9.0.dev0'
 
 if sys.version_info[:2] == (3, 10):
     warnings.warn(
-        "Python 3.10 support will be dropped in the next major release "
+        "Python 3.10 support will be dropped in the next release "
         "of Certbot. Please upgrade your Python version.",
         DeprecationWarning
     )  # pragma: no cover

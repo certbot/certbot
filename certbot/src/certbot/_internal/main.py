@@ -1885,7 +1885,7 @@ def main(cli_args: Optional[list[str]] = None) -> Optional[Union[str, int]]:
 
     if sys.version_info[:2] == (3, 10):
         logger.warning(
-            "Python 3.10 support will be dropped in the next major release "
+            "Python 3.10 support will be dropped in the next release "
             "of Certbot. Please upgrade your Python version.",
         )  # pragma: no cover
 
