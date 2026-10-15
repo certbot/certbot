@@ -35,8 +35,6 @@ jobs:
             TOXENV: integration-nginx-oldest
           - PYTHON_VERSION: '3.11'
             TOXENV: integration
-          - PYTHON_VERSION: '3.11'
-            TOXENV: integration
           - PYTHON_VERSION: '3.12'
             TOXENV: integration
           - PYTHON_VERSION: '3.13'
