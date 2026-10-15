@@ -1883,6 +1883,12 @@ def main(cli_args: Optional[list[str]] = None) -> Optional[Union[str, int]]:
         if config.func != plugins_cmd:  # pylint: disable=comparison-with-callable
             raise
 
+    if sys.version_info[:2] == (3, 10):
+        logger.warning(
+            "Python 3.10 support will be dropped in the next release "
+            "of Certbot. Please upgrade your Python version.",
+        )  # pragma: no cover
+
     with make_displayer(config) as displayer:
         display_obj.set_display(displayer)
 
