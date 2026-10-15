@@ -713,7 +713,10 @@ any subcommand.
 
 Hooks specified in the command line, :ref:`configuration file
 <config-file>`, or :ref:`renewal configuration files <renewal-config-file>` are
-run as usual after running all hooks in these directories. One minor exception
+run as usual after running all hooks in these directories. If the same hook is
+set in more than one of these places, the value from the command line takes
+precedence, followed by the configuration file, and the renewal configuration
+file is only used if the hook is not set anywhere else. One minor exception
 to this is if a hook specified elsewhere is simply the path to an executable
 file in the hook directory of the same type (e.g. your pre-hook is the path to
 an executable in ``/etc/letsencrypt/renewal-hooks/pre``), the file is not run a
