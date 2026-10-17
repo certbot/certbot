@@ -688,7 +688,7 @@ class ClientNetwork:
         except Exception:  # pylint: disable=broad-except
             pass
 
-    def _wrap_in_jws(self, obj: jose.JSONDeSerializable, nonce: str, url: str) -> str:
+    def _wrap_in_jws(self, obj: jose.JSONDeSerializable | None, nonce: str, url: str) -> str:
         """Wrap `JSONDeSerializable` object in JWS.
 
         .. todo:: Implement ``acmePath``.
@@ -699,7 +699,7 @@ class ClientNetwork:
         :rtype: str
 
         """
-        jobj = obj.json_dumps(indent=2).encode() if obj else b''
+        jobj = obj.json_dumps(indent=2).encode() if obj is not None else b''
         logger.debug('JWS payload:\n%s', jobj)
         assert self.key
         kwargs = {
@@ -875,7 +875,7 @@ class ClientNetwork:
                 return self._post_once(*args, **kwargs)
             raise
 
-    def _post_once(self, url: str, obj: jose.JSONDeSerializable,
+    def _post_once(self, url: str, obj: jose.JSONDeSerializable | None,
                    content_type: str = JOSE_CONTENT_TYPE, **kwargs: Any) -> requests.Response:
         new_nonce_url = kwargs.pop('new_nonce_url', None)
         if not self.key:
