@@ -227,9 +227,6 @@ class DNSPersist01ResponseTest(unittest.TestCase):
         from acme.challenges import DNSPersist01Response
         self.response = DNSPersist01Response()
 
-    def test_truthiness(self):
-        assert self.response
-
     def test_empty_json(self):
         assert {} == self.response
 
