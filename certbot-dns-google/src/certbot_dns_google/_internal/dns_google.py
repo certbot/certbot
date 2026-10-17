@@ -147,7 +147,7 @@ class _GoogleClient:
             # The process was interrupted previously and validation token exists
             return
 
-        add_records.append(record_content)
+        add_records.append("\"" + record_content + "\"")
 
         data = {
             "kind": "dns#change",
