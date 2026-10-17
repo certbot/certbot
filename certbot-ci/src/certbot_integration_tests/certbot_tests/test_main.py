@@ -393,7 +393,7 @@ def test_renew_when_ari_says_its_time(context: IntegrationTestsContext) -> None:
     misc.set_ari_response(certificate_pem, json.dumps({
         'suggestedWindow': {
             'start': '2020-01-01T00:00:00Z',
-            'end': '2020-01-01T00:00:00Z'
+            'end': '2020-01-02T00:00:00Z'
         }
     }))
 
@@ -409,6 +409,36 @@ def test_renew_when_ari_says_its_time(context: IntegrationTestsContext) -> None:
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_hook_execution(context.hook_probe, 'deploy')
+
+
+@pytest.mark.parametrize('start,end', [
+    ('2020-01-01T00:00:00Z', '2020-01-01T00:00:00Z'),
+    ('2020-01-02T00:00:00Z', '2020-01-01T00:00:00Z'),
+    ('2090-01-01T00:00:00Z', '2090-01-01T00:00:00Z'),
+    ('2090-01-02T00:00:00Z', '2090-01-01T00:00:00Z'),
+])
+@pytest.mark.parametrize('fallback_due', [False, True])
+def test_renew_with_invalid_ari_window(context: IntegrationTestsContext,
+                                      start: str, end: str, fallback_due: bool) -> None:
+    """Invalid ARI windows use the existing renewal fallback."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+    with open(join(context.config_dir, 'live', certname, 'cert.pem'), 'r') as cert:
+        certificate_pem = cert.read()
+    misc.set_ari_response(certificate_pem, json.dumps({
+        'suggestedWindow': {'start': start, 'end': end}
+    }))
+    if fallback_due:
+        config_path = join(context.config_dir, 'renewal', f'{certname}.conf')
+        with open(config_path, 'r') as config:
+            contents = config.read()
+        with open(config_path, 'w') as config:
+            config.write('renew_before_expiry = 100 years\n' + contents)
+
+    _, stderr = context.certbot(['renew'], force_renew=False)
+
+    assert 'An error occurred requesting ACME Renewal Information (ARI)' in stderr
+    assert_cert_count_for_lineage(context.config_dir, certname, 2 if fallback_due else 1)
 
 
 def test_renew_with_changed_private_key_complexity(context: IntegrationTestsContext) -> None:
