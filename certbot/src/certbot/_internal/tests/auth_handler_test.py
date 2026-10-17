@@ -428,16 +428,35 @@ def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0, wait_value=1):
 class ChallbToAchallTest(unittest.TestCase):
     """Tests for certbot._internal.auth_handler.challb_to_achall."""
 
-    def _call(self, challb):
+    def _call(self, challb, dns_persist_metadata: acme_client.DNSPersistMetadata | None):
         from certbot._internal.auth_handler import challb_to_achall
         ident = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain")
-        return challb_to_achall(challb, "account_key", ident)
+        mock_acme_client = mock.MagicMock()
+        if dns_persist_metadata is None:
+            mock_acme_client.get_dns_persist_metadata.side_effect = \
+                acme_errors.MissingDirectoryFieldsError([])
+        else:
+            mock_acme_client.get_dns_persist_metadata.return_value = dns_persist_metadata
+        return challb_to_achall(challb, acme_util.JWK, ident, mock_acme_client)
 
     def test_it(self):
-        assert self._call(acme_util.HTTP01_P) == \
+        assert self._call(acme_util.HTTP01_P, None) == \
             achallenges.KeyAuthorizationAnnotatedChallenge(
-                challb=acme_util.HTTP01_P, account_key="account_key",
+                challb=acme_util.HTTP01_P, account_key=acme_util.JWK,
                 identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain"))
+
+    def test_invalid_dns_persist(self):
+        with pytest.raises(acme_errors.MissingDirectoryFieldsError):
+            assert self._call(acme_util.DNS_PERSIST_01_P, None)
+
+    def test_valid_dns_persist(self):
+        metadata = acme_client.DNSPersistMetadata('https://ca.example.com/account-hash/',
+            ('ca.example',), None)
+        assert self._call(acme_util.DNS_PERSIST_01_P, metadata) == \
+            achallenges.DNSPersist(challb=acme_util.DNS_PERSIST_01_P,
+                identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value="domain"),
+                account_key=acme_util.JWK,
+                account_hash_prefix="https://ca.example.com/account-hash/")
 
 
 class GenChallengePathTest(unittest.TestCase):
