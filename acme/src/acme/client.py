@@ -31,6 +31,42 @@ logger = logging.getLogger(__name__)
 DEFAULT_NETWORK_TIMEOUT = 45
 
 
+class DNSPersistMetadata:
+    """Metadata derived from the ACME CA
+    """
+    def __init__(self, account_hash_prefix: str, issuer_domain_names: tuple[str, ...],
+                 caa_identities: tuple[str, ...] | None) -> None:
+        self.account_hash_prefix = account_hash_prefix
+        self.issuer_domain_names = set(issuer_domain_names)
+        self.caa_identities: set[str] | None
+        if caa_identities is not None:
+            self.caa_identities = set(caa_identities)
+        else:
+            self.caa_identities = None
+
+    def validate_challenge(self, chall: challenges.DNSPersist01) -> None:
+        """Checks whether the challenge is valid with respect to the CA's Directory, as defined in
+        the RFC section 3.2.
+
+        :param .messages.Directory dir: The CA's ACME Directory.
+        :raises .errors.MalformedChallengeError: If the challenge's fields are invalid with respect
+            to the ACME Directory
+        """
+        chall_issuer_domain_names = set(chall.issuer_domain_names)
+        # the challenge's issuerDomainNames must be a superset of the CA's issuerDomainNames
+        if not chall_issuer_domain_names >= self.issuer_domain_names:
+            raise errors.MalformedChallengeError("Invalid dns-persist-01 challenge: challenge "
+                f"must contain every CA issuerDomainName ({self.issuer_domain_names}), "
+                f"but got {chall_issuer_domain_names}")
+
+        # if the CA advertises caaIdentities, it must be a superset of the challenge's
+        # issuerDomainNames
+        if self.caa_identities is not None and not self.caa_identities > chall_issuer_domain_names:
+            raise errors.MalformedChallengeError("Invalid dns-persist-01 challenge: challenge "
+                f"contains issuerDomainNames ({chall_issuer_domain_names}) not present in CA's "
+                f"caaIdentities ({self.caa_identities})")
+
+
 class ClientV2:
     """ACME client for a v2 API.
 
@@ -99,6 +135,29 @@ class ClientV2:
         updated_regr = self._send_recv_regr(regr, body=body)
         self.net.account = updated_regr
         return updated_regr
+
+    def get_dns_persist_metadata(self) -> DNSPersistMetadata:
+        """Checks whether the challenge is valid with respect to the CA's Directory, as defined in
+        the RFC section 3.2.
+
+        :raises .errors.MissingDirectoryFieldsError: If the CA is missing some of the requisite
+            ACME Directory fields.
+        :returns: A DNSPersistMetadata object
+        :rtype: `.DNSPersistMetadata`
+        """
+        meta = self.directory.get_meta()
+        if meta.account_hash_prefix is None or meta.issuer_domain_names is None:
+            missing_fields = []
+            if meta.account_hash_prefix is None:
+                missing_fields.append('accountHashPrefix')
+            if meta.issuer_domain_names is None:
+                missing_fields.append('issuerDomainNames')
+            raise errors.MissingDirectoryFieldsError(missing_fields)
+        return DNSPersistMetadata(
+            meta.account_hash_prefix,
+            meta.issuer_domain_names,
+            meta.caa_identities,
+        )
 
     def _get_v2_account(self, regr: messages.RegistrationResource, update_body: bool = False
                        ) -> messages.RegistrationResource:
@@ -385,8 +444,8 @@ class ClientV2:
 
     def external_account_required(self) -> bool:
         """Checks if ACME server requires External Account Binding authentication."""
-        return hasattr(self.directory, 'meta') and \
-               hasattr(self.directory.meta, 'external_account_required') and \
+        meta = self.directory.get_meta()
+        return hasattr(meta, 'external_account_required') and \
                self.directory.meta.external_account_required
 
     def _post_as_get(self, *args: Any, **kwargs: Any) -> requests.Response:
