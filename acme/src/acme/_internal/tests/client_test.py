@@ -1,5 +1,6 @@
 """Tests for acme.client."""
 # pylint: disable=too-many-lines
+from typing import Any
 import copy
 import datetime
 import http.client as http_client
@@ -611,6 +612,74 @@ class ClientV2Test(unittest.TestCase):
         self.response.headers['Retry-After'] = '100'
         _, retry_after = self.client.renewal_time(cert_pem)
         assert retry_after == datetime.datetime(2025, 3, 15, 00, 1, 40)
+
+    def test_invalid_dns_persist_metadata(self):
+        from acme.messages import Directory
+
+        # if the directory's meta object is missing either (or both) of the required fields, the
+        # method should raise a MissingDirectoryFieldsError
+        invalid_meta_fields: list[dict[str, Any]] = [
+            {},
+            {'issuerDomainNames': ('example.ca',)},
+            {'accountHashPrefix': 'https://ca.example/account-hash'}
+        ]
+
+        for meta_fields in invalid_meta_fields:
+            self.directory.meta = Directory.Meta.from_json(meta_fields)
+            with self.assertRaises(errors.MissingDirectoryFieldsError) as err:
+                self.client.get_dns_persist_metadata()
+            if 'issuerDomainNames' not in meta_fields:
+                assert 'issuerDomainNames' in err.exception.fields
+            if 'accountHashPrefix' not in meta_fields:
+                assert 'accountHashPrefix' in err.exception.fields
+
+    def test_get_dns_persist_metadata(self):
+        from acme.messages import Directory
+
+        self.directory.meta = Directory.Meta.from_json({
+            'issuerDomainNames': ('example.ca',),
+            'accountHashPrefix': 'https://ca.example/account-hash',
+        })
+        metadata = self.client.get_dns_persist_metadata()
+        assert metadata.issuer_domain_names == set(('example.ca',))
+        assert metadata.account_hash_prefix == 'https://ca.example/account-hash'
+        assert metadata.caa_identities is None
+
+class DNSPersistMetadataTest(unittest.TestCase):
+    def setUp(self):
+        from acme.client import DNSPersistMetadata
+        self.issuer_domain_names = ('authority.example', 'ca.example.net')
+        self.caa_identities = ('authority.example', 'ca.example.net', 'example.com')
+        self.metadata = DNSPersistMetadata(
+            'https://ca.example/account-hash/',
+            self.issuer_domain_names,
+            self.caa_identities,
+        )
+
+    def test_invalid_challenges(self):
+        from acme.challenges import DNSPersist01
+        account_uri = 'https://ca.example/acct/123'
+        # from the RFC section 3.2: When [issuerDomainNames] is available, the client MUST consider
+        # a challenge malformed if any value in [issuerDomainNames] is absent from [the challenge].
+        with self.assertRaises(errors.MalformedChallengeError):
+            self.metadata.validate_challenge(DNSPersist01(
+                account_uri=account_uri,
+                issuer_domain_names=self.issuer_domain_names[1:]))
+        with self.assertRaises(errors.MalformedChallengeError):
+            self.metadata.validate_challenge(DNSPersist01(
+                account_uri=account_uri,
+                issuer_domain_names=self.issuer_domain_names[:1]))
+        with self.assertRaises(errors.MalformedChallengeError):
+            self.metadata.validate_challenge(DNSPersist01(
+                account_uri=account_uri,
+                issuer_domain_names=('some.otherdomain.org')))
+
+        # also from 3.2: When [caaIdentities] is available, the client MUST consider a challenge
+        # malformed if any value in [the challenge] is absent from [caaIdentities].
+        with self.assertRaises(errors.MalformedChallengeError):
+            self.metadata.validate_challenge(DNSPersist01(
+                account_uri='https://ca.example/acct/123',
+                issuer_domain_names=self.issuer_domain_names + ('example.net',)))
 
 def test_renewal_info_path_component():
     from cryptography import x509

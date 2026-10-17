@@ -6,7 +6,6 @@ from typing import Any
 from typing import Iterator
 from typing import Mapping
 from typing import MutableMapping
-from typing import Optional
 from typing import TypeVar
 
 from cryptography import x509
@@ -132,11 +131,11 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 
     """
     typ: str = jose.field('type', omitempty=True, default='about:blank')
-    title: str = jose.field('title', omitempty=True)
-    detail: str = jose.field('detail', omitempty=True)
-    identifier: Optional['Identifier'] = jose.field(
+    title: str | None = jose.field('title', omitempty=True)
+    detail: str | None = jose.field('detail', omitempty=True)
+    identifier: Identifier | None = jose.field(
         'identifier', decoder=Identifier.from_json, omitempty=True)
-    subproblems: Optional[tuple['Error', ...]] = jose.field('subproblems', omitempty=True)
+    subproblems: tuple['Error', ...] | None = jose.field('subproblems', omitempty=True)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that subproblems is redefined. Let's ignore the type check here.
@@ -161,7 +160,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         return cls(typ=typ, **kwargs)
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """Hardcoded error description based on its type.
 
         :returns: Description if standard ACME error or ``None``.
@@ -171,7 +170,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         return ERROR_TYPE_DESCRIPTIONS.get(self.typ)
 
     @property
-    def code(self) -> Optional[str]:
+    def code(self) -> str | None:
         """ACME error code.
 
         Basically self.typ without the ERROR_PREFIX.
@@ -225,18 +224,22 @@ class Directory(jose.JSONDeSerializable):
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
-        _terms_of_service: str = jose.field('termsOfService', omitempty=True)
-        website: str = jose.field('website', omitempty=True)
-        caa_identities: list[str] = jose.field('caaIdentities', omitempty=True)
-        external_account_required: bool = jose.field('externalAccountRequired', omitempty=True)
-        profiles: dict[str, str] = jose.field('profiles', omitempty=True)
+        _terms_of_service: str | None = jose.field('termsOfService', omitempty=True)
+        website: str | None = jose.field('website', omitempty=True)
+        caa_identities: tuple[str, ...] | None = jose.field('caaIdentities', omitempty=True)
+        external_account_required: bool | None = jose.field('externalAccountRequired',
+            omitempty=True)
+        profiles: dict[str, str] | None = jose.field('profiles', omitempty=True)
+        account_hash_prefix: str | None = jose.field('accountHashPrefix', omitempty=True)
+        issuer_domain_names: tuple[str, ...] | None = jose.field('issuerDomainNames',
+                omitempty=True)
 
         def __init__(self, **kwargs: Any) -> None:
             kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
             super().__init__(**kwargs)
 
         @property
-        def terms_of_service(self) -> str:
+        def terms_of_service(self) -> str | None:
             """URL for the CA TOS"""
             return self._terms_of_service
 
@@ -249,7 +252,9 @@ class Directory(jose.JSONDeSerializable):
         def _internal_name(self, name: str) -> str:
             return '_' + name if name == 'terms_of_service' else name
 
-    def __init__(self, jobj: Mapping[str, Any]) -> None:
+    def __init__(self, jobj: MutableMapping[str, Any]) -> None:
+        if 'meta' not in jobj:
+            jobj['meta'] = Directory.Meta()
         self._jobj = jobj
 
     def __getattr__(self, name: str) -> Any:
@@ -264,12 +269,17 @@ class Directory(jose.JSONDeSerializable):
         except KeyError:
             raise KeyError(f'Directory field "{name}" not found')
 
+    def get_meta(self) -> 'Directory.Meta':
+        """Returns the Directory's Meta object"""
+        return self.meta
+
     def to_partial_json(self) -> dict[str, Any]:
         return util.map_keys(self._jobj, lambda k: k)
 
     @classmethod
     def from_json(cls, jobj: MutableMapping[str, Any]) -> 'Directory':
-        jobj['meta'] = cls.Meta.from_json(jobj.pop('meta', {}))
+        if 'meta' in jobj:
+            jobj['meta'] = cls.Meta.from_json(jobj.pop('meta'))
         return cls(jobj)
 
 
@@ -344,20 +354,20 @@ class Registration(ResourceBody):
     # contacts while not expecting the `contact` field when loading from json.
     # This is implemented in the constructor and *_json methods.
     contact: tuple[str, ...] = jose.field('contact', omitempty=True, default=())
-    agreement: str = jose.field('agreement', omitempty=True)
-    status: Status = jose.field('status', omitempty=True)
-    terms_of_service_agreed: bool = jose.field('termsOfServiceAgreed', omitempty=True)
-    only_return_existing: bool = jose.field('onlyReturnExisting', omitempty=True)
-    external_account_binding: dict[str, Any] = jose.field('externalAccountBinding',
+    agreement: str | None = jose.field('agreement', omitempty=True)
+    status: Status | None = jose.field('status', omitempty=True)
+    terms_of_service_agreed: bool | None = jose.field('termsOfServiceAgreed', omitempty=True)
+    only_return_existing: bool | None = jose.field('onlyReturnExisting', omitempty=True)
+    external_account_binding: dict[str, Any] | None = jose.field('externalAccountBinding',
                                                           omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls: type[GenericRegistration], phone: Optional[str] = None,
-                  email: Optional[str] = None,
-                  external_account_binding: Optional[dict[str, Any]] = None,
+    def from_data(cls: type[GenericRegistration], phone: str | None = None,
+                  email: str | None = None,
+                  external_account_binding: dict[str, Any] | None = None,
                   **kwargs: Any) -> GenericRegistration:
         """
         Create registration resource from contact details.
@@ -483,8 +493,8 @@ class ChallengeBody(ResourceBody):
     _url: str = jose.field('url', omitempty=True, default=None)
     status: Status = jose.field('status', decoder=Status.from_json,
                         omitempty=True, default=STATUS_PENDING)
-    validated: datetime.datetime = fields.rfc3339('validated', omitempty=True)
-    error: Error = jose.field('error', decoder=Error.from_json,
+    validated: datetime.datetime | None = fields.rfc3339('validated', omitempty=True)
+    error: Error | None = jose.field('error', decoder=Error.from_json,
                        omitempty=True, default=None)
 
     def __init__(self, **kwargs: Any) -> None:
@@ -556,8 +566,8 @@ class Authorization(ResourceBody):
     # general, but for Key Authorization '[t]he "expires" field MUST
     # be absent'... then acme-spec gives example with 'expires'
     # present... That's confusing!
-    expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
-    wildcard: bool = jose.field('wildcard', omitempty=True)
+    expires: datetime.datetime | None = fields.rfc3339('expires', omitempty=True)
+    wildcard: bool | None = jose.field('wildcard', omitempty=True)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that challenge is redefined. Let's ignore the type check here.
@@ -635,14 +645,14 @@ class Order(ResourceBody):
     :ivar ~.Error error: Any error that occurred during finalization, if applicable.
     """
     # https://datatracker.ietf.org/doc/draft-aaron-acme-profiles/
-    profile: str = jose.field('profile', omitempty=True)
+    profile: str | None = jose.field('profile', omitempty=True)
     identifiers: list[Identifier] = jose.field('identifiers', omitempty=True)
     status: Status = jose.field('status', decoder=Status.from_json, omitempty=True)
     authorizations: list[str] = jose.field('authorizations', omitempty=True)
-    certificate: str = jose.field('certificate', omitempty=True)
+    certificate: str | None = jose.field('certificate', omitempty=True)
     finalize: str = jose.field('finalize', omitempty=True)
-    expires: datetime.datetime = fields.rfc3339('expires', omitempty=True)
-    error: Error = jose.field('error', omitempty=True, decoder=Error.from_json)
+    expires: datetime.datetime | None = fields.rfc3339('expires', omitempty=True)
+    error: Error | None = jose.field('error', omitempty=True, decoder=Error.from_json)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that identifiers is redefined. Let's ignore the type check here.
