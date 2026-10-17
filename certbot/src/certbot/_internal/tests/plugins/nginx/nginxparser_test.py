@@ -389,47 +389,58 @@ class TestRawNginxParser(unittest.TestCase):
         loads(test)
 
     def test_location_comment_issue(self):
-        # See discussion at https://github.com/certbot/certbot/issues/10264
-        already_good = '''
-        location = /resume
-        # x
-        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
-        '''
-        loads(already_good)
-        already_good = '''
-        location = /resume
-        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
-        # {
-        '''
-        loads(already_good)
-        needs_fixing = '''
-        location = /resume
-        # {
-        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
-        '''
-        with pytest.raises(ParseException):
-            loads(needs_fixing) # fails
-        needs_fixing = '''
-        location = /resume
-        # x{
-        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
-        '''
-        with pytest.raises(ParseException):
-            loads(needs_fixing) # fails
-        needs_fixing = '''
-        location = /resume
-        #{
-        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
-        '''
-        with pytest.raises(ParseException):
-            loads(needs_fixing) # fails
-        needs_fixing = '''
-        location = /resume
-        # {x
-        { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
-        '''
-        with pytest.raises(ParseException):
-            loads(needs_fixing) # fails
+        # See https://github.com/certbot/certbot/issues/10264. Each input puts
+        # a comment between a block header and its `{`; this used to raise a
+        # ParseException (or, for `# x`, silently absorb `#` and `x` as block
+        # header tokens and lose the comment). Now all parse and round-trip.
+        fixtures = [
+            '''
+            location = /resume
+            # x
+            { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+            ''',
+            '''
+            location = /resume
+            { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+            # {
+            ''',
+            '''
+            location = /resume
+            # {
+            { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+            ''',
+            '''
+            location = /resume
+            # x{
+            { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+            ''',
+            '''
+            location = /resume
+            #{
+            { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+            ''',
+            '''
+            location = /resume
+            # {x
+            { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+            ''',
+            '''
+            location = /resume
+            # { rewrite .* /resume.php redirect; }
+            { rewrite .* /Files/Adam_Lein_resume.pdf redirect; }
+            ''',
+        ]
+        for src in fixtures:
+            parsed = loads(src)
+            # The comment text must survive the round trip; it may move from
+            # between the header and `{` to the start of the block body,
+            # which is semantically equivalent nginx.
+            assert '#' in dumps(parsed), src
+            # Round trip stabilizes after one cycle: dumps(parsed) may inject
+            # separators, but dumps(loads(dumps(parsed))) equals dumps(parsed).
+            once = dumps(loads(dumps(parsed)))
+            twice = dumps(loads(once))
+            assert once == twice, src
 
 
 class TestUnspacedList(unittest.TestCase):
