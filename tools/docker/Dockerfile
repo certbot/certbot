@@ -1,6 +1,8 @@
 #base image
 FROM python:3.14-alpine3.23 AS certbot
 
+LABEL org.opencontainers.image.source="https://github.com/certbot/certbot"
+
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt
