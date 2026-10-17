@@ -12,9 +12,9 @@ import josepy as jose
 class Header(jose.Header):
     """ACME-specific JOSE Header. Implements nonce, kid, and url.
     """
-    nonce: Optional[bytes] = jose.field('nonce', omitempty=True, encoder=jose.encode_b64jose)
-    kid: Optional[str] = jose.field('kid', omitempty=True)
-    url: Optional[str] = jose.field('url', omitempty=True)
+    nonce: bytes | None = jose.field('nonce', omitempty=True, encoder=jose.encode_b64jose)
+    kid: str | None = jose.field('kid', omitempty=True)
+    url: str | None = jose.field('url', omitempty=True)
 
     # Mypy does not understand the josepy magic happening here, and falsely claims
     # that nonce is redefined. Let's ignore the type check here.
