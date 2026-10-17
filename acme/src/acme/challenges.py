@@ -484,11 +484,6 @@ class DNSResponse(ChallengeResponse):
 class DNSPersist01Response(ChallengeResponse):
     """ACME "dns-persist-01" challenge response."""
 
-    def __bool__(self) -> bool:
-        # Because this response yields an empty JSON object whose __len__() == 0, manually set a
-        # truthy value
-        return True
-
 
 @Challenge.register
 class DNSPersist01(Challenge):
