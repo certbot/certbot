@@ -153,20 +153,21 @@ class DirectoryTest(unittest.TestCase):
 
     def setUp(self):
         from acme.messages import Directory
+        self.meta = Directory.Meta(
+            terms_of_service='https://example.com/acme/terms',
+            website='https://www.example.com/',
+            caa_identities=['example.com'],
+            profiles={
+                "example": "some profile",
+                "other example": "a different profile"
+            },
+            account_hash_prefix='https://ca.example/account-hash/',
+            issuer_domain_names=['authority.example', 'ca.example.net'],
+        )
         self.dir = Directory({
             'newReg': 'reg',
             'newCert': 'cert',
-            'meta': Directory.Meta(
-                terms_of_service='https://example.com/acme/terms',
-                website='https://www.example.com/',
-                caa_identities=['example.com'],
-                profiles={
-                    "example": "some profile",
-                    "other example": "a different profile"
-                },
-                account_hash_prefix=['https://ca.example/account-hash/'],
-                issuer_domain_names=['authority.example', 'ca.example.net'],
-            ),
+            'meta': self.meta,
         })
 
     def test_init_wrong_key_value_success(self):  # pylint: disable=no-self-use
@@ -175,6 +176,22 @@ class DirectoryTest(unittest.TestCase):
 
     def test_getitem(self):
         assert 'reg' == self.dir['newReg']
+
+    def test_get_meta(self):
+        assert self.dir.get_meta() == self.meta
+
+    def test_get_missing_meta(self):
+        from acme.messages import Directory
+        dir = Directory.from_json({})
+        assert dir.get_meta() == Directory.Meta()
+
+        dir = Directory({})
+        assert dir.get_meta() == Directory.Meta()
+
+    def test_meta_missing_fields(self):
+        from acme.messages import Directory
+        meta = Directory.Meta()
+        assert meta.external_account_required is None
 
     def test_getitem_fails_with_key_error(self):
         with pytest.raises(KeyError):
@@ -199,7 +216,7 @@ class DirectoryTest(unittest.TestCase):
                     'example': 'some profile',
                     'other example': 'a different profile'
                 },
-                'accountHashPrefix': ['https://ca.example/account-hash/'],
+                'accountHashPrefix': 'https://ca.example/account-hash/',
                 'issuerDomainNames': ['authority.example', 'ca.example.net'],
             },
         }
