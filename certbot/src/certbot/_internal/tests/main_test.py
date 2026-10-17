@@ -1892,7 +1892,10 @@ class UnregisterTest(unittest.TestCase):
             patch.stop()
 
     def test_abort_unregister(self):
-        self.mocks['account'].AccountFileStorage.return_value = mock.Mock()
+        mocked_storage = mock.MagicMock()
+        mocked_storage.find_all.return_value = [mock.MagicMock()]
+        self.mocks['account'].AccountFileStorage.return_value = mocked_storage
+        self.mocks['_determine_account'].return_value = (mock.MagicMock(), None)
 
         util_mock = self.mocks['get_utility']()
         util_mock.yesno.return_value = False
@@ -1902,6 +1905,7 @@ class UnregisterTest(unittest.TestCase):
 
         res = main.unregister(config, unused_plugins)
         assert res == "Deactivation aborted."
+        self.mocks['_determine_account'].assert_called_once_with(config)
 
     @mock.patch("certbot._internal.main.display_util.notify")
     def test_unregister(self, mock_notify):
