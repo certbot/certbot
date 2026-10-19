@@ -155,3 +155,19 @@ class ARIError(ClientError):
     def __init__(self, message: str, retry_after: datetime.datetime) -> None:
         super().__init__(message, retry_after)
         self.retry_after = retry_after
+
+
+class MissingDirectoryFieldsError(Error):
+    """The client expected the ACME CA Directory to contain some fields, but they were missing."""
+
+    def __init__(self, fields: list[str]) -> None:
+        super().__init__()
+        self.fields = fields
+
+
+class MalformedChallengeError(Error):
+    """The client is required to consider a challenge malformed for the specified reason."""
+
+    def __init__(self, reason: str) -> None:
+        super().__init__()
+        self.reason = reason

@@ -230,6 +230,9 @@ class Directory(jose.JSONDeSerializable):
         external_account_required: bool | None = jose.field('externalAccountRequired',
             omitempty=True)
         profiles: dict[str, str] | None = jose.field('profiles', omitempty=True)
+        account_hash_prefix: str | None = jose.field('accountHashPrefix', omitempty=True)
+        issuer_domain_names: tuple[str, ...] | None = jose.field('issuerDomainNames',
+                omitempty=True)
 
         def __init__(self, **kwargs: Any) -> None:
             kwargs = {self._internal_name(k): v for k, v in kwargs.items()}
@@ -249,7 +252,9 @@ class Directory(jose.JSONDeSerializable):
         def _internal_name(self, name: str) -> str:
             return '_' + name if name == 'terms_of_service' else name
 
-    def __init__(self, jobj: Mapping[str, Any]) -> None:
+    def __init__(self, jobj: MutableMapping[str, Any]) -> None:
+        if 'meta' not in jobj:
+            jobj['meta'] = Directory.Meta()
         self._jobj = jobj
 
     def __getattr__(self, name: str) -> Any:
@@ -264,12 +269,17 @@ class Directory(jose.JSONDeSerializable):
         except KeyError:
             raise KeyError(f'Directory field "{name}" not found')
 
+    def get_meta(self) -> 'Directory.Meta':
+        """Returns the Directory's Meta object"""
+        return self.meta
+
     def to_partial_json(self) -> dict[str, Any]:
         return util.map_keys(self._jobj, lambda k: k)
 
     @classmethod
     def from_json(cls, jobj: MutableMapping[str, Any]) -> 'Directory':
-        jobj['meta'] = cls.Meta.from_json(jobj.pop('meta', {}))
+        if 'meta' in jobj:
+            jobj['meta'] = cls.Meta.from_json(jobj.pop('meta'))
         return cls(jobj)
 
 
