@@ -61,7 +61,7 @@ class DNSPersistMetadata:
 
         # if the CA advertises caaIdentities, it must be a superset of the challenge's
         # issuerDomainNames
-        if self.caa_identities is not None and not self.caa_identities > chall_issuer_domain_names:
+        if self.caa_identities is not None and not self.caa_identities >= chall_issuer_domain_names:
             raise errors.MalformedChallengeError("Invalid dns-persist-01 challenge: challenge "
                 f"contains issuerDomainNames ({chall_issuer_domain_names}) not present in CA's "
                 f"caaIdentities ({self.caa_identities})")
