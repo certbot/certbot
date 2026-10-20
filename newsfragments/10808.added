@@ -1,0 +1,1 @@
+Added an OCI image source label to Docker images, allowing third-party tools such as Renovate to discover the source repository.
