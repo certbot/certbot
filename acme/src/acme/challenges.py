@@ -495,7 +495,7 @@ class DNSPersist01(Challenge):
     """Label clients prepend to the domain name being validated."""
 
     account_uri: str = jose.field("accounturi")
-    issuer_domain_names: tuple[str] = jose.field("issuer-domain-names")
+    issuer_domain_names: tuple[str, ...] = jose.field("issuerDomainNames")
 
     def hash_account_uri(self, domain: str, account_public_key: jose.JWK,
                          account_hash_prefix: str) -> str:

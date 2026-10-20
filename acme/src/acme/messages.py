@@ -252,10 +252,12 @@ class Directory(jose.JSONDeSerializable):
         def _internal_name(self, name: str) -> str:
             return '_' + name if name == 'terms_of_service' else name
 
-    def __init__(self, jobj: MutableMapping[str, Any]) -> None:
+    def __init__(self, jobj: Mapping[str, Any]) -> None:
+        new_jobj = jobj
         if 'meta' not in jobj:
-            jobj['meta'] = Directory.Meta()
-        self._jobj = jobj
+            new_jobj = dict(jobj)
+            new_jobj['meta'] = Directory.Meta()
+        self._jobj = new_jobj
 
     def __getattr__(self, name: str) -> Any:
         try:

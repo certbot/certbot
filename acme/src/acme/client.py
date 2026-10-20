@@ -446,7 +446,7 @@ class ClientV2:
         """Checks if ACME server requires External Account Binding authentication."""
         meta = self.directory.get_meta()
         return hasattr(meta, 'external_account_required') and \
-               self.directory.meta.external_account_required
+               meta.external_account_required
 
     def _post_as_get(self, *args: Any, **kwargs: Any) -> requests.Response:
         """
