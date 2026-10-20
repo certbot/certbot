@@ -152,16 +152,16 @@ class DNSPersist01Test(unittest.TestCase):
         self.jmsg = {
             'type': 'dns-persist-01',
             'accounturi': 'https://ca.example/acct/123',
-            'issuer-domain-names': ['authority.example', 'ca.example.net']
+            'issuerDomainNames': ['authority.example', 'ca.example.net']
         }
         self.msg = DNSPersist01(
             account_uri=self.jmsg['accounturi'],
-            issuer_domain_names=tuple(self.jmsg['issuer-domain-names']))
+            issuer_domain_names=tuple(self.jmsg['issuerDomainNames']))
 
     def test_to_partial_json(self):
         expected_json = copy.deepcopy(self.jmsg)
         # josepy converts lists into tuples
-        expected_json['issuer-domain-names'] = tuple(expected_json['issuer-domain-names'])
+        expected_json['issuerDomainNames'] = tuple(expected_json['issuerDomainNames'],)
         assert expected_json == self.msg.to_partial_json()
 
     def test_from_json_hashable(self):
