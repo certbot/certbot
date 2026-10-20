@@ -656,7 +656,7 @@ class DNSPersistMetadataTest(unittest.TestCase):
             self.caa_identities,
         )
 
-    def test_valid_callenges(self):
+    def test_valid_challenges(self):
         from acme.challenges import DNSPersist01
         account_uri = 'https://ca.example/acct/123'
         self.metadata.validate_challenge(DNSPersist01(
