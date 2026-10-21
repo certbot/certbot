@@ -6,6 +6,8 @@ version = '5.9.0.dev0'
 
 install_requires = [
     'cloudflare>=4.0',
+    # Needed to follow CNAME aliases for the _acme-challenge record.
+    'dnspython>=2.6.1',
 ]
 
 if os.environ.get('SNAP_BUILD'):
