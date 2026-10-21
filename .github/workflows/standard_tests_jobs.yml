@@ -41,3 +41,12 @@ jobs:
   test_sphinx_builds:
     name: '-' # Makes results viewing cleaner
     uses: "./.github/workflows/sphinx_steps.yml"
+  zizmor:
+    name: Workflow security (zizmor)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: pipx install zizmor
+      - run: zizmor .
