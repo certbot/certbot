@@ -1892,7 +1892,10 @@ class UnregisterTest(unittest.TestCase):
             patch.stop()
 
     def test_abort_unregister(self):
-        self.mocks['account'].AccountFileStorage.return_value = mock.Mock()
+        mocked_storage = mock.MagicMock()
+        mocked_storage.find_all.return_value = [mock.MagicMock()]
+        self.mocks['account'].AccountFileStorage.return_value = mocked_storage
+        self.mocks['_determine_account'].return_value = (mock.MagicMock(), None)
 
         util_mock = self.mocks['get_utility']()
         util_mock.yesno.return_value = False
@@ -1902,6 +1905,8 @@ class UnregisterTest(unittest.TestCase):
 
         res = main.unregister(config, unused_plugins)
         assert res == "Deactivation aborted."
+        self.mocks['_determine_account'].assert_called_once_with(config)
+        self.mocks['client'].Client.assert_not_called()
 
     @mock.patch("certbot._internal.main.display_util.notify")
     def test_unregister(self, mock_notify):
@@ -1909,7 +1914,9 @@ class UnregisterTest(unittest.TestCase):
         mocked_storage.find_all.return_value = ["an account"]
 
         self.mocks['account'].AccountFileStorage.return_value = mocked_storage
-        self.mocks['_determine_account'].return_value = (mock.MagicMock(), "foo")
+        acc = mock.MagicMock()
+        acme = mock.MagicMock()
+        self.mocks['_determine_account'].return_value = (acc, acme)
 
         cb_client = mock.MagicMock()
         self.mocks['client'].Client.return_value = cb_client
@@ -1920,12 +1927,33 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
 
         assert res is None
+        self.mocks['_determine_account'].assert_called_once_with(config)
+        self.mocks['client'].Client.assert_called_once_with(
+            config, acc, None, None, acme=acme)
+        cb_client.acme.deactivate_registration.assert_called_once_with(acc.regr)
         mock_notify.assert_called_once_with("Account deactivated.")
+
+    def test_unregister_selection_error(self):
+        mocked_storage = mock.MagicMock()
+        mocked_storage.find_all.return_value = ["account 1", "account 2"]
+        self.mocks['account'].AccountFileStorage.return_value = mocked_storage
+        self.mocks['_determine_account'].side_effect = ValueError
+
+        util_mock = self.mocks['get_utility']()
+        config = mock.MagicMock()
+
+        with self.assertRaises(ValueError):
+            main.unregister(config, mock.Mock())
+
+        self.mocks['_determine_account'].assert_called_once_with(config)
+        util_mock.yesno.assert_not_called()
+        self.mocks['client'].Client.assert_not_called()
 
     def test_unregister_no_account(self):
         mocked_storage = mock.MagicMock()
         mocked_storage.find_all.return_value = []
         self.mocks['account'].AccountFileStorage.return_value = mocked_storage
+        util_mock = self.mocks['get_utility']()
 
         cb_client = mock.MagicMock()
         self.mocks['client'].Client.return_value = cb_client
@@ -1937,6 +1965,9 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
         m = "Could not find existing account for server https://acme.example.com/directory."
         assert res == m
+        self.mocks['_determine_account'].assert_not_called()
+        util_mock.yesno.assert_not_called()
+        self.mocks['client'].Client.assert_not_called()
         assert cb_client.acme.deactivate_registration.called is False
 
 
