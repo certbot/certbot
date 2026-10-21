@@ -328,9 +328,10 @@ class ClientV2:
         :returns: Tuple of time to attempt renewal, next time to ask for renewal info
 
         :raises errors.ARIError: If an error occurs fetching ARI from the
-            server. Explicit exception chaining is used so the original error
-            can be accessed through the __cause__ attribute on the ARIError if
-            desired.
+            server or the returned suggested renewal window is invalid
+            (its end time is not after its start time). Fetch errors use
+            explicit exception chaining so the original error can be
+            accessed through the __cause__ attribute if desired.
 
         """
         now = datetime.datetime.now()
