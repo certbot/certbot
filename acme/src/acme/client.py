@@ -328,9 +328,10 @@ class ClientV2:
         :returns: Tuple of time to attempt renewal, next time to ask for renewal info
 
         :raises errors.ARIError: If an error occurs fetching ARI from the
-            server. Explicit exception chaining is used so the original error
-            can be accessed through the __cause__ attribute on the ARIError if
-            desired.
+            server or the returned suggested renewal window is invalid
+            (its end time is not after its start time). Fetch errors use
+            explicit exception chaining so the original error can be
+            accessed through the __cause__ attribute if desired.
 
         """
         now = datetime.datetime.now()
@@ -362,6 +363,10 @@ class ClientV2:
 
         start = renewal_info.suggested_window.start # pylint: disable=no-member
         end = renewal_info.suggested_window.end # pylint: disable=no-member
+
+        if end <= start:
+            raise errors.ARIError('suggestedWindow end must be after start',
+                                  now + default_retry_after)
 
         delta_seconds = (end - start).total_seconds()
         random_seconds = random.uniform(0, delta_seconds)
