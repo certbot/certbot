@@ -100,6 +100,23 @@ class DNS(AnnotatedChallenge):
     __slots__ = ('challb', 'domain', 'identifier') # pylint: disable=redefined-slots-in-subclass
     acme_type = challenges.DNS
 
+
+class DNSPersist(AnnotatedChallenge):
+    """Client annotated "dns-persist" ACME challenge"""
+    # pylint: disable=redefined-slots-in-subclass
+    __slots__ = ('challb', 'domain', 'identifier', 'account_key', 'account_hash_prefix',
+        'account_uri')
+    acme_type = challenges.DNSPersist01
+
+    def get_dns_txt_record(self) -> tuple[str, str]:
+        """Returns both the domain and value for the DNS TXT record.
+
+        :rtype: tuple[str, str]
+        """
+        return self.challb.get_dns_txt_record(self.identifier.value, self.account_key,
+            self.account_uri, self.account_hash_prefix)
+
+
 class Other(AnnotatedChallenge):
     """Client annotated ACME challenge of an unknown type."""
     __slots__ = ('challb', 'domain', 'identifier') # pylint: disable=redefined-slots-in-subclass
