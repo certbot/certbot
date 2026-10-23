@@ -658,38 +658,55 @@ class DNSPersistMetadataTest(unittest.TestCase):
 
     def test_valid_challenges(self):
         from acme.challenges import DNSPersist01
-        account_uri = 'https://ca.example/acct/123'
         self.metadata.validate_challenge(DNSPersist01(
-            account_uri=account_uri,
             issuer_domain_names=self.issuer_domain_names))
         self.metadata.validate_challenge(DNSPersist01(
-            account_uri=account_uri,
             issuer_domain_names=self.caa_identities))
+
+        # both the directory's and challenge's issuerDomainNames can have up to 10 domains
+        from acme.client import DNSPersistMetadata
+        max_domain_names = [f'{i}.example.net' for i in range(10)]
+        max_metadata = DNSPersistMetadata('https://ca.example/account-hash/', tuple(max_domain_names), None)
+        max_metadata.validate_challenge(DNSPersist01(
+            issuer_domain_names=max_domain_names))
 
     def test_invalid_challenges(self):
         from acme.challenges import DNSPersist01
-        account_uri = 'https://ca.example/acct/123'
-        # from the RFC section 3.2: When [issuerDomainNames] is available, the client MUST consider
-        # a challenge malformed if any value in [issuerDomainNames] is absent from [the challenge].
+        # from the RFC section 3.2: When [the directory's issuerDomainNames] is available, the
+        # client MUST consider a challenge malformed if any value in [the directory's
+        # issuerDomainNames] is absent from [the challenge's issuerDomainNames].
         with self.assertRaises(errors.MalformedChallengeError):
             self.metadata.validate_challenge(DNSPersist01(
-                account_uri=account_uri,
                 issuer_domain_names=self.issuer_domain_names[1:]))
         with self.assertRaises(errors.MalformedChallengeError):
             self.metadata.validate_challenge(DNSPersist01(
-                account_uri=account_uri,
                 issuer_domain_names=self.issuer_domain_names[:1]))
         with self.assertRaises(errors.MalformedChallengeError):
             self.metadata.validate_challenge(DNSPersist01(
-                account_uri=account_uri,
                 issuer_domain_names=('some.otherdomain.org')))
 
-        # also from 3.2: When [caaIdentities] is available, the client MUST consider a challenge
-        # malformed if any value in [the challenge] is absent from [caaIdentities].
+        # also from 3.2: When [the directory's caaIdentities] is available, the client MUST consider
+        # a challenge malformed if any value in [the challenge's issuerDomainNames] is absent from
+        # [the directory's caaIdentities].
         with self.assertRaises(errors.MalformedChallengeError):
             self.metadata.validate_challenge(DNSPersist01(
-                account_uri='https://ca.example/acct/123',
                 issuer_domain_names=self.issuer_domain_names + ('example.net',)))
+
+        # from 3.1: Clients MUST consider a challenge malformed if the [the challenge's
+        # issuerDomainNames] array is empty or if it contains more than 10 entries.
+
+        # note that because the directory's issuerDomainNames already MUST'nt be empty, 3.1's first
+        # requirement is already satisfied by 3.2. but since we don't raise exceptions on invalid
+        # metadata issuerDomainNames, let's test the case anyway.
+        from acme.client import DNSPersistMetadata
+        empty_metadata = DNSPersistMetadata('https://ca.example/account-hash/', (), None)
+        with self.assertRaises(errors.MalformedChallengeError):
+            empty_metadata.validate_challenge(DNSPersist01(issuer_domain_names=[]))
+        max_domains = [f'{i}.example.net' for i in range(11)]
+        max_metadata = DNSPersistMetadata('https://ca.example/account-hash/', tuple(max_domains), None)
+        with self.assertRaises(errors.MalformedChallengeError):
+            max_metadata.validate_challenge(DNSPersist01(issuer_domain_names=max_domains + ['11.example.net']))
+
 
 def test_renewal_info_path_component():
     from cryptography import x509
