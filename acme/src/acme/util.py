@@ -10,7 +10,7 @@ def map_keys(dikt: Mapping[Any, Any], func: Callable[[Any], Any]) -> dict[Any, A
 
 
 def is_wildcard_domain(domain: str | bytes) -> bool:
-    """"Is domain a wildcard domain?
+    """Is domain a wildcard domain?
 
     :param domain: domain to check
     :type domain: `bytes` or `str`
