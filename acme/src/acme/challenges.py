@@ -507,7 +507,7 @@ class DNSPersist01(Challenge):
 
             <accountHashPrefix><hash-alg>/<base64url hash value>
 
-        :param str name: Domain name being validated.
+        :param str domain: Domain name being validated.
         :param .JWK account_public_key: Account public key.
         :param str account_hash_prefix: The account hash URI prefix defined by the CA.
         :returns: A URI representing the hashed account URI.

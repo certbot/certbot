@@ -48,7 +48,7 @@ class DNSPersistMetadata:
         """Checks whether the challenge is valid with respect to the CA's Directory, as defined in
         the RFC sections 3.1 and 3.2.
 
-        :param .messages.Directory dir: The CA's ACME Directory.
+        :param .challenges.DNSPersist01 chall: The challenge to validate
         :raises .errors.MalformedChallengeError: If the challenge's fields are invalid with respect
             to the ACME Directory
         """
