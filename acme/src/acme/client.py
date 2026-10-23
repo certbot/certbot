@@ -46,12 +46,20 @@ class DNSPersistMetadata:
 
     def validate_challenge(self, chall: challenges.DNSPersist01) -> None:
         """Checks whether the challenge is valid with respect to the CA's Directory, as defined in
-        the RFC section 3.2.
+        the RFC sections 3.1 and 3.2.
 
         :param .messages.Directory dir: The CA's ACME Directory.
         :raises .errors.MalformedChallengeError: If the challenge's fields are invalid with respect
             to the ACME Directory
         """
+        # the challenge's issuerDomainNames mustn't be empty or have more than 10 entries
+        if len(chall.issuer_domain_names) == 0:
+            raise errors.MalformedChallengeError("Invalid dns-persist-01 challenge: challenge's "
+                "issuerDomainNames field must be non-empty")
+        if len(chall.issuer_domain_names) > 10:
+            raise errors.MalformedChallengeError("Invalid dns-persist-01 challenge: challenge's "
+                "issuerDomainNames field must have 10 or fewer entries")
+
         chall_issuer_domain_names = set(chall.issuer_domain_names)
         # the challenge's issuerDomainNames must be a superset of the CA's issuerDomainNames
         if not chall_issuer_domain_names >= self.issuer_domain_names:

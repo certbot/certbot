@@ -494,11 +494,10 @@ class DNSPersist01(Challenge):
     LABEL = "_validation-persist"
     """Label clients prepend to the domain name being validated."""
 
-    account_uri: str = jose.field("accounturi")
     issuer_domain_names: tuple[str, ...] = jose.field("issuerDomainNames")
 
     def hash_account_uri(self, domain: str, account_public_key: jose.JWK,
-                         account_hash_prefix: str) -> str:
+                         account_uri: str, account_hash_prefix: str) -> str:
         """Computes the hashed account information needed to bind our account to the domain. The RFC
         mandates that the CA support SHA256, that the hashed value is:
 
@@ -521,27 +520,32 @@ class DNSPersist01(Challenge):
         digest.update(domain_bytes)
         thumbprint = jose.encode_b64jose(account_public_key.thumbprint())
         digest.update(thumbprint.encode('utf8'))
-        digest.update(self.account_uri.encode('utf8'))
+        digest.update(account_uri.encode('utf8'))
         base64_hash_value = jose.encode_b64jose(digest.finalize())
         return f"{account_hash_prefix}{hash_alg}/{base64_hash_value}"
 
     def get_dns_txt_record(self, name: str, account_public_key: jose.JWK,
-                           account_hash_prefix: str) -> tuple[str, str]:
+                           account_uri: str, account_hash_prefix: str) -> tuple[str, str]:
         """Returns both the domain and value for the DNS TXT record.
 
         :param str name: Domain name being validated.
         :returns: The domain and rdata value for the TXT record.
         :rtype: tuple[str, str]
         """
+        wildcard = False
+        if util.is_wildcard_domain(name):
+            name = name.removeprefix('*.')
+            wildcard = True
+
         accounturi = self.hash_account_uri(name, account_public_key,
-            account_hash_prefix)
+            account_uri, account_hash_prefix)
+
         rdata_parts = [
             self.issuer_domain_names[0],
             "accounturi={0}".format(accounturi),
         ]
 
-        if util.is_wildcard_domain(name):
-            name = name.removeprefix('*.')
+        if wildcard:
             rdata_parts.append("policy=wildcard")
 
         domain = "{0}.{1}".format(self.LABEL, name)
