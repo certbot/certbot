@@ -642,7 +642,7 @@ class ClientV2Test(unittest.TestCase):
         })
         metadata = self.client.get_dns_persist_metadata()
         assert metadata.issuer_domain_names == set(('example.ca',))
-        assert metadata.account_hash_prefix == 'https://ca.example/account-hash'
+        assert metadata.account_hash_prefix == 'https://ca.example/account-hash/'
         assert metadata.caa_identities is None
 
 class DNSPersistMetadataTest(unittest.TestCase):
@@ -702,10 +702,10 @@ class DNSPersistMetadataTest(unittest.TestCase):
         empty_metadata = DNSPersistMetadata('https://ca.example/account-hash/', (), None)
         with self.assertRaises(errors.MalformedChallengeError):
             empty_metadata.validate_challenge(DNSPersist01(issuer_domain_names=[]))
-        max_domains = [f'{i}.example.net' for i in range(11)]
+        max_domains = [f'{i}.example.net' for i in range(10)]
         max_metadata = DNSPersistMetadata('https://ca.example/account-hash/', tuple(max_domains), None)
         with self.assertRaises(errors.MalformedChallengeError):
-            max_metadata.validate_challenge(DNSPersist01(issuer_domain_names=max_domains + ['11.example.net']))
+            max_metadata.validate_challenge(DNSPersist01(issuer_domain_names=max_domains + ['10.example.net']))
 
 
 def test_renewal_info_path_component():
