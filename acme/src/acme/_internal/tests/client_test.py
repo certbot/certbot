@@ -621,7 +621,7 @@ class ClientV2Test(unittest.TestCase):
         invalid_meta_fields: list[dict[str, Any]] = [
             {},
             {'issuerDomainNames': ('example.ca',)},
-            {'accountHashPrefix': 'https://ca.example/account-hash'}
+            {'accountHashPrefix': 'https://ca.example/account-hash/'}
         ]
 
         for meta_fields in invalid_meta_fields:
@@ -638,7 +638,7 @@ class ClientV2Test(unittest.TestCase):
 
         self.directory.meta = Directory.Meta.from_json({
             'issuerDomainNames': ('example.ca',),
-            'accountHashPrefix': 'https://ca.example/account-hash',
+            'accountHashPrefix': 'https://ca.example/account-hash/',
         })
         metadata = self.client.get_dns_persist_metadata()
         assert metadata.issuer_domain_names == set(('example.ca',))
