@@ -22,8 +22,7 @@ HTTP01 = challenges.HTTP01(
     token=b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 DNS01 = challenges.DNS01(token=b"17817c66b60ce2e4012dfad92657527a")
 DNS01_2 = challenges.DNS01(token=b"cafecafecafecafecafecafe0feedbac")
-DNS_PERSIST_01 = challenges.DNSPersist01(
-    issuer_domain_names=('ca.example',))
+DNS_PERSIST_01 = challenges.DNSPersist01(issuer_domain_names=('ca.example',))
 
 CHALLENGES = [HTTP01, DNS01]
 
@@ -52,9 +51,17 @@ DNS_PERSIST_01_P = chall_to_challb(DNS_PERSIST_01, messages.STATUS_PENDING)
 def gen_achall(challb: ChallengeBody, fqdn: str,
                account_hash_prefix: str | None = None) -> AnnotatedChallenge:
     """Construct an AnnotatedChallenge for the given ChallengeBody"""
+    from acme.client import DNSPersistMetadata
     ident = messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=fqdn)
     acme_client = mock.MagicMock()
-    acme_client.directory.meta.account_hash_prefix = account_hash_prefix
+    if account_hash_prefix is None:
+        acme_client.get_dns_persist_metadata.side_effect = Exception()
+    else:
+        acme_client.get_dns_persist_metadata.return_value = DNSPersistMetadata(
+            account_hash_prefix,
+            ('ca.example',),
+            None
+        )
     account = mock.MagicMock()
     account.regr.uri = ACCOUNT_URI
     account.key = JWK

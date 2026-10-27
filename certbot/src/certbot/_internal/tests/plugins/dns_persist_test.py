@@ -82,6 +82,12 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             out = [line.strip() for line in f.readlines()]
             assert out == expected_out
 
+    def test_setup_with_hook_err(self):
+        self.config.dns_persist_setup = True
+        self.config.dns_persist_setup_hook = '/bin/false'
+        with pytest.raises(errors.PluginError):
+            self.auth.perform(self.achalls)
+
     def test_prepare_bad_hook(self):
         self.config.dns_persist_setup = True
         self.config.dns_persist_setup_hook = os.path.abspath(os.sep)  # is / on UNIX
