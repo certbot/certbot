@@ -52,17 +52,16 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
 
         with the following value:
 
-        {validation}""")
+        {validation}\n""")
     _SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS: str = dedent("""\
         (This must be set up in addition to the previous challenges; do not remove, replace, or undo
         the previous challenge tasks yet. Note that you might be asked to create multiple distinct
-        TXT records with the same name. This is permitted by DNS standards.)""")
+        TXT records with the same name. This is permitted by DNS standards.)\n""")
     _FINAL_DNS_INSTRUCTIONS: str = dedent("""\
         Before continuing, verify the TXT record has been deployed. Depending on the DNS provider,
-        this may take some time, from a few seconds to multiple minutes. You can check if it has
-        finished deploying with aid of online tools, such as the Google Admin Toolbox:
-        https://toolbox.googleapps.com/apps/dig/#TXT/{domain}. Look for one or more bolded line(s)
-        below the line ';ANSWER'. It should show the value(s) you've just added.""")
+        this may take some time, from a few seconds to multiple minutes. Please refer to the
+        documentation of your DNS provider for more information on checking currently-deployed DNS
+        records.\n""")
 
     def __init__(self, config: NamespaceConfig, name: str) -> None:
         super().__init__(config, name)
@@ -73,7 +72,8 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
     @override
     def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         add('setup',
-            help='Setup the DNS TXT records before performing the ACME challenges')
+            help='Setup the DNS TXT records before performing the ACME challenges',
+            action='store_true')
         add('setup-hook',
             help='Path or command to execute for the setup script')
         add('setup-cleanup-hook',
@@ -145,7 +145,9 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
                     'CERTBOT_DOMAIN': domain,
                     'CERTBOT_VALIDATION': validation,
                 }
-                self._execute_hook('setup-hook', env)
+                if not self._execute_hook('setup-hook', env):
+                    raise errors.PluginError(
+                        f"Failed to run dns-persist-setup-hook on domain {domain}")
             else:
                 msg = self._DNS_CHALLENGE_INSTRUCTIONS.format(domain=domain, validation=validation)
                 if i > 0:
@@ -159,7 +161,9 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
             self._execute_hook('setup-cleanup-hook', {})
         self.reverter.recovery_routine()
 
-    def _execute_hook(self, hook_name: str, new_env: dict[str, str]) -> tuple[str, str]:
+    def _execute_hook(self, hook_name: str, new_env: dict[str, str]) -> bool:
+        '''Runs the given script with the given env, and returns a tuple of whether the script
+        succeeded (i.e. had returncode 0)'''
         env = util.env_no_snap_for_external_calls()
         env.update(new_env)
         returncode, err, out = misc.execute_command_status(
@@ -170,4 +174,4 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         display_ops.report_executed_command(
             f"Hook '--dns-persist-{hook_name}'", returncode, out, err)
 
-        return err, out
+        return returncode == 0
