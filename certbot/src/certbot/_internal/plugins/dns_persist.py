@@ -12,7 +12,6 @@ from certbot.configuration import NamespaceConfig
 from certbot.plugins import common
 from certbot.display import ops as display_ops
 from certbot.display import util as display_util
-from typing_extensions import override
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +68,6 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         self.reverter.recovery_routine()
 
     @classmethod
-    @override
     def add_parser_arguments(cls, add: Callable[..., None]) -> None:
         add('setup',
             help='Setup the DNS TXT records before performing the ACME challenges',
@@ -79,7 +77,6 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
         add('setup-cleanup-hook',
             help='Path or command to execute for the cleanup script')
 
-    @override
     def prepare(self) -> None:
         setup_hook_provided = any(
             self.conf(arg) is not None for arg in ['setup-hook', 'setup-cleanup-hook']
@@ -98,13 +95,11 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
                     hook_prefix = self.option_name(name)[:-len('-hook')]
                     hooks.validate_hook(hook, hook_prefix)
 
-    @override
     def more_info(self) -> str:
         return (
             'This plugin allows the user to create a one-time DNS record that permits indefinite'
             'automated renewals, even for wildcard domains.')
 
-    @override
     def auth_hint(self, failed_achalls: list[achallenges.AnnotatedChallenge]) -> str:
         domains = [achall.identifier.value for achall in failed_achalls]
         return dedent(f"""
@@ -114,11 +109,9 @@ class Authenticator(common.Plugin, interfaces.Authenticator):
             command with the --dns-persist-setup flag), or try waiting longer for DNS propagation on
             the next attempt.""")
 
-    @override
     def get_chall_pref(self, identifier: str) -> Iterable[type[Challenge]]:
         return [challenges.DNSPersist01]
 
-    @override
     def perform(self, achalls: list[achallenges.AnnotatedChallenge]) -> list[ChallengeResponse]:
         persist_achalls: list[achallenges.DNSPersist] = []
         for achall in achalls:
