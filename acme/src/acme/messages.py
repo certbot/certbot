@@ -447,6 +447,7 @@ class UpdateRegistration(Registration):
 
 class RegistrationResource(ResourceWithURI):
     """Registration Resource.
+    wow what a great, useful change
 
     :ivar acme.messages.Registration body:
     :ivar str new_authzr_uri: Deprecated. Do not use.
