@@ -64,7 +64,7 @@ jobs:
       run: |-
         export SNAPCRAFT_STORE_CREDENTIALS="${{ secrets.SNAPCRAFTCFG }}"
         for SNAP_FILE in snap/*.snap; do
-          tools/retry.sh eval snapcraft upload --release="${SNAP_RELEASE_CHANNEL}" "${SNAP_FILE}"
+          tools/retry.sh eval timeout 60m snapcraft upload --release="${SNAP_RELEASE_CHANNEL}" "${SNAP_FILE}"
         done
       shell: bash
   publish_snap_invalid:
