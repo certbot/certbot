@@ -108,6 +108,31 @@ class OSCPTestCryptography(unittest.TestCase):
         assert mocks['mock_check'].call_args_list[3][0][0].public_numbers() == \
                          responder.public_key().public_numbers()
 
+    def test_invalid_der_response_is_not_fatal(self):
+        # An invalid response from an OCSP responder must not break certbot
+        # certificates; the certificate's revocation remains unknown.
+        with mock.patch('certbot._internal.ocsp.requests.post',
+                        return_value=mock.Mock(status_code=200, content=b'not DER')):
+            with self.assertLogs('certbot._internal.ocsp', level='WARNING') as captured:
+                revoked = self.checker.ocsp_revoked(self.cert_obj)
+
+        assert revoked is False
+        assert 'Could not parse OCSP response' in captured.output[0]
+
+    def test_noncompliant_ocsp_signature_algorithm_is_not_fatal(self):
+        # Some OCSP responses have malformed ECDSA AlgorithmIdentifier
+        # parameters, resulting in ValueError during ASN.1 parsing.
+        with _ocsp_mock(ocsp_lib.OCSPCertStatus.REVOKED,
+                        ocsp_lib.OCSPResponseStatus.SUCCESSFUL) as mocks:
+            mocks['mock_response'].side_effect = ValueError(
+                'error parsing asn1 value: ParseError { kind: ExtraData, '
+                'location: ["BasicOCSPResponse::signature_algorithm"] }')
+            with self.assertLogs('certbot._internal.ocsp', level='WARNING'):
+                revoked = self.checker.ocsp_revoked(self.cert_obj)
+            mocks['mock_check'].assert_not_called()
+
+        assert revoked is False
+
     def test_revoke_resiliency(self):
         # Server return an invalid HTTP response
         with _ocsp_mock(ocsp_lib.OCSPCertStatus.UNKNOWN, ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
@@ -192,7 +217,7 @@ class TestDeprecation:
 
     def test_no_changes(self):
         from certbot._internal import ocsp
-        expected_hash = '4f595b3c6e63749af1f71b5b4890b94e04734bb75f8bff95cf7d7a7e4752d5c1'
+        expected_hash = 'b512d6d665312d405c858e84ea1a9f1f78e8310116ee3ec42c5fbca683e6de44'
         failure_message = ('Despite being prefixed by _internal, certbot._internal.ocsp is still '
             'part of our public API while certbot.ocsp exists. You are free to make changes to '
             'this file and update the hash in this test however, please be sure your changes do '
