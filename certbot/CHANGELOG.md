@@ -4,6 +4,18 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.9.0 - 2026-10-28
+
+### Added
+
+- Added an OCI image source label to Docker images, allowing third-party tools such as Renovate to discover the source repository. ([#10808](https://github.com/certbot/certbot/issues/10808))
+
+### Fixed
+
+- Fixes a bug where certbot would sometimes incorrectly pass failed SANs as successfully renewed SANs to renewal hooks. ([#10780](https://github.com/certbot/certbot/issues/10780))
+- The account to deactivate is selected before Certbot asks for irreversible deactivation confirmation.
+
+
 ## 5.8.0 - 2026-09-01
 
 ### Changed
