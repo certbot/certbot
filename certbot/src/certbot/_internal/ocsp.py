@@ -114,8 +114,9 @@ def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout:
     try:
         response_ocsp = ocsp.load_der_ocsp_response(response.content)
     except ValueError as error:
-        # Malformed OCSP responses (including invalid signature algorithm ASN.1)
-        # should not prevent other certificates from being listed or renewed.
+        # Malformed OCSP responses (including invalid ASN.1 in
+        # BasicOCSPResponse::signature_algorithm) should not prevent other
+        # certificates from being listed or renewed.
         logger.warning("Could not parse OCSP response for %s: %s", cert_path, error)
         return False
 

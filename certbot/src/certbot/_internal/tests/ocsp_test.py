@@ -217,7 +217,7 @@ class TestDeprecation:
 
     def test_no_changes(self):
         from certbot._internal import ocsp
-        expected_hash = 'b512d6d665312d405c858e84ea1a9f1f78e8310116ee3ec42c5fbca683e6de44'
+        expected_hash = 'dc0cef0f46c48537b360e1ec93ab959f55c5af52ad750f88fd3a4d24ec5b36fe'
         failure_message = ('Despite being prefixed by _internal, certbot._internal.ocsp is still '
             'part of our public API while certbot.ocsp exists. You are free to make changes to '
             'this file and update the hash in this test however, please be sure your changes do '
