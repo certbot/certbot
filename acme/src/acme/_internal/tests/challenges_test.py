@@ -1,6 +1,7 @@
 """Tests for acme.challenges."""
+import copy
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 import unittest
 from unittest import mock
 import urllib.parse as urllib_parse
@@ -142,6 +143,95 @@ class DNS01Test(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.challenges import DNS01
         hash(DNS01.from_json(self.jmsg))
+
+
+class DNSPersist01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNSPersist01
+        self.jmsg: dict[str, Any] = {
+            'type': 'dns-persist-01',
+            'issuerDomainNames': ['authority.example', 'ca.example.net']
+        }
+        self.msg = DNSPersist01(issuer_domain_names=tuple(self.jmsg['issuerDomainNames']))
+
+    def test_to_partial_json(self):
+        expected_json = copy.deepcopy(self.jmsg)
+        # josepy converts lists into tuples
+        expected_json['issuerDomainNames'] = tuple(expected_json['issuerDomainNames'],)
+        assert expected_json == self.msg.to_partial_json()
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNSPersist01
+        hash(DNSPersist01.from_json(self.jmsg))
+
+    def test_from_json(self):
+        from acme.challenges import DNSPersist01
+        assert self.msg == DNSPersist01.from_json(self.jmsg)
+
+    def test_example_from_rfc(self):
+        # pulled from https://www.ietf.org/archive/id/draft-ietf-acme-dns-persist-02.html#section-10.2
+        key = test_util.load_rfc7638_rsa_key()
+        prefix ='https://ca.example/account-hash/'
+        account_uri = 'https://ca.example/acct/123'
+        (domain, rdata) = self.msg.get_dns_txt_record('example.com', key,
+            account_uri, prefix)
+        assert domain == '_validation-persist.example.com'
+        assert rdata == ("authority.example;"
+        " accounturi=https://ca.example/account-hash/"
+        "sha-256/5SQm7n6tPh2-PlLbCKGnViTXX5z19SCN4cPGQHSk-kw")
+
+    def test_wildcard(self):
+        # pulled from https://www.ietf.org/archive/id/draft-ietf-acme-dns-persist-02.html#name-wildcard-validation-example
+        name = '*.example.com'
+        key = test_util.load_rfc7638_rsa_key()
+        prefix ='https://ca.example/account-hash/'
+        account_uri = 'https://ca.example/acct/123'
+        (domain, rdata) = self.msg.get_dns_txt_record(name, key,
+            account_uri, prefix)
+        assert domain == '_validation-persist.example.com'
+        assert rdata == ("authority.example;"
+            " accounturi=https://ca.example/account-hash/"
+            "sha-256/5SQm7n6tPh2-PlLbCKGnViTXX5z19SCN4cPGQHSk-kw;"
+            " policy=wildcard")
+
+    def test_hash_function(self):
+        thumbprint = test_util.load_rfc7638_rsa_key().thumbprint()
+        encoded_thumbprint = jose.encode_b64jose(thumbprint)
+        mocked_result = b'foo'
+        b64_mocked_result = jose.encode_b64jose(mocked_result)
+        mock_digest = mock.MagicMock()
+        mock_digest.update = mock.MagicMock()
+        mock_digest.finalize = mock.MagicMock(return_value=mocked_result)
+        account_uri = 'https://ca.example/acct/123'
+        with mock.patch("acme.challenges.hashes.Hash") as mock_hash:
+            mock_hash.return_value = mock_digest
+            mock_key = mock.MagicMock()
+            mock_key.thumbprint = mock.MagicMock(return_value=thumbprint)
+            prefix = 'https://ca.example/account-hash/'
+            result = self.msg.hash_account_uri('example.com', mock_key, account_uri, prefix)
+
+        mock_digest.update.assert_has_calls([
+            mock.call(bytes([0x0b])),
+            mock.call(b'example.com'),
+            mock.call(encoded_thumbprint.encode('utf8')),
+            mock.call(account_uri.encode('utf8'))
+        ])
+        assert result == f'https://ca.example/account-hash/sha-256/{b64_mocked_result}'
+
+    def test_response(self):
+        from acme.challenges import DNSPersist01Response
+        assert isinstance(self.msg.response(), DNSPersist01Response)
+
+
+class DNSPersist01ResponseTest(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNSPersist01Response
+        self.response = DNSPersist01Response()
+
+    def test_empty_json(self):
+        assert {} == self.response
 
 
 class HTTP01ResponseTest(unittest.TestCase):
