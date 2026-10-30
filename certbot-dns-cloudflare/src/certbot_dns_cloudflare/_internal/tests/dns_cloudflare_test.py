@@ -7,6 +7,8 @@ from unittest import mock
 
 import cloudflare
 import pytest
+import dns.exception
+import dns.name
 
 from certbot import errors
 from certbot.compat import os
@@ -112,6 +114,44 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
                                "cloudflare_api_key": API_KEY}, self.config.cloudflare_credentials)
         with pytest.raises(errors.PluginError):
             self.auth.perform([self.achall])
+
+    def test_check_cname_flag_initialization(self):
+        from certbot_dns_cloudflare._internal.dns_cloudflare import Authenticator
+
+        dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY,
+                              "cloudflare_check_cname": "true"},
+                              self.config.cloudflare_credentials)
+
+        auth = Authenticator(self.config, "cloudflare")
+        auth._setup_credentials()
+        assert auth._get_cloudflare_client().check_cname is True
+
+        dns_test_common.write({"cloudflare_api_token": API_TOKEN,
+                              "cloudflare_check_cname": "true"},
+                              self.config.cloudflare_credentials)
+        auth = Authenticator(self.config, "cloudflare")
+        auth._setup_credentials()
+        assert auth._get_cloudflare_client().check_cname is True
+
+        dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY,
+                              "cloudflare_check_cname": "false"},
+                              self.config.cloudflare_credentials)
+        auth = Authenticator(self.config, "cloudflare")
+        auth._setup_credentials()
+        assert auth._get_cloudflare_client().check_cname is False
+
+        dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY},
+                              self.config.cloudflare_credentials)
+        auth = Authenticator(self.config, "cloudflare")
+        auth._setup_credentials()
+        assert auth._get_cloudflare_client().check_cname is False
+
+        dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY,
+                               "cloudflare_check_cname": "some_other_value"},
+                              self.config.cloudflare_credentials)
+        auth = Authenticator(self.config, "cloudflare")
+        auth._setup_credentials()
+        assert auth._get_cloudflare_client().check_cname is False
 
     def test_get_cloudflare_client_with_api_token(self):
         from certbot_dns_cloudflare._internal.dns_cloudflare import Authenticator
@@ -320,6 +360,68 @@ class CloudflareClientTest(unittest.TestCase):
 
         self.cf.dns.records.list.assert_called_once()
         self.cf.dns.records.delete.assert_not_called()
+
+    @mock.patch('certbot_dns_cloudflare._internal.dns_cloudflare.dns.resolver')
+    def test_find_target_with_cname(self, mock_dns_resolver):
+        self.cloudflare_client = self.cloudflare_client.__class__(EMAIL, API_KEY,
+                                                                  check_cname='true')
+        self.cloudflare_client.cf = self.cf
+
+        # dnspython hands back an absolute dns.name.Name, which renders with a
+        # trailing dot that Cloudflare's exact name filter would never match.
+        cname = dns.name.from_text('cname.example.com')
+        assert str(cname) == 'cname.example.com.'
+        mock_dns_resolver.resolve.return_value = [mock.MagicMock(target=cname)]
+        self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
+
+        target = self.cloudflare_client._find_target(DOMAIN, self.record_name)
+
+        mock_dns_resolver.resolve.assert_called_with(self.record_name, 'CNAME')
+        self.cf.zones.list.assert_called_with(name='cname.example.com', per_page=1)
+        assert target.record_name == 'cname.example.com'
+        assert target.zone_id == self.zone_id
+
+    @mock.patch('certbot_dns_cloudflare._internal.dns_cloudflare.dns.resolver')
+    def test_find_target_no_cname(self, mock_dns_resolver):
+        self.cloudflare_client = self.cloudflare_client.__class__(EMAIL, API_KEY,
+                                                                  check_cname='true')
+        self.cloudflare_client.cf = self.cf
+
+        mock_dns_resolver.resolve.side_effect = dns.exception.DNSException
+        self.cf.zones.list.return_value = [_mock_zone(self.zone_id)]
+
+        target = self.cloudflare_client._find_target(DOMAIN, self.record_name)
+
+        mock_dns_resolver.resolve.assert_called_with(self.record_name, 'CNAME')
+        self.cf.zones.list.assert_called_with(name=DOMAIN, per_page=1)
+        assert target.record_name == self.record_name
+        assert target.zone_id == self.zone_id
+
+
+class CloudflareClientTargetTest(unittest.TestCase):
+
+    def setUp(self):
+        from certbot_dns_cloudflare._internal.dns_cloudflare import _CloudflareClientTarget
+        self.cloudflare_client_target_class = _CloudflareClientTarget
+
+    def test_cloudflare_client_target_str(self):
+        # Create an instance with a known zone_id
+        target = self.cloudflare_client_target_class(zone_id='test_zone_id_123', record_name='test_record')
+        assert str(target) == 'test_zone_id_123'
+
+        # Create an instance with an empty zone_id
+        target_empty = self.cloudflare_client_target_class(zone_id='', record_name='test_record_empty')
+        assert str(target_empty) == ''
+
+
+    def test_cloudflare_client_target_bool(self):
+        # Test case where zone_id is a non-empty string
+        target_true = self.cloudflare_client_target_class(zone_id='test_zone_id_abc', record_name='test_record')
+        assert bool(target_true) is True
+
+        # Test case where zone_id is an empty string
+        target_false_empty = self.cloudflare_client_target_class(zone_id='', record_name='test_record_empty')
+        assert bool(target_false_empty) is False
 
 
 if __name__ == "__main__":
