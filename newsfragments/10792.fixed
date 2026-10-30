@@ -1,0 +1,1 @@
+Handle malformed OCSP responses without interrupting certificate checks.
