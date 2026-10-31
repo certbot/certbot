@@ -1,0 +1,1 @@
+Fixed the Google Cloud DNS plugin appending unquoted values onto the existing (quoted) rrdatas when adding a TXT record to a name with an existing RRset, which prevented later cleanup from matching and left stale _acme-challenge records in the zone.
