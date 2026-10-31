@@ -906,14 +906,19 @@ class RenewableCert(interfaces.RenewableCert):
         filename = "{0}{1}.pem".format(kind, version)
         # Relative rather than absolute target directory
         target_directory = os.path.dirname(filesystem.readlink(link))
-        # TODO: it could be safer to make the link first under a temporary
-        #       filename, then unlink the old link, then rename the new link
-        #       to the old link; this ensures that this process is able to
-        #       create symlinks.
+        new_target = os.path.join(target_directory, filename)
+
         # TODO: we might also want to check consistency of related links
         #       for the other corresponding items
-        os.unlink(link)
-        os.symlink(os.path.join(target_directory, filename), link)
+        # Create the new link under a temporary name and rename it over the
+        # old link so the transition is atomic. This avoids a window where
+        # the link does not exist, and removes the dependence on live/ being
+        # 0o700 to prevent an attacker-planted symlink from winning the race.
+        temp_link = link + ".new"
+        if os.path.lexists(temp_link):
+            os.unlink(temp_link)
+        os.symlink(new_target, temp_link)
+        filesystem.replace(temp_link, link)
 
     def update_all_links_to(self, version: int) -> None:
         """Change all member objects to point to the specified version.
