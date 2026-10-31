@@ -29,6 +29,13 @@ server and optional port that supports RFC 2136 Dynamic Updates, the name
 of the TSIG key, the TSIG key secret itself, the algorithm used if it's
 different to HMAC-MD5, and optionally whether to sign the initial SOA query.
 
+Some providers differentiate between the DNS server that serves DNS queries
+and the server that accepts DNS updates, so an optional separate update server
+may be specified.
+Optional protocol preferences for communication with the DNS server and
+update server may be specified, possible values being: ``tcp_first``,
+``tcp_only``, ``udp_first`` and ``udp_only``.
+
 .. code-block:: ini
    :name: credentials.ini
    :caption: Example credentials file:
@@ -47,6 +54,15 @@ AmKd7ak51vWKgSl12ib86oQRPkpDjg==
    # TSIG sign SOA query (optional, default: false)
    dns_rfc2136_sign_query = false
 
+   # Target Update server (IPv4 or IPv6 address, not a hostname)
+   # (optional, default: same as dns_rfc2136_server)
+   dns_rfc2136_update_server = 192.0.2.1
+   # Protocol preference for target DNS server communication
+   # (optional, default: tcp_first)
+   dns_rfc2136_server_proto_pref = tcp_first
+   # Protocol preference for update server communication
+   # (optional, default: tcp_only)
+   dns_rfc2136_update_server_proto_pref = tcp_only
 
 The path to this file can be provided interactively or using the
 ``--dns-rfc2136-credentials`` command-line argument. Certbot records the
