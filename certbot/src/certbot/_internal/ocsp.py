@@ -78,7 +78,7 @@ def _determine_ocsp_server(cert_path: str) -> tuple[Optional[str], Optional[str]
 
         url = descriptions[0].access_location.value
     except (x509.ExtensionNotFound, IndexError):
-        logger.info("Cannot extract OCSP URI from %s", cert_path)
+        logger.debug("Cannot extract OCSP URI from %s", cert_path)
         return None, None
 
     url = url.rstrip()
@@ -86,7 +86,7 @@ def _determine_ocsp_server(cert_path: str) -> tuple[Optional[str], Optional[str]
 
     if host:
         return url, host
-    logger.info("Cannot process OCSP host from URL (%s) in certificate at %s", url, cert_path)
+    logger.debug("Cannot process OCSP host from URL (%s) in certificate at %s", url, cert_path)
     return None, None
 
 
