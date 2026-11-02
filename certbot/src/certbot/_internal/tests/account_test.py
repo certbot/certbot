@@ -172,6 +172,21 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
             mock_listdir.return_value = ["x", "y", "z"]
             assert ["x", "z"] == self.storage.find_all()
 
+    def test_find_all_skips_corrupt_account(self):
+        # An account with a broken metadata file must not crash account
+        # enumeration: it is skipped like any other unloadable account.
+        account_path = os.path.join(self.config.accounts_dir, self.acc.id)
+        filesystem.makedirs(account_path)
+        with open(os.path.join(account_path, "private_key.json"), "w") as key_file:
+            key_file.write(KEY.json_dumps())
+        with open(os.path.join(account_path, "regr.json"), "w") as regr_file:
+            regr_file.write('{"uri": "https://example.com/acme/account/1", "body": {}}')
+        with open(os.path.join(account_path, "meta.json"), "w") as corrupt_meta:
+            corrupt_meta.write("{invalid json")
+        assert [] == self.storage.find_all()
+        with pytest.raises(errors.AccountStorageError):
+            self.storage.load(self.acc.id)
+
     def test_load_non_existent_raises_error(self):
         with pytest.raises(errors.AccountNotFound):
             self.storage.load("missing")
