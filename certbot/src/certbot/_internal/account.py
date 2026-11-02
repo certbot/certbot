@@ -220,7 +220,7 @@ class AccountFileStorage(interfaces.AccountStorage):
                 key = jose.JWK.json_loads(key_file.read())
             with open(self._metadata_path(account_dir_path)) as metadata_file:
                 meta = Account.Meta.json_loads(metadata_file.read())
-        except OSError as error:
+        except (OSError, jose.errors.DeserializationError) as error:
             raise errors.AccountStorageError(error)
 
         return Account(regr, key, meta)
