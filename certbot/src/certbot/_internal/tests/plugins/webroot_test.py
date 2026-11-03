@@ -200,8 +200,19 @@ class AuthenticatorTest(unittest.TestCase):
                 self.auth.perform([])
         filesystem.chmod(self.path, 0o700)
 
+    @unittest.skipIf(not filesystem.POSIX_MODE, reason='Test specific to Linux')
+    @mock.patch("os.fchown")
+    def test_failed_chown(self, mock_fchown):
+        mock_fchown.side_effect = OSError(errno.EACCES, "msg")
+        self.auth.perform([self.achall])  # exception caught and logged
+        # The directories were still created, and are cleaned up afterwards.
+        assert os.path.isdir(self.root_challenge_path)
+        self.auth.cleanup([self.achall])
+        assert not os.path.exists(self.partial_root_challenge_path)
+
+    @unittest.skipIf(filesystem.POSIX_MODE, reason='Test specific to Windows')
     @mock.patch("certbot._internal.plugins.webroot.filesystem.copy_ownership_and_apply_mode")
-    def test_failed_chown(self, mock_ownership):
+    def test_failed_chown_windows(self, mock_ownership):
         mock_ownership.side_effect = OSError(errno.EACCES, "msg")
         self.auth.perform([self.achall])  # exception caught and logged
 

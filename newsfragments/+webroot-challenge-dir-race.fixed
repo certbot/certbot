@@ -1,0 +1,1 @@
+Fixes a race condition in the webroot plugin where, if the webroot could be modified by a less privileged user while Certbot ran, the ownership and mode of an unintended file could be changed instead of those of the challenge directory Certbot had just created.

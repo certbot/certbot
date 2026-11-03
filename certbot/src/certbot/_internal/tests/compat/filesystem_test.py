@@ -445,6 +445,110 @@ class CopyOwnershipAndModeTest(test_util.TempDirTestCase):
         assert filesystem.check_mode(dst, 0o700) is True
 
 
+class MkdirCopyOwnershipAndApplyModeTest(test_util.TempDirTestCase):
+    """Tests about mkdir_copy_ownership_and_apply_mode"""
+    def setUp(self):
+        super().setUp()
+        self.parent = os.path.join(self.tempdir, 'parent')
+        filesystem.mkdir(self.parent)
+        self.dst = os.path.join(self.parent, 'new')
+        # A file that must never be touched, as the swapped in symlinks point to it.
+        self.victim = os.path.join(self.tempdir, 'victim')
+        util.safe_open(self.victim, 'w', chmod=0o600).close()
+        # Captured before any test patches it.
+        self.real_mkdir = filesystem.os.mkdir
+
+    def _call(self):
+        filesystem.mkdir_copy_ownership_and_apply_mode(
+            self.dst, self.parent, 0o755, copy_user=True, copy_group=True)
+
+    def test_creates_directory(self):
+        filesystem.mkdir_copy_ownership_and_apply_mode(
+            self.dst, self.parent, 0o750, copy_user=True, copy_group=True)
+
+        assert os.path.isdir(self.dst)
+        assert not os.path.islink(self.dst)
+        assert filesystem.check_mode(self.dst, 0o750)
+        assert filesystem.has_same_ownership(self.dst, self.parent)
+
+    @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
+    def test_copies_given_ownership(self):
+        with mock.patch('os.fchown') as mock_fchown:
+            with mock.patch('os.stat') as mock_stat:
+                mock_stat.return_value.st_uid = 50
+                mock_stat.return_value.st_gid = 51
+                filesystem.mkdir_copy_ownership_and_apply_mode(
+                    self.dst, self.victim, 0o755, copy_user=True, copy_group=False)
+                filesystem.mkdir_copy_ownership_and_apply_mode(
+                    self.dst + '2', self.victim, 0o755, copy_user=False, copy_group=True)
+
+        assert mock_fchown.call_args_list[0][0][1:] == (50, -1)
+        assert mock_fchown.call_args_list[1][0][1:] == (-1, 51)
+
+    def test_existing_directory(self):
+        filesystem.mkdir(self.dst)
+        with pytest.raises(FileExistsError):
+            self._call()
+
+    @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
+    def test_missing_parent(self):
+        self.dst = os.path.join(self.tempdir, 'missing', 'new')
+        with pytest.raises(FileNotFoundError):
+            self._call()
+
+    @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
+    def test_ownership_failure(self):
+        with mock.patch('os.fchown', side_effect=PermissionError(errno.EPERM, 'msg')):
+            with pytest.raises(filesystem.OwnershipError):
+                self._call()
+        # Directory creation succeeded and callers rely on that to clean it up.
+        assert os.path.isdir(self.dst)
+
+    @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
+    def test_ownership_failure_windows(self):
+        with mock.patch('certbot.compat.filesystem.copy_ownership_and_apply_mode',
+                        side_effect=OSError(errno.EACCES, 'msg')):
+            with pytest.raises(filesystem.OwnershipError):
+                self._call()
+        # Directory creation succeeded and callers rely on that to clean it up.
+        assert os.path.isdir(self.dst)
+
+    @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
+    def test_new_directory_replaced_by_symlink(self):
+        def mkdir_then_swap(name, mode, dir_fd=None):
+            self.real_mkdir(name, mode, dir_fd=dir_fd)
+            os.rmdir(name, dir_fd=dir_fd)
+            os.symlink(self.victim, name, dir_fd=dir_fd)
+
+        with mock.patch('os.mkdir', side_effect=mkdir_then_swap):
+            with pytest.raises(filesystem.OwnershipError):
+                self._call()
+
+        # The symlink must not have been followed.
+        assert filesystem.check_mode(self.victim, 0o600)
+
+    @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
+    def test_parent_replaced_by_symlink(self):
+        other = os.path.join(self.tempdir, 'other')
+        filesystem.mkdir(other)
+        # An existing file with the same name as the new directory.
+        decoy = os.path.join(other, 'new')
+        util.safe_open(decoy, 'w', chmod=0o600).close()
+        moved = os.path.join(self.tempdir, 'moved')
+
+        def mkdir_then_swap_parent(name, mode, dir_fd=None):
+            self.real_mkdir(name, mode, dir_fd=dir_fd)
+            filesystem.replace(self.parent, moved)
+            os.symlink(other, self.parent)
+
+        with mock.patch('os.mkdir', side_effect=mkdir_then_swap_parent):
+            self._call()
+
+        # Only the directory that was created got its mode and ownership set.
+        assert filesystem.check_mode(decoy, 0o600)
+        assert filesystem.check_mode(os.path.join(moved, 'new'), 0o755)
+
+
 class CheckPermissionsTest(test_util.TempDirTestCase):
     """Tests relative to functions that check modes."""
     def setUp(self):
