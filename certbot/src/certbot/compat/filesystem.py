@@ -129,6 +129,72 @@ def copy_ownership_and_apply_mode(src: str, dst: str, mode: int,
     chmod(dst, mode)
 
 
+class OwnershipError(OSError):
+    """
+    Raised by :func:`mkdir_copy_ownership_and_apply_mode` when the directory was created
+    but its ownership or mode could not be set.
+    """
+
+
+def mkdir_copy_ownership_and_apply_mode(dst: str, src: str, mode: int,
+                                        copy_user: bool, copy_group: bool) -> None:
+    """
+    Create the directory ``dst``, copy ownership (user and optionally group on Linux) from
+    ``src`` to it, then apply the given mode, in a way that is safe to use when ``dst`` lives
+    in a directory that other, less privileged, users can write to.
+
+    Calling :func:`mkdir` followed by :func:`copy_ownership_and_apply_mode` is not safe in
+    that situation on Linux: both act on a path, so in between the two calls an unprivileged
+    user can replace the new directory, or one of its parents, with a symlink and make the
+    process (which may be running as root) change the owner and mode of an arbitrary file.
+    On Linux the parent directory is therefore opened once and the new directory is created,
+    opened (without following symlinks) and modified relative to that descriptor, so the
+    ownership and mode changes can only ever apply to the directory that was just created.
+
+    :param str dst: Path of the directory to create (its parent must already exist)
+    :param str src: Path of the file or directory to copy the ownership from
+    :param int mode: Permission mode to apply on the new directory
+    :param bool copy_user: Copy user if `True`
+    :param bool copy_group: Copy group if `True` on Linux (has no effect on Windows)
+
+    :raises OSError: if the directory could not be created
+    :raises OwnershipError: if the directory was created but its ownership or mode
+        could not be set (it still exists)
+    """
+    if not POSIX_MODE:
+        # Windows has no symlink-following chown and uses a DACL, see the notes above
+        # copy_ownership_and_apply_mode.
+        mkdir(dst, mode)
+        try:
+            copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group)
+        except (OSError, AttributeError) as err:
+            raise OwnershipError(str(err)) from err
+        return
+
+    parent, name = os.path.split(dst)
+    # O_PATH (Linux) is enough to use the descriptor as a base for mkdir/open and, unlike
+    # O_RDONLY, does not require read permission on the parent directory.
+    parent_flags = os.O_DIRECTORY | getattr(os, "O_PATH", os.O_RDONLY)
+    parent_fd = os.open(parent or os.curdir, parent_flags)
+    try:
+        os.mkdir(name, mode, dir_fd=parent_fd)
+        try:
+            child_fd = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                               dir_fd=parent_fd)
+            try:
+                stats = os.stat(src)
+                os.fchown(child_fd,
+                          stats.st_uid if copy_user else -1,
+                          stats.st_gid if copy_group else -1)
+                os.fchmod(child_fd, mode)
+            finally:
+                os.close(child_fd)
+        except OSError as err:
+            raise OwnershipError(f"Unable to set ownership or mode of {dst}: {err}") from err
+    finally:
+        os.close(parent_fd)
+
+
 # Quite similar to copy_ownership_and_apply_mode, but this time the DACL is copied from
 # the source file on Windows. The DACL stays consistent with the dynamic rights of the
 # equivalent POSIX mode, because ownership and mode are copied altogether on the destination
