@@ -195,7 +195,8 @@ class DNSPersist01Test(unittest.TestCase):
             "sha-256/5SQm7n6tPh2-PlLbCKGnViTXX5z19SCN4cPGQHSk-kw;"
             " policy=wildcard")
 
-    def test_hash_function(self):
+    def _run_mocked_hash_account_uri(self, domain: str, account_uri: str):
+        from acme.util import normalize_domain
         thumbprint = test_util.load_rfc7638_rsa_key().thumbprint()
         encoded_thumbprint = jose.encode_b64jose(thumbprint)
         mocked_result = b'foo'
@@ -203,21 +204,28 @@ class DNSPersist01Test(unittest.TestCase):
         mock_digest = mock.MagicMock()
         mock_digest.update = mock.MagicMock()
         mock_digest.finalize = mock.MagicMock(return_value=mocked_result)
-        account_uri = 'https://ca.example/acct/123'
         with mock.patch("acme.challenges.hashes.Hash") as mock_hash:
             mock_hash.return_value = mock_digest
             mock_key = mock.MagicMock()
             mock_key.thumbprint = mock.MagicMock(return_value=thumbprint)
             prefix = 'https://ca.example/account-hash/'
-            result = self.msg.hash_account_uri('example.com', mock_key, account_uri, prefix)
+            result = self.msg.hash_account_uri(domain, mock_key, account_uri, prefix)
 
+        normalized_domain = normalize_domain(domain)
+        domain_bytes = normalized_domain.encode()
         mock_digest.update.assert_has_calls([
-            mock.call(bytes([0x0b])),
-            mock.call(b'example.com'),
+            mock.call(bytes([len(domain_bytes)])),
+            mock.call(domain_bytes),
             mock.call(encoded_thumbprint.encode('utf8')),
             mock.call(account_uri.encode('utf8'))
         ])
         assert result == f'https://ca.example/account-hash/sha-256/{b64_mocked_result}'
+
+    def test_hash_function(self):
+        self._run_mocked_hash_account_uri('example.com', 'https://ca.example/acct/123')
+
+    def test_hash_function_with_unicode_domain(self):
+        self._run_mocked_hash_account_uri('üÑICODE-example.com', 'https://ca.example/acct/123')
 
     def test_response(self):
         from acme.challenges import DNSPersist01Response
