@@ -549,7 +549,6 @@ class ClientV2Test(unittest.TestCase):
     @mock.patch('acme.client.random.uniform')
     @mock.patch('acme.client.datetime')
     def test_renewal_time_invalid_window(self, dt_mock, mock_uniform):
-        mock_uniform.return_value = 0
         def now(tzinfo=None):
             return datetime.datetime(2025, 3, 15, tzinfo=tzinfo)
         dt_mock.datetime.now.side_effect = now
