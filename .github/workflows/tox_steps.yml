@@ -44,7 +44,7 @@ jobs:
       if: runner.os == 'macOS'
       run: |-
         unset HOMEBREW_NO_INSTALL_FROM_API
-        brew untap homebrew/core homebrew/cask
+        brew untap homebrew/core homebrew/cask || true
         brew update
         brew install augeas
         BREW_PREFIX="$(brew --prefix)"
