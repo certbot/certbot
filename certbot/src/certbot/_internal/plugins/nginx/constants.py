@@ -55,6 +55,7 @@ ALL_SSL_OPTIONS_HASHES = [
     '0175f71721dd8e5315a6d0f3efef703ff54e867d1ab2a4e076791b89a0b3511a',
     '246b520bedc461fcbd35f4d3efdd75ebf171baccaba5c38f488009566de6d5b3',
     'dd72286f760c90550f34fbeeceb5a1f1351b09b812e65a18569a0f4a4d7f5847',
+    '62567f8b39ad38ab981caf140451c321b01a1e3f1f5708252ffdf962234d3f08',
 ]
 """SHA256 hashes of the contents of all versions of MOD_SSL_CONF_SRC"""
 
