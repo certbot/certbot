@@ -4,6 +4,14 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 <!-- towncrier release notes start -->
 
+## 5.10.0 - 2026-11-10
+
+### Fixed
+
+- Fixes a race condition in the webroot plugin where, if the webroot could be modified by a less privileged user while Certbot ran, the ownership and mode of an unintended file could be changed instead of those of the challenge directory Certbot had just created.
+- Rejects invalid ARI suggested renewal windows whose end time is not after their start time.
+
+
 ## 5.9.0 - 2026-10-28
 
 ### Added
