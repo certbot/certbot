@@ -1,0 +1,1 @@
+Rejects invalid ARI suggested renewal windows whose end time is not after their start time.
