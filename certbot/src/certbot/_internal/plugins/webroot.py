@@ -210,12 +210,18 @@ to serve all files under specified web root ({0})."""
                         # For Linux, this is coupled with the "umask" call above because
                         # os.mkdir's "mode" parameter may not always work:
                         # https://docs.python.org/3/library/os.html#os.mkdir
-                        filesystem.mkdir(prefix, 0o755)
-                        self._created_dirs.append(prefix)
+                        #
+                        # Creating the directory and copying the ownership are done in one
+                        # step that is not vulnerable to the directory being swapped for a
+                        # symlink in between, as the webroot may be writable by a less
+                        # privileged user than the one running Certbot.
                         try:
-                            filesystem.copy_ownership_and_apply_mode(
-                                path, prefix, 0o755, copy_user=True, copy_group=True)
-                        except (OSError, AttributeError) as exception:
+                            filesystem.mkdir_copy_ownership_and_apply_mode(
+                                prefix, path, 0o755, copy_user=True, copy_group=True)
+                            self._created_dirs.append(prefix)
+                        except filesystem.OwnershipError as exception:
+                            # The directory exists, so it still needs to be cleaned up.
+                            self._created_dirs.append(prefix)
                             logger.warning("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)
                     except OSError as exception:
