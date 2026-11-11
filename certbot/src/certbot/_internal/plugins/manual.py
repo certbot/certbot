@@ -62,13 +62,19 @@ with the following value:
 
 {validation}
 """
+    _DNS_CONTINUE_INSTRUCTIONS = """
+You do not need to wait for this TXT record to be deployed yet. Continue setting
+up the remaining challenge tasks first.
+"""
     _DNS_VERIFY_INSTRUCTIONS = """
-Before continuing, verify the TXT record has been deployed. Depending on the DNS
-provider, this may take some time, from a few seconds to multiple minutes. You can
-check if it has finished deploying with aid of online tools, such as the Google
+All required DNS challenge TXT records have now been shown. Before continuing,
+verify that all of them have been deployed. Depending on the DNS provider, this may
+take some time, from a few seconds to multiple minutes. You can check if it has
+finished deploying with aid of online tools, such as the Google
 Admin Toolbox: https://toolbox.googleapps.com/apps/dig/#TXT/{domain}.
-Look for one or more bolded line(s) below the line ';ANSWER'. It should show the
-value(s) you've just added.
+Look for one or more bolded line(s) below the line ';ANSWER'. They should show the
+value(s) you have just added. Certbot will verify all of the DNS challenges when
+you continue from this prompt.
 """
     _HTTP_INSTRUCTIONS = """\
 Create a file containing just this data:
@@ -170,7 +176,7 @@ permitted by DNS standards.)
     def perform(self, achalls: list[achallenges.AnnotatedChallenge]
                 ) -> list[challenges.ChallengeResponse]:  # pylint: disable=missing-function-docstring
         responses = []
-        last_dns_achall = 0
+        last_dns_achall = None
         for i, achall in enumerate(achalls):
             if isinstance(achall.chall, challenges.DNS01):
                 last_dns_achall = i
@@ -178,7 +184,12 @@ permitted by DNS standards.)
             if self.conf('auth-hook'):
                 self._perform_achall_with_script(achall, achalls)
             else:
-                self._perform_achall_manually(achall, i == last_dns_achall)
+                dns_verification_domain = None
+                if last_dns_achall is not None and i == len(achalls) - 1:
+                    last_dns = achalls[last_dns_achall]
+                    dns_verification_domain = last_dns.validation_domain_name(
+                        last_dns.identifier.value)
+                self._perform_achall_manually(achall, dns_verification_domain)
             responses.append(achall.response(achall.account_key))
         return responses
 
@@ -204,7 +215,7 @@ permitted by DNS standards.)
         self.env[achall] = env
 
     def _perform_achall_manually(self, achall: achallenges.AnnotatedChallenge,
-                                 last_dns_achall: bool = False) -> None:
+                                 dns_verification_domain: str | None = None) -> None:
         identifier_value = achall.identifier.value
         validation = achall.validation(achall.account_key)
         if isinstance(achall.chall, challenges.HTTP01):
@@ -227,13 +238,14 @@ permitted by DNS standards.)
                 # instruct user not to remove any previous http-01 challenge
                 msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
             self.subsequent_dns_challenge = True
-            if last_dns_achall:
-                # last dns-01 challenge
-                msg += self._DNS_VERIFY_INSTRUCTIONS.format(
-                    domain=achall.validation_domain_name(identifier_value))
+            if dns_verification_domain is None:
+                msg += self._DNS_CONTINUE_INSTRUCTIONS
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
             msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
+        if dns_verification_domain is not None:
+            msg += self._DNS_VERIFY_INSTRUCTIONS.format(
+                domain=dns_verification_domain)
         display_util.notification(msg, wrap=False, force_interactive=True)
         self.subsequent_any_challenge = True
 
