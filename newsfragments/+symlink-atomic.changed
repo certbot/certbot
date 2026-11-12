@@ -1,0 +1,1 @@
+Cert symlink updates in the live directory are now performed atomically via a temporary filename and rename, closing a small window where the link briefly did not exist.
