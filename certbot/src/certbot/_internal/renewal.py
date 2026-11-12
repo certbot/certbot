@@ -2,6 +2,7 @@
 import configobj
 import copy
 import datetime
+import hashlib
 import itertools
 import logging
 import random
@@ -41,6 +42,8 @@ from certbot.display import util as display_util
 logger = logging.getLogger(__name__)
 
 ARI_RETRY_AFTER_CONFIG_ITEM = "ari_retry_after"
+ARI_RENEWAL_TIME_CONFIG_ITEM = "ari_renewal_time"
+ARI_CERTIFICATE_CONFIG_ITEM = "ari_certificate_sha256"
 
 # These are the items which get pulled out of a renewal configuration
 # file's renewalparams and actually used in the client configuration
@@ -376,14 +379,20 @@ def _ari_renewal_time(lineage: storage.RenewableCert,
         return None
 
     ari_config_section = lineage.configfile.get("acme_renewal_info", {})
+    fingerprint = hashlib.sha256(cert_pem).hexdigest()
+    saved_fingerprint = ari_config_section.get(ARI_CERTIFICATE_CONFIG_ITEM)
+    same_certificate = saved_fingerprint == fingerprint
     retry_after = ari_config_section.get(ARI_RETRY_AFTER_CONFIG_ITEM, None)
-    if retry_after:
+    if retry_after and (saved_fingerprint is None or same_certificate):
         retry_after_datetime = datetime.datetime.fromisoformat(retry_after)
         now = datetime.datetime.now()
         if now < retry_after_datetime:
             logger.debug("Skipped ACME Renewal Info check because ari_retry_after %s is in "
                          "the future",
                          retry_after)
+            saved_time = ari_config_section.get(ARI_RENEWAL_TIME_CONFIG_ITEM)
+            if same_certificate and saved_time:
+                return datetime.datetime.fromisoformat(saved_time)
             return None
 
     renewal_time = None
@@ -405,6 +414,8 @@ def _ari_renewal_time(lineage: storage.RenewableCert,
         # Note: the ACME client returns naive (no timezone) datetimes for retry_after, and that
         # is what we serialize here.
         ARI_RETRY_AFTER_CONFIG_ITEM: retry_after.isoformat(timespec="seconds"),
+        ARI_CERTIFICATE_CONFIG_ITEM: fingerprint,
+        ARI_RENEWAL_TIME_CONFIG_ITEM: renewal_time.isoformat() if renewal_time else "",
     }
     storage.atomic_rewrite(lineage.configfile.filename, config_update)
     return renewal_time
