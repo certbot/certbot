@@ -175,7 +175,7 @@ class DNSPersist01Test(unittest.TestCase):
         prefix ='https://ca.example/account-hash/'
         account_uri = 'https://ca.example/acct/123'
         (domain, rdata) = self.msg.get_dns_txt_record('example.com', key,
-            account_uri, prefix)
+            account_uri, prefix, False)
         assert domain == '_validation-persist.example.com'
         assert rdata == ("authority.example;"
         " accounturi=https://ca.example/account-hash/"
@@ -183,12 +183,11 @@ class DNSPersist01Test(unittest.TestCase):
 
     def test_wildcard(self):
         # pulled from https://www.ietf.org/archive/id/draft-ietf-acme-dns-persist-02.html#name-wildcard-validation-example
-        name = '*.example.com'
         key = test_util.load_rfc7638_rsa_key()
         prefix ='https://ca.example/account-hash/'
         account_uri = 'https://ca.example/acct/123'
-        (domain, rdata) = self.msg.get_dns_txt_record(name, key,
-            account_uri, prefix)
+        (domain, rdata) = self.msg.get_dns_txt_record('example.com', key,
+            account_uri, prefix, True)
         assert domain == '_validation-persist.example.com'
         assert rdata == ("authority.example;"
             " accounturi=https://ca.example/account-hash/"

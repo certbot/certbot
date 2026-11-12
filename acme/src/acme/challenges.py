@@ -11,7 +11,6 @@ from typing import Optional
 from typing import TypeVar
 from typing import Union
 
-from acme import util
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 import josepy as jose
@@ -32,7 +31,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
                   jobj: Mapping[str, Any]) -> Union[GenericChallenge, 'UnrecognizedChallenge']:
         try:
             return cast(GenericChallenge, super().from_json(jobj))
-        except jose.UnrecognizedTypeError as error:
+        except jose.DeserializationError as error:
             logger.debug(error)
             return UnrecognizedChallenge.from_json(jobj)
 
@@ -525,18 +524,18 @@ class DNSPersist01(Challenge):
         return f"{account_hash_prefix}{hash_alg}/{base64_hash_value}"
 
     def get_dns_txt_record(self, name: str, account_public_key: jose.JWK,
-                           account_uri: str, account_hash_prefix: str) -> tuple[str, str]:
+                           account_uri: str, account_hash_prefix: str,
+                           wildcard: bool) -> tuple[str, str]:
         """Returns both the domain and value for the DNS TXT record.
 
         :param str name: Domain name being validated.
+        :param jose.JWK account_public_key: The ACME account's public key
+        :param str account_uri: The ACME account URI
+        :param str account_hash_prefix: The CA's ACME account hash prefix
+        :param bool wildcard: Whether a wildcard certificate is being provisioned
         :returns: The domain and rdata value for the TXT record.
         :rtype: tuple[str, str]
         """
-        wildcard = False
-        if util.is_wildcard_domain(name):
-            name = name.removeprefix('*.')
-            wildcard = True
-
         accounturi = self.hash_account_uri(name, account_public_key,
             account_uri, account_hash_prefix)
 
