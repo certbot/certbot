@@ -489,6 +489,7 @@ class RenewalTest(test_util.ConfigTestCase):
 
         assert renewable_cert_config['acme_renewal_info']['ari_retry_after'] == retry_after.isoformat(
             timespec='seconds')
+        assert renewable_cert_config['acme_renewal_info']['ari_renewal_time'] == renewal_time.isoformat()
 
     def test_skips_ari_when_retry_after_future(self):
         from certbot._internal import renewal
@@ -507,6 +508,52 @@ class RenewalTest(test_util.ConfigTestCase):
         # Check for renewal. All we care about here is that renewal_time is not called; if it were,
         # an exception would be raised.
         renewal.should_autorenew(renewable_cert, mock_ari_client_pool)
+
+    def test_reuses_ari_selection_after_reloading_lineage(self):
+        from certbot._internal import renewal
+
+        rc_path = test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        conf = configobj.ConfigObj(rc_path)
+        conf.pop("renew_before_expiry", None)
+        conf.write()
+        renewable_cert = storage.RenewableCert(rc_path, self.config)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        cert_path = renewable_cert.version("cert", renewable_cert.latest_common_version())
+        with open(cert_path, "wb") as cert:
+            cert.write(make_cert_with_lifetime(now - datetime.timedelta(days=75), 90))
+        mock_ari_client_pool = MockAriClientPool(
+            now + datetime.timedelta(days=1),
+            datetime.datetime.now() + datetime.timedelta(hours=6))
+
+        assert not renewal.should_autorenew(renewable_cert, mock_ari_client_pool)
+
+        renewable_cert = storage.RenewableCert(rc_path, self.config)
+        mock_ari_client_pool = MockAriClientPool(None, None)
+        assert not renewal.should_autorenew(renewable_cert, mock_ari_client_pool)
+        mock_ari_client_pool.mock_acme.renewal_time.assert_not_called()
+
+    def test_ari_selection_is_not_reused_for_a_different_certificate(self):
+        from certbot._internal import renewal
+
+        rc_path = test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        conf = configobj.ConfigObj(rc_path)
+        conf.pop("renew_before_expiry", None)
+        conf.write()
+        renewable_cert = storage.RenewableCert(rc_path, self.config)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        retry_after = datetime.datetime.now() + datetime.timedelta(hours=6)
+        mock_ari_client_pool = MockAriClientPool(now + datetime.timedelta(days=1), retry_after)
+        cert_path = renewable_cert.version("cert", renewable_cert.latest_common_version())
+        with open(cert_path, "wb") as cert:
+            cert.write(make_cert_with_lifetime(now - datetime.timedelta(days=75), 90))
+        assert not renewal.should_autorenew(renewable_cert, mock_ari_client_pool)
+
+        with open(cert_path, "wb") as cert:
+            cert.write(make_cert_with_lifetime(now, 90))
+        renewable_cert = storage.RenewableCert(rc_path, self.config)
+        mock_ari_client_pool = MockAriClientPool(now + datetime.timedelta(days=1), retry_after)
+        assert not renewal.should_autorenew(renewable_cert, mock_ari_client_pool)
+        mock_ari_client_pool.mock_acme.renewal_time.assert_called_once()
 
     def test_checks_ari_when_retry_after_absent(self):
         from certbot._internal import renewal
