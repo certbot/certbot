@@ -559,8 +559,9 @@ class ClientV2:
             when = parsedate_tz(retry_after)
             if when is not None:
                 try:
-                    tz_secs = datetime.timedelta(when[-1] if when[-1] is not None else 0)
-                    return datetime.datetime(*when[:7]) - tz_secs
+                    tz_secs = datetime.timedelta(seconds=when[-1] if when[-1] is not None else 0)
+                    date = datetime.datetime(*when[:6], tzinfo=datetime.timezone(tz_secs))
+                    return date.astimezone().replace(tzinfo=None)
                 except (ValueError, OverflowError):
                     pass
             seconds = default

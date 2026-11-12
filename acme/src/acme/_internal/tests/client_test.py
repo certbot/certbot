@@ -419,8 +419,17 @@ class ClientV2Test(unittest.TestCase):
 
     def test_retry_after_date(self):
         self.response.headers['Retry-After'] = 'Fri, 31 Dec 1999 23:59:59 GMT'
-        assert datetime.datetime(1999, 12, 31, 23, 59, 59) == \
-            self.client.retry_after(response=self.response, default=10)
+        expected = datetime.datetime(
+            1999, 12, 31, 23, 59, 59, tzinfo=datetime.timezone.utc
+        ).astimezone().replace(tzinfo=None)
+        assert expected == self.client.retry_after(response=self.response, default=10)
+
+    def test_retry_after_date_with_offset(self):
+        self.response.headers['Retry-After'] = 'Fri, 31 Dec 1999 18:59:59 -0500'
+        expected = datetime.datetime(
+            1999, 12, 31, 23, 59, 59, tzinfo=datetime.timezone.utc
+        ).astimezone().replace(tzinfo=None)
+        assert expected == self.client.retry_after(response=self.response, default=10)
 
     @mock.patch('acme.client.datetime')
     def test_retry_after_invalid(self, dt_mock):
@@ -435,6 +444,7 @@ class ClientV2Test(unittest.TestCase):
     def test_retry_after_overflow(self, dt_mock):
         dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
         dt_mock.timedelta = datetime.timedelta
+        dt_mock.timezone = datetime.timezone
         dt_mock.datetime.side_effect = datetime.datetime
 
         self.response.headers['Retry-After'] = "Tue, 116 Feb 2016 11:50:00 MST"
