@@ -59,3 +59,19 @@ def load_ecdsa_private_key(*names):
                            serialization.load_der_private_key)
     return ComparableECKey(loader(
         load_vector(*names), password=None, backend=default_backend()))
+
+
+def load_rfc7638_rsa_key() -> jose.JWKRSA:
+    """Returns the RSA JWK defined in RFC7638, Section 3.1."""
+    return jose.JWKRSA.fields_from_json({
+        "kty": "RSA",
+        "n": ("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAt"
+            "VT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn6"
+            "4tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FD"
+            "W2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n9"
+            "1CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINH"
+            "aQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw"),
+        "e": "AQAB",
+        "alg": "RS256",
+        "kid": "2011-04-29"
+    })

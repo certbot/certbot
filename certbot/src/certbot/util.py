@@ -1,4 +1,5 @@
 """Utilities for all Certbot."""
+import warnings
 import argparse
 import atexit
 import errno
@@ -690,6 +691,8 @@ def is_wildcard_domain(domain: Union[str, bytes]) -> bool:
     :rtype: bool
 
     """
+    warnings.warn("certbot.util.is_wildcard_domain is deprecated and "
+        "will be removed in the next major release.", DeprecationWarning)
     if isinstance(domain, str):
         return domain.startswith("*.")
     return domain.startswith(b"*.")
