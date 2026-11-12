@@ -32,5 +32,22 @@ class IsWildcardDomainTest(unittest.TestCase):
         assert self._call(self.wildcard.encode())
 
 
+class NormalizeDomainTest(unittest.TestCase):
+    def _call(self, domain: str) -> str:
+        from acme.util import normalize_domain
+        return normalize_domain(domain)
+
+    def test_example(self):
+        # https://www.ietf.org/archive/id/draft-ietf-acme-dns-persist-02.html#section-9.2-4
+        assert self._call('EXAMPLE.com.') == 'example.com'
+        assert self._call('EXAMPLE.com') == 'example.com'
+
+    def test_unicode_example(self):
+        # https://www.ietf.org/archive/id/draft-ietf-acme-dns-persist-02.html#section-9.2-6 contains
+        # an error. See https://github.com/ietf-wg-acme/draft-ietf-acme-dns-persist/issues/88
+        assert self._call('üÑICODE-example.com.') == 'xn--icode-example-hkb8n.com'
+        assert self._call('üÑICODE-example.com') == 'xn--icode-example-hkb8n.com'
+
+
 if __name__ == '__main__':
     sys.exit(pytest.main(sys.argv[1:] + [__file__]))  # pragma: no cover

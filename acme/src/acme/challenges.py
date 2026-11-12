@@ -495,7 +495,7 @@ class DNSPersist01(Challenge):
 
     issuer_domain_names: tuple[str, ...] = jose.field("issuerDomainNames")
 
-    def hash_account_uri(self, domain: str, account_public_key: jose.JWK,
+    def hash_account_uri(self, normalized_domain: str, account_public_key: jose.JWK,
                          account_uri: str, account_hash_prefix: str) -> str:
         """Computes the hashed account information needed to bind our account to the domain. The RFC
         mandates that the CA support SHA256, that the hashed value is:
@@ -514,7 +514,8 @@ class DNSPersist01(Challenge):
         """
         hash_alg = "sha-256"
         digest = hashes.Hash(hashes.SHA256(), default_backend())
-        domain_bytes = domain.encode('utf8')
+        normalized_domain = util.normalize_domain(normalized_domain)
+        domain_bytes = normalized_domain.encode('utf8')
         digest.update(bytes([len(domain_bytes)]))
         digest.update(domain_bytes)
         thumbprint = jose.encode_b64jose(account_public_key.thumbprint())
