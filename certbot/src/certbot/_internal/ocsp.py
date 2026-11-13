@@ -111,7 +111,14 @@ def _check_ocsp_cryptography(cert_path: str, chain_path: str, url: str, timeout:
         logger.info("OCSP check failed for %s (HTTP status: %d)", cert_path, response.status_code)
         return False
 
-    response_ocsp = ocsp.load_der_ocsp_response(response.content)
+    try:
+        response_ocsp = ocsp.load_der_ocsp_response(response.content)
+    except ValueError as error:
+        # Malformed OCSP responses (including invalid ASN.1 in
+        # BasicOCSPResponse::signature_algorithm) should not prevent other
+        # certificates from being listed or renewed.
+        logger.warning("Could not parse OCSP response for %s: %s", cert_path, error)
+        return False
 
     # Check OCSP response validity
     if response_ocsp.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
