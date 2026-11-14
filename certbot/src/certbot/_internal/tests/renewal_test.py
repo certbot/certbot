@@ -1,6 +1,7 @@
 """Tests for certbot._internal.renewal"""
 import copy
 import datetime
+from pathlib import Path
 import sys
 import tempfile
 import unittest
@@ -12,7 +13,10 @@ import pytest
 from acme import challenges, errors as acme_errors
 from certbot import configuration
 from certbot import errors
+from certbot._internal import cli
+from certbot._internal import constants
 from certbot._internal import storage
+from certbot._internal.plugins.disco import PluginsRegistry
 import certbot.tests.util as test_util
 
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -550,6 +554,35 @@ class MockAriClientPool:
 
     def get(self, server):
         return self.mock_acme
+
+
+@pytest.mark.parametrize(('option', 'renewal_key'), [
+    ('pre-hook', 'pre_hook'), ('post-hook', 'post_hook'), ('deploy-hook', 'renew_hook'),
+])
+@pytest.mark.parametrize('cli_hook', [None, 'from-cli'])
+@pytest.mark.parametrize('global_hook', [None, 'from-cli-ini'])
+@pytest.mark.parametrize('saved_hook', [None, 'from-renewal-conf'])
+def test_renewal_hook_precedence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                 option: str, renewal_key: str, cli_hook: str | None,
+                                 global_hook: str | None, saved_hook: str | None) -> None:
+    from certbot._internal import renewal
+
+    cli_ini = tmp_path / 'cli.ini'
+    cli_ini.write_text(f'{option} = {global_hook}\n' if global_hook else '', encoding='utf-8')
+    monkeypatch.setitem(constants.CLI_DEFAULTS, 'config_files', [str(cli_ini)])
+
+    renewal_file = test_util.make_lineage(str(tmp_path), 'sample-renewal.conf')
+    if saved_hook:
+        saved_config = configobj.ConfigObj(renewal_file)
+        saved_config['renewalparams'][renewal_key] = saved_hook
+        saved_config.write()
+
+    args = ['renew', '--config-dir', str(tmp_path), '--disable-hook-validation']
+    if cli_hook:
+        args.extend([f'--{option}', cli_hook])
+    config = cli.prepare_and_parse_args(PluginsRegistry.find_all(), args)
+    assert renewal.reconstitute(config, renewal_file) is not None
+    assert getattr(config, option.replace('-', '_')) == (cli_hook or global_hook or saved_hook)
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):

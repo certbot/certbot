@@ -713,13 +713,16 @@ Prior to certbot 3.2.0, hooks in directories were only run when certificates
 were renewed with the ``renew`` subcommand, but as of 3.2.0, they are run for
 any subcommand.
 
-Hooks specified in the command line, :ref:`configuration file
-<config-file>`, or :ref:`renewal configuration files <renewal-config-file>` are
-run as usual after running all hooks in these directories. One minor exception
-to this is if a hook specified elsewhere is simply the path to an executable
-file in the hook directory of the same type (e.g. your pre-hook is the path to
-an executable in ``/etc/letsencrypt/renewal-hooks/pre``), the file is not run a
-second time. You can stop Certbot from automatically running executables found
+For each hook type, Certbot runs the directory hooks first. During
+``certbot renew``, it then looks for a hook on the command line, then in the
+:ref:`global configuration file (cli.ini) <config-file>`, and finally in the
+:ref:`certificate's renewal configuration file <renewal-config-file>`. It runs
+the command from the first source that defines the hook.
+
+If that command is the same path as a directory hook of the same type,
+Certbot skips the duplicate. A deploy hook still runs once for each
+certificate successfully renewed.
+You can stop Certbot from automatically running executables found
 in these directories by including ``--no-directory-hooks`` on the command line.
 
 More information about hooks can be found by running
