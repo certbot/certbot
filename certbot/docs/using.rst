@@ -584,8 +584,7 @@ If you need to delete a certificate, use the ``delete`` subcommand.
 
 Certbot does not automatically revoke a certificate before deleting it. If you're no longer using a certificate and don't
 plan to use it anywhere else, you may want to follow the instructions in `Revoking certificates`_ instead. Generally, there's
-no need to revoke a certificate if its private key has not been compromised, but you may still receive expiration emails
-from Let's Encrypt unless you revoke.
+no need to revoke a certificate if its private key has not been compromised.
 
 .. note:: Do not manually delete certificate files from inside ``/etc/letsencrypt/``. Always use the ``delete`` subcommand.
 
@@ -771,8 +770,9 @@ only those domains, rather than replacing the original certificate.
 When run with a set of domains corresponding to an existing certificate,
 the ``certonly`` command attempts to renew that specific certificate.
 
-Please note that the CA will send notification emails to the address
-you provide if you do not renew certificates that are about to expire.
+Whether you receive certificate expiration emails depends on your CA.
+Let's Encrypt `no longer sends expiration emails
+<https://letsencrypt.org/2025/06/26/expiration-notification-service-has-ended/>`_.
 
 Certbot is working hard to improve the renewal process, and we
 apologize for any inconvenience you encounter in integrating these
