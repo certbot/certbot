@@ -6,6 +6,7 @@ This a complete usage example of the python-acme API.
 
 Limitations of this example:
     - Works for only one Domain name
+      (see acme.crypto_util.make_csr() `domains` arg to add multiple domains)
     - Performs only HTTP-01 challenge
     - Uses ACME-v2
 
