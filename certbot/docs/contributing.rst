@@ -539,7 +539,7 @@ instance for its open source projects as described below.
 
 You can get involved with several of EFF's software projects such as Certbot at
 the `EFF Open Source Contributor Chat Platform
-<https://opensource.eff.org/signup_user_complete/?id=6iqur37ucfrctfswrs14iscobw>`_.
+<https://opensource.eff.org/signup_user_complete/?id=r1b6cnta9bysxk6im3kuabiu1y>`_.
 By signing up for the EFF Open Source Contributor Chat Platform, you consent to
 share your personal information with the Electronic Frontier Foundation, which
 is the operator and data controller for this platform. The channels will be
