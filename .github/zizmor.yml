@@ -1,0 +1,11 @@
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "*": any
+  dangerous-triggers:
+    ignore:
+      # These workflows have been manually reviewed for safety.
+      # See https://github.com/certbot/certbot/pull/10490
+      - merged.yaml
+      - review_requested.yaml
