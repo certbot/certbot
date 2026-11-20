@@ -366,6 +366,41 @@ class RenewableCertTests(BaseRenewableCertTest):
         assert os.path.basename(filesystem.readlink(self.test_rc.chain)) == \
                          "chain3000.pem"
 
+    def test_update_link_to_atomic_keeps_link_valid(self):
+        """If the rename is interrupted, the original link must still resolve."""
+        for ver in range(1, 3):
+            for kind in ALL_FOUR:
+                self._write_out_kind(kind, ver)
+        link = self.test_rc.cert
+        original_target = filesystem.readlink(link)
+
+        # Simulate an interruption of filesystem.replace after the new symlink
+        # is created under a temporary name. The original link must still
+        # exist and point at the original target.
+        with mock.patch(
+                "certbot._internal.storage.filesystem.replace",
+                side_effect=RuntimeError("simulated interrupt")):
+            with pytest.raises(RuntimeError):
+                self.test_rc._update_link_to("cert", 1)  # pylint: disable=protected-access
+
+        assert os.path.lexists(link)
+        assert filesystem.readlink(link) == original_target
+
+    def test_update_link_to_cleans_stale_temp(self):
+        """A stale .new symlink from a previous interrupted run is cleaned up."""
+        for ver in range(1, 3):
+            for kind in ALL_FOUR:
+                self._write_out_kind(kind, ver)
+        link = self.test_rc.cert
+        temp_link = link + ".new"
+        os.symlink("stale-target.pem", temp_link)
+        assert os.path.lexists(temp_link)
+
+        self.test_rc._update_link_to("cert", 1)  # pylint: disable=protected-access
+
+        assert not os.path.lexists(temp_link)
+        assert os.path.basename(filesystem.readlink(link)) == "cert1.pem"
+
     def test_version(self):
         self._write_out_kind("cert", 12)
         # TODO: We should probably test that the directory is still the
@@ -404,15 +439,18 @@ class RenewableCertTests(BaseRenewableCertTest):
             assert self.test_rc.current_version(kind) == 12
 
     def test_update_all_links_to_full_failure(self):
-        def unlink_or_raise(path, real_unlink=os.unlink):
+        # Symlink updates now go through filesystem.replace rather than a
+        # plain os.unlink. To simulate a mid-update failure, fail the replace
+        # for fullchain.
+        def replace_or_raise(src, dst, real_replace=filesystem.replace):
             # pylint: disable=missing-docstring
-            if "fullchain" in os.path.basename(path):
+            if "fullchain" in os.path.basename(dst):
                 raise ValueError
-            real_unlink(path)
+            real_replace(src, dst)
 
         self._write_out_ex_kinds()
-        with mock.patch("certbot._internal.storage.os.unlink") as mock_unlink:
-            mock_unlink.side_effect = unlink_or_raise
+        with mock.patch("certbot._internal.storage.filesystem.replace") as mock_replace:
+            mock_replace.side_effect = replace_or_raise
             with pytest.raises(ValueError):
                 self.test_rc.update_all_links_to(12)
 
