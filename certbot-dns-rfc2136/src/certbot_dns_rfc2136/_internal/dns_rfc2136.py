@@ -1,4 +1,5 @@
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
+from enum import Enum
 import logging
 from typing import Any
 from typing import Callable
@@ -24,6 +25,23 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_NETWORK_TIMEOUT = 45
 
+class ProtoPref(Enum):
+    """Enum for protocol preference options."""
+
+    TCP_ONLY  = 'tcp_only'
+    TCP_FIRST = 'tcp_first'
+    UDP_ONLY  = 'udp_only'
+    UDP_FIRST = 'udp_first'
+
+    @classmethod
+    def map_to_func_list(cls, pp: 'ProtoPref') -> list[Callable[..., dns.message.Message]]:
+        """Map protocol preference to list of dns.query functions."""
+        return {
+            ProtoPref.TCP_ONLY: [dns.query.tcp],
+            ProtoPref.TCP_FIRST: [dns.query.tcp, dns.query.udp],
+            ProtoPref.UDP_ONLY: [dns.query.udp],
+            ProtoPref.UDP_FIRST: [dns.query.udp, dns.query.tcp]
+        }[pp] # type: ignore
 
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator using RFC 2136 Dynamic Updates
@@ -52,7 +70,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     @classmethod
     def add_parser_arguments(cls, add: Callable[..., None],
                              default_propagation_seconds: int = 60) -> None:
-        super().add_parser_arguments(add, default_propagation_seconds=60)
+        super().add_parser_arguments(add, default_propagation_seconds)
         add('credentials', help='RFC 2136 credentials INI file.')
 
     def more_info(self) -> str:
@@ -68,6 +86,18 @@ class Authenticator(dns_common.DNSAuthenticator):
         if algorithm:
             if not self.ALGORITHMS.get(algorithm.upper()):
                 raise errors.PluginError("Unknown algorithm: {0}.".format(algorithm))
+        server_pp = cast(str, credentials.conf('server_proto_pref'))
+        if server_pp and server_pp.upper() not in ProtoPref.__members__:
+            raise errors.PluginError("Unknown protocol preference: {0}. Must be one of {1}."
+                        .format(server_pp, str.join(', ', sorted(ProtoPref.__members__))))
+        update_server = cast(str, credentials.conf('update_server'))
+        if update_server and not is_ipaddress(update_server):
+            raise errors.PluginError(f"The configured target update server ({update_server})" + \
+                                "is not a valid IPv4 or IPv6 address. A hostname is not allowed.")
+        update_server_pp = cast(str, credentials.conf('update_server_proto_pref'))
+        if update_server_pp and update_server_pp.upper() not in ProtoPref.__members__:
+            raise errors.PluginError("Unknown update server protocol: {0}. Must be one of {1}."
+                        .format(update_server_pp, str.join(', ',sorted(ProtoPref.__members__))))
 
     def _setup_credentials(self) -> None:
         self.credentials = self._configure_credentials(
@@ -98,16 +128,26 @@ class Authenticator(dns_common.DNSAuthenticator):
                               cast(str, self.credentials.conf('name')),
                               cast(str, self.credentials.conf('secret')),
                               self.ALGORITHMS.get(algorithm, dns.tsig.HMAC_MD5),
-                              (self.credentials.conf('sign_query') or '').upper() == "TRUE")
+                              (self.credentials.conf('sign_query') or '').upper() == "TRUE",
+                              DEFAULT_NETWORK_TIMEOUT,
+                              self.credentials.conf('server_proto_pref'),
+                              self.credentials.conf('update_server'),
+                              self.credentials.conf('update_server_proto_pref'))
 
 
 class _RFC2136Client:
+
+    domain_to_challenges_map: dict[str, list[str]] = {}
+
     """
-    Encapsulates all communication with the target DNS server.
+    Encapsulates all communication with the target DNS and/or update server.
     """
     def __init__(self, server: str, port: int, key_name: str, key_secret: str,
                  key_algorithm: dns.name.Name, sign_query: bool,
-                 timeout: int = DEFAULT_NETWORK_TIMEOUT) -> None:
+                 timeout: int = DEFAULT_NETWORK_TIMEOUT,
+                 server_proto_pref: str | None = None,
+                 update_server: str | None = None,
+                 update_server_proto_pref: str | None = None) -> None:
         self.server = server
         self.port = port
         self.keyring = dns.tsigkeyring.from_text({
@@ -116,6 +156,37 @@ class _RFC2136Client:
         self.algorithm = key_algorithm
         self.sign_query = sign_query
         self._default_timeout = timeout
+        self.update_server = update_server or server
+        self.server_proto_pref = server_proto_pref\
+            and ProtoPref(server_proto_pref) or ProtoPref.TCP_FIRST
+        self.update_server_proto_pref = update_server_proto_pref\
+            and ProtoPref(update_server_proto_pref) or ProtoPref.TCP_ONLY
+
+    def _try_with_protocols(self, func: Callable[..., dns.message.Message],
+            proto_pref: ProtoPref) -> dns.message.Message:
+        """
+        Try to execute a function using a list of protocol functions, falling back on failure.
+
+        :param func: The function to execute, taking a protocol function as its only argument.
+        :param protocol_func_list: The list of protocol functions to try.
+        :returns: The result of the function.
+        :raises dns.exception.Timeout: if all protocol functions time out.
+        """
+
+        proto_funcs = ProtoPref.map_to_func_list(proto_pref)
+        for idx, protof in enumerate(proto_funcs):
+            try:
+                return func(protof)
+            except (OSError, dns.exception.Timeout) as e:
+                if idx == len(proto_funcs) - 1:
+                    raise e
+                def prot_to_msg(prot: Callable[..., Any]) -> str:
+                    return 'TCP' if prot is dns.query.tcp else 'UDP'
+                exception_message = prot_to_msg(protof) + " query failed"
+                if idx < len(proto_funcs) - 1:
+                    exception_message += ", fallback to " + prot_to_msg(proto_funcs[idx + 1])
+                logger.debug('%s: %s', exception_message, e)
+        return dns.message.Message()  # pragma: no cover
 
     def add_txt_record(self, record_name: str, record_content: str, record_ttl: int) -> None:
         """
@@ -133,14 +204,19 @@ class _RFC2136Client:
         o = dns.name.from_text(domain)
         rel = n.relativize(o)
 
+        _RFC2136Client.domain_to_challenges_map.setdefault(domain, []).insert(0, record_content)
+        record_content_list = _RFC2136Client.domain_to_challenges_map[domain]
+
         update = dns.update.Update(
             domain,
             keyring=self.keyring,
             keyalgorithm=self.algorithm)
-        update.add(rel, record_ttl, dns.rdatatype.TXT, record_content)
+        update.add(rel, record_ttl, dns.rdatatype.TXT, *record_content_list)
 
         try:
-            response = dns.query.tcp(update, self.server, self._default_timeout, self.port)
+            response = self._try_with_protocols(lambda prot:
+                prot(update, self.update_server, self._default_timeout, self.port),
+                self.update_server_proto_pref)
         except Exception as e:
             raise errors.PluginError('Encountered error adding TXT record: {0}'
                                      .format(e))
@@ -168,6 +244,8 @@ class _RFC2136Client:
         o = dns.name.from_text(domain)
         rel = n.relativize(o)
 
+        _RFC2136Client.domain_to_challenges_map.pop(domain, None)
+
         update = dns.update.Update(
             domain,
             keyring=self.keyring,
@@ -175,7 +253,9 @@ class _RFC2136Client:
         update.delete(rel, dns.rdatatype.TXT, record_content)
 
         try:
-            response = dns.query.tcp(update, self.server, self._default_timeout, self.port)
+            response = self._try_with_protocols(lambda prot:
+                prot(update, self.update_server, self._default_timeout, self.port),
+                self.update_server_proto_pref)
         except Exception as e:
             raise errors.PluginError('Encountered error deleting TXT record: {0}'
                                      .format(e))
@@ -227,11 +307,9 @@ class _RFC2136Client:
             request.use_tsig(self.keyring, algorithm=self.algorithm)
 
         try:
-            try:
-                response = dns.query.tcp(request, self.server, self._default_timeout, self.port)
-            except (OSError, dns.exception.Timeout) as e:
-                logger.debug('TCP query failed, fallback to UDP: %s', e)
-                response = dns.query.udp(request, self.server, self._default_timeout, self.port)
+            response = self._try_with_protocols(lambda prot:
+                prot(request, self.server, self._default_timeout, self.port),
+                self.server_proto_pref)
             rcode = response.rcode()
 
             # Authoritative Answer bit should be set
