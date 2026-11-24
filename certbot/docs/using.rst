@@ -355,7 +355,7 @@ dns-hosttech_           Y    N    DNS Authentication using the Hosttech DNS API
 .. _dns-clouddns: https://github.com/vshosting/certbot-dns-clouddns
 .. _dns-lightsail: https://github.com/noi/certbot-dns-lightsail
 .. _dns-inwx: https://github.com/oGGy990/certbot-dns-inwx/
-.. _dns-azure: https://github.com/terricain/certbot-dns-azure
+.. _dns-azure: https://github.com/cloudchristoph/certbot-dns-azure-modern
 .. _dns-godaddy: https://github.com/miigotu/certbot-dns-godaddy
 .. _dns-yandexcloud: https://github.com/PykupeJIbc/certbot-dns-yandexcloud
 .. _dns-bunny: https://github.com/mwt/certbot-dns-bunny
