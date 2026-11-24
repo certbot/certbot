@@ -73,8 +73,11 @@ def _suggest_donation_if_appropriate(config: configuration.NamespaceConfig) -> N
     # - renewing
     # - using the staging server (--staging or --dry-run)
     # - running with --quiet (display fd won't be available during atexit calls #8995)
+    # - using a non-Let's Encrypt ACME server
     assert config.verb != "renew"
     if config.staging or config.quiet:
+        return
+    if "letsencrypt.org" not in config.server:
         return
     util.atexit_register(
         display_util.notification,
