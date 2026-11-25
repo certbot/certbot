@@ -340,6 +340,7 @@ dns-dnscale_            Y    N    DNS Authenticator for DNScale
 dns-feno_               Y    N    DNS Authentication using the FENO (feno.no) API for .no domains
 dns-enum_               Y    N    DNS Authentication using enum DNS
 dns-hosttech_           Y    N    DNS Authentication using the Hosttech DNS API
+dns-nicmanager_         Y    N    DNS Authentication using the nicmanager AnycastDNS API
 ======================= ==== ==== =================================================================
 
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
@@ -381,6 +382,7 @@ dns-hosttech_           Y    N    DNS Authentication using the Hosttech DNS API
 .. _dns-feno: https://github.com/mrerikcodes/certbot-dns-feno
 .. _dns-enum: https://github.com/enumco/certbot-dns-enum
 .. _dns-hosttech: https://github.com/bunkerity/certbot-dns-hosttech
+.. _dns-nicmanager: https://github.com/jp1337/certbot-dns-nicmanager
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
