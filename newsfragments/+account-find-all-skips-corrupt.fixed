@@ -1,0 +1,1 @@
+Fixed a crash during account enumeration when an account file on disk is corrupt: unloadable accounts are now skipped as intended instead of Certbot failing with a josepy deserialization error.
